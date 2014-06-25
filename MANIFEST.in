@@ -1,0 +1,6 @@
+include README.rst
+include LICENSE
+
+exclude .gitignore
+exclude .gitreview
+global-exclude *.pyc
