@@ -1,6 +1,6 @@
-========
- Octavia
-========
+=======
+Octavia
+=======
 
 Operator-grade open source scalable load balancer.
 
@@ -15,3 +15,4 @@ contributors, please see the CONSTITUTION.rst file in this directory, or
 specifications in the specs/ subdirectory. Other documentation can be
 found in the docs/ directory.
 
+Please also see the ROADMAP.rst file for our project roadmap.

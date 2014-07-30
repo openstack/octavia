@@ -39,7 +39,8 @@ Some notes about using this template:
   For more complicated diagrams that need "real" graphics, yet still should
   be in the git revision control system, GraphViz .dot files are acceptable.
   If you require an image (screenshot) for your BP, attaching that to the BP
-  and checking it in is also accepted. However, text representations are prefered.
+  and checking it in is also accepted. However, text representations are
+  prefered.
 
 * Diagram examples
 
@@ -186,7 +187,8 @@ proposed changes to the data model.
 
 Questions which need to be addressed by this section include:
 
-* What new data objects and/or database schema changes is this going to require?
+* What new data objects and/or database schema changes is this going to
+  require?
 
 * What database migrations will accompany this change.
 
@@ -324,8 +326,9 @@ changes to an existing notification, or removing a notification.
 Other end user impact
 ---------------------
 
-Aside from the API, are there other ways a user will interact with this feature?
-Keep in mind that 'user' in this context could mean either tenant or operator.
+Aside from the API, are there other ways a user will interact with this
+feature? Keep in mind that 'user' in this context could mean either tenant or
+operator.
 
 * Does this change have an impact on python-neutronclient? What does the user
   interface there look like?
@@ -345,12 +348,12 @@ Examples of things to consider here include:
 * A small change in a utility function or a commonly used decorator can have a
   large impacts on performance.
 
-* Calls which result in a database queries (whether direct or via conductor) can
-  have a profound impact on performance when called in critical sections of the
-  code.
+* Calls which result in a database queries (whether direct or via conductor)
+  can have a profound impact on performance when called in critical sections
+  of the code.
 
-* Will the change include any locking, and if so what considerations are there on
-  holding the lock?
+* Will the change include any locking, and if so what considerations are there
+  on holding the lock?
 
 Other deployer impact
 ---------------------
@@ -415,8 +418,8 @@ but we're mostly trying to understand the timeline for implementation.
 Dependencies
 ============
 
-* Include specific references to specs and/or blueprints in octavia, or in other
-  projects, that this one either depends on or is related to.
+* Include specific references to specs and/or blueprints in octavia, or in
+  other projects, that this one either depends on or is related to.
 
 * If this requires functionality of another project that is not currently used
   by Octavia document that fact.
