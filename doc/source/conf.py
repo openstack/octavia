@@ -34,7 +34,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinxcontrib.actdiag',
               'sphinxcontrib.seqdiag',
               'sphinxcontrib.nwdiag',
-              'sphinxcontrib.googlechart.graphviz',
+              'sphinx.ext.graphviz',
               'oslosphinx'
              ]
 
