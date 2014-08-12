@@ -1,0 +1,225 @@
+/*
+*    Copyright 2014 OpenStack Foundation
+*
+*    Licensed under the Apache License, Version 2.0 (the "License"); you may
+*    not use this file except in compliance with the License. You may obtain
+*    a copy of the License at
+*
+*         http://www.apache.org/licenses/LICENSE-2.0
+*
+*    Unless required by applicable law or agreed to in writing, software
+*    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+*    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+*    License for the specific language governing permissions and limitations
+*    under the License.
+*/
+/*
+ * Requires graphviz version 2.37 or later to render correctly
+ */
+digraph G {
+  labelloc="t";
+  label="Octavia component design (v0.5)";
+  rankdir=LR;
+  splines=false;
+
+  subgraph cluster_Neutron {
+    label="Neutron";
+    color="green";
+
+    NetworkingServices [shape=rectangle label="Networking Services"];
+
+    subgraph cluster_LBaaS {
+      label="LBaaS";
+      color="yellow";
+
+      UserAPIHandler [shape=none margin=0 label=
+        <<table border="0" cellspacing="0" cellborder="1">
+          <tr>
+            <td style="invis"></td>
+            <td style="invis"></td>
+            <td color="#707070" sides="lt"></td>
+            <td color="#707070" sides="t"></td>
+            <td color="#707070" sides="t"></td>
+            <td color="#707070" sides="t"></td>
+            <td color="#707070" sides="tr"></td>
+          </tr>
+          <tr>
+            <td style="invis"></td>
+            <td color="#707070" sides="lt"></td>
+            <td color="#707070" sides="t"></td>
+            <td color="#707070" sides="t"></td>
+            <td color="#707070" sides="t"></td>
+            <td color="#707070" sides="tr"></td>
+            <td color="#707070" sides="r"></td>
+          </tr>
+          <tr>
+            <td sides="lt"></td>
+            <td sides="t"></td>
+            <td sides="t"><br/>User API Handler</td>
+            <td sides="t"></td>
+            <td sides="tr"></td>
+            <td color="#707070" sides="r"></td>
+            <td color="#707070" sides="r"></td>
+          </tr>
+          <tr>
+            <td sides="l"></td>
+            <td sides="ltb"></td>
+            <td sides="tb" port="driver"><font point-size="10">Driver</font></td>
+            <td sides="trb"></td>
+            <td sides="r"></td>
+            <td color="#707070" sides="r"></td>
+            <td color="#707070" sides="br"></td>
+          </tr>
+          <tr>
+            <td sides="l"></td>
+            <td style="invis"></td>
+            <td style="invis"></td>
+            <td style="invis"></td>
+            <td sides="r"></td>
+            <td color="#707070" sides="rb"></td>
+            <td style="invis"></td>
+           </tr>
+           <tr>
+            <td sides="lb"></td>
+            <td sides="b"></td>
+            <td sides="b"></td>
+            <td sides="b"></td>
+            <td sides="br"></td>
+            <td style="invis"></td>
+            <td style="invis"></td>
+           </tr>
+         </table>>];
+    };
+  };
+
+  subgraph cluster_Octavia {
+    label="Octavia";
+    color="blue";
+
+      NetworkingDriver [shape=rectangle label="Networking Driver"];
+
+      OperatorAPIHandler [shape=none margin=0 label=
+         <<table border="0" cellspacing="0" cellborder="1">
+           <tr>
+             <td style="invis"></td>
+             <td style="invis"></td>
+             <td color="#707070" sides="lt"></td>
+             <td color="#707070" sides="t"></td>
+             <td color="#707070" sides="t"></td>
+             <td color="#707070" sides="t"></td>
+             <td color="#707070" sides="tr"></td>
+           </tr>
+           <tr>
+             <td style="invis"></td>
+             <td color="#707070" sides="lt"></td>
+             <td color="#707070" sides="t"></td>
+             <td color="#707070" sides="t"></td>
+             <td color="#707070" sides="t"></td>
+             <td color="#707070" sides="tr"></td>
+             <td color="#707070" sides="r"></td>
+           </tr>
+           <tr>
+             <td sides="lt"></td>
+             <td sides="t"></td>
+             <td sides="t"><br/>Operator API Handler</td>
+             <td sides="t"></td>
+             <td sides="tr"></td>
+             <td color="#707070" sides="r"></td>
+             <td color="#707070" sides="rb"></td>
+           </tr>
+           <tr>
+             <td sides="l"></td>
+             <td style="invis"></td>
+             <td style="invis"></td>
+             <td style="invis"></td>
+             <td sides="r"></td>
+             <td color="#707070" sides="rb"></td>
+             <td style="invis"></td>
+           </tr>
+           <tr>
+             <td sides="lb"></td>
+             <td sides="b"></td>
+             <td sides="b"></td>
+             <td sides="b"></td>
+             <td sides="br"></td>
+             <td style="invis"></td>
+             <td style="invis"></td>
+           </tr>
+         </table>>];
+
+      subgraph cluster_Controller {
+        label="";
+        color=white;
+        Controller [shape=none margin=0 label=
+          <<table border="0" cellspacing="0" cellborder="1">
+            <tr>
+              <td> Controller </td>
+            </tr>
+            <tr>
+              <td sides="tlrb"><font point-size="10"> Health Monitor </font></td>
+            </tr>
+            <tr>
+              <td sides="tlrb"><font point-size="10"> VM Driver </font></td>
+            </tr>
+          </table>>];
+
+        Database [shape=cylinder];
+      };
+
+      subgraph cluster_OctaviaVMs2 {
+        label="";
+        color="white";
+        id="OctaviaMVs2";
+        OctaviaVM3 [shape=none margin=0 label=
+          <<table border="0" cellspacing="0" cellborder="1">
+            <tr>
+              <td>Octavia VM</td>
+            </tr>
+          </table>>];
+        OctaviaVM4 [shape=none margin=0 label=
+          <<table border="0" cellspacing="0" cellborder="1">
+            <tr>
+              <td>Octavia VM</td>
+            </tr>
+          </table>>];
+        OctaviaVM5 [shape=none margin=0 label=
+          <<table border="0" cellspacing="0" cellborder="1">
+            <tr>
+              <td>Octavia VM</td>
+            </tr>
+          </table>>];
+      };
+
+      subgraph cluster_Network {
+        label="LB Network";
+        color="gray";
+        bgcolor="gray";
+
+        Stuff [style=invis shape=none margin=0 label=
+          <<table border="0" cellspacing="0" cellborder="1">
+            <tr>
+              <td>Stuff<br/></td>
+            </tr>
+          </table>>];
+        LBNetwork [shape=none margin=0 label=""];
+        Things [style=invis shape=none margin=0 label=
+          <<table border="0" cellspacing="0" cellborder="1">
+            <tr>
+              <td>Things<br/><br/></td>
+            </tr>
+          </table>>];
+      };
+
+      OperatorAPIHandler -> Controller [dir=none];
+      Controller -> LBNetwork [style=invis];
+      LBNetwork -> {OctaviaVM3 OctaviaVM4 OctaviaVM5} [style=invis];
+      Controller -> {OctaviaVM3 OctaviaVM4 OctaviaVM5} [constraint=false dir=none];
+      Controller -> NetworkingDriver [constraint=false dir=none];
+      Controller -> Database [constraint=false dir=none];
+
+    };
+
+  UserAPIHandler:driver -> Controller [dir=none];
+  NetworkingServices -> NetworkingDriver [dir=none];
+
+}
