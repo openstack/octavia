@@ -1,5 +1,5 @@
 Octavia Style Commandments
-=======================
+==========================
 This project was ultimately spawned from work done on the Neutron project.
 As such, we tend to follow Neutron conventions regarding coding style.
 
@@ -7,7 +7,7 @@ As such, we tend to follow Neutron conventions regarding coding style.
   http://docs.openstack.org/developer/hacking/
 
 Octavia Specific Commandments
---------------------------
+-----------------------------
 
 - [N320] Validate that LOG messages, except debug ones, have translations
 

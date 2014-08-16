@@ -30,9 +30,9 @@ Octavia VM images might be replaced by a vendor's proprietary VM image.)
 Rather, it means that:
 * The reference implementation should always be open source and unencumbered.
 * We are typically not interested in making design compromises in order to work
-  with a vendor's proprietary product. If a vendor wants to develop a component
-  for Octavia, then the vendor should bend to Octavia's needs, not the other
-  way around.
+with a vendor's proprietary product. If a vendor wants to develop a component
+for Octavia, then the vendor should bend to Octavia's needs, not the other
+way around.
 
 Octavia is a load balancer for large operators
 ----------------------------------------------

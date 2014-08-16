@@ -32,10 +32,10 @@ Neutron LBaaS progress:
 
 Octavia progress:
 * Consensus on:
-  * Constitution
-  * Road map
-  * Component design
-  * APIs
+** Constitution
+** Road map
+** Component design
+** APIs
 * Initial code underway (perhaps alpha release?)
 
 
@@ -59,12 +59,12 @@ Octavia progress:
 * Horizon UI for operators
 * Neutron LBaaS driver interface for Octavia
 * Non-voting Neutron third-party CI for Octavia to ensure Neutron code changes
-  don't break Octavia
+don't break Octavia
 * Command-and-control layer handles:
-  * Octavia VM lifecycle maangement
-  * Octavia VM monitoring
-  * Octavia VM command and control
-  * Neutron LBaaS service deployment
+** Octavia VM lifecycle maangement
+** Octavia VM monitoring
+** Octavia VM command and control
+** Neutron LBaaS service deployment
 * Resilient topologies for Octavia VMs (ie. HA for the VMs)
 * "Experimental" project status
 
@@ -93,7 +93,7 @@ OpenStack release target: ???
 
 Octavia progress:
 * "Two layer" load balancing topology implemented where layers 1-4 handled by
-  routing infrastructure, and 4-7 handled by Octavia VMs acting in parallel.
+routing infrastructure, and 4-7 handled by Octavia VMs acting in parallel.
 * Improvements to Horizon UI for operators
 
 
@@ -104,13 +104,13 @@ Short-term timeline
 Highest priority:
 * See Neutron LBaaS work scheduled for Juno through to completion.
 * Import google docs describing v0.5, v1.0 and v2.0 Octavia into specs folder
-  of this repository
+of this repository
 * Get reviews and consensus on the same
 
 Medium priority:
 * Define and document Octavia VM <=> Controller RESTful APIs
 * Define best practices for credential management between Octavia VM and
-  controllers (suggested: bi-direction server / client certificat verification)
+controllers (suggested: bi-direction server / client certificat verification)
 * Collect requirements for Operator API
 * Start work on Octavia VM image
 * Start work on Octavia VM agent
@@ -118,12 +118,12 @@ Medium priority:
 * Create Neutron LBaaS driver for Octavia
 * Get Octavia to work in devstack
 * Flesh out the above items with more detailed checklists as work commences on
-  them
+them
 
 Lower priority:
 * Create mock-ups of and start coding Horizon UI for Octavia operators
 * Create non-voting CI interface for testing changes relating to Octavia in
-  gerrit
+gerrit
 
 
 ============================
