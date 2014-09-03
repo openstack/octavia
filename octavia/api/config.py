@@ -1,4 +1,4 @@
-# Copyright 2014,  Doug Wiegley,  A10 Networks.
+#    Copyright 2014 Rackspace
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -12,15 +12,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import octavia.common.exceptions as exc
-import octavia.tests.unit.base as base
+# Pecan Application Configurations
+# See https://pecan.readthedocs.org/en/latest/configuration.html#application-configuration # noqa
+app = {
+    'root': 'octavia.api.root_controller.RootController',
+    'modules': ['octavia.api'],
+    'debug': False
+}
 
-
-class TestExceptions(base.TestCase):
-    # Rough sanity test of module import; not meant to be exhaustive
-
-    def test_exception(self):
-        try:
-            raise exc.NotFound(resource="test", id="test")
-        except exc.NotFound:
-            pass
+# WSME Configurations
+# See https://wsme.readthedocs.org/en/latest/integrate.html#configuration
+wsme = {
+    # Keeping debug True for now so we can easily troubleshoot.
+    'debug': True
+}

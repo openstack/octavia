@@ -13,12 +13,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import re
+
 
 class BaseDataModel(object):
 
     # NOTE(brandon-logan) This does not discover dicts for relationship
     # attributes.
     def to_dict(self):
+        """Converts a data model to a dictionary."""
         ret = {}
         for attr in self.__dict__:
             if attr.startswith('_'):
@@ -33,6 +36,12 @@ class BaseDataModel(object):
         if isinstance(other, self.__class__):
             return self.to_dict() == other.to_dict()
         return False
+
+    @classmethod
+    def _name(cls):
+        """Returns class name in a more human readable form."""
+        # Split the class name up by capitalized words
+        return ' '.join(re.findall('[A-Z][^A-Z]*', cls.__name__))
 
 
 class SessionPersistence(BaseDataModel):
@@ -122,7 +131,7 @@ class Listener(BaseDataModel):
                  default_pool_id=None, load_balancer_id=None, protocol=None,
                  protocol_port=None, connection_limit=None,
                  enabled=None, provisioning_status=None, operating_status=None,
-                 default_tls_container_id=None, stats=None, default_pool=None,
+                 tls_certificate_id=None, stats=None, default_pool=None,
                  load_balancer=None, sni_containers=None):
         self.id = id
         self.tenant_id = tenant_id
@@ -136,7 +145,7 @@ class Listener(BaseDataModel):
         self.enabled = enabled
         self.provisioning_status = provisioning_status
         self.operating_status = operating_status
-        self.default_tls_container_id = default_tls_container_id
+        self.tls_certificate_id = tls_certificate_id
         self.stats = stats
         self.default_pool = default_pool
         self.load_balancer = load_balancer

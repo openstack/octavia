@@ -115,7 +115,7 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.TenantMixin):
     __tablename__ = "member"
     __table_args__ = (
         sa.UniqueConstraint('pool_id', 'ip_address', 'protocol_port',
-                            name='uq_member_pool_id_ip_address_protocol_port'),
+                            name='uq_member_pool_id_address_protocol_port'),
     )
 
     pool_id = sa.Column(
@@ -123,7 +123,7 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.TenantMixin):
         sa.ForeignKey("pool.id", name="fk_member_pool_id"),
         nullable=False)
     subnet_id = sa.Column(sa.String(36), nullable=True)
-    ip_address = sa.Column(sa.String(64), nullable=False)
+    ip_address = sa.Column('ip_address', sa.String(64), nullable=False)
     protocol_port = sa.Column(sa.Integer, nullable=False)
     weight = sa.Column(sa.Integer, nullable=True)
     operating_status = sa.Column(
@@ -137,8 +137,7 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.TenantMixin):
                                                         cascade="delete"))
 
 
-class HealthMonitor(base_models.BASE, base_models.IdMixin,
-                    base_models.TenantMixin):
+class HealthMonitor(base_models.BASE):
 
     __data_model__ = data_models.HealthMonitor
 
@@ -261,7 +260,7 @@ class Listener(base_models.BASE, base_models.IdMixin, base_models.TenantMixin):
         sa.String(36),
         sa.ForeignKey("load_balancer.id", name="fk_listener_load_balancer_id"),
         nullable=True)
-    default_tls_container_id = sa.Column(sa.String(36), nullable=True)
+    tls_certificate_id = sa.Column(sa.String(36), nullable=True)
     default_pool_id = sa.Column(
         sa.String(36),
         sa.ForeignKey("pool.id", name="fk_listener_pool_id"),

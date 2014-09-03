@@ -279,7 +279,7 @@ def upgrade():
         sa.Column(u'protocol_port', sa.Integer(), nullable=False),
         sa.Column(u'connection_limit', sa.Integer(), nullable=True),
         sa.Column(u'load_balancer_id', sa.String(36), nullable=True),
-        sa.Column(u'default_tls_container_id', sa.String(36), nullable=True),
+        sa.Column(u'tls_certificate_id', sa.String(36), nullable=True),
         sa.Column(u'default_pool_id', sa.String(36), nullable=True),
         sa.Column(u'provisioning_status', sa.String(16), nullable=False),
         sa.Column(u'operating_status', sa.String(16), nullable=False),

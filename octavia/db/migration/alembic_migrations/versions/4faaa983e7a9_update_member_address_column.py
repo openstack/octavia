@@ -12,25 +12,27 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo.config import cfg
-from oslo.db.sqlalchemy import session as db_session
+"""update member address column
 
-_FACADE = None
+Revision ID: 4faaa983e7a9
+Revises: 13500e2e978d
+Create Date: 2014-09-29 11:22:16.565071
 
+"""
 
-def _create_facade_lazily():
-    global _FACADE
-    if _FACADE is None:
-        _FACADE = db_session.EngineFacade.from_config(cfg.CONF, sqlite_fk=True)
-    return _FACADE
+# revision identifiers, used by Alembic.
+revision = '4faaa983e7a9'
+down_revision = '13500e2e978d'
 
-
-def get_engine():
-    facade = _create_facade_lazily()
-    return facade.get_engine()
+from alembic import op
+import sqlalchemy as sa
 
 
-def get_session(expire_on_commit=True):
-    """Helper method to grab session."""
-    facade = _create_facade_lazily()
-    return facade.get_session(expire_on_commit=expire_on_commit)
+def upgrade():
+    op.alter_column(u'member', u'address', new_column_name=u'ip_address',
+                    existing_type=sa.String(64))
+
+
+def downgrade():
+    op.alter_column(u'member', u'ip_address', new_column_name=u'address',
+                    existing_type=sa.String(64))

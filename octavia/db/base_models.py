@@ -12,19 +12,24 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from octavia.openstack.common import uuidutils
-
 from oslo.db.sqlalchemy import models
 import sqlalchemy as sa
 from sqlalchemy.ext import declarative
 from sqlalchemy.orm import collections
+
+from octavia.openstack.common import uuidutils
 
 
 class OctaviaBase(models.ModelBase):
 
     __data_model__ = None
 
-    def to_data_model(self, calling_cls=None):
+    def to_data_model(self, _calling_cls=None):
+        """Converts to a data model.
+
+        :param _calling_cls: Used only for internal recursion of this method.
+                             Should not be called from the outside.
+        """
         if not self.__data_model__:
             raise NotImplementedError
         dm_kwargs = {}
@@ -35,16 +40,17 @@ class OctaviaBase(models.ModelBase):
         for attr_name in attr_names:
             attr = getattr(self, attr_name)
             if isinstance(attr, OctaviaBase):
-                if attr.__class__ != calling_cls:
+                if attr.__class__ != _calling_cls:
                     dm_kwargs[attr_name] = attr.to_data_model(
-                        calling_cls=self.__class__)
+                        _calling_cls=self.__class__)
             elif isinstance(attr, collections.InstrumentedList):
                 dm_kwargs[attr_name] = []
                 for item in attr:
                     if isinstance(item, OctaviaBase):
-                        if attr.__class__ != calling_cls:
+                        if attr.__class__ != _calling_cls:
                             dm_kwargs[attr_name].append(
-                                item.to_data_model(calling_cls=self.__class__))
+                                item.to_data_model(
+                                    _calling_cls=self.__class__))
                     else:
                         dm_kwargs[attr_name].append(item)
         return self.__data_model__(**dm_kwargs)

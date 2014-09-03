@@ -12,25 +12,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo.config import cfg
-from oslo.db.sqlalchemy import session as db_session
-
-_FACADE = None
+from octavia.db import api as db_api
+from octavia.openstack.common import context as common_context
 
 
-def _create_facade_lazily():
-    global _FACADE
-    if _FACADE is None:
-        _FACADE = db_session.EngineFacade.from_config(cfg.CONF, sqlite_fk=True)
-    return _FACADE
+class Context(common_context.RequestContext):
+    def __init__(self, user_id, tenant_id, is_admin=False, auth_token=None):
+        super(Context, self).__init__(tenant=tenant_id, auth_token=auth_token,
+                                      is_admin=is_admin, user=user_id)
+        self._session = None
 
-
-def get_engine():
-    facade = _create_facade_lazily()
-    return facade.get_engine()
-
-
-def get_session(expire_on_commit=True):
-    """Helper method to grab session."""
-    facade = _create_facade_lazily()
-    return facade.get_session(expire_on_commit=expire_on_commit)
+    @property
+    def session(self):
+        if self._session is None:
+            self._session = db_api.get_session()
+        return self._session

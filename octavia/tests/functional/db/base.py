@@ -12,9 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo.config import cfg
+from oslo.db import options as db_options
 from oslo.db.sqlalchemy import test_base
 
 from octavia.common import constants
+from octavia.db import api as db_api
 from octavia.db import base_models
 from octavia.db import models
 
@@ -23,24 +26,27 @@ class OctaviaDBTestBase(test_base.DbTestCase):
 
     def setUp(self):
         super(OctaviaDBTestBase, self).setUp()
+        # NOTE(blogan): doing this for now because using the engine and
+        # session set up in the fixture for test_base.DbTestCase does not work
+        # with the API functional tests.  Need to investigate more if this
+        # becomes a problem
+        cfg.CONF.register_opts(db_options.database_opts, 'database')
+        cfg.CONF.set_override('connection', 'sqlite://', group='database')
         # needed for closure
-        engine = self.engine
-        base_models.BASE.metadata.create_all(bind=engine)
-        self._seed_lookup_tables()
+        engine = db_api.get_engine()
+        session = db_api.get_session()
+        base_models.BASE.metadata.create_all(engine)
+        self._seed_lookup_tables(session)
 
-        def unregister_models():
+        def clear_tables():
             """Unregister all data models."""
-            base_models.BASE.metadata.drop_all(bind=engine)
+            base_models.BASE.metadata.drop_all(engine)
 
-        self.addCleanup(unregister_models)
+        self.addCleanup(clear_tables)
 
-        self.session = self._get_session()
+        self.session = session
 
-    def _get_session(self):
-        return self.sessionmaker(bind=self.engine, expire_on_commit=True)
-
-    def _seed_lookup_tables(self):
-        session = self._get_session()
+    def _seed_lookup_tables(self, session):
         self._seed_lookup_table(
             session, constants.SUPPORTED_PROVISIONING_STATUSES,
             models.ProvisioningStatus)

@@ -14,10 +14,9 @@
 
 from octavia.common import constants
 from octavia.common import data_models as models
-from octavia.common import exceptions
 from octavia.db import repositories as repo
 from octavia.openstack.common import uuidutils
-from octavia.tests.unit.db import base
+from octavia.tests.functional.db import base
 
 
 class BaseRepositoryTest(base.OctaviaDBTestBase):
@@ -52,6 +51,205 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
         member_list = self.member_repo.get_all(self.session,
                                                tenant_id=self.FAKE_UUID_2)
         self.assertIsInstance(member_list, list)
+
+
+class AllRepositoriesTest(base.OctaviaDBTestBase):
+
+    def setUp(self):
+        super(AllRepositoriesTest, self).setUp()
+        self.repos = repo.Repositories()
+        self.listener = self.repos.listener.create(
+            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            enabled=True, provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE)
+
+    def test_all_repos_has_correct_repos(self):
+        repo_attr_names = ('load_balancer', 'vip', 'health_monitor',
+                           'session_persistence', 'pool', 'member', 'listener',
+                           'listener_stats', 'amphora', 'sni')
+        for repo_attr in repo_attr_names:
+            single_repo = getattr(self.repos, repo_attr, None)
+            message = ("Class Repositories should have %s instance"
+                       " variable.") % repo_attr
+            self.assertIsNotNone(single_repo, message=message)
+            message = (("instance variable, %(repo_name)s, of class "
+                        "Repositories should be an instance of %(base)s") %
+                       {'repo_name': repo_attr,
+                        'base': repo.BaseRepository.__name__})
+            self.assertIsInstance(single_repo, repo.BaseRepository,
+                                  msg=message)
+
+        for attr in vars(self.repos):
+            if attr.startswith('_') or attr in repo_attr_names:
+                continue
+            possible_repo = getattr(self.repos, attr, None)
+            message = ('Class Repositories is not expected to have %s instance'
+                       ' variable as a repository.' % attr)
+            self.assertFalse(isinstance(possible_repo, repo.BaseRepository),
+                             msg=message)
+
+    def test_create_load_balancer_and_vip(self):
+        lb = {'name': 'test1', 'description': 'desc1', 'enabled': True,
+              'provisioning_status': constants.PENDING_UPDATE,
+              'operating_status': constants.OFFLINE}
+        vip = {'floating_ip_id': uuidutils.generate_uuid(),
+               'floating_ip_network_id': uuidutils.generate_uuid(),
+               'ip_address': '10.0.0.1',
+               'net_port_id': uuidutils.generate_uuid(),
+               'subnet_id': uuidutils.generate_uuid()}
+        lb_dm = self.repos.create_load_balancer_and_vip(self.session, lb, vip)
+        lb_dm_dict = lb_dm.to_dict()
+        del lb_dm_dict['vip']
+        del lb_dm_dict['listeners']
+        del lb_dm_dict['amphorae']
+        del lb_dm_dict['tenant_id']
+        self.assertEqual(lb, lb_dm_dict)
+        vip_dm_dict = lb_dm.vip.to_dict()
+        vip_dm_dict['load_balancer_id'] = lb_dm.id
+        del vip_dm_dict['load_balancer']
+        self.assertEqual(vip, vip_dm_dict)
+
+    def test_create_pool_on_listener_without_sp(self):
+        pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
+                'description': 'desc1',
+                'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                'enabled': True, 'operating_status': constants.ONLINE}
+        pool_dm = self.repos.create_pool_on_listener(self.session,
+                                                     self.listener.id,
+                                                     pool)
+        pool_dm_dict = pool_dm.to_dict()
+        del pool_dm_dict['members']
+        del pool_dm_dict['health_monitor']
+        del pool_dm_dict['session_persistence']
+        del pool_dm_dict['listener']
+        del pool_dm_dict['tenant_id']
+        self.assertEqual(pool, pool_dm_dict)
+        new_listener = self.repos.listener.get(self.session,
+                                               id=self.listener.id)
+        self.assertEqual(pool_dm.id, new_listener.default_pool_id)
+
+    def test_create_pool_on_listener_with_sp(self):
+        pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
+                'description': 'desc1',
+                'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                'enabled': True, 'operating_status': constants.ONLINE}
+        sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+              'cookie_name': 'cookie_monster'}
+        pool_dm = self.repos.create_pool_on_listener(self.session,
+                                                     self.listener.id,
+                                                     pool, sp_dict=sp)
+        pool_dm_dict = pool_dm.to_dict()
+        del pool_dm_dict['members']
+        del pool_dm_dict['health_monitor']
+        del pool_dm_dict['session_persistence']
+        del pool_dm_dict['listener']
+        del pool_dm_dict['tenant_id']
+        self.assertEqual(pool, pool_dm_dict)
+        sp_dm_dict = pool_dm.session_persistence.to_dict()
+        del sp_dm_dict['pool']
+        sp['pool_id'] = pool_dm.id
+        self.assertEqual(sp, sp_dm_dict)
+        new_listener = self.repos.listener.get(self.session,
+                                               id=self.listener.id)
+        self.assertEqual(pool_dm.id, new_listener.default_pool_id)
+        new_sp = self.repos.session_persistence.get(self.session,
+                                                    pool_id=pool_dm.id)
+        self.assertIsNotNone(new_sp)
+
+    def test_update_pool_on_listener_without_sp(self):
+        pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
+                'description': 'desc1',
+                'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                'enabled': True, 'operating_status': constants.ONLINE}
+        pool_dm = self.repos.create_pool_on_listener(self.session,
+                                                     self.listener.id, pool)
+        update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
+        new_pool_dm = self.repos.update_pool_on_listener(
+            self.session, pool_dm.id, update_pool, None)
+        pool_dm_dict = new_pool_dm.to_dict()
+        del pool_dm_dict['members']
+        del pool_dm_dict['health_monitor']
+        del pool_dm_dict['session_persistence']
+        del pool_dm_dict['listener']
+        del pool_dm_dict['tenant_id']
+        pool.update(update_pool)
+        self.assertEqual(pool, pool_dm_dict)
+        self.assertIsNone(new_pool_dm.session_persistence)
+
+    def test_update_pool_on_listener_with_existing_sp(self):
+        pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
+                'description': 'desc1',
+                'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                'enabled': True, 'operating_status': constants.ONLINE}
+        sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+              'cookie_name': 'cookie_monster'}
+        pool_dm = self.repos.create_pool_on_listener(self.session,
+                                                     self.listener.id,
+                                                     pool, sp_dict=sp)
+        update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
+        update_sp = {'type': constants.SESSION_PERSISTENCE_SOURCE_IP}
+        new_pool_dm = self.repos.update_pool_on_listener(
+            self.session, pool_dm.id, update_pool, update_sp)
+        pool_dm_dict = new_pool_dm.to_dict()
+        del pool_dm_dict['members']
+        del pool_dm_dict['health_monitor']
+        del pool_dm_dict['session_persistence']
+        del pool_dm_dict['listener']
+        del pool_dm_dict['tenant_id']
+        pool.update(update_pool)
+        self.assertEqual(pool, pool_dm_dict)
+        sp_dm_dict = new_pool_dm.session_persistence.to_dict()
+        del sp_dm_dict['pool']
+        sp['pool_id'] = pool_dm.id
+        sp.update(update_sp)
+        self.assertEqual(sp, sp_dm_dict)
+
+    def test_update_pool_on_listener_with_nonexisting_sp(self):
+        pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
+                'description': 'desc1',
+                'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                'enabled': True, 'operating_status': constants.ONLINE}
+        pool_dm = self.repos.create_pool_on_listener(self.session,
+                                                     self.listener.id,
+                                                     pool)
+        update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
+        update_sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+                     'cookie_name': 'monster_cookie'}
+        new_pool_dm = self.repos.update_pool_on_listener(
+            self.session, pool_dm.id, update_pool, update_sp)
+        sp_dm_dict = new_pool_dm.session_persistence.to_dict()
+        del sp_dm_dict['pool']
+        update_sp['pool_id'] = pool_dm.id
+        update_sp.update(update_sp)
+        self.assertEqual(update_sp, sp_dm_dict)
+
+    def test_update_pool_on_listener_with_nonexisting_sp_delete_sp(self):
+        pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
+                'description': 'desc1',
+                'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                'enabled': True, 'operating_status': constants.ONLINE}
+        pool_dm = self.repos.create_pool_on_listener(self.session,
+                                                     self.listener.id,
+                                                     pool)
+        update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
+        new_pool_dm = self.repos.update_pool_on_listener(
+            self.session, pool_dm.id, update_pool, None)
+        self.assertIsNone(new_pool_dm.session_persistence)
+
+    def test_update_pool_on_listener_with_existing_sp_delete_sp(self):
+        pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
+                'description': 'desc1',
+                'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                'enabled': True, 'operating_status': constants.ONLINE}
+        sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+              'cookie_name': 'cookie_monster'}
+        pool_dm = self.repos.create_pool_on_listener(self.session,
+                                                     self.listener.id,
+                                                     pool, sp_dict=sp)
+        update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
+        new_pool_dm = self.repos.update_pool_on_listener(
+            self.session, pool_dm.id, update_pool, None)
+        self.assertIsNone(new_pool_dm.session_persistence)
 
 
 class PoolRepositoryTest(BaseRepositoryTest):
@@ -106,8 +304,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
                                 tenant_id=self.FAKE_UUID_2)
         self.pool_repo.delete(self.session, id=pool.id)
-        self.assertRaises(exceptions.NotFound, self.pool_repo.get,
-                          self.session, id=pool.id)
+        self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
 
     def test_delete_with_member(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
@@ -122,16 +319,13 @@ class PoolRepositoryTest(BaseRepositoryTest):
         self.assertEqual(1, len(new_pool.members))
         self.assertEqual(member, new_pool.members[0])
         self.pool_repo.delete(self.session, id=pool.id)
-        self.assertRaises(exceptions.NotFound, self.pool_repo.get,
-                          self.session, id=pool.id)
-        self.assertRaises(exceptions.NotFound, self.member_repo.get,
-                          self.session, id=member.id)
+        self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
+        self.assertIsNone(self.member_repo.get(self.session, id=member.id))
 
     def test_delete_with_health_monitor(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
                                 tenant_id=self.FAKE_UUID_2)
-        hm = self.hm_repo.create(self.session, id=self.FAKE_UUID_3,
-                                 tenant_id=self.FAKE_UUID_2, pool_id=pool.id,
+        hm = self.hm_repo.create(self.session, pool_id=pool.id,
                                  type=constants.HEALTH_MONITOR_HTTP,
                                  delay=1, timeout=1, fall_threshold=1,
                                  rise_threshold=1, enabled=True)
@@ -139,10 +333,8 @@ class PoolRepositoryTest(BaseRepositoryTest):
         self.assertEqual(pool, new_pool)
         self.assertEqual(hm, new_pool.health_monitor)
         self.pool_repo.delete(self.session, id=pool.id)
-        self.assertRaises(exceptions.NotFound, self.pool_repo.get,
-                          self.session, id=pool.id)
-        self.assertRaises(exceptions.NotFound, self.hm_repo.get, self.session,
-                          pool_id=hm.pool_id)
+        self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
+        self.assertIsNone(self.hm_repo.get(self.session, pool_id=hm.pool_id))
 
     def test_delete_with_session_persistence(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
@@ -155,16 +347,13 @@ class PoolRepositoryTest(BaseRepositoryTest):
         self.assertEqual(pool, new_pool)
         self.assertEqual(sp, new_pool.session_persistence)
         self.pool_repo.delete(self.session, id=new_pool.id)
-        self.assertRaises(exceptions.NotFound, self.pool_repo.get,
-                          self.session, id=pool.id)
-        self.assertRaises(exceptions.NotFound, self.sp_repo.get, self.session,
-                          pool_id=sp.pool_id)
+        self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
+        self.assertIsNone(self.sp_repo.get(self.session, pool_id=sp.pool_id))
 
     def test_delete_with_all_children(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
                                 tenant_id=self.FAKE_UUID_2)
-        hm = self.hm_repo.create(self.session, id=self.FAKE_UUID_1,
-                                 tenant_id=self.FAKE_UUID_2, pool_id=pool.id,
+        hm = self.hm_repo.create(self.session, pool_id=pool.id,
                                  type=constants.HEALTH_MONITOR_HTTP,
                                  delay=1, timeout=1, fall_threshold=1,
                                  rise_threshold=1, enabled=True)
@@ -187,14 +376,10 @@ class PoolRepositoryTest(BaseRepositoryTest):
         self.assertEqual(hm, new_pool.health_monitor)
         self.assertEqual(sp, new_pool.session_persistence)
         self.pool_repo.delete(self.session, id=pool.id)
-        self.assertRaises(exceptions.NotFound, self.pool_repo.get,
-                          self.session, id=pool.id)
-        self.assertRaises(exceptions.NotFound, self.member_repo.get,
-                          self.session, id=member.id)
-        self.assertRaises(exceptions.NotFound, self.hm_repo.get, self.session,
-                          pool_id=hm.pool_id)
-        self.assertRaises(exceptions.NotFound, self.sp_repo.get, self.session,
-                          pool_id=sp.pool_id)
+        self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
+        self.assertIsNone(self.member_repo.get(self.session, id=member.id))
+        self.assertIsNone(self.hm_repo.get(self.session, pool_id=hm.pool_id))
+        self.assertIsNone(self.sp_repo.get(self.session, pool_id=sp.pool_id))
 
 
 class MemberRepositoryTest(BaseRepositoryTest):
@@ -261,8 +446,7 @@ class MemberRepositoryTest(BaseRepositoryTest):
         member = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
                                     self.pool.id, "10.0.0.1")
         self.member_repo.delete(self.session, id=member.id)
-        self.assertRaises(exceptions.NotFound, self.member_repo.get,
-                          self.session, id=member.id)
+        self.assertIsNone(self.member_repo.get(self.session, id=member.id))
         new_pool = self.pool_repo.get(self.session, id=self.pool.id)
         self.assertIsNotNone(new_pool)
         self.assertEqual(0, len(new_pool.members))
@@ -311,8 +495,8 @@ class SessionPersistenceRepositoryTest(BaseRepositoryTest):
     def test_delete(self):
         sp = self.create_session_persistence(self.pool.id)
         self.sp_repo.delete(self.session, pool_id=sp.pool_id)
-        self.assertRaises(exceptions.NotFound, self.member_repo.get,
-                          self.session, pool_id=sp.pool_id)
+        self.assertIsNone(self.member_repo.get(self.session,
+                                               pool_id=sp.pool_id))
         new_pool = self.pool_repo.get(self.session, id=self.pool.id)
         self.assertIsNotNone(new_pool)
         self.assertIsNone(new_pool.session_persistence)
@@ -380,8 +564,7 @@ class ListenerRepositoryTest(BaseRepositoryTest):
     def test_delete(self):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
         self.listener_repo.delete(self.session, id=listener.id)
-        self.assertRaises(exceptions.NotFound, self.listener_repo.get,
-                          self.session, id=listener.id)
+        self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
 
     def test_delete_with_sni(self):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
@@ -391,10 +574,9 @@ class ListenerRepositoryTest(BaseRepositoryTest):
         self.assertIsNotNone(new_listener)
         self.assertEqual(sni, new_listener.sni_containers[0])
         self.listener_repo.delete(self.session, id=new_listener.id)
-        self.assertRaises(exceptions.NotFound, self.listener_repo.get,
-                          self.session, id=listener.id)
-        self.assertRaises(exceptions.NotFound, self.sni_repo.get, self.session,
-                          listener_id=listener.id)
+        self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
+        self.assertIsNone(self.sni_repo.get(self.session,
+                                            listener_id=listener.id))
 
     def test_delete_with_stats(self):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
@@ -405,10 +587,9 @@ class ListenerRepositoryTest(BaseRepositoryTest):
         self.assertIsNotNone(new_listener)
         self.assertEqual(stats, new_listener.stats)
         self.listener_repo.delete(self.session, id=listener.id)
-        self.assertRaises(exceptions.NotFound, self.listener_repo.get,
-                          self.session, id=listener.id)
-        self.assertRaises(exceptions.NotFound, self.listener_stats_repo.get,
-                          self.session, listener_id=listener.id)
+        self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
+        self.assertIsNone(self.listener_stats_repo.get(
+            self.session, listener_id=listener.id))
 
     def test_delete_with_pool(self):
         pool = self.pool_repo.create(
@@ -423,10 +604,8 @@ class ListenerRepositoryTest(BaseRepositoryTest):
         self.assertIsNotNone(new_listener)
         self.assertEqual(pool, new_listener.default_pool)
         self.listener_repo.delete(self.session, id=new_listener.id)
-        self.assertRaises(exceptions.NotFound, self.listener_repo.get,
-                          self.session, id=listener.id)
-        self.assertRaises(exceptions.NotFound, self.pool_repo.get,
-                          self.session, id=pool.id)
+        self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
+        self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
 
     def test_delete_with_all_children(self):
         pool = self.pool_repo.create(
@@ -448,14 +627,12 @@ class ListenerRepositoryTest(BaseRepositoryTest):
         self.assertEqual(sni, new_listener.sni_containers[0])
         self.assertEqual(stats, new_listener.stats)
         self.listener_repo.delete(self.session, id=listener.id)
-        self.assertRaises(exceptions.NotFound, self.listener_repo.get,
-                          self.session, id=listener.id)
-        self.assertRaises(exceptions.NotFound, self.sni_repo.get, self.session,
-                          listener_id=listener.id)
-        self.assertRaises(exceptions.NotFound, self.listener_stats_repo.get,
-                          self.session, listener_id=sni.listener_id)
-        self.assertRaises(exceptions.NotFound, self.pool_repo.get,
-                          self.session, id=pool.id)
+        self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
+        self.assertIsNone(self.sni_repo.get(self.session,
+                                            listener_id=listener.id))
+        self.assertIsNone(self.listener_stats_repo.get(
+            self.session, listener_id=sni.listener_id))
+        self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
 
 
 class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
@@ -506,8 +683,8 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         stats = self.create_listener_stats(self.listener.id)
         self.listener_stats_repo.delete(self.session,
                                         listener_id=stats.listener_id)
-        self.assertRaises(exceptions.NotFound, self.listener_stats_repo.get,
-                          self.session, listener_id=stats.listener_id)
+        self.assertIsNone(self.listener_stats_repo.get(
+            self.session, listener_id=stats.listener_id))
         new_listener = self.listener_repo.get(self.session,
                                               id=self.listener.id)
         self.assertIsNotNone(new_listener)
@@ -527,8 +704,7 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
 
     def create_health_monitor(self, pool_id):
         health_monitor = self.hm_repo.create(
-            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
-            type=constants.HEALTH_MONITOR_HTTP, pool_id=pool_id,
+            self.session, type=constants.HEALTH_MONITOR_HTTP, pool_id=pool_id,
             delay=1, timeout=1, fall_threshold=1, rise_threshold=1,
             http_method="POST", url_path="http://localhost:80/index.php",
             expected_codes="200", enabled=True)
@@ -564,8 +740,7 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
     def test_delete(self):
         hm = self.create_health_monitor(self.pool.id)
         self.hm_repo.delete(self.session, pool_id=hm.pool_id)
-        self.assertRaises(exceptions.NotFound, self.hm_repo.get, self.session,
-                          pool_id=hm.pool_id)
+        self.assertIsNone(self.hm_repo.get(self.session, pool_id=hm.pool_id))
         new_pool = self.pool_repo.get(self.session, id=self.pool.id)
         self.assertIsNotNone(new_pool)
         self.assertIsNone(new_pool.health_monitor)
@@ -617,8 +792,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
     def test_delete(self):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
         self.lb_repo.delete(self.session, id=lb.id)
-        self.assertRaises(exceptions.NotFound, self.lb_repo.get, self.session,
-                          id=lb.id)
+        self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
 
     def test_delete_with_amphora(self):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
@@ -631,8 +805,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         self.assertEqual(1, len(new_lb.amphorae))
         self.assertEqual(amphora, new_lb.amphorae[0])
         self.lb_repo.delete(self.session, id=new_lb.id)
-        self.assertRaises(exceptions.NotFound, self.lb_repo.get, self.session,
-                          id=lb.id)
+        self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
         new_amphora = self.amphora_repo.get(self.session, id=amphora.id)
         self.assertIsNotNone(new_amphora)
         self.assertIsNone(new_amphora.load_balancer_id)
@@ -653,8 +826,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         self.assertIn(amphora_1, new_lb.amphorae)
         self.assertIn(amphora_2, new_lb.amphorae)
         self.lb_repo.delete(self.session, id=new_lb.id)
-        self.assertRaises(exceptions.NotFound, self.lb_repo.get, self.session,
-                          id=lb.id)
+        self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
         new_amphora_1 = self.amphora_repo.get(self.session, id=amphora_1.id)
         new_amphora_2 = self.amphora_repo.get(self.session, id=amphora_2.id)
         self.assertIsNotNone(new_amphora_1)
@@ -671,10 +843,9 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         self.assertIsNotNone(new_lb.vip)
         self.assertEqual(vip, new_lb.vip)
         self.lb_repo.delete(self.session, id=new_lb.id)
-        self.assertRaises(exceptions.NotFound, self.lb_repo.get, self.session,
-                          id=lb.id)
-        self.assertRaises(exceptions.NotFound, self.vip_repo.get, self.session,
-                          load_balancer_id=lb.id)
+        self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
+        self.assertIsNone(self.vip_repo.get(self.session,
+                                            load_balancer_id=lb.id))
 
     def test_delete_with_listener(self):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
@@ -690,10 +861,8 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         self.assertEqual(1, len(new_lb.listeners))
         self.assertEqual(listener, new_lb.listeners[0])
         self.lb_repo.delete(self.session, id=new_lb.id)
-        self.assertRaises(exceptions.NotFound, self.lb_repo.get, self.session,
-                          id=lb.id)
-        self.assertRaises(exceptions.NotFound, self.listener_repo.get,
-                          self.session, id=listener.id)
+        self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
+        self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
 
     def test_delete_with_many_listeners(self):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
@@ -717,12 +886,11 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         self.assertIn(listener_1, new_lb.listeners)
         self.assertIn(listener_2, new_lb.listeners)
         self.lb_repo.delete(self.session, id=new_lb.id)
-        self.assertRaises(exceptions.NotFound, self.lb_repo.get, self.session,
-                          id=lb.id)
-        self.assertRaises(exceptions.NotFound, self.listener_repo.get,
-                          self.session, id=listener_1.id)
-        self.assertRaises(exceptions.NotFound, self.listener_repo.get,
-                          self.session, id=listener_2.id)
+        self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
+        self.assertIsNone(self.listener_repo.get(self.session,
+                                                 id=listener_1.id))
+        self.assertIsNone(self.listener_repo.get(self.session,
+                                                 id=listener_2.id))
 
     def test_delete_with_all_children(self):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
@@ -748,15 +916,35 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         self.assertEqual(amphora, new_lb.amphorae[0])
         self.assertEqual(listener, new_lb.listeners[0])
         self.lb_repo.delete(self.session, id=new_lb.id)
-        self.assertRaises(exceptions.NotFound, self.lb_repo.get, self.session,
-                          id=lb.id)
+        self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
         new_amphora = self.amphora_repo.get(self.session, id=amphora.id)
         self.assertIsNotNone(new_amphora)
         self.assertIsNone(new_amphora.load_balancer_id)
-        self.assertRaises(exceptions.NotFound, self.vip_repo.get, self.session,
-                          load_balancer_id=lb.id)
-        self.assertRaises(exceptions.NotFound, self.listener_repo.get,
-                          self.session, id=listener.id)
+        self.assertIsNone(self.vip_repo.get(self.session,
+                                            load_balancer_id=lb.id))
+        self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
+
+    def test_test_and_set_provisioning_status_immutable(self):
+        lb_id = uuidutils.generate_uuid()
+        self.lb_repo.create(self.session, id=lb_id,
+                            provisioning_status=constants.PENDING_CREATE,
+                            operating_status=constants.OFFLINE,
+                            enabled=True)
+        self.assertFalse(self.lb_repo.test_and_set_provisioning_status(
+            self.session, lb_id, constants.PENDING_UPDATE))
+        lb = self.lb_repo.get(self.session, id=lb_id)
+        self.assertEqual(constants.PENDING_CREATE, lb.provisioning_status)
+
+    def test_test_and_set_provisioning_status_mutable(self):
+        lb_id = uuidutils.generate_uuid()
+        self.lb_repo.create(self.session, id=lb_id,
+                            provisioning_status=constants.ACTIVE,
+                            operating_status=constants.OFFLINE,
+                            enabled=True)
+        self.lb_repo.test_and_set_provisioning_status(
+            self.session, lb_id, constants.PENDING_UPDATE)
+        lb = self.lb_repo.get(self.session, id=lb_id)
+        self.assertEqual(constants.PENDING_UPDATE, lb.provisioning_status)
 
 
 class VipRepositoryTest(BaseRepositoryTest):
@@ -799,8 +987,8 @@ class VipRepositoryTest(BaseRepositoryTest):
         vip = self.create_vip(self.lb.id)
         self.vip_repo.delete(self.session,
                              load_balancer_id=vip.load_balancer_id)
-        self.assertRaises(exceptions.NotFound, self.vip_repo.get, self.session,
-                          load_balancer_id=vip.load_balancer_id)
+        self.assertIsNone(self.vip_repo.get(
+            self.session, load_balancer_id=vip.load_balancer_id))
         new_lb = self.lb_repo.get(self.session, id=self.lb.id)
         self.assertIsNotNone(new_lb)
         self.assertIsNone(new_lb.vip)
@@ -848,8 +1036,8 @@ class SNIRepositoryTest(BaseRepositoryTest):
     def test_delete(self):
         sni = self.create_sni(self.listener.id)
         self.sni_repo.delete(self.session, listener_id=sni.listener_id)
-        self.assertRaises(exceptions.NotFound, self.sni_repo.get, self.session,
-                          listener_id=sni.listener_id)
+        self.assertIsNone(self.sni_repo.get(self.session,
+                                            listener_id=sni.listener_id))
         new_listener = self.listener_repo.get(self.session,
                                               id=self.listener.id)
         self.assertIsNotNone(new_listener)
@@ -895,8 +1083,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
     def test_delete(self):
         amphora = self.create_amphora(self.FAKE_UUID_1)
         self.amphora_repo.delete(self.session, id=amphora.id)
-        self.assertRaises(exceptions.NotFound, self.amphora_repo.get,
-                          self.session, id=amphora.id)
+        self.assertIsNone(self.amphora_repo.get(self.session, id=amphora.id))
 
     def test_associate_amphora_load_balancer(self):
         amphora = self.create_amphora(self.FAKE_UUID_1)
@@ -910,7 +1097,6 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         amphora = self.create_amphora(self.FAKE_UUID_1)
         self.amphora_repo.associate(self.session, self.lb.id, amphora.id)
         self.amphora_repo.delete(self.session, id=amphora.id)
-        self.assertRaises(exceptions.NotFound, self.amphora_repo.get,
-                          self.session, id=amphora.id)
+        self.assertIsNone(self.amphora_repo.get(self.session, id=amphora.id))
         new_lb = self.lb_repo.get(self.session, id=self.lb.id)
         self.assertEqual(0, len(new_lb.amphorae))

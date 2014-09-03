@@ -1,4 +1,4 @@
-# Copyright 2014,  Doug Wiegley,  A10 Networks.
+#    Copyright 2014 Rackspace
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -12,15 +12,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import octavia.common.exceptions as exc
-import octavia.tests.unit.base as base
+from wsme import types as wtypes
+from wsmeext import pecan as wsme_pecan
+
+from octavia.api.v1.controllers import base
+from octavia.api.v1.controllers import load_balancer
 
 
-class TestExceptions(base.TestCase):
-    # Rough sanity test of module import; not meant to be exhaustive
+class V1Controller(base.BaseController):
 
-    def test_exception(self):
-        try:
-            raise exc.NotFound(resource="test", id="test")
-        except exc.NotFound:
-            pass
+    loadbalancers = load_balancer.LoadBalancersController()
+
+    @wsme_pecan.wsexpose(wtypes.text)
+    def get(self):
+        # TODO(blogan): decide what exactly should be here, if anything
+        return "V1"

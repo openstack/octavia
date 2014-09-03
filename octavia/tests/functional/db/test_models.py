@@ -15,13 +15,14 @@
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.db import models
-from octavia.tests.unit.db import base
+from octavia.openstack.common import uuidutils
+from octavia.tests.functional.db import base
 
 
 class ModelTestMixin(object):
 
-    FAKE_UUID_1 = '0123456789012345678901234567890123456'
-    FAKE_UUID_2 = '1234567890123456789012345678901234567'
+    FAKE_UUID_1 = uuidutils.generate_uuid()
+    FAKE_UUID_2 = uuidutils.generate_uuid()
 
     def _insert(self, session, model_cls, model_kwargs):
         with session.begin():
@@ -69,9 +70,7 @@ class ModelTestMixin(object):
         return self._insert(session, models.SessionPersistence, kwargs)
 
     def create_health_monitor(self, session, pool_id, **overrides):
-        kwargs = {'tenant_id': self.FAKE_UUID_1,
-                  'id': self.FAKE_UUID_1,
-                  'pool_id': pool_id,
+        kwargs = {'pool_id': pool_id,
                   'type': constants.HEALTH_MONITOR_HTTP,
                   'delay': 1,
                   'timeout': 1,
@@ -115,7 +114,7 @@ class ModelTestMixin(object):
     def create_amphora(self, session, **overrides):
         kwargs = {'id': self.FAKE_UUID_1,
                   'host_id': self.FAKE_UUID_1,
-                  'status': constants.ONLINE}
+                  'status': constants.ACTIVE}
         kwargs.update(overrides)
         return self._insert(session, models.Amphora, kwargs)
 
@@ -361,26 +360,27 @@ class HealthMonitorModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_update(self):
         health_monitor = self.create_health_monitor(self.session, self.pool.id)
-        health_monitor_id = health_monitor.id
         health_monitor.name = 'test1'
         new_health_monitor = self.session.query(
-            models.HealthMonitor).filter_by(id=health_monitor_id).first()
+            models.HealthMonitor).filter_by(
+                pool_id=health_monitor.pool_id).first()
         self.assertEqual('test1', new_health_monitor.name)
 
     def test_delete(self):
         health_monitor = self.create_health_monitor(self.session, self.pool.id)
-        health_monitor_id = health_monitor.id
         with self.session.begin():
             self.session.delete(health_monitor)
             self.session.flush()
         new_health_monitor = self.session.query(
-            models.HealthMonitor).filter_by(id=health_monitor_id).first()
+            models.HealthMonitor).filter_by(
+                pool_id=health_monitor.pool_id).first()
         self.assertIsNone(new_health_monitor)
 
     def test_pool_relationship(self):
         health_monitor = self.create_health_monitor(self.session, self.pool.id)
         new_health_monitor = self.session.query(
-            models.HealthMonitor).filter_by(id=health_monitor.id).first()
+            models.HealthMonitor).filter_by(
+                pool_id=health_monitor.pool_id).first()
         self.assertIsNotNone(new_health_monitor.pool)
         self.assertTrue(isinstance(new_health_monitor.pool, models.Pool))
 
@@ -478,10 +478,10 @@ class SNIModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_update(self):
         sni = self.create_sni(self.session, listener_id=self.listener.id)
-        sni.listener_id = self.FAKE_UUID_2
+        sni.tls_container_id = self.FAKE_UUID_2
         new_sni = self.session.query(
-            models.SNI).filter_by(listener_id=self.FAKE_UUID_2).first()
-        self.assertEqual(self.FAKE_UUID_2, new_sni.listener_id)
+            models.SNI).filter_by(listener_id=self.FAKE_UUID_1).first()
+        self.assertEqual(self.FAKE_UUID_2, new_sni.tls_container_id)
 
     def test_delete(self):
         sni = self.create_sni(self.session, listener_id=self.listener.id)
@@ -592,7 +592,7 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_health_monitor_tree(self):
         hm_db = self.session.query(models.HealthMonitor).filter_by(
-            id=self.hm.id).first()
+            pool_id=self.hm.pool_id).first()
         self.check_health_monitor(hm_db.to_data_model())
 
     def test_member_tree(self):
@@ -735,8 +735,6 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertEqual(constants.SESSION_PERSISTENCE_HTTP_COOKIE, sp.type)
 
     def check_health_monitor_data_model(self, hm):
-        self.assertEqual(self.FAKE_UUID_1, hm.tenant_id)
-        self.assertEqual(self.FAKE_UUID_1, hm.id)
         self.assertEqual(constants.HEALTH_MONITOR_HTTP, hm.type)
         self.assertEqual(1, hm.delay)
         self.assertEqual(1, hm.timeout)

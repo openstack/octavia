@@ -4,6 +4,7 @@ blockdiag
 docutils==0.11
 nwdiag
 oslosphinx
+pecan>=0.7.0
 pbr>=0.6,<1.0
 seqdiag
 sphinx
@@ -35,5 +36,5 @@ python-barbicanclient>=3.0
 python-keystoneclient>=0.11.1
 python-novaclient>=2.17.0
 posix_ipc
-
 pyOpenSSL>=0.14
+wsme==0.6.1
