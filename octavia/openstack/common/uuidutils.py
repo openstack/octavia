@@ -1,4 +1,4 @@
-# Copyright 2011-2014 OpenStack Foundation
+# Copyright (c) 2012 Intel Corporation.
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,7 +13,25 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import gettext
+"""
+UUID related utilities and helper functions.
+"""
+
+import uuid
 
 
-gettext.install('octavia', unicode=1)
+def generate_uuid():
+    return str(uuid.uuid4())
+
+
+def is_uuid_like(val):
+    """Returns validation of a value as a UUID.
+
+    For our purposes, a UUID is a canonical form string:
+    aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+
+    """
+    try:
+        return str(uuid.UUID(val)) == val
+    except (TypeError, ValueError, AttributeError):
+        return False

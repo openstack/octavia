@@ -1,5 +1,4 @@
-# Copyright 2011-2014 OpenStack Foundation
-# All Rights Reserved.
+# Copyright 2014,  Doug Wiegley,  A10 Networks.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,7 +12,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import gettext
+import octavia.common.exceptions as exc
+import octavia.tests.unit.base as base
 
 
-gettext.install('octavia', unicode=1)
+class TestExceptions(base.TestCase):
+    # Rough sanity test of module import; not meant to be exhaustive
+
+    def test_exception(self):
+        try:
+            raise exc.NotFound()
+        except exc.NotFound:
+            pass
+        else:
+            raise Exception()
