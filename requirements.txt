@@ -1,4 +1,5 @@
 actdiag
+alembic>=0.6.4
 blockdiag
 docutils==0.11
 nwdiag
@@ -10,6 +11,7 @@ sphinxcontrib-actdiag
 sphinxcontrib-blockdiag
 sphinxcontrib-nwdiag
 sphinxcontrib-seqdiag
+SQLAlchemy>=0.7.8,<=0.9.99
 graphviz
 
 anyjson>=0.3.3
@@ -19,9 +21,7 @@ requests>=1.2.1
 jsonrpclib
 netaddr>=0.7.6
 python-neutronclient>=2.3.6,<3
-SQLAlchemy>=0.8.4,<=0.8.99,>=0.9.7,<=0.9.99
 WebOb>=1.2.3
-alembic>=0.6.4
 six>=1.7.0
 oslo.config>=1.4.0.0a3
 oslo.db>=0.4.0  # Apache-2.0
