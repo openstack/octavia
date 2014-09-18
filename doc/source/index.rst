@@ -1,16 +1,18 @@
 .. octavia-specs documentation master file
 
-==============================
-Octavia Project Specifications
-==============================
-
-Contents:
+====
+Main
+====
 
 .. toctree::
    :glob:
    :maxdepth: 1
 
-   specs/*
+   main/*
+
+======================
+Project Specifications
+======================
 
 Version 0.5 specs:
 
@@ -20,7 +22,7 @@ Version 0.5 specs:
 
    specs/version0.5/*
 
-Version 1 specs:
+Version 1:
 
 .. toctree::
    :glob:
@@ -28,9 +30,9 @@ Version 1 specs:
 
    specs/version1/*
 
-============================
-Octavia Design Documentation
-============================
+====================
+Design Documentation
+====================
 
 Version 0.5:
 
