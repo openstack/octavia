@@ -1,4 +1,4 @@
-# Copyright 2014,  Doug Wiegley,  A10 Networks.
+#    Copyright 2014 Rackspace
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -12,12 +12,24 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import octavia.common.constants as constants
-import octavia.tests.unit.base as base
+from oslo.config import cfg
+from oslo.db.sqlalchemy import session as db_session
+
+_FACADE = None
 
 
-class TestConstants(base.TestCase):
-    # Rough sanity test of module import; not meant to be exhaustive
+def _create_facade_lazily():
+    global _FACADE
+    if _FACADE is None:
+        _FACADE = db_session.EngineFacade.from_config(cfg.CONF)
+    return _FACADE
 
-    def test_import(self):
-        self.assertEqual(constants.PROTOCOL_TCP, 'TCP')
+
+def get_engine():
+    facade = _create_facade_lazily()
+    return facade.get_engine()
+
+
+def get_session(**kwargs):
+    facade = _create_facade_lazily()
+    return facade.get_session(**kwargs)
