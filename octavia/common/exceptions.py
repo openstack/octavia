@@ -52,8 +52,12 @@ class BadRequest(OctaviaException):
 
 
 class NotFound(OctaviaException):
-    pass
+    message = _('%(resource)s not found.')
 
 
 class NotAuthorized(OctaviaException):
     message = _("Not authorized.")
+
+
+class MissingArguments(OctaviaException):
+    message = _("Missing arguments.")

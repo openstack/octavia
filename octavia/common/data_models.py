@@ -21,10 +21,12 @@ class BaseDataModel(object):
     def to_dict(self):
         ret = {}
         for attr in self.__dict__:
-            if (attr.startswith('_') or
-                    isinstance(getattr(self, attr), BaseDataModel)):
+            if attr.startswith('_'):
                 continue
-            ret[attr] = self.__dict__[attr]
+            if isinstance(getattr(self, attr), (BaseDataModel, list)):
+                ret[attr] = None
+            else:
+                ret[attr] = self.__dict__[attr]
         return ret
 
     def __eq__(self, other):
