@@ -159,33 +159,33 @@ digraph G {
               <td sides="tlrb"><font point-size="10"> Health Monitor </font></td>
             </tr>
             <tr>
-              <td sides="tlrb"><font point-size="10"> VM Driver </font></td>
+              <td sides="tlrb"><font point-size="10"> Amphora LB Driver </font></td>
             </tr>
           </table>>];
 
         Database [shape=cylinder];
       };
 
-      subgraph cluster_OctaviaVMs2 {
+      subgraph cluster_Amphoras2 {
         label="";
         color="white";
-        id="OctaviaMVs2";
-        OctaviaVM3 [shape=none margin=0 label=
+        id="AmphoraMVs2";
+        Amphora3 [shape=none margin=0 label=
           <<table border="0" cellspacing="0" cellborder="1">
             <tr>
-              <td>Octavia VM</td>
+              <td>Amphora</td>
             </tr>
           </table>>];
-        OctaviaVM4 [shape=none margin=0 label=
+        Amphora4 [shape=none margin=0 label=
           <<table border="0" cellspacing="0" cellborder="1">
             <tr>
-              <td>Octavia VM</td>
+              <td>Amphora</td>
             </tr>
           </table>>];
-        OctaviaVM5 [shape=none margin=0 label=
+        Amphora5 [shape=none margin=0 label=
           <<table border="0" cellspacing="0" cellborder="1">
             <tr>
-              <td>Octavia VM</td>
+              <td>Amphora</td>
             </tr>
           </table>>];
       };
@@ -212,8 +212,8 @@ digraph G {
 
       OperatorAPIHandler -> Controller [dir=none];
       Controller -> LBNetwork [style=invis];
-      LBNetwork -> {OctaviaVM3 OctaviaVM4 OctaviaVM5} [style=invis];
-      Controller -> {OctaviaVM3 OctaviaVM4 OctaviaVM5} [constraint=false dir=none];
+      LBNetwork -> {Amphora3 Amphora4 Amphora5} [style=invis];
+      Controller -> {Amphora3 Amphora4 Amphora5} [constraint=false dir=none];
       Controller -> NetworkingDriver [constraint=false dir=none];
       Controller -> Database [constraint=false dir=none];
 
