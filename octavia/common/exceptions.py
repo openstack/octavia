@@ -61,3 +61,11 @@ class NotAuthorized(OctaviaException):
 
 class MissingArguments(OctaviaException):
     message = _("Missing arguments.")
+
+
+class CertificateStorageException(OctaviaException):
+    message = _('Could not store certificate: %(msg)s')
+
+
+class CertificateGenerationException(OctaviaException):
+    message = _('Could not sign the certificate request: %(msg)s')
