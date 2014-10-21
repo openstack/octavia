@@ -19,7 +19,7 @@ from octavia.openstack.common import importutils
 
 certmgr_opts = [
     cfg.StrOpt('cert_manager_class',
-               default='octavia.certificates.barbican.BarbicanCertManager',
+               default='octavia.certificates.manager.LocalCertManager',
                help='The full class name of the cert manager API class'),
 ]
 

@@ -19,7 +19,7 @@ from octavia.openstack.common import importutils
 
 certgen_opts = [
     cfg.StrOpt('cert_generator_class',
-               default='octavia.certificates.barbican.BarbicanCertGenerator',
+               default='octavia.certificates.generator.LocalCertGenerator',
                help='The full class name of the cert generator API class'),
 ]
 
