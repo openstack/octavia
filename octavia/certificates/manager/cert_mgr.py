@@ -41,9 +41,10 @@ class CertManager(object):
         pass
 
     @abc.abstractmethod
-    def get_cert(self, cert_ref, **kwargs):
+    def get_cert(self, cert_ref, check_only=False, **kwargs):
         """Retrieves the specified cert.
 
+        If check_only is True, don't perform any sort of registration.
         If the specified cert does not exist, a CertificateStorageException
         should be raised.
         """
