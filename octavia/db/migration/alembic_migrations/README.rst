@@ -1,6 +1,6 @@
 The migrations in the alembic/versions contain the migrations.
 
-Before runnign this migration ensure that the database ocatavia exists.
+Before running this migration ensure that the database octavia exists.
 
 Currently the database connection string is in octavia/db/migration/alembic.ini
 but this should eventually be pulled out into an octavia configuration file.

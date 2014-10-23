@@ -71,7 +71,8 @@ def get_cache(url='memory://'):
     parameters = parse.parse_qsl(query)
     kwargs = {'options': dict(parameters)}
 
-    mgr = driver.DriverManager('octavia.openstack.common.cache.backends', backend,
+    mgr = driver.DriverManager('octavia.openstack.common.cache.backends',
+                               backend,
                                invoke_on_load=True,
                                invoke_args=[parsed],
                                invoke_kwds=kwargs)

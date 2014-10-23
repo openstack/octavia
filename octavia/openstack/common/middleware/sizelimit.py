@@ -67,8 +67,9 @@ class LimitingReader(object):
         return result
 
 
-@versionutils.deprecated(as_of=versionutils.deprecated.JUNO,
-                         in_favor_of='octavia.middleware.RequestBodySizeLimiter')
+@versionutils.deprecated(
+    as_of=versionutils.deprecated.JUNO,
+    in_favor_of='octavia.middleware.RequestBodySizeLimiter')
 class RequestBodySizeLimiter(base.Middleware):
     """Limit the size of incoming requests."""
 
