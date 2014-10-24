@@ -1,0 +1,29 @@
+seqdiag {
+    span_height = 10;
+    activation = none;
+    === In Octavia ===
+    Barbican;
+    Octavia => Nova [label="Create new Amphora", note="include Octavia Controller certificate and IP as Metadata"];
+    loop {
+        Octavia => Nova [label="Poll for ACTIVE Amphora", return="Amphora Management IP"];
+    }
+    Octavia -> Octavia [label="Store Amphora IP"];
+    === Meanwhile, in the Amphora ===
+    Amphora -> Amphora [label="Generate private key and CSR"];
+    Amphora => Octavia [label="Request Certificate Signing", return = "Signed Certificate"] {
+        Octavia -> Octavia [label="Verify Amphora by source IP"];
+        Octavia => Barbican [label="Process CSR using private CA", return="Signed Certificate"];
+    }
+    Amphora -> Amphora [label="Start Services (API, Heartbeat)"];
+    "Amphora Heartbeat" -> Octavia [label="Announce", note="UDP? HTTPS?"] {
+        Octavia -> Octavia [label="Verify Amphora by source IP (UDP) or certificate (HTTPS)"];
+        === If Verification fails ===
+        Octavia -> Octavia [label="Log and Ignore"];
+        === If Verification succeeds ===
+        Octavia => "Amphora API" [label="Run Self-test"];
+        === If Self-test fails ===
+        Octavia -> Octavia [label="Delete Amphora, retry process"];
+        === If Self-test succeeds ===
+        Octavia -> Octavia [label="Add Amphora to standby pool"];
+    }
+}

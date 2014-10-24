@@ -1,0 +1,16 @@
+seqdiag {
+    span_height = 10;
+    === If Certificate is pre-stored in Barbican ===
+    User => Octavia [label="Create LB with TLS (passing tls_certificate_id)", note="HTTPS", return="202/400/401"] {
+        Octavia => Barbican [label="Fetch Certificate Container", note="HTTPS", return="Certificate Data"];
+    }
+    === If Certificate is passed directly to Octavia ===
+    User => Octavia [label="Create LB with TLS (passing tls_certificate, tls_private_key, etc)", note="HTTPS", return="
+202/400/401"] {
+        Octavia => Barbican [label="Store Secrets / Certificate Container", note="HTTPS", return="tls_certificate_id"];
+    }
+    Octavia -> Octavia [label="Store tls_certificate_id"];
+    === After certificate handling, in both cases ===
+    Octavia -> Octavia [label="Fetch Amphora from Spare Pool"];
+    Octavia => "Amphora API" [label="Configure Amphora", note="HTTPS", return="Update LB Status"];
+}
