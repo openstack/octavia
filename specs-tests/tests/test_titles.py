@@ -97,6 +97,7 @@ class TestTitles(testtools.TestCase):
     def test_template(self):
         files = set(glob.glob('specs/*.rst') + glob.glob('specs/*/*'))
         files = files - set(glob.glob('specs/*/*.dot'))
+        files = files - set(glob.glob('specs/*/*.diag'))
         for filename in files:
             self.assertTrue(filename.endswith(".rst"),
                             "spec's file must use 'rst' extension.")
