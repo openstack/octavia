@@ -16,4 +16,6 @@ import testtools
 
 
 class TestCase(testtools.TestCase):
-    pass
+
+    def setUp(self):
+        super(TestCase, self).setUp()
