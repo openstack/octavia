@@ -1,0 +1,9 @@
+#!/bin/bash
+set -eux
+set -o pipefail
+
+# Allow haproxy to proxy any port if SELinux is in enforcing mode
+# https://bugs.launchpad.net/tripleo/+bug/1339938
+if [[ -x /usr/sbin/semanage ]]; then
+    setsebool -P haproxy_connect_any 1
+fi

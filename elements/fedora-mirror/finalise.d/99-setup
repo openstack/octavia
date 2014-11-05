@@ -1,0 +1,3 @@
+#!/bin/bash
+
+mv /opt/repos/* /etc/yum.repos.d/

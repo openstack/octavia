@@ -1,0 +1,13 @@
+#!/bin/bash
+
+mkdir -p /opt/repos
+mv /etc/yum.repos.d/* /opt/repos/
+cat >> /etc/yum.repos.d/centos.repo <<EOF
+[Local-Repository]
+name=CentOS \$releasever - \$basearch - Local
+baseurl=$CENTOS_MIRROR
+enabled=1
+gpgcheck=0
+priority=1
+EOF
+yum makecache

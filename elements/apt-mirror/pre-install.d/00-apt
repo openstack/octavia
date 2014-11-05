@@ -1,0 +1,5 @@
+#!/bin/bash
+
+mkdir -p /etc/apt/apt.conf.d/
+touch /etc/apt/apt.conf.d/01proxy
+echo -e "Acquire::http { Proxy \"$UBUNTU_MIRROR\"; };" > /etc/apt/apt.conf.d/01proxy

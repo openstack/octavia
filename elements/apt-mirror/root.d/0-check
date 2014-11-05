@@ -1,0 +1,5 @@
+#!/bin/bash
+if [ -z "$UBUNTU_MIRROR" ]; then
+    echo "You should specify parameter 'UBUNTU_MIRROR'"
+    exit 2
+fi

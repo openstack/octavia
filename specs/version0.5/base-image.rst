@@ -60,17 +60,23 @@ Command syntax:
             [-a i386 | **amd64** | armhf ]
             [-b **haproxy** ]
             [-c **~/.cache/image-create** | <cache directory> ]
+            [-h]
             [-i **ubuntu** | fedora | centos ]
             [-o **amphora-x64-haproxy** | <filename> ]
-            [-t **qcow2** | tar ]
+            [-r <root password> ]
             [-s **5** | <size in GB> ]
+            [-t **qcow2** | tar ]
+            [-w <working directory> ]
         '-a' is the architecture type for the image (default: amd64)
         '-b' is the backend type (default: haproxy)
         '-c' is the path to the cache directory (default: ~/.cache/image-create)
+        '-h' display help message
         '-i' is the base OS (default: ubuntu)
         '-o' is the output image file name
-        '-t' is the image type (default: qcow2)
+        '-r' enable the root account in the generated image (default: disabled)
         '-s' is the image size to produce in gigabytes (default: 5)
+        '-t' is the image type (default: qcow2)
+        '-w' working directory for image building (default: .)
 
 
 .. line-block::
@@ -78,6 +84,7 @@ Command syntax:
     Environment variables supported by the script:
        BASE_OS_MIRROR - URL to a mirror for the base OS selected  (-i).
        DIB_REPO_PATH - Path to the diskimage-builder repository (default: ../../diskimage-builder)
+       ELEMENTS_REPO_PATH - Path to the /tripleo-image-elements repository (default: ../../tripleo-image-elements)
        DIB_ELEMENTS - Override the elements used to build the image
        DIB_LOCAL_ELEMENTS - Elements to add to the build (requires DIB_LOCAL_ELEMENTS_PATH be specified)
        DIB_LOCAL_ELEMENTS_PATH - Path to the local elements directory
