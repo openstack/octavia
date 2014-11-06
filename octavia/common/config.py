@@ -82,11 +82,16 @@ keystone_authtoken_opts = [
     cfg.StrOpt('admin_project_id'),
 ]
 
+networking_opts = [
+    cfg.StrOpt('lb_network_id', help=_('ID of amphora internal network')),
+]
+
 core_cli_opts = []
 
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_opts(keystone_authtoken_opts, group='keystone_authtoken')
+cfg.CONF.register_opts(networking_opts, group='networking')
 cfg.CONF.register_cli_opts(core_cli_opts)
 
 # Ensure that the control exchange is set correctly

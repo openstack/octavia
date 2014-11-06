@@ -21,6 +21,7 @@ from octavia.tests.functional.db import base
 
 class ModelTestMixin(object):
 
+    FAKE_IP = '10.0.0.1'
     FAKE_UUID_1 = uuidutils.generate_uuid()
     FAKE_UUID_2 = uuidutils.generate_uuid()
 
@@ -114,7 +115,8 @@ class ModelTestMixin(object):
     def create_amphora(self, session, **overrides):
         kwargs = {'id': self.FAKE_UUID_1,
                   'compute_id': self.FAKE_UUID_1,
-                  'status': constants.ACTIVE}
+                  'status': constants.ACTIVE,
+                  'lb_network_ip': self.FAKE_IP}
         kwargs.update(overrides)
         return self._insert(session, models.Amphora, kwargs)
 

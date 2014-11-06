@@ -16,8 +16,6 @@ import abc
 
 import six
 
-import octavia.common.constants as constants
-
 
 @six.add_metaclass(abc.ABCMeta)
 class ComputeBase(object):
@@ -31,16 +29,15 @@ class ComputeBase(object):
         pass
 
     @abc.abstractmethod
-    def build(self, amphora_type=constants.AMPHORA_VM, amphora_flavor=None,
-              image_id=None, keys=None, sec_groups=None, network_ids=None):
+    def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
+              key_name=None, sec_groups=None, network_ids=None):
         """Build a new amphora.
 
-        :param amphora_type: The type of amphora to create (ex: VM)
+        :param name: Optional name for Amphora
         :param amphora_flavor: Optionally specify a flavor
         :param image_id: ID of the base image for the amphora instance
-        :param keys: Optionally specify a list of ssh public keys
-        :param sec_groups: Optionally specify list of security
-        groups
+        :param key_name: Optionally specify a keypair
+        :param sec_groups: Optionally specify list of security groups
         :param network_ids: A list of network IDs to attach to the amphora
         :returns: The id of the new instance.
         """
