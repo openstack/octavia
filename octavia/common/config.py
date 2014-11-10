@@ -75,10 +75,18 @@ core_opts = [
                       ' more than one region.')),
 ]
 
+keystone_authtoken_opts = [
+    cfg.StrOpt('auth_uri'),
+    cfg.StrOpt('admin_user'),
+    cfg.StrOpt('admin_password'),
+    cfg.StrOpt('admin_project_id'),
+]
+
 core_cli_opts = []
 
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
+cfg.CONF.register_opts(keystone_authtoken_opts, group='keystone_authtoken')
 cfg.CONF.register_cli_opts(core_cli_opts)
 
 # Ensure that the control exchange is set correctly
