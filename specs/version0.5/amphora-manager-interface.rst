@@ -93,47 +93,6 @@ Establish an abstract base class to model the desired functionality:
             """
             raise NotImplementedError
 
-        def start(self, amphora_id):
-            """ start the specified instance
-
-            :param amphora_id: the id of the instance to start
-            """
-
-            raise NotImplementedError
-
-        def suspend(self, amphora_id):
-            """ suspend the specified instance
-
-            :param amphora_id: the id of the instance to suspend
-            """
-
-            raise NotImplementedError
-
-        def resume(self, amphora_id):
-            """ resume the specified instance
-
-            :param amphora_id: the id of the instance to suspend
-            """
-
-            raise NotImplementedError
-
-        def stop(self, amphora_id):
-            """ stop the specified instance
-
-            :param amphora_id: the id of the instance to stop
-            """
-
-            raise NotImplementedError
-
-        def backup(self, amphora_id):
-            """ create a backup of the specified instance.  The
-            format of the backup is implementation-defined
-
-            :param amphora_id: the id of the instance to snapshot
-            """
-
-            raise NotImplementedError
-
 Exception Model
 ---------------
 
