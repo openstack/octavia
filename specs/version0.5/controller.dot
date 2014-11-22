@@ -1,0 +1,81 @@
+﻿/*
+ * Copyright 2014 Hewlett-Packard Development Company, L.P.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+*/
+digraph G {
+
+
+   subgraph cluster0 {
+      style=filled;
+      color=gray75;
+
+
+      label = "Controller";
+
+
+      apim [label="API\nManager", fontcolor=white, color=forestgreen, style=filled];
+      health [label="Health\nManager", fontcolor=white, color=forestgreen, style=filled];
+      house [label="Housekeeping\n(Spares/Cleanup)\nManager", fontcolor=white, color=forestgreen, style=filled];
+      deploy [label="Deploy\nWorker", fontcolor=white, color=forestgreen, style=filled];
+      proxy [label="Services\nProxy", fontcolor=white, color=forestgreen, style=filled];
+
+
+      subgraph cluster1 {
+         style=filled;
+         color=gray90;
+         fontcolor=black;
+
+
+         label = "Amphora Driver";
+         msg [label="Message\nHandler", fontcolor=white, color=forestgreen, style=filled];
+         config [label="Config\nHandler", fontcolor=white, color=forestgreen, style=filled];
+         stats [label="Stats\nHandler", fontcolor=white, color=forestgreen, style=filled];
+         log [label="Log\nHandler", fontcolor=black, color=forestgreen, style=dashed];
+      }
+
+
+      health -> msg;
+   }
+
+
+   db [label="Database", fontcolor=white, color=dodgerblue, style=filled];
+   api [label="APIs", fontcolor=white, color=forestgreen, style=filled];
+   oslo [label="Oslo\nMessaging", fontcolor=white, color=dodgerblue, style=filled];
+   nova [label="Nova", fontcolor=white, color=dodgerblue, style=filled];
+   neutron [label="Neutron", fontcolor=white, color=dodgerblue, style=filled];
+   cert [label="Certificate\nLibrary", fontcolor=white, color=dodgerblue, style=filled];
+   bbq [label="Barbican", fontcolor=white, color=dodgerblue, style=filled];
+   swift [label="SWIFT", fontcolor=white, color=dodgerblue, style=filled];
+   ceilo [label="Ceilometer", fontcolor=white, color=dodgerblue, style=filled];
+   amp [label="Amphorae", fontcolor=black, color=coral2, style=filled];
+
+
+   db -> api -> oslo -> apim [dir="both"];
+   db -> deploy [dir="both"];
+   db -> apim [dir="both"];
+   db -> health [dir="both"];
+   db -> house [dir="both"];
+   db -> msg [dir="both"];
+   nova -> deploy [dir="both"];
+   nova -> house [dir="both"];
+   neutron -> deploy [dir="both"];
+   neutron -> house [dir="both"];
+   proxy -> swift [dir="both"];
+   proxy -> amp [dir="both"];
+   cert -> deploy [dir="both"];
+   cert -> bbq [dir="both"];
+   stats -> ceilo [dir="both"];
+   msg -> amp [ltail=cluster1];
+   msg -> amp [ltail=cluster1];
+}
