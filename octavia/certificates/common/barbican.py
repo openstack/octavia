@@ -21,10 +21,10 @@ from barbicanclient import client as barbican_client
 from keystoneclient.auth.identity import v3 as keystone_client
 from keystoneclient import session
 from oslo.config import cfg
+from oslo.utils import excutils
 
 from octavia.certificates.common import cert
-from octavia.openstack.common import excutils
-from octavia.openstack.common import gettextutils
+from octavia.i18n import _LE
 from octavia.openstack.common import log as logging
 
 
@@ -39,7 +39,7 @@ class BarbicanCert(cert.Cert):
     def __init__(self, cert_container):
         if not isinstance(cert_container,
                           barbican_client.containers.CertificateContainer):
-            raise TypeError(gettextutils._LE(
+            raise TypeError(_LE(
                 "Retrieved Barbican Container is not of the correct type "
                 "(certificate)."))
         self._cert_container = cert_container
@@ -79,7 +79,7 @@ class BarbicanKeystoneAuth(object):
                 cls._keystone_session = session.Session(auth=kc)
             except Exception as e:
                 with excutils.save_and_reraise_exception():
-                    LOG.error(gettextutils._LE(
+                    LOG.error(_LE(
                         "Error creating Keystone session: %s"), e)
         return cls._keystone_session
 
@@ -97,6 +97,6 @@ class BarbicanKeystoneAuth(object):
                 )
             except Exception as e:
                 with excutils.save_and_reraise_exception():
-                    LOG.error(gettextutils._LE(
+                    LOG.error(_LE(
                         "Error creating Barbican client: %s"), e)
         return cls._barbican_client

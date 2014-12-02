@@ -17,11 +17,11 @@
 Cert manager implementation for Barbican
 """
 from oslo.config import cfg
+from oslo.utils import excutils
 
 from octavia.certificates.common import barbican as barbican_common
 from octavia.certificates.manager import cert_mgr
-from octavia.openstack.common import excutils
-from octavia.openstack.common import gettextutils
+from octavia.i18n import _LE, _LI, _LW
 from octavia.openstack.common import log as logging
 
 
@@ -50,7 +50,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
         """
         connection = barbican_common.BarbicanKeystoneAuth.get_barbican_client()
 
-        LOG.info(gettextutils._LI(
+        LOG.info(_LI(
             "Storing certificate container '{0}' in Barbican."
         ).format(name))
 
@@ -99,16 +99,16 @@ class BarbicanCertManager(cert_mgr.CertManager):
                     old_ref = i.secret_ref
                     try:
                         i.delete()
-                        LOG.info(gettextutils._LI(
+                        LOG.info(_LI(
                             "Deleted secret {0} ({1}) during rollback."
                         ).format(i.name, old_ref))
                     except Exception:
-                        LOG.warning(gettextutils._LW(
+                        LOG.warning(_LW(
                             "Failed to delete {0} ({1}) during rollback. This "
                             "might not be a problem."
                         ).format(i.name, old_ref))
             with excutils.save_and_reraise_exception():
-                LOG.error(gettextutils._LE(
+                LOG.error(_LE(
                     "Error storing certificate data: {0}"
                 ).format(str(e)))
 
@@ -128,7 +128,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
         """
         connection = barbican_common.BarbicanKeystoneAuth.get_barbican_client()
 
-        LOG.info(gettextutils._LI(
+        LOG.info(_LI(
             "Loading certificate container {0} from Barbican."
         ).format(cert_ref))
         try:
@@ -145,7 +145,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
             return barbican_common.BarbicanCert(cert_container)
         except Exception as e:
             with excutils.save_and_reraise_exception():
-                LOG.error(gettextutils._LE(
+                LOG.error(_LE(
                     "Error getting {0}: {1}"
                 ).format(cert_ref, str(e)))
 
@@ -162,7 +162,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
         """
         connection = barbican_common.BarbicanKeystoneAuth.get_barbican_client()
 
-        LOG.info(gettextutils._LI(
+        LOG.info(_LI(
             "Deregistering as a consumer of {0} in Barbican."
         ).format(cert_ref))
         try:
@@ -173,7 +173,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
             )
         except Exception as e:
             with excutils.save_and_reraise_exception():
-                LOG.error(gettextutils._LE(
+                LOG.error(_LE(
                     "Error deregistering as a consumer of {0}: {1}"
                 ).format(cert_ref, str(e)))
 
@@ -186,7 +186,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
         """
         connection = barbican_common.BarbicanKeystoneAuth.get_barbican_client()
 
-        LOG.info(gettextutils._LI(
+        LOG.info(_LI(
             "Recursively deleting certificate container {0} from Barbican."
         ).format(cert_ref))
         try:
@@ -200,6 +200,6 @@ class BarbicanCertManager(cert_mgr.CertManager):
             certificate_container.delete()
         except Exception as e:
             with excutils.save_and_reraise_exception():
-                LOG.error(gettextutils._LE(
+                LOG.error(_LE(
                     "Error recursively deleting container {0}: {1}"
                 ).format(cert_ref, str(e)))

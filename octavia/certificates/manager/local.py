@@ -20,7 +20,7 @@ from oslo.config import cfg
 from octavia.certificates.common import local as local_common
 from octavia.certificates.manager import cert_mgr
 from octavia.common import exceptions
-from octavia.openstack.common import gettextutils
+from octavia.i18n import _LE, _LI
 from octavia.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class LocalCertManager(cert_mgr.CertManager):
         cert_ref = str(uuid.uuid4())
         filename_base = os.path.join(CONF.certificates.storage_path, cert_ref)
 
-        LOG.info(gettextutils._LI(
+        LOG.info(_LI(
             "Storing certificate data on the local filesystem."
         ))
         try:
@@ -73,7 +73,7 @@ class LocalCertManager(cert_mgr.CertManager):
                 with open(filename_pkp, 'w') as pass_file:
                     pass_file.write(private_key_passphrase)
         except IOError as ioe:
-            LOG.error(gettextutils._LE("Failed to store certificate."))
+            LOG.error(_LE("Failed to store certificate."))
             raise exceptions.CertificateStorageException(message=ioe.message)
 
         return cert_ref
@@ -88,7 +88,7 @@ class LocalCertManager(cert_mgr.CertManager):
                  certificate data
         :raises CertificateStorageException: if certificate retrieval fails
         """
-        LOG.info(gettextutils._LI(
+        LOG.info(_LI(
             "Loading certificate {0} from the local filesystem."
         ).format(cert_ref))
 
@@ -105,7 +105,7 @@ class LocalCertManager(cert_mgr.CertManager):
             with open(filename_certificate, 'r') as cert_file:
                 cert_data['certificate'] = cert_file.read()
         except IOError:
-            LOG.error(gettextutils._LE(
+            LOG.error(_LE(
                 "Failed to read certificate for {0}."
             ).format(cert_ref))
             raise exceptions.CertificateStorageException(
@@ -115,7 +115,7 @@ class LocalCertManager(cert_mgr.CertManager):
             with open(filename_private_key, 'r') as key_file:
                 cert_data['private_key'] = key_file.read()
         except IOError:
-            LOG.error(gettextutils._LE(
+            LOG.error(_LE(
                 "Failed to read private key for {0}."
             ).format(cert_ref))
             raise exceptions.CertificateStorageException(
@@ -144,7 +144,7 @@ class LocalCertManager(cert_mgr.CertManager):
 
         :raises CertificateStorageException: if certificate deletion fails
         """
-        LOG.info(gettextutils._LI(
+        LOG.info(_LI(
             "Deleting certificate {0} from the local filesystem."
         ).format(cert_ref))
 
@@ -161,7 +161,7 @@ class LocalCertManager(cert_mgr.CertManager):
             os.remove(filename_intermediates)
             os.remove(filename_pkp)
         except IOError as ioe:
-            LOG.error(gettextutils._LE(
+            LOG.error(_LE(
                 "Failed to delete certificate {0}."
             ).format(cert_ref))
             raise exceptions.CertificateStorageException(message=ioe.message)

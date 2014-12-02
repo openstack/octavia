@@ -21,7 +21,7 @@ import time
 from eventlet import event
 from eventlet import greenthread
 
-from octavia.openstack.common.gettextutils import _LE, _LW
+from octavia.openstack.common._i18n import _LE, _LW
 from octavia.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)

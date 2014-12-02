@@ -17,7 +17,7 @@
 Octavia base exception handling.
 """
 
-from octavia.openstack.common import excutils
+from oslo.utils import excutils
 
 
 class OctaviaException(Exception):

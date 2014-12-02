@@ -14,8 +14,7 @@
 #    under the License.
 
 from oslo.config import cfg
-
-from octavia.openstack.common import importutils
+from oslo.utils import importutils
 
 certgen_opts = [
     cfg.StrOpt('cert_generator_class',

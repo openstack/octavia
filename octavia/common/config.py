@@ -23,9 +23,9 @@ from oslo import messaging
 # from paste import deploy
 
 from octavia.common import utils
+from octavia.i18n import _LI
 from octavia.openstack.common import log as logging
 from octavia import version
-
 
 LOG = logging.getLogger(__name__)
 
@@ -113,7 +113,7 @@ def setup_logging(conf):
     """
     product_name = "octavia"
     logging.setup(product_name)
-    LOG.info(_("Logging enabled!"))
+    LOG.info(_LI("Logging enabled!"))
 
 
 # def load_paste_app(app_name):

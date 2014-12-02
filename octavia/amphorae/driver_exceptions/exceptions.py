@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from octavia.openstack.common import excutils
+from oslo.utils import excutils
 
 
 class AmphoraDriverError(Exception):
