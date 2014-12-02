@@ -14,8 +14,7 @@
 #    under the License.
 
 from oslo.config import cfg
-
-from octavia.openstack.common import importutils
+from oslo.utils import importutils
 
 certmgr_opts = [
     cfg.StrOpt('cert_manager_class',

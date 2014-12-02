@@ -12,12 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
 import os
 import ssl
 
 from oslo.config import cfg
 
-from octavia.openstack.common.gettextutils import _
+from octavia.openstack.common._i18n import _
 
 
 ssl_opts = [
@@ -32,9 +33,14 @@ ssl_opts = [
                     "the server securely."),
 ]
 
-
 CONF = cfg.CONF
-CONF.register_opts(ssl_opts, "ssl")
+config_section = 'ssl'
+CONF.register_opts(ssl_opts, config_section)
+
+
+def list_opts():
+    """Entry point for oslo.config-generator."""
+    return [(config_section, copy.deepcopy(ssl_opts))]
 
 
 def is_enabled():

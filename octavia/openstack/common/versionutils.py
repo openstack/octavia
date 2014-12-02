@@ -23,7 +23,7 @@ import inspect
 import pkg_resources
 import six
 
-from octavia.openstack.common.gettextutils import _
+from octavia.openstack.common._i18n import _
 from octavia.openstack.common import log as logging
 
 

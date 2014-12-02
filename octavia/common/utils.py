@@ -26,7 +26,8 @@ import socket
 # from eventlet.green import subprocess
 # from oslo.config import cfg
 
-from octavia.openstack.common import excutils
+from oslo.utils import excutils
+
 from octavia.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)

@@ -20,7 +20,7 @@ from oslo.config import cfg
 
 from octavia.certificates.generator import cert_gen
 from octavia.common import exceptions
-from octavia.openstack.common import gettextutils
+from octavia.i18n import _LE, _LI
 from octavia.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
@@ -53,11 +53,11 @@ class LocalCertGenerator(cert_gen.CertGenerator):
         :return: Signed certificate
         :raises Exception: if certificate signing fails
         """
-        LOG.info(gettextutils._LI(
+        LOG.info(_LI(
             "Signing a certificate request using pyOpenSSL locally."
         ))
         if not ca_cert:
-            LOG.info(gettextutils._LI("Using CA Certificate from config."))
+            LOG.info(_LI("Using CA Certificate from config."))
             try:
                 ca_cert = open(CONF.certificates.ca_certificate).read()
             except IOError:
@@ -66,7 +66,7 @@ class LocalCertGenerator(cert_gen.CertGenerator):
                     .format(CONF.certificates.ca_certificate)
                 )
         if not ca_key:
-            LOG.info(gettextutils._LI("Using CA Private Key from config."))
+            LOG.info(_LI("Using CA Private Key from config."))
             try:
                 ca_key = open(CONF.certificates.ca_private_key).read()
             except IOError:
@@ -77,11 +77,11 @@ class LocalCertGenerator(cert_gen.CertGenerator):
         if not ca_key_pass:
             ca_key_pass = CONF.certificates.ca_private_key_passphrase
             if ca_key_pass:
-                LOG.info(gettextutils._LI(
+                LOG.info(_LI(
                     "Using CA Private Key Passphrase from config."
                 ))
             else:
-                LOG.info(gettextutils._LI(
+                LOG.info(_LI(
                     "No Passphrase found for CA Private Key, not using one."
                 ))
         if not ca_digest:
@@ -104,5 +104,5 @@ class LocalCertGenerator(cert_gen.CertGenerator):
 
             return crypto.dump_certificate(crypto.FILETYPE_PEM, new_cert)
         except Exception as e:
-            LOG.error(gettextutils._LE("Unable to sign certificate."))
+            LOG.error(_LE("Unable to sign certificate."))
             raise exceptions.CertificateGenerationException(e)

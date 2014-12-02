@@ -20,11 +20,25 @@ Supported configuration options:
 `key_namespace`: Namespace under which keys will be created.
 """
 
+########################################################################
+#
+# THIS MODULE IS DEPRECATED
+#
+# Please refer to
+# https://etherpad.openstack.org/p/kilo-octavia-library-proposals for
+# the discussion leading to this deprecation.
+#
+# We recommend helping with the new octavia.cache library being created
+# as a wrapper for dogpile.
+#
+########################################################################
+
+
 from six.moves.urllib import parse
 from stevedore import driver
 
 
-def _get_olso_configs():
+def _get_oslo.configs():
     """Returns the oslo.config options to register."""
     # NOTE(flaper87): Oslo config should be
     # optional. Instead of doing try / except
@@ -45,7 +59,7 @@ def register_oslo.configs(conf):
     :params conf: Config object.
     :type conf: `cfg.ConfigOptions`
     """
-    conf.register_opts(_get_olso_configs())
+    conf.register_opts(_get_oslo.configs())
 
 
 def get_cache(url='memory://'):
@@ -71,8 +85,7 @@ def get_cache(url='memory://'):
     parameters = parse.parse_qsl(query)
     kwargs = {'options': dict(parameters)}
 
-    mgr = driver.DriverManager('octavia.openstack.common.cache.backends',
-                               backend,
+    mgr = driver.DriverManager('octavia.openstack.common.cache.backends', backend,
                                invoke_on_load=True,
                                invoke_args=[parsed],
                                invoke_kwds=kwargs)
