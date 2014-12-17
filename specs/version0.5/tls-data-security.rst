@@ -53,16 +53,14 @@ event or during some other non-interactive scenario).
 .. seqdiag:: tls-data-security-2.diag
 
 2. Create a CertificateGenerator interface to generate certificates from CSRs.
-When an Amphora spins up, it will generate its own private key and CSR, then
-contact the controller and request a signed certificate. The controller will
-cause one to be generated [2] and return it to the Amphora (syncronous), which
-will configure the Amphora API to listen using that certificate. All future
-communications with the Amphora will do client certificate validation based on
-our (private) certificate authority.
-
-If we are unable to generate a certificate for the Amphora, we will respond
-with a 503 and the Amphora will be expected to wait some configurable retry
-period before trying again.
+When the controller creates an Amphora, it will generate a private key and a
+CSR, generate a signed certificate from the CSR, and include the private key
+and signed certificate in a ConfigDrive for the new Amphora. It will also
+include a copy of the Controller's certificate on the ConfigDrive. All future
+communications with the Amphora will do certificate validation based on these
+certificates. For the Amphora, this will be based on our (private) certificate
+authority and the CN of the Amphora's cert matching the ID of the Amphora. For
+the Controller, the cert should be a complete match with the version provided.
 
 (The CertificateManager and CertificateGenerator interfaces are separate
 because while Barbican can perform both functions, future implementations
@@ -93,10 +91,7 @@ generic).
 
 REST API impact
 ---------------
-There will need to be an API resource in the controller for the Amphora to
-use when requesting a certificate. All further API based communication with
-the Amphora will take place over HTTPS and validate the certificate of
-both the server and the client.
+None
 
 Security impact
 ---------------

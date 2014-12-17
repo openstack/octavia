@@ -1,29 +1,34 @@
 seqdiag {
     span_height = 10;
     activation = none;
-    === In Octavia ===
     Barbican;
-    Octavia => Nova [label="Create new Amphora", note="include Octavia Controller certificate and IP as Metadata"];
+    === In Octavia ===
+    Octavia -> Octavia [label="Get a new cert/key from CertGenerator"];
+    Octavia -> "Compute Driver" [label="Create new Amphora"] {
+        "Compute Driver" -> Nova [label="Create instance", note="Ref Impl, ConfigDrive: Octavia Controller certificate and IP, and a generated/signed cert + private key"];
+    }
+    Octavia => "Compute Driver" [label="Wait for Amphora Ready"];
     loop {
-        Octavia => Nova [label="Poll for ACTIVE Amphora", return="Amphora Management IP"];
+        "Compute Driver" => Nova [label="Poll for ACTIVE Amphora", note="Ref Impl", return="Amphora Management IP"];
     }
     Octavia -> Octavia [label="Store Amphora IP"];
-    === Meanwhile, in the Amphora ===
-    Amphora -> Amphora [label="Generate private key and CSR"];
-    Amphora => Octavia [label="Request Certificate Signing", return = "Signed Certificate"] {
-        Octavia -> Octavia [label="Verify Amphora by source IP"];
-        Octavia => Barbican [label="Process CSR using private CA", return="Signed Certificate"];
+    Octavia => "Amp Driver" [label="Run Amphora Self-Test", return="PASS/FAIL"] {
+        "Amp Driver" -> "Amp Driver" [label="Poll DB until first Heartbeat arrives", note="Ref Impl"];
+        "Amp Driver" => "Amphora API" [label="Run Self-Test", note="Ref Impl"] {
+            === If Self-test passes ===
+            Octavia -> Octavia [label="Add Amphora to standby pool"];
+            === If Self-test fails ===
+            Octavia -> Octavia [label="Delete Amphora"];
+        }
     }
+
+    === In the Amphora (Ref Impl) ===
     Amphora -> Amphora [label="Start Services (API, Heartbeat)"];
-    "Amphora Heartbeat" -> Octavia [label="Announce", note="UDP? HTTPS?"] {
-        Octavia -> Octavia [label="Verify Amphora by source IP (UDP) or certificate (HTTPS)"];
+    "Amp Heartbeat" -> "Amp Driver" [label="Announce", note="UDP"] {
+        "Amp Driver" -> "Amp Driver" [label="Verify Amphora by Signed UDP Heartbeat"];
         === If Verification fails ===
-        Octavia -> Octavia [label="Log and Ignore"];
+        "Amp Driver" -> "Amp Driver" [label="Log and Ignore"];
         === If Verification succeeds ===
-        Octavia => "Amphora API" [label="Run Self-test"];
-        === If Self-test fails ===
-        Octavia -> Octavia [label="Delete Amphora, retry process"];
-        === If Self-test succeeds ===
-        Octavia -> Octavia [label="Add Amphora to standby pool"];
+        "Amp Driver" -> "Health Manager" [label="Store Heartbeat"];
     }
 }
