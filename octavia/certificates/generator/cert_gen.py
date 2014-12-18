@@ -25,7 +25,8 @@ import six
 class CertGenerator(object):
     """Base Cert Generator Interface
 
-    A Certificate Generator is responsible for signing TLS certificates.
+    A Certificate Generator is responsible for generating private keys,
+    generating CSRs, and signing TLS certificates.
     """
 
     @abc.abstractmethod
@@ -38,7 +39,22 @@ class CertGenerator(object):
         :param csr: A Certificate Signing Request
         :param validity: Valid for <validity> seconds from the current time
 
-        :return: Signed certificate
+        :return: PEM Encoded Signed certificate
         :raises Exception: If certificate signing fails
+        """
+        pass
+
+    @abc.abstractmethod
+    def generate_cert_key_pair(self, cn, validity, bit_length, passphrase):
+        """Generates a private key and certificate pair
+
+        :param cn: Common name to use for the Certificate
+        :param validity: Validity period for the Certificate
+        :param bit_length: Private key bit length
+        :param passphrase: Passphrase to use for encrypting the private key
+
+        :return: octavia.certificates.common.Cert representation of the
+                 certificate data
+        :raises Exception: If generation fails
         """
         pass
