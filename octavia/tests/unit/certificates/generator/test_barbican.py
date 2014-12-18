@@ -1,4 +1,4 @@
-# Copyright 2014 Rackspace
+# Copyright 2014 Rackspace US, Inc
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -64,3 +64,6 @@ class TestBarbicanGenerator(base.TestCase):
         # create order should be called once
         # should get back a valid order
         bc.orders.create.assert_called_once_with()
+
+    def test_generate_cert_key_pair(self):
+        self.skipTest("Barbican does not yet support signing.")
