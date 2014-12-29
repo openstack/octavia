@@ -1,0 +1,95 @@
+{# #    Copyright (c) 2015 Rackspace
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+#}
+{% extends 'haproxy_base.template' %}
+
+{% macro bind_macro(constants, listener, lb_vip_address) %}
+{% if listener.default_tls_path %}
+{% set def_crt_opt = "ssl crt %s"|format(listener.default_tls_path)|trim() %}
+{% else %}
+{% set def_crt_opt = "" %}
+{% endif %}
+{% if listener.crt_dir %}
+{% set crt_dir_opt = "crt %s"|format(listener.crt_dir)|trim() %}
+{% else %}
+{% set crt_dir_opt = "" %}
+{% endif %}
+bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{ "%s %s"|format(def_crt_opt, crt_dir_opt)|trim() }}
+{% endmacro %}
+
+{% macro use_backend_macro(listener) %}
+{% if listener.default_pool %}
+default_backend {{ listener.default_pool.id }}
+{% endif %}
+{% endmacro %}
+
+{% macro frontend_macro(constants, listener, lb_vip_address) %}
+frontend {{ listener.id }}
+    option tcplog
+{% if listener.connection_limit is defined %}
+    maxconn {{ listener.connection_limit }}
+{% endif %}
+{% if listener.protocol_mode == constants.PROTOCOL_HTTP.lower() %}
+    option forwardfor
+{% endif %}
+    {{ bind_macro(constants, listener, lb_vip_address)|trim() }}
+    mode {{ listener.protocol_mode }}
+{% if listener.default_pool %}
+    default_backend {{ listener.default_pool.id }}
+{% endif %}
+{% endmacro %}
+
+{% macro backend_macro(constants, listener, pool) %}
+backend {{ pool.id }}
+    mode {{ pool.protocol }}
+    balance {{ pool.lb_algorithm }}
+{% if listener.protocol == constants.PROTOCOL_TERMINATED_HTTPS %}
+    redirect scheme https if !{ ssl_fc }
+{% endif %}
+{% if pool.session_persistence %}
+{% if pool.session_persistence.type == constants.SESSION_PERSISTENCE_SOURCE_IP %}
+    stick-table type ip size 10k
+    stick on src
+{% elif pool.session_persistence.type == constants.SESSION_PERSISTENCE_HTTP_COOKIE %}
+    cookie SRV insert indirect nocache
+{% endif %}
+{% endif %}
+{% if pool.health_monitor %}
+    timeout check {{ pool.health_monitor.timeout }}
+{% if pool.health_monitor.type == constants.HEALTH_MONITOR_HTTP or pool.health_monitor.type == constants.HEALTH_MONITOR_HTTPS %}
+    option httpchk {{ pool.health_monitor.http_method }} {{ pool.health_monitor.url_path }}
+    http-check expect rstatus {{ pool.health_monitor.expected_codes }}
+{% endif %}
+{% if pool.health_monitor.type == constants.HEALTH_MONITOR_HTTPS %}
+    option ssl-hello-chk
+{% endif %}
+{% endif %}
+{% if listener.protocol_mode == constants.PROTOCOL_HTTP.lower() %}
+    option forwardfor
+{% endif %}
+{% for member in pool.members %}
+{% if pool.health_monitor %}
+{% set hm_opt = " check inter %ds fall %d"|format(pool.health_monitor.delay, pool.health_monitor.fall_threshold) %}
+{% else %}
+{% set hm_opt = "" %}
+{% endif %}
+{%if pool.session_persistence.type == constants.SESSION_PERSISTENCE_HTTP_COOKIE %}
+{% set persistence_opt = " cookie %s"|format(member.id) %}
+{% else %}
+{% set persistence_opt = "" %}
+{% endif %}
+    {{ "server %s %s:%d weight %s%s%s"|e|format(member.id, member.address, member.protocol_port, member.weight, hm_opt, persistence_opt)|trim() }}
+{% endfor %}
+{% endmacro %}

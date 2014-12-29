@@ -1,0 +1,27 @@
+{# #    Copyright (c) 2015 Rackspace
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+#}
+{% extends 'haproxy_proxies.template' %}
+{% set loadbalancer_name = loadbalancer.name %}
+{% set usergroup = user_group %}
+{% set sock_path = stats_sock %}
+
+{% block proxies %}
+{% from 'haproxy_proxies.template' import frontend_macro as frontend_macro, backend_macro%}
+{{ frontend_macro(constants, loadbalancer.listener, loadbalancer.vip_address) }}
+{% if loadbalancer.listener.default_pool %}
+{{ backend_macro(constants, loadbalancer.listener, loadbalancer.listener.default_pool) }}
+{% endif %}
+{% endblock proxies %}
