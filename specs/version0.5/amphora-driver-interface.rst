@@ -21,6 +21,9 @@ The controller needs to talk through a driver to the amphora to allow
 for custom APIs and custom rendering of configuration data for
 different amphora implementations.
 
+The system will heavily utilize taskflow [2] to accomplish its goals
+so it is expected that drivers will implement there functions as tasks.
+
 
 Proposed change
 ===============
@@ -33,43 +36,63 @@ Establish a base class to model the desire functionality:
         def getLogger(self):
             #return the logger to use - this is a way to inject a custom logger for testing, etc
 
-        def update(self, listener, vip):
-            #update the amphora with a new configuration for the ;istener on vip
+        def get_update_flow(self):
+            """
+                returns a task flow which updates the amphora with a new configuration
+                for the listener on the vip. The system will place both listener and vip
+                into the task flow engine (or as a result of previous tasks)
+            """
             raise NotImplementedError
 
-        def suspend(self, listener, vip):
-            #stop the listener - OPTIONAL
+        def get_stop_flow(self):
+            """
+                returns a task flow which stops the listener
+                on the vip. Both "listener" and "vip" become
+                defined inputs for the flow.
+            """
+            return None
+
+        def get_start_flow(self):
+            """
+                returns a task flow which starts the listener
+                on the vip. Both "listener" and "vip" become
+                defined inputs for the flow.
+            """
+            return None
+
+        def get_delete_flow(self):
+            """
+                returns a task flow which deletes the listener
+                on the vip. Both "listener" and "vip" become
+                defined inputs for the flow.
+            """
             raise NotImplementedError
 
-        def enable(self, listener, vip):
-            #start/enable the listener
+        def get_info(self, amphora):
+            """
+                returns information about the amphora, e.g. {"Rest Interface": "1.0", "Amphorae": "1.0",
+                "packages":{"ha proxy":"1.5"}, "network-interfaces": {"eth0":{"ip":...}}
+                some information might come from querying the amphora
+            """
             raise NotImplementedError
 
-        def delete(self, listener, vip):
-            #delete the listener from the amphora
-            raise NotImplementedError
+        def get_config_network_flow(self, amphora):
+            """
+                returns a task flow which returns the network configuration to be inspected by
+                the controller and creates missing network interfaces, etc.
+                "amphora" becomes a defined inputs for the flow and the flow will return
+                a list of network interface cards in the format {"eth0":{"ip":"123.123.123.123",
+                "netmask":"...", "mac":",,,"))
+            """
+            raise NotImplementedErr
 
-        def info(self, amphora):
-            #returns information about the amphora, e.g. {"Rest Interface": "1.0", "Amphorae": "1.0",
-            #   "packages":{"ha proxy":"1.5"}}
-            #some information might come from querying the amphora
-            raise NotImplementedError
-
-        def get_metrics(self, amphora):
-            #return ceilometer ready metrics - some amphora might choose to send them
-            #straight to ceilometer others might use the mixin
-            #support metrics to be compatible with Neutron LBaaS
-            raise NotImplementedError
-
-        def get_health(self, amphora):
-            #returns map: {"amphora-status":HEALTHY, loadbalancers: {"loadbalancer-id": {"loadbalancer-status": HEALTHY,
-            # "listeners":{"listener-id":{"listener-status":HEALTHY, "nodes":{"node-id":HEALTHY, ...}}, ...}, ...}}
-            raise NotImplementedError
 
         def get_diagnostics(self, amphora):
-            #run some expensive self tests to determine if the amphora and the lbs are healthy
-            #the idea is that those tests are triggered more infrequent than the health
-            #gathering
+            """
+                OPTIONAL - run some expensive self tests to determine if the amphora and the
+                lbs are healthy the idea is that those tests are triggered more infrequent
+                than the heartbeat
+            """
             raise NotImplementedError
 
 The referenced listener is a listener object and vip a vip as described
@@ -90,27 +113,24 @@ The driver is expected to raise the following well defined exceptions
 * NotImplementedError - this functionality is not implemented/not supported
 * AmphoraDriverError - a super class for all other exceptions and the catch
     all if no specific exception can be found
+
     * NotFoundError - this amphora couldn't be found/ was deleted by nova
     * InfoException - gathering information about this amphora failed
-    * MetricsException - gathering metrics failed
+    * NetworkConfigException - gathering network information failed
     * UnauthorizedException - the driver can't access the amphora
-    * StatisticsException - gathering statistics failed
     * TimeOutException - contacting the amphora timed out
     * UnavailableException - the amphora is temporary unavailable
-    * DeleteFailed - this load balancer couldn't be deleted
     * SuspendFaied - this load balancer couldn't be suspended
     * EnableFailed - this load balancer couldn't be enabled
-    * ArchiveException - couldn't archive the logs
-
-        * TargetException - the target is not accessible
-        * QuotaException - the target has no space left
-        * UnauthorizedException - unauthorized to write to the target
-
+    * DeleteFailed - this load balancer couldn't be deleted
     * ProvisioningErrors - those are errors which happen during provisioning
+
         * ListenerProvisioningError - could not provision Listener
         * LoadBalancerProvisoningError - could not provision LoadBalancer
         * HealthMonitorProvisioningError - could not provision HealthMonitor
         * NodeProvisioningError - could not provision Node
+
+
 
 
 Health and Stat Mixin
@@ -237,5 +257,6 @@ we need to write an interface documentation so
 References
 ==========
 [1] http://martinfowler.com/bliki/CircuitBreaker.html
+[2] http://docs.openstack.org/developer/taskflow/index.html
 
 
