@@ -79,6 +79,19 @@ class MissingArguments(OctaviaException):
     message = _("Missing arguments.")
 
 
+class NeedsPassphrase(OctaviaException):
+    message = _("Passphrase needed to decrypt key but client "
+                "did not provide one.")
+
+
+class UnreadableCert(OctaviaException):
+    message = _("Could not read X509 from PEM")
+
+
+class MisMatchedKey(OctaviaException):
+    message = _("Key and x509 certificate do not match")
+
+
 class CertificateStorageException(OctaviaException):
     message = _('Could not store certificate: %(msg)s')
 
