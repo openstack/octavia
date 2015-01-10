@@ -20,10 +20,8 @@ from octavia.api.v1.types import base
 class VIP(base.BaseType):
     """Defines the response and acceptable POST request attributes."""
     ip_address = wtypes.wsattr(base.IPAddressType())
-    net_port_id = wtypes.wsattr(wtypes.UuidType())
-    subnet_id = wtypes.wsattr(wtypes.UuidType())
-    floating_ip_id = wtypes.wsattr(wtypes.UuidType())
-    floating_ip_network_id = wtypes.wsattr(wtypes.UuidType())
+    port_id = wtypes.wsattr(wtypes.UuidType())
+    network_id = wtypes.wsattr(wtypes.UuidType())
 
 
 class LoadBalancerResponse(base.BaseType):

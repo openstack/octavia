@@ -227,10 +227,8 @@ class Vip(base_models.BASE):
                       name="fk_vip_load_balancer_id"),
         nullable=False, primary_key=True)
     ip_address = sa.Column(sa.String(36), nullable=True)
-    net_port_id = sa.Column(sa.String(36), nullable=True)
-    subnet_id = sa.Column(sa.String(36), nullable=True)
-    floating_ip_id = sa.Column(sa.String(36), nullable=True)
-    floating_ip_network_id = sa.Column(sa.String(36), nullable=True)
+    port_id = sa.Column(sa.String(36), nullable=True)
+    network_id = sa.Column(sa.String(36), nullable=True)
     load_balancer = orm.relationship("LoadBalancer", uselist=False,
                                      backref=orm.backref("vip", uselist=False,
                                                          cascade="delete"))

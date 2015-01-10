@@ -55,10 +55,8 @@ class TestLoadBalancer(base.BaseAPITest):
 
     def test_get(self):
         vip = {'ip_address': '10.0.0.1',
-               'floating_ip_id': uuidutils.generate_uuid(),
-               'net_port_id': uuidutils.generate_uuid(),
-               'subnet_id': uuidutils.generate_uuid(),
-               'floating_ip_network_id': uuidutils.generate_uuid()}
+               'port_id': uuidutils.generate_uuid(),
+               'network_id': uuidutils.generate_uuid()}
         lb = self.create_load_balancer(vip, name='lb1',
                                        description='test1_desc',
                                        enabled=False)
@@ -74,10 +72,8 @@ class TestLoadBalancer(base.BaseAPITest):
 
     def test_create_with_vip(self):
         vip = {'ip_address': '10.0.0.1',
-               'floating_ip_id': uuidutils.generate_uuid(),
-               'net_port_id': uuidutils.generate_uuid(),
-               'subnet_id': uuidutils.generate_uuid(),
-               'floating_ip_network_id': uuidutils.generate_uuid()}
+               'network_id': uuidutils.generate_uuid(),
+               'port_id': uuidutils.generate_uuid()}
         lb_json = {'name': 'test1', 'description': 'test1_desc',
                    'vip': vip, 'enabled': False}
         response = self.post(self.LBS_PATH, lb_json)
@@ -102,7 +98,7 @@ class TestLoadBalancer(base.BaseAPITest):
         self.post(self.LBS_PATH, lb_json, status=400)
 
     def test_create_with_nonuuid_vip_attributes(self):
-        lb_json = {'vip': {'floating_ip_id': 'HI'}}
+        lb_json = {'vip': {'network_id': 'HI'}}
         self.post(self.LBS_PATH, lb_json, status=400)
 
     def test_update(self):
@@ -113,7 +109,7 @@ class TestLoadBalancer(base.BaseAPITest):
         response = self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json)
         api_lb = response.json
         r_vip = api_lb.get('vip')
-        self.assertIsNone(r_vip.get('floating_ip_id'))
+        self.assertIsNone(r_vip.get('network_id'))
         self.assertEqual('lb2', api_lb.get('name'))
         self.assertEqual('desc1', api_lb.get('description'))
         self.assertFalse(api_lb.get('enabled'))
@@ -126,12 +122,12 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_update_with_vip(self):
         lb = self.create_load_balancer({}, name='lb1', description='desc1',
                                        enabled=False)
-        lb_json = {'vip': {'floating_ip_id': '1234'}}
+        lb_json = {'vip': {'network_id': '1234'}}
         lb = self.set_lb_status(lb.get('id'))
         response = self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json)
         api_lb = response.json
         r_vip = api_lb.get('vip')
-        self.assertIsNone(r_vip.get('floating_ip_id'))
+        self.assertIsNone(r_vip.get('network_id'))
         self.assertEqual('lb1', api_lb.get('name'))
         self.assertEqual('desc1', api_lb.get('description'))
         self.assertFalse(api_lb.get('enabled'))
@@ -148,7 +144,7 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_update_pending_create(self):
         lb = self.create_load_balancer({}, name='lb1', description='desc1',
                                        enabled=False)
-        lb_json = {'vip': {'floating_ip_id': '1234'}}
+        lb_json = {'vip': {'network_id': '1234'}}
         self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json, status=409)
 
     def test_delete_pending_create(self):
@@ -159,7 +155,7 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_update_pending_update(self):
         lb = self.create_load_balancer({}, name='lb1', description='desc1',
                                        enabled=False)
-        lb_json = {'vip': {'floating_ip_id': '1234'}}
+        lb_json = {'vip': {'network_id': '1234'}}
         lb = self.set_lb_status(lb.get('id'))
         self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json)
         self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json, status=409)
@@ -167,7 +163,7 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_delete_pending_update(self):
         lb = self.create_load_balancer({}, name='lb1', description='desc1',
                                        enabled=False)
-        lb_json = {'vip': {'floating_ip_id': '1234'}}
+        lb_json = {'vip': {'network_id': '1234'}}
         lb = self.set_lb_status(lb.get('id'))
         self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json)
         self.delete(self.LB_PATH.format(lb_id=lb.get('id')), status=409)
@@ -177,7 +173,7 @@ class TestLoadBalancer(base.BaseAPITest):
                                        enabled=False)
         lb = self.set_lb_status(lb.get('id'))
         self.delete(self.LB_PATH.format(lb_id=lb.get('id')))
-        lb_json = {'vip': {'floating_ip_id': '1234'}}
+        lb_json = {'vip': {'network_id': '1234'}}
         self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json, status=409)
 
     def test_delete_pending_delete(self):

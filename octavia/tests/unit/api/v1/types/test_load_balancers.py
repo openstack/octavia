@@ -83,10 +83,8 @@ class TestVip(base.BaseTypesTest):
 
     def test_vip(self):
         body = {"vip": {"ip_address": "10.0.0.1",
-                        "net_port_id": uuidutils.generate_uuid(),
-                        "subnet_id": uuidutils.generate_uuid(),
-                        "floating_ip_id": uuidutils.generate_uuid(),
-                        "floating_ip_network_id": uuidutils.generate_uuid()}}
+                        "port_id": uuidutils.generate_uuid(),
+                        "network_id": uuidutils.generate_uuid()}}
         wsme_json.fromjson(self._type, body)
 
     def test_invalid_ip_address(self):
@@ -94,22 +92,12 @@ class TestVip(base.BaseTypesTest):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
-    def test_invalid_net_port_id(self):
-        body = {"net_port_id": "invalid_uuid"}
+    def test_invalid_port_id(self):
+        body = {"port_id": "invalid_uuid"}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
-    def test_invalid_subnet_id(self):
-        body = {"subnet_id": "invalid_uuid"}
-        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
-                          body)
-
-    def test_invalid_floating_ip_id(self):
-        body = {"floating_ip_id": "invalid_uuid"}
-        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
-                          body)
-
-    def test_invalid_floating_network_ip_id(self):
-        body = {"floating_ip_network_id": "invalid_uuid"}
+    def test_invalid_network_id(self):
+        body = {"network_id": "invalid_uuid"}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)

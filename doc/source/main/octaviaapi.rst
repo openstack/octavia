@@ -75,21 +75,27 @@ Load Balancers
 | provisioning_status | String     | Physical status of a load balancer |
 +---------------------+------------+------------------------------------+
 
-|
+Virtual IP
+**********
+The following table lists the attributes of a VIP.  If only port_id is
+provided then the network_id will be populated.  If only network_id is
+provided then a port will be created and the port_id will be returned.
+If an ip_address is provided then that IP will be attempted to be
+assigned to the VIP as long as port_id or network_id is provided as well.
 
-+------------------------------------------------------------------+
-| **Fully Populated VIP Object**                                   |
-+------------------------+------+----------------------------------+
-| Parameters             | Type | Description                      |
-+========================+======+==================================+
-| net_port_id            | UUID | ``UUID`` for neutron port        |
-+------------------------+------+----------------------------------+
-| subnet_id              | UUID | ``UUID`` for subnet              |
-+------------------------+------+----------------------------------+
-| floating_ip_id         | UUID | ``UUID`` for floating IP         |
-+------------------------+------+----------------------------------+
-| floating_ip_network_id | UUID | ``UUID`` for floating IP network |
-+------------------------+------+----------------------------------+
++----------------------------------------------------------------------+
+| **Fully Populated VIP Object**                                       |
++------------------------+----------+----------------------------------+
+| Parameters             | Type     | Description                      |
++========================+==========+==================================+
+| ip_address             | IPv(4|6) | Frontend IP of load balancer     |
++------------------------+----------+----------------------------------+
+| port_id                | UUID     | ``UUID`` for port                |
+|                        |          | (equivalent to neutron port)     |
++------------------------+----------+----------------------------------+
+| network_id             | UUID     | ``UUID`` for network             |
+|                        |          | (equivalent to neutron subnet)   |
++------------------------+----------+----------------------------------+
 
 List Load Balancers
 *******************
@@ -112,10 +118,9 @@ Retrieve a list of load balancers.
         {
             'id': 'uuid',
             'vip': {
-                'net_port_id': 'uuid',
-                'subnet_id': 'uuid',
-                'floating_ip_id': 'uuid',
-                'floating_ip_network_id': 'uuid'
+                'port_id': 'uuid',
+                'network_id': 'uuid',
+                'ip_address': '192.0.2.1'
             },
             'tenant_id': 'uuid',
             'name': 'lb_name',
@@ -147,10 +152,9 @@ Retrieve details of a load balancer.
     {
         'id': 'uuid',
         'vip':{
-            'net_port_id': 'uuid',
-            'subnet_id': 'uuid',
-            'floating_ip_id': 'uuid',
-            'floating_ip_network_id': 'uuid'
+            'port_id': 'uuid',
+            'network_id': 'uuid',
+            'ip_address': '192.0.2.1'
         },
         'tenant_id': 'uuid',
         'name': 'lb_name',
@@ -198,7 +202,7 @@ Create a load balancer.
 
     {
         'vip': {
-            'net_port_id': 'uuid'
+            'port_id': 'uuid'
         },
         'tenant_id': 'uuid',
         'name': 'lb_name',
@@ -211,10 +215,9 @@ Create a load balancer.
     {
         'id': 'uuid',
         'vip':{
-            'net_port_id': 'uuid',
-            'subnet_id': 'uuid',
-            'floating_ip_id': 'uuid',
-            'floating_ip_network_id': 'uuid'
+            'port_id': 'uuid',
+            'network_id': 'uuid',
+            'ip_address': '192.0.2.1'
         },
         'tenant_id': 'uuid',
         'name': 'lb_name',
@@ -265,10 +268,9 @@ Modify mutable fields of a load balancer.
     {
         'id': 'uuid',
         'vip':{
-            'net_port_id': 'uuid',
-            'subnet_id': 'uuid',
-            'floating_ip_id': 'uuid',
-            'floating_ip_network_id': 'uuid'
+            'port_id': 'uuid',
+            'network_id': 'uuid',
+            'ip_address': '192.0.2.1'
         },
         'tenant_id': 'uuid',
         'name': 'lb_name',
