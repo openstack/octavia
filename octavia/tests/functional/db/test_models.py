@@ -113,7 +113,7 @@ class ModelTestMixin(object):
 
     def create_amphora(self, session, **overrides):
         kwargs = {'id': self.FAKE_UUID_1,
-                  'host_id': self.FAKE_UUID_1,
+                  'compute_id': self.FAKE_UUID_1,
                   'status': constants.ACTIVE}
         kwargs.update(overrides)
         return self._insert(session, models.Amphora, kwargs)
@@ -753,7 +753,7 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def check_amphora_data_model(self, amphora):
         self.assertEqual(self.FAKE_UUID_1, amphora.id)
-        self.assertEqual(self.FAKE_UUID_1, amphora.host_id)
+        self.assertEqual(self.FAKE_UUID_1, amphora.compute_id)
         self.assertEqual(constants.ONLINE, amphora.status)
 
     def check_load_balancer_amphora_data_model(self, amphora):
