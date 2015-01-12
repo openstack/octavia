@@ -45,8 +45,8 @@ class AmphoraLoadBalancerDriver(object):
         pass
 
     @abc.abstractmethod
-    def disable(self, listener, vip):
-        """Suspend the running amphora --optional
+    def stop(self, listener, vip):
+        """Stop the listener on the vip
 
         :param listener: listener object,
         need to use its protocol_port property
@@ -61,8 +61,8 @@ class AmphoraLoadBalancerDriver(object):
         pass
 
     @abc.abstractmethod
-    def enable(self, listener, vip):
-        """Start/enable the listener
+    def start(self, listener, vip):
+        """Start the listener on the vip
 
         :param listener: listener object,
         need to use its protocol_port property
@@ -78,7 +78,7 @@ class AmphoraLoadBalancerDriver(object):
 
     @abc.abstractmethod
     def delete(self, listener, vip):
-        """Delete the listener from the amphora
+        """Delete the listener on the vip
 
         :param listener: listener object,
         need to use its protocol_port property
@@ -93,7 +93,7 @@ class AmphoraLoadBalancerDriver(object):
         pass
 
     @abc.abstractmethod
-    def info(self, amphora):
+    def get_info(self, amphora):
         """Returns information about the amphora
 
         :param amphora: amphora object, need to use its id property
@@ -110,46 +110,26 @@ class AmphoraLoadBalancerDriver(object):
         pass
 
     @abc.abstractmethod
-    def get_metrics(self, amphora):
-        """Return ceilometer ready metrics
-
-        Some amphora might choose to send them straight to ceilometer others
-        might use the mixin support metrics to be compatible with Neutron LBaaS
-
-        :param amphora: amphora object, need to use its id property
-        :type amphora: object
-        :returns: return a value list (amphora.id, status flag--'get_metrics')
-
-        At this moment, we just build the basic structure for testing, will
-        add more function along with the development, eventually, we want it
-        to return information as:
-        {"Rest Interface": "1.0", "Amphorae": "1.0",
-        "packages":{"ha proxy":"1.5"}}
-        some information might come from querying the amphora
-        """
-        pass
-
-    @abc.abstractmethod
-    def get_health(self, amphora):
-        """Return ceilometer ready health
-
-        :param amphora: amphora object, need to use its id property
-        :type amphora: object
-        :returns: return a value list (amphora.id, status flag--'get_health')
-
-        At this moment, we just build the basic structure for testing, will
-        add more function along with the development, eventually, we want it
-        to return information as:
-        returns map: {"amphora-status":HEALTHY,
-        loadbalancers: {"loadbalancer-id": {"loadbalancer-status": HEALTHY,
-        "listeners":{"listener-id":{"listener-status":HEALTHY,
-        "nodes":{"node-id":HEALTHY, ...}}, ...}, ...}}
-        """
-        pass
-
-    @abc.abstractmethod
     def get_diagnostics(self, amphora):
         """Return ceilometer ready health
+
+        :param amphora: amphora object, need to use its id property
+        :type amphora: object
+        :returns: return a value list (amphora.id, status flag--'ge
+        t_diagnostics')
+
+        At this moment, we just build the basic structure for testing, will
+        add more function along with the development, eventually, we want it
+        run some expensive self tests to determine if the amphora and the lbs
+        are healthy the idea is that those tests are triggered more infrequent
+        than the health gathering
+        """
+        pass
+
+    @abc.abstractmethod
+    def finalize_amphora(self, amphora):
+        """It is called before listeners configured while amphora was built
+
 
         :param amphora: amphora object, need to use its id property
         :type amphora: object

@@ -59,9 +59,16 @@ class NoopAmphoraLoadBalancerDriver(base.TestCase):
                              self.listener.protocol_port,
                              self.vip.ip_address)])
 
-    def test_disable(self):
-        self.driver.disable(self.listener, self.vip)
-        self.assertEqual((self.listener, self.vip, 'disable'),
+    def test_stop(self):
+        self.driver.stop(self.listener, self.vip)
+        self.assertEqual((self.listener, self.vip, 'stop'),
+                         self.driver.driver.amphoraconfig[(
+                             self.listener.protocol_port,
+                             self.vip.ip_address)])
+
+    def test_start(self):
+        self.driver.start(self.listener, self.vip)
+        self.assertEqual((self.listener, self.vip, 'start'),
                          self.driver.driver.amphoraconfig[(
                              self.listener.protocol_port,
                              self.vip.ip_address)])
@@ -73,33 +80,20 @@ class NoopAmphoraLoadBalancerDriver(base.TestCase):
                              self.listener.protocol_port,
                              self.vip.ip_address)])
 
-    def test_enable(self):
-        self.driver.enable(self.listener, self.vip)
-        self.assertEqual((self.listener, self.vip, 'enable'),
-                         self.driver.driver.amphoraconfig[(
-                             self.listener.protocol_port,
-                             self.vip.ip_address)])
-
-    def test_info(self):
-        self.driver.info(self.amphora)
-        self.assertEqual((self.amphora.id, 'info'),
-                         self.driver.driver.amphoraconfig[
-                             self.amphora.id])
-
-    def test_get_metrics(self):
-        self.driver.get_metrics(self.amphora)
-        self.assertEqual((self.amphora.id, 'get_metrics'),
-                         self.driver.driver.amphoraconfig[
-                             self.amphora.id])
-
-    def test_get_health(self):
-        self.driver.get_health(self.amphora)
-        self.assertEqual((self.amphora.id, 'get_health'),
+    def test_get_info(self):
+        self.driver.get_info(self.amphora)
+        self.assertEqual((self.amphora.id, 'get_info'),
                          self.driver.driver.amphoraconfig[
                              self.amphora.id])
 
     def test_get_diagnostics(self):
         self.driver.get_diagnostics(self.amphora)
         self.assertEqual((self.amphora.id, 'get_diagnostics'),
+                         self.driver.driver.amphoraconfig[
+                             self.amphora.id])
+
+    def test_finalize_amphora(self):
+        self.driver.finalize_amphora(self.amphora)
+        self.assertEqual((self.amphora.id, 'finalize amphora'),
                          self.driver.driver.amphoraconfig[
                              self.amphora.id])
