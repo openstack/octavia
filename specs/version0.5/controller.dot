@@ -27,7 +27,7 @@ digraph G {
       apim [label="API\nManager", fontcolor=white, color=forestgreen, style=filled];
       health [label="Health\nManager", fontcolor=white, color=forestgreen, style=filled];
       house [label="Housekeeping\n(Spares/Cleanup)\nManager", fontcolor=white, color=forestgreen, style=filled];
-      deploy [label="Deploy\nWorker", fontcolor=white, color=forestgreen, style=filled];
+      deploy [label="Deploy\nWorker", fontcolor=white, color=forestgreen, style=filled, shape=hexagon];
       proxy [label="Services\nProxy", fontcolor=white, color=forestgreen, style=filled];
 
 
@@ -61,6 +61,7 @@ digraph G {
    amp [label="Amphorae", fontcolor=black, color=coral2, style=filled];
 
 
+   deploy -> apim [dir="both"];
    db -> api -> oslo -> apim [dir="both"];
    db -> deploy [dir="both"];
    db -> apim [dir="both"];
