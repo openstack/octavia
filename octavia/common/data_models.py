@@ -195,10 +195,10 @@ class SNI(BaseDataModel):
 
 class Amphora(BaseDataModel):
 
-    def __init__(self, id=None, load_balancer_id=None, host_id=None,
+    def __init__(self, id=None, load_balancer_id=None, compute_id=None,
                  status=None, load_balancer=None):
         self.id = id
         self.load_balancer_id = load_balancer_id
-        self.host_id = host_id
+        self.compute_id = compute_id
         self.status = status
         self.load_balancer = load_balancer
