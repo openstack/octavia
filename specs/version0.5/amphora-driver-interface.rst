@@ -12,7 +12,7 @@ https://blueprints.launchpad.net/octavia/+spec/amphora-driver-interface
 This blueprint describes how a driver will interface with the controller.
 It will describe the base class and other classes required. It will not
 describe the REST interface needed to talk to an amphora nor
-how health information or statistsics are gathered from the amphora.
+how health information or statistics are gathered from the amphora.
 
 
 Problem description
@@ -21,8 +21,9 @@ The controller needs to talk through a driver to the amphora to allow
 for custom APIs and custom rendering of configuration data for
 different amphora implementations.
 
-The system will heavily utilize taskflow [2] to accomplish its goals
-so it is expected that drivers will implement there functions as tasks.
+The controller will heavily utilize taskflow [2] to accomplish its goals
+so it is highly encouraged for drivers to use taskflow to organize their
+work, too.
 
 
 Proposed change
@@ -33,38 +34,31 @@ Establish a base class to model the desire functionality:
 
     class AmphoraLoadBalancerDriver(object):
 
-        def getLogger(self):
+        def get_logger(self):
             #return the logger to use - this is a way to inject a custom logger for testing, etc
 
-        def get_update_flow(self):
+        def update(self, listener, vip):
             """
-                returns a task flow which updates the amphora with a new configuration
-                for the listener on the vip. The system will place both listener and vip
-                into the task flow engine (or as a result of previous tasks)
+                updates the amphora with a new configuration
+                for the listener on the vip.
             """
             raise NotImplementedError
 
-        def get_stop_flow(self):
+        def stop(self, listener, vip):
             """
-                returns a task flow which stops the listener
-                on the vip. Both "listener" and "vip" become
-                defined inputs for the flow.
+                stops the listener on the vip.
             """
             return None
 
-        def get_start_flow(self):
+        def start(self, listener, vip):
             """
-                returns a task flow which starts the listener
-                on the vip. Both "listener" and "vip" become
-                defined inputs for the flow.
+                starts the listener on the vip.
             """
             return None
 
-        def get_delete_flow(self):
+        def delete(self, listener, vip):
             """
-                returns a task flow which deletes the listener
-                on the vip. Both "listener" and "vip" become
-                defined inputs for the flow.
+                deletes the listener on the vip.
             """
             raise NotImplementedError
 
@@ -76,17 +70,6 @@ Establish a base class to model the desire functionality:
             """
             raise NotImplementedError
 
-        def get_config_network_flow(self, amphora):
-            """
-                returns a task flow which returns the network configuration to be inspected by
-                the controller and creates missing network interfaces, etc.
-                "amphora" becomes a defined inputs for the flow and the flow will return
-                a list of network interface cards in the format {"eth0":{"ip":"123.123.123.123",
-                "netmask":"...", "mac":",,,"))
-            """
-            raise NotImplementedErr
-
-
         def get_diagnostics(self, amphora):
             """
                 OPTIONAL - run some expensive self tests to determine if the amphora and the
@@ -94,6 +77,16 @@ Establish a base class to model the desire functionality:
                 than the heartbeat
             """
             raise NotImplementedError
+
+        def finalize_amphora(self, amphora):
+            """
+                OPTIONAL - this method is called once an amphora has been build but before
+                any listeners are configured. This is a hook for drivers who need to do
+                additional work before am amphora becomes ready to accept listeners. Please keep in
+                mind that amphora might be kept in am offline pool after this call.
+            """
+            pass
+
 
 The referenced listener is a listener object and vip a vip as described
 in our model. The model is detached from the DB so the driver can't write
@@ -158,7 +151,7 @@ Here is the mixin definition:
         def update_stats(stats):
             #uses map {"loadbalancer-id":{"listener-id": {"bytes-in": 123, "bytes_out":123, "active_connections":123,
             # "total_connections", 123}, ...}
-            # elements are named to keep it extsnsible for future versions
+            # elements are named to keep it extensible for future versions
             #awesome update code and code to send to ceilometer
             pass
 
