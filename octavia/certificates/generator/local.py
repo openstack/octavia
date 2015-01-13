@@ -17,11 +17,13 @@ import os
 
 from OpenSSL import crypto
 from oslo.config import cfg
+import six
 
 from octavia.certificates.generator import cert_gen
 from octavia.common import exceptions
 from octavia.i18n import _LE, _LI
 from octavia.openstack.common import log as logging
+
 
 LOG = logging.getLogger(__name__)
 
@@ -94,12 +96,27 @@ class LocalCertGenerator(cert_gen.CertGenerator):
             lo_req = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr)
 
             new_cert = crypto.X509()
+            new_cert.set_version(2)
             new_cert.set_serial_number(LocalCertGenerator._new_serial())
             new_cert.gmtime_adj_notBefore(0)
             new_cert.gmtime_adj_notAfter(validity)
             new_cert.set_issuer(lo_cert.get_subject())
             new_cert.set_subject(lo_req.get_subject())
             new_cert.set_pubkey(lo_req.get_pubkey())
+            exts = [
+                crypto.X509Extension(
+                    six.b('basicConstraints'), True, six.b('CA:false')),
+                crypto.X509Extension(
+                    six.b('keyUsage'), True,
+                    six.b('digitalSignature, keyEncipherment')),
+                crypto.X509Extension(
+                    six.b('extendedKeyUsage'), False,
+                    six.b('clientAuth, serverAuth')),
+                crypto.X509Extension(
+                    six.b('nsCertType'), False,
+                    six.b('client, server'))
+            ]
+            new_cert.add_extensions(exts)
             new_cert.sign(lo_key, ca_digest)
 
             return crypto.dump_certificate(crypto.FILETYPE_PEM, new_cert)

@@ -14,6 +14,7 @@
 import datetime
 
 from OpenSSL import crypto
+import six
 
 import octavia.certificates.generator.local as local_cert_gen
 import octavia.tests.unit.base as base
@@ -88,3 +89,22 @@ class TestLocalGenerator(base.TestCase):
                          datetime.timedelta(seconds=2 * 365 * 24 * 60 * 60))
         diff = should_expire - expires
         self.assertTrue(diff < datetime.timedelta(seconds=10))
+
+        # Use the openSSL highlevel text output to verify attributes
+        cert_text = crypto.dump_certificate(crypto.FILETYPE_TEXT, cert)
+
+        # Make sure this is a version 3 X509.
+        self.assertIn(six.b("Version: 3"), cert_text)
+
+        # Make sure this cert is marked as Server and Client Cert via the
+        # The extended Key Usage extension
+        self.assertIn(six.b("TLS Web Server Authentication"), cert_text)
+        self.assertIn(six.b("TLS Web Client Authentication"), cert_text)
+
+        # Make sure this cert has the nsCertType server, and client
+        # attributes set
+        self.assertIn(six.b("SSL Server"), cert_text)
+        self.assertIn(six.b("SSL Client"), cert_text)
+
+        # Make sure this cert can't sign other certs
+        self.assertIn(six.b("CA:FALSE"), cert_text)
