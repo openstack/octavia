@@ -318,6 +318,7 @@ class Amphora(base_models.BASE):
                                      name="fk_amphora_load_balancer_id"),
         nullable=True)
     compute_id = sa.Column(sa.String(36), nullable=True)
+    lb_network_ip = sa.Column(sa.String(64), nullable=True)
     status = sa.Column(
         sa.String(36),
         sa.ForeignKey("provisioning_status.name",

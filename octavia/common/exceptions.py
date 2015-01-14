@@ -20,6 +20,8 @@ Octavia base exception handling.
 from oslo.utils import excutils
 from webob import exc
 
+from octavia.i18n import _LE
+
 
 class OctaviaException(Exception):
     """Base Octavia Exception.
@@ -112,3 +114,19 @@ class DuplicatePoolEntry(APIException):
 class ImmutableObject(APIException):
     msg = _("%(resource)s %(id)s is immutable and cannot be updated.")
     code = 409
+
+
+class ComputeBuildException(OctaviaException):
+    message = _LE('Failed to build nova instance.')
+
+
+class ComputeDeleteException(OctaviaException):
+    message = _LE('Failed to delete nova instance.')
+
+
+class ComputeGetException(OctaviaException):
+    message = _LE('Failed to retrieve nova instance.')
+
+
+class ComputeStatusException(OctaviaException):
+    message = _LE('Failed to retrieve nova instance status.')

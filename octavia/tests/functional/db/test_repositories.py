@@ -21,6 +21,7 @@ from octavia.tests.functional.db import base
 
 class BaseRepositoryTest(base.OctaviaDBTestBase):
 
+    FAKE_IP = "10.0.0.1"
     FAKE_UUID_1 = uuidutils.generate_uuid()
     FAKE_UUID_2 = uuidutils.generate_uuid()
     FAKE_UUID_3 = uuidutils.generate_uuid()
@@ -797,7 +798,8 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         amphora = self.amphora_repo.create(self.session, id=self.FAKE_UUID_1,
                                            load_balancer_id=lb.id,
                                            compute_id=self.FAKE_UUID_3,
-                                           status=constants.ACTIVE)
+                                           status=constants.ACTIVE,
+                                           lb_network_ip=self.FAKE_IP)
         new_lb = self.lb_repo.get(self.session, id=lb.id)
         self.assertIsNotNone(new_lb)
         self.assertEqual(1, len(new_lb.amphorae))
@@ -817,6 +819,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         amphora_2 = self.amphora_repo.create(self.session, id=self.FAKE_UUID_3,
                                              load_balancer_id=lb.id,
                                              compute_id=self.FAKE_UUID_3,
+                                             lb_network_ip=self.FAKE_IP,
                                              status=constants.ACTIVE)
         new_lb = self.lb_repo.get(self.session, id=lb.id)
         self.assertIsNotNone(new_lb)
@@ -895,6 +898,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         amphora = self.amphora_repo.create(self.session, id=self.FAKE_UUID_1,
                                            load_balancer_id=lb.id,
                                            compute_id=self.FAKE_UUID_3,
+                                           lb_network_ip=self.FAKE_IP,
                                            status=constants.ACTIVE)
         vip = self.vip_repo.create(self.session, load_balancer_id=lb.id,
                                    ip_address="10.0.0.1")
@@ -1055,7 +1059,8 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
     def create_amphora(self, amphora_id):
         amphora = self.amphora_repo.create(self.session, id=amphora_id,
                                            compute_id=self.FAKE_UUID_3,
-                                           status=constants.ACTIVE)
+                                           status=constants.ACTIVE,
+                                           lb_network_ip=self.FAKE_IP)
         return amphora
 
     def test_get(self):
