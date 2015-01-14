@@ -43,12 +43,19 @@ class NoopManager(object):
         self.amphoraconfig[(listener.protocol_port,
                             vip.ip_address)] = (listener, vip, 'active')
 
-    def disable(self, listener, vip):
-        LOG.debug("Amphora %s no-op, suspend listener %s, vip %s",
+    def stop(self, listener, vip):
+        LOG.debug("Amphora %s no-op, stop listener %s, vip %s",
                   self.__class__.__name__,
                   listener.protocol_port, vip.ip_address)
         self.amphoraconfig[(listener.protocol_port,
-                            vip.ip_address)] = (listener, vip, 'disable')
+                            vip.ip_address)] = (listener, vip, 'stop')
+
+    def start(self, listener, vip):
+        LOG.debug("Amphora %s no-op, start listener %s, vip %s",
+                  self.__class__.__name__,
+                  listener.protocol_port, vip.ip_address)
+        self.amphoraconfig[(listener.protocol_port,
+                            vip.ip_address)] = (listener, vip, 'start')
 
     def delete(self, listener, vip):
         LOG.debug("Amphora %s no-op, delete listener %s, vip %s",
@@ -57,32 +64,20 @@ class NoopManager(object):
         self.amphoraconfig[(listener.protocol_port,
                             vip.ip_address)] = (listener, vip, 'delete')
 
-    def enable(self, listener, vip):
-        LOG.debug("Amphora %s no-op, enable listener %s, vip %s",
-                  self.__class__.__name__,
-                  listener.protocol_port, vip.ip_address)
-        self.amphoraconfig[(listener.protocol_port,
-                            vip.ip_address)] = (listener, vip, 'enable')
-
-    def info(self, amphora):
+    def get_info(self, amphora):
         LOG.debug("Amphora %s no-op, info amphora %s",
                   self.__class__.__name__, amphora.id)
-        self.amphoraconfig[amphora.id] = (amphora.id, 'info')
-
-    def get_metrics(self, amphora):
-        LOG.debug("Amphora %s no-op, get metrics amphora %s",
-                  self.__class__.__name__, amphora.id)
-        self.amphoraconfig[amphora.id] = (amphora.id, 'get_metrics')
-
-    def get_health(self, amphora):
-        LOG.debug("Amphora %s no-op, get health amphora %s",
-                  self.__class__.__name__, amphora.id)
-        self.amphoraconfig[amphora.id] = (amphora.id, 'get_health')
+        self.amphoraconfig[amphora.id] = (amphora.id, 'get_info')
 
     def get_diagnostics(self, amphora):
         LOG.debug("Amphora %s no-op, get diagnostics amphora %s",
                   self.__class__.__name__, amphora.id)
         self.amphoraconfig[amphora.id] = (amphora.id, 'get_diagnostics')
+
+    def finalize_amphora(self, amphora):
+        LOG.debug("Amphora %s no-op, finalize amphora %s",
+                  self.__class__.__name__, amphora.id)
+        self.amphoraconfig[amphora.id] = (amphora.id, 'finalize amphora')
 
 
 class NoopAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
@@ -99,30 +94,26 @@ class NoopAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
 
         self.driver.update(listener, vip)
 
-    def disable(self, listener, vip):
+    def stop(self, listener, vip):
 
-        self.driver.disable(listener, vip)
+        self.driver.stop(listener, vip)
 
-    def enable(self, listener, vip):
+    def start(self, listener, vip):
 
-        self.driver.enable(listener, vip)
+        self.driver.start(listener, vip)
 
     def delete(self, listener, vip):
 
         self.driver.delete(listener, vip)
 
-    def info(self, amphora):
+    def get_info(self, amphora):
 
-        self.driver.info(amphora)
-
-    def get_metrics(self, amphora):
-
-        self.driver.get_metrics(amphora)
-
-    def get_health(self, amphora):
-
-        self.driver.get_health(amphora)
+        self.driver.get_info(amphora)
 
     def get_diagnostics(self, amphora):
 
         self.driver.get_diagnostics(amphora)
+
+    def finalize_amphora(self, amphora):
+
+        self.driver.finalize_amphora(amphora)
