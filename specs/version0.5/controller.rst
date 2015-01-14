@@ -82,25 +82,21 @@ is defined in the amphora-driver-interface specification.
 **API Manager**
 
 The API Manager is event driven and tasked with servicing requests from the
-API components via an Oslo messaging queue.  It is also the primary lifecycle
-management component for Amphora.  Many API requests can be serviced by
-querying the database for the current state of load balancers and listeners.
+API components via an Oslo messaging.  It is also the primary lifecycle
+management component for Amphora.
 
-Requests for a new load balancer or listener will cause the API Manager to
-spawn a Deploy Worker process.  Spawning a seperate process makes sure that
-the API Manager can continue to service API requests while the longer running
-deployment process is progressing.
+To service requests the API Manager will spawn a Deploy Worker process.
+Spawning a seperate process makes sure that the API Manager can continue to
+service API requests while the longer running deployment process is
+progressing.
 
-API requests may also cause the API Manager to push updated configurations to
-the Octavia database and notify the driver to push an updated configuration
-to the listener.  A worker will be dispatched to supervise the process of
-pushing out the new configuration.
-
-Delete requests for load balancers or listeners will call the Amphora driver
-wrap up method to gracefully shutdown the processes, ship logs, ship
-statistics, un-plug network resources, and mark pending delete status in the
-database for the Housekeeping Manager to cleanup the Amphora should it no
-longer be needed.
+Messages received via Oslo messaging will include the load balancer ID,
+requested action, and configuration update data.  Passing the configuration
+update data via Oslo messaging allows the deploy worker to rollback to a
+"last known good" configuration should there be a problem with the
+configuration update.  The spawned worker will use this information to access
+the Octavia database to gather any additional details that may be required to
+complete the requested action.
 
 **Compute Driver**
 
