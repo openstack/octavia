@@ -108,3 +108,74 @@ class TestLocalGenerator(base.TestCase):
 
         # Make sure this cert can't sign other certs
         self.assertIn(six.b("CA:FALSE"), cert_text)
+
+    def test_generate_private_key(self):
+        bit_length = 1024
+        # Attempt to generate a private key
+        pk = local_cert_gen.LocalCertGenerator._generate_private_key(
+            bit_length=bit_length
+        )
+
+        # Attempt to load the generated private key
+        pko = crypto.load_privatekey(crypto.FILETYPE_PEM, pk)
+
+        # Make sure the bit_length is what we set
+        self.assertEqual(pko.bits(), bit_length)
+
+    def test_generate_private_key_with_passphrase(self):
+        bit_length = 2048
+        # Attempt to generate a private key
+        pk = local_cert_gen.LocalCertGenerator._generate_private_key(
+            bit_length=bit_length,
+            passphrase=self.ca_private_key_passphrase
+        )
+
+        # Attempt to load the generated private key
+        pko = crypto.load_privatekey(crypto.FILETYPE_PEM, pk,
+                                     self.ca_private_key_passphrase)
+
+        # Make sure the bit_length is what we set
+        self.assertEqual(pko.bits(), bit_length)
+
+    def test_generate_csr(self):
+        cn = 'test_cn'
+        # Attempt to generate a CSR
+        csr = local_cert_gen.LocalCertGenerator._generate_csr(
+            cn=cn,
+            private_key=self.ca_private_key,
+            passphrase=self.ca_private_key_passphrase
+        )
+
+        # Attempt to load the generated CSR
+        csro = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr)
+
+        # Make sure the CN is correct
+        self.assertEqual(csro.get_subject().CN, cn)
+
+    def test_generate_cert_key_pair(self):
+        cn = 'test_cn'
+        bit_length = 512
+        # Attempt to generate a cert/key pair
+        cert_object = local_cert_gen.LocalCertGenerator.generate_cert_key_pair(
+            cn=cn,
+            validity=2 * 365 * 24 * 60 * 60,
+            bit_length=bit_length,
+            passphrase=self.ca_private_key_passphrase,
+            ca_cert=self.ca_certificate,
+            ca_key=self.ca_private_key,
+            ca_key_pass=self.ca_private_key_passphrase
+        )
+
+        # Validate that the cert and key are loadable
+        cert = crypto.load_certificate(
+            crypto.FILETYPE_PEM,
+            cert_object.certificate
+        )
+        self.assertIsNotNone(cert)
+
+        key = crypto.load_privatekey(
+            crypto.FILETYPE_PEM,
+            cert_object.private_key,
+            cert_object.private_key_passphrase
+        )
+        self.assertIsNotNone(key)

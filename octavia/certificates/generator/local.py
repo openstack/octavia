@@ -19,6 +19,7 @@ from OpenSSL import crypto
 from oslo.config import cfg
 import six
 
+from octavia.certificates.common import local as local_common
 from octavia.certificates.generator import cert_gen
 from octavia.common import exceptions
 from octavia.i18n import _LE, _LI
@@ -33,13 +34,13 @@ CONF = cfg.CONF
 class LocalCertGenerator(cert_gen.CertGenerator):
     """Cert Generator Interface that signs certs locally."""
 
-    @staticmethod
-    def _new_serial():
+    @classmethod
+    def _new_serial(cls):
         return int(binascii.hexlify(os.urandom(20)), 16)
 
-    @staticmethod
-    def sign_cert(csr, validity, ca_cert=None, ca_key=None, ca_key_pass=None,
-                  ca_digest=None):
+    @classmethod
+    def sign_cert(cls, csr, validity, ca_cert=None, ca_key=None,
+                  ca_key_pass=None, ca_digest=None):
         """Signs a certificate using our private CA based on the specified CSR
 
         The signed certificate will be valid from now until <validity> seconds
@@ -64,7 +65,7 @@ class LocalCertGenerator(cert_gen.CertGenerator):
                 ca_cert = open(CONF.certificates.ca_certificate).read()
             except IOError:
                 raise exceptions.CertificateGenerationException(
-                    "Failed to load {0}."
+                    msg="Failed to load {0}."
                     .format(CONF.certificates.ca_certificate)
                 )
         if not ca_key:
@@ -73,7 +74,7 @@ class LocalCertGenerator(cert_gen.CertGenerator):
                 ca_key = open(CONF.certificates.ca_private_key).read()
             except IOError:
                 raise exceptions.CertificateGenerationException(
-                    "Failed to load {0}."
+                    msg="Failed to load {0}."
                     .format(CONF.certificates.ca_certificate)
                 )
         if not ca_key_pass:
@@ -97,7 +98,7 @@ class LocalCertGenerator(cert_gen.CertGenerator):
 
             new_cert = crypto.X509()
             new_cert.set_version(2)
-            new_cert.set_serial_number(LocalCertGenerator._new_serial())
+            new_cert.set_serial_number(cls._new_serial())
             new_cert.gmtime_adj_notBefore(0)
             new_cert.gmtime_adj_notAfter(validity)
             new_cert.set_issuer(lo_cert.get_subject())
@@ -122,4 +123,50 @@ class LocalCertGenerator(cert_gen.CertGenerator):
             return crypto.dump_certificate(crypto.FILETYPE_PEM, new_cert)
         except Exception as e:
             LOG.error(_LE("Unable to sign certificate."))
-            raise exceptions.CertificateGenerationException(e)
+            raise exceptions.CertificateGenerationException(msg=e)
+
+    @classmethod
+    def _generate_private_key(cls, bit_length=2048, passphrase=None):
+        pk = crypto.PKey()
+        pk.generate_key(crypto.TYPE_RSA, bit_length)
+        if passphrase:
+            return crypto.dump_privatekey(
+                crypto.FILETYPE_PEM,
+                pk,
+                'aes-256-cbc',
+                passphrase
+            )
+        else:
+            return crypto.dump_privatekey(
+                crypto.FILETYPE_PEM,
+                pk
+            )
+
+    @classmethod
+    def _generate_csr(cls, cn, private_key, passphrase=None):
+        pk = crypto.load_privatekey(
+            crypto.FILETYPE_PEM,
+            private_key,
+            passphrase
+        )
+        csr = crypto.X509Req()
+        csr.set_pubkey(pk)
+        subject = csr.get_subject()
+        subject.CN = cn
+        return crypto.dump_certificate_request(
+            crypto.FILETYPE_PEM,
+            csr
+        )
+
+    @classmethod
+    def generate_cert_key_pair(cls, cn, validity, bit_length=2048,
+                               passphrase=None, **kwargs):
+        pk = cls._generate_private_key(bit_length, passphrase)
+        csr = cls._generate_csr(cn, pk, passphrase)
+        cert = cls.sign_cert(csr, validity, **kwargs)
+        cert_object = local_common.LocalCert(
+            certificate=cert,
+            private_key=pk,
+            private_key_passphrase=passphrase
+        )
+        return cert_object
