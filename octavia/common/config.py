@@ -83,7 +83,7 @@ keystone_authtoken_opts = [
 ]
 
 networking_opts = [
-    cfg.StrOpt('lb_network_id', help=_('ID of amphora internal network')),
+    cfg.StrOpt('lb_network_name', help=_('Name of amphora internal network')),
 ]
 
 core_cli_opts = []

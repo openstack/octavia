@@ -1,4 +1,4 @@
-#    Copyright 2014 Rackspace
+# Copyright 2014 Rackspace
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -35,10 +35,10 @@ CONF.import_group('networking', 'octavia.common.config')
 class VirtualMachineManager(compute_base.ComputeBase):
     '''Compute implementation of virtual machines via nova.'''
 
-    def __init__(self):
+    def __init__(self, region=None):
         super(VirtualMachineManager, self).__init__()
         # Must initialize nova api
-        self._nova_client = NovaKeystoneAuth.get_nova_client()
+        self._nova_client = NovaKeystoneAuth.get_nova_client(region)
         self.manager = self._nova_client.servers
 
     def get_logger(self):
@@ -59,11 +59,15 @@ class VirtualMachineManager(compute_base.ComputeBase):
         :returns: UUID of amphora
         '''
         try:
+            nics = []
+            for net_id in network_ids:
+                nics.append({"net-id": net_id})
+
             amphora = self.manager.create(
                 name=name, image=image_id, flavor=amphora_flavor,
                 key_name=key_name, security_groups=sec_groups,
-                nics=network_ids)
-            return amphora.get('id')
+                nics=nics)
+            return amphora.id
         except Exception:
             LOG.exception(_LE("Error building nova virtual machine."))
             raise exceptions.ComputeBuildException()
@@ -86,7 +90,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
         :returns: constant of amphora status
         '''
         try:
-            if self.get_amphora(amphora_id=amphora_id):
+            amphora = self.get_amphora(amphora_id=amphora_id)
+            if amphora and amphora.status == 'ACTIVE':
                 return constants.AMPHORA_UP
         except Exception:
             LOG.exception(_LE("Error retrieving nova virtual machine status."))
@@ -116,12 +121,14 @@ class VirtualMachineManager(compute_base.ComputeBase):
         # Extract information from nova response to populate desired amphora
         # fields
         lb_network_ip = None
-        for interface in nova_response.get('interface_list'):
-            if interface.get('net_id') is CONF.networking.lb_network_id:
-                lb_network_ip = interface.get('fixed_ips')[0].get('ip_address')
+
+        for network_name in nova_response.addresses:
+            if network_name == CONF.networking.lb_network_name:
+                lb_network_ip = (
+                    nova_response.addresses[network_name][0]['addr'])
         response = models.Amphora(
-            compute_id=nova_response.get('id'),
-            status=nova_response.get('status'),
+            compute_id=nova_response.id,
+            status=nova_response.status,
             lb_network_ip=lb_network_ip
         )
         return response
@@ -151,20 +158,21 @@ class NovaKeystoneAuth(object):
             except Exception:
                 with excutils.save_and_reraise_exception():
                     LOG.exception(_LE("Error creating Keystone session."))
-                    LOG.info()
         return cls._keystone_session
 
     @classmethod
-    def get_nova_client(cls):
+    def get_nova_client(cls, region):
         """Create nova client object.
 
+        :param region: The region of the service
         :return: a Nova Client object.
         :raises Exception: if the client cannot be created
         """
         if not cls._nova_client:
             try:
                 cls._nova_client = nova_client.Client(
-                    constants.NOVA_3, session=cls._get_keystone_session()
+                    constants.NOVA_2, session=cls._get_keystone_session(),
+                    region_name=region
                 )
             except Exception:
                 with excutils.save_and_reraise_exception():

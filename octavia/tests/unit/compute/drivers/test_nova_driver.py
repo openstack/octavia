@@ -31,42 +31,35 @@ CONF.import_group('networking', 'octavia.common.config')
 class TestNovaClient(base.TestCase):
 
     def setUp(self):
-        net_id = uuidutils.generate_uuid()
-        CONF.set_override(group='networking', name='lb_network_id',
-                          override=net_id)
+        net_name = uuidutils.generate_uuid()
+        CONF.set_override(group='networking', name='lb_network_name',
+                          override=net_name)
         self.amphora = models.Amphora(
             compute_id=uuidutils.generate_uuid(),
-            status='ONLINE',
+            status='ACTIVE',
             lb_network_ip='10.0.0.1'
         )
-        self.nova_response = {'id': self.amphora.compute_id,
-                              'type': constants.AMPHORA_VM,
-                              'image': uuidutils.generate_uuid(),
-                              'flavor': 1,
-                              'keys': [uuidutils.generate_uuid()],
-                              'security_groups': ['admin'],
-                              'nics': [uuidutils.generate_uuid()],
-                              'status': 'ONLINE',
-                              'interface_list': [{
-                                  "fixed_ips": [
-                                      {'ip_address': '10.0.0.1',
-                                       'subnet_id': uuidutils.generate_uuid()}
-                                  ],
-                                  'net_id': net_id}]}
+
+        self.nova_response = mock.Mock()
+        self.nova_response.id = self.amphora.compute_id
+        self.nova_response.status = 'ACTIVE'
+        self.nova_response.addresses = {net_name: [{'addr': '10.0.0.1'}]}
+
         self.manager = nova_common.VirtualMachineManager()
         self.manager.manager = mock.MagicMock()
         self.manager.manager.get.return_value = self.nova_response
         self.manager.manager.create.return_value = self.nova_response
+
         super(TestNovaClient, self).setUp()
 
     def test_build(self):
         amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
                                         key_name=1, sec_groups=1,
-                                        network_ids=1)
+                                        network_ids=[1])
         self.assertEqual(self.amphora.compute_id, amphora_id)
         self.manager.manager.create.assert_called_with(
             name="amphora_name", image=1, flavor=1, key_name=1,
-            security_groups=1, nics=1
+            security_groups=1, nics=[{'net-id': 1}]
         )
 
     def test_bad_build(self):
@@ -76,7 +69,7 @@ class TestNovaClient(base.TestCase):
     def test_delete(self):
         amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
                                         key_name=1, sec_groups=1,
-                                        network_ids=1)
+                                        network_ids=[1])
         self.manager.delete(amphora_id)
         self.manager.manager.delete.assert_called_with(server=amphora_id)
 
@@ -84,7 +77,7 @@ class TestNovaClient(base.TestCase):
         self.manager.manager.delete.side_effect = Exception
         amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
                                         key_name=1, sec_groups=1,
-                                        network_ids=1)
+                                        network_ids=[1])
         self.assertRaises(exceptions.ComputeDeleteException,
                           self.manager.delete, amphora_id)
 
@@ -150,12 +143,12 @@ class TestNovaAuth(base.TestCase):
         nova_common.NovaKeystoneAuth._keystone_session = (
             mock.MagicMock()
         )
-        bc1 = nova_common.NovaKeystoneAuth.get_nova_client()
+        bc1 = nova_common.NovaKeystoneAuth.get_nova_client(region=None)
 
         # Our returned client should also be the saved client
         self.assertIsInstance(
             nova_common.NovaKeystoneAuth._nova_client,
-            novaclient.v3.client.Client
+            novaclient.v1_1.client.Client
         )
         self.assertIs(
             nova_common.NovaKeystoneAuth._nova_client,
@@ -163,5 +156,6 @@ class TestNovaAuth(base.TestCase):
         )
 
         # Getting the session again should return the same object
-        bc2 = nova_common.NovaKeystoneAuth.get_nova_client()
+        bc2 = nova_common.NovaKeystoneAuth.get_nova_client(
+            region="test-region")
         self.assertIs(bc1, bc2)
