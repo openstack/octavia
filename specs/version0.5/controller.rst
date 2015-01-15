@@ -4,9 +4,9 @@
 
  http://creativecommons.org/licenses/by/3.0/legalcode
 
-==========================================
+==================
 Octavia Controller
-==========================================
+==================
 
 Launchpad blueprint:
 
@@ -47,7 +47,7 @@ Proposed change
 The Octavia controller will consist of the following components:
 
 * Amphora Driver
-* API Manager
+* Queue Consumer
 * Certificate Library
 * Compute Driver
 * Deploy Worker
@@ -79,14 +79,14 @@ The Amphora driver abstracts the backend implementation of an Amphora.  The
 controller will interact with Amphora via the Amphora driver.  This interface
 is defined in the amphora-driver-interface specification.
 
-**API Manager**
+**Queue Consumer**
 
-The API Manager is event driven and tasked with servicing requests from the
+The Queue Consumer is event driven and tasked with servicing requests from the
 API components via an Oslo messaging.  It is also the primary lifecycle
 management component for Amphora.
 
-To service requests the API Manager will spawn a Deploy Worker process.
-Spawning a seperate process makes sure that the API Manager can continue to
+To service requests the Queue Consumer will spawn a Deploy Worker process.
+Spawning a separate process makes sure that the Queue Consumer can continue to
 service API requests while the longer running deployment process is
 progressing.
 
@@ -105,7 +105,7 @@ machine, container, appliance, or device that the Amphora will run in.
 
 **Deploy Worker**
 
-The Deploy Worker is spawned from the API Manager or the Health
+The Deploy Worker is spawned from the Queue Consumer or the Health
 Manager.  It interfaces with the compute driver (in some deployment scenarios),
 network driver, and Amphora driver to activate Amphora instances,
 load balancers, and listeners.
@@ -122,7 +122,7 @@ This determination will be made based on the apolocation requirements of
 the load balancer, the load balancer count on the existing Amphora, and
 the availability of ready spare Amphora in the spares pool.
 
-The Deploy Worker will be resposible for passing in the required metadata
+The Deploy Worker will be responsible for passing in the required metadata
 via config drive when deploying an Amphora.  This metadata will include:
 a list of controller IP addresses, controller certificate authority
 certificate, and the Amphora certificate and key file.
@@ -132,7 +132,7 @@ amphora-lifecycle-management specification as the Activate Amphora sequence.
 
 **Certificate Library**
 
-The Certificate Library provides an abstration for workers to access security
+The Certificate Library provides an abstraction for workers to access security
 data stored in OpenStack Barbican from the Amphora Driver.  It will provide a
 short term (1 minute) cache of the security contents to facilitate the
 efficient startup of a large number of listeners sharing security content.
