@@ -79,11 +79,16 @@ networking_opts = [
     cfg.StrOpt('lb_network_name', help=_('Name of amphora internal network')),
 ]
 
+oslo_messaging_opts = [
+    cfg.StrOpt('topic'),
+]
+
 core_cli_opts = []
 
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_opts(networking_opts, group='networking')
+cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
 cfg.CONF.register_cli_opts(core_cli_opts)
 cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
 

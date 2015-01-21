@@ -21,17 +21,17 @@ import six
 class BaseObjectHandler(object):
     """Base class for any object handler."""
     @abc.abstractmethod
-    def create(self, data_model):
+    def create(self, model_id):
         """Begins process of actually creating data_model."""
         pass
 
     @abc.abstractmethod
-    def update(self, data_model):
+    def update(self, model_id, updated_dict):
         """Begins process of actually updating data_model."""
         pass
 
     @abc.abstractmethod
-    def delete(self, data_model):
+    def delete(self, model_id):
         """Begins process of actually deleting data_model."""
         pass
 
@@ -42,13 +42,13 @@ class NotImplementedObjectHandler(BaseObjectHandler):
     Helper class to make any subclass of AbstractHandler explode if it
     is missing any of the required object managers.
     """
-    def update(self, data_model):
+    def update(self, model_id, updated_dict):
         raise NotImplementedError()
 
-    def delete(self, data_model):
+    def delete(self, model_id):
         raise NotImplementedError()
 
-    def create(self, data_model):
+    def create(self, model_id):
         raise NotImplementedError()
 
 
