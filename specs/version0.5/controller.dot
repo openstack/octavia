@@ -24,7 +24,7 @@ digraph G {
       label = "Controller";
 
 
-      apim [label="API\nManager", fontcolor=white, color=forestgreen, style=filled];
+      queue [label="Queue\nConsumer", fontcolor=white, color=forestgreen, style=filled];
       health [label="Health\nManager", fontcolor=white, color=forestgreen, style=filled];
       house [label="Housekeeping\n(Spares/Cleanup)\nManager", fontcolor=white, color=forestgreen, style=filled];
       deploy [label="Deploy\nWorker", fontcolor=white, color=forestgreen, style=filled, shape=hexagon];
@@ -61,10 +61,10 @@ digraph G {
    amp [label="Amphorae", fontcolor=black, color=coral2, style=filled];
 
 
-   deploy -> apim [dir="both"];
-   db -> api -> oslo -> apim [dir="both"];
+   deploy -> queue [dir="both"];
+   db -> api -> oslo -> queue [dir="both"];
    db -> deploy [dir="both"];
-   db -> apim [dir="both"];
+   db -> queue [dir="both"];
    db -> health [dir="both"];
    db -> house [dir="both"];
    db -> msg [dir="both"];
