@@ -155,6 +155,7 @@ cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
 cfg.CONF.register_opts(haproxy_amphora_opts, group='haproxy_amphora')
 cfg.CONF.register_opts(controller_worker_opts, group='controller_worker')
 cfg.CONF.register_opts(task_flow_opts, group='task_flow')
+cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
 cfg.CONF.register_cli_opts(core_cli_opts)
 cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
 cfg.CONF.register_opts(keystone_authtoken_v3_opts,

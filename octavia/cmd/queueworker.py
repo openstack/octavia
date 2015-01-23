@@ -12,19 +12,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_config import cfg
-from oslo_log import log
+import sys
 
-from octavia.common import config
-from octavia.i18n import _LI
+import eventlet
+from oslo_log import log as logging
 
-LOG = log.getLogger(__name__)
+from octavia.common import service
+from octavia.controller.queue import consumer
+
+eventlet.monkey_patch()
+
+LOG = logging.getLogger(__name__)
 
 
-def prepare_service(argv=None):
-    """Sets global config from config file and sets up logging."""
-    argv = argv or []
-    config.init(argv[1:])
-    LOG.info(_LI('Starting Octavia API server'))
-    log.set_defaults()
-    config.setup_logging(cfg.CONF)
+def main():
+    service.prepare_service(sys.argv)
+    c = consumer.Consumer()
+    c.listen()
