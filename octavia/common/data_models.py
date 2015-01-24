@@ -200,3 +200,10 @@ class Amphora(BaseDataModel):
         self.status = status
         self.lb_network_ip = lb_network_ip
         self.load_balancer = load_balancer
+
+
+class AmphoraHealth(BaseDataModel):
+
+    def __init__(self, amphora_id=None, last_update=None):
+        self.amphora_id = amphora_id
+        self.last_update = last_update

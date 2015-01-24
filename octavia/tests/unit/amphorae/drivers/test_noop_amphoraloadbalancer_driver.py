@@ -19,7 +19,9 @@ from octavia.openstack.common import log as logging
 from octavia.openstack.common import uuidutils
 from octavia.tests.unit import base as base
 
+
 LOG = logging.getLogger(__name__)
+FAKE_UUID_1 = uuidutils.generate_uuid()
 
 
 class LoggingMixIn(base.TestCase):

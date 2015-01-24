@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
+
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.db import models
@@ -119,6 +121,12 @@ class ModelTestMixin(object):
                   'lb_network_ip': self.FAKE_IP}
         kwargs.update(overrides)
         return self._insert(session, models.Amphora, kwargs)
+
+    def create_amphora_health(self, session, **overrides):
+        kwargs = {'amphora_id': self.FAKE_UUID_1,
+                  'last_update': datetime.date.today()}
+        kwargs.update(overrides)
+        return self._insert(session, models.AmphoraHealth, kwargs)
 
 
 class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
@@ -536,6 +544,36 @@ class AmphoraModelTest(base.OctaviaDBTestBase, ModelTestMixin):
             id=amphora.id).first()
         self.assertIsNotNone(new_amphora.load_balancer)
         self.assertIsInstance(new_amphora.load_balancer, models.LoadBalancer)
+
+
+class AmphoraHealthModelTest(base.OctaviaDBTestBase, ModelTestMixin):
+    def setUp(self):
+        super(AmphoraHealthModelTest, self).setUp()
+        self.amphora = self.create_amphora(self.session)
+
+    def test_create(self):
+        self.create_amphora_health(self.session)
+
+    def test_update(self):
+        amphora_health = self.create_amphora_health(self.session)
+        d = datetime.date.today()
+        newdate = d.replace(day=d.day)
+        amphora_health.last_update = newdate
+        new_amphora_health = self.session.query(
+            models.AmphoraHealth).filter_by(
+            amphora_id=amphora_health.amphora_id).first()
+        self.assertEqual(newdate, new_amphora_health.last_update.date())
+
+    def test_delete(self):
+        amphora_health = self.create_amphora_health(
+            self.session)
+        with self.session.begin():
+            self.session.delete(amphora_health)
+            self.session.flush()
+        new_amphora_health = self.session.query(
+            models.AmphoraHealth).filter_by(
+            amphora_id=amphora_health.amphora_id).first()
+        self.assertIsNone(new_amphora_health)
 
 
 class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):

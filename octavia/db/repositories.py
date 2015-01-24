@@ -1,4 +1,4 @@
-#    Copyright 2014 Rackspace
+# Copyright 2014 Rackspace
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -22,9 +22,10 @@ from octavia.common import exceptions
 from octavia.db import models
 from octavia.openstack.common import uuidutils
 
+import datetime
+
 
 class BaseRepository(object):
-
     model_class = None
 
     def create(self, session, **model_kwargs):
@@ -101,7 +102,6 @@ class BaseRepository(object):
 
 
 class Repositories(object):
-
     def __init__(self):
         self.load_balancer = LoadBalancerRepository()
         self.vip = VipRepository()
@@ -113,6 +113,7 @@ class Repositories(object):
         self.listener_stats = ListenerStatisticsRepository()
         self.amphora = AmphoraRepository()
         self.sni = SNIRepository()
+        self.amphorahealth = AmphoraHealthRepository()
 
     def create_load_balancer_and_vip(self, session, load_balancer_dict,
                                      vip_dict):
@@ -203,7 +204,6 @@ class Repositories(object):
 
 
 class LoadBalancerRepository(BaseRepository):
-
     model_class = models.LoadBalancer
 
     def test_and_set_provisioning_status(self, session, id, status):
@@ -230,7 +230,6 @@ class LoadBalancerRepository(BaseRepository):
 
 
 class VipRepository(BaseRepository):
-
     model_class = models.Vip
 
     def update(self, session, load_balancer_id, **model_kwargs):
@@ -241,7 +240,6 @@ class VipRepository(BaseRepository):
 
 
 class HealthMonitorRepository(BaseRepository):
-
     model_class = models.HealthMonitor
 
     def update(self, session, pool_id, **model_kwargs):
@@ -252,7 +250,6 @@ class HealthMonitorRepository(BaseRepository):
 
 
 class SessionPersistenceRepository(BaseRepository):
-
     model_class = models.SessionPersistence
 
     def update(self, session, pool_id, **model_kwargs):
@@ -268,12 +265,10 @@ class SessionPersistenceRepository(BaseRepository):
 
 
 class PoolRepository(BaseRepository):
-
     model_class = models.Pool
 
 
 class MemberRepository(BaseRepository):
-
     model_class = models.Member
 
     def delete_members(self, session, member_ids):
@@ -282,7 +277,6 @@ class MemberRepository(BaseRepository):
 
 
 class ListenerRepository(BaseRepository):
-
     model_class = models.Listener
 
     def has_pool(self, session, id):
@@ -292,7 +286,6 @@ class ListenerRepository(BaseRepository):
 
 
 class ListenerStatisticsRepository(BaseRepository):
-
     model_class = models.ListenerStatistics
 
     def update(self, session, listener_id, **model_kwargs):
@@ -303,7 +296,6 @@ class ListenerStatisticsRepository(BaseRepository):
 
 
 class AmphoraRepository(BaseRepository):
-
     model_class = models.Amphora
 
     def associate(self, session, load_balancer_id, amphora_id):
@@ -317,7 +309,6 @@ class AmphoraRepository(BaseRepository):
 
 
 class SNIRepository(BaseRepository):
-
     model_class = models.SNI
 
     def update(self, session, listener_id=None, tls_container_id=None,
@@ -332,3 +323,44 @@ class SNIRepository(BaseRepository):
             elif tls_container_id:
                 session.query(self.model_class).filter_by(
                     tls_container_id=tls_container_id).update(model_kwargs)
+
+
+class AmphoraHealthRepository(BaseRepository):
+    model_class = models.AmphoraHealth
+
+    def update(self, session, amphora_id, **model_kwargs):
+        """Updates a healthmanager entity in the database by amphora_id."""
+        with session.begin(subtransactions=True):
+            session.query(self.model_class).filter_by(
+                amphora_id=amphora_id).update(model_kwargs)
+
+    def check_amphora_expired(self, session, amphora_id, timestamp=None):
+        """check if a specific amphora is expired
+
+        :param session: A Sql Alchemy database session.
+        :param amphora_id: id of an amphora object
+        :param timestamp: A standard datetime which is used to see if an
+        amphora needs to be updated (default: now - 10s)
+        :returns: boolean
+        """
+        if not timestamp:
+            timestamp = datetime.datetime.utcnow() - datetime.timedelta(
+                seconds=10)
+        amphora_health = self.get(session, amphora_id=amphora_id)
+        return amphora_health.last_update < timestamp
+
+    def get_expired_amphorae(self, session, timestamp=None):
+        """Retrieves a list of entities from the health manager database.
+
+        :param session: A Sql Alchemy database session.
+        :param timestamp: A standard datetime which is used to see if an
+        amphora needs to be updated (default: now - 10s)
+        :returns: [octavia.common.data_model]
+        """
+        if not timestamp:
+            timestamp = datetime.datetime.utcnow() - datetime.timedelta(
+                seconds=10)
+        filterquery = self.model_class.last_update < timestamp
+        model_list = session.query(self.model_class).filter(filterquery).all()
+        data_model_list = [model.to_data_model() for model in model_list]
+        return data_model_list
