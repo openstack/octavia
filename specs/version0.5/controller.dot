@@ -27,7 +27,7 @@ digraph G {
       queue [label="Queue\nConsumer", fontcolor=white, color=forestgreen, style=filled];
       health [label="Health\nManager", fontcolor=white, color=forestgreen, style=filled];
       house [label="Housekeeping\n(Spares/Cleanup)\nManager", fontcolor=white, color=forestgreen, style=filled];
-      deploy [label="Deploy\nWorker", fontcolor=white, color=forestgreen, style=filled, shape=hexagon];
+      ctrl [label="Controller\nWorker", fontcolor=white, color=forestgreen, style=filled, shape=hexagon];
       proxy [label="Services\nProxy", fontcolor=white, color=forestgreen, style=filled];
 
 
@@ -61,20 +61,20 @@ digraph G {
    amp [label="Amphorae", fontcolor=black, color=coral2, style=filled];
 
 
-   deploy -> queue [dir="both"];
+   ctrl -> queue [dir="both"];
    db -> api -> oslo -> queue [dir="both"];
-   db -> deploy [dir="both"];
+   db -> ctrl [dir="both"];
    db -> queue [dir="both"];
    db -> health [dir="both"];
    db -> house [dir="both"];
    db -> msg [dir="both"];
-   nova -> deploy [dir="both"];
+   nova -> ctrl [dir="both"];
    nova -> house [dir="both"];
-   neutron -> deploy [dir="both"];
+   neutron -> ctrl [dir="both"];
    neutron -> house [dir="both"];
    proxy -> swift [dir="both"];
    proxy -> amp [dir="both"];
-   cert -> deploy [dir="both"];
+   cert -> ctrl [dir="both"];
    cert -> bbq [dir="both"];
    stats -> ceilo [dir="both"];
    msg -> amp [ltail=cluster1];
