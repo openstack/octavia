@@ -1113,6 +1113,27 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         new_lb = self.lb_repo.get(self.session, id=self.lb.id)
         self.assertEqual(0, len(new_lb.amphorae))
 
+    def test_allocate_and_associate(self):
+        new_amphora = self.amphora_repo.allocate_and_associate(self.session,
+                                                               self.lb.id)
+        self.assertIsNone(new_amphora)
+
+        amphora = self.create_amphora(self.FAKE_UUID_1)
+        self.amphora_repo.update(self.session, amphora.id,
+                                 status=constants.AMPHORA_READY)
+        new_amphora = self.amphora_repo.allocate_and_associate(self.session,
+                                                               self.lb.id)
+        self.assertIsNotNone(new_amphora)
+        self.assertIsInstance(new_amphora, models.Amphora)
+
+    def test_get_all_lbs_on_amphora(self):
+        amphora = self.create_amphora(self.FAKE_UUID_1)
+        self.amphora_repo.associate(self.session, self.lb.id, amphora.id)
+        lb_list = self.amphora_repo.get_all_lbs_on_amphora(self.session,
+                                                           amphora.id)
+        self.assertIsNotNone(lb_list)
+        self.assertIn(self.lb, lb_list)
+
 
 class AmphoraHealthRepositoryTest(BaseRepositoryTest):
     def setUp(self):

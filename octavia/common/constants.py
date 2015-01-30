@@ -37,15 +37,36 @@ PROTOCOL_HTTPS = 'HTTPS'
 PROTOCOL_TERMINATED_HTTPS = 'TERMINATED_HTTPS'
 SUPPORTED_PROTOCOLS = (PROTOCOL_TCP, PROTOCOL_HTTPS, PROTOCOL_HTTP)
 
+# Note: The database Amphora table has a foreign key constraint against
+#       the provisioning_status table
+# Amphora has been allocated to a load balancer
+AMPHORA_ALLOCATED = 'ALLOCATED'
+# Amphora healthy with listener(s) deployed
+# TODO(johnsom) This doesn't exist
+AMPHORA_UP = 'UP'
+# Amphora unhealthy with listener(s) deployed
+# TODO(johnsom) This doesn't exist
+AMPHORA_DOWN = 'DOWN'
+# Amphora is being built
+AMPHORA_BOOTING = 'BOOTING'
+# Amphora is ready to be allocated to a load balancer
+AMPHORA_READY = 'READY'
+
 ACTIVE = 'ACTIVE'
 PENDING_DELETE = 'PENDING_DELETE'
 PENDING_UPDATE = 'PENDING_UPDATE'
 PENDING_CREATE = 'PENDING_CREATE'
 DELETED = 'DELETED'
 ERROR = 'ERROR'
-SUPPORTED_PROVISIONING_STATUSES = (ACTIVE, PENDING_DELETE, PENDING_CREATE,
+SUPPORTED_PROVISIONING_STATUSES = (ACTIVE, AMPHORA_ALLOCATED,
+                                   AMPHORA_BOOTING, AMPHORA_READY,
+                                   PENDING_DELETE, PENDING_CREATE,
                                    PENDING_UPDATE, DELETED, ERROR)
 MUTABLE_STATUSES = (ACTIVE,)
+
+SUPPORTED_AMPHORA_STATUSES = (AMPHORA_ALLOCATED, AMPHORA_UP, AMPHORA_DOWN,
+                              AMPHORA_BOOTING, AMPHORA_READY, DELETED,
+                              PENDING_DELETE)
 
 ONLINE = 'ONLINE'
 OFFLINE = 'OFFLINE'
@@ -56,9 +77,33 @@ SUPPORTED_OPERATING_STATUSES = (ONLINE, OFFLINE, DEGRADED, ERROR)
 AMPHORA_VM = 'VM'
 SUPPORTED_AMPHORA_TYPES = (AMPHORA_VM,)
 
-AMPHORA_UP = 'UP'
-AMPHORA_DOWN = 'DOWN'
-SUPPORTED_AMPHORA_STATUSES = (AMPHORA_UP, AMPHORA_DOWN)
+# Task/Flow constants
+AMPHORA = 'amphora'
+DELTA = 'delta'
+LISTENER = 'listener'
+LOADBALANCER = 'loadbalancer'
+NICS = 'nics'
+VIP = 'vip'
+
+CREATE_AMPHORA_FLOW = 'octavia-create-amphora-flow'
+CREATE_AMPHORA_FOR_LB_FLOW = 'octavia-create-amp-for-lb-flow'
+CREATE_HEALTH_MONITOR_FLOW = 'octavia-create-health-monitor-flow'
+CREATE_LISTENER_FLOW = 'octavia-create-listener_flow'
+CREATE_LOADBALANCER_FLOW = 'octavia-create-loadbalancer-flow'
+CREATE_MEMBER_FLOW = 'octavia-create-member-flow'
+CREATE_POOL_FLOW = 'octavia-create-pool-flow'
+DELETE_AMPHORA_FLOW = 'octavia-delete-amphora-flow'
+DELETE_HEALTH_MONITOR_FLOW = 'octavia-delete-health-monitor-flow'
+DELETE_LISTENER_FLOW = 'octavia-delete-listener_flow'
+DELETE_LOADBALANCER_FLOW = 'octavia-delete-loadbalancer-flow'
+DELETE_MEMBER_FLOW = 'octavia-delete-member-flow'
+DELETE_POOL_FLOW = 'octavia-delete-pool-flow'
+LOADBALANCER_NETWORKING_SUBFLOW = 'octavia-new-loadbalancer-net-subflow'
+UPDATE_HEALTH_MONITOR_FLOW = 'octavia-update-health-monitor-flow'
+UPDATE_LISTENER_FLOW = 'octavia-update-listener-flow'
+UPDATE_LOADBALANCER_FLOW = 'octavia-update-loadbalancer-flow'
+UPDATE_MEMBER_FLOW = 'octavia-update-member-flow'
+UPDATE_POOL_FLOW = 'octavia-update-pool-flow'
 
 NOVA_1 = '1.1'
 NOVA_2 = '2'

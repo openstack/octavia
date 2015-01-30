@@ -40,3 +40,5 @@ pyasn1_modules
 singledispatch>=3.4.0.3 # For pecan
 Jinja2>=2.6  # BSD License (3 clause)
 paramiko
+taskflow>=0.5.0 # Apache-2.0
+networkx #this will go away once taskflow doesn't need it any longer

@@ -104,6 +104,48 @@ haproxy_amphora_opts = [
                                                      'attempts.'))
 ]
 
+controller_worker_opts = [
+    cfg.IntOpt('amp_active_retries',
+               default=10,
+               help=_('Retry attempts to wait for Amphora to become active')),
+    cfg.IntOpt('amp_active_wait_sec',
+               default=10,
+               help=_('Seconds to wait for an Amphora to become active')),
+    cfg.StrOpt('amp_flavor_id',
+               default='',
+               help=_('Nova instance flavor id for the Amphora')),
+    cfg.StrOpt('amp_image_id',
+               default='',
+               help=_('Glance image id for the Amphora image to boot')),
+    cfg.StrOpt('amp_ssh_key',
+               default='',
+               help=_('SSH key to load into the Amphora')),
+    cfg.StrOpt('amp_network',
+               default='',
+               help=_('Network to attach to the Amphora')),
+    cfg.ListOpt('amp_secgroup_list',
+                default='',
+                help=_('List of security groups to attach to the Amphora')),
+    cfg.StrOpt('amphora_driver',
+               default='amphora_noop_driver',
+               help=_('Name of the amphora driver to use')),
+    cfg.StrOpt('compute_driver',
+               default='compute_noop_driver',
+               help=_('Name of the compute driver to use')),
+    cfg.StrOpt('network_driver',
+               default='network_noop_driver',
+               help=_('Name of the network driver to use'))
+]
+
+task_flow_opts = [
+    cfg.StrOpt('engine',
+               default='serial',
+               help=_('TaskFlow engine to use')),
+    cfg.IntOpt('max_workers',
+               default=5,
+               help=_('The maximum number of workers'))
+]
+
 core_cli_opts = []
 
 # Register the configuration options
@@ -111,6 +153,8 @@ cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_opts(networking_opts, group='networking')
 cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
 cfg.CONF.register_opts(haproxy_amphora_opts, group='haproxy_amphora')
+cfg.CONF.register_opts(controller_worker_opts, group='controller_worker')
+cfg.CONF.register_opts(task_flow_opts, group='task_flow')
 cfg.CONF.register_cli_opts(core_cli_opts)
 cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
 cfg.CONF.register_opts(keystone_authtoken_v3_opts,

@@ -20,7 +20,7 @@ Octavia base exception handling.
 from oslo_utils import excutils
 from webob import exc
 
-from octavia.i18n import _LE
+from octavia.i18n import _LE, _LI
 
 
 class OctaviaException(Exception):
@@ -151,3 +151,15 @@ class ComputeStatusException(OctaviaException):
 class IDAlreadyExists(OctaviaException):
     message = _LE('Already an entity with that specified id.')
     code = 409
+
+
+class NoSuitableAmphoraException(OctaviaException):
+    message = _LE('Unable to allocate an amphora due to: %(msg)s')
+
+
+# This is an internal use exception for the taskflow work flow
+# and will not be exposed to the customer.  This means it is a
+# normal part of operation while waiting for nova to go active
+# on the instance
+class ComputeWaitTimeoutException(OctaviaException):
+    message = _LI('Waiting for compute to go active timeout.')

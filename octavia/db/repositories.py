@@ -301,13 +301,56 @@ class AmphoraRepository(BaseRepository):
     model_class = models.Amphora
 
     def associate(self, session, load_balancer_id, amphora_id):
-        """Associates an amphora with a load balancer."""
+        """Associates an amphora with a load balancer.
+
+        :param session: A Sql Alchemy database session.
+        :param load_balancer_id: The load balancer id to associate
+        :param amphora_id: The amphora id to associate
+        """
         with session.begin(subtransactions=True):
             load_balancer = session.query(models.LoadBalancer).filter_by(
                 id=load_balancer_id).first()
             amphora = session.query(self.model_class).filter_by(
                 id=amphora_id).first()
             load_balancer.amphorae.append(amphora)
+
+    def allocate_and_associate(self, session, load_balancer_id):
+        """Allocate an amphora for a load balancer.
+
+        For v0.5 this is simple, find a free amp and
+        associate the lb.  In the future this needs to be
+        enhanced.
+
+        :param session: A Sql Alchemy database session.
+        :param load_balancer_id: The load balancer id to associate
+        :returns: The amphora ID for the load balancer or None
+        """
+        with session.begin(subtransactions=True):
+            amp = session.query(self.model_class).with_for_update().filter_by(
+                status='READY', load_balancer_id=None).first()
+
+            if amp is None:
+                return None
+
+            amp.status = 'ALLOCATED'
+            amp.load_balancer_id = load_balancer_id
+
+        return amp.to_data_model()
+
+    def get_all_lbs_on_amphora(self, session, amphora_id):
+        """Get all of the load balancers on an amphora.
+
+        :param session: A Sql Alchemy database session.
+        :param amphora_id: The amphora id to list the load balancers from
+        :returns: [octavia.common.data_model]
+        """
+        with session.begin(subtransactions=True):
+            lb_subquery = (session.query(self.model_class.load_balancer_id).
+                           filter_by(id=amphora_id).subquery())
+            lb_list = (session.query(models.LoadBalancer).
+                       filter(models.LoadBalancer.id.in_(lb_subquery)).all())
+            data_model_list = [model.to_data_model() for model in lb_list]
+            return data_model_list
 
 
 class SNIRepository(BaseRepository):
