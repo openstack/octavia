@@ -50,7 +50,7 @@ The Octavia controller will consist of the following components:
 * Queue Consumer
 * Certificate Library
 * Compute Driver
-* Deploy Worker
+* Controller Worker
 * Health Manager
 * Housekeeping Manager
 * Network Driver
@@ -85,7 +85,7 @@ The Queue Consumer is event driven and tasked with servicing requests from the
 API components via an Oslo messaging.  It is also the primary lifecycle
 management component for Amphora.
 
-To service requests the Queue Consumer will spawn a Deploy Worker process.
+To service requests the Queue Consumer will spawn a Controller Worker process.
 Spawning a separate process makes sure that the Queue Consumer can continue to
 service API requests while the longer running deployment process is
 progressing.
@@ -103,31 +103,31 @@ complete the requested action.
 The Compute Driver abstracts the implementation of instantiating the virtual
 machine, container, appliance, or device that the Amphora will run in.
 
-**Deploy Worker**
+**Controller Worker**
 
-The Deploy Worker is spawned from the Queue Consumer or the Health
+The Controller Worker is spawned from the Queue Consumer or the Health
 Manager.  It interfaces with the compute driver (in some deployment scenarios),
 network driver, and Amphora driver to activate Amphora instances,
 load balancers, and listeners.
 
-When a request for a new instance or failover is received the Deploy Worker
+When a request for a new instance or failover is received the Controller Worker
 will have responsibility for connecting the appropriate networking ports to the
 Amphora via the network driver and triggering a configuration push via the
 Amphora driver.  This will include validating that the targeted Amphora
 has the required networks plumbed to the Amphora.
 
-The Amphora configured by the Deploy Worker may be an existing Amphora
+The Amphora configured by the Controller Worker may be an existing Amphora
 instance, a new Amphora from the spares pool, or a newly created Amphora.
 This determination will be made based on the apolocation requirements of
 the load balancer, the load balancer count on the existing Amphora, and
 the availability of ready spare Amphora in the spares pool.
 
-The Deploy Worker will be responsible for passing in the required metadata
+The Controller Worker will be responsible for passing in the required metadata
 via config drive when deploying an Amphora.  This metadata will include:
 a list of controller IP addresses, controller certificate authority
 certificate, and the Amphora certificate and key file.
 
-The main flow of the Deploy Worker is described in the
+The main flow of the Controller Worker is described in the
 amphora-lifecycle-management specification as the Activate Amphora sequence.
 
 **Certificate Library**
