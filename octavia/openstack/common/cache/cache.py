@@ -38,7 +38,7 @@ from six.moves.urllib import parse
 from stevedore import driver
 
 
-def _get_oslo.configs():
+def _get_oslo_configs():
     """Returns the oslo.config options to register."""
     # NOTE(flaper87): Oslo config should be
     # optional. Instead of doing try / except
@@ -53,13 +53,13 @@ def _get_oslo.configs():
     ]
 
 
-def register_oslo.configs(conf):
+def register_oslo_configs(conf):
     """Registers a cache configuration options
 
     :params conf: Config object.
     :type conf: `cfg.ConfigOptions`
     """
-    conf.register_opts(_get_oslo.configs())
+    conf.register_opts(_get_oslo_configs())
 
 
 def get_cache(url='memory://'):
