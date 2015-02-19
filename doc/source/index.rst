@@ -9,6 +9,7 @@ Main
    :maxdepth: 1
 
    main/*
+   main/*/*
 
 ======================
 Project Specifications
