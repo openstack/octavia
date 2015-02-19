@@ -14,6 +14,7 @@
 from keystoneclient import session
 import mock
 import novaclient
+import novaclient.v1_1
 from oslo.config import cfg
 
 from octavia.common import constants
