@@ -40,3 +40,8 @@ Jinja2>=2.6  # BSD License (3 clause)
 paramiko>=1.13.0
 taskflow>=0.7.1
 networkx>=1.8
+
+#for the amphora api
+Flask
+netifaces
+

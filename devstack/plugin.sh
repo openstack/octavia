@@ -92,6 +92,17 @@ function octavia_configure {
     recreate_database_mysql octavia
     iniset $OCTAVIA_DIR/octavia/db/migration/alembic.ini alembic sqlalchemy.url "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia"
     alembic -c $OCTAVIA_DIR/octavia/db/migration/alembic.ini upgrade head
+
+    if [[ -a $OCTAVIA_CERTS_DIR ]] ; then
+        rm -rf $OCTAVIA_CERTS_DIR
+    fi
+    source $OCTAVIA_DIR/bin/create_certificates.sh $OCTAVIA_CERTS_DIR $OCTAVIA_DIR/etc/certificates/openssl.cnf
+    iniset $OCTAVIA_CONF haproxy_amphora client_cert ${OCTAVIA_CERTS_DIR}/client.pem
+    iniset $OCTAVIA_CONF haproxy_amphora server_ca ${OCTAVIA_CERTS_DIR}/ca_01.pem
+    iniset $OCTAVIA_CONF certificates ca_certificate ${OCTAVIA_CERTS_DIR}/ca_01.pem
+    iniset $OCTAVIA_CONF certificates ca_private_key ${OCTAVIA_CERTS_DIR}/private/cakey.pem
+    iniset $OCTAVIA_CONF certificates ca_private_key_passphrase foobar
+
 }
 
 function build_mgmt_network {
@@ -103,6 +114,7 @@ function build_mgmt_network {
     neutron security-group-create lb-mgmt-sec-grp
     neutron security-group-rule-create --protocol icmp lb-mgmt-sec-grp
     neutron security-group-rule-create --protocol tcp --port-range-min 22 --port-range-max 22 lb-mgmt-sec-grp
+    neutron security-group-rule-create --protocol tcp --port-range-min 8443 --port-range-max 8443 lb-mgmt-sec-grp
 
     OCTAVIA_MGMT_SEC_GRP_ID=$(nova secgroup-list | awk ' / lb-mgmt-sec-grp / {print $2}')
     iniset ${OCTAVIA_CONF} controller_worker amp_secgroup_list ${OCTAVIA_MGMT_SEC_GRP_ID}

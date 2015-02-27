@@ -110,9 +110,32 @@ haproxy_amphora_opts = [
     cfg.IntOpt('connection_max_retries',
                default=10,
                help=_('Retry threshold for connecting to amphorae.')),
-    cfg.FloatOpt('connection_retry_interval',
-                 default=1,
-                 help=_('Retry timeout between attempts.'))
+    cfg.IntOpt('connection_retry_interval',
+               default=5,
+               help=_('Retry timeout between attempts in seconds.')),
+
+    # REST server
+    cfg.StrOpt('bind_host', default='0.0.0.0',
+               help=_("The host IP to bind to")),
+    cfg.IntOpt('bind_port', default=8443,
+               help=_("The port to bind to")),
+    cfg.StrOpt('haproxy_cmd', default='/usr/sbin/haproxy',
+               help=_("The full path to haproxy")),
+    cfg.IntOpt('respawn_count', default=2,
+               help=_("The respawn count for haproxy's upstart script")),
+    cfg.IntOpt('respawn_interval', default=2,
+               help=_("The respawn interval for haproxy's upstart script")),
+    cfg.StrOpt('haproxy_cert_dir', default='/tmp/',
+               help=_("The directory to store haproxy cert files in")),
+    cfg.StrOpt('agent_server_cert', default='/etc/octavia/certs/server.pem',
+               help=_("The server certificate for the agent.py server "
+                      "to use")),
+    cfg.StrOpt('agent_server_ca', default='/etc/octavia/certs/client_ca.pem',
+               help=_("The ca which signed the client certificates")),
+    cfg.StrOpt('agent_server_network_dir',
+               default='/etc/network/interfaces.d/',
+               help=_("The directory where new network interfaces "
+                      "are located"))
 ]
 
 controller_worker_opts = [
@@ -171,7 +194,6 @@ cfg.CONF.register_cli_opts(core_cli_opts)
 cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
 cfg.CONF.register_opts(keystone_authtoken_v3_opts,
                        group='keystone_authtoken_v3')
-
 # Ensure that the control exchange is set correctly
 messaging.set_transport_defaults(control_exchange='octavia')
 _SQL_CONNECTION_DEFAULT = 'sqlite://'
