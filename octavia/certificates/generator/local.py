@@ -93,10 +93,19 @@ class LocalCertGenerator(cert_gen.CertGenerator):
         cls._validate_cert(ca_cert, ca_key, ca_key_pass)
         if not ca_digest:
             ca_digest = CONF.certificates.signing_digest
+        if not ca_cert:
+            with open(CONF.certificates.ca_certificate, 'r') as f:
+                ca_cert = f.read()
+        if not ca_key:
+            with open(CONF.certificates.ca_private_key, 'r') as f:
+                ca_key = f.read()
+        if not ca_key_pass:
+            ca_key_pass = CONF.certificates.ca_private_key_passphrase
+
         try:
             lo_cert = crypto.load_certificate(crypto.FILETYPE_PEM, ca_cert)
             lo_key = crypto.load_privatekey(crypto.FILETYPE_PEM, ca_key,
-                                            passphrase=ca_key_pass)
+                                            ca_key_pass)
             lo_req = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr)
 
             new_cert = crypto.X509()
@@ -147,11 +156,17 @@ class LocalCertGenerator(cert_gen.CertGenerator):
 
     @classmethod
     def _generate_csr(cls, cn, private_key, passphrase=None):
-        pk = crypto.load_privatekey(
-            crypto.FILETYPE_PEM,
-            private_key,
-            passphrase
-        )
+        if passphrase:
+            pk = crypto.load_privatekey(
+                crypto.FILETYPE_PEM,
+                private_key,
+                passphrase
+            )
+        else:
+            pk = crypto.load_privatekey(
+                crypto.FILETYPE_PEM,
+                private_key
+            )
         csr = crypto.X509Req()
         csr.set_pubkey(pk)
         subject = csr.get_subject()

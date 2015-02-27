@@ -38,6 +38,10 @@ class BaseDataModel(object):
         return False
 
     @classmethod
+    def from_dict(cls, dict):
+        return cls(**dict)
+
+    @classmethod
     def _name(cls):
         """Returns class name in a more human readable form."""
         # Split the class name up by capitalized words

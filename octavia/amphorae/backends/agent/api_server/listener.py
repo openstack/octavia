@@ -361,7 +361,7 @@ def _check_ssl_filename_format(filename):
 
 
 def _cert_dir(listener_id):
-    return os.path.join(util.CONF.haproxy_amphora.haproxy_cert_dir,
+    return os.path.join(util.CONF.haproxy_amphora.base_cert_dir,
                         listener_id)
 
 

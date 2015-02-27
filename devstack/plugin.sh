@@ -61,6 +61,7 @@ function octavia_configure {
 
     # Setting other required default options
     iniset $OCTAVIA_CONF controller_worker amphora_driver amphora_haproxy_ssh_driver
+    #iniset $OCTAVIA_CONF controller_worker amphora_driver amphora_haproxy_rest_driver
     iniset $OCTAVIA_CONF controller_worker compute_driver compute_nova_driver
     iniset $OCTAVIA_CONF controller_worker network_driver allowed_address_pairs_driver
 

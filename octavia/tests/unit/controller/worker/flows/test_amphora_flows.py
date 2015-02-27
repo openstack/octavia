@@ -27,6 +27,8 @@ AUTH_VERSION = '2'
 class TestAmphoraFlows(base.TestCase):
 
     def setUp(self):
+        cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_ssh_driver',
+                              group='controller_worker')
         self.AmpFlow = amphora_flows.AmphoraFlows()
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="keystone_authtoken", auth_version=AUTH_VERSION)
@@ -46,6 +48,22 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(len(amp_flow.provides), 3)
         self.assertEqual(len(amp_flow.requires), 0)
 
+    def test_get_create_amphora_flow_cert(self):
+        cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
+                              group='controller_worker')
+        self.AmpFlow = amphora_flows.AmphoraFlows()
+
+        amp_flow = self.AmpFlow.get_create_amphora_flow()
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+
+        self.assertEqual(len(amp_flow.provides), 4)
+        self.assertEqual(len(amp_flow.requires), 0)
+
     def test_get_create_amphora_for_lb_flow(self):
 
         amp_flow = self.AmpFlow.get_create_amphora_for_lb_flow()
@@ -62,6 +80,26 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
 
         self.assertEqual(len(amp_flow.provides), 7)
+        self.assertEqual(len(amp_flow.requires), 1)
+
+    def test_get_cert_create_amphora_for_lb_flow(self):
+        cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
+                              group='controller_worker')
+        self.AmpFlow = amphora_flows.AmphoraFlows()
+        amp_flow = self.AmpFlow.get_create_amphora_for_lb_flow()
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.LOADBALANCER, amp_flow.provides)
+        self.assertIn(constants.VIP, amp_flow.provides)
+        self.assertIn(constants.AMPS_DATA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+
+        self.assertEqual(len(amp_flow.provides), 8)
         self.assertEqual(len(amp_flow.requires), 1)
 
     def test_get_delete_amphora_flow(self):

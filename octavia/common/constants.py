@@ -94,6 +94,7 @@ VIP = 'vip'
 POOL = 'pool'
 POOL_ID = 'pool_id'
 OBJECT = 'object'
+SERVER_PEM = 'server_pem'
 
 CREATE_AMPHORA_FLOW = 'octavia-create-amphora-flow'
 CREATE_AMPHORA_FOR_LB_FLOW = 'octavia-create-amp-for-lb-flow'
