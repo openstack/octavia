@@ -13,7 +13,7 @@
 #    under the License.
 from keystoneclient import session
 import mock
-import novaclient.v1_1
+import novaclient.v2
 from oslo.config import cfg
 
 from octavia.common import constants
@@ -148,7 +148,7 @@ class TestNovaAuth(base.TestCase):
         # Our returned client should also be the saved client
         self.assertIsInstance(
             nova_common.NovaKeystoneAuth._nova_client,
-            novaclient.v1_1.client.Client
+            novaclient.v2.client.Client
         )
         self.assertIs(
             nova_common.NovaKeystoneAuth._nova_client,
