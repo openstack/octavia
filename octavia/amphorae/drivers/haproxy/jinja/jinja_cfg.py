@@ -121,7 +121,7 @@ class JinjaTemplater(object):
         :return: Rendered configuration
         """
         loadbalancer = self._transform_loadbalancer(
-            listener.loadbalancer,
+            listener.load_balancer,
             listener,
             tls_cert)
         if not socket_path:
@@ -162,7 +162,7 @@ class JinjaTemplater(object):
         }
         if listener.connection_limit and listener.connection_limit > -1:
             ret_value['connection_limit'] = listener.connection_limit
-        if listener.tls_container_id:
+        if listener.tls_certificate_id:
             ret_value['default_tls_path'] = '%s/%s/%s.pem' % (
                 self.cert_store_path, listener.id, tls_cert.primary_cn)
         if listener.sni_containers:

@@ -39,3 +39,4 @@ pyasn1
 pyasn1_modules
 singledispatch>=3.4.0.3 # For pecan
 Jinja2>=2.6  # BSD License (3 clause)
+paramiko

@@ -267,7 +267,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_transform_loadbalancer(self):
         in_listener = sample_configs.sample_listener_tuple()
         ret = self.jinja_cfg._transform_loadbalancer(
-            in_listener.loadbalancer, in_listener, None)
+            in_listener.load_balancer, in_listener, None)
         self.assertEqual(sample_configs.RET_LB, ret)
 
     def test_expand_expected_codes(self):

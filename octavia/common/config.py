@@ -92,12 +92,25 @@ keystone_authtoken_v3_opts = [
                help=_('Admin project keystone authentication domain'))
 ]
 
+haproxy_amphora_opts = [
+    cfg.StrOpt('username', help=_('Name of user for access to amphora.')),
+    cfg.StrOpt('key_name', help=_('Name of key loaded on amphora at boot.')),
+    cfg.StrOpt('base_path', help=_('Base directory for amphora files.')),
+    cfg.StrOpt('base_cert_dir', help=_('Base directory for cert storage.')),
+    cfg.StrOpt('haproxy_template', help=_('Custom haproxy template.')),
+    cfg.IntOpt('connection_max_retries', help=_('Retry threshold for '
+                                                'connecting to amphorae.')),
+    cfg.FloatOpt('connection_retry_interval', help=_('Retry timeout between '
+                                                     'attempts.'))
+]
+
 core_cli_opts = []
 
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_opts(networking_opts, group='networking')
 cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
+cfg.CONF.register_opts(haproxy_amphora_opts, group='haproxy_amphora')
 cfg.CONF.register_cli_opts(core_cli_opts)
 cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
 cfg.CONF.register_opts(keystone_authtoken_v3_opts,

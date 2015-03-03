@@ -81,7 +81,7 @@ RET_LISTENER_TLS = {
     'protocol_mode': 'http',
     'default_pool': RET_POOL,
     'connection_limit': 98,
-    'tls_container_id': 'cont_id_1',
+    'tls_certificate_id': 'cont_id_1',
     'default_tls_path': '/etc/ssl/sample_loadbalancer_id_1/fakeCN.pem',
     'default_tls_container': RET_DEF_TLS_CONT}
 
@@ -92,7 +92,7 @@ RET_LISTENER_TLS_SNI = {
     'protocol': 'TERMINATED_HTTPS',
     'default_pool': RET_POOL,
     'connection_limit': 98,
-    'tls_container_id': 'cont_id_1',
+    'tls_certificate_id': 'cont_id_1',
     'default_tls_path': '/etc/ssl/sample_loadbalancer_id_1/fakeCN.pem',
     'default_tls_container': RET_DEF_TLS_CONT,
     'crt_dir': '/v2/sample_loadbalancer_id_1',
@@ -119,8 +119,7 @@ def sample_loadbalancer_tuple(proto=None, monitor=True, persistence=True,
                               persistence_type=None, tls=False, sni=False):
     proto = 'HTTP' if proto is None else proto
     in_lb = collections.namedtuple(
-        'loadbalancer', 'id, name, protocol, vip, '
-                        'listeners')
+        'load_balancer', 'id, name, protocol, vip, listeners, amphorae')
     return in_lb(
         id='sample_loadbalancer_id_1',
         name='test-lb',
@@ -137,12 +136,13 @@ def sample_loadbalancer_tuple(proto=None, monitor=True, persistence=True,
 def sample_listener_loadbalancer_tuple(proto=None):
     proto = 'HTTP' if proto is None else proto
     in_lb = collections.namedtuple(
-        'loadbalancer', 'id, name, protocol, vip')
+        'load_balancer', 'id, name, protocol, vip, amphorae')
     return in_lb(
         id='sample_loadbalancer_id_1',
         name='test-lb',
         protocol=proto,
-        vip=sample_vip_tuple()
+        vip=sample_vip_tuple(),
+        amphorae=[sample_amphora_tuple()]
     )
 
 
@@ -157,19 +157,19 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
     port = '443' if proto is 'HTTPS' or proto is 'TERMINATED_HTTPS' else '80'
     in_listener = collections.namedtuple(
         'listener', 'id, protocol_port, protocol, default_pool, '
-                    'connection_limit, tls_container_id, '
+                    'connection_limit, tls_certificate_id, '
                     'sni_container_ids, default_tls_container, '
-                    'sni_containers, loadbalancer')
+                    'sni_containers, load_balancer')
     return in_listener(
         id='sample_listener_id_1',
         protocol_port=port,
         protocol=proto,
-        loadbalancer=sample_listener_loadbalancer_tuple(proto=proto),
+        load_balancer=sample_listener_loadbalancer_tuple(proto=proto),
         default_pool=sample_pool_tuple(
             proto=proto, monitor=monitor, persistence=persistence,
             persistence_type=persistence_type),
         connection_limit=98,
-        tls_container_id='cont_id_1' if tls else '',
+        tls_certificate_id='cont_id_1' if tls else '',
         sni_container_ids=['cont_id_2', 'cont_id_3'] if sni else [],
         default_tls_container=sample_tls_container_tuple(
             id='cont_id_1', certificate='--imapem1--\n',
@@ -268,6 +268,15 @@ def sample_health_monitor_tuple(proto='HTTP'):
                    timeout=31, fall_threshold=3, rise_threshold=2,
                    http_method='GET', url_path='/index.html',
                    expected_codes='418', enabled=True)
+
+
+def sample_amphora_tuple():
+    amphora = collections.namedtuple('amphora', 'id, load_balancer_id, '
+                                                'compute_id, status,'
+                                                'lb_network_ip')
+    return amphora(id='sample_amp_id_1', load_balancer_id='sample_lb_id_1',
+                   compute_id='sample_compute_id_1', status='ACTIVE',
+                   lb_network_ip='10.0.0.1')
 
 
 def sample_base_expected_config(frontend=None, backend=None):
