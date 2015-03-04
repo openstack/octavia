@@ -11,28 +11,22 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-"""create healthmanager table
+"""Add a column busy in table amphora health
 
-Revision ID: 92fe9857279
-Revises: 256852d5ff7c
-Create Date: 2015-01-22 16:58:23.440247
+Revision ID: 543f5d8e4e56
+Revises: 2351ea316465
+Create Date: 2015-07-27 11:32:16.685383
 
 """
 
 # revision identifiers, used by Alembic.
-revision = '92fe9857279'
-down_revision = '256852d5ff7c'
+revision = '543f5d8e4e56'
+down_revision = '2351ea316465'
 
 from alembic import op
 import sqlalchemy as sa
 
 
 def upgrade():
-    op.create_table(
-        u'amphora_health',
-        sa.Column(u'amphora_id', sa.String(36), nullable=False,
-                  primary_key=True),
-        sa.Column(u'last_update', sa.DateTime(timezone=True),
-                  nullable=False)
-
-    )
+    op.add_column(u'amphora_health',
+                  sa.Column(u'busy', sa.Boolean(), nullable=False))

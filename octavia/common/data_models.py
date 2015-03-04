@@ -241,6 +241,7 @@ class Amphora(BaseDataModel):
 
 class AmphoraHealth(BaseDataModel):
 
-    def __init__(self, amphora_id=None, last_update=None):
+    def __init__(self, amphora_id=None, last_update=None, busy=False):
         self.amphora_id = amphora_id
         self.last_update = last_update
+        self.busy = busy

@@ -19,11 +19,17 @@ reference
 
 import datetime
 
+from oslo_config import cfg
+from oslo_log import log as logging
 from oslo_utils import uuidutils
 
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.db import models
+
+CONF = cfg.CONF
+LOG = logging.getLogger(__name__)
+CONF.import_group('health_manager', 'octavia.common.config')
 
 
 class BaseRepository(object):
@@ -407,18 +413,26 @@ class AmphoraHealthRepository(BaseRepository):
         amphora_health = self.get(session, amphora_id=amphora_id)
         return amphora_health.last_update < timestamp
 
-    def get_expired_amphorae(self, session, timestamp=None):
-        """Retrieves a list of entities from the health manager database.
+    def get_stale_amphora(self, session):
+        """Retrieves a staled amphora from the health manager database.
 
         :param session: A Sql Alchemy database session.
-        :param timestamp: A standard datetime which is used to see if an
-        amphora needs to be updated (default: now - 10s)
         :returns: [octavia.common.data_model]
         """
-        if not timestamp:
-            timestamp = datetime.datetime.utcnow() - datetime.timedelta(
-                seconds=10)
-        filterquery = self.model_class.last_update < timestamp
-        model_list = session.query(self.model_class).filter(filterquery).all()
-        data_model_list = [model.to_data_model() for model in model_list]
-        return data_model_list
+
+        timestamp = CONF.health_manager.heartbeat_timeout
+
+        expired_time = datetime.datetime.utcnow() - datetime.timedelta(
+            seconds=timestamp)
+
+        with session.begin(subtransactions=True):
+            amp = session.query(self.model_class).with_for_update().filter_by(
+                busy=False).filter(
+                self.model_class.last_update < expired_time).first()
+
+            if amp is None:
+                return None
+
+            amp.busy = True
+
+        return amp.to_data_model()

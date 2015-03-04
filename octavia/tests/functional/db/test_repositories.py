@@ -1166,7 +1166,8 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
 
         amphora_health = self.amphora_health_repo.create(
             self.session, amphora_id=amphora_id,
-            last_update=newdate)
+            last_update=newdate,
+            busy=False)
         return amphora_health
 
     def test_get(self):
@@ -1193,11 +1194,11 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
             self.session, self.amphora.id, exp_age)
         self.assertTrue(checkres)
 
-    def test_get_expired_amphorae(self):
+    def test_get_stale_amphorae(self):
         self.create_amphora_health(self.amphora.id)
-        amphora_list = self.amphora_health_repo.get_expired_amphorae(
+        stale_amphora = self.amphora_health_repo.get_stale_amphora(
             self.session)
-        self.assertEqual(len(amphora_list), 1)
+        self.assertEqual(stale_amphora.amphora_id, self.amphora.id)
 
     def test_create(self):
         amphora_health = self.create_amphora_health(self.FAKE_UUID_1)

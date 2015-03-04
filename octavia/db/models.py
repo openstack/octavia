@@ -358,3 +358,5 @@ class AmphoraHealth(base_models.BASE):
         sa.String(36), nullable=False, primary_key=True)
     last_update = sa.Column(sa.DateTime, default=func.now(),
                             nullable=False)
+
+    busy = sa.Column(sa.Boolean(), default=False, nullable=False)
