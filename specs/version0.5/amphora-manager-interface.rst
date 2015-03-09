@@ -46,7 +46,7 @@ Establish an abstract base class to model the desired functionality:
 
         def build(self, amphora_type = VM, amphora_flavor = None,
                   image_id = None, keys = None, sec_groups = None,
-                  network_ids = None ):
+                  network_ids = None,config_drive_files = None,user_data=None):
 
             """ build a new amphora.
 
@@ -62,6 +62,14 @@ Establish an abstract base class to model the desired functionality:
             groups
             :param network_ids: A list of network_ids to attach to
             the amphora
+            :config_drive_files:  A dict of files to overrwrite on
+            the server upon boot. Keys are file names (i.e. /etc/passwd)
+            and values are the file contents (either as a string or as
+            a file-like object). A maximum of five entries is allowed,
+            and each file must be 10k or less.
+            :param user_data: user data to pass to be exposed by the
+            metadata server this can be a file type object as well or
+            a string
 
             :returns: The id of the new instance.
 
