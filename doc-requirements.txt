@@ -4,7 +4,7 @@ docutils==0.11
 nwdiag
 oslosphinx
 seqdiag
-sphinx
+sphinx==1.2.3
 sphinxcontrib-actdiag
 sphinxcontrib-blockdiag
 sphinxcontrib-nwdiag

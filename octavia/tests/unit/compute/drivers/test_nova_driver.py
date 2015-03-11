@@ -54,13 +54,24 @@ class TestNovaClient(base.TestCase):
 
     def test_build(self):
         amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
-                                        key_name=1, sec_groups=1,
-                                        network_ids=[1])
+                                        key_name=1,
+                                        sec_groups=1,
+                                        network_ids=[1],
+                                        user_data='Blah',
+                                        config_drive_files='Files Blah')
+
         self.assertEqual(self.amphora.compute_id, amphora_id)
+
         self.manager.manager.create.assert_called_with(
-            name="amphora_name", image=1, flavor=1, key_name=1,
-            security_groups=1, nics=[{'net-id': 1}]
-        )
+            name="amphora_name",
+            nics=[{'net-id': 1}],
+            image=1,
+            flavor=1,
+            key_name=1,
+            security_groups=1,
+            config_drive_files='Files Blah',
+            user_data='Blah',
+            config_drive=True)
 
     def test_bad_build(self):
         self.manager.manager.create.side_effect = Exception
