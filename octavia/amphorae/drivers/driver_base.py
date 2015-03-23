@@ -144,6 +144,20 @@ class AmphoraLoadBalancerDriver(object):
         """
         pass
 
+    def post_network_plug(self, amphora):
+        """Called after amphora added to network
+
+
+        :param amphora: amphora object, needs id and network ip(s)
+        :type amphora: object
+
+        This method is optional to implement.  After adding an amphora to a
+        network, there may be steps necessary on the amphora to allow it to
+        access said network.  Ex: creating an interface on an amphora for a
+        neutron network to utilize.
+        """
+        pass
+
 
 @six.add_metaclass(abc.ABCMeta)
 class HealthMixin(object):

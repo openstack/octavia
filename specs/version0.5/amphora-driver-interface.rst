@@ -87,6 +87,13 @@ Establish a base class to model the desire functionality:
             """
             pass
 
+        def post_network_plug(self, amphora):
+            """
+                OPTIONAL - this method will be called after adding a compute instance to a network.
+                This will perform any necessary actions to allow for connectivity for that network
+                on that instance.
+            """
+
 
 The referenced listener is a listener object and vip a vip as described
 in our model. The model is detached from the DB so the driver can't write
