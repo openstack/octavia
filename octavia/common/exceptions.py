@@ -32,8 +32,10 @@ class OctaviaException(Exception):
     """
     message = _("An unknown exception occurred.")
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         try:
+            if len(args) > 0:
+                self.message = args[0]
             super(OctaviaException, self).__init__(self.message % kwargs)
             self.msg = self.message % kwargs
         except Exception:
