@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
+
 from octavia.common import constants
 from octavia.common import data_models as models
 from octavia.db import repositories as repo
@@ -38,6 +40,7 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
         self.hm_repo = repo.HealthMonitorRepository()
         self.sni_repo = repo.SNIRepository()
         self.amphora_repo = repo.AmphoraRepository()
+        self.amphora_health_repo = repo.AmphoraHealthRepository()
 
     def test_get_all_return_value(self):
         pool_list = self.pool_repo.get_all(self.session,
@@ -67,7 +70,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
     def test_all_repos_has_correct_repos(self):
         repo_attr_names = ('load_balancer', 'vip', 'health_monitor',
                            'session_persistence', 'pool', 'member', 'listener',
-                           'listener_stats', 'amphora', 'sni')
+                           'listener_stats', 'amphora', 'sni',
+                           'amphorahealth')
         for repo_attr in repo_attr_names:
             single_repo = getattr(self.repos, repo_attr, None)
             message = ("Class Repositories should have %s instance"
@@ -1103,3 +1107,67 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         self.assertIsNone(self.amphora_repo.get(self.session, id=amphora.id))
         new_lb = self.lb_repo.get(self.session, id=self.lb.id)
         self.assertEqual(0, len(new_lb.amphorae))
+
+
+class AmphoraHealthRepositoryTest(BaseRepositoryTest):
+    def setUp(self):
+        super(AmphoraHealthRepositoryTest, self).setUp()
+        self.amphora = self.amphora_repo.create(self.session,
+                                                id=self.FAKE_UUID_1,
+                                                compute_id=self.FAKE_UUID_3,
+                                                status=constants.ACTIVE,
+                                                lb_network_ip=self.FAKE_IP)
+
+    def create_amphora_health(self, amphora_id):
+        newdate = datetime.datetime.utcnow() - datetime.timedelta(minutes=10)
+
+        amphora_health = self.amphora_health_repo.create(
+            self.session, amphora_id=amphora_id,
+            last_update=newdate)
+        return amphora_health
+
+    def test_get(self):
+        amphora_health = self.create_amphora_health(self.amphora.id)
+        new_amphora_health = self.amphora_health_repo.get(
+            self.session, amphora_id=amphora_health.amphora_id)
+
+        self.assertIsInstance(new_amphora_health, models.AmphoraHealth)
+        self.assertEqual(amphora_health, new_amphora_health)
+
+    def test_check_amphora_out_of_date(self):
+        self.create_amphora_health(self.amphora.id)
+        checkres = self.amphora_health_repo.check_amphora_expired(
+            self.session, self.amphora.id)
+        self.assertTrue(checkres)
+
+    def test_get_expired_amphorae(self):
+        self.create_amphora_health(self.amphora.id)
+        amphora_list = self.amphora_health_repo.get_expired_amphorae(
+            self.session)
+        self.assertEqual(len(amphora_list), 1)
+
+    def test_create(self):
+        amphora_health = self.create_amphora_health(self.FAKE_UUID_1)
+        self.assertEqual(self.FAKE_UUID_1, amphora_health.amphora_id)
+        newcreatedtime = datetime.datetime.utcnow()
+        oldcreatetime = amphora_health.last_update
+
+        diff = newcreatedtime - oldcreatetime
+        self.assertEqual(diff.seconds, 600)
+
+    def test_update(self):
+        d = datetime.datetime.today()
+        amphora_health = self.create_amphora_health(self.FAKE_UUID_1)
+        self.amphora_health_repo.update(self.session,
+                                        amphora_health.amphora_id,
+                                        last_update=d)
+        new_amphora_health = self.amphora_health_repo.get(
+            self.session, amphora_id=amphora_health.amphora_id)
+        self.assertEqual(d, new_amphora_health.last_update)
+
+    def test_delete(self):
+        amphora_health = self.create_amphora_health(self.FAKE_UUID_1)
+        self.amphora_health_repo.delete(
+            self.session, amphora_id=amphora_health.amphora_id)
+        self.assertIsNone(self.amphora_health_repo.get(
+            self.session, amphora_id=amphora_health.amphora_id))

@@ -12,9 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+
 import sqlalchemy as sa
 from sqlalchemy import orm
 from sqlalchemy.orm import validates
+from sqlalchemy.sql import func
 
 from octavia.common import data_models
 from octavia.db import base_models
@@ -323,3 +325,13 @@ class Amphora(base_models.BASE):
         sa.String(36),
         sa.ForeignKey("provisioning_status.name",
                       name="fk_container_provisioning_status_name"))
+
+
+class AmphoraHealth(base_models.BASE):
+    __data_model__ = data_models.AmphoraHealth
+    __tablename__ = "amphora_health"
+
+    amphora_id = sa.Column(
+        sa.String(36), nullable=False, primary_key=True)
+    last_update = sa.Column(sa.DateTime, default=func.now(),
+                            nullable=False)
