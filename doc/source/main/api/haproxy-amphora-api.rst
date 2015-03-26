@@ -324,8 +324,10 @@ health of the amphora, currently-configured topology and role, etc.
     'uuid': '6e2bc8a0-2548-4fb7-a5f0-fb1ef4a696ce',
     'haproxy_version': '1.5.11',
     'api_version': '0.1',
-    'network_tx': 3300138,
-    'network_rx': 982001,
+    'networks': {
+        'eth0': {
+            'network_tx': 3300138,
+            'network_rx': 982001, }}
     'active': 'TRUE',
     'haproxy_count': 3,
     'cpu':{
@@ -387,8 +389,9 @@ JSON Response attributes:
 Note that the command will return an array of *all* listeners' statuses. Each
 listener status contains the following attributes:
 
-* *status* - One of: ACTIVE, PENDING_CREATE, PENDING_UPDATE,
-  PENDING_DELETE, DELETED, ERROR
+* *status* - One of the operational status: ACTIVE, STOPPED, ERROR -
+  future versions might support provisioning status:
+  PENDING_CREATE, PENDING_UPDATE, PENDING_DELETE, DELETED
 * *uuid* - Listener UUID
 * *type* - One of: TCP, HTTP, TERMINATED_HTTPS
 
@@ -408,7 +411,7 @@ a valid haproxy configuration).
     'type': 'HTTP',
    },
    {
-    'status': 'PENDING_CREATE',
+    'status': 'STOPPED',
     'uuid': '19d45130-5b9f-11e4-8ed6-0800200c9a66',
     'type': 'TERMINATED_HTTPS',
    }]
@@ -437,8 +440,9 @@ Get a listener's status
 
 JSON Response attributes:
 
-* *status* - One of: ACTIVE, PENDING_CREATE, PENDING_UPDATE,
-  PENDING_DELETE, DELETED, ERROR
+* *status* - One of the operational status: ACTIVE, STOPPED, ERROR -
+  future versions might support provisioning status:
+  PENDING_CREATE, PENDING_UPDATE, PENDING_DELETE, DELETED
 * *uuid* - Listener UUID
 * *type* - One of: TCP, HTTP, TERMINATED_HTTPS
 * *pools* - Map of pool UUIDs and their overall UP / DOWN / DEGRADED status
@@ -483,11 +487,11 @@ just if there is a valid haproxy configuration).
 
 ::
 
-  JSON Response:
-  {
-    'message': 'Not Found',
-  }
-
+    JSON Response:
+      {
+        'message': 'Listener Not Found',
+        'details': 'No listener with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
+      }
 
 Start or Stop a listener
 ------------------------
@@ -502,10 +506,10 @@ Start or Stop a listener
 * **Data params:** none
 * **Success Response:**
 
-  * Code: 200
+  * Code: 202
 
     * Content: OK
-    * *(Also contains results of attempt to start / stop / soft \
+    * *(Also contains preliminary results of attempt to start / stop / soft \
       restart (reload) the haproxy daemon)*
 
 * **Error Response:**
@@ -536,7 +540,7 @@ Start or Stop a listener
 
 **Examples:**
 
-* Success code 200:
+* Success code 201:
 
 ::
 
@@ -546,7 +550,7 @@ Start or Stop a listener
   JSON Response:
   {
     'message': 'OK',
-    'details': 'Configuration file is valid\nhaproxy daemon for 04bff5c3-5862-4a13-b9e3-9b440d0ed50a started (pid 19833)',
+    'details': 'Configuration file is valid\nhaproxy daemon for 04bff5c3-5862-4a13-b9e3-9b440d0ed50a started',
   }
 
 * Error code 400:
@@ -633,6 +637,7 @@ Delete a listener
   * Delete IPs, iptables accounting rules, etc. from this amphora if they're no
     longer in use.
   * Clean up listener configuration directory.
+  * Delete listener's SSL certificates
   * Clean up logs (ship final logs to logging destination if configured)
   * Clean up stats socket.
 
@@ -660,6 +665,7 @@ Delete a listener
   JSON Response:
   {
     'message': 'Listener Not Found',
+    'details': 'No listener with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
   }
 
 * Error code 503:
@@ -702,6 +708,10 @@ Upload SSL certificate PEM file
   * Code: 400
 
     * Content: Certificate and key do not match
+
+  * Code: 404
+
+    * Content: Not Found
 
   * Code: 503
 
@@ -774,6 +784,20 @@ explicitly restarted
     'message': 'Certificate and key do not match'
   }
 
+* Error code 404:
+
+::
+
+  PUT URI:
+  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+
+  JSON Response:
+  {
+    'message': 'Listener Not Found',
+    'details': 'No listener with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
+  }
+
+
 * Error code 503:
 
 ::
@@ -834,10 +858,21 @@ disclosing it over the wire from the amphora is a security risk.
 
 ::
 
-  JSON response:
-  {
-    'message': 'Not Found',
-  }
+    JSON Response:
+      {
+        'message': 'Listener Not Found',
+        'details': 'No listener with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
+      }
+
+* Error code 404:
+
+::
+
+    JSON Response:
+      {
+        'message': 'Certificate Not Found',
+        'details': 'No certificate with file name: www.example.com.pem',
+      }
 
 Delete SSL certificate PEM file
 -------------------------------
@@ -891,10 +926,11 @@ Delete SSL certificate PEM file
   DELETE URL:
   https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
 
-  JSON Response:
-  {
-    'message': 'Certificate Not Found',
-  }
+ JSON Response:
+      {
+        'message': 'Certificate Not Found',
+        'details': 'No certificate with file name: www.example.com.pem',
+      }
 
 * Error code 503:
 
@@ -920,7 +956,6 @@ Upload listener haproxy configuration
   * Code: 201
 
     * Content: OK
-    * *(Also includes output from attempt to start haproxy daemon)*
 
 * **Error Response:**
 
@@ -937,7 +972,6 @@ Upload listener haproxy configuration
 
 | OK
 | Configuration file is valid
-| haproxy daemon for 7e9f91eb-b3e6-4e3b-a1a7-d6f7fdc1de7c started (pid 32428)
 
 * **Implied actions:**
 
@@ -966,7 +1000,6 @@ out of the haproxy daemon status interface for tracking health and stats).
   JSON Response:
   {
     'message': 'OK'
-    'details': 'Configuration file is valid\nhaproxy daemon for 04bff5c3-5862-4a13-b9e3-9b440d0ed50a started (pid 19833)',
   }
 
 * Error code 400:
@@ -1035,8 +1068,9 @@ Get listener haproxy configuration
 
 ::
 
-  JSON response:
-  {
-    'message': 'Not Found',
-  }
+    JSON Response:
+      {
+        'message': 'Listener Not Found',
+        'details': 'No listener with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
+      }
 
