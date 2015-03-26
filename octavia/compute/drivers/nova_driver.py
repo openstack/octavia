@@ -46,7 +46,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
         pass
 
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
-              key_name=None, sec_groups=None, network_ids=None):
+              key_name=None, sec_groups=None, network_ids=None,
+              config_drive_files=None, user_data=None):
         '''Create a new virtual machine.
 
         :param name: optional name for amphora
@@ -55,9 +56,19 @@ class VirtualMachineManager(compute_base.ComputeBase):
         :param key_name: keypair to add to the virtual machine
         :param sec_groups: Security group IDs for virtual machine
         :param network_ids: Network IDs to include on virtual machine
+        :param config_drive_files:  An optional dict of files to overwrite on
+        the server upon boot. Keys are file names (i.e. /etc/passwd)
+        and values are the file contents (either as a string or as
+        a file-like object). A maximum of five entries is allowed,
+        and each file must be 10k or less.
+        :param user_data: Optional user data to pass to be exposed by the
+        metadata server this can be a file type object as well or
+        a string
+
         :raises NovaBuildException: if nova failed to build virtual machine
         :returns: UUID of amphora
         '''
+
         try:
             nics = []
             for net_id in network_ids:
@@ -66,7 +77,12 @@ class VirtualMachineManager(compute_base.ComputeBase):
             amphora = self.manager.create(
                 name=name, image=image_id, flavor=amphora_flavor,
                 key_name=key_name, security_groups=sec_groups,
-                nics=nics)
+                nics=nics,
+                config_drive_files=config_drive_files,
+                user_data=user_data,
+                config_drive=True
+            )
+
             return amphora.id
         except Exception:
             LOG.exception(_LE("Error building nova virtual machine."))

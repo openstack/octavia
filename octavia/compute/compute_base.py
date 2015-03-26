@@ -30,7 +30,8 @@ class ComputeBase(object):
 
     @abc.abstractmethod
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
-              key_name=None, sec_groups=None, network_ids=None):
+              key_name=None, sec_groups=None, network_ids=None,
+              config_drive_files=None, user_data=None):
         """Build a new amphora.
 
         :param name: Optional name for Amphora
@@ -39,7 +40,17 @@ class ComputeBase(object):
         :param key_name: Optionally specify a keypair
         :param sec_groups: Optionally specify list of security groups
         :param network_ids: A list of network IDs to attach to the amphora
-        :returns: The id of the new instance.
+        :param config_drive_files:  An optional dict of files to overwrite on
+        the server upon boot. Keys are file names (i.e. /etc/passwd)
+        and values are the file contents (either as a string or as
+        a file-like object). A maximum of five entries is allowed,
+        and each file must be 10k or less.
+        :param user_data: Optional user data to pass to be exposed by the
+        metadata server this can be a file type object as well or
+        a string
+
+        :raises NovaBuildException: if nova failed to build virtual machine
+        :returns: UUID of amphora
         """
         pass
 
