@@ -31,3 +31,5 @@ pyOpenSSL>=0.11
 WSME>=0.6
 pyasn1
 pyasn1_modules
+
+jinja2

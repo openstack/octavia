@@ -190,6 +190,18 @@ class SNI(BaseDataModel):
         self.tls_container_id = tls_container_id
 
 
+class TLSContainer(BaseDataModel):
+
+    def __init__(self, id=None, primary_cn=None, certificate=None,
+                 private_key=None, passphrase=None, intermediates=[]):
+        self.id = id
+        self.primary_cn = primary_cn
+        self.certificate = certificate
+        self.private_key = private_key
+        self.passphrase = passphrase
+        self.intermediates = intermediates
+
+
 class Amphora(BaseDataModel):
 
     def __init__(self, id=None, load_balancer_id=None, compute_id=None,
