@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = octavia
+omit = octavia/tests/*,octavia/openstack/*
+
+[report]
+ignore-errors = True
