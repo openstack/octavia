@@ -62,7 +62,7 @@ class TestBarbicanManager(base.TestCase):
         # Mock out the client
         bc = mock.MagicMock()
         bc.containers.create_certificate.return_value = self.empty_container
-        barbican_common.BarbicanKeystoneAuth._barbican_client = bc
+        barbican_common.BarbicanAuth._barbican_client = bc
 
         # Attempt to store a cert
         barbican_cert_mgr.BarbicanCertManager.store_cert(
@@ -104,7 +104,7 @@ class TestBarbicanManager(base.TestCase):
         ]
         bc.secrets.create.side_effect = test_secrets
         self.empty_container.store.side_effect = ValueError()
-        barbican_common.BarbicanKeystoneAuth._barbican_client = bc
+        barbican_common.BarbicanAuth._barbican_client = bc
 
         # Attempt to store a cert
         self.assertRaises(
@@ -144,7 +144,7 @@ class TestBarbicanManager(base.TestCase):
         # Mock out the client
         bc = mock.MagicMock()
         bc.containers.register_consumer.return_value = self.container
-        barbican_common.BarbicanKeystoneAuth._barbican_client = bc
+        barbican_common.BarbicanAuth._barbican_client = bc
 
         # Get the container data
         data = barbican_cert_mgr.BarbicanCertManager.get_cert(
@@ -175,7 +175,7 @@ class TestBarbicanManager(base.TestCase):
         # Mock out the client
         bc = mock.MagicMock()
         bc.containers.get.return_value = self.container
-        barbican_common.BarbicanKeystoneAuth._barbican_client = bc
+        barbican_common.BarbicanAuth._barbican_client = bc
 
         # Get the container data
         data = barbican_cert_mgr.BarbicanCertManager.get_cert(
@@ -201,7 +201,7 @@ class TestBarbicanManager(base.TestCase):
     def test_delete_cert(self):
         # Mock out the client
         bc = mock.MagicMock()
-        barbican_common.BarbicanKeystoneAuth._barbican_client = bc
+        barbican_common.BarbicanAuth._barbican_client = bc
 
         # Attempt to deregister as a consumer
         barbican_cert_mgr.BarbicanCertManager.delete_cert(
@@ -221,7 +221,7 @@ class TestBarbicanManager(base.TestCase):
         # Mock out the client
         bc = mock.MagicMock()
         bc.containers.get.return_value = self.container
-        barbican_common.BarbicanKeystoneAuth._barbican_client = bc
+        barbican_common.BarbicanAuth._barbican_client = bc
 
         # Attempt to store a cert
         barbican_cert_mgr.BarbicanCertManager._actually_delete_cert(

@@ -21,12 +21,12 @@ from oslo_utils import uuidutils
 from octavia.common import constants
 from octavia.common import data_models as models
 from octavia.common import exceptions
+from octavia.common import keystone
 import octavia.compute.drivers.nova_driver as nova_common
 import octavia.tests.unit.base as base
 
 
 CONF = cfg.CONF
-CONF.import_group('networking', 'octavia.common.config')
 
 
 class TestNovaClient(base.TestCase):
@@ -35,6 +35,8 @@ class TestNovaClient(base.TestCase):
         net_name = uuidutils.generate_uuid()
         CONF.set_override(group='networking', name='lb_network_name',
                           override=net_name)
+        CONF.set_override(group='keystone_authtoken', name='auth_version',
+                          override='2')
         self.amphora = models.Amphora(
             compute_id=uuidutils.generate_uuid(),
             status='ACTIVE',
@@ -116,58 +118,50 @@ class TestNovaClient(base.TestCase):
 class TestNovaAuth(base.TestCase):
 
     def setUp(self):
+        CONF.set_override(group='keystone_authtoken', name='auth_version',
+                          override='2')
         # Reset the session and client
-        nova_common.NovaKeystoneAuth._keystone_session = None
-        nova_common.NovaKeystoneAuth._nova_client = None
+        nova_common.NovaAuth._nova_client = None
+        keystone._SESSION = None
 
         super(TestNovaAuth, self).setUp()
 
     def test_get_keystone_client(self):
         # There should be no existing session
-        self.assertIsNone(
-            nova_common.NovaKeystoneAuth._keystone_session
-        )
+        self.assertIsNone(keystone._SESSION)
 
         # Get us a session
-        ks1 = nova_common.NovaKeystoneAuth._get_keystone_session()
+        ks1 = keystone.get_session()
 
         # Our returned session should also be the saved session
-        self.assertIsInstance(
-            nova_common.NovaKeystoneAuth._keystone_session,
-            session.Session
-        )
-        self.assertIs(
-            nova_common.NovaKeystoneAuth._keystone_session,
-            ks1
-        )
+        self.assertIsInstance(keystone._SESSION, session.Session)
+        self.assertIs(keystone._SESSION, ks1)
 
         # Getting the session again should return the same object
-        ks2 = nova_common.NovaKeystoneAuth._get_keystone_session()
+        ks2 = keystone.get_session()
         self.assertIs(ks1, ks2)
 
     def test_get_nova_client(self):
         # There should be no existing client
         self.assertIsNone(
-            nova_common.NovaKeystoneAuth._nova_client
+            nova_common.NovaAuth._nova_client
         )
 
         # Mock out the keystone session and get the client
-        nova_common.NovaKeystoneAuth._keystone_session = (
-            mock.MagicMock()
-        )
-        bc1 = nova_common.NovaKeystoneAuth.get_nova_client(region=None)
+        keystone._SESSION = mock.MagicMock()
+        bc1 = nova_common.NovaAuth.get_nova_client(region=None)
 
         # Our returned client should also be the saved client
         self.assertIsInstance(
-            nova_common.NovaKeystoneAuth._nova_client,
+            nova_common.NovaAuth._nova_client,
             novaclient.v2.client.Client
         )
         self.assertIs(
-            nova_common.NovaKeystoneAuth._nova_client,
+            nova_common.NovaAuth._nova_client,
             bc1
         )
 
         # Getting the session again should return the same object
-        bc2 = nova_common.NovaKeystoneAuth.get_nova_client(
+        bc2 = nova_common.NovaAuth.get_nova_client(
             region="test-region")
         self.assertIs(bc1, bc2)

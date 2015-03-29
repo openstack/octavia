@@ -10,6 +10,7 @@ Babel>=1.3
 eventlet>=0.16.1,!=0.17.0
 requests>=2.2.0,!=2.4.0
 jsonrpclib
+keystonemiddleware>=1.5.0
 netaddr>=0.7.12
 python-neutronclient>=2.3.11,<3
 WebOb>=1.2.3

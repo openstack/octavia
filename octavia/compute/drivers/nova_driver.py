@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from keystoneclient.auth.identity import v3 as keystone_client
-from keystoneclient import session
 from novaclient import client as nova_client
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -22,6 +20,7 @@ from oslo_utils import excutils
 from octavia.common import constants
 from octavia.common import data_models as models
 from octavia.common import exceptions
+from octavia.common import keystone
 from octavia.compute import compute_base
 from octavia.i18n import _LE
 
@@ -38,7 +37,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
     def __init__(self, region=None):
         super(VirtualMachineManager, self).__init__()
         # Must initialize nova api
-        self._nova_client = NovaKeystoneAuth.get_nova_client(region)
+        self._nova_client = NovaAuth.get_nova_client(region)
         self.manager = self._nova_client.servers
 
     def get_logger(self):
@@ -150,31 +149,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
         return response
 
 
-class NovaKeystoneAuth(object):
-    _keystone_session = None
+class NovaAuth(object):
     _nova_client = None
-
-    # TODO(rm_you): refactor for common availability
-    @classmethod
-    def _get_keystone_session(cls):
-        """Initializes a Keystone session.
-
-        :return: a Keystone Session object
-        :raises Exception: if the session cannot be established
-        """
-        if not cls._keystone_session:
-            try:
-                kc = keystone_client.Password(
-                    auth_url=CONF.keystone_authtoken.auth_uri,
-                    username=CONF.keystone_authtoken.admin_user,
-                    password=CONF.keystone_authtoken.admin_password,
-                    project_id=CONF.keystone_authtoken.admin_project_id
-                )
-                cls._keystone_session = session.Session(auth=kc)
-            except Exception:
-                with excutils.save_and_reraise_exception():
-                    LOG.exception(_LE("Error creating Keystone session."))
-        return cls._keystone_session
 
     @classmethod
     def get_nova_client(cls, region):
@@ -187,7 +163,7 @@ class NovaKeystoneAuth(object):
         if not cls._nova_client:
             try:
                 cls._nova_client = nova_client.Client(
-                    constants.NOVA_2, session=cls._get_keystone_session(),
+                    constants.NOVA_2, session=keystone.get_session(),
                     region_name=region
                 )
             except Exception:

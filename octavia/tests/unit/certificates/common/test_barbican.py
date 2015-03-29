@@ -11,70 +11,44 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from barbicanclient import client as barbican_client
-from keystoneclient import session
 import mock
 
 import octavia.certificates.common.barbican as barbican_common
+from octavia.common import keystone
 import octavia.tests.unit.base as base
 
 
 class TestBarbicanAuth(base.TestCase):
 
     def setUp(self):
-        # Reset the session and client
-        barbican_common.BarbicanKeystoneAuth._keystone_session = None
-        barbican_common.BarbicanKeystoneAuth._barbican_client = None
+        # Reset the client
+        barbican_common.BarbicanAuth._barbican_client = None
+        keystone._SESSION = None
 
         super(TestBarbicanAuth, self).setUp()
 
-    def test_get_keystone_client(self):
-        # There should be no existing session
-        self.assertIsNone(
-            barbican_common.BarbicanKeystoneAuth._keystone_session
-        )
-
-        # Get us a session
-        ks1 = barbican_common.BarbicanKeystoneAuth._get_keystone_session()
-
-        # Our returned session should also be the saved session
-        self.assertIsInstance(
-            barbican_common.BarbicanKeystoneAuth._keystone_session,
-            session.Session
-        )
-        self.assertIs(
-            barbican_common.BarbicanKeystoneAuth._keystone_session,
-            ks1
-        )
-
-        # Getting the session again should return the same object
-        ks2 = barbican_common.BarbicanKeystoneAuth._get_keystone_session()
-        self.assertIs(ks1, ks2)
-
     def test_get_barbican_client(self):
         # There should be no existing client
-        self.assertIsNone(
-            barbican_common.BarbicanKeystoneAuth._barbican_client
-        )
+        self.assertIsNone(keystone._SESSION)
 
         # Mock out the keystone session and get the client
-        barbican_common.BarbicanKeystoneAuth._keystone_session = (
-            mock.MagicMock()
-        )
-        bc1 = barbican_common.BarbicanKeystoneAuth.get_barbican_client()
+        keystone._SESSION = mock.MagicMock()
+        bc1 = barbican_common.BarbicanAuth.get_barbican_client()
 
         # Our returned client should also be the saved client
         self.assertIsInstance(
-            barbican_common.BarbicanKeystoneAuth._barbican_client,
+            barbican_common.BarbicanAuth._barbican_client,
             barbican_client.Client
         )
         self.assertIs(
-            barbican_common.BarbicanKeystoneAuth._barbican_client,
+            barbican_common.BarbicanAuth._barbican_client,
             bc1
         )
 
         # Getting the session again should return the same object
-        bc2 = barbican_common.BarbicanKeystoneAuth.get_barbican_client()
+        bc2 = barbican_common.BarbicanAuth.get_barbican_client()
         self.assertIs(bc1, bc2)
 
 

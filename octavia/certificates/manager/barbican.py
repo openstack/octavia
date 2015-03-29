@@ -48,7 +48,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
         :returns: the container_ref of the stored cert
         :raises Exception: if certificate storage fails
         """
-        connection = barbican_common.BarbicanKeystoneAuth.get_barbican_client()
+        connection = barbican_common.BarbicanAuth.get_barbican_client()
 
         LOG.info(_LI(
             "Storing certificate container '{0}' in Barbican."
@@ -126,7 +126,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
                  certificate data
         :raises Exception: if certificate retrieval fails
         """
-        connection = barbican_common.BarbicanKeystoneAuth.get_barbican_client()
+        connection = barbican_common.BarbicanAuth.get_barbican_client()
 
         LOG.info(_LI(
             "Loading certificate container {0} from Barbican."
@@ -160,7 +160,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
 
         :raises Exception: if deregistration fails
         """
-        connection = barbican_common.BarbicanKeystoneAuth.get_barbican_client()
+        connection = barbican_common.BarbicanAuth.get_barbican_client()
 
         LOG.info(_LI(
             "Deregistering as a consumer of {0} in Barbican."
@@ -184,7 +184,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
         :param cert_ref: the UUID of the cert to delete
         :raises Exception: if certificate deletion fails
         """
-        connection = barbican_common.BarbicanKeystoneAuth.get_barbican_client()
+        connection = barbican_common.BarbicanAuth.get_barbican_client()
 
         LOG.info(_LI(
             "Recursively deleting certificate container {0} from Barbican."

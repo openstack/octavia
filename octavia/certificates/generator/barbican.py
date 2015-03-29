@@ -56,7 +56,7 @@ class BarbicanCertGenerator(cert_gen.CertGenerator):
         :return: PEM encoded private key
         :raises Exception: If private key generation fails
         """
-        connection = barbican_common.BarbicanKeystoneAuth.get_barbican_client()
+        connection = barbican_common.BarbicanAuth.get_barbican_client()
         order = connection.orders.create_asymmetric(
             bit_length=bit_length,
             algorithm='rsa',
