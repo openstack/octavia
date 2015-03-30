@@ -15,17 +15,17 @@
 from keystoneclient.auth.identity import v3 as keystone_client
 from keystoneclient import session
 from novaclient import client as nova_client
-from oslo.config import cfg
-from oslo.utils import excutils
+from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_utils import excutils
 
 from octavia.common import constants
 from octavia.common import data_models as models
 from octavia.common import exceptions
 from octavia.compute import compute_base
 from octavia.i18n import _LE
-from octavia.openstack.common import log
 
-LOG = log.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 CONF = cfg.CONF
 CONF.import_group('keystone_authtoken', 'octavia.common.config')

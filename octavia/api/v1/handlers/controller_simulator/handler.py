@@ -21,13 +21,14 @@ entity status management.
 import threading
 import time
 
+from oslo_log import log as logging
+
 from octavia.api.v1.handlers import abstract_handler
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.db import api as db_api
 import octavia.db.repositories as repos
 from octavia.i18n import _LI
-from octavia.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

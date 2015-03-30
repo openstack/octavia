@@ -12,8 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_utils import uuidutils
+
 from octavia.common import constants
-from octavia.openstack.common import uuidutils
 from octavia.tests.functional.api.v1 import base
 
 

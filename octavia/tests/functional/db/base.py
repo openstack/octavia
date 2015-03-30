@@ -12,9 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo.config import cfg
-from oslo.db import options as db_options
-from oslo.db.sqlalchemy import test_base
+from oslo_config import cfg
+from oslo_db import options as db_options
+from oslo_db.sqlalchemy import test_base
 
 from octavia.common import constants
 from octavia.db import api as db_api

@@ -14,8 +14,8 @@
 
 import logging
 
-import oslo.db.exception as oslo_exc
-from oslo.utils import excutils
+import oslo_db.exception as oslo_exc
+from oslo_utils import excutils
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 

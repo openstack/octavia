@@ -17,12 +17,12 @@
 import sys
 from wsgiref import simple_server
 
-from oslo.config import cfg
+from oslo_config import cfg
+from oslo_log import log as logging
 
 from octavia.api import app as api_app
 from octavia.common import service as octavia_service
 from octavia.i18n import _LI
-from octavia.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

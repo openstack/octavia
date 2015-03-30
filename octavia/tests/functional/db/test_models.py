@@ -14,10 +14,11 @@
 
 import datetime
 
+from oslo_utils import uuidutils
+
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.db import models
-from octavia.openstack.common import uuidutils
 from octavia.tests.functional.db import base
 
 

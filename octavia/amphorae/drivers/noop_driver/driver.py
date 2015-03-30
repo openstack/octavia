@@ -12,8 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from oslo_log import log as logging
+
 from octavia.amphorae.drivers import driver_base as driver_base
-from octavia.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 

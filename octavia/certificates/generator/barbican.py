@@ -19,9 +19,10 @@ Cert generator implementation for Barbican
 import random
 import time
 
+from oslo_log import log as logging
+
 from octavia.certificates.common import barbican as barbican_common
 from octavia.certificates.generator import cert_gen
-from octavia.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

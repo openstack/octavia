@@ -12,12 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo.db.sqlalchemy import models
+from oslo_db.sqlalchemy import models
+from oslo_utils import uuidutils
 import sqlalchemy as sa
 from sqlalchemy.ext import declarative
 from sqlalchemy.orm import collections
-
-from octavia.openstack.common import uuidutils
 
 
 class OctaviaBase(models.ModelBase):

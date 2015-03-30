@@ -18,7 +18,7 @@ Common classes for local filesystem certificate handling
 """
 import os
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 from octavia.certificates.common import cert
 

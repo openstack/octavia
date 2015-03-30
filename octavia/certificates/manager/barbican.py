@@ -16,13 +16,13 @@
 """
 Cert manager implementation for Barbican
 """
-from oslo.config import cfg
-from oslo.utils import excutils
+from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_utils import excutils
 
 from octavia.certificates.common import barbican as barbican_common
 from octavia.certificates.manager import cert_mgr
 from octavia.i18n import _LE, _LI, _LW
-from octavia.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

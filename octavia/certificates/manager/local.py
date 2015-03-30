@@ -15,13 +15,13 @@
 import os
 import uuid
 
-from oslo.config import cfg
+from oslo_config import cfg
+from oslo_log import log as logging
 
 from octavia.certificates.common import local as local_common
 from octavia.certificates.manager import cert_mgr
 from octavia.common import exceptions
 from octavia.i18n import _LE, _LI
-from octavia.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 

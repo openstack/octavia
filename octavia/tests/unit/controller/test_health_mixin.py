@@ -12,12 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-
 import mock
+from oslo_utils import uuidutils
 
 from octavia.common import constants
 from octavia.controller.healthmanager import update_health_mixin as healthmixin
-from octavia.openstack.common import uuidutils
 import octavia.tests.unit.base as base
 
 

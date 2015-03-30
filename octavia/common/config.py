@@ -17,14 +17,14 @@
 Routines for configuring Octavia
 """
 
-from oslo.config import cfg
-from oslo.db import options as db_options
-from oslo import messaging
+from oslo_config import cfg
+from oslo_db import options as db_options
+from oslo_log import log as logging
+import oslo_messaging as messaging
 # from paste import deploy
 
 from octavia.common import utils
 from octavia.i18n import _LI
-from octavia.openstack.common import log as logging
 from octavia import version
 
 LOG = logging.getLogger(__name__)
@@ -104,6 +104,8 @@ db_options.set_defaults(cfg.CONF,
                         sqlite_db='', max_pool_size=10,
                         max_overflow=20, pool_timeout=10)
 
+logging.register_options(cfg.CONF)
+
 
 def init(args, **kwargs):
     cfg.CONF(args=args, project='octavia',
@@ -117,7 +119,7 @@ def setup_logging(conf):
     :param conf: a cfg.ConfOpts object
     """
     product_name = "octavia"
-    logging.setup(product_name)
+    logging.setup(conf, product_name)
     LOG.info(_LI("Logging enabled!"))
 
 

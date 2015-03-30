@@ -12,11 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_log import log as logging
+from oslo_utils import uuidutils
 
 from octavia.amphorae.drivers.noop_driver import driver as driver
 from octavia.db import models as models
-from octavia.openstack.common import log as logging
-from octavia.openstack.common import uuidutils
 from octavia.tests.unit import base as base
 
 

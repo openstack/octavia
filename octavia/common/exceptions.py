@@ -17,7 +17,7 @@
 Octavia base exception handling.
 """
 
-from oslo.utils import excutils
+from oslo_utils import excutils
 from webob import exc
 
 from octavia.i18n import _LE

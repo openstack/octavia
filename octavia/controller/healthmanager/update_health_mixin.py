@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from oslo_log import log as logging
 import sqlalchemy
 from sqlalchemy.sql import func
 
@@ -19,7 +20,6 @@ from octavia.amphorae.drivers import driver_base as driver_base
 from octavia.common import constants
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
-from octavia.openstack.common import log as logging
 
 import six
 
@@ -115,4 +115,4 @@ class UpdateHealthMixin(driver_base.HealthMixin):
                                 operating_status=member)
                         except sqlalchemy.orm.exc.NoResultFound:
                             LOG.DEBUG("Member %s is not able to update in DB",
-                                     member_id)
+                                      member_id)

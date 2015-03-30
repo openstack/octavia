@@ -14,8 +14,8 @@
 import os
 
 import mock
-from oslo.config import cfg
-from oslo.config import fixture as oslo_fixture
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 
 import octavia.certificates.common.cert as cert
 import octavia.certificates.manager.local as local_cert_mgr

@@ -11,16 +11,17 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from keystoneclient import session
 import mock
 import novaclient.v2
-from oslo.config import cfg
+from oslo_config import cfg
+from oslo_utils import uuidutils
 
 from octavia.common import constants
 from octavia.common import data_models as models
 from octavia.common import exceptions
 import octavia.compute.drivers.nova_driver as nova_common
-from octavia.openstack.common import uuidutils
 import octavia.tests.unit.base as base
 
 

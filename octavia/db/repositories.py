@@ -17,10 +17,11 @@ Defines interface for DB access that Resource or Octavia Controllers may
 reference
 """
 
+from oslo_utils import uuidutils
+
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.db import models
-from octavia.openstack.common import uuidutils
 
 import datetime
 

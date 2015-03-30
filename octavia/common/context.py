@@ -12,8 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_context import context as common_context
+
 from octavia.db import api as db_api
-from octavia.openstack.common import context as common_context
 
 
 class Context(common_context.RequestContext):

@@ -12,7 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo.utils import excutils
+from oslo_log import log as logging
+from oslo_utils import excutils
 import pecan
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
@@ -25,7 +26,6 @@ from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import api as db_api
 from octavia.i18n import _LI
-from octavia.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

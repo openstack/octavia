@@ -12,12 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_utils import uuidutils
 from wsme import exc
 from wsme.rest import json as wsme_json
 
 from octavia.api.v1.types import base as base_type
 from octavia.common import constants
-from octavia.openstack.common import uuidutils
 from octavia.tests.unit import base
 
 
