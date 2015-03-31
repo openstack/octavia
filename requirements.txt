@@ -35,4 +35,4 @@ WSME>=0.6
 pyasn1
 pyasn1_modules
 
-jinja2
+Jinja2>=2.6  # BSD License (3 clause)
