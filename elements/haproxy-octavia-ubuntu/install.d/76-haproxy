@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -eux
+set -o pipefail
+
+[ -d /var/lib/haproxy ] || install -d -D -m 0755 -o root -g root /var/lib/haproxy

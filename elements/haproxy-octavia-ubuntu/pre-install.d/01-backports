@@ -1,0 +1,7 @@
+#!/bin/bash
+# Add the Ubuntu backports archive
+
+set -eu
+set -o xtrace
+
+echo deb http://archive.ubuntu.com/ubuntu trusty-backports main restricted universe multiverse > /etc/apt/sources.list.d/backports.list

@@ -261,7 +261,11 @@ else
         fi
 fi
 
-PKG_LIST="Babel argparse dib-utils PyYAML"
+# "pip freeze" does not show argparse, even if it is explictly installed,
+# because it is part of of the standard python library in 2.7.
+# See https://github.com/pypa/pip/issues/1570
+
+PKG_LIST="Babel dib-utils PyYAML"
     for pkg in $PKG_LIST; do
         if ! pip freeze 2>/dev/null| grep -q "^$pkg==" &>/dev/null; then
             echo "Required python package " $pkg " is not installed.  Exiting."
@@ -295,18 +299,21 @@ popd > /dev/null
 
 if [ "$AMP_BASEOS" = "ubuntu" ]; then
     AMP_element_sequence=${AMP_element_sequence:-"base vm ubuntu"}
+    AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND-ubuntu"
     if [ "$BASE_OS_MIRROR" ]; then
         AMP_element_sequence="$AMP_element_sequence apt-mirror"
         export UBUNTU_MIRROR="$BASE_OS_MIRROR"
     fi
 elif [ "$AMP_BASEOS" = "fedora" ]; then
     AMP_element_sequence=${AMP_element_sequence:-"base vm fedora"}
+    AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
     if [ "$BASE_OS_MIRROR" ]; then
         AMP_element_sequence="$AMP_element_sequence fedora-mirror"
         export FEDORA_MIRROR="$BASE_OS_MIRROR"
     fi
 elif [ "$AMP_BASEOS" = "centos" ]; then
     AMP_element_sequence=${AMP_element_sequence:-"base vm centos7"}
+    AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
     if [ "$BASE_OS_MIRROR" ]; then
         AMP_element_sequence="$AMP_element_sequence centos-mirror"
         export CENTOS_MIRROR="$BASE_OS_MIRROR"
@@ -318,8 +325,8 @@ if [ "$AMP_ROOTPW" ]; then
     export DIB_PASSWORD=$AMP_ROOTPW
 fi
 
-# Add the Octavia Amphora backend element
-AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
+# Add the Octavia Amphora agent element
+AMP_element_sequence="$AMP_element_sequence amphora-agent"
 
 # Allow full elements override
 if [ "$DIB_ELEMENTS" ]; then
