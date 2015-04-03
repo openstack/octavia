@@ -94,6 +94,25 @@ Establish a base class to model the desire functionality:
                 on that instance.
             """
 
+        def start_health_check(self, health_mixin):
+            """start check health
+
+            :param health_mixin: health mixin object
+            :type amphora: object
+
+            Start listener process and  calls HealthMixin to update
+            databases information.
+            """
+            pass
+
+        def stop_health_check(self):
+            """stop check health
+
+
+            Stop listener process and  calls HealthMixin to update
+            databases information.
+            """
+            pass
 
 The referenced listener is a listener object and vip a vip as described
 in our model. The model is detached from the DB so the driver can't write

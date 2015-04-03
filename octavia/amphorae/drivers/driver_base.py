@@ -158,6 +158,27 @@ class AmphoraLoadBalancerDriver(object):
         """
         pass
 
+    def start_health_check(self, health_mixin):
+        """start check health
+
+
+        :param health_mixin: health mixin object
+        :type amphora: object
+
+        Start listener process and  calls HealthMixin to update
+        databases information.
+        """
+        pass
+
+    def stop_health_check(self):
+        """stop check health
+
+
+        Stop listener process and  calls HealthMixin to update
+        databases information.
+        """
+        pass
+
 
 @six.add_metaclass(abc.ABCMeta)
 class HealthMixin(object):
