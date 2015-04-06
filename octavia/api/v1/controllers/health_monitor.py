@@ -124,7 +124,6 @@ class HealthMonitorController(base.BaseController):
                      self.pool_id)
             raise exceptions.NotFound(
                 resource=data_models.HealthMonitor._name(), id=id)
-        hm_dict = health_monitor.to_dict(render_unsets=False)
         # Verify load balancer is in a mutable status.  If so it can be assumed
         # that the listener is also in a mutable status because a load balancer
         # will only be ACTIVE when all it's listeners as ACTIVE.
@@ -139,25 +138,9 @@ class HealthMonitorController(base.BaseController):
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
         try:
-            self.repositories.health_monitor.update(
-                session, self.pool_id, **hm_dict)
-        except odb_exceptions.DBError:
-            # Setting LB and Listener back to active because this is just a
-            # validation failure
-            self.repositories.load_balancer.update(
-                session, self.load_balancer_id,
-                provisioning_status=constants.ACTIVE)
-            self.repositories.listener.update(
-                session, self.listener_id,
-                provisioning_status=constants.ACTIVE)
-            raise exceptions.InvalidOption(value=hm_dict.get('type'),
-                                           option='type')
-        db_hm = self.repositories.health_monitor.get(
-            session, pool_id=self.pool_id)
-        try:
             LOG.info(_LI("Sending Update of Health Monitor for Pool %s to "
                          "handler") % self.pool_id)
-            self.handler.update(db_hm)
+            self.handler.update(db_hm, health_monitor)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.listener.update(

@@ -56,34 +56,38 @@ class BaseProducer(abstract_handler.BaseObjectHandler):
     def create(self, model):
         """Sends a create message to the controller via oslo.messaging
 
-        :param data_model:
+        :param model:
         """
         model_id = getattr(model, 'id', None)
+        p_class = self.payload_class
         if isinstance(model, data_models.HealthMonitor):
             model_id = model.pool_id
-        kw = {"{0}_id".format(self.payload_class): model_id}
+            p_class = PoolProducer.PAYLOAD_CLASS
+        kw = {"{0}_id".format(p_class): model_id}
         method_name = "create_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
-    def update(self, model, updated_dict):
+    def update(self, data_model, updated_model):
         """sends an update message to the controller via oslo.messaging
 
         :param updated_model:
         :param data_model:
         """
-        model_id = getattr(model, 'id', None)
-        if isinstance(model, data_models.HealthMonitor):
-            model_id = model.pool_id
-        kw = {"{0}_updates".format(self.payload_class): updated_dict,
-              "{0}_id".format(self.payload_class): model_id}
+        model_id = getattr(data_model, 'id', None)
+        p_class = self.payload_class
+        if isinstance(data_model, data_models.HealthMonitor):
+            model_id = data_model.pool_id
+            p_class = PoolProducer.PAYLOAD_CLASS
+        kw = {"{0}_updates".format(self.payload_class):
+              updated_model.to_dict(render_unsets=False),
+              "{0}_id".format(p_class): model_id}
         method_name = "update_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
     def delete(self, model):
         """sends a delete message to the controller via oslo.messaging
 
-        :param updated_model:
-        :param data_model:
+        :param model:
         """
         model_id = getattr(model, 'id', None)
         if isinstance(model, data_models.HealthMonitor):
@@ -97,46 +101,55 @@ class LoadBalancerProducer(BaseProducer):
     """Sends updates,deletes and creates to the RPC end of the queue consumer
 
     """
+    PAYLOAD_CLASS = "load_balancer"
+
     @property
     def payload_class(self):
-        return "load_balancer"
+        return self.PAYLOAD_CLASS
 
 
 class ListenerProducer(BaseProducer):
     """Sends updates,deletes and creates to the RPC end of the queue consumer
 
-
     """
+    PAYLOAD_CLASS = "listener"
+
     @property
     def payload_class(self):
-        return "listener"
+        return self.PAYLOAD_CLASS
 
 
 class PoolProducer(BaseProducer):
     """Sends updates,deletes and creates to the RPC end of the queue consumer
 
     """
+    PAYLOAD_CLASS = "pool"
+
     @property
     def payload_class(self):
-        return "pool"
+        return self.PAYLOAD_CLASS
 
 
 class HealthMonitorProducer(BaseProducer):
     """Sends updates,deletes and creates to the RPC end of the queue consumer
 
     """
+    PAYLOAD_CLASS = "health_monitor"
+
     @property
     def payload_class(self):
-        return "health_monitor"
+        return self.PAYLOAD_CLASS
 
 
 class MemberProducer(BaseProducer):
     """Sends updates,deletes and creates to the RPC end of the queue consumer
 
     """
+    PAYLOAD_CLASS = "member"
+
     @property
     def payload_class(self):
-        return "member"
+        return self.PAYLOAD_CLASS
 
 
 class ProducerHandler(abstract_handler.BaseHandler):

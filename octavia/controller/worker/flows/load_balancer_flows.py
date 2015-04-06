@@ -116,6 +116,8 @@ class LoadBalancerFlows(object):
         update_LB_flow = linear_flow.Flow(constants.UPDATE_LOADBALANCER_FLOW)
         update_LB_flow.add(controller_tasks.DisableEnableLB(
             requires='loadbalancer'))
+        update_LB_flow.add(database_tasks.UpdateLoadbalancerInDB(
+            requires=['loadbalancer', 'update_dict']))
         update_LB_flow.add(database_tasks.MarkLBActiveInDB(
             requires='loadbalancer'))
 

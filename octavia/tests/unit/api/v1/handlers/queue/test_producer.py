@@ -29,7 +29,13 @@ from oslo_config import fixture
 import oslo_messaging as messaging
 
 from octavia.api.v1.handlers.queue import producer
+from octavia.api.v1.types import health_monitor
+from octavia.api.v1.types import listener
+from octavia.api.v1.types import load_balancer
+from octavia.api.v1.types import member
+from octavia.api.v1.types import pool
 from octavia.common import config
+from octavia.common import data_models
 from octavia.tests.unit import base
 
 
@@ -72,9 +78,11 @@ class TestProducer(base.TestCase):
 
     def test_update_loadbalancer(self):
         p = producer.LoadBalancerProducer()
-        p.update(self.mck_model, {'admin_state_up': False})
-        kw = {'load_balancer_updates': {'admin_state_up': False},
-              'load_balancer_id': self.mck_model.id}
+        lb = data_models.LoadBalancer(id=10)
+        lb_updates = load_balancer.LoadBalancerPUT(enabled=False)
+        p.update(lb, lb_updates)
+        kw = {'load_balancer_id': lb.id,
+              'load_balancer_updates': lb_updates.to_dict(render_unsets=False)}
         self.mck_client.cast.assert_called_once_with(
             {}, 'update_load_balancer', **kw)
 
@@ -94,9 +102,12 @@ class TestProducer(base.TestCase):
 
     def test_update_listener(self):
         p = producer.ListenerProducer()
-        p.update(self.mck_model, {'admin_state_up': False})
-        kw = {'listener_updates': {'admin_state_up': False},
-              'listener_id': self.mck_model.id}
+        listener_model = data_models.LoadBalancer(id=10)
+        listener_updates = listener.ListenerPUT(enabled=False)
+        p.update(listener_model, listener_updates)
+        kw = {'listener_id': listener_model.id,
+              'listener_updates': listener_updates.to_dict(
+                  render_unsets=False)}
         self.mck_client.cast.assert_called_once_with(
             {}, 'update_listener', **kw)
 
@@ -116,9 +127,11 @@ class TestProducer(base.TestCase):
 
     def test_update_pool(self):
         p = producer.PoolProducer()
-        p.update(self.mck_model, {'admin_state_up': False})
-        kw = {'pool_updates': {'admin_state_up': False},
-              'pool_id': self.mck_model.id}
+        pool_model = data_models.Pool(id=10)
+        pool_updates = pool.PoolPUT(enabled=False)
+        p.update(pool_model, pool_updates)
+        kw = {'pool_id': pool_model.id,
+              'pool_updates': pool_updates.to_dict(render_unsets=False)}
         self.mck_client.cast.assert_called_once_with(
             {}, 'update_pool', **kw)
 
@@ -138,9 +151,12 @@ class TestProducer(base.TestCase):
 
     def test_update_healthmonitor(self):
         p = producer.HealthMonitorProducer()
-        p.update(self.mck_model, {'admin_state_up': False})
-        kw = {'health_monitor_updates': {'admin_state_up': False},
-              'health_monitor_id': self.mck_model.id}
+        hm = data_models.HealthMonitor(pool_id=10)
+        hm_updates = health_monitor.HealthMonitorPUT(enabled=False)
+        p.update(hm, hm_updates)
+        kw = {'pool_id': hm.pool_id,
+              'health_monitor_updates': hm_updates.to_dict(
+                  render_unsets=False)}
         self.mck_client.cast.assert_called_once_with(
             {}, 'update_health_monitor', **kw)
 
@@ -160,8 +176,10 @@ class TestProducer(base.TestCase):
 
     def test_update_member(self):
         p = producer.MemberProducer()
-        p.update(self.mck_model, {'admin_state_up': False})
-        kw = {'member_updates': {'admin_state_up': False},
-              'member_id': self.mck_model.id}
+        member_model = data_models.Member(id=10)
+        member_updates = member.MemberPUT(enabled=False)
+        p.update(member_model, member_updates)
+        kw = {'member_id': member_model.id,
+              'member_updates': member_updates.to_dict(render_unsets=False)}
         self.mck_client.cast.assert_called_once_with(
             {}, 'update_member', **kw)

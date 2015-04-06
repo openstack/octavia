@@ -80,4 +80,4 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn('loadbalancer', lb_flow.requires)
 
         self.assertEqual(len(lb_flow.provides), 0)
-        self.assertEqual(len(lb_flow.requires), 1)
+        self.assertEqual(len(lb_flow.requires), 2)
