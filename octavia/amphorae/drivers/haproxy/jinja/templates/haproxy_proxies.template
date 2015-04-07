@@ -81,7 +81,7 @@ backend {{ pool.id }}
 {% endif %}
 {% for member in pool.members %}
 {% if pool.health_monitor %}
-{% set hm_opt = " check inter %ds fall %d"|format(pool.health_monitor.delay, pool.health_monitor.fall_threshold) %}
+{% set hm_opt = " check inter %ds fall %d rise %d"|format(pool.health_monitor.delay, pool.health_monitor.fall_threshold, pool.health_monitor.rise_threshold) %}
 {% else %}
 {% set hm_opt = "" %}
 {% endif %}

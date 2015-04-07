@@ -50,9 +50,11 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    option forwardfor\n"
               "    server sample_member_id_1 10.0.0.99:82 "
-              "weight 13 check inter 30s fall 3 cookie sample_member_id_1\n"
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
-              "weight 13 check inter 30s fall 3 cookie sample_member_id_2\n\n")
+              "weight 13 check inter 30s fall 3 rise 2 cookie "
+              "sample_member_id_2\n\n")
         tls_tupe = sample_configs.sample_tls_container_tuple(
             certificate='imaCert1', private_key='imaPrivateKey1',
             primary_cn='FakeCN')
@@ -85,9 +87,11 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    option forwardfor\n"
               "    server sample_member_id_1 10.0.0.99:82 "
-              "weight 13 check inter 30s fall 3 cookie sample_member_id_1\n"
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
-              "weight 13 check inter 30s fall 3 cookie sample_member_id_2\n\n")
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_listener_tuple(
                 proto='TERMINATED_HTTPS', tls=True),
@@ -110,9 +114,11 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    option forwardfor\n"
               "    server sample_member_id_1 10.0.0.99:82 "
-              "weight 13 check inter 30s fall 3 cookie sample_member_id_1\n"
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
-              "weight 13 check inter 30s fall 3 cookie sample_member_id_2\n\n")
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_listener_tuple())
         self.assertEqual(
@@ -135,9 +141,11 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    option ssl-hello-chk\n"
               "    server sample_member_id_1 10.0.0.99:82 "
-              "weight 13 check inter 30s fall 3 cookie sample_member_id_1\n"
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
-              "weight 13 check inter 30s fall 3 cookie sample_member_id_2\n\n")
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_listener_tuple(proto='HTTPS'))
         self.assertEqual(sample_configs.sample_base_expected_config(
@@ -220,9 +228,9 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    option forwardfor\n"
               "    server sample_member_id_1 10.0.0.99:82 "
-              "weight 13 check inter 30s fall 3\n"
+              "weight 13 check inter 30s fall 3 rise 2\n"
               "    server sample_member_id_2 10.0.0.98:82 "
-              "weight 13 check inter 30s fall 3\n\n")
+              "weight 13 check inter 30s fall 3 rise 2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_listener_tuple(
                 persistence_type='SOURCE_IP'))
