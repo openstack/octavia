@@ -47,18 +47,25 @@ JINJA_ENV = None
 
 class JinjaTemplater(object):
 
-    def __init__(self, base_amp_path=None,
+    def __init__(self,
+                 base_amp_path=None,
                  base_crt_dir=None,
-                 haproxy_template=None):
+                 haproxy_template=None,
+                 log_http=None,
+                 log_server=None,
+                 timeout_client=None,
+                 timeout_server=None,
+                 timeout_connect=None):
+        """HaProxy configuration generation
 
-        """:param base_amp_path: Base path for amphora data
-
+        :param base_amp_path: Base path for amphora data
         :param base_crt_dir: Base directory for certificate storage
-
-        :param haproxy_template: Absolute path to the Jinja template for
-
-        HaProxy configuration generation
-
+        :param haproxy_template: Absolute path to Jinja template
+        :param log_http: Haproxy HTTP logging path
+        :param log_server: Haproxy Server logging path
+        :param timeout_client: Timeout client
+        :param timeout_server: Timeout server
+        :param timeout_connect: Timeout connect
         """
 
         self.base_amp_path = base_amp_path if base_amp_path else BASE_PATH
@@ -67,11 +74,23 @@ class JinjaTemplater(object):
                                  else HAPROXY_TEMPLATE)
         self.cert_store_path = '{0}{1}'.format(self.base_amp_path,
                                                self.base_crt_dir)
+        self.log_http = log_http
+        self.log_server = log_server
+        self.timeout_client = timeout_client
+        self.timeout_server = timeout_server
+        self.timeout_connect = timeout_connect
 
     def build_config(self, listener, tls_cert,
                      socket_path=None,
                      user_group='nogroup'):
-        """Convert a logical configuration to the HAProxy version."""
+        """Convert a logical configuration to the HAProxy version
+
+        :param listener: The listener configuration
+        :param tls_cert: The TLS certificates for the listener
+        :param socket_path: The socket path for Haproxy process
+        :param user_group: The user group
+        :return: Rendered configuration
+        """
         return self.render_loadbalancer_obj(listener,
                                             tls_cert=tls_cert,
                                             user_group=user_group,
@@ -93,7 +112,14 @@ class JinjaTemplater(object):
                                 tls_cert=None,
                                 user_group='nogroup',
                                 socket_path=None):
-        """Renders a templated configuration from a load balancer object."""
+        """Renders a templated configuration from a load balancer object
+
+        :param listener: The listener configuration
+        :param tls_cert: The TLS certificates for the listener
+        :param socket_path: The socket path for Haproxy process
+        :param user_group: The user group
+        :return: Rendered configuration
+        """
         loadbalancer = self._transform_loadbalancer(
             listener.loadbalancer,
             listener,
@@ -103,7 +129,12 @@ class JinjaTemplater(object):
         return self._get_template().render(
             {'loadbalancer': loadbalancer,
              'user_group': user_group,
-             'stats_sock': socket_path},
+             'stats_sock': socket_path,
+             'log_http': self.log_http,
+             'log_server': self.log_server,
+             'timeout_client': self.timeout_client,
+             'timeout_server': self.timeout_server,
+             'timeout_connect': self.timeout_connect},
             constants=constants)
 
     def _transform_loadbalancer(self, loadbalancer, listener, tls_cert):

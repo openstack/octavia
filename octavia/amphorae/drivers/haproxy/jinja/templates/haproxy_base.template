@@ -18,16 +18,16 @@ global
     daemon
     user nobody
     group {{ usergroup }}
-    log /dev/log local0
-    log /dev/log local1 notice
+    log {{ log_http | default('/dev/log', true)}} local0
+    log {{ log_server | default('/dev/log', true)}} local1 notice
     stats socket {{ sock_path }} mode 0666 level user
 
 defaults
     log global
     retries 3
     option redispatch
-    timeout connect 5000
-    timeout client 50000
-    timeout server 50000
+    timeout connect {{ timeout_connect | default('5000', true) }}
+    timeout client {{ timeout_client | default('50000', true) }}
+    timeout server {{ timeout_server | default('50000', true) }}
 
 {% block proxies %}{% endblock proxies %}
