@@ -99,3 +99,9 @@ class NoopAmphoraLoadBalancerDriver(base.TestCase):
         self.assertEqual((self.amphora.id, 'finalize amphora'),
                          self.driver.driver.amphoraconfig[
                              self.amphora.id])
+
+    def test_post_network_plug(self):
+        self.driver.post_network_plug(self.amphora)
+        self.assertEqual((self.amphora.id, 'post_network_plug'),
+                         self.driver.driver.amphoraconfig[
+                             self.amphora.id])

@@ -80,6 +80,11 @@ class NoopManager(object):
                   self.__class__.__name__, amphora.id)
         self.amphoraconfig[amphora.id] = (amphora.id, 'finalize amphora')
 
+    def post_network_plug(self, amphora):
+        LOG.debug("Amphora %s no-op, post network plug amphora %s",
+                  self.__class__.__name__, amphora.id)
+        self.amphoraconfig[amphora.id] = (amphora.id, 'post_network_plug')
+
 
 class NoopAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
     def __init__(self, log):
@@ -118,3 +123,7 @@ class NoopAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
     def finalize_amphora(self, amphora):
 
         self.driver.finalize_amphora(amphora)
+
+    def post_network_plug(self, amphora):
+
+        self.driver.post_network_plug(amphora)
