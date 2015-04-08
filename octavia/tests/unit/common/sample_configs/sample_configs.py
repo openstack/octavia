@@ -25,6 +25,7 @@ RET_MONITOR = {
     'delay': 30,
     'timeout': 31,
     'fall_threshold': 3,
+    'rise_threshold': 2,
     'http_method': 'GET',
     'url_path': '/index.html',
     'expected_codes': '418',
@@ -260,13 +261,13 @@ def sample_session_persistence_tuple(persistence_type=None):
 def sample_health_monitor_tuple(proto='HTTP'):
     proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
     monitor = collections.namedtuple(
-        'monitor', 'id, type, delay, timeout, fall_threshold, http_method, '
-                   'url_path, expected_codes, enabled')
+        'monitor', 'id, type, delay, timeout, fall_threshold, rise_threshold,'
+                   'http_method, url_path, expected_codes, enabled')
 
     return monitor(id='sample_monitor_id_1', type=proto, delay=30,
-                   timeout=31, fall_threshold=3, http_method='GET',
-                   url_path='/index.html', expected_codes='418',
-                   enabled=True)
+                   timeout=31, fall_threshold=3, rise_threshold=2,
+                   http_method='GET', url_path='/index.html',
+                   expected_codes='418', enabled=True)
 
 
 def sample_base_expected_config(frontend=None, backend=None):
@@ -287,9 +288,9 @@ def sample_base_expected_config(frontend=None, backend=None):
                    "    option httpchk GET /index.html\n"
                    "    http-check expect rstatus 418\n"
                    "    server sample_member_id_1 10.0.0.99:82 weight 13 "
-                   "check inter 30s fall 3 cookie sample_member_id_1\n"
+                   "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
                    "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-                   "check inter 30s fall 3 cookie sample_member_id_2\n")
+                   "check inter 30s fall 3 rise 2 cookie sample_member_id_2\n")
     return ("# Configuration for test-lb\n"
             "global\n"
             "    daemon\n"

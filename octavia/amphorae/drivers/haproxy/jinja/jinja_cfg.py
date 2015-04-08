@@ -205,6 +205,7 @@ class JinjaTemplater(object):
             'delay': monitor.delay,
             'timeout': monitor.timeout,
             'fall_threshold': monitor.fall_threshold,
+            'rise_threshold': monitor.rise_threshold,
             'http_method': monitor.http_method,
             'url_path': monitor.url_path,
             'expected_codes': '|'.join(
