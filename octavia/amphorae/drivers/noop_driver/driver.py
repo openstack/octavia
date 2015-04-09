@@ -87,14 +87,9 @@ class NoopManager(object):
 
 
 class NoopAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
-    def __init__(self, log):
+    def __init__(self):
         super(NoopAmphoraLoadBalancerDriver, self).__init__()
-        self.log = log
         self.driver = NoopManager()
-
-    def get_logger(self):
-
-        raise NotImplementedError
 
     def update(self, listener, vip):
 

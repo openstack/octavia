@@ -43,16 +43,13 @@ class NoopAmphoraLoadBalancerDriver(base.TestCase):
 
     def setUp(self):
         super(NoopAmphoraLoadBalancerDriver, self).setUp()
-        self.driver = driver.NoopAmphoraLoadBalancerDriver(LOG)
+        self.driver = driver.NoopAmphoraLoadBalancerDriver()
         self.listener = models.Listener()
         self.listener.protocol_port = 80
         self.vip = models.Vip()
         self.vip.ip_address = "10.0.0.1"
         self.amphora = models.Amphora()
         self.amphora.id = self.FAKE_UUID_1
-
-    def test_get_logger(self):
-        self.assertEqual(LOG, self.driver.log)
 
     def test_update(self):
         self.driver.update(self.listener, self.vip)

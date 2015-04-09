@@ -20,15 +20,6 @@ import six
 @six.add_metaclass(abc.ABCMeta)
 class AmphoraLoadBalancerDriver(object):
     @abc.abstractmethod
-    def get_logger(self):
-        """Return the logger to use.
-
-        This is a way to inject a custom logger for testing,etc.
-        :returns: the logger
-        """
-        pass
-
-    @abc.abstractmethod
     def update(self, listener, vip):
         """Update the amphora with a new configuration
 
