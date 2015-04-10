@@ -121,7 +121,6 @@ class AmphoraLoadBalancerDriver(object):
     def finalize_amphora(self, amphora):
         """It is called before listeners configured while amphora was built
 
-
         :param amphora: amphora object, need to use its id property
         :type amphora: object
         :returns: return a value list (amphora.id, status flag--'ge
@@ -135,9 +134,18 @@ class AmphoraLoadBalancerDriver(object):
         """
         pass
 
+    def post_vip_plug(self, load_balancer):
+        """Called after network driver has allocated and plugged the VIP
+
+        :param load_balancer: A load balancer that just had its vip allocated
+                              and plugged in the network driver.
+        :type load_balancer: octavia.common.data_models.LoadBalancer
+        :returns: None
+        """
+        pass
+
     def post_network_plug(self, amphora):
         """Called after amphora added to network
-
 
         :param amphora: amphora object, needs id and network ip(s)
         :type amphora: object
