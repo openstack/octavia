@@ -804,6 +804,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
                                            load_balancer_id=lb.id,
                                            compute_id=self.FAKE_UUID_3,
                                            status=constants.ACTIVE,
+                                           vrrp_ip=self.FAKE_IP,
                                            lb_network_ip=self.FAKE_IP)
         new_lb = self.lb_repo.get(self.session, id=lb.id)
         self.assertIsNotNone(new_lb)
@@ -825,6 +826,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
                                              load_balancer_id=lb.id,
                                              compute_id=self.FAKE_UUID_3,
                                              lb_network_ip=self.FAKE_IP,
+                                             vrrp_ip=self.FAKE_IP,
                                              status=constants.ACTIVE)
         new_lb = self.lb_repo.get(self.session, id=lb.id)
         self.assertIsNotNone(new_lb)
@@ -1065,7 +1067,9 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         amphora = self.amphora_repo.create(self.session, id=amphora_id,
                                            compute_id=self.FAKE_UUID_3,
                                            status=constants.ACTIVE,
-                                           lb_network_ip=self.FAKE_IP)
+                                           lb_network_ip=self.FAKE_IP,
+                                           vrrp_ip=self.FAKE_IP,
+                                           ha_ip=self.FAKE_IP)
         return amphora
 
     def test_get(self):

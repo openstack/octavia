@@ -117,7 +117,9 @@ class AbstractNetworkDriver(object):
 
         :param load_balancer: octavia.common.data_models.LoadBalancer instance
         :param vip: octavia.common.data_models.VIP instance
-        :return: octavia.common.data_models.VIP instance
+        :return: dict consisting of amphora_id as key and bind_ip as value.
+                 bind_ip is the ip that the amphora should listen on to
+                 receive traffic to load balance.
         :raises: PlugVIPException
         """
         pass
@@ -148,11 +150,15 @@ class AbstractNetworkDriver(object):
         """
 
     @abc.abstractmethod
-    def unplug_network(self, amphora_id, network_id):
+    def unplug_network(self, amphora_id, network_id, ip_address=None):
         """Disconnects an existing amphora from an existing network.
+
+        If ip_address is not specificed, all the interfaces plugged on
+        network_id should be unplugged.
 
         :param amphora_id: id of an amphora in the compute service
         :param network_id: id of a network
+        :param ip_address: specific ip_address to unplug
         :return: None
         :raises: UnplugNetworkException, AmphoraNotFound, NetworkNotFound
         """

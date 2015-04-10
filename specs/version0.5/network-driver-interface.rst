@@ -47,6 +47,19 @@ Existing data model:
     * network_id - (neutron subnet)
     * port_id - (neutron port)
 
+* class Amphora
+    * load_balancer_id
+    * compute_id
+    * lb_network_ip
+    * status
+    * vrrp_ip - if an active/passive topology, this is the ip where the vrrp
+                communication between peers happens
+    * ha_ip - this is the highly available IP.  In an active/passive topology
+              it most likely exists on the MASTER amphora and on failure
+              it will be raised on the SLAVE amphora.  In an active/active
+              topology it may exist on both amphorae.  In the end, it is up
+              to the amphora driver to decide how to use this.
+
 New data model:
 
 * class Interface
@@ -90,7 +103,7 @@ class AbstractNetworkDriver
           ids and the vip data model.
 
     * vip = instance of a VIP
-    * returns VIP instance
+    * returns list of Amphora
     * raises PlugVIPException
 
 * unplug_vip(loadbalancer, vip)
@@ -130,11 +143,13 @@ class AbstractNetworkDriver
     * returns Interface instance
     * raises PlugNetworkException, AmphoraNotFound, NetworkNotFound
 
-* unplug_network(amphora_id, network_id)
+* unplug_network(amphora_id, network_id, ip_address=None)
 
-    * Disconnects an existing amphora from an existing network.
+    * Disconnects an existing amphora from an existing network. If ip_address
+      is not specified then all interfaces on that network will be unplugged.
     * amphora = id of an amphora in the compute service to unplug
     * network_id = id of network to unplug amphora
+    * ip_address = ip address of interface to unplug
     * returns None
     * raises UnplugNetworkException, AmphoraNotFound, NetworkNotFound
 
