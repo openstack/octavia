@@ -38,60 +38,65 @@ Establish a base class to model the desire functionality:
             #return the logger to use - this is a way to inject a custom logger for testing, etc
 
         def update(self, listener, vip):
-            """
-                updates the amphora with a new configuration
-                for the listener on the vip.
+            """updates the amphora with a new configuration
+
+            for the listener on the vip.
             """
             raise NotImplementedError
 
         def stop(self, listener, vip):
-            """
-                stops the listener on the vip.
-            """
+            """stops the listener on the vip."""
             return None
 
         def start(self, listener, vip):
-            """
-                starts the listener on the vip.
-            """
+            """starts the listener on the vip."""
             return None
 
         def delete(self, listener, vip):
-            """
-                deletes the listener on the vip.
-            """
+            """deletes the listener on the vip."""
             raise NotImplementedError
 
         def get_info(self, amphora):
-            """
-                returns information about the amphora, e.g. {"Rest Interface": "1.0", "Amphorae": "1.0",
-                "packages":{"ha proxy":"1.5"}, "network-interfaces": {"eth0":{"ip":...}}
-                some information might come from querying the amphora
+            """Get detailed information about an amphora
+
+            returns information about the amphora, e.g. {"Rest Interface":
+            "1.0", "Amphorae": "1.0", "packages":{"ha proxy":"1.5"},
+            "network-interfaces": {"eth0":{"ip":...}} some information might
+            come from querying the amphora
             """
             raise NotImplementedError
 
         def get_diagnostics(self, amphora):
-            """
-                OPTIONAL - run some expensive self tests to determine if the amphora and the
-                lbs are healthy the idea is that those tests are triggered more infrequent
-                than the heartbeat
+            """OPTIONAL - Run diagnostics
+
+            run some expensive self tests to determine if the amphora and the
+            lbs are healthy the idea is that those tests are triggered more
+            infrequent than the heartbeat
             """
             raise NotImplementedError
 
         def finalize_amphora(self, amphora):
-            """
-                OPTIONAL - this method is called once an amphora has been build but before
-                any listeners are configured. This is a hook for drivers who need to do
-                additional work before am amphora becomes ready to accept listeners. Please keep in
-                mind that amphora might be kept in am offline pool after this call.
+            """OPTIONAL - called once an amphora has been build but before
+
+            any listeners are configured. This is a hook for drivers who need
+            to do additional work before am amphora becomes ready to accept
+            listeners. Please keep in mind that amphora might be kept in am
+            offline pool after this call.
             """
             pass
 
         def post_network_plug(self, amphora):
+            """OPTIONAL - called after adding a compute instance to a network.
+
+            This will perform any necessary actions to allow for connectivity
+            for that network on that instance.
             """
-                OPTIONAL - this method will be called after adding a compute instance to a network.
-                This will perform any necessary actions to allow for connectivity for that network
-                on that instance.
+
+        def post_vip_plug(self, load_balancer):
+            """OPTIONAL - called after plug_vip method of the network driver.
+
+            This is to do any additional work needed on the amphorae to plug
+            the vip, such as bring up interfaces.
             """
 
         def start_health_check(self, health_mixin):
@@ -107,7 +112,6 @@ Establish a base class to model the desire functionality:
 
         def stop_health_check(self):
             """stop check health
-
 
             Stop listener process and  calls HealthMixin to update
             databases information.
