@@ -49,154 +49,160 @@ The Controller Worker library will provide the following methods:
 .. code:: python
 
     def create_amphora(self):
-        """
-            Creates an Amphora.
+        """Creates an Amphora.
 
-            :returns: amphora_id
+        :returns: amphora_id
         """
         raise NotImplementedError
 
     def delete_amphora(self, amphora_id):
-        """
-            Deletes an existing Amphora.
+        """Deletes an existing Amphora.
 
-            :returns: None
-            :raises AmphoraNotFound: The referenced Amphora was not found
+        :param amphora_id: ID of the amphora to delete
+        :returns: None
+        :raises AmphoraNotFound: The referenced Amphora was not found
         """
         raise NotImplementedError
 
     def create_load_balancer(self, load_balancer_id):
-        """
-            Creates a load balancer by allocating Amphorae.
+        """Creates a load balancer by allocating Amphorae.
 
-            :returns: None
-            :raises NoSuitableAmphora: Unable to allocate an Amphora.
+        :param load_balancer_id: ID of the load balancer to create
+        :returns: None
+        :raises NoSuitableAmphora: Unable to allocate an Amphora.
         """
         raise NotImplementedError
 
-    def update_load_balancer(self, load_balancer_updates, load_balancer_id):
-        """
-            Updates a load balancer.
+    def update_load_balancer(self, load_balancer_id, load_balancer_updates):
+        """Updates a load balancer.
 
-            :returns: None
-            :raises LBNotFound: The referenced load balancer was not found
+        :param load_balancer_id: ID of the load balancer to update
+        :param load_balancer_updates: Dict containing updated load balancer
+        attributes
+        :returns: None
+        :raises LBNotFound: The referenced load balancer was not found
         """
         raise NotImplementedError
 
     def delete_load_balancer(self, load_balancer_id):
-        """
-            Deletes a load balancer by de-allocating Amphorae.
+        """Deletes a load balancer by de-allocating Amphorae.
 
-            :returns: None
-            :raises LBNotFound: The referenced load balancer was not found
+        :param load_balancer_id: ID of the load balancer to delete
+        :returns: None
+        :raises LBNotFound: The referenced load balancer was not found
         """
         raise NotImplementedError
 
     def create_listener(self, listener_id):
-        """
-            Creates a listener.
+        """Creates a listener.
 
-            :returns: None
-            :raises NoSuitableLB: Unable to find the load balancer
+        :param listener_id: ID of the listener to create
+        :returns: None
+        :raises NoSuitableLB: Unable to find the load balancer
         """
         raise NotImplementedError
 
-    def update_listener(self, listener_updates, listener_id):
-        """
-            Updates a listener.
+    def update_listener(self, listener_id, listener_updates):
+        """Updates a listener.
 
-            :returns: None
-            :raises ListenerNotFound: The referenced listener was not found
+        :param listener_id: ID of the listener to update
+        :param listener_updates: Dict containing updated listener attributes
+        :returns: None
+        :raises ListenerNotFound: The referenced listener was not found
         """
         raise NotImplementedError
 
     def delete_listener(self, listener_id):
-        """
-            Deletes a listener.
+        """Deletes a listener.
 
-            :returns: None
-            :raises ListenerNotFound: The referenced listener was not found
+        :param listener_id: ID of the listener to delete
+        :returns: None
+        :raises ListenerNotFound: The referenced listener was not found
         """
         raise NotImplementedError
 
     def create_pool(self, pool_id):
-        """
-            Creates a node pool.
+        """Creates a node pool.
 
-            :returns: None
-            :raises NoSuitableLB: Unable to find the load balancer
+        :param pool_id: ID of the pool to create
+        :returns: None
+        :raises NoSuitableLB: Unable to find the load balancer
         """
         raise NotImplementedError
 
-    def update_pool(self, pool_updates, pool_id):
-        """
-            Updates a node pool.
+    def update_pool(self, pool_id, pool_updates):
+        """Updates a node pool.
 
-            :returns: None
-            :raises PoolNotFound: The referenced pool was not found
+        :param pool_id: ID of the pool to update
+        :param pool_updates: Dict containing updated pool attributes
+        :returns: None
+        :raises PoolNotFound: The referenced pool was not found
         """
         raise NotImplementedError
 
     def delete_pool(self, pool_id):
-        """
-            Deletes a node pool.
+        """Deletes a node pool.
 
-            :returns: None
-            :raises PoolNotFound: The referenced pool was not found
+        :param pool_id: ID of the pool to delete
+        :returns: None
+        :raises PoolNotFound: The referenced pool was not found
         """
         raise NotImplementedError
 
     def create_health_monitor(self, health_monitor_id):
-        """
-            Creates a health monitor.
+        """Creates a health monitor.
 
-            :returns: None
-            :raises NoSuitablePool: Unable to find the node pool
+        :param health_monitor_id: ID of the health monitor to create
+        :returns: None
+        :raises NoSuitablePool: Unable to find the node pool
         """
         raise NotImplementedError
 
-    def update_health_monitor(self, health_monitor_updates, health_monitor_id):
-        """
-            Updates a health monitor.
+    def update_health_monitor(self, health_monitor_id, health_monitor_updates):
+        """Updates a health monitor.
 
-            :returns: None
-            :raises HMNotFound: The referenced health monitor was not found
+        :param health_monitor_id: ID of the health monitor to update
+        :param health_monitor_updates: Dict containing updated health monitor
+        attributes
+        :returns: None
+        :raises HMNotFound: The referenced health monitor was not found
         """
         raise NotImplementedError
 
     def delete_health_monitor(self, health_monitor_id):
-        """
-            Deletes a health monitor.
+        """Deletes a health monitor.
 
-            :returns: None
-            :raises HMNotFound: The referenced health monitor was not found
+        :param health_monitor_id: ID of the health monitor to delete
+        :returns: None
+        :raises HMNotFound: The referenced health monitor was not found
         """
         raise NotImplementedError
 
     def create_member(self, member_id):
-        """
-            Creates a pool member.
+        """Creates a pool member.
 
-            :returns: None
-            :raises NoSuitablePool: Unable to find the node pool
+        :param member_id: ID of the member to create
+        :returns: None
+        :raises NoSuitablePool: Unable to find the node pool
         """
         raise NotImplementedError
 
-    def update_member(self, member_updates, member_id):
-        """
-            Updates a pool member.
+    def update_member(self, member_id, member_updates):
+        """Updates a pool member.
 
-            :returns: None
-            :raises MemberNotFound: The referenced member was not found
+        :param member_id: ID of the member to update
+        :param member_updates: Dict containing updated member attributes
+        :returns: None
+        :raises MemberNotFound: The referenced member was not found
         """
         raise NotImplementedError
 
     def delete_member(self, member_id):
-        """
-            Deletes a pool member.
+        """Deletes a pool member.
 
-            :returns: None
-            :raises MemberNotFound: The referenced member was not found
+        :param member_id: ID of the member to delete
+        :returns: None
+        :raises MemberNotFound: The referenced member was not found
         """
         raise NotImplementedError
 
