@@ -75,9 +75,8 @@ class NoopManager(object):
 
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
-    def __init__(self, log):
+    def __init__(self):
         super(NoopNetworkDriver, self).__init__()
-        self.log = log
         self.driver = NoopManager()
 
     def allocate_vip(self, port_id=None, network_id=None, ip_address=None):

@@ -24,9 +24,6 @@ class NoopManager(object):
         super(NoopManager, self).__init__()
         self.computeconfig = {}
 
-    def get_logger(self):
-        LOG.debug("Compute %s no-op", self.__class__.__name__)
-
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
               key_name=None, sec_groups=None, network_ids=None,
               config_drive_files=None, user_data=None):
@@ -60,13 +57,9 @@ class NoopManager(object):
 
 
 class NoopComputeDriver(driver_base.ComputeBase):
-    def __init__(self, log):
+    def __init__(self, region=None):
         super(NoopComputeDriver, self).__init__()
-        self.log = log
         self.driver = NoopManager()
-
-    def get_logger(self):
-        self.driver.get_logger()
 
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
               key_name=None, sec_groups=None, network_ids=None,

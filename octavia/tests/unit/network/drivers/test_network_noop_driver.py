@@ -30,7 +30,7 @@ class TestNoopNetworkDriver(base.TestCase):
 
     def setUp(self):
         super(TestNoopNetworkDriver, self).setUp()
-        self.driver = driver.NoopNetworkDriver(LOG)
+        self.driver = driver.NoopNetworkDriver()
         self.port_id = 88
         self.network_id = self.FAKE_UUID_3
         self.ip_address = "10.0.0.2"

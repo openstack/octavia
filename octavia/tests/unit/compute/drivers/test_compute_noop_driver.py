@@ -29,7 +29,7 @@ class TestNoopComputeDriver(base.TestCase):
 
     def setUp(self):
         super(TestNoopComputeDriver, self).setUp()
-        self.driver = driver.NoopComputeDriver(LOG)
+        self.driver = driver.NoopComputeDriver()
 
         self.name = "amphora_name"
         self.amphora_flavor = "m1.tiny"
@@ -40,9 +40,6 @@ class TestNoopComputeDriver(base.TestCase):
         self.confdrivefiles = "config_driver_files"
         self.user_data = "user_data"
         self.amphora_id = self.FAKE_UUID_1
-
-    def get_logger(self):
-        self.driver.get_logger()
 
     def build(self):
         self.driver.build(self.name, self.amphora_flavor, self.image_id,

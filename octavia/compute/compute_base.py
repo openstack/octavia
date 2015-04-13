@@ -21,14 +21,6 @@ import six
 class ComputeBase(object):
 
     @abc.abstractmethod
-    def get_logger(self):
-        """Return logger to be used
-
-        :returns: the logger.
-        """
-        pass
-
-    @abc.abstractmethod
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
               key_name=None, sec_groups=None, network_ids=None,
               config_drive_files=None, user_data=None):

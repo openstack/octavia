@@ -40,10 +40,6 @@ class VirtualMachineManager(compute_base.ComputeBase):
         self._nova_client = NovaAuth.get_nova_client(region)
         self.manager = self._nova_client.servers
 
-    def get_logger(self):
-        '''Retrieve a custom logger.'''
-        pass
-
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
               key_name=None, sec_groups=None, network_ids=None,
               config_drive_files=None, user_data=None):

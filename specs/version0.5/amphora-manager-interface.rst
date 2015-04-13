@@ -35,15 +35,6 @@ Establish an abstract base class to model the desired functionality:
 
     class AmphoraComputeDriver(object):
 
-        def get_logger(self):
-
-            """ return the logger to use - this is a way to inject a
-            custom logger for testing, etc
-
-            :returns: the logger
-            """
-             raise NotImplementedError
-
         def build(self, amphora_type = VM, amphora_flavor = None,
                   image_id = None, keys = None, sec_groups = None,
                   network_ids = None,config_drive_files = None,user_data=None):

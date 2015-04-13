@@ -34,9 +34,6 @@ Establish a base class to model the desire functionality:
 
     class AmphoraLoadBalancerDriver(object):
 
-        def get_logger(self):
-            #return the logger to use - this is a way to inject a custom logger for testing, etc
-
         def update(self, listener, vip):
             """updates the amphora with a new configuration
 
