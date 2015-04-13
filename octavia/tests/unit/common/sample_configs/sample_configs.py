@@ -218,8 +218,8 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
                       persistence_type=None):
     proto = 'HTTP' if proto is None else proto
     in_pool = collections.namedtuple(
-        'pool', 'id, protocol, lb_algorithm, members, healthmonitor,'
-                'sessionpersistence, enabled, operating_status')
+        'pool', 'id, protocol, lb_algorithm, members, health_monitor,'
+                'session_persistence, enabled, operating_status')
     mon = sample_health_monitor_tuple(proto=proto) if monitor is True else None
     persis = sample_session_persistence_tuple(
         persistence_type=persistence_type) if persistence is True else None
@@ -229,8 +229,8 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
         lb_algorithm='ROUND_ROBIN',
         members=[sample_member_tuple('sample_member_id_1', '10.0.0.99'),
                  sample_member_tuple('sample_member_id_2', '10.0.0.98')],
-        healthmonitor=mon,
-        sessionpersistence=persis,
+        health_monitor=mon,
+        session_persistence=persis,
         enabled=True,
         operating_status='ACTIVE')
 

@@ -191,13 +191,13 @@ class JinjaTemplater(object):
         members = [self._transform_member(x)
                    for x in pool.members if self._include_member(x)]
         ret_value['members'] = members
-        if pool.healthmonitor:
+        if pool.health_monitor:
             ret_value['health_monitor'] = self._transform_health_monitor(
-                pool.healthmonitor)
-        if pool.sessionpersistence:
+                pool.health_monitor)
+        if pool.session_persistence:
             ret_value[
                 'session_persistence'] = self._transform_session_persistence(
-                pool.sessionpersistence)
+                pool.session_persistence)
         return ret_value
 
     def _transform_session_persistence(self, persistence):
