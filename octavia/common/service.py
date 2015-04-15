@@ -26,17 +26,5 @@ def prepare_service(argv=None):
     argv = argv or []
     config.init(argv[1:])
     LOG.info(_LI('Starting Octavia API server'))
-    cfg.set_defaults(log.log_opts,
-                     default_log_levels=['amqp=WARN',
-                                         'amqplib=WARN',
-                                         'qpid.messaging=INFO',
-                                         'sqlalchemy=WARN',
-                                         'keystoneclient=INFO',
-                                         'stevedore=INFO',
-                                         'eventlet.wsgi.server=WARN',
-                                         'iso8601=WARN',
-                                         'paramiko=WARN',
-                                         'requests=WARN',
-                                         'ironic.openstack.common=WARN',
-                                         ])
+    log.set_defaults()
     config.setup_logging(cfg.CONF)
