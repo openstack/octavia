@@ -1074,3 +1074,146 @@ Get listener haproxy configuration
         'details': 'No listener with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
       }
 
+
+Plug VIP
+------------------------
+
+* **URL:** /*:version*/plug/vip/*:ip*
+* **Method:** Post
+* **URL params:**
+
+     * *:ip* = the vip's ip address
+
+* **Data params:** none
+* **Success Response:**
+
+  * Code: 202
+
+    * Content: OK
+
+* **Error Response:**
+  * Code: 400
+
+    * Content: Invalid IP
+
+  * Code: 404
+
+    * Content: No suitable network interface found
+
+  * Code: 500
+
+    * Content: Error plugging VIP
+    * (Also contains error output from the ip up command)
+
+  * Code: 503
+
+    * Content: Topology transition in progress
+
+* **Response:**
+
+| OK
+| VIP vip ip plugged on interface interface
+
+* **Implied actions:**
+
+  * Look for an interface marked as down (recently added port)
+  * Assign VIP
+  * Bring that interface up
+
+**Examples:**
+
+* Success code 202:
+
+::
+
+  POST URL:
+  https://octavia-haproxy-img-00328.local/v0.1/plug/vip/203.0.113.2
+
+  JSON Response:
+      {
+        'message': 'OK',
+        'details': 'VIP 203.0.113.2 plugged on interface eth1'
+      }
+
+
+
+
+
+* Error code 400:
+
+::
+
+    JSON Response:
+      {
+        'message': 'Invalid VIP',
+      }
+
+* Error code 404:
+
+::
+
+    JSON Response:
+      {
+        'message': 'No suitable network interface found',
+      }
+
+
+Plug Network
+------------------------
+
+* **URL:** /*:version*/plug/network/
+* **Method:** POST
+* **URL params:** none
+
+* **Data params:** none
+* **Success Response:**
+
+  * Code: 202
+
+    * Content: OK
+
+* **Error Response:**
+
+  * Code: 404
+
+    * Content: No suitable network interface found
+
+  * Code: 500
+
+    * Content: Error plugging Port
+    * (Also contains error output from the ip up command)
+
+  * Code: 503
+
+    * Content: Topology transition in progress
+
+* **Response:**
+
+| OK
+| Plugged interface interface
+
+**Examples:**
+
+* Success code 202:
+
+::
+
+  POST URL:
+  https://octavia-haproxy-img-00328.local/v0.1/plug/network/
+
+  JSON Response:
+      {
+        'message': 'OK',
+        'details': 'Plugged interface eth1'
+      }
+
+
+* Error code 404:
+
+::
+
+    JSON Response:
+      {
+        'message': 'No suitable network interface found',
+      }
+
