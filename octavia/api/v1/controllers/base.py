@@ -12,19 +12,26 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo.config import cfg
 from pecan import rest
+from stevedore import driver as stevedore_driver
 
-from octavia.api.v1.handlers.controller_simulator import handler
 from octavia.api.v1.types import load_balancer as lb_types
 from octavia.api.v1.types import pool as pool_types
 from octavia.db import repositories
+
+CONF = cfg.CONF
 
 
 class BaseController(rest.RestController):
 
     def __init__(self):
-        self.handler = handler.SimulatedControllerHandler()
         self.repositories = repositories.Repositories()
+        self.handler = stevedore_driver.DriverManager(
+            namespace='octavia.api.handlers',
+            name=CONF.api_handler,
+            invoke_on_load=True
+        ).driver
 
     def _convert_db_to_type(self, db_entity, to_type):
         """Converts a data model into a Octavia WSME type
