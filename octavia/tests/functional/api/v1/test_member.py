@@ -101,6 +101,27 @@ class TestMember(base.BaseAPITest):
                                             self.listener.get('id'),
                                             constants.ACTIVE, constants.ONLINE)
 
+    def test_create_with_id(self):
+        mid = uuidutils.generate_uuid()
+        api_member = self.create_member(self.lb.get('id'),
+                                        self.listener.get('id'),
+                                        self.pool.get('id'),
+                                        '10.0.0.1', 80, id=mid)
+        self.assertEqual(mid, api_member.get('id'))
+
+    def test_create_with_duplicate_id(self):
+        member = self.create_member(self.lb.get('id'),
+                                    self.listener.get('id'),
+                                    self.pool.get('id'),
+                                    '10.0.0.1', 80)
+        self.set_lb_status(self.lb.get('id'), constants.ACTIVE)
+        path = self.MEMBERS_PATH.format(lb_id=self.lb.get('id'),
+                                        listener_id=self.listener.get('id'),
+                                        pool_id=self.pool.get('id'))
+        body = {'id': member.get('id'), 'ip_address': '10.0.0.3',
+                'protocol_port': 81}
+        self.post(path, body, status=409, expect_errors=True)
+
     def test_bad_create(self):
         api_member = {'name': 'test1'}
         self.post(self.members_path, api_member, status=400)

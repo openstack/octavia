@@ -30,6 +30,7 @@ class MemberResponse(base.BaseType):
 
 class MemberPOST(base.BaseType):
     """Defines mandatory and optional attributes of a POST request."""
+    id = wtypes.wsattr(wtypes.UuidType())
     enabled = wtypes.wsattr(bool, default=True)
     ip_address = wtypes.wsattr(base.IPAddressType(), mandatory=True)
     protocol_port = wtypes.wsattr(wtypes.IntegerType(), mandatory=True)

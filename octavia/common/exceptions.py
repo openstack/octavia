@@ -143,3 +143,8 @@ class ComputeGetException(OctaviaException):
 
 class ComputeStatusException(OctaviaException):
     message = _LE('Failed to retrieve nova instance status.')
+
+
+class IDAlreadyExists(OctaviaException):
+    message = _LE('Already an entity with that specified id.')
+    code = 409

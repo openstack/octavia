@@ -93,13 +93,16 @@ class ListenersController(base.BaseController):
         try:
             db_listener = self.repositories.listener.create(
                 session, **listener_dict)
-        except odb_exceptions.DBDuplicateEntry:
+        except odb_exceptions.DBDuplicateEntry as de:
             # Setting LB back to active because this is just a validation
             # failure
             lb_repo.update(session, self.load_balancer_id,
                            provisioning_status=constants.ACTIVE)
-            raise exceptions.DuplicateListenerEntry(
-                port=listener_dict.get('protocol_port'))
+            if ['id'] == de.columns:
+                raise exceptions.IDAlreadyExists()
+            elif set(['load_balancer_id', 'protocol_port']) == set(de.columns):
+                raise exceptions.DuplicateListenerEntry(
+                    port=listener_dict.get('protocol_port'))
         except odb_exceptions.DBError:
             # Setting LB back to active because this is just a validation
             # failure

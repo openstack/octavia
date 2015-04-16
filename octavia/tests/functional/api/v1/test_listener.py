@@ -73,17 +73,20 @@ class TestListener(base.BaseAPITest):
                                                   listener_id='SEAN-CONNERY')
         self.get(listener_path, status=404)
 
-    def test_create(self):
+    def test_create(self, **optionals):
         lb_listener = {'name': 'listener1', 'description': 'desc1',
                        'enabled': False, 'protocol': constants.PROTOCOL_HTTP,
                        'protocol_port': 80, 'connection_limit': 10,
                        'tls_certificate_id': uuidutils.generate_uuid()}
+        lb_listener.update(optionals)
         response = self.post(self.listeners_path, lb_listener)
         listener_api = response.json
         extra_expects = {'provisioning_status': constants.PENDING_CREATE,
                          'operating_status': constants.OFFLINE}
         lb_listener.update(extra_expects)
         self.assertTrue(uuidutils.is_uuid_like(listener_api.get('id')))
+        for key, value in optionals.items():
+            self.assertEqual(value, lb_listener.get(key))
         lb_listener['id'] = listener_api.get('id')
         self.assertEqual(lb_listener, listener_api)
         self.assert_correct_lb_status(self.lb.get('id'),
@@ -92,6 +95,19 @@ class TestListener(base.BaseAPITest):
         self.assert_final_lb_statuses(self.lb.get('id'))
         self.assert_final_listener_statuses(self.lb.get('id'),
                                             listener_api.get('id'))
+
+    def test_create_with_id(self):
+        self.test_create(id=uuidutils.generate_uuid())
+
+    def test_create_with_duplicate_id(self):
+        listener = self.create_listener(self.lb.get('id'),
+                                        constants.PROTOCOL_HTTP,
+                                        protocol_port=80)
+        self.set_lb_status(self.lb.get('id'), constants.ACTIVE)
+        path = self.LISTENERS_PATH.format(lb_id=self.lb.get('id'))
+        body = {'id': listener.get('id'), 'protocol': constants.PROTOCOL_HTTP,
+                'protocol_port': 81}
+        self.post(path, body, status=409, expect_errors=True)
 
     def test_create_defaults(self):
         defaults = {'name': None, 'description': None, 'enabled': True,

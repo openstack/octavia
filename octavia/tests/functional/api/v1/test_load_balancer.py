@@ -25,8 +25,9 @@ class TestLoadBalancer(base.BaseAPITest):
         api_list = response.json
         self.assertEqual([], api_list)
 
-    def test_create(self):
+    def test_create(self, **optionals):
         lb_json = {'name': 'test1', 'vip': {}}
+        lb_json.update(optionals)
         response = self.post(self.LBS_PATH, lb_json)
         api_lb = response.json
         self.assertTrue(uuidutils.is_uuid_like(api_lb.get('id')))
@@ -36,7 +37,17 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(constants.OFFLINE,
                          api_lb.get('operating_status'))
         self.assertTrue(api_lb.get('enabled'))
+        for key, value in optionals.items():
+            self.assertEqual(value, lb_json.get(key))
         self.assert_final_lb_statuses(api_lb.get('id'))
+
+    def test_create_with_id(self):
+        self.test_create(id=uuidutils.generate_uuid())
+
+    def test_create_with_duplicate_id(self):
+        lb = self.create_load_balancer({})
+        self.post(self.LBS_PATH, {'id': lb.get('id'), 'vip': {}},
+                  status=409, expect_errors=True)
 
     def test_create_without_vip(self):
         lb_json = {'name': 'test1'}

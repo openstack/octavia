@@ -95,6 +95,9 @@ class PoolsController(base.BaseController):
         try:
             db_pool = self.repositories.create_pool_on_listener(
                 session, self.listener_id, pool_dict, sp_dict=sp_dict)
+        except odb_exceptions.DBDuplicateEntry as de:
+            if ['id'] == de.columns:
+                raise exceptions.IDAlreadyExists()
         except odb_exceptions.DBError:
             # Setting LB and Listener back to active because this is just a
             # validation failure

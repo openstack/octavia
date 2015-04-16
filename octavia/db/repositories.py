@@ -17,13 +17,13 @@ Defines interface for DB access that Resource or Octavia Controllers may
 reference
 """
 
+import datetime
+
 from oslo_utils import uuidutils
 
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.db import models
-
-import datetime
 
 
 class BaseRepository(object):
@@ -116,23 +116,23 @@ class Repositories(object):
         self.sni = SNIRepository()
         self.amphorahealth = AmphoraHealthRepository()
 
-    def create_load_balancer_and_vip(self, session, load_balancer_dict,
-                                     vip_dict):
+    def create_load_balancer_and_vip(self, session, lb_dict, vip_dict):
         """Inserts load balancer and vip entities into the database.
 
         Inserts load balancer and vip entities into the database in one
         transaction and returns the data model of the load balancer.
 
         :param session: A Sql Alchemy database session.
-        :param load_balancer_dict: Dictionary representation of a load balancer
+        :param lb_dict: Dictionary representation of a load balancer
         :param vip_dict: Dictionary representation of a vip
         :returns: octava.common.data_models.LoadBalancer
         """
         with session.begin():
-            load_balancer_dict['id'] = uuidutils.generate_uuid()
-            lb = models.LoadBalancer(**load_balancer_dict)
+            if not lb_dict.get('id'):
+                lb_dict['id'] = uuidutils.generate_uuid()
+            lb = models.LoadBalancer(**lb_dict)
             session.add(lb)
-            vip_dict['load_balancer_id'] = load_balancer_dict['id']
+            vip_dict['load_balancer_id'] = lb_dict['id']
             vip = models.Vip(**vip_dict)
             session.add(vip)
         return self.load_balancer.get(session, id=lb.id)
@@ -148,7 +148,8 @@ class Repositories(object):
         :returns: octavia.common.data_models.Pool
         """
         with session.begin(subtransactions=True):
-            pool_dict['id'] = uuidutils.generate_uuid()
+            if not pool_dict.get('id'):
+                pool_dict['id'] = uuidutils.generate_uuid()
             db_pool = self.pool.create(session, **pool_dict)
             if sp_dict:
                 sp_dict['pool_id'] = pool_dict['id']
