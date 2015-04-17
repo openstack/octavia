@@ -27,7 +27,8 @@ from octavia.i18n import _LI
 
 LOG = logging.getLogger(__name__)
 
-if __name__ == '__main__':
+
+def main():
     octavia_service.prepare_service(sys.argv)
     app = api_app.setup_app()
 
