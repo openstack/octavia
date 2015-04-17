@@ -87,6 +87,27 @@ class TestPool(base.BaseAPITest):
                                             self.listener.get('id'),
                                             constants.ACTIVE, constants.ONLINE)
 
+    def test_create_with_id(self):
+        pid = uuidutils.generate_uuid()
+        api_pool = self.create_pool(self.lb.get('id'),
+                                    self.listener.get('id'),
+                                    constants.PROTOCOL_HTTP,
+                                    constants.LB_ALGORITHM_ROUND_ROBIN,
+                                    id=pid)
+        self.assertEqual(pid, api_pool.get('id'))
+
+    def test_create_with_duplicate_id(self):
+        pool = self.create_pool(self.lb.get('id'),
+                                self.listener.get('id'),
+                                constants.PROTOCOL_HTTP,
+                                constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.set_lb_status(self.lb.get('id'), constants.ACTIVE)
+        path = self.POOLS_PATH.format(lb_id=self.lb.get('id'),
+                                      listener_id=self.listener.get('id'))
+        body = {'id': pool.get('id'), 'protocol': constants.PROTOCOL_HTTP,
+                'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN}
+        self.post(path, body, status=409, expect_errors=True)
+
     def test_bad_create(self):
         api_pool = {'name': 'test1'}
         self.post(self.pools_path, api_pool, status=400)

@@ -82,7 +82,7 @@ class MembersController(base.BaseController):
                                              id=self.load_balancer_id)
         try:
             db_member = self.repositories.member.create(session, **member_dict)
-        except oslo_exc.DBDuplicateEntry:
+        except oslo_exc.DBDuplicateEntry as de:
             # Setting LB and Listener back to active because this is just a
             # validation failure
             self.repositories.load_balancer.update(
@@ -91,9 +91,13 @@ class MembersController(base.BaseController):
             self.repositories.listener.update(
                 session, self.listener_id,
                 provisioning_status=constants.ACTIVE)
-            raise exceptions.DuplicateMemberEntry(
-                ip_address=member_dict.get('ip_address'),
-                port=member_dict.get('protocol_port'))
+            if ['id'] == de.columns:
+                raise exceptions.IDAlreadyExists()
+            elif (set(['pool_id', 'ip_address', 'protocol_port']) ==
+                  set(de.columns)):
+                raise exceptions.DuplicateMemberEntry(
+                    ip_address=member_dict.get('ip_address'),
+                    port=member_dict.get('protocol_port'))
         try:
             LOG.info(_LI("Sending Creation of Member %s to handler") %
                      db_member.id)

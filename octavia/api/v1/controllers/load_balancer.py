@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
 import pecan
@@ -69,8 +70,11 @@ class LoadBalancersController(base.BaseController):
         vip_dict = lb_dict.pop('vip')
         lb_dict['provisioning_status'] = constants.PENDING_CREATE
         lb_dict['operating_status'] = constants.OFFLINE
-        db_lb = self.repositories.create_load_balancer_and_vip(
-            session, lb_dict, vip_dict)
+        try:
+            db_lb = self.repositories.create_load_balancer_and_vip(
+                session, lb_dict, vip_dict)
+        except odb_exceptions.DBDuplicateEntry:
+            raise exceptions.IDAlreadyExists()
         # Handler will be responsible for sending to controller
         try:
             LOG.info(_LI("Sending created Load Balancer %s to the handler") %

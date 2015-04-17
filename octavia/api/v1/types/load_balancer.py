@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 from wsme import types as wtypes
 
 from octavia.api.v1.types import base
@@ -38,6 +37,7 @@ class LoadBalancerResponse(base.BaseType):
 
 class LoadBalancerPOST(base.BaseType):
     """Defines mandatory and optional attributes of a POST request."""
+    id = wtypes.wsattr(wtypes.UuidType())
     name = wtypes.wsattr(wtypes.StringType(max_length=255))
     description = wtypes.wsattr(wtypes.StringType(max_length=255))
     enabled = wtypes.wsattr(bool, default=True)

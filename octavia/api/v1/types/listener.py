@@ -40,6 +40,7 @@ class ListenerResponse(base.BaseType):
 
 class ListenerPOST(base.BaseType):
     """Defines mandatory and optional attributes of a POST request."""
+    id = wtypes.wsattr(wtypes.UuidType())
     name = wtypes.wsattr(wtypes.StringType(max_length=255))
     description = wtypes.wsattr(wtypes.StringType(max_length=255))
     enabled = wtypes.wsattr(bool, default=True)
