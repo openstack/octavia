@@ -37,21 +37,31 @@ def get_session():
     """
     global _SESSION
     if not _SESSION:
+
+        kwargs = {'auth_url': cfg.CONF.keystone_authtoken.auth_uri,
+                  'username': cfg.CONF.keystone_authtoken.admin_user,
+                  'password': cfg.CONF.keystone_authtoken.admin_password}
+
         if cfg.CONF.keystone_authtoken.auth_version == '2':
             client = v2_client
+            kwargs['tenant_name'] = (cfg.CONF.keystone_authtoken.
+                                     admin_tenant_name)
         elif cfg.CONF.keystone_authtoken.auth_version == '3':
             client = v3_client
+            kwargs['project_name'] = (cfg.CONF.keystone_authtoken.
+                                      admin_tenant_name)
+            kwargs['user_domain_name'] = (cfg.CONF.keystone_authtoken.
+                                          admin_user_domain)
+            kwargs['project_domain_name'] = (cfg.CONF.keystone_authtoken.
+                                             admin_project_domain)
         else:
             raise Exception('Unknown keystone version!')
+
         try:
-            kc = client.Password(
-                auth_url=cfg.CONF.keystone_authtoken.auth_uri,
-                username=cfg.CONF.keystone_authtoken.admin_user,
-                password=cfg.CONF.keystone_authtoken.admin_password,
-                tenant_name=cfg.CONF.keystone_authtoken.admin_tenant_name
-            )
+            kc = client.Password(**kwargs)
             _SESSION = session.Session(auth=kc)
         except Exception:
             with excutils.save_and_reraise_exception():
                 LOG.exception(_LE("Error creating Keystone session."))
+
     return _SESSION
