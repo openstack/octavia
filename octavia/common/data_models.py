@@ -205,12 +205,15 @@ class TLSContainer(BaseDataModel):
 class Amphora(BaseDataModel):
 
     def __init__(self, id=None, load_balancer_id=None, compute_id=None,
-                 status=None, lb_network_ip=None, load_balancer=None):
+                 status=None, lb_network_ip=None, vrrp_ip=None,
+                 ha_ip=None, load_balancer=None):
         self.id = id
         self.load_balancer_id = load_balancer_id
         self.compute_id = compute_id
         self.status = status
         self.lb_network_ip = lb_network_ip
+        self.vrrp_ip = vrrp_ip
+        self.ha_ip = ha_ip
         self.load_balancer = load_balancer
 
 

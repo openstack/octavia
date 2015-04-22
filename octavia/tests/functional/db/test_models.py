@@ -119,6 +119,8 @@ class ModelTestMixin(object):
         kwargs = {'id': self.FAKE_UUID_1,
                   'compute_id': self.FAKE_UUID_1,
                   'status': constants.ACTIVE,
+                  'vrrp_ip': self.FAKE_IP,
+                  'ha_ip': self.FAKE_IP,
                   'lb_network_ip': self.FAKE_IP}
         kwargs.update(overrides)
         return self._insert(session, models.Amphora, kwargs)
