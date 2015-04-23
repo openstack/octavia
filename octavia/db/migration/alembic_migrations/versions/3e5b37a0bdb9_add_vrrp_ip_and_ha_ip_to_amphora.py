@@ -15,7 +15,7 @@
 """Add vrrp_ip and ha_ip to amphora
 
 Revision ID: 3e5b37a0bdb9
-Revises: 256852d5ff7c
+Revises: 92fe9857279
 Create Date: 2015-03-24 18:17:36.998604
 
 """
