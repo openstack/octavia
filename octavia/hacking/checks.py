@@ -116,8 +116,8 @@ def no_translate_debug_logs(logical_line, filename):
     * This check assumes that 'LOG' is a logger.
     O319
     """
-    if _directory_to_check_translation(filename):
-        if logical_line.startswith("LOG.debug(_("):
+    if _directory_to_check_translation(filename) and logical_line.startswith(
+            "LOG.debug(_("):
             yield(0, "O319 Don't translate debug level logs")
 
 

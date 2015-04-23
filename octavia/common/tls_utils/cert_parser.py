@@ -41,8 +41,8 @@ def validate_cert(certificate, private_key=None,
     """
     x509 = _get_x509_from_pem_bytes(certificate)
     if intermediates:
-        for x509Pem in _split_x509s(intermediates):
-            _get_x509_from_pem_bytes(x509Pem)
+        for x509pem in _split_x509s(intermediates):
+            _get_x509_from_pem_bytes(x509pem)
     if private_key:
         pkey = _read_privatekey(
             private_key, passphrase=private_key_passphrase)
@@ -57,25 +57,26 @@ def validate_cert(certificate, private_key=None,
 
 
 def _read_privatekey(privatekey_pem, passphrase=None):
-    def cb(*args):
+    def _get_passphrase(*args):
         if passphrase:
             return six.b(passphrase)
         else:
             raise exceptions.NeedsPassphrase
-    return crypto.load_privatekey(crypto.FILETYPE_PEM, privatekey_pem, cb)
+    return crypto.load_privatekey(crypto.FILETYPE_PEM, privatekey_pem,
+                                  _get_passphrase)
 
 
-def _split_x509s(x509Str):
+def _split_x509s(xstr):
     """Split the input string into individual x509 text blocks
 
-    :param x509Str: A large multi x509 certificate blcok
+    :param xstr: A large multi x509 certificate blcok
     :returns: A list of strings where each string represents an
     X509 pem block surrounded by BEGIN CERTIFICATE,
     END CERTIFICATE block tags
     """
     curr_pem_block = []
     inside_x509 = False
-    for line in x509Str.replace("\r", "").split("\n"):
+    for line in xstr.replace("\r", "").split("\n"):
         if inside_x509:
             curr_pem_block.append(line)
             if line == X509_END:
@@ -101,10 +102,10 @@ def get_host_names(certificate):
     """
 
     x509 = _get_x509_from_pem_bytes(certificate)
-    hostNames = {}
+    hostnames = {}
     if hasattr(x509.get_subject(), 'CN'):
-        hostNames['cn'] = x509.get_subject().CN
-    hostNames['dns_names'] = []
+        hostnames['cn'] = x509.get_subject().CN
+    hostnames['dns_names'] = []
     num_exts = x509.get_extension_count()
     for i in range(0, num_exts):
         ext = x509.get_extension(i)
@@ -116,8 +117,8 @@ def get_host_names(certificate):
             for general_names in general_names_container[0]:
                 if general_names.getName() == 'dNSName':
                     octets = general_names.getComponent().asOctets()
-                    hostNames['dns_names'].append(octets.encode('utf-8'))
-    return hostNames
+                    hostnames['dns_names'].append(octets.encode('utf-8'))
+    return hostnames
 
 
 def _get_x509_from_pem_bytes(certificate_pem):

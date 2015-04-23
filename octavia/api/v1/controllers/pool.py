@@ -65,21 +65,8 @@ class PoolsController(base.BaseController):
         return self._convert_db_to_type(default_pool,
                                         [pool_types.PoolResponse])
 
-    @wsme_pecan.wsexpose(pool_types.PoolResponse, body=pool_types.PoolPOST,
-                         status_code=202)
-    def post(self, pool):
-        """Creates a pool on a listener.
-
-        This does not allow more than one pool to be on a listener so once one
-        is created, another cannot be created until the first one has been
-        deleted.
-        """
-        session = db_api.get_session()
-        if self.repositories.listener.has_pool(session, self.listener_id):
-            raise exceptions.DuplicatePoolEntry()
-        # Verify load balancer is in a mutable status.  If so it can be assumed
-        # that the listener is also in a mutable status because a load balancer
-        # will only be ACTIVE when all it's listeners as ACTIVE.
+    def _test_lb_status(self, session):
+        """Verify load balancer is in a mutable status."""
         if not self.repositories.test_and_set_lb_and_listener_prov_status(
                 session, self.load_balancer_id, self.listener_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE):
@@ -89,9 +76,13 @@ class PoolsController(base.BaseController):
             db_lb = lb_repo.get(session, id=self.load_balancer_id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
-        pool_dict = pool.to_dict()
-        sp_dict = pool_dict.pop('session_persistence', None)
-        pool_dict['operating_status'] = constants.OFFLINE
+
+    def _validate_create_pool(self, session, sp_dict, pool_dict):
+        """Validate creating pool on load balancer.
+
+        Update database for load balancer and listener based on provisioning
+        status.
+        """
         try:
             db_pool = self.repositories.create_pool_on_listener(
                 session, self.listener_id, pool_dict, sp_dict=sp_dict)
@@ -123,6 +114,41 @@ class PoolsController(base.BaseController):
         db_pool = self.repositories.pool.get(session, id=db_pool.id)
         return self._convert_db_to_type(db_pool, pool_types.PoolResponse)
 
+    @wsme_pecan.wsexpose(pool_types.PoolResponse, body=pool_types.PoolPOST,
+                         status_code=202)
+    def post(self, pool):
+        """Creates a pool on a listener.
+
+        This does not allow more than one pool to be on a listener so once one
+        is created, another cannot be created until the first one has been
+        deleted.
+        """
+        session = db_api.get_session()
+        if self.repositories.listener.has_pool(session, self.listener_id):
+            raise exceptions.DuplicatePoolEntry()
+        # Verify load balancer is in a mutable status.  If so it can be assumed
+        # that the listener is also in a mutable status because a load balancer
+        # will only be ACTIVE when all it's listeners as ACTIVE.
+
+        self._test_lb_status(session)
+        pool_dict = pool.to_dict()
+        sp_dict = pool_dict.pop('session_persistence', None)
+        pool_dict['operating_status'] = constants.OFFLINE
+
+        return self._validate_create_pool(session, sp_dict, pool_dict)
+
+    def _test_lb_status_put(self, session):
+        """Verify load balancer is in a mutable status for put method."""
+        if not self.repositories.test_and_set_lb_and_listener_prov_status(
+                session, self.load_balancer_id, self.listener_id,
+                constants.PENDING_UPDATE, constants.PENDING_UPDATE):
+            LOG.info(_LI("Pool %s cannot be updated because the Load "
+                         "Balancer is in an immutable state") % id)
+            lb_repo = self.repositories.load_balancer
+            db_lb = lb_repo.get(session, id=self.load_balancer_id)
+            raise exceptions.ImmutableObject(resource=db_lb._name(),
+                                             id=self.load_balancer_id)
+
     @wsme_pecan.wsexpose(pool_types.PoolResponse, wtypes.text,
                          body=pool_types.PoolPUT, status_code=202)
     def put(self, id, pool):
@@ -135,18 +161,12 @@ class PoolsController(base.BaseController):
         # Verify load balancer is in a mutable status.  If so it can be assumed
         # that the listener is also in a mutable status because a load balancer
         # will only be ACTIVE when all it's listeners as ACTIVE.
-        if not self.repositories.test_and_set_lb_and_listener_prov_status(
-                session, self.load_balancer_id, self.listener_id,
-                constants.PENDING_UPDATE, constants.PENDING_UPDATE):
-            LOG.info(_LI("Pool %s cannot be updated because the Load "
-                         "Balancer is in an immutable state") % id)
-            lb_repo = self.repositories.load_balancer
-            db_lb = lb_repo.get(session, id=self.load_balancer_id)
-            raise exceptions.ImmutableObject(resource=db_lb._name(),
-                                             id=self.load_balancer_id)
+        self._test_lb_status_put(session)
+
         pool_dict = pool.to_dict(render_unsets=False)
         pool_dict['operating_status'] = old_db_pool.operating_status
         sp_dict = pool_dict.pop('session_persistence', None)
+
         try:
             self.repositories.update_pool_on_listener(session, id, pool_dict,
                                                       sp_dict)

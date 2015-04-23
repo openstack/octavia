@@ -40,7 +40,8 @@ class ListenersController(base.BaseController):
         self.load_balancer_id = load_balancer_id
         self.handler = self.handler.listener
 
-    def _secure_data(self, listener):
+    @staticmethod
+    def _secure_data(listener):
         # TODO(blogan): Handle this data when certificate management code is
         # available
         listener.tls_termination = wtypes.Unset
@@ -67,29 +68,20 @@ class ListenersController(base.BaseController):
         return self._convert_db_to_type(db_listeners,
                                         [listener_types.ListenerResponse])
 
-    @wsme_pecan.wsexpose(listener_types.ListenerResponse,
-                         body=listener_types.ListenerPOST, status_code=202)
-    def post(self, listener):
-        """Creates a listener on a load balancer."""
-        self._secure_data(listener)
-        session = db_api.get_session()
-        lb_repo = self.repositories.load_balancer
+    def _test_lb_status_post(self, session, lb_repo):
+        """Verify load balancer is in a mutable status for post method."""
         if not lb_repo.test_and_set_provisioning_status(
                 session, self.load_balancer_id, constants.PENDING_UPDATE):
             db_lb = lb_repo.get(session, id=self.load_balancer_id)
             LOG.info(_LI("Load Balancer %s is immutable.") % db_lb.id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
-        listener_dict = listener.to_dict()
-        listener_dict['load_balancer_id'] = self.load_balancer_id
-        listener_dict['provisioning_status'] = constants.PENDING_CREATE
-        listener_dict['operating_status'] = constants.OFFLINE
-        # NOTE(blogan): Throwing away because we should not store secure data
-        # in the database nor should we send it to a handler.
-        if 'tls_termination' in listener_dict:
-            del listener_dict['tls_termination']
-        # This is the extra validation layer for wrong protocol or duplicate
-        # listeners on the same load balancer.
+
+    def _validate_listeners(self, session, lb_repo, listener_dict):
+        """Validate listeners for wrong protocol or duplicate listeners
+
+        Update the load balancer db when provisioning status changes.
+        """
         try:
             db_listener = self.repositories.listener.create(
                 session, **listener_dict)
@@ -110,7 +102,6 @@ class ListenersController(base.BaseController):
                            provisioning_status=constants.ACTIVE)
             raise exceptions.InvalidOption(value=listener_dict.get('protocol'),
                                            option='protocol')
-        # Handler will be responsible for sending to controller
         try:
             LOG.info(_LI("Sending Creation of Listener %s to handler") %
                      db_listener.id)
@@ -124,6 +115,39 @@ class ListenersController(base.BaseController):
             session, id=db_listener.id)
         return self._convert_db_to_type(db_listener,
                                         listener_types.ListenerResponse)
+
+    @wsme_pecan.wsexpose(listener_types.ListenerResponse,
+                         body=listener_types.ListenerPOST, status_code=202)
+    def post(self, listener):
+        """Creates a listener on a load balancer."""
+        self._secure_data(listener)
+        session = db_api.get_session()
+        lb_repo = self.repositories.load_balancer
+        self._test_lb_status_post(session, lb_repo)
+        listener_dict = listener.to_dict()
+        listener_dict['load_balancer_id'] = self.load_balancer_id
+        listener_dict['provisioning_status'] = constants.PENDING_CREATE
+        listener_dict['operating_status'] = constants.OFFLINE
+        # NOTE(blogan): Throwing away because we should not store secure data
+        # in the database nor should we send it to a handler.
+        if 'tls_termination' in listener_dict:
+            del listener_dict['tls_termination']
+        # This is the extra validation layer for wrong protocol or duplicate
+        # listeners on the same load balancer.
+
+        return self._validate_listeners(session, lb_repo, listener_dict)
+
+    def _test_lb_status_put(self, session, id):
+        """Test load balancer status for put method."""
+        if not self.repositories.test_and_set_lb_and_listener_prov_status(
+                session, self.load_balancer_id, id, constants.PENDING_UPDATE,
+                constants.PENDING_UPDATE):
+            LOG.info(_LI("Load Balancer %s is immutable.") %
+                     self.load_balancer_id)
+            lb_repo = self.repositories.load_balancer
+            db_lb = lb_repo.get(session, id=self.load_balancer_id)
+            raise exceptions.ImmutableObject(resource=db_lb._name(),
+                                             id=self.load_balancer_id)
 
     @wsme_pecan.wsexpose(listener_types.ListenerResponse, wtypes.text,
                          body=listener_types.ListenerPUT, status_code=202)
@@ -139,15 +163,8 @@ class ListenersController(base.BaseController):
         # Verify load balancer is in a mutable status.  If so it can be assumed
         # that the listener is also in a mutable status because a load balancer
         # will only be ACTIVE when all it's listeners as ACTIVE.
-        if not self.repositories.test_and_set_lb_and_listener_prov_status(
-                session, self.load_balancer_id, id, constants.PENDING_UPDATE,
-                constants.PENDING_UPDATE):
-            LOG.info(_LI("Load Balancer %s is immutable.") %
-                     self.load_balancer_id)
-            lb_repo = self.repositories.load_balancer
-            db_lb = lb_repo.get(session, id=self.load_balancer_id)
-            raise exceptions.ImmutableObject(resource=db_lb._name(),
-                                             id=self.load_balancer_id)
+
+        self._test_lb_status_put(session, id)
         listener_dict = listener.to_dict(render_unsets=False)
         listener_dict['operating_status'] = old_db_listener.operating_status
         # NOTE(blogan): Throwing away because we should not store secure data

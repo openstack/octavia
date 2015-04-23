@@ -26,6 +26,6 @@ CONF = cfg.CONF
 CONF.register_opts(certmgr_opts, group='certificates')
 
 
-def API():
+def ManagerAPI():
     cls = importutils.import_class(CONF.certmgr.cert_manager_class)
     return cls()

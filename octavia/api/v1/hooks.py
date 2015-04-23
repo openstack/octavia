@@ -18,7 +18,8 @@ from octavia.common import context
 
 
 class ContextHook(hooks.PecanHook):
-    def on_route(self, state):
+    @staticmethod
+    def on_route(state):
         user_id = state.request.headers.get('X-User-Id')
         user_id = state.request.headers.get('X-User', user_id)
         tenant = state.request.headers.get('X-Tenant-Id')

@@ -23,8 +23,9 @@ class RootController(rest.RestController):
     """The controller in which the pecan wsgi app should be created with."""
     v1 = controllers.V1Controller()
 
+    @staticmethod
     @wsme_pecan.wsexpose(wtypes.text)
-    def get(self):
+    def get():
         # TODO(blogan): once a decision is made on how to do versions, do that
         # here
         return {'versions': [{'status': 'CURRENT',

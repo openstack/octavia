@@ -38,19 +38,19 @@ class OctaviaBase(models.ModelBase):
                       if not attr_name.startswith('_')]
         for attr_name in attr_names:
             attr = getattr(self, attr_name)
-            if isinstance(attr, OctaviaBase):
-                if attr.__class__ != _calling_cls:
-                    dm_kwargs[attr_name] = attr.to_data_model(
-                        _calling_cls=self.__class__)
+            if isinstance(attr, OctaviaBase
+                          ) and attr.__class__ != _calling_cls:
+                dm_kwargs[attr_name] = attr.to_data_model(
+                    _calling_cls=self.__class__)
             elif isinstance(attr, collections.InstrumentedList):
                 dm_kwargs[attr_name] = []
                 for item in attr:
-                    if isinstance(item, OctaviaBase):
-                        if attr.__class__ != _calling_cls:
-                            dm_kwargs[attr_name].append(
-                                item.to_data_model(
-                                    _calling_cls=self.__class__))
-                    else:
+                    if isinstance(item, OctaviaBase
+                                  ) and attr.__class__ != _calling_cls:
+                        dm_kwargs[attr_name].append(
+                            item.to_data_model(
+                                _calling_cls=self.__class__))
+                    elif not isinstance(item, OctaviaBase):
                         dm_kwargs[attr_name].append(item)
         return self.__data_model__(**dm_kwargs)
 

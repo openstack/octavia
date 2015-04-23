@@ -200,7 +200,8 @@ class JinjaTemplater(object):
                 pool.session_persistence)
         return ret_value
 
-    def _transform_session_persistence(self, persistence):
+    @staticmethod
+    def _transform_session_persistence(persistence):
         """Transforms session persistence into an object that will
 
             be processed by the templating system
@@ -210,7 +211,8 @@ class JinjaTemplater(object):
             'cookie_name': persistence.cookie_name
         }
 
-    def _transform_member(self, member):
+    @staticmethod
+    def _transform_member(member):
         """Transforms a member into an object that will
 
             be processed by the templating system
@@ -244,7 +246,8 @@ class JinjaTemplater(object):
             'enabled': monitor.enabled,
         }
 
-    def _include_member(self, member):
+    @staticmethod
+    def _include_member(member):
         """Members that should be included
 
             Return only those that meet the criteria for templating
@@ -255,7 +258,8 @@ class JinjaTemplater(object):
             member.enabled
         )
 
-    def _expand_expected_codes(self, codes):
+    @staticmethod
+    def _expand_expected_codes(codes):
         """Expand the expected code string in set of codes.
 
         200-204 -> 200, 201, 202, 204

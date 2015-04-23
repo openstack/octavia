@@ -123,7 +123,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
             raise exceptions.ComputeGetException()
         return self._translate_amphora(amphora)
 
-    def _translate_amphora(self, nova_response):
+    @staticmethod
+    def _translate_amphora(nova_response):
         '''Convert a nova virtual machine into an amphora object.
 
         :param nova_response: JSON response from nova

@@ -42,13 +42,16 @@ class NotImplementedObjectHandler(BaseObjectHandler):
     Helper class to make any subclass of AbstractHandler explode if it
     is missing any of the required object managers.
     """
-    def update(self, model_id, updated_dict):
+    @staticmethod
+    def update(model_id, updated_dict):
         raise NotImplementedError()
 
-    def delete(self, model_id):
+    @staticmethod
+    def delete(model_id):
         raise NotImplementedError()
 
-    def create(self, model_id):
+    @staticmethod
+    def create(model_id):
         raise NotImplementedError()
 
 

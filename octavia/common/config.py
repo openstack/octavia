@@ -21,7 +21,7 @@ from oslo_config import cfg
 from oslo_db import options as db_options
 from oslo_log import log as logging
 import oslo_messaging as messaging
-# from paste import deploy
+
 
 from octavia.common import utils
 from octavia.i18n import _LI

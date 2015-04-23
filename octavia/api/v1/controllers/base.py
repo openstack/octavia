@@ -33,7 +33,8 @@ class BaseController(rest.RestController):
             invoke_on_load=True
         ).driver
 
-    def _convert_db_to_type(self, db_entity, to_type):
+    @staticmethod
+    def _convert_db_to_type(db_entity, to_type):
         """Converts a data model into a Octavia WSME type
 
         :param db_entity: data model to convert

@@ -23,7 +23,8 @@ class V1Controller(base.BaseController):
 
     loadbalancers = load_balancer.LoadBalancersController()
 
+    @staticmethod
     @wsme_pecan.wsexpose(wtypes.text)
-    def get(self):
+    def get():
         # TODO(blogan): decide what exactly should be here, if anything
         return "V1"

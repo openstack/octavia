@@ -26,6 +26,6 @@ CONF = cfg.CONF
 CONF.register_opts(certgen_opts, group='certificates')
 
 
-def API():
+def GeneratorAPI():
     cls = importutils.import_class(CONF.certgen.cert_generator_class)
     return cls()

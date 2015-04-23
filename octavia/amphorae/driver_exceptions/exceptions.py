@@ -34,7 +34,8 @@ class AmphoraDriverError(Exception):
 
         return unicode(self.msg)
 
-    def use_fatal_exceptions(self):
+    @staticmethod
+    def use_fatal_exceptions():
         """Return True if use fatal exceptions by raising them."""
         return False
 

@@ -96,9 +96,10 @@ class ListenerStatistics(base_models.BASE):
                                 backref=orm.backref("stats", uselist=False,
                                                     cascade="delete"))
 
+    @staticmethod
     @validates('bytes_in', 'bytes_out',
                'active_connections', 'total_connections')
-    def validate_non_negative_int(self, key, value):
+    def validate_non_negative_int(key, value):
         if value < 0:
             data = {'key': key, 'value': value}
             raise ValueError(data)

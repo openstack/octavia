@@ -39,26 +39,7 @@ class LocalCertGenerator(cert_gen.CertGenerator):
         return int(binascii.hexlify(os.urandom(20)), 16)
 
     @classmethod
-    def sign_cert(cls, csr, validity, ca_cert=None, ca_key=None,
-                  ca_key_pass=None, ca_digest=None):
-        """Signs a certificate using our private CA based on the specified CSR
-
-        The signed certificate will be valid from now until <validity> seconds
-        from now.
-
-        :param csr: A Certificate Signing Request
-        :param validity: Valid for <validity> seconds from the current time
-        :param ca_cert: Signing Certificate (default: config)
-        :param ca_key: Signing Certificate Key (default: config)
-        :param ca_key_pass: Signing Certificate Key Pass (default: config)
-        :param ca_digest: Digest method to use for signing (default: config)
-
-        :return: Signed certificate
-        :raises Exception: if certificate signing fails
-        """
-        LOG.info(_LI(
-            "Signing a certificate request using pyOpenSSL locally."
-        ))
+    def _validate_cert(cls, ca_cert, ca_key, ca_key_pass):
         if not ca_cert:
             LOG.info(_LI("Using CA Certificate from config."))
             try:
@@ -87,9 +68,31 @@ class LocalCertGenerator(cert_gen.CertGenerator):
                 LOG.info(_LI(
                     "No Passphrase found for CA Private Key, not using one."
                 ))
+
+    @classmethod
+    def sign_cert(cls, csr, validity, ca_cert=None, ca_key=None,
+                  ca_key_pass=None, ca_digest=None):
+        """Signs a certificate using our private CA based on the specified CSR
+
+        The signed certificate will be valid from now until <validity> seconds
+        from now.
+
+        :param csr: A Certificate Signing Request
+        :param validity: Valid for <validity> seconds from the current time
+        :param ca_cert: Signing Certificate (default: config)
+        :param ca_key: Signing Certificate Key (default: config)
+        :param ca_key_pass: Signing Certificate Key Pass (default: config)
+        :param ca_digest: Digest method to use for signing (default: config)
+
+        :return: Signed certificate
+        :raises Exception: if certificate signing fails
+        """
+        LOG.info(_LI(
+            "Signing a certificate request using pyOpenSSL locally."
+        ))
+        cls._validate_cert(ca_cert, ca_key, ca_key_pass)
         if not ca_digest:
             ca_digest = CONF.certificates.signing_digest
-
         try:
             lo_cert = crypto.load_certificate(crypto.FILETYPE_PEM, ca_cert)
             lo_key = crypto.load_privatekey(crypto.FILETYPE_PEM, ca_key,

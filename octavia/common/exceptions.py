@@ -48,7 +48,8 @@ class OctaviaException(Exception):
     def __unicode__(self):
         return unicode(self.msg)
 
-    def use_fatal_exceptions(self):
+    @staticmethod
+    def use_fatal_exceptions():
         return False
 
 
