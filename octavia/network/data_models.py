@@ -18,8 +18,9 @@ from octavia.common import data_models
 class Interface(data_models.BaseDataModel):
 
     def __init__(self, id=None, amphora_id=None, network_id=None,
-                 ip_address=None):
+                 ip_address=None, port_id=None):
         self.id = id
         self.amphora_id = amphora_id
         self.network_id = network_id
+        self.port_id = port_id
         self.ip_address = ip_address
