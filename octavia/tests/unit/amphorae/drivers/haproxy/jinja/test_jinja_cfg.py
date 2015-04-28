@@ -270,26 +270,6 @@ class TestHaproxyCfg(base.TestCase):
             in_listener.loadbalancer, in_listener, None)
         self.assertEqual(sample_configs.RET_LB, ret)
 
-    def test_include_member(self):
-        ret = self.jinja_cfg._include_member(
-            sample_configs.sample_member_tuple('sample_member_id_1',
-                                               '10.0.0.99'))
-        self.assertTrue(ret)
-
-    def test_include_member_invalid_status(self):
-        ret = self.jinja_cfg._include_member(
-            sample_configs.sample_member_tuple('sample_member_id_1',
-                                               '10.0.0.99',
-                                               operating_status='PENDING'))
-        self.assertFalse(ret)
-
-    def test_include_member_invalid_admin_state(self):
-        ret = self.jinja_cfg._include_member(
-            sample_configs.sample_member_tuple('sample_member_id_1',
-                                               '10.0.0.99',
-                                               enabled=False))
-        self.assertFalse(ret)
-
     def test_expand_expected_codes(self):
         exp_codes = ''
         self.assertEqual(self.jinja_cfg._expand_expected_codes(exp_codes),

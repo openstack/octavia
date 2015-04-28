@@ -188,8 +188,7 @@ class JinjaTemplater(object):
             'enabled': pool.enabled,
             'operating_status': pool.operating_status
         }
-        members = [self._transform_member(x)
-                   for x in pool.members if self._include_member(x)]
+        members = [self._transform_member(x) for x in pool.members]
         ret_value['members'] = members
         if pool.health_monitor:
             ret_value['health_monitor'] = self._transform_health_monitor(
@@ -245,18 +244,6 @@ class JinjaTemplater(object):
                 self._expand_expected_codes(monitor.expected_codes)),
             'enabled': monitor.enabled,
         }
-
-    @staticmethod
-    def _include_member(member):
-        """Members that should be included
-
-            Return only those that meet the criteria for templating
-        """
-        return (
-            member.operating_status in
-            ACTIVE_PENDING_STATUSES and
-            member.enabled
-        )
 
     @staticmethod
     def _expand_expected_codes(codes):
