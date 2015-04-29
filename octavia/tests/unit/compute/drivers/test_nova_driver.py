@@ -32,7 +32,7 @@ CONF = cfg.CONF
 class TestNovaClient(base.TestCase):
 
     def setUp(self):
-        net_name = uuidutils.generate_uuid()
+        net_name = "lb-mgmt-net"
         CONF.set_override(group='networking', name='lb_network_name',
                           override=net_name)
         CONF.set_override(group='keystone_authtoken', name='auth_version',
@@ -48,8 +48,14 @@ class TestNovaClient(base.TestCase):
         self.nova_response.status = 'ACTIVE'
         self.nova_response.addresses = {net_name: [{'addr': '10.0.0.1'}]}
 
+        self.nova_network = mock.Mock()
+        self.nova_network.label = net_name
+
         self.manager = nova_common.VirtualMachineManager()
         self.manager.manager = mock.MagicMock()
+        self.manager._nova_client = mock.MagicMock()
+
+        self.manager._nova_client.networks.get.return_value = self.nova_network
         self.manager.manager.get.return_value = self.nova_response
         self.manager.manager.create.return_value = self.nova_response
 
