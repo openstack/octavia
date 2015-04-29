@@ -25,6 +25,7 @@ from octavia.i18n import _LE
 LOG = logging.getLogger(__name__)
 
 cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
+cfg.CONF.import_group('keystone_authtoken_v3', 'octavia.common.config')
 
 _SESSION = None
 
@@ -50,9 +51,9 @@ def get_session():
             client = v3_client
             kwargs['project_name'] = (cfg.CONF.keystone_authtoken.
                                       admin_tenant_name)
-            kwargs['user_domain_name'] = (cfg.CONF.keystone_authtoken.
+            kwargs['user_domain_name'] = (cfg.CONF.keystone_authtoken_v3.
                                           admin_user_domain)
-            kwargs['project_domain_name'] = (cfg.CONF.keystone_authtoken.
+            kwargs['project_domain_name'] = (cfg.CONF.keystone_authtoken_v3.
                                              admin_project_domain)
         else:
             raise Exception('Unknown keystone version!')

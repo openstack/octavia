@@ -85,6 +85,13 @@ oslo_messaging_opts = [
     cfg.StrOpt('topic'),
 ]
 
+keystone_authtoken_v3_opts = [
+    cfg.StrOpt('admin_user_domain', default='default',
+               help=_('Admin user keystone authentication domain')),
+    cfg.StrOpt('admin_project_domain', default='default',
+               help=_('Admin project keystone authentication domain'))
+]
+
 core_cli_opts = []
 
 # Register the configuration options
@@ -93,6 +100,8 @@ cfg.CONF.register_opts(networking_opts, group='networking')
 cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
 cfg.CONF.register_cli_opts(core_cli_opts)
 cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
+cfg.CONF.register_opts(keystone_authtoken_v3_opts,
+                       group='keystone_authtoken_v3')
 
 # Ensure that the control exchange is set correctly
 messaging.set_transport_defaults(control_exchange='octavia')
