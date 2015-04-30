@@ -170,7 +170,7 @@ class DeletePoolInDB(BaseDatabaseTask):
 class GetAmphoraByID(BaseDatabaseTask):
     """Get an amphora object from the database."""
 
-    def execute(self, amphora_id):
+    def execute(self, amphora):
         """Get an amphora object from the database.
 
         :param amphora_id: The amphora ID to lookup
@@ -178,14 +178,14 @@ class GetAmphoraByID(BaseDatabaseTask):
         """
 
         LOG.debug("Get amphora from DB for amphora id: %s " %
-                  amphora_id)
-        return self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
+                  amphora.id)
+        return self.amphora_repo.get(db_apis.get_session(), id=amphora.id)
 
 
 class GetLoadbalancerByID(BaseDatabaseTask):
     """Get an load balancer object from the database."""
 
-    def execute(self, loadbalancer_id):
+    def execute(self, loadbalancer):
         """Get an load balancer object from the database.
 
         :param loadbalancer_id: The load balancer ID to lookup
@@ -193,9 +193,9 @@ class GetLoadbalancerByID(BaseDatabaseTask):
         """
 
         LOG.debug("Get load balancer from DB for load balancer id: %s " %
-                  loadbalancer_id)
+                  loadbalancer.id)
         return self.loadbalancer_repo.get(db_apis.get_session(),
-                                          id=loadbalancer_id)
+                                          id=loadbalancer.id)
 
 
 class MapLoadbalancerToAmphora(BaseDatabaseTask):
@@ -221,7 +221,6 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
         else:
             LOG.debug("Allocated Amphora with id %s for load balancer "
                       "with id %s" % (amp.id, loadbalancer.id))
-
         return amp
 
 

@@ -44,11 +44,11 @@ class LoadBalancerFlows(object):
             requires='loadbalancer',
             provides='amphora'))
         create_LB_flow.add(database_tasks.GetAmphoraByID(
-            requires='amphora_id',
-            provides='amphora'))
+            requires='amphora',
+            provides='updated_amphora'))
         create_LB_flow.add(database_tasks.GetLoadbalancerByID(
-            requires='loadbalancer_id',
-            provides='loadbalancer'))
+            requires='loadbalancer',
+            provides='updated_loadbalancer'))
         new_LB_net_subflow = self.get_new_LB_networking_subflow()
         create_LB_flow.add(new_LB_net_subflow)
         create_LB_flow.add(database_tasks.MarkLBActiveInDB(
@@ -79,18 +79,21 @@ class LoadBalancerFlows(object):
         new_LB_net_subflow = linear_flow.Flow(constants.
                                               LOADBALANCER_NETWORKING_SUBFLOW)
         new_LB_net_subflow.add(network_tasks.GetPlumbedNetworks(
-            requires='amphora',
+            rebind={'amphora': 'updated_amphora'},
             provides='nics'))
         new_LB_net_subflow.add(network_tasks.CalculateDelta(
-            requires=['amphora', 'nics'],
+            rebind={'amphora': 'updated_amphora'},
+            requires='nics',
             provides='delta'))
         new_LB_net_subflow.add(network_tasks.PlugNetworks(
-            requires=['amphora', 'delta']))
+            rebind={'amphora': 'updated_amphora'},
+            requires='delta'))
         new_LB_net_subflow.add(amphora_driver_tasks.AmphoraPostNetworkPlug(
-            requires='amphora'))
-        new_LB_net_subflow.add(network_tasks.PlugVIP(requires='amphora'))
+            rebind={'amphora': 'updated_amphora'}))
+        new_LB_net_subflow.add(network_tasks.PlugVIP(
+            rebind={'amphora': 'updated_amphora'}))
         new_LB_net_subflow.add(amphora_driver_tasks.AmphoraPostVIPPlug(
-            requires='loadbalancer'))
+            rebind={'loadbalancer': 'updated_loadbalancer'}))
 
         return new_LB_net_subflow
 

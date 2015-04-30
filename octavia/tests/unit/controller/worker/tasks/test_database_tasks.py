@@ -198,7 +198,7 @@ class TestDatabaseTasks(base.TestCase):
                                mock_amphora_repo_update):
 
         get_amp_by_id = database_tasks.GetAmphoraByID()
-        amp = get_amp_by_id.execute(AMP_ID)
+        amp = get_amp_by_id.execute(_amphora_mock)
 
         repo.AmphoraRepository.get.assert_called_once_with(
             'TEST',
@@ -218,7 +218,7 @@ class TestDatabaseTasks(base.TestCase):
                                     mock_amphora_repo_update):
 
         get_lb_by_id = database_tasks.GetLoadbalancerByID()
-        lb = get_lb_by_id.execute(LB_ID)
+        lb = get_lb_by_id.execute(_loadbalancer_mock)
 
         repo.LoadBalancerRepository.get.assert_called_once_with(
             'TEST',

@@ -69,7 +69,8 @@ class AmphoraFlows(object):
         """
         create_amp_for_lb_flow = linear_flow.Flow(constants.
                                                   CREATE_AMPHORA_FOR_LB_FLOW)
-        create_amp_for_lb_flow.add(database_tasks.CreateAmphoraInDB())
+        create_amp_for_lb_flow.add(database_tasks.CreateAmphoraInDB(
+                                   provides='amphora'))
         create_amp_for_lb_flow.add(compute_tasks.ComputeCreate())
         create_amp_for_lb_flow.add(database_tasks.MarkAmphoraBootingInDB())
         wait_flow = linear_flow.Flow('wait_for_amphora',
@@ -84,11 +85,11 @@ class AmphoraFlows(object):
                                    MarkAmphoraAllocatedInDB(
                                        requires='loadbalancer'))
         create_amp_for_lb_flow.add(database_tasks.GetAmphoraByID(
-                                   requires='amphora_id',
-                                   provides='amphora'))
+                                   requires='amphora',
+                                   provides='updated_amphora'))
         create_amp_for_lb_flow.add(database_tasks.GetLoadbalancerByID(
-                                   requires='loadbalancer_id',
-                                   provides='loadbalancer'))
+                                   requires='loadbalancer',
+                                   provides='updated_loadbalancer'))
         new_LB_net_subflow = self._lb_flows.get_new_LB_networking_subflow()
         create_amp_for_lb_flow.add(new_LB_net_subflow)
         create_amp_for_lb_flow.add(database_tasks.MarkLBActiveInDB(

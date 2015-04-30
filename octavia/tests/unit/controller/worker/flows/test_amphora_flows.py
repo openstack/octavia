@@ -52,8 +52,8 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn('amphora', amp_flow.provides)
         self.assertIn('loadbalancer', amp_flow.requires)
 
-        self.assertEqual(len(amp_flow.provides), 4)
-        self.assertEqual(len(amp_flow.requires), 3)
+        self.assertEqual(len(amp_flow.provides), 5)
+        self.assertEqual(len(amp_flow.requires), 1)
 
     def test_get_delete_amphora_flow(self):
 
