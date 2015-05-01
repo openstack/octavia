@@ -123,8 +123,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
             raise exceptions.ComputeGetException()
         return self._translate_amphora(amphora)
 
-    @staticmethod
-    def _translate_amphora(nova_response):
+    def _translate_amphora(self, nova_response):
         '''Convert a nova virtual machine into an amphora object.
 
         :param nova_response: JSON response from nova
@@ -132,12 +131,12 @@ class VirtualMachineManager(compute_base.ComputeBase):
         '''
         # Extract information from nova response to populate desired amphora
         # fields
-        lb_network_ip = None
 
-        for network_name in nova_response.addresses:
-            if network_name == CONF.networking.lb_network_name:
-                lb_network_ip = (
-                    nova_response.addresses[network_name][0]['addr'])
+        lb_network_ip = nova_response.addresses[
+            self._nova_client.networks.get(
+                CONF.controller_worker.amp_network).label
+        ][0]['addr']
+
         response = models.Amphora(
             compute_id=nova_response.id,
             status=nova_response.status,
