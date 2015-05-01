@@ -79,9 +79,14 @@ SUPPORTED_AMPHORA_TYPES = (AMPHORA_VM,)
 
 # Task/Flow constants
 AMPHORA = 'amphora'
+AMPHORA_ID = 'amphora_id'
 DELTA = 'delta'
 LISTENER = 'listener'
 LOADBALANCER = 'loadbalancer'
+LOADBALANCER_ID = 'loadbalancer_id'
+COMPUTE_ID = 'compute_id'
+COMPUTE_OBJ = 'compute_obj'
+AMPS_DATA = 'amps_data'
 NICS = 'nics'
 VIP = 'vip'
 
@@ -104,6 +109,10 @@ UPDATE_LISTENER_FLOW = 'octavia-update-listener-flow'
 UPDATE_LOADBALANCER_FLOW = 'octavia-update-loadbalancer-flow'
 UPDATE_MEMBER_FLOW = 'octavia-update-member-flow'
 UPDATE_POOL_FLOW = 'octavia-update-pool-flow'
+
+# Task Names
+RELOAD_LB_AFTER_AMP_ASSOC = 'reload-lb-after-amp-assoc'
+RELOAD_LB_AFTER_PLUG_VIP = 'reload-lb-after-plug-vip'
 
 NOVA_1 = '1.1'
 NOVA_2 = '2'

@@ -153,6 +153,10 @@ class IDAlreadyExists(OctaviaException):
     code = 409
 
 
+class NoReadyAmphoraeException(OctaviaException):
+    message = _LE('There are not any READY amphora available.')
+
+
 class NoSuitableAmphoraException(OctaviaException):
     message = _LE('Unable to allocate an amphora due to: %(msg)s')
 

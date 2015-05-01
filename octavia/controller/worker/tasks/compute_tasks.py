@@ -19,6 +19,7 @@ import time
 from oslo.config import cfg
 from stevedore import driver as stevedore_driver
 from taskflow import task
+from taskflow.types import failure
 
 from octavia.common import constants
 from octavia.common import exceptions
@@ -45,66 +46,62 @@ class BaseComputeTask(task.Task):
 class ComputeCreate(BaseComputeTask):
     """Create the compute instance for a new amphora."""
 
-    def execute(self, amphora):
+    def execute(self, amphora_id):
         """Create an amphora
 
         :returns: an amphora
         """
-        LOG.debug("Nova Create execute for amphora with id %s" % amphora.id)
+        LOG.debug("Nova Create execute for amphora with id %s" % amphora_id)
 
         try:
-            # todo(german): add security groups
             compute_id = self.compute.build(
-                name="amphora-" + amphora.id,
+                name="amphora-" + amphora_id,
                 amphora_flavor=CONF.controller_worker.amp_flavor_id,
                 image_id=CONF.controller_worker.amp_image_id,
                 key_name=CONF.controller_worker.amp_ssh_key_name,
-                sec_groups=None,
-                network_ids=CONF.controller_worker.amp_network)
+                sec_groups=CONF.controller_worker.amp_secgroup_list,
+                network_ids=[CONF.controller_worker.amp_network])
 
             LOG.debug("Server created with id: %s for amphora id: %s" %
-                      (compute_id, amphora.id))
-
-            amphora.compute_id = compute_id
-
-            return amphora
+                      (compute_id, amphora_id))
+            return compute_id
 
         except Exception as e:
             LOG.error(_LE("Nova create for amphora id: %(amp)s "
                           "failed: %(exp)s"),
-                      {'amp': amphora.id, 'exp': e})
+                      {'amp': amphora_id, 'exp': e})
             raise e
 
-    def revert(self, amphora, *args, **kwargs):
+    def revert(self, result, amphora_id, *args, **kwargs):
         """This method will revert the creation of the
 
         amphora. So it will just delete it in this flow
         """
+        if isinstance(result, failure.Failure):
+            return
+        compute_id = result
         LOG.warn(_LW("Reverting Nova create for amphora with id"
                      "%(amp)s and compute id: %(comp)s"),
-                 {'amp': amphora.id, 'comp': amphora.compute_id})
+                 {'comp': compute_id})
         try:
-            self.compute.delete(amphora.compute_id)
-            amphora.compute_id = None
+            self.compute.delete(compute_id)
         except Exception as e:
             LOG.error(_LE("Reverting Nova create failed"
                           " with exception %s"), e)
-        return
 
 
 class ComputeWait(BaseComputeTask):
     """Wait for the compute driver to mark the amphora active."""
 
-    def execute(self, amphora):
+    def execute(self, compute_id):
         """Wait for the compute driver to mark the amphora active
 
         :raises: Generic exception if the amphora is not active
         :returns: An amphora object
         """
         time.sleep(CONF.controller_worker.amp_active_wait_sec)
-        amp = self.compute.get_amphora(amphora.compute_id)
+        amp = self.compute.get_amphora(compute_id)
         if amp.status == constants.ACTIVE:
-            amphora.lb_network_ip = amp.lb_network_ip
-            return amphora
+            return amp
 
         raise exceptions.ComputeWaitTimeoutException()

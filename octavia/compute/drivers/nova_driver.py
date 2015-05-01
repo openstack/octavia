@@ -132,10 +132,11 @@ class VirtualMachineManager(compute_base.ComputeBase):
         # Extract information from nova response to populate desired amphora
         # fields
 
-        lb_network_ip = nova_response.addresses[
-            self._nova_client.networks.get(
-                CONF.controller_worker.amp_network).label
-        ][0]['addr']
+        net_name = self._nova_client.networks.get(
+            CONF.controller_worker.amp_network).label
+        lb_network_ip = None
+        if net_name in nova_response.addresses:
+            lb_network_ip = nova_response.addresses[net_name][0]['addr']
 
         response = models.Amphora(
             compute_id=nova_response.id,

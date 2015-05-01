@@ -18,6 +18,7 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
+from octavia.common import data_models as o_data_models
 from octavia.controller.worker.tasks import network_tasks
 from octavia.network import base as net_base
 from octavia.network import data_models
@@ -29,6 +30,9 @@ COMPUTE_ID = uuidutils.generate_uuid()
 PORT_ID = uuidutils.generate_uuid()
 NETWORK_ID = uuidutils.generate_uuid()
 IP_ADDRESS = "172.24.41.1"
+VIP = o_data_models.Vip(port_id=PORT_ID, network_id=NETWORK_ID,
+                        ip_address=IP_ADDRESS)
+LB = o_data_models.LoadBalancer(vip=VIP)
 
 
 class TestException(Exception):
@@ -173,35 +177,28 @@ class TestNetworkTasks(base.TestCase):
                       mock_driver):
         net = network_tasks.PlugVIP()
 
-        lb_mock = mock.MagicMock()
-        self.amphora_mock.load_balancer = lb_mock
-        vip_mock = mock.MagicMock()
-        lb_mock.vip = vip_mock
+        mock_driver.plug_vip.return_value = ["vip"]
 
-        mock_driver.plug_vip.side_effect = ["vip"]
-
-        net.execute(self.amphora_mock)
-        mock_driver.plug_vip.assert_called_once_with(lb_mock, vip_mock)
-        self.assertEqual("vip", lb_mock.vip)
+        data = net.execute(LB)
+        mock_driver.plug_vip.assert_called_once_with(LB, LB.vip)
+        self.assertEqual(["vip"], data)
 
         # revert
-        lb_mock.vip = vip_mock
-        net.revert(self.amphora_mock)
-        mock_driver.unplug_vip.assert_called_once_with(lb_mock, vip_mock)
+        net.revert(["vip"], LB)
+        mock_driver.unplug_vip.assert_called_once_with(LB, LB.vip)
 
     def test_allocate_vip(self, mock_driver):
         net = network_tasks.AllocateVIP()
 
-        mock_driver.allocate_vip.side_effect = ["vip"]
+        mock_driver.allocate_vip.return_value = LB.vip
 
         mock_driver.reset_mock()
-        self.assertEqual("vip", net.execute(PORT_ID, NETWORK_ID, IP_ADDRESS))
-        mock_driver.allocate_vip.assert_called_once_with(PORT_ID,
-                                                         NETWORK_ID,
-                                                         IP_ADDRESS)
+        self.assertEqual(LB.vip, net.execute(LB))
+        mock_driver.allocate_vip.assert_called_once_with(
+            port_id=PORT_ID, network_id=NETWORK_ID, ip_address=IP_ADDRESS)
         # revert
         vip_mock = mock.MagicMock()
-        net.revert(vip_mock)
+        net.revert(vip_mock, LB)
         mock_driver.deallocate_vip.assert_called_once_with(vip_mock)
 
     def test_deallocate_vip(self, mock_driver):

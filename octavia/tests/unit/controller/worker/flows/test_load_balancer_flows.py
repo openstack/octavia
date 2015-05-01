@@ -15,6 +15,7 @@
 
 from taskflow.patterns import linear_flow as flow
 
+from octavia.common import constants
 from octavia.controller.worker.flows import load_balancer_flows
 import octavia.tests.unit.base as base
 
@@ -32,11 +33,13 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertIsInstance(lb_flow, flow.Flow)
 
-        self.assertIn('amphora', lb_flow.provides)
-        self.assertIn('delta', lb_flow.provides)
-        self.assertIn('nics', lb_flow.provides)
+        self.assertIn(constants.AMPHORA, lb_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, lb_flow.provides)
+        self.assertIn(constants.VIP, lb_flow.provides)
+        self.assertIn(constants.AMPS_DATA, lb_flow.provides)
+        self.assertIn(constants.LOADBALANCER, lb_flow.provides)
 
-        self.assertIn('loadbalancer', lb_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, lb_flow.requires)
 
         self.assertEqual(len(lb_flow.provides), 5)
         self.assertEqual(len(lb_flow.requires), 1)
@@ -58,10 +61,14 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertIsInstance(lb_flow, flow.Flow)
 
-        self.assertIn('updated_loadbalancer', lb_flow.requires)
-        self.assertIn('updated_amphora', lb_flow.requires)
+        self.assertIn(constants.VIP, lb_flow.provides)
+        self.assertIn(constants.AMPS_DATA, lb_flow.provides)
+        self.assertIn(constants.LOADBALANCER, lb_flow.provides)
 
-        self.assertEqual(len(lb_flow.provides), 2)
+        self.assertIn(constants.LOADBALANCER, lb_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, lb_flow.requires)
+
+        self.assertEqual(len(lb_flow.provides), 3)
         self.assertEqual(len(lb_flow.requires), 2)
 
     def test_get_update_load_balancer_flow(self):

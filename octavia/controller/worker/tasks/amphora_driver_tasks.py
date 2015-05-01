@@ -18,6 +18,7 @@ import logging
 from oslo.config import cfg
 from stevedore import driver as stevedore_driver
 from taskflow import task
+from taskflow.types import failure
 
 from octavia.common import constants
 from octavia.db import api as db_apis
@@ -110,7 +111,6 @@ class ListenerDelete(BaseAmphoraTask):
         LOG.warn(_LW("Reverting listener delete."))
         self.listener_repo.update(db_apis.get_session(), id=listener.id,
                                   provisioning_status=constants.ERROR)
-        return None
 
 
 class AmphoraGetInfo(BaseAmphoraTask):
@@ -137,13 +137,13 @@ class AmphoraFinalize(BaseAmphoraTask):
         self.amphora_driver.finalize_amphora(amphora)
         LOG.debug("Finalized the amphora.")
 
-    def revert(self, amphora, *args, **kwargs):
+    def revert(self, result, amphora, *args, **kwargs):
         """Handle a failed amphora finalize."""
-
+        if isinstance(result, failure.Failure):
+            return
         LOG.warn(_LW("Reverting amphora finalize."))
         self.amphora_repo.update(db_apis.get_session(), id=amphora.id,
-                                 provisioning_status=constants.ERROR)
-        return None
+                                 status=constants.ERROR)
 
 
 class AmphoraPostNetworkPlug(BaseAmphoraTask):
@@ -154,12 +154,13 @@ class AmphoraPostNetworkPlug(BaseAmphoraTask):
         self.amphora_driver.post_network_plug(amphora)
         LOG.debug("Posted network plug for the compute instance")
 
-    def revert(self, amphora, *args, **kwargs):
+    def revert(self, result, amphora, *args, **kwargs):
         """Handle a failed post network plug."""
+        if isinstance(result, failure.Failure):
+            return
         LOG.warn(_LW("Reverting post network plug."))
         self.amphora_repo.update(db_apis.get_session(), id=amphora.id,
-                                 provisioning_status=constants.ERROR)
-        return None
+                                 status=constants.ERROR)
 
 
 class AmphoraPostVIPPlug(BaseAmphoraTask):
@@ -170,10 +171,11 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
         self.amphora_driver.post_vip_plug(loadbalancer)
         LOG.debug("Notfied amphora of vip plug")
 
-    def revert(self, loadbalancer, *args, **kwargs):
+    def revert(self, result, loadbalancer, *args, **kwargs):
         """Handle a failed amphora vip plug notification."""
+        if isinstance(result, failure.Failure):
+            return
         LOG.warn(_LW("Reverting post vip plug."))
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       id=loadbalancer.id,
-                                      provisioning_status=constants.ERROR)
-        return None
+                                      status=constants.ERROR)

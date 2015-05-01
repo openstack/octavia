@@ -174,6 +174,7 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
                     raise exc.TimeOutException()
             else:
                 return
+        raise exc.UnavailableException()
 
     def _process_tls_certificates(self, listener):
         """Processes TLS data from the listener.

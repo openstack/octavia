@@ -17,8 +17,10 @@ import logging
 
 from oslo_utils import uuidutils
 from taskflow import task
+from taskflow.types import failure
 
 from octavia.common import constants
+from octavia.common import exceptions
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
 from octavia.i18n import _LW
@@ -30,6 +32,7 @@ class BaseDatabaseTask(task.Task):
     """Base task to load drivers common to the tasks."""
 
     def __init__(self, **kwargs):
+        self.repos = repo.Repositories()
         self.amphora_repo = repo.AmphoraRepository()
         self.health_mon_repo = repo.HealthMonitorRepository()
         self.listener_repo = repo.ListenerRepository()
@@ -42,8 +45,6 @@ class BaseDatabaseTask(task.Task):
 class CreateAmphoraInDB(BaseDatabaseTask):
     """Task to create an initial amphora in the Database."""
 
-    default_provides = constants.AMPHORA
-
     def execute(self, *args, **kwargs):
         """Creates an pending create amphora record in the database.
 
@@ -55,26 +56,28 @@ class CreateAmphoraInDB(BaseDatabaseTask):
                                            status=constants.PENDING_CREATE)
 
         LOG.debug("Created Amphora in DB with id %s" % amphora.id)
-        return amphora
+        return amphora.id
 
-    def revert(self, *args, **kwargs):
+    def revert(self, result, *args, **kwargs):
         """Revert by storing the amphora in error state in the DB
 
         In a future version we might change the status to DELETED
         if deleting the amphora was successful
         """
 
-        if 'result' not in kwargs:
-            return None  # nothing to do
+        if isinstance(result, failure.Failure):
+            # This task's execute failed, so nothing needed to be done to
+            # revert
+            return
 
-#        amphora = kwargs['result']
-# TODO(johnsom) fix
-#        LOG.warn(_LW("Reverting create amphora in DB for amp id %s "),
-#                 amphora.id)
+        # At this point the revert is being called because another task
+        # executed after this failed so we will need to do something and
+        # result is the amphora's id
 
-#        _amphora_repo.update(db_apis.get_session(), amphora.id,
-#                                 status=constants.ERROR,
-#                                 compute_id=amphora.compute_id)
+        LOG.warn(_LW("Reverting create amphora in DB for amp id %s "), result)
+
+        # Delete the amphora for now. May want to just update status later
+        self.amphora_repo.delete(db_apis.get_session(), id=result)
 
 
 class DeleteHealthMonitorInDB(BaseDatabaseTask):
@@ -167,10 +170,10 @@ class DeletePoolInDB(BaseDatabaseTask):
 #                              operating_status=constants.ERROR)
 
 
-class GetAmphoraByID(BaseDatabaseTask):
+class ReloadAmphora(BaseDatabaseTask):
     """Get an amphora object from the database."""
 
-    def execute(self, amphora):
+    def execute(self, amphora_id):
         """Get an amphora object from the database.
 
         :param amphora_id: The amphora ID to lookup
@@ -178,14 +181,14 @@ class GetAmphoraByID(BaseDatabaseTask):
         """
 
         LOG.debug("Get amphora from DB for amphora id: %s " %
-                  amphora.id)
-        return self.amphora_repo.get(db_apis.get_session(), id=amphora.id)
+                  amphora_id)
+        return self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
 
 
-class GetLoadbalancerByID(BaseDatabaseTask):
+class ReloadLoadBalancer(BaseDatabaseTask):
     """Get an load balancer object from the database."""
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer_id, *args, **kwargs):
         """Get an load balancer object from the database.
 
         :param loadbalancer_id: The load balancer ID to lookup
@@ -193,15 +196,34 @@ class GetLoadbalancerByID(BaseDatabaseTask):
         """
 
         LOG.debug("Get load balancer from DB for load balancer id: %s " %
-                  loadbalancer.id)
+                  loadbalancer_id)
         return self.loadbalancer_repo.get(db_apis.get_session(),
-                                          id=loadbalancer.id)
+                                          id=loadbalancer_id)
+
+
+class UpdateVIPAfterAllocation(BaseDatabaseTask):
+
+    def execute(self, loadbalancer_id, vip):
+        self.repos.vip.update(db_apis.get_session(), loadbalancer_id,
+                              port_id=vip.port_id, network_id=vip.network_id,
+                              ip_address=vip.ip_address)
+        return self.repos.load_balancer.get(db_apis.get_session(),
+                                            id=loadbalancer_id)
+
+
+class UpdateAmphoraVIPData(BaseDatabaseTask):
+
+    def execute(self, amps_data):
+        for amp_data in amps_data:
+            self.repos.amphora.update(db_apis.get_session(), amp_data.id,
+                                      vrrp_ip=amp_data.vrrp_ip,
+                                      ha_ip=amp_data.ha_ip)
 
 
 class MapLoadbalancerToAmphora(BaseDatabaseTask):
     """Maps and assigns a load balancer to an amphora in the database."""
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer_id):
         """Allocates an Amphora for the load balancer in the database.
 
         :param lb_id: The load balancer id to map to an amphora
@@ -210,18 +232,20 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
         """
 
         LOG.debug("Allocating an Amphora for load balancer with id %s" %
-                  loadbalancer.id)
+                  loadbalancer_id)
 
         amp = self.amphora_repo.allocate_and_associate(
             db_apis.get_session(),
-            loadbalancer.id)
+            loadbalancer_id)
         if amp is None:
             LOG.debug("No Amphora available for load balancer with id %s" %
-                      loadbalancer.id)
-        else:
-            LOG.debug("Allocated Amphora with id %s for load balancer "
-                      "with id %s" % (amp.id, loadbalancer.id))
-        return amp
+                      loadbalancer_id)
+            raise exceptions.NoReadyAmphoraeException()
+
+        LOG.debug("Allocated Amphora with id %s for load balancer "
+                  "with id %s" % (amp.id, loadbalancer_id))
+
+        return amp.id
 
 
 class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
@@ -231,20 +255,23 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
     retried sufficiently - so just abort
     """
 
-    def execute(self, amphora, loadbalancer):
+    def execute(self, amphora, loadbalancer_id):
         """Mark amphora as allocated to a load balancer in DB."""
 
         LOG.debug("Mark ALLOCATED in DB for amphora: %s with compute id %s "
                   "for load balancer: %s" %
-                  (amphora.id, amphora.compute_id, loadbalancer.id))
+                  (amphora.id, amphora.compute_id, loadbalancer_id))
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.AMPHORA_ALLOCATED,
                                  compute_id=amphora.compute_id,
                                  lb_network_ip=amphora.lb_network_ip,
-                                 load_balancer_id=loadbalancer.id)
+                                 load_balancer_id=loadbalancer_id)
 
-    def revert(self, amphora, *args, **kwargs):
+    def revert(self, result, amphora, loadbalancer_id, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up."""
+
+        if isinstance(result, failure.Failure):
+            return
 
         LOG.warn(_LW("Reverting mark amphora ready in DB for amp "
                      "id %(amp)s and compute id %(comp)s"),
@@ -256,24 +283,27 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
 class MarkAmphoraBootingInDB(BaseDatabaseTask):
     """Mark the amphora as booting in the database."""
 
-    def execute(self, amphora):
+    def execute(self, amphora_id, compute_id):
         """Mark amphora booting in DB."""
 
         LOG.debug("Mark BOOTING in DB for amphora: %s with compute id %s" %
-                  (amphora.id, amphora.compute_id))
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                  (amphora_id, compute_id))
+        self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  status=constants.AMPHORA_BOOTING,
-                                 compute_id=amphora.compute_id)
+                                 compute_id=compute_id)
 
-    def revert(self, amphora, *args, **kwargs):
+    def revert(self, result, amphora_id, compute_id, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up."""
+
+        if isinstance(result, failure.Failure):
+            return
 
         LOG.warn(_LW("Reverting mark amphora booting in DB for amp "
                      "id %(amp)s and compute id %(comp)s"),
-                 {'amp': amphora.id, 'comp': amphora.compute_id})
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                 {'amp': amphora_id, 'comp': compute_id})
+        self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  status=constants.ERROR,
-                                 compute_id=amphora.compute_id)
+                                 compute_id=compute_id)
 
 
 class MarkAmphoraDeletedInDB(BaseDatabaseTask):
@@ -378,6 +408,22 @@ class MarkAmphoraReadyInDB(BaseDatabaseTask):
                                  status=constants.ERROR,
                                  compute_id=amphora.compute_id,
                                  lb_network_ip=amphora.lb_network_ip)
+
+
+class UpdateAmphoraComputeId(BaseDatabaseTask):
+
+    def execute(self, amphora_id, compute_id):
+        self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                 compute_id=compute_id)
+        return self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
+
+
+class UpdateAmphoraInfo(BaseDatabaseTask):
+
+    def execute(self, amphora_id, compute_obj):
+        self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                 lb_network_ip=compute_obj.lb_network_ip)
+        return self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
 
 
 class MarkLBActiveInDB(BaseDatabaseTask):

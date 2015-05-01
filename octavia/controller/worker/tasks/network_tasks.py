@@ -18,6 +18,7 @@ import logging
 from oslo.config import cfg
 from stevedore import driver as stevedore_driver
 from taskflow import task
+from taskflow.types import failure
 
 from octavia.common import constants
 from octavia.i18n import _LW, _LE
@@ -179,48 +180,51 @@ class UnPlugNetworks(BaseNetworkTask):
 class PlugVIP(BaseNetworkTask):
     """Task to plumb a VIP."""
 
-    def execute(self, amphora):
+    def execute(self, loadbalancer):
         """Plumb a vip to an amphora."""
 
-        # Likely needs to be a subflow!
+        LOG.debug("Plumbing VIP for loadbalancer id: %s" % loadbalancer.id)
 
-        LOG.debug("Plumbing VIP for amphora id: %s" % amphora.id)
+        amps_data = self.network_driver.plug_vip(loadbalancer,
+                                                 loadbalancer.vip)
+        return amps_data
 
-        vip = self.network_driver.plug_vip(amphora.load_balancer,
-                                           amphora.load_balancer.vip)
-        amphora.load_balancer.vip = vip
-        return
-
-    def revert(self, amphora):
+    def revert(self, result, loadbalancer, *args, **kwargs):
         """Handle a failure to plumb a vip."""
 
-        LOG.warn(_LW("Unable to plug VIP for amp id %s"), amphora.id)
+        if isinstance(result, failure.Failure):
+            return
+        LOG.warn(_LW("Unable to plug VIP for loadbalancer id %s"),
+                 loadbalancer.id)
 
-        self.network_driver.unplug_vip(amphora.load_balancer,
-                                       amphora.load_balancer.vip)
-
-        return
+        self.network_driver.unplug_vip(loadbalancer, loadbalancer.vip)
 
 
 class AllocateVIP(BaseNetworkTask):
     """Task to allocate a VIP."""
 
-    def execute(self, port_id, network_id, ip_address):
+    def execute(self, loadbalancer):
         """Allocate a vip to the loadbalancer."""
 
         LOG.debug("Allocate_vip port_id %s, network_id %s,"
                   "ip_address %s",
-                  port_id, network_id, ip_address)
-        return self.network_driver.allocate_vip(port_id,
-                                                network_id, ip_address)
+                  loadbalancer.vip.port_id,
+                  loadbalancer.vip.network_id,
+                  loadbalancer.vip.ip_address)
+        return self.network_driver.allocate_vip(
+            port_id=loadbalancer.vip.port_id,
+            network_id=loadbalancer.vip.network_id,
+            ip_address=loadbalancer.vip.ip_address)
 
-    def revert(self, vip):
+    def revert(self, result, loadbalancer, *args, **kwargs):
         """Handle a failure to allocate vip."""
 
-        LOG.warn(_LW("Unable to allocate VIP %s"), vip.ip_address)
-
+        if isinstance(result, failure.Failure):
+            LOG.exception(_LE("Unable to allocate VIP"))
+            return
+        vip = result
+        LOG.warn(_LW("Deallocating vip %s"), vip.ip_address)
         self.network_driver.deallocate_vip(vip)
-        return
 
 
 class DeallocateVIP(BaseNetworkTask):

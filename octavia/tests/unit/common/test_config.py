@@ -23,3 +23,6 @@ class TestConfig(base.TestCase):
     def test_sanity(self):
         config.init([])
         config.setup_logging(cfg.CONF)
+        # Resetting because this will cause inconsistent errors when run with
+        # other tests
+        self.addCleanup(cfg.CONF.reset)

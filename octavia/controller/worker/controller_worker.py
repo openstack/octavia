@@ -16,6 +16,7 @@
 import logging
 
 from octavia.common import base_taskflow
+from octavia.common import constants
 from octavia.common import exceptions
 from octavia.controller.worker.flows import amphora_flows
 from octavia.controller.worker.flows import health_monitor_flows
@@ -246,33 +247,24 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         # a conditional flow that would make this cleaner once implemented.
         # https://review.openstack.org/#/c/98946/
 
-        lb = self._lb_repo.get(db_apis.get_session(),
-                               id=load_balancer_id)
-
-        create_lb_tf = self._taskflow_load(self._lb_flows.
-                                           get_create_load_balancer_flow(),
-                                           store={'loadbalancer': lb})
+        store = {constants.LOADBALANCER_ID: load_balancer_id}
+        create_lb_tf = self._taskflow_load(
+            self._lb_flows.get_create_load_balancer_flow(), store=store)
         with tf_logging.DynamicLoggingListener(create_lb_tf,
                                                log=LOG):
-            amp = None
             try:
                 create_lb_tf.run()
-                amp = create_lb_tf.storage.fetch('amphora')
-            except Exception:
-                pass
+            except exceptions.NoReadyAmphoraeException:
+                create_amp_lb_tf = self._taskflow_load(
+                    self._amphora_flows.get_create_amphora_for_lb_flow(),
+                    store=store)
 
-        if amp is None:
-
-            create_amp_lb_tf = self._taskflow_load(
-                self._amphora_flows.get_create_amphora_for_lb_flow(),
-                store={'loadbalancer': lb})
-
-            with tf_logging.DynamicLoggingListener(create_amp_lb_tf,
-                                                   log=LOG):
-                try:
-                    create_amp_lb_tf.run()
-                except exceptions.ComputeBuildException as e:
-                    raise exceptions.NoSuitableAmphoraException(msg=e.msg)
+                with tf_logging.DynamicLoggingListener(create_amp_lb_tf,
+                                                       log=LOG):
+                    try:
+                        create_amp_lb_tf.run()
+                    except exceptions.ComputeBuildException as e:
+                        raise exceptions.NoSuitableAmphoraException(msg=e.msg)
 
     def delete_load_balancer(self, load_balancer_id):
         """Deletes a load balancer by de-allocating Amphorae.

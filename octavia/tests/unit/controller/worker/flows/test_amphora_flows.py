@@ -17,6 +17,7 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from taskflow.patterns import linear_flow as flow
 
+from octavia.common import constants
 from octavia.controller.worker.flows import amphora_flows
 import octavia.tests.unit.base as base
 
@@ -38,9 +39,11 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
-        self.assertIn('amphora', amp_flow.provides)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
 
-        self.assertEqual(len(amp_flow.provides), 1)
+        self.assertEqual(len(amp_flow.provides), 3)
         self.assertEqual(len(amp_flow.requires), 0)
 
     def test_get_create_amphora_for_lb_flow(self):
@@ -49,10 +52,16 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
-        self.assertIn('amphora', amp_flow.provides)
-        self.assertIn('loadbalancer', amp_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.LOADBALANCER, amp_flow.provides)
+        self.assertIn(constants.VIP, amp_flow.provides)
+        self.assertIn(constants.AMPS_DATA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
 
-        self.assertEqual(len(amp_flow.provides), 5)
+        self.assertEqual(len(amp_flow.provides), 7)
         self.assertEqual(len(amp_flow.requires), 1)
 
     def test_get_delete_amphora_flow(self):
@@ -61,7 +70,7 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
-        self.assertIn('amphora', amp_flow.requires)
+        self.assertIn(constants.AMPHORA, amp_flow.requires)
 
         self.assertEqual(len(amp_flow.provides), 0)
         self.assertEqual(len(amp_flow.requires), 1)

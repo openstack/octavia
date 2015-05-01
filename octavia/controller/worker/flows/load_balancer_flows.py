@@ -40,19 +40,21 @@ class LoadBalancerFlows(object):
         # https://review.openstack.org/#/c/98946/
 
         create_LB_flow = linear_flow.Flow(constants.CREATE_LOADBALANCER_FLOW)
+
         create_LB_flow.add(database_tasks.MapLoadbalancerToAmphora(
-            requires='loadbalancer',
-            provides='amphora'))
-        create_LB_flow.add(database_tasks.GetAmphoraByID(
-            requires='amphora',
-            provides='updated_amphora'))
-        create_LB_flow.add(database_tasks.GetLoadbalancerByID(
-            requires='loadbalancer',
-            provides='updated_loadbalancer'))
+            requires=constants.LOADBALANCER_ID,
+            provides=constants.AMPHORA_ID))
+        create_LB_flow.add(database_tasks.ReloadAmphora(
+            requires=constants.AMPHORA_ID,
+            provides=constants.AMPHORA))
+        create_LB_flow.add(database_tasks.ReloadLoadBalancer(
+            name=constants.RELOAD_LB_AFTER_AMP_ASSOC,
+            requires=constants.LOADBALANCER_ID,
+            provides=constants.LOADBALANCER))
         new_LB_net_subflow = self.get_new_LB_networking_subflow()
         create_LB_flow.add(new_LB_net_subflow)
         create_LB_flow.add(database_tasks.MarkLBActiveInDB(
-            requires='loadbalancer'))
+            requires=constants.LOADBALANCER))
 
         return create_LB_flow
 
@@ -78,22 +80,23 @@ class LoadBalancerFlows(object):
 
         new_LB_net_subflow = linear_flow.Flow(constants.
                                               LOADBALANCER_NETWORKING_SUBFLOW)
-        new_LB_net_subflow.add(network_tasks.GetPlumbedNetworks(
-            rebind={'amphora': 'updated_amphora'},
-            provides='nics'))
-        new_LB_net_subflow.add(network_tasks.CalculateDelta(
-            rebind={'amphora': 'updated_amphora'},
-            requires='nics',
-            provides='delta'))
-        new_LB_net_subflow.add(network_tasks.PlugNetworks(
-            rebind={'amphora': 'updated_amphora'},
-            requires='delta'))
-        new_LB_net_subflow.add(amphora_driver_tasks.AmphoraPostNetworkPlug(
-            rebind={'amphora': 'updated_amphora'}))
+        new_LB_net_subflow.add(network_tasks.AllocateVIP(
+            requires=constants.LOADBALANCER,
+            provides=constants.VIP))
+        new_LB_net_subflow.add(database_tasks.UpdateVIPAfterAllocation(
+            requires=(constants.LOADBALANCER_ID, constants.VIP),
+            provides=constants.LOADBALANCER))
         new_LB_net_subflow.add(network_tasks.PlugVIP(
-            rebind={'amphora': 'updated_amphora'}))
+            requires=constants.LOADBALANCER,
+            provides=constants.AMPS_DATA))
+        new_LB_net_subflow.add(database_tasks.UpdateAmphoraVIPData(
+            requires=constants.AMPS_DATA))
+        new_LB_net_subflow.add(database_tasks.ReloadLoadBalancer(
+            name=constants.RELOAD_LB_AFTER_PLUG_VIP,
+            requires=constants.LOADBALANCER_ID,
+            provides=constants.LOADBALANCER))
         new_LB_net_subflow.add(amphora_driver_tasks.AmphoraPostVIPPlug(
-            rebind={'loadbalancer': 'updated_loadbalancer'}))
+            requires=constants.LOADBALANCER))
 
         return new_LB_net_subflow
 

@@ -44,17 +44,26 @@ class AmphoraFlows(object):
         """
         create_amphora_flow = linear_flow.Flow(constants.CREATE_AMPHORA_FLOW)
         create_amphora_flow.add(database_tasks.CreateAmphoraInDB(
-                                provides='amphora'))
-        create_amphora_flow.add(compute_tasks.ComputeCreate())
-        create_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB())
+                                provides=constants.AMPHORA_ID))
+        create_amphora_flow.add(compute_tasks.ComputeCreate(
+            requires=constants.AMPHORA_ID,
+            provides=constants.COMPUTE_ID))
+        create_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
+            requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
         wait_flow = linear_flow.Flow('wait_for_amphora',
                                      retry=retry.Times(CONF.
                                                        controller_worker.
                                                        amp_active_retries))
-        wait_flow.add(compute_tasks.ComputeWait())
+        wait_flow.add(compute_tasks.ComputeWait(
+            requires=constants.COMPUTE_ID))
         create_amphora_flow.add(wait_flow)
-        create_amphora_flow.add(amphora_driver_tasks.AmphoraFinalize())
-        create_amphora_flow.add(database_tasks.MarkAmphoraReadyInDB())
+        create_amphora_flow.add(database_tasks.ReloadAmphora(
+            requires=constants.AMPHORA_ID,
+            provides=constants.AMPHORA))
+        create_amphora_flow.add(amphora_driver_tasks.AmphoraFinalize(
+            requires=constants.AMPHORA))
+        create_amphora_flow.add(database_tasks.MarkAmphoraReadyInDB(
+            requires=constants.AMPHORA))
 
         return create_amphora_flow
 
@@ -70,30 +79,43 @@ class AmphoraFlows(object):
         create_amp_for_lb_flow = linear_flow.Flow(constants.
                                                   CREATE_AMPHORA_FOR_LB_FLOW)
         create_amp_for_lb_flow.add(database_tasks.CreateAmphoraInDB(
-                                   provides='amphora'))
-        create_amp_for_lb_flow.add(compute_tasks.ComputeCreate())
-        create_amp_for_lb_flow.add(database_tasks.MarkAmphoraBootingInDB())
+            provides=constants.AMPHORA_ID))
+        create_amp_for_lb_flow.add(compute_tasks.ComputeCreate(
+            requires=constants.AMPHORA_ID,
+            provides=constants.COMPUTE_ID))
+        create_amp_for_lb_flow.add(database_tasks.UpdateAmphoraComputeId(
+            requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
+        create_amp_for_lb_flow.add(database_tasks.MarkAmphoraBootingInDB(
+            requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
         wait_flow = linear_flow.Flow('wait_for_amphora',
                                      retry=retry.Times(CONF.
                                                        controller_worker.
                                                        amp_active_retries))
-        wait_flow.add(compute_tasks.ComputeWait())
+        wait_flow.add(compute_tasks.ComputeWait(
+            requires=constants.COMPUTE_ID,
+            provides=constants.COMPUTE_OBJ))
+        wait_flow.add(database_tasks.UpdateAmphoraInfo(
+            requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
+            provides=constants.AMPHORA))
         create_amp_for_lb_flow.add(wait_flow)
-        create_amp_for_lb_flow.add(amphora_driver_tasks.
-                                   AmphoraFinalize())
-        create_amp_for_lb_flow.add(database_tasks.
-                                   MarkAmphoraAllocatedInDB(
-                                       requires='loadbalancer'))
-        create_amp_for_lb_flow.add(database_tasks.GetAmphoraByID(
-                                   requires='amphora',
-                                   provides='updated_amphora'))
-        create_amp_for_lb_flow.add(database_tasks.GetLoadbalancerByID(
-                                   requires='loadbalancer',
-                                   provides='updated_loadbalancer'))
+        create_amp_for_lb_flow.add(amphora_driver_tasks.AmphoraFinalize(
+            requires=constants.AMPHORA))
+        create_amp_for_lb_flow.add(
+            database_tasks.MarkAmphoraAllocatedInDB(
+                requires=(constants.AMPHORA, constants.LOADBALANCER_ID),
+                provides=constants.LOADBALANCER))
+        create_amp_for_lb_flow.add(
+            database_tasks.ReloadAmphora(requires=constants.AMPHORA_ID,
+                                         provides=constants.AMPHORA))
+        create_amp_for_lb_flow.add(
+            database_tasks.ReloadLoadBalancer(
+                name=constants.RELOAD_LB_AFTER_AMP_ASSOC,
+                requires=constants.LOADBALANCER_ID,
+                provides=constants.LOADBALANCER))
         new_LB_net_subflow = self._lb_flows.get_new_LB_networking_subflow()
         create_amp_for_lb_flow.add(new_LB_net_subflow)
         create_amp_for_lb_flow.add(database_tasks.MarkLBActiveInDB(
-                                   requires='loadbalancer'))
+                                   requires=constants.LOADBALANCER))
 
         return create_amp_for_lb_flow
 

@@ -29,7 +29,7 @@ AMP_FLAVOR_ID = 10
 AMP_IMAGE_ID = 11
 AMP_SSH_KEY_NAME = None
 AMP_NET = uuidutils.generate_uuid()
-AMP_SEC_GROUPS = None
+AMP_SEC_GROUPS = []
 AMP_WAIT = 12
 AMPHORA_ID = uuidutils.generate_uuid()
 COMPUTE_ID = uuidutils.generate_uuid()
@@ -68,43 +68,39 @@ class TestComputeTasks(base.TestCase):
         super(TestComputeTasks, self).setUp()
 
     @mock.patch('stevedore.driver.DriverManager.driver')
-    def test_compute_create(self,
-                            mock_driver):
+    def test_compute_create(self, mock_driver):
 
         mock_driver.build.side_effect = [COMPUTE_ID, TestException('test')]
 
         # Test execute()
         createcompute = compute_tasks.ComputeCreate()
-        amphora = createcompute.execute(_amphora_mock)
+        compute_id = createcompute.execute(_amphora_mock.id)
 
         # Validate that the build method was called properly
         mock_driver.build.assert_called_once_with(
-            name="amphora-" + AMPHORA_ID,
+            name="amphora-" + _amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
             key_name=AMP_SSH_KEY_NAME,
             sec_groups=AMP_SEC_GROUPS,
-            network_ids=AMP_NET)
+            network_ids=[AMP_NET])
 
         # Make sure it returns the expected compute_id
-        assert(amphora.compute_id == COMPUTE_ID)
+        assert(compute_id == COMPUTE_ID)
 
         # Test that a build exception is raised
 
         createcompute = compute_tasks.ComputeCreate()
         self.assertRaises(TestException,
                           createcompute.execute,
-                          amphora=_amphora_mock)
+                          _amphora_mock)
 
         # Test revert()
 
         _amphora_mock.compute_id = COMPUTE_ID
 
         createcompute = compute_tasks.ComputeCreate()
-        createcompute.revert(_amphora_mock)
-
-        # Validate that the compute_id is cleared
-        self.assertIsNone(_amphora_mock.compute_id)
+        createcompute.revert(compute_id, _amphora_mock.id)
 
         # Validate that the delete method was called properly
         mock_driver.delete.assert_called_once_with(
@@ -112,7 +108,7 @@ class TestComputeTasks(base.TestCase):
 
         # Test that a delete exception is not raised
 
-        createcompute.revert(_amphora_mock)
+        createcompute.revert(COMPUTE_ID, _amphora_mock.id)
 
     @mock.patch('stevedore.driver.DriverManager.driver')
     @mock.patch('time.sleep')
@@ -127,13 +123,11 @@ class TestComputeTasks(base.TestCase):
         mock_driver.get_amphora.return_value = _amphora_mock
 
         computewait = compute_tasks.ComputeWait()
-        amphora = computewait.execute(_amphora_mock)
+        computewait.execute(COMPUTE_ID)
 
         time.sleep.assert_called_once_with(AMP_WAIT)
 
         mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID)
-
-        assert(amphora.lb_network_ip == LB_NET_IP)
 
         _amphora_mock.status = constants.DELETED
 

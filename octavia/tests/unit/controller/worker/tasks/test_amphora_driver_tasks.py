@@ -179,11 +179,11 @@ class TestDatabaseTasks(base.TestCase):
             _amphora_mock)
 
         # Test revert
-        amp = amphora_finalize_obj.revert(_amphora_mock)
+        amp = amphora_finalize_obj.revert(None, _amphora_mock)
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
             id=AMP_ID,
-            provisioning_status=constants.ERROR)
+            status=constants.ERROR)
         self.assertIsNone(amp)
 
     def test_amphora_post_network_plug(self,
@@ -202,11 +202,11 @@ class TestDatabaseTasks(base.TestCase):
             assert_called_once_with)(_amphora_mock)
 
         # Test revert
-        amp = amphora_post_network_plug_obj.revert(_amphora_mock)
+        amp = amphora_post_network_plug_obj.revert(None, _amphora_mock)
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
             id=AMP_ID,
-            provisioning_status=constants.ERROR)
+            status=constants.ERROR)
 
         self.assertIsNone(amp)
 
@@ -228,10 +228,10 @@ class TestDatabaseTasks(base.TestCase):
             assert_called_once_with)(_LB_mock)
 
         # Test revert
-        amp = amphora_post_vip_plug_obj.revert(_LB_mock)
+        amp = amphora_post_vip_plug_obj.revert(None, _LB_mock)
         repo.LoadBalancerRepository.update.assert_called_once_with(
             'TEST',
             id=LB_ID,
-            provisioning_status=constants.ERROR)
+            status=constants.ERROR)
 
         self.assertIsNone(amp)
