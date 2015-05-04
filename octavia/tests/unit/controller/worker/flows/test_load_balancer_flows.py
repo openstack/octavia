@@ -38,8 +38,8 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertIn('loadbalancer', lb_flow.requires)
 
-        self.assertEqual(len(lb_flow.provides), 4)
-        self.assertEqual(len(lb_flow.requires), 3)
+        self.assertEqual(len(lb_flow.provides), 5)
+        self.assertEqual(len(lb_flow.requires), 1)
 
     def test_get_delete_load_balancer_flow(self):
 
@@ -58,8 +58,8 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertIsInstance(lb_flow, flow.Flow)
 
-        self.assertIn('amphora', lb_flow.requires)
-        self.assertIn('loadbalancer', lb_flow.requires)
+        self.assertIn('updated_loadbalancer', lb_flow.requires)
+        self.assertIn('updated_amphora', lb_flow.requires)
 
         self.assertEqual(len(lb_flow.provides), 2)
         self.assertEqual(len(lb_flow.requires), 2)
