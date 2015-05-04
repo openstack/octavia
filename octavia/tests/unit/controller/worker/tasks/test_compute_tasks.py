@@ -27,7 +27,7 @@ import octavia.tests.unit.base as base
 
 AMP_FLAVOR_ID = 10
 AMP_IMAGE_ID = 11
-AMP_SSH_KEY = None
+AMP_SSH_KEY_NAME = None
 AMP_NET = uuidutils.generate_uuid()
 AMP_SEC_GROUPS = None
 AMP_WAIT = 12
@@ -54,7 +54,8 @@ class TestComputeTasks(base.TestCase):
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="controller_worker", amp_flavor_id=AMP_FLAVOR_ID)
         conf.config(group="controller_worker", amp_image_id=AMP_IMAGE_ID)
-        conf.config(group="controller_worker", amp_ssh_key=AMP_SSH_KEY)
+        conf.config(group="controller_worker",
+                    amp_ssh_key_name=AMP_SSH_KEY_NAME)
         conf.config(group="controller_worker", amp_network=AMP_NET)
         conf.config(group="controller_worker", amp_active_wait_sec=AMP_WAIT)
         conf.config(group="keystone_authtoken", auth_version=AUTH_VERSION)
@@ -81,7 +82,7 @@ class TestComputeTasks(base.TestCase):
             name="amphora-" + AMPHORA_ID,
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
-            key_name=AMP_SSH_KEY,
+            key_name=AMP_SSH_KEY_NAME,
             sec_groups=AMP_SEC_GROUPS,
             network_ids=AMP_NET)
 

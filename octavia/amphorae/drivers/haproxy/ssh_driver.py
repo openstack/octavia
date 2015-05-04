@@ -166,7 +166,7 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
             try:
                 self.client.connect(hostname=hostname,
                                     username=self.amp_config.username,
-                                    key_filename=self.amp_config.key_name)
+                                    key_filename=self.amp_config.key_path)
             except socket.error:
                 LOG.warn(_LW("Could not ssh to instance"))
                 time.sleep(self.amp_config.connection_retry_interval)

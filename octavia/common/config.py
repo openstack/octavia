@@ -93,15 +93,26 @@ keystone_authtoken_v3_opts = [
 ]
 
 haproxy_amphora_opts = [
-    cfg.StrOpt('username', help=_('Name of user for access to amphora.')),
-    cfg.StrOpt('key_name', help=_('Name of key loaded on amphora at boot.')),
-    cfg.StrOpt('base_path', help=_('Base directory for amphora files.')),
-    cfg.StrOpt('base_cert_dir', help=_('Base directory for cert storage.')),
+    cfg.StrOpt('username',
+               default='ubuntu',
+               help=_('Name of user for access to amphora.')),
+    cfg.StrOpt('key_path',
+               default='/opt/stack/.ssh/id_rsa',
+               help=_('Local absolute path to the private key '
+                      'loaded on amphora at boot.')),
+    cfg.StrOpt('base_path',
+               default='/var/lib/octavia',
+               help=_('Base directory for amphora files.')),
+    cfg.StrOpt('base_cert_dir',
+               default='/var/lib/octavia/certs',
+               help=_('Base directory for cert storage.')),
     cfg.StrOpt('haproxy_template', help=_('Custom haproxy template.')),
-    cfg.IntOpt('connection_max_retries', help=_('Retry threshold for '
-                                                'connecting to amphorae.')),
-    cfg.FloatOpt('connection_retry_interval', help=_('Retry timeout between '
-                                                     'attempts.'))
+    cfg.IntOpt('connection_max_retries',
+               default=10,
+               help=_('Retry threshold for connecting to amphorae.')),
+    cfg.IntOpt('connection_retry_interval',
+               default=5,
+               help=_('Retry timeout between attempts in seconds.'))
 ]
 
 controller_worker_opts = [
@@ -117,9 +128,9 @@ controller_worker_opts = [
     cfg.StrOpt('amp_image_id',
                default='',
                help=_('Glance image id for the Amphora image to boot')),
-    cfg.StrOpt('amp_ssh_key',
+    cfg.StrOpt('amp_ssh_key_name',
                default='',
-               help=_('SSH key to load into the Amphora')),
+               help=_('SSH key name used to boot the Amphora')),
     cfg.StrOpt('amp_network',
                default='',
                help=_('Network to attach to the Amphora')),
