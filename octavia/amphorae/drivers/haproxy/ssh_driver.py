@@ -65,13 +65,13 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
 
         # Build a list of commands to send to the exec method
         commands = ['chmod 600 {0}/haproxy.cfg'.format(conf_path),
-                    'sudo haproxy -f {0}/haproxy.cfg -p {0}/{1}.pid -sf '
+                    'haproxy -f {0}/haproxy.cfg -p {0}/{1}.pid -sf '
                     '$(cat {0}/{1}.pid)'.format(conf_path, listener.id)]
 
         # Exec appropriate commands on all amphorae
         self._exec_on_amphorae(
             listener.load_balancer.amphorae, commands,
-            make_dir='mkdir -p {0}'.format(conf_path), data=[config],
+            make_dir=conf_path, data=[config],
             upload_dir='{0}/haproxy.cfg'.format(conf_path))
 
     def stop(self, listener, vip):
@@ -105,7 +105,7 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
 
         # Define commands to execute on the amphorae
         commands = [
-            'sudo haproxy -f {0}/{1}/haproxy.cfg -p {0}/{1}/{1}.pid'.format(
+            'haproxy -f {0}/{1}/haproxy.cfg -p {0}/{1}/{1}.pid'.format(
                 self.amp_config.base_path, listener.id)]
 
         # Exec appropriate commands on all amphorae
@@ -136,12 +136,12 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
             self._connect(hostname=amp.lb_network_ip)
 
             stdout, _ = self._execute_command(
-                "ip link | grep DOWN -m 1 | awk '{print $2}'",
-                run_as_root=False)
+                "ip link | grep DOWN -m 1 | awk '{print $2}'")
             iface = stdout[:-2]
             if not iface:
                 self.client.close()
                 continue
+
             vip = load_balancer.vip.ip_address
             sections = vip.split('.')[:3]
             sections.append('255')
@@ -151,25 +151,25 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
                        "address {1}\nbroadcast {2}\nnetmask {3}\" "
                        ">> /etc/network/interfaces'".format(
                            iface, vip, broadcast, '255.255.255.0'))
-            self._execute_command(command)
+            self._execute_command(command, run_as_root=True)
             # sanity ifdown for interface
             command = "ifdown {0}".format(iface)
-            self._execute_command(command)
+            self._execute_command(command, run_as_root=True)
             # sanity ifdown for static ip
             command = "ifdown {0}:0".format(iface)
-            self._execute_command(command)
+            self._execute_command(command, run_as_root=True)
             # ifup for interface
             command = "ifup {0}".format(iface)
-            self._execute_command(command)
+            self._execute_command(command, run_as_root=True)
             # ifup for static ip
             command = "ifup {0}:0".format(iface)
-            self._execute_command(command)
+            self._execute_command(command, run_as_root=True)
             self.client.close()
 
     def post_network_plug(self, amphora):
         self._connect(hostname=amphora.lb_network_ip)
         stdout, _ = self._execute_command(
-            "ip link | grep DOWN -m 1 | awk '{print $2}'", run_as_root=False)
+            "ip link | grep DOWN -m 1 | awk '{print $2}'")
         iface = stdout[:-2]
         if not iface:
             self.client.close()
@@ -177,16 +177,16 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
         # make interface come up on boot
         command = ("sh -c 'echo \"\nauto {0}\niface {0} inet dhcp\" "
                    ">> /etc/network/interfaces'".format(iface))
-        self._execute_command(command)
+        self._execute_command(command, run_as_root=True)
         # ifdown for sanity
         command = "ifdown {0}".format(iface)
-        self._execute_command(command)
+        self._execute_command(command, run_as_root=True)
         # ifup to bring it up
         command = "ifup {0}".format(iface)
-        self._execute_command(command)
+        self._execute_command(command, run_as_root=True)
         self.client.close()
 
-    def _execute_command(self, command, run_as_root=True):
+    def _execute_command(self, command, run_as_root=False):
         if run_as_root:
             command = "sudo {0}".format(command)
         _, stdout, stderr = self.client.exec_command(command)
@@ -238,10 +238,10 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
                 data.append(self._build_pem(bbq_container))
 
         if data:
-            self._exec_on_amphorae(listener.load_balancer.amphorae,
-                                   ['chmod 600 {0}/*.pem'.format(cert_dir)],
-                                   make_dir=cert_dir, data=data,
-                                   upload_dir=cert_dir)
+            self._exec_on_amphorae(
+                listener.load_balancer.amphorae, [
+                    'chmod 600 {0}/*.pem'.format(cert_dir)],
+                make_dir=cert_dir, data=data, upload_dir=cert_dir)
 
         return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
 
@@ -284,7 +284,11 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
 
             # Setup for file upload
             if make_dir:
-                self.client.exec_command(make_dir)
+                mkdir_cmd = 'mkdir -p {0}'.format(make_dir)
+                self._execute_command(mkdir_cmd, run_as_root=True)
+                chown_cmd = 'chown -R {0} {1}'.format(
+                    self.amp_config.username, make_dir)
+                self._execute_command(chown_cmd, run_as_root=True)
 
             # Upload files to location
             if temps:
@@ -294,7 +298,7 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
 
             # Execute remaining commands
             for command in commands:
-                self.client.exec_command(command)
+                self._execute_command(command, run_as_root=True)
             self.client.close()
 
         # Close the temp file
