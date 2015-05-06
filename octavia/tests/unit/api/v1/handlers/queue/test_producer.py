@@ -37,6 +37,8 @@ class TestProducer(base.TestCase):
     def setUp(self):
         super(TestProducer, self).setUp()
         self.config = fixture.Config()
+        self.mck_model = mock.Mock()
+        self.mck_model.id = '10'
         config.cfg.CONF.set_override('topic', 'OCTAVIA_PROV',
                                      group='oslo_messaging')
         mck_target = mock.patch(
@@ -56,110 +58,110 @@ class TestProducer(base.TestCase):
 
     def test_create_loadbalancer(self):
         p = producer.LoadBalancerProducer()
-        p.create(10)
-        kw = {'load_balancer_id': 10}
+        p.create(self.mck_model)
+        kw = {'load_balancer_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'create_load_balancer', **kw)
 
     def test_delete_loadbalancer(self):
         p = producer.LoadBalancerProducer()
-        p.delete(10)
-        kw = {'load_balancer_id': 10}
+        p.delete(self.mck_model)
+        kw = {'load_balancer_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'delete_load_balancer', **kw)
 
     def test_update_loadbalancer(self):
         p = producer.LoadBalancerProducer()
-        p.update(10, {'admin_state_up': False})
+        p.update(self.mck_model, {'admin_state_up': False})
         kw = {'load_balancer_updates': {'admin_state_up': False},
-              'load_balancer_id': 10}
+              'load_balancer_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'update_load_balancer', **kw)
 
     def test_create_listener(self):
         p = producer.ListenerProducer()
-        p.create(10)
-        kw = {'listener_id': 10}
+        p.create(self.mck_model)
+        kw = {'listener_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'create_listener', **kw)
 
     def test_delete_listener(self):
         p = producer.ListenerProducer()
-        p.delete(10)
-        kw = {'listener_id': 10}
+        p.delete(self.mck_model)
+        kw = {'listener_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'delete_listener', **kw)
 
     def test_update_listener(self):
         p = producer.ListenerProducer()
-        p.update(10, {'admin_state_up': False})
+        p.update(self.mck_model, {'admin_state_up': False})
         kw = {'listener_updates': {'admin_state_up': False},
-              'listener_id': 10}
+              'listener_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'update_listener', **kw)
 
     def test_create_pool(self):
         p = producer.PoolProducer()
-        p.create(10)
-        kw = {'pool_id': 10}
+        p.create(self.mck_model)
+        kw = {'pool_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'create_pool', **kw)
 
     def test_delete_pool(self):
         p = producer.PoolProducer()
-        p.delete(10)
-        kw = {'pool_id': 10}
+        p.delete(self.mck_model)
+        kw = {'pool_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'delete_pool', **kw)
 
     def test_update_pool(self):
         p = producer.PoolProducer()
-        p.update(10, {'admin_state_up': False})
+        p.update(self.mck_model, {'admin_state_up': False})
         kw = {'pool_updates': {'admin_state_up': False},
-              'pool_id': 10}
+              'pool_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'update_pool', **kw)
 
     def test_create_healthmonitor(self):
         p = producer.HealthMonitorProducer()
-        p.create(10)
-        kw = {'health_monitor_id': 10}
+        p.create(self.mck_model)
+        kw = {'health_monitor_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'create_health_monitor', **kw)
 
     def test_delete_healthmonitor(self):
         p = producer.HealthMonitorProducer()
-        p.delete(10)
-        kw = {'health_monitor_id': 10}
+        p.delete(self.mck_model)
+        kw = {'health_monitor_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'delete_health_monitor', **kw)
 
     def test_update_healthmonitor(self):
         p = producer.HealthMonitorProducer()
-        p.update(10, {'admin_state_up': False})
+        p.update(self.mck_model, {'admin_state_up': False})
         kw = {'health_monitor_updates': {'admin_state_up': False},
-              'health_monitor_id': 10}
+              'health_monitor_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'update_health_monitor', **kw)
 
     def test_create_member(self):
         p = producer.MemberProducer()
-        p.create(10)
-        kw = {'member_id': 10}
+        p.create(self.mck_model)
+        kw = {'member_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'create_member', **kw)
 
     def test_delete_member(self):
         p = producer.MemberProducer()
-        p.delete(10)
-        kw = {'member_id': 10}
+        p.delete(self.mck_model)
+        kw = {'member_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'delete_member', **kw)
 
     def test_update_member(self):
         p = producer.MemberProducer()
-        p.update(10, {'admin_state_up': False})
+        p.update(self.mck_model, {'admin_state_up': False})
         kw = {'member_updates': {'admin_state_up': False},
-              'member_id': 10}
+              'member_id': self.mck_model.id}
         self.mck_client.cast.assert_called_once_with(
             {}, 'update_member', **kw)

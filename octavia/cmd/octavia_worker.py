@@ -15,12 +15,11 @@
 import sys
 
 import eventlet
+eventlet.monkey_patch()
 from oslo_log import log as logging
 
 from octavia.common import service
 from octavia.controller.queue import consumer
-
-eventlet.monkey_patch()
 
 LOG = logging.getLogger(__name__)
 
