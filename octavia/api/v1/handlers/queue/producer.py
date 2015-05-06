@@ -52,33 +52,33 @@ class BaseProducer(abstract_handler.BaseObjectHandler):
             topic=topic, version="1.0", fanout=False)
         self.client = messaging.RPCClient(self.transport, target=self.target)
 
-    def create(self, model_id):
+    def create(self, model):
         """Sends a create message to the controller via oslo.messaging
 
         :param data_model:
         """
-        kw = {"{0}_id".format(self.payload_class): model_id}
+        kw = {"{0}_id".format(self.payload_class): model.id}
         method_name = "create_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
-    def update(self, model_id, updated_dict):
+    def update(self, model, updated_dict):
         """sends an update message to the controller via oslo.messaging
 
         :param updated_model:
         :param data_model:
         """
         kw = {"{0}_updates".format(self.payload_class): updated_dict,
-              "{0}_id".format(self.payload_class): model_id}
+              "{0}_id".format(self.payload_class): model.id}
         method_name = "update_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
-    def delete(self, model_id):
+    def delete(self, model):
         """sends a delete message to the controller via oslo.messaging
 
         :param updated_model:
         :param data_model:
         """
-        kw = {"{0}_id".format(self.payload_class): model_id}
+        kw = {"{0}_id".format(self.payload_class): model.id}
         method_name = "delete_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
