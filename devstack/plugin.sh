@@ -75,6 +75,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF haproxy_amphora key_path ${OCTAVIA_AMP_SSH_KEY_PATH}
 
     recreate_database_mysql octavia
+    iniset $OCTAVIA_DIR/octavia/db/migration/alembic.ini alembic sqlalchemy.url "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia"
     alembic -c $OCTAVIA_DIR/octavia/db/migration/alembic.ini upgrade head
 }
 
