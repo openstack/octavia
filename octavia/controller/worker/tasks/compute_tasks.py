@@ -82,7 +82,7 @@ class ComputeCreate(BaseComputeTask):
         compute_id = result
         LOG.warn(_LW("Reverting Nova create for amphora with id"
                      "%(amp)s and compute id: %(comp)s"),
-                 {'comp': compute_id})
+                 {'amp': amphora_id, 'comp': compute_id})
         try:
             self.compute.delete(compute_id)
         except Exception as e:
