@@ -37,7 +37,7 @@ class TestMemberFlows(base.TestCase):
         self.assertIn('vip', member_flow.requires)
 
         self.assertEqual(len(member_flow.requires), 3)
-        self.assertEqual(len(member_flow.provides), 0)
+        self.assertEqual(len(member_flow.provides), 1)
 
     def test_get_delete_member_flow(self):
 

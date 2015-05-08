@@ -79,6 +79,7 @@ SUPPORTED_AMPHORA_TYPES = (AMPHORA_VM,)
 
 # Task/Flow constants
 AMPHORA = 'amphora'
+AMPHORAE = 'amphorae'
 AMPHORA_ID = 'amphora_id'
 DELTA = 'delta'
 DELTAS = 'deltas'

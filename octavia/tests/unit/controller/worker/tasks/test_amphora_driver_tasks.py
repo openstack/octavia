@@ -31,6 +31,7 @@ _listener_mock = mock.MagicMock()
 _listener_mock.id = LISTENER_ID
 _vip_mock = mock.MagicMock()
 _LB_mock = mock.MagicMock()
+_amphorae_mock = [_amphora_mock]
 
 
 @mock.patch('octavia.db.repositories.AmphoraRepository.update')
@@ -203,6 +204,30 @@ class TestDatabaseTasks(base.TestCase):
 
         # Test revert
         amp = amphora_post_network_plug_obj.revert(None, _amphora_mock)
+        repo.AmphoraRepository.update.assert_called_once_with(
+            'TEST',
+            id=AMP_ID,
+            status=constants.ERROR)
+
+        self.assertIsNone(amp)
+
+    def test_amphorae_post_network_plug(self, mock_driver,
+                                        mock_generate_uuid,
+                                        mock_log,
+                                        mock_get_session,
+                                        mock_listener_repo_update,
+                                        mock_amphora_repo_update):
+
+        _LB_mock.amphorae = [_amphora_mock]
+        amphora_post_network_plug_obj = (amphora_driver_tasks.
+                                         AmphoraePostNetworkPlug())
+        amphora_post_network_plug_obj.execute(_LB_mock)
+
+        (mock_driver.post_network_plug.
+            assert_called_once_with)(_amphora_mock)
+
+        # Test revert
+        amp = amphora_post_network_plug_obj.revert(None, _LB_mock)
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
             id=AMP_ID,

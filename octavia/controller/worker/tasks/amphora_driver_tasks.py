@@ -163,6 +163,25 @@ class AmphoraPostNetworkPlug(BaseAmphoraTask):
                                  status=constants.ERROR)
 
 
+class AmphoraePostNetworkPlug(BaseAmphoraTask):
+    """Task to notify the amphorae post network plug."""
+
+    def execute(self, loadbalancer):
+        """Execute post_network_plug routine."""
+        for amphora in loadbalancer.amphorae:
+            self.amphora_driver.post_network_plug(amphora)
+            LOG.debug("Posted network plug for the compute instance")
+
+    def revert(self, result, loadbalancer, *args, **kwargs):
+        """Handle a failed post network plug."""
+        if isinstance(result, failure.Failure):
+            return
+        LOG.warn(_LW("Reverting post network plug."))
+        for amphora in loadbalancer.amphorae:
+            self.amphora_repo.update(db_apis.get_session(), id=amphora.id,
+                                     status=constants.ERROR)
+
+
 class AmphoraPostVIPPlug(BaseAmphoraTask):
     """Task to notify the amphora post VIP plug."""
 

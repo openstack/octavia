@@ -19,6 +19,7 @@ from octavia.common import constants
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import database_tasks
 from octavia.controller.worker.tasks import model_tasks
+from octavia.controller.worker.tasks import network_tasks
 
 
 class MemberFlows(object):
@@ -29,11 +30,20 @@ class MemberFlows(object):
         :returns: The flow for creating a member
         """
         create_member_flow = linear_flow.Flow(constants.CREATE_MEMBER_FLOW)
+        create_member_flow.add(network_tasks.CalculateDelta(
+            requires=constants.LOADBALANCER,
+            provides=constants.DELTAS))
+        create_member_flow.add(network_tasks.HandleNetworkDeltas(
+            requires=constants.DELTAS))
+        create_member_flow.add(amphora_driver_tasks.AmphoraePostNetworkPlug(
+            requires=constants.LOADBALANCER
+        ))
         create_member_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=['listener', 'vip']))
+            requires=(constants.LISTENER, constants.VIP)))
         create_member_flow.add(database_tasks.
                                MarkLBAndListenerActiveInDB(
-                                   requires=['loadbalancer', 'listener']))
+                                   requires=(constants.LOADBALANCER,
+                                             constants.LISTENER)))
 
         return create_member_flow
 
