@@ -180,3 +180,13 @@ class AbstractNetworkDriver(object):
         :return: None
         """
         pass
+
+    @abc.abstractmethod
+    def get_network(self, network_id=None, subnet_id=None):
+        """Retrieves network from network id or subnet id   .
+
+        :param network_id: id of an network to retrieve
+        :param subnet_id: id of an subnet to retrieve network
+        :return: octavia.network.data_models.Network
+        :raises: NetworkException, NetworkNotFound
+        """

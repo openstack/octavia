@@ -49,54 +49,78 @@ class TestNetworkTasks(base.TestCase):
     def setUp(self):
         network_tasks.LOG = mock.MagicMock()
         self.amphora_mock = mock.MagicMock()
+        self.load_balancer_mock = mock.MagicMock()
+        self.load_balancer_mock.amphorae = []
         self.amphora_mock.id = AMPHORA_ID
         self.amphora_mock.compute_id = COMPUTE_ID
         conf = oslo_fixture.Config(cfg.CONF)
-        conf.config(group="controller_worker", amp_network=[])
+        conf.config(group="controller_worker", amp_network='netid')
 
         super(TestNetworkTasks, self).setUp()
 
     def test_calculate_delta(self,
                              mock_driver):
-        EMPTY = {'add': [], 'delete': []}
+        EMPTY = []
+        empty_deltas = [data_models.Delta(
+            amphora_id=self.amphora_mock.id,
+            compute_id=self.amphora_mock.compute_id,
+            add_nics=[],
+            delete_nics=[])]
 
         def _interface(network_id):
             return [data_models.Interface(network_id=network_id)]
 
         net = network_tasks.CalculateDelta()
 
-        self.amphora_mock.load_balancer = None
-        self.assertEqual(EMPTY, net.execute(self.amphora_mock, []))
+        self.assertEqual(EMPTY, net.execute(self.load_balancer_mock))
 
-        lb_mock = mock.MagicMock()
-        self.amphora_mock.load_balancer = lb_mock
-        lb_mock.listeners = None
-        self.assertEqual(EMPTY, net.execute(self.amphora_mock, []))
+        self.amphora_mock.load_balancer = self.load_balancer_mock
+        self.load_balancer_mock.amphorae = [self.amphora_mock]
+        self.load_balancer_mock.listeners = None
+        self.assertEqual(EMPTY, net.execute(self.load_balancer_mock))
 
         listener_mock = mock.MagicMock()
-        lb_mock.listeners = [listener_mock]
+        self.load_balancer_mock.listeners = [listener_mock]
         listener_mock.default_pool = None
-        self.assertEqual(EMPTY, net.execute(self.amphora_mock, []))
+        self.assertEqual(empty_deltas, net.execute(self.load_balancer_mock))
+        mock_driver.get_plugged_networks.assert_called_once_with(COMPUTE_ID)
 
         pool_mock = mock.MagicMock()
         listener_mock.default_pool = pool_mock
         pool_mock.members = None
-        self.assertEqual(EMPTY, net.execute(self.amphora_mock, []))
+        self.assertEqual(empty_deltas, net.execute(self.load_balancer_mock))
 
         member_mock = mock.MagicMock()
         pool_mock.members = [member_mock]
         member_mock.subnet_id = 1
-        self.assertEqual({'add': _interface(1), 'delete': []},
-                         net.execute(self.amphora_mock, []))
 
-        self.assertEqual(EMPTY, net.execute(self.amphora_mock, _interface(1)))
+        mock_driver.get_network.return_value = data_models.Network(id=2)
 
-        result = {'add': _interface(1), 'delete': _interface(2)}
-        self.assertEqual(result, net.execute(self.amphora_mock, _interface(2)))
+        ndm = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                compute_id=self.amphora_mock.compute_id,
+                                add_nics=_interface(2),
+                                delete_nics=[])
+        self.assertEqual([ndm], net.execute(self.load_balancer_mock))
+
+        mock_driver.get_network.assert_called_once_with(subnet_id=1)
+
+        mock_driver.get_plugged_networks.return_value = _interface(2)
+        self.assertEqual(empty_deltas, net.execute(self.load_balancer_mock))
+
+        mock_driver.get_plugged_networks.return_value = _interface(3)
+        ndm = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                compute_id=self.amphora_mock.compute_id,
+                                add_nics=_interface(2),
+                                delete_nics=_interface(3))
+        self.assertEqual([ndm], net.execute(self.load_balancer_mock))
 
         pool_mock.members = []
-        self.assertEqual({'add': [], 'delete': _interface(2)},
-                         net.execute(self.amphora_mock, _interface(2)))
+        mock_driver.get_plugged_networks.return_value = _interface(2)
+        ndm = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                compute_id=self.amphora_mock.compute_id,
+                                add_nics=[],
+                                delete_nics=_interface(2))
+        self.assertEqual([ndm], net.execute(self.load_balancer_mock))
 
     def test_get_plumbed_networks(self,
                                   mock_driver):
@@ -109,16 +133,26 @@ class TestNetworkTasks(base.TestCase):
 
     def test_plug_networks(self,
                            mock_driver):
+
+        def _interface(network_id):
+            return [data_models.Interface(network_id=network_id)]
+
         net = network_tasks.PlugNetworks()
 
         net.execute(self.amphora_mock, None)
         self.assertFalse(mock_driver.plug_network.called)
 
-        delta = {'add': []}
+        delta = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                  compute_id=self.amphora_mock.compute_id,
+                                  add_nics=[],
+                                  delete_nics=[])
         net.execute(self.amphora_mock, delta)
         self.assertFalse(mock_driver.plug_network.called)
 
-        delta = {'add': [data_models.Interface(network_id=1)]}
+        delta = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                  compute_id=self.amphora_mock.compute_id,
+                                  add_nics=_interface(1),
+                                  delete_nics=[])
         net.execute(self.amphora_mock, delta)
         mock_driver.plug_network.assert_called_once_with(COMPUTE_ID, 1)
 
@@ -126,11 +160,17 @@ class TestNetworkTasks(base.TestCase):
         net.revert(self.amphora_mock, None)
         self.assertFalse(mock_driver.unplug_network.called)
 
-        delta = {'add': []}
+        delta = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                  compute_id=self.amphora_mock.compute_id,
+                                  add_nics=[],
+                                  delete_nics=[])
         net.revert(self.amphora_mock, delta)
         self.assertFalse(mock_driver.unplug_network.called)
 
-        delta = {'add': [data_models.Interface(network_id=1)]}
+        delta = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                  compute_id=self.amphora_mock.compute_id,
+                                  add_nics=_interface(1),
+                                  delete_nics=[])
         net.revert(self.amphora_mock, delta)
         mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
 
@@ -147,18 +187,26 @@ class TestNetworkTasks(base.TestCase):
                           delta)
         mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
 
-    def test_unplug_networks(self,
-                             mock_driver):
+    def test_unplug_networks(self, mock_driver):
+        def _interface(network_id):
+            return [data_models.Interface(network_id=network_id)]
+
         net = network_tasks.UnPlugNetworks()
 
         net.execute(self.amphora_mock, None)
         self.assertFalse(mock_driver.unplug_network.called)
 
-        delta = {'delete': []}
+        delta = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                  compute_id=self.amphora_mock.compute_id,
+                                  add_nics=[],
+                                  delete_nics=[])
         net.execute(self.amphora_mock, delta)
         self.assertFalse(mock_driver.unplug_network.called)
 
-        delta = {'delete': [data_models.Interface(network_id=1)]}
+        delta = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                  compute_id=self.amphora_mock.compute_id,
+                                  add_nics=[],
+                                  delete_nics=_interface(1))
         net.execute(self.amphora_mock, delta)
         mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
 
@@ -171,6 +219,82 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.reset_mock()
         mock_driver.unplug_network.side_effect = Exception()
         net.execute(self.amphora_mock, delta)  # No exception
+        mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
+
+    def test_handle_network_delta(self, mock_driver):
+        def _interface(network_id):
+            return [data_models.Interface(network_id=network_id)]
+
+        net = network_tasks.HandleNetworkDeltas()
+
+        net.execute([])
+        self.assertFalse(mock_driver.plug_network.called)
+
+        delta = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                  compute_id=self.amphora_mock.compute_id,
+                                  add_nics=[],
+                                  delete_nics=[])
+        net.execute([delta])
+        self.assertFalse(mock_driver.plug_network.called)
+
+        delta = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                  compute_id=self.amphora_mock.compute_id,
+                                  add_nics=_interface(1),
+                                  delete_nics=[])
+        net.execute([delta])
+        mock_driver.plug_network.assert_called_once_with(COMPUTE_ID, 1)
+
+        # revert
+        net.execute([delta])
+        self.assertFalse(mock_driver.unplug_network.called)
+
+        delta = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                  compute_id=self.amphora_mock.compute_id,
+                                  add_nics=[],
+                                  delete_nics=[])
+        net.execute([delta])
+        self.assertFalse(mock_driver.unplug_network.called)
+
+        delta = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                  compute_id=self.amphora_mock.compute_id,
+                                  add_nics=_interface(1),
+                                  delete_nics=[])
+
+        mock_driver.reset_mock()
+        mock_driver.unplug_network.side_effect = net_base.NetworkNotFound
+
+        mock_driver.reset_mock()
+        mock_driver.unplug_network.side_effect = TestException('test')
+        self.assertRaises(TestException, net.revert, [delta])
+        mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
+
+        mock_driver.reset_mock()
+        net.execute([])
+        self.assertFalse(mock_driver.unplug_network.called)
+
+        delta = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                  compute_id=self.amphora_mock.compute_id,
+                                  add_nics=[],
+                                  delete_nics=[])
+        net.execute([delta])
+        self.assertFalse(mock_driver.unplug_network.called)
+
+        delta = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                  compute_id=self.amphora_mock.compute_id,
+                                  add_nics=[],
+                                  delete_nics=_interface(1))
+        net.execute([delta])
+        mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
+
+        mock_driver.reset_mock()
+        mock_driver.unplug_network.side_effect = net_base.NetworkNotFound
+        net.execute([delta])
+        mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
+
+        # Do a test with a general exception in case behavior changes
+        mock_driver.reset_mock()
+        mock_driver.unplug_network.side_effect = Exception()
+        net.execute([delta])
         mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
 
     def test_plug_vip(self,

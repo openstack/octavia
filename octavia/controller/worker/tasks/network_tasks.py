@@ -51,9 +51,9 @@ class CalculateDelta(BaseNetworkTask):
     plumbing them.
     """
 
-    default_provides = constants.DELTA
+    default_provides = constants.DELTAS
 
-    def execute(self, amphora, nics):
+    def execute(self, loadbalancer):
         """Compute which NICs need to be plugged
 
         for the amphora to become operational.
@@ -63,37 +63,50 @@ class CalculateDelta(BaseNetworkTask):
         :returns the delta
         """
 
-        LOG.debug("Calculating network delta for amphora id: %s" % amphora.id)
+        deltas = []
+        for amphora in loadbalancer.amphorae:
 
-        # Figure out what networks we want
-        # seed with lb network(s)
-        desired_network_ids = set(CONF.controller_worker.amp_network)
-        if (not amphora.load_balancer) or (
-                not amphora.load_balancer.listeners):
-            return {'add': [], 'delete': []}
+            LOG.debug("Calculating network delta for amphora id: %s"
+                      % amphora.id)
 
-        for listener in amphora.load_balancer.listeners:
-            if (not listener.default_pool) or (
-                    not listener.default_pool.members):
-                continue
-            desired_network_ids.update(list(
-                member.subnet_id for member in listener.default_pool.members))
+            # Figure out what networks we want
+            # seed with lb network(s)
+            desired_network_ids = {CONF.controller_worker.amp_network,
+                                   loadbalancer.vip.network_id}
 
-        # assume we don't have two nics in the same network
-        actual_network_nics = dict((nic.network_id, nic) for nic in nics)
+            if not loadbalancer.listeners:
+                return []
 
-        del_ids = set(actual_network_nics) - desired_network_ids
-        delete_nics = list(
-            actual_network_nics[net_id] for net_id in del_ids)
+            for listener in loadbalancer.listeners:
+                if (not listener.default_pool) or (
+                        not listener.default_pool.members):
+                    continue
+                desired_network_ids.update(
+                    list(
+                        self.network_driver.get_network(
+                            subnet_id=member.subnet_id).id
+                        for member in listener.default_pool.members
+                        if member.subnet_id
+                    )
+                )
 
-        add_ids = desired_network_ids - set(actual_network_nics)
-        add_nics = list(
-            data_models.Interface(network_id=net_id) for net_id in add_ids)
+            nics = self.network_driver.get_plugged_networks(amphora.compute_id)
+            # assume we don't have two nics in the same network
+            actual_network_nics = dict((nic.network_id, nic) for nic in nics)
 
-        return {
-            'delete': delete_nics,
-            'add': add_nics
-        }
+            del_ids = set(actual_network_nics) - desired_network_ids
+            delete_nics = list(
+                actual_network_nics[net_id] for net_id in del_ids)
+
+            add_ids = desired_network_ids - set(actual_network_nics)
+            add_nics = list(data_models.Interface(
+                network_id=net_id) for net_id in add_ids)
+            deltas.append(data_models.Delta(amphora_id=amphora.id,
+                                            compute_id=amphora.compute_id,
+                                            add_nics=add_nics,
+                                            delete_nics=delete_nics))
+
+        return deltas
 
 
 class GetPlumbedNetworks(BaseNetworkTask):
@@ -129,7 +142,7 @@ class PlugNetworks(BaseNetworkTask):
             return None
 
         # add nics
-        for nic in delta['add']:
+        for nic in delta.add_nics:
             self.network_driver.plug_network(amphora.compute_id,
                                              nic.network_id)
 
@@ -140,7 +153,7 @@ class PlugNetworks(BaseNetworkTask):
         if not delta:
             return
 
-        for nic in delta['add']:
+        for nic in delta.add_nics:
             try:
                 self.network_driver.unplug_network(amphora.compute_id,
                                                    nic.network_id)
@@ -163,7 +176,7 @@ class UnPlugNetworks(BaseNetworkTask):
             LOG.debug("No network deltas for amphora id: %s" % amphora.id)
             return None
 
-        for nic in delta['delete']:
+        for nic in delta.delete_nics:
             try:
                 self.network_driver.unplug_network(amphora.compute_id,
                                                    nic.network_id)
@@ -175,6 +188,51 @@ class UnPlugNetworks(BaseNetworkTask):
                     _LE("Unable to unplug network - exception: %s"),
                     e.message)
                 pass  # Todo(german) follow up if that makes sense
+
+
+class HandleNetworkDeltas(BaseNetworkTask):
+    """Task to plug and unplug networks
+
+    Loop through the deltas and plug or unplug
+    networks based on delta
+    """
+
+    def execute(self, deltas):
+        """Handle network plugging based off deltas."""
+
+        for delta in deltas:
+            for nic in delta.add_nics:
+                self.network_driver.plug_network(delta.compute_id,
+                                                 nic.network_id)
+
+            for nic in delta.delete_nics:
+                try:
+                    self.network_driver.unplug_network(delta.compute_id,
+                                                       nic.network_id)
+                except base.NetworkNotFound as e:
+                    LOG.debug("Network %d not found ", nic.network_id)
+                    pass
+                except Exception as e:
+                    LOG.error(
+                        _LE("Unable to unplug network - exception: %s"),
+                        e.message)
+                    pass
+
+    def revert(self, deltas):
+        """Handle a network plug or unplug failures."""
+
+        for delta in deltas:
+            LOG.warn(_LW("Unable to plug networks for amp id %s"),
+                     delta.amphora_id)
+            if not delta:
+                return
+
+            for nic in delta.add_nics:
+                try:
+                    self.network_driver.unplug_network(delta.compute_id,
+                                                       nic.network_id)
+                except base.NetworkNotFound:
+                    pass
 
 
 class PlugVIP(BaseNetworkTask):

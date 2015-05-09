@@ -81,6 +81,7 @@ SUPPORTED_AMPHORA_TYPES = (AMPHORA_VM,)
 AMPHORA = 'amphora'
 AMPHORA_ID = 'amphora_id'
 DELTA = 'delta'
+DELTAS = 'deltas'
 LISTENER = 'listener'
 LOADBALANCER = 'loadbalancer'
 LOADBALANCER_ID = 'loadbalancer_id'

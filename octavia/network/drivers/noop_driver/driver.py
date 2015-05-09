@@ -77,6 +77,12 @@ class NoopManager(object):
                   self.__class__.__name__, load_balancer)
         self.networkconfigconfig[load_balancer] = (load_balancer, 'update_vip')
 
+    def get_network(self, network_id=None, subnet_id=None):
+        LOG.debug("Network %s no-op, get_network network_id %s",
+                  self.__class__.__name__, network_id)
+        self.networkconfigconfig[network_id, subnet_id] = (
+            network_id, subnet_id, 'get_network')
+
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def __init__(self):
@@ -106,3 +112,6 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def update_vip(self, load_balancer):
         self.driver.update_vip(load_balancer)
+
+    def get_network(self, network_id=None, subnet_id=None):
+        self.driver.get_network(network_id, subnet_id)

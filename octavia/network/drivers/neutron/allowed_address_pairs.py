@@ -179,6 +179,17 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
         self.nova_client.servers.add_security_group(
             amphora.compute_id, sec_grp.get('id'))
 
+    def _map_network_to_data_model(self, network):
+        nw = network.get('network')
+        return network_models.Network(
+            id=nw.get('id'), name=nw.get('name'), subnets=nw.get('subnets'),
+            tenant_id=nw.get('tenant_id'),
+            admin_state_up=nw.get('admin_state_up'), mtu=nw.get('mtu'),
+            provider_network_type=nw.get('provider:network_type'),
+            provider_physical_network=nw.get('provider:physical_network'),
+            provider_segmentation_id=nw.get('provider:segmentation_id'),
+            router_external=nw.get('router:external'))
+
     def deallocate_vip(self, vip):
         try:
             self.neutron_client.delete_port(vip.port_id)
@@ -349,3 +360,31 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
     def update_vip(self, load_balancer):
         sec_grp = self._get_lb_security_group(load_balancer.id)
         self._update_security_group_rules(load_balancer, sec_grp.get('id'))
+
+    def get_network(self, network_id=None, subnet_id=None):
+        network = None
+        try:
+            if network_id:
+                network = self.neutron_client.show_network(network_id)
+            elif subnet_id:
+                subnet = (self.neutron_client.show_subnet(subnet_id)
+                          .get('subnet').get('network_id'))
+                network = self.neutron_client.show_network(subnet)
+        except base.NetworkNotFound:
+            message = _LE('Network not found '
+                          '(network id: {network_id} '
+                          'and subnet id: {subnet_id}.').format(
+                network_id=network_id,
+                subnet_id=subnet_id)
+            LOG.exception(message)
+            raise base.NetworkNotFound(message)
+        except Exception:
+            message = _LE('Error retrieving network '
+                          '(network id: {network_id} '
+                          'and subnet id: {subnet_id}.').format(
+                network_id=network_id,
+                subnet_id=subnet_id)
+            LOG.exception(message)
+            raise base.NetworkException(message)
+
+        return self._map_network_to_data_model(network)

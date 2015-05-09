@@ -60,13 +60,30 @@ Existing data model:
               topology it may exist on both amphorae.  In the end, it is up
               to the amphora driver to decide how to use this.
 
-New data model:
+New data models:
 
 * class Interface
     * id
     * network_id - (neutron subnet)
     * amphora_id
     * ip_address - (IPv4 or IPv6)
+
+* class Delta
+    * amphora_id
+    * compute_id
+    * add_nics
+    * delete_nics
+
+* class Network
+    * id
+    * name
+    * subnets - (list of subnet ids)
+    * tenant_id
+    * admin_state_up
+    * provider_network_type
+    * provider_physical_network
+    * provider_segmentation_id
+    * router_external
 
 New Exceptions defined in the octavia.network package:
 
@@ -161,6 +178,14 @@ class AbstractNetworkDriver
     * Hook for the driver to update the VIP information based on the state
       of the passed in loadbalancer
     * loadbalancer: instance of a data_models.LoadBalancer
+
+* get_network(network_id=None, subnet_id=None):
+
+    * Retrieves the network from network_id or subnet_id
+    * network_id = id of an network to retrieve
+    * subnet_id = id of an subnet to retrieve network
+    * returns = Network data model
+    * raises NetworkException, NetworkNotFound
 
 Alternatives
 ------------
