@@ -102,8 +102,7 @@ class AmphoraFlows(object):
             requires=constants.AMPHORA))
         create_amp_for_lb_flow.add(
             database_tasks.MarkAmphoraAllocatedInDB(
-                requires=(constants.AMPHORA, constants.LOADBALANCER_ID),
-                provides=constants.LOADBALANCER))
+                requires=(constants.AMPHORA, constants.LOADBALANCER_ID)))
         create_amp_for_lb_flow.add(
             database_tasks.ReloadAmphora(requires=constants.AMPHORA_ID,
                                          provides=constants.AMPHORA))
