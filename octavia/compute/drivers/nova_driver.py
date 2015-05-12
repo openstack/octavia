@@ -73,8 +73,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
                 name=name, image=image_id, flavor=amphora_flavor,
                 key_name=key_name, security_groups=sec_groups,
                 nics=nics,
-                config_drive_files=config_drive_files,
-                user_data=user_data,
+                files=config_drive_files,
+                userdata=user_data,
                 config_drive=True
             )
 
