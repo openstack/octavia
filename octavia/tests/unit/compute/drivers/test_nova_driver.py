@@ -78,8 +78,8 @@ class TestNovaClient(base.TestCase):
             flavor=1,
             key_name=1,
             security_groups=1,
-            config_drive_files='Files Blah',
-            user_data='Blah',
+            files='Files Blah',
+            userdata='Blah',
             config_drive=True)
 
     def test_bad_build(self):
