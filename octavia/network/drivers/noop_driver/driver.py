@@ -24,12 +24,11 @@ class NoopManager(object):
         super(NoopManager, self).__init__()
         self.networkconfigconfig = {}
 
-    def allocate_vip(self, port_id=None, network_id=None, ip_address=None):
-        LOG.debug("Network %s no-op, allocate_vip port_id %s, network_id %s,"
-                  "ip_address %s",
-                  self.__class__.__name__, port_id, network_id, ip_address)
-        self.networkconfigconfig[(port_id, network_id, ip_address)] = (
-            port_id, network_id, ip_address, 'allocate_vip')
+    def allocate_vip(self, load_balancer):
+        LOG.debug("Network %s no-op, allocate_vip load_balancer %s",
+                  self.__class__.__name__, load_balancer)
+        self.networkconfigconfig[load_balancer] = (
+            load_balancer, 'allocate_vip')
 
     def deallocate_vip(self, vip):
         LOG.debug("Network %s no-op, deallocate_vip vip %s",
@@ -73,14 +72,19 @@ class NoopManager(object):
         self.networkconfigconfig[amphora_id] = (
             amphora_id, 'get_plugged_networks')
 
+    def update_vip(self, load_balancer):
+        LOG.debug("Network %s no-op, update_vip load_balancer %s",
+                  self.__class__.__name__, load_balancer)
+        self.networkconfigconfig[load_balancer] = (load_balancer, 'update_vip')
+
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def __init__(self):
         super(NoopNetworkDriver, self).__init__()
         self.driver = NoopManager()
 
-    def allocate_vip(self, port_id=None, network_id=None, ip_address=None):
-        self.driver.allocate_vip(port_id, network_id, ip_address)
+    def allocate_vip(self, load_balancer):
+        self.driver.allocate_vip(load_balancer)
 
     def deallocate_vip(self, vip):
         self.driver.deallocate_vip(vip)
@@ -99,3 +103,6 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def get_plugged_networks(self, amphora_id):
         self.driver.get_plugged_networks(amphora_id)
+
+    def update_vip(self, load_balancer):
+        self.driver.update_vip(load_balancer)
