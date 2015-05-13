@@ -115,15 +115,11 @@ class AbstractNetworkDriver
     * returns None
     * raises UnplugVIPException, PluggedVIPNotFound
 
-* allocate_vip(port_id=None, network_id=None, ip_address=None)
+* allocate_vip(loadbalancer)
 
     * Allocates a virtual ip and reserves it for later use as the frontend
       connection of a load balancer.
-    * port_id = id of port that has already been created.  If this is
-      provided, it will be used regardless of the other parameters.
-    * network_id = if port_id is not provided, this should be provided
-      to create the virtual IP on this network.
-    * ip_address = will attempt to allocate this specific IP address
+    * loadbalancer = instance of a data_models.LoadBalancer
     * returns VIP instance
     * raises AllocateVIPException, PortNotFound, NetworkNotFound
 
@@ -159,6 +155,12 @@ class AbstractNetworkDriver
     * amphora_id = id of an amphora in the compute service
     * returns = list of Instance instances
     * raises AmphoraNotFound
+
+* update_vip(loadbalancer):
+
+    * Hook for the driver to update the VIP information based on the state
+      of the passed in loadbalancer
+    * loadbalancer: instance of a data_models.LoadBalancer
 
 Alternatives
 ------------

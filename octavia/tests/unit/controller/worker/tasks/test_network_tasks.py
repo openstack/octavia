@@ -194,8 +194,7 @@ class TestNetworkTasks(base.TestCase):
 
         mock_driver.reset_mock()
         self.assertEqual(LB.vip, net.execute(LB))
-        mock_driver.allocate_vip.assert_called_once_with(
-            port_id=PORT_ID, network_id=NETWORK_ID, ip_address=IP_ADDRESS)
+        mock_driver.allocate_vip.assert_called_once_with(LB)
         # revert
         vip_mock = mock.MagicMock()
         net.revert(vip_mock, LB)

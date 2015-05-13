@@ -211,10 +211,7 @@ class AllocateVIP(BaseNetworkTask):
                   loadbalancer.vip.port_id,
                   loadbalancer.vip.network_id,
                   loadbalancer.vip.ip_address)
-        return self.network_driver.allocate_vip(
-            port_id=loadbalancer.vip.port_id,
-            network_id=loadbalancer.vip.network_id,
-            ip_address=loadbalancer.vip.ip_address)
+        return self.network_driver.allocate_vip(loadbalancer)
 
     def revert(self, result, loadbalancer, *args, **kwargs):
         """Handle a failure to allocate vip."""
@@ -237,3 +234,12 @@ class DeallocateVIP(BaseNetworkTask):
 
         self.network_driver.deallocate_vip(vip)
         return
+
+
+class UpdateVIP(BaseNetworkTask):
+    """Task to update a VIP."""
+
+    def execute(self, loadbalancer):
+        LOG.debug("Updating VIP of load_balancer %s." % loadbalancer.id)
+
+        self.network_driver.update_vip(loadbalancer)

@@ -19,6 +19,7 @@ from octavia.common import constants
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import database_tasks
 from octavia.controller.worker.tasks import model_tasks
+from octavia.controller.worker.tasks import network_tasks
 
 
 class ListenerFlows(object):
@@ -31,6 +32,8 @@ class ListenerFlows(object):
         create_listener_flow = linear_flow.Flow(constants.CREATE_LISTENER_FLOW)
         create_listener_flow.add(amphora_driver_tasks.ListenerUpdate(
             requires=['listener', 'vip']))
+        create_listener_flow.add(network_tasks.UpdateVIP(
+            requires=constants.LOADBALANCER))
         create_listener_flow.add(database_tasks.
                                  MarkLBAndListenerActiveInDB(
                                      requires=['loadbalancer', 'listener']))
@@ -45,6 +48,8 @@ class ListenerFlows(object):
         delete_listener_flow = linear_flow.Flow(constants.DELETE_LISTENER_FLOW)
         delete_listener_flow.add(amphora_driver_tasks.ListenerDelete(
             requires=['listener', 'vip']))
+        delete_listener_flow.add(network_tasks.UpdateVIP(
+            requires=constants.LOADBALANCER))
         delete_listener_flow.add(database_tasks.MarkListenerDeletedInDB(
             requires='listener'))
         delete_listener_flow.add(database_tasks.

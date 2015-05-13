@@ -80,18 +80,13 @@ class AbstractNetworkDriver(object):
     """
 
     @abc.abstractmethod
-    def allocate_vip(self, port_id=None, network_id=None, ip_address=None):
+    def allocate_vip(self, load_balancer):
         """Allocates a virtual ip.
 
         Reserves it for later use as the frontend connection of a load
         balancer.
 
-        :param port_id: id of port that has already been created.  If this is
-                        provided, it will be used regardless of the other
-                        parameters.
-        :param network_id: if port_id is not provided, this should be
-                           provided to create the virtual ip on this network.
-        :param ip_address: will attempt to allocate this specific IP address
+        :param load_balancer: octavia.common.data_models.LoadBalancer instance
         :return: octavia.common.data_models.VIP
         :raises: AllocateVIPException, PortNotFound, NetworkNotFound
         """
@@ -172,3 +167,16 @@ class AbstractNetworkDriver(object):
         :return: [octavia.network.data_models.Instance]
         :raises: AmphoraNotFound
         """
+
+    def update_vip(self, load_balancer):
+        """Hook for the driver to update the VIP information.
+
+        This method will be called upon the change of a load_balancer
+        configuration. It is an optional method to be implemented by drivers.
+        It allows the driver to update any VIP information based on the
+        state of the passed in load_balancer.
+
+        :param load_balancer: octavia.common.data_models.LoadBalancer instance
+        :return: None
+        """
+        pass

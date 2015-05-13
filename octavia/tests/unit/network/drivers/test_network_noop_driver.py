@@ -42,12 +42,10 @@ class TestNoopNetworkDriver(base.TestCase):
         self.amphora_id = self.FAKE_UUID_1
 
     def test_allocate_vip(self):
-        self.driver.allocate_vip(self.port_id, self.network_id,
-                                 self.ip_address)
-        self.assertEqual((self.port_id, self.network_id, self.ip_address,
-                          'allocate_vip'),
-                         self.driver.driver.networkconfigconfig[(
-                             self.port_id, self.network_id, self.ip_address)])
+        self.driver.allocate_vip(self.load_balancer)
+        self.assertEqual(
+            (self.load_balancer, 'allocate_vip'),
+            self.driver.driver.networkconfigconfig[self.load_balancer])
 
     def test_deallocate_vip(self):
         self.driver.deallocate_vip(self.vip)
@@ -91,3 +89,10 @@ class TestNoopNetworkDriver(base.TestCase):
         self.assertEqual((self.amphora_id, 'get_plugged_networks'),
                          self.driver.driver.networkconfigconfig[(
                              self.amphora_id)])
+
+    def test_update_vip(self):
+        self.driver.update_vip(self.load_balancer)
+        self.assertEqual((self.load_balancer, 'update_vip'),
+                         self.driver.driver.networkconfigconfig[(
+                             self.load_balancer
+                         )])

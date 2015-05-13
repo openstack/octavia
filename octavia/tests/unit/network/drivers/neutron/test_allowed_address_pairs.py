@@ -161,12 +161,15 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             self.assertIn(amp.id, [lb.amphorae[0].id, lb.amphorae[1].id])
 
     def test_allocate_vip(self):
+        fake_lb_vip = data_models.Vip()
+        fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip)
         self.assertRaises(network_base.AllocateVIPException,
-                          self.driver.allocate_vip, port_id=None,
-                          network_id=None)
+                          self.driver.allocate_vip, fake_lb)
         show_port = self.driver.neutron_client.show_port
         show_port.return_value = MOCK_NEUTRON_PORT
-        vip = self.driver.allocate_vip(port_id=MOCK_NEUTRON_PORT['port']['id'])
+        fake_lb_vip = data_models.Vip(port_id=MOCK_NEUTRON_PORT['port']['id'])
+        fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip)
+        vip = self.driver.allocate_vip(fake_lb)
         self.assertIsInstance(vip, data_models.Vip)
         self.assertEqual(
             MOCK_NEUTRON_PORT['port']['fixed_ips'][0]['ip_address'],
@@ -178,8 +181,10 @@ class TestAllowedAddressPairsDriver(base.TestCase):
 
         create_port = self.driver.neutron_client.create_port
         create_port.return_value = MOCK_NEUTRON_PORT
-        vip = self.driver.allocate_vip(
+        fake_lb_vip = data_models.Vip(
             network_id=MOCK_NEUTRON_PORT['port']['network_id'])
+        fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip)
+        vip = self.driver.allocate_vip(fake_lb)
         self.assertIsInstance(vip, data_models.Vip)
         self.assertEqual(
             MOCK_NEUTRON_PORT['port']['fixed_ips'][0]['ip_address'],
@@ -289,3 +294,32 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.driver.unplug_network(amp_id, if2.net_id)
         interface_detach.assert_called_once_with(server=amp_id,
                                                  port_id=if2.port_id)
+
+    def test_update_vip(self):
+        listeners = [data_models.Listener(protocol_port=80),
+                     data_models.Listener(protocol_port=443)]
+        lb = data_models.LoadBalancer(id='1', listeners=listeners)
+        list_sec_grps = self.driver.neutron_client.list_security_groups
+        list_sec_grps.return_value = {'security_groups': [{'id': 'secgrp-1'}]}
+        fake_rules = {
+            'security_group_rules': [
+                {'id': 'rule-80', 'port_range_max': 80},
+                {'id': 'rule-22', 'port_range_max': 22}
+            ]
+        }
+        list_rules = self.driver.neutron_client.list_security_group_rules
+        list_rules.return_value = fake_rules
+        delete_rule = self.driver.neutron_client.delete_security_group_rule
+        create_rule = self.driver.neutron_client.create_security_group_rule
+        self.driver.update_vip(lb)
+        delete_rule.assert_called_once_with('rule-22')
+        expected_create_rule = {
+            'security_group_rule': {
+                'security_group_id': 'secgrp-1',
+                'direction': 'ingress',
+                'protocol': 'TCP',
+                'port_range_min': 443,
+                'port_range_max': 443
+            }
+        }
+        create_rule.assert_called_once_with(expected_create_rule)

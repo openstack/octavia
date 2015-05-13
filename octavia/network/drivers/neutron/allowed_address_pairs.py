@@ -130,6 +130,34 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
         if len(sec_grps.get('security_groups')):
             return sec_grps.get('security_groups')[0]
 
+    def _update_security_group_rules(self, load_balancer, sec_grp_id):
+        rules = self.neutron_client.list_security_group_rules(
+            security_group_id=sec_grp_id)
+        updated_ports = [listener.protocol_port
+                         for listener in load_balancer.listeners]
+        # Just going to use port_range_max for now because we can assume that
+        # port_range_max and min will be the same since this driver is
+        # responsible for creating these rules
+        old_ports = [rule.get('port_range_max')
+                     for rule in rules.get('security_group_rules', [])]
+        add_ports = set(updated_ports) - set(old_ports)
+        del_ports = set(old_ports) - set(updated_ports)
+        for rule in rules.get('security_group_rules', []):
+            if rule.get('port_range_max') in del_ports:
+                self.neutron_client.delete_security_group_rule(rule.get('id'))
+
+        for port in add_ports:
+            rule = {
+                'security_group_rule': {
+                    'security_group_id': sec_grp_id,
+                    'direction': 'ingress',
+                    'protocol': 'TCP',
+                    'port_range_min': port,
+                    'port_range_max': port
+                }
+            }
+            self.neutron_client.create_security_group_rule(rule)
+
     def _update_vip_security_group(self, load_balancer, vip):
         sec_grp = self._get_lb_security_group(load_balancer.id)
         if not sec_grp:
@@ -137,21 +165,7 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
             new_sec_grp = {'security_group': {'name': sec_grp_name}}
             sec_grp = self.neutron_client.create_security_group(new_sec_grp)
             sec_grp = sec_grp['security_group']
-        for listener in load_balancer.listeners:
-            rule = {
-                'security_group_rule': {
-                    'security_group_id': sec_grp.get('id'),
-                    'direction': 'ingress',
-                    'protocol': 'TCP',
-                    'port_range_min': listener.protocol_port,
-                    'port_range_max': listener.protocol_port
-                }
-            }
-            try:
-                self.neutron_client.create_security_group_rule(rule)
-            except neutron_client_exceptions.Conflict as conflict_e:
-                if 'already exists' not in conflict_e.message.lower():
-                    raise conflict_e
+        self._update_security_group_rules(load_balancer, sec_grp.get('id'))
         port_update = {'port': {'security_groups': [sec_grp.get('id')]}}
         try:
             self.neutron_client.update_port(vip.port_id, port_update)
@@ -197,28 +211,29 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
                 ha_ip=vip.ip_address))
         return plugged_amphorae
 
-    def allocate_vip(self, port_id=None, network_id=None, ip_address=None):
-        if not port_id and not network_id:
+    def allocate_vip(self, load_balancer):
+        if not load_balancer.vip.port_id and not load_balancer.vip.network_id:
             raise base.AllocateVIPException('Cannot allocate a vip '
                                             'without a port_id or '
                                             'a network_id.')
-        if port_id:
+        if load_balancer.vip.port_id:
             LOG.info(_LI('Port {port_id} already exists. Nothing to be '
-                         'done.').format(port_id=port_id))
+                         'done.').format(port_id=load_balancer.vip.port_id))
             try:
-                port = self.neutron_client.show_port(port_id)
+                port = self.neutron_client.show_port(load_balancer.vip.port_id)
             except neutron_client_exceptions.PortNotFoundClient as e:
                 raise base.PortNotFound(e.message)
             except Exception:
                 message = _LE('Error retrieving info about port '
-                              '{port_id}.').format(port_id=port_id)
+                              '{port_id}.').format(
+                    port_id=load_balancer.vip.port_id)
                 LOG.exception(message)
                 raise base.AllocateVIPException(message)
             return self._port_to_vip(port)
 
         # It can be assumed that network_id exists
-        port = {'port': {'name': 'octavia-port',
-                         'network_id': network_id,
+        port = {'port': {'name': 'octavia-lb-' + load_balancer.id,
+                         'network_id': load_balancer.vip.network_id,
                          'admin_state_up': False,
                          'device_id': '',
                          'device_owner': ''}}
@@ -228,7 +243,8 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
             raise base.NetworkNotFound(e.message)
         except Exception:
             message = _LE('Error creating neutron port on network '
-                          '{network_id}.').format(network_id=network_id)
+                          '{network_id}.').format(
+                network_id=load_balancer.vip.network_id)
             LOG.exception(message)
             raise base.AllocateVIPException(message)
         return self._port_to_vip(new_port)
@@ -329,3 +345,7 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
                               'unplugged.').format(base=message)
             LOG.exception(message)
             raise base.UnplugNetworkException(message)
+
+    def update_vip(self, load_balancer):
+        sec_grp = self._get_lb_security_group(load_balancer.id)
+        self._update_security_group_rules(load_balancer, sec_grp.get('id'))
