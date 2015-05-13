@@ -25,6 +25,21 @@ function build_octavia_worker_image {
     # upload_image file://${OCTAVIA_AMP_IMAGE_NAME}.qcow2 $TOKEN
 }
 
+function create_octavia_accounts {
+        create_service_user "neutron"
+
+        if [[ "$KEYSTONE_CATALOG_BACKEND" = 'sql' ]]; then
+
+            local neutron_service=$(get_or_create_service "octavia" \
+                "octavia" "Octavia Service")
+            get_or_create_endpoint $neutron_service \
+                "$REGION_NAME" \
+                "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/" \
+                "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/" \
+                "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/"
+        fi
+}
+
 function octavia_configure {
 
     sudo mkdir -m 755 -p $OCTAVIA_CONF_DIR
@@ -127,6 +142,9 @@ function octavia_start {
     if is_service_enabled tempest; then
         configure_octavia_tempest ${OCTAVIA_AMP_NETWORK_ID}
     fi
+
+    # Adds service and endpoint
+    create_octavia_accounts
 
     run_process $OCTAVIA_API  "$OCTAVIA_API_BINARY $OCTAVIA_API_ARGS"
     run_process $OCTAVIA_CONSUMER  "$OCTAVIA_CONSUMER_BINARY $OCTAVIA_CONSUMER_ARGS"
