@@ -16,7 +16,7 @@ from wsme import types as wtypes
 
 
 class IPAddressType(wtypes.UserType):
-    basetype = str
+    basetype = unicode
     name = 'ipaddress'
 
     @staticmethod
