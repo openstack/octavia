@@ -138,6 +138,9 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
             _, stdout, _ = self.client.exec_command(
                 "ip link | grep DOWN -m 1 | awk '{print $2}'")
             output = stdout.read()[:-2]
+            if not output:
+                self.client.close()
+                continue
             vip = load_balancer.vip.ip_address
             sections = vip.split('.')[:3]
             sections.append('255')
@@ -156,6 +159,9 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
         _, stdout, _ = self.client.exec_command(
             "ip link | grep DOWN -m 1 | awk '{print $2}'")
         output = stdout.read()[:-2]
+        if not output:
+            self.client.close()
+            return
         command = ("sudo sh -c 'echo \"\nauto {0}\niface {0} inet dhcp\" "
                    ">> /etc/network/interfaces; ifup {0}'".format(output))
         self.client.exec_command(command)
