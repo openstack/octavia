@@ -135,37 +135,67 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
             # Connect to amphora
             self._connect(hostname=amp.lb_network_ip)
 
-            _, stdout, _ = self.client.exec_command(
-                "ip link | grep DOWN -m 1 | awk '{print $2}'")
-            output = stdout.read()[:-2]
-            if not output:
+            stdout, _ = self._execute_command(
+                "ip link | grep DOWN -m 1 | awk '{print $2}'",
+                run_as_root=False)
+            iface = stdout[:-2]
+            if not iface:
                 self.client.close()
                 continue
             vip = load_balancer.vip.ip_address
             sections = vip.split('.')[:3]
             sections.append('255')
             broadcast = '.'.join(sections)
-            command = ("sudo sh -c 'echo \"\nauto {0} {0}:0\n"
+            command = ("sh -c 'echo \"\nauto {0} {0}:0\n"
                        "iface {0} inet dhcp\n\niface {0}:0 inet static\n"
                        "address {1}\nbroadcast {2}\nnetmask {3}\" "
-                       ">> /etc/network/interfaces; ifup {0}; "
-                       "ifup {0}:0'".format(output, vip, broadcast,
-                                            '255.255.255.0'))
-            self.client.exec_command(command)
+                       ">> /etc/network/interfaces'".format(
+                           iface, vip, broadcast, '255.255.255.0'))
+            self._execute_command(command)
+            # sanity ifdown for interface
+            command = "ifdown {0}".format(iface)
+            self._execute_command(command)
+            # sanity ifdown for static ip
+            command = "ifdown {0}:0".format(iface)
+            self._execute_command(command)
+            # ifup for interface
+            command = "ifup {0}".format(iface)
+            self._execute_command(command)
+            # ifup for static ip
+            command = "ifup {0}:0".format(iface)
+            self._execute_command(command)
             self.client.close()
 
     def post_network_plug(self, amphora):
         self._connect(hostname=amphora.lb_network_ip)
-        _, stdout, _ = self.client.exec_command(
-            "ip link | grep DOWN -m 1 | awk '{print $2}'")
-        output = stdout.read()[:-2]
-        if not output:
+        stdout, _ = self._execute_command(
+            "ip link | grep DOWN -m 1 | awk '{print $2}'", run_as_root=False)
+        iface = stdout[:-2]
+        if not iface:
             self.client.close()
             return
-        command = ("sudo sh -c 'echo \"\nauto {0}\niface {0} inet dhcp\" "
-                   ">> /etc/network/interfaces; ifup {0}'".format(output))
-        self.client.exec_command(command)
+        # make interface come up on boot
+        command = ("sh -c 'echo \"\nauto {0}\niface {0} inet dhcp\" "
+                   ">> /etc/network/interfaces'".format(iface))
+        self._execute_command(command)
+        # ifdown for sanity
+        command = "ifdown {0}".format(iface)
+        self._execute_command(command)
+        # ifup to bring it up
+        command = "ifup {0}".format(iface)
+        self._execute_command(command)
         self.client.close()
+
+    def _execute_command(self, command, run_as_root=True):
+        if run_as_root:
+            command = "sudo {0}".format(command)
+        _, stdout, stderr = self.client.exec_command(command)
+        stdout = stdout.read()
+        stderr = stderr.read()
+        LOG.debug('Sent command {0}'.format(command))
+        LOG.debug('Returned stdout: {0}'.format(stdout))
+        LOG.debug('Returned stderr: {0}'.format(stderr))
+        return stdout, stderr
 
     def _connect(self, hostname):
         for attempts in xrange(self.amp_config.connection_max_retries):
