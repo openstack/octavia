@@ -41,11 +41,9 @@ class TestSshDriver(base.TestCase):
         self.driver.barbican_client = mock.Mock(
             spec=barbican.BarbicanCertManager)
         self.driver.client = mock.Mock(spec=paramiko.SSHClient)
+        self.driver.client.exec_command.return_value = (
+            mock.Mock(), mock.Mock(), mock.Mock())
         self.driver.amp_config = mock.MagicMock()
-
-    def test_get_logger(self):
-        self.skip('Will complete later')
-        self.assertEqual(LOG, self.driver.get_logger)
 
     def test_update(self):
         with mock.patch.object(
@@ -71,12 +69,11 @@ class TestSshDriver(base.TestCase):
                 build_conf.assert_called_once_with(
                     listener, listener.default_tls_container,
                     listener.sni_containers)
-                self.driver.client.connect(
-                    mock.ANY, mock.ANY).assert_called_once()
+                self.driver.client.connect.assert_called_once()
                 self.driver.client.open_sftp().assert_called_once()
                 self.driver.client.open_sftp().put().assert_called_once()
-                self.driver.client.exec_command(mock.ANY).assert_called_once()
-                self.driver.client.close().assert_called_once()
+                self.driver.client.exec_command.assert_called_once()
+                self.driver.client.close.assert_called_once()
 
     def test_stop(self):
         # Build sample Listener and VIP configs
@@ -86,9 +83,9 @@ class TestSshDriver(base.TestCase):
 
         # Execute driver method
         self.driver.start(listener, vip)
-        self.driver.client.connect(mock.ANY).assert_called_once()
-        self.driver.client.exec_command(mock.ANY).assert_called_once()
-        self.driver.client.close().assert_called_once()
+        self.driver.client.connect.assert_called_once()
+        self.driver.client.exec_command.assert_called_once()
+        self.driver.client.close.assert_called_once()
 
     def test_start(self):
         # Build sample Listener and VIP configs
@@ -98,9 +95,9 @@ class TestSshDriver(base.TestCase):
 
         # Execute driver method
         self.driver.start(listener, vip)
-        self.driver.client.connect(mock.ANY).assert_called_once()
-        self.driver.client.exec_command(mock.ANY).assert_called_once()
-        self.driver.client.close().assert_called_once()
+        self.driver.client.connect.assert_called_once()
+        self.driver.client.exec_command.assert_called_once()
+        self.driver.client.close.assert_called_once()
 
     def test_delete(self):
         # Build sample Listener and VIP configs
@@ -112,9 +109,9 @@ class TestSshDriver(base.TestCase):
         self.driver.delete(listener, vip)
 
         # Verify call
-        self.driver.client.connect(mock.ANY, mock.ANY).assert_called_once()
-        self.driver.client.exec_command(mock.ANY).assert_called_once()
-        self.driver.client.close().assert_called_once()
+        self.driver.client.connect.assert_called_once()
+        self.driver.client.exec_command.assert_called_once()
+        self.driver.client.close.assert_called_once()
 
     def test_get_info(self):
         pass
