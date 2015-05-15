@@ -81,15 +81,15 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             delete_amp_tf.run()
 
-    def create_health_monitor(self, health_monitor_id):
+    def create_health_monitor(self, pool_id):
         """Creates a health monitor.
 
-        :param health_monitor_id: ID of the health monitor to create
+        :param pool_id: ID of the pool to create a health monitor on
         :returns: None
         :raises NoSuitablePool: Unable to find the node pool
         """
         health_mon = self._health_mon_repo.get(db_apis.get_session(),
-                                               pool_id=health_monitor_id)
+                                               pool_id=pool_id)
 
         listener = health_mon.pool.listener
         health_mon.pool.health_monitor = health_mon
@@ -108,15 +108,15 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             create_hm_tf.run()
 
-    def delete_health_monitor(self, health_monitor_id):
+    def delete_health_monitor(self, pool_id):
         """Deletes a health monitor.
 
-        :param health_monitor_id: ID of the health monitor to delete
+        :param pool_id: ID of the pool to delete its health monitor
         :returns: None
         :raises HMNotFound: The referenced health monitor was not found
         """
         health_mon = self._health_mon_repo.get(db_apis.get_session(),
-                                               pool_id=health_monitor_id)
+                                               pool_id=pool_id)
 
         listener = health_mon.pool.listener
         health_mon.pool.health_monitor = health_mon
@@ -127,23 +127,23 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                            get_delete_health_monitor_flow(),
                                            store={'health_mon': health_mon,
                                                   'health_mon_id':
-                                                      health_monitor_id,
+                                                      pool_id,
                                                   'listener': listener,
                                                   'vip': vip})
         with tf_logging.DynamicLoggingListener(delete_hm_tf,
                                                log=LOG):
             delete_hm_tf.run()
 
-    def update_health_monitor(self, health_monitor_id, health_monitor_updates):
+    def update_health_monitor(self, pool_id, health_monitor_updates):
         """Updates a health monitor.
 
-        :param health_monitor_id: ID of the health monitor to update
+        :param pool_id: ID of the pool to have it's health monitor updated
         :param health_monitor_updates: Dict containing updated health monitor
         :returns: None
         :raises HMNotFound: The referenced health monitor was not found
         """
         health_mon = self._health_mon_repo.get(db_apis.get_session(),
-                                               pool_id=health_monitor_id)
+                                               pool_id=pool_id)
 
         listener = health_mon.pool.listener
         health_mon.pool.health_monitor = health_mon

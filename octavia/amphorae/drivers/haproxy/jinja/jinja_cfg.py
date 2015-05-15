@@ -231,6 +231,10 @@ class JinjaTemplater(object):
 
             be processed by the templating system
         """
+        codes = None
+        if monitor.expected_codes:
+            codes = '|'.join(self._expand_expected_codes(
+                monitor.expected_codes))
         return {
             'id': monitor.id,
             'type': monitor.type,
@@ -240,8 +244,7 @@ class JinjaTemplater(object):
             'rise_threshold': monitor.rise_threshold,
             'http_method': monitor.http_method,
             'url_path': monitor.url_path,
-            'expected_codes': '|'.join(
-                self._expand_expected_codes(monitor.expected_codes)),
+            'expected_codes': codes,
             'enabled': monitor.enabled,
         }
 
