@@ -13,10 +13,10 @@
 #    under the License.
 
 from keystoneclient import session
-import mock
 import novaclient.v2
 from oslo_config import cfg
 from oslo_utils import uuidutils
+import six
 
 from octavia.common import constants
 from octavia.common import data_models as models
@@ -25,6 +25,10 @@ from octavia.common import keystone
 import octavia.compute.drivers.nova_driver as nova_common
 import octavia.tests.unit.base as base
 
+if six.PY2:
+    import mock
+else:
+    import unittest.mock as mock
 
 CONF = cfg.CONF
 

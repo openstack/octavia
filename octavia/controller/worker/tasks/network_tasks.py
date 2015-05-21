@@ -186,7 +186,7 @@ class UnPlugNetworks(BaseNetworkTask):
             except Exception as e:
                 LOG.error(
                     _LE("Unable to unplug network - exception: %s"),
-                    e.message)
+                    str(e))
                 pass  # Todo(german) follow up if that makes sense
 
 
@@ -215,7 +215,7 @@ class HandleNetworkDeltas(BaseNetworkTask):
                 except Exception as e:
                     LOG.error(
                         _LE("Unable to unplug network - exception: %s"),
-                        e.message)
+                        str(e))
                     pass
 
     def revert(self, deltas):

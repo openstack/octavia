@@ -12,12 +12,17 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import mock
 from oslo_utils import uuidutils
+import six
 
 from octavia.common import constants
 from octavia.controller.healthmanager import update_health_mixin as healthmixin
 import octavia.tests.unit.base as base
+
+if six.PY2:
+    import mock
+else:
+    import unittest.mock as mock
 
 
 class TestUpdateHealthMixin(base.TestCase):
@@ -59,12 +64,14 @@ class TestUpdateHealthMixin(base.TestCase):
         self.assertTrue(self.amphora_health_repo.update.called)
 
         # test listener, member
-        for listener_id, listener in health.get('listeners', {}).iteritems():
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
                 'blah', listener_id, operating_status=constants.ONLINE)
 
-            for member_id, member in listener.get('members', {}).iteritems():
+            for member_id, member in six.iteritems(
+                    listener.get('members', {})):
                 self.member_repo.update.assert_any_call(
                     'blah', id=member_id, operating_status=constants.ONLINE)
 
@@ -92,11 +99,13 @@ class TestUpdateHealthMixin(base.TestCase):
         self.assertFalse(self.amphora_health_repo.update.called)
 
         # test listener, member
-        for listener_id, listener in health.get('listeners', {}).iteritems():
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
                 'blah', listener_id, operating_status=constants.ERROR)
 
-            for member_id, member in listener.get('members', {}).iteritems():
+            for member_id, member in six.iteritems(
+                    listener.get('members', {})):
                 self.member_repo.update.assert_any_call(
                     'blah', id=member_id, operating_status=constants.ERROR)

@@ -13,10 +13,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from cryptography.hazmat import backends
+from cryptography import x509
 from OpenSSL import crypto
 from OpenSSL import SSL
-import pyasn1.codec.der.decoder as decoder
-import pyasn1_modules.rfc2459 as rfc2459
 import six
 
 import octavia.common.exceptions as exceptions
@@ -100,25 +100,21 @@ def get_host_names(certificate):
     'dns_names' is a list of dNSNames (possibly empty) from
     the SubjectAltNames of the certificate.
     """
+    try:
+        cert = x509.load_pem_x509_certificate(certificate,
+                                              backends.default_backend())
+        ext = cert.extensions.get_extension_for_oid(
+            x509.OID_SUBJECT_ALTERNATIVE_NAME
+        )
+        cn = cert.subject.get_attributes_for_oid(x509.OID_COMMON_NAME)[0]
 
-    x509 = _get_x509_from_pem_bytes(certificate)
-    hostnames = {}
-    if hasattr(x509.get_subject(), 'CN'):
-        hostnames['cn'] = x509.get_subject().CN
-    hostnames['dns_names'] = []
-    num_exts = x509.get_extension_count()
-    for i in range(0, num_exts):
-        ext = x509.get_extension(i)
-        if ext.get_short_name() == 'subjectAltName':
-            data = ext.get_data()
-
-            general_names_container = decoder.decode(
-                data, asn1Spec=rfc2459.GeneralNames())
-            for general_names in general_names_container[0]:
-                if general_names.getName() == 'dNSName':
-                    octets = general_names.getComponent().asOctets()
-                    hostnames['dns_names'].append(octets.encode('utf-8'))
-    return hostnames
+        host_names = {
+            'cn': cn.value.lower(),
+            'dns_names': ext.value.get_values_for_type(x509.DNSName)
+        }
+        return host_names
+    except Exception:
+        raise exceptions.UnreadableCert
 
 
 def _get_x509_from_pem_bytes(certificate_pem):

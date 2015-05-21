@@ -20,7 +20,7 @@ import json
 def encode(msg, key):
     result = {}
     src = json.dumps(msg)
-    hmc = hmac.new(key, src, hashlib.sha1)
+    hmc = hmac.new(key.encode('ascii'), src.encode('ascii'), hashlib.sha1)
     result['msg'] = msg
     result['hmac'] = hmc.hexdigest()
     return json.dumps(result)
@@ -29,5 +29,5 @@ def encode(msg, key):
 def checkhmac(envelope_str, key):
     envelope = json.loads(envelope_str)
     src = json.dumps(envelope['msg'])
-    hmc = hmac.new(key, src, hashlib.sha1)
+    hmc = hmac.new(key.encode('ascii'), src.encode('ascii'), hashlib.sha1)
     return hmc.hexdigest() == envelope['hmac']

@@ -15,15 +15,20 @@
 
 import time
 
-import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
+import six
 
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.controller.worker.tasks import compute_tasks
 import octavia.tests.unit.base as base
+
+if six.PY2:
+    import mock
+else:
+    import unittest.mock as mock
 
 AMP_FLAVOR_ID = 10
 AMP_IMAGE_ID = 11

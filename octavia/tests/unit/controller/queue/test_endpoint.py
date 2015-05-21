@@ -12,11 +12,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
+import six
 
 from octavia.controller.queue import endpoint
 from octavia.controller.worker import controller_worker
 from octavia.tests.unit import base
+
+if six.PY2:
+    import mock
+else:
+    import unittest.mock as mock
 
 
 class TestEndpoint(base.TestCase):

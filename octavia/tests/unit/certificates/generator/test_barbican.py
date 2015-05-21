@@ -13,11 +13,16 @@
 #    under the License.
 import uuid
 
-import mock
 from OpenSSL import crypto
+import six
 
 import octavia.certificates.generator.barbican as barbican_cert_gen
 import octavia.tests.unit.base as base
+
+if six.PY2:
+    import mock
+else:
+    import unittest.mock as mock
 
 
 class TestBarbicanGenerator(base.TestCase):
