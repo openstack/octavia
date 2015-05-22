@@ -32,6 +32,7 @@ import six
 
 from octavia.api.v1.handlers import abstract_handler
 from octavia.common import constants
+from octavia.common import data_models
 
 cfg.CONF.import_group('oslo_messaging', 'octavia.common.config')
 
@@ -57,7 +58,10 @@ class BaseProducer(abstract_handler.BaseObjectHandler):
 
         :param data_model:
         """
-        kw = {"{0}_id".format(self.payload_class): model.id}
+        model_id = getattr(model, 'id', None)
+        if isinstance(model, data_models.HealthMonitor):
+            model_id = model.pool_id
+        kw = {"{0}_id".format(self.payload_class): model_id}
         method_name = "create_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
@@ -67,8 +71,11 @@ class BaseProducer(abstract_handler.BaseObjectHandler):
         :param updated_model:
         :param data_model:
         """
+        model_id = getattr(model, 'id', None)
+        if isinstance(model, data_models.HealthMonitor):
+            model_id = model.pool_id
         kw = {"{0}_updates".format(self.payload_class): updated_dict,
-              "{0}_id".format(self.payload_class): model.id}
+              "{0}_id".format(self.payload_class): model_id}
         method_name = "update_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
@@ -78,7 +85,10 @@ class BaseProducer(abstract_handler.BaseObjectHandler):
         :param updated_model:
         :param data_model:
         """
-        kw = {"{0}_id".format(self.payload_class): model.id}
+        model_id = getattr(model, 'id', None)
+        if isinstance(model, data_models.HealthMonitor):
+            model_id = model.pool_id
+        kw = {"{0}_id".format(self.payload_class): model_id}
         method_name = "delete_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
