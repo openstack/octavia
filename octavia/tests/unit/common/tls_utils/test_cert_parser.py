@@ -18,9 +18,10 @@ import six
 import octavia.common.exceptions as exceptions
 import octavia.common.tls_utils.cert_parser as cert_parser
 from octavia.tests.unit import base
+from octavia.tests.unit.common.sample_configs import sample_configs
 
 
-ALT_EXT_CRT = b"""-----BEGIN CERTIFICATE-----
+ALT_EXT_CRT = """-----BEGIN CERTIFICATE-----
 MIIGqjCCBZKgAwIBAgIJAIApBg8slSSiMA0GCSqGSIb3DQEBBQUAMIGLMQswCQYD
 VQQGEwJVUzEOMAwGA1UECAwFVGV4YXMxFDASBgNVBAcMC1NhbiBBbnRvbmlvMR4w
 HAYDVQQKDBVPcGVuU3RhY2sgRXhwZXJpbWVudHMxFjAUBgNVBAsMDU5ldXRyb24g
@@ -60,7 +61,7 @@ elu2c/X7MR4ObOjhDfaVGQ8kMhYf5hx69qyNDsGi
 -----END CERTIFICATE-----
 """
 
-SOME_OTHER_RSA_KEY = b"""
+SOME_OTHER_RSA_KEY = """
 -----BEGIN RSA PRIVATE KEY-----
 MIICWwIBAAKBgQDDnJL9dAdDpjoq4tksTJmdM0AjIHa7Y2yc8XwU7YkgrOR0m4Po
 r7El0NwWf5i/LFudX1cOkfwemMIPwQ+67k0BVu/W3SR+g9ZzVKZtTBJnDoqMZ4RJ
@@ -78,7 +79,7 @@ q3NRSsf/nRLY1NtMdwJAVKOdUCwZKGpGyOUZPRbZZAPlojIff2CxJ6E2Pr0RbShD
 -----END RSA PRIVATE KEY-----
 """
 
-ALT_EXT_CRT_KEY = b"""
+ALT_EXT_CRT_KEY = """
 -----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEAsvWeZsM9QOmzziLWwzeuEetz4OW7Q3/ApBYpkV6JZS0X+mi3
 X1XejTJcOmyDtblGQsxMWRkRydCnIZ2kAaNOPOY1cxnD30TPGyatHeXqFQQhKJ9V
@@ -110,7 +111,7 @@ iMwJYgm98P27s4TEMdhlPNVJrj1FrD+4VrgpOsoM20EkZnTvel9s
 
 ENCRYPTED_PKCS8_CRT_KEY_PASSPHRASE = "test_passphrase"
 
-ENCRYPTED_PKCS8_CRT_KEY = b"""-----BEGIN ENCRYPTED PRIVATE KEY-----
+ENCRYPTED_PKCS8_CRT_KEY = """-----BEGIN ENCRYPTED PRIVATE KEY-----
 MIIE6TAbBgkqhkiG9w0BBQMwDgQIT04zko6pmJICAggABIIEyL/79sqzTQ7BsEjY
 ao2Uhh3//mpNJfCDhjSZOmWL7s4+161cEqpxrfxo4bHH8fkZ60VZUQP8CjwwQUhP
 4iwpv2bYbQwzlttZwTC6s28wh7FRtgVoVPTwvXJa6fl2zAjLtsjwLZ/556ez9xIJ
@@ -141,7 +142,7 @@ p7cuYY1cAyI7gFfl5A==
 -----END ENCRYPTED PRIVATE KEY-----
 """
 
-UNENCRYPTED_PKCS8_CRT_KEY = b"""-----BEGIN PRIVATE KEY-----
+UNENCRYPTED_PKCS8_CRT_KEY = """-----BEGIN PRIVATE KEY-----
 MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCy9Z5mwz1A6bPO
 ItbDN64R63Pg5btDf8CkFimRXollLRf6aLdfVd6NMlw6bIO1uUZCzExZGRHJ0Kch
 naQBo0485jVzGcPfRM8bJq0d5eoVBCEon1W7xLn7WGU+oz8TOTC+lgIxTWgRGT1r
@@ -173,7 +174,7 @@ P7hWuCk6ygzbQSRmdO96X2w=
 
 EXPECTED_IMD_SUBJS = ["IMD3", "IMD2", "IMD1"]
 
-X509_IMDS = b"""Junk
+X509_IMDS = """Junk
 -----BEGIN CERTIFICATE-----
 MIIBhDCCAS6gAwIBAgIGAUo7hO/eMA0GCSqGSIb3DQEBCwUAMA8xDTALBgNVBAMT
 BElNRDIwHhcNMTQxMjExMjI0MjU1WhcNMjUxMTIzMjI0MjU1WjAPMQ0wCwYDVQQD
@@ -255,3 +256,10 @@ class TestTLSParseUtils(base.TestCase):
 
         for i in six.moves.xrange(0, len(imds)):
             self.assertEqual(EXPECTED_IMD_SUBJS[i], imds[i].get_subject().CN)
+
+    def test_build_pem(self):
+        expected = 'imainter\nimainter2\nimacert\nimakey'
+        tls_tupe = sample_configs.sample_tls_container_tuple(
+            certificate='imacert', private_key='imakey',
+            intermediates=['imainter', 'imainter2'])
+        self.assertEqual(expected, cert_parser.build_pem(tls_tupe))

@@ -30,7 +30,8 @@ class CertManager(object):
 
     @abc.abstractmethod
     def store_cert(self, certificate, private_key, intermediates=None,
-                   private_key_passphrase=None, **kwargs):
+                   private_key_passphrase=None, expiration=None,
+                   name=None):
         """Stores (i.e., registers) a cert with the cert manager.
 
         This method stores the specified cert and returns its UUID that
@@ -41,7 +42,8 @@ class CertManager(object):
         pass
 
     @abc.abstractmethod
-    def get_cert(self, cert_ref, check_only=False, **kwargs):
+    def get_cert(self, cert_ref, resource_ref=None, check_only=False,
+                 service_name=None):
         """Retrieves the specified cert.
 
         If check_only is True, don't perform any sort of registration.
@@ -51,7 +53,7 @@ class CertManager(object):
         pass
 
     @abc.abstractmethod
-    def delete_cert(self, cert_ref, **kwargs):
+    def delete_cert(self, cert_ref, resource_ref, service_name=None):
         """Deletes the specified cert.
 
         If the specified cert does not exist, a CertificateStorageException

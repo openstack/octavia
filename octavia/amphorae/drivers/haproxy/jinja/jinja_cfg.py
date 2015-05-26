@@ -36,7 +36,7 @@ ACTIVE_PENDING_STATUSES = constants.SUPPORTED_PROVISIONING_STATUSES + (
     constants.DEGRADED,)
 
 BASE_PATH = '/var/lib/octavia'
-BASE_CRT_DIR = '/listeners'
+BASE_CRT_DIR = BASE_PATH + '/certs'
 
 HAPROXY_TEMPLATE = os.path.abspath(
     os.path.join(os.path.dirname(__file__),
@@ -72,8 +72,6 @@ class JinjaTemplater(object):
         self.base_crt_dir = base_crt_dir if base_crt_dir else BASE_CRT_DIR
         self.haproxy_template = (haproxy_template if haproxy_template
                                  else HAPROXY_TEMPLATE)
-        self.cert_store_path = '{0}{1}'.format(self.base_amp_path,
-                                               self.base_crt_dir)
         self.log_http = log_http
         self.log_server = log_server
         self.timeout_client = timeout_client
@@ -163,11 +161,12 @@ class JinjaTemplater(object):
         if listener.connection_limit and listener.connection_limit > -1:
             ret_value['connection_limit'] = listener.connection_limit
         if listener.tls_certificate_id:
-            ret_value['default_tls_path'] = '%s/%s/%s.pem' % (
-                self.cert_store_path, listener.id, tls_cert.primary_cn)
+            ret_value['default_tls_path'] = '%s.pem' % (
+                os.path.join(self.base_crt_dir,
+                             listener.id,
+                             tls_cert.primary_cn))
         if listener.sni_containers:
-            ret_value['crt_dir'] = '%s/%s' % (
-                self.cert_store_path, listener.id)
+            ret_value['crt_dir'] = os.path.join(self.base_crt_dir, listener.id)
         if listener.default_pool:
             ret_value['default_pool'] = self._transform_pool(
                 listener.default_pool)
