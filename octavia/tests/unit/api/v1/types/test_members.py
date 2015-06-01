@@ -54,8 +54,8 @@ class TestMemberPOST(base.BaseTypesTest):
 
     def test_invalid_enabled(self):
         body = {"ip_address": "10.0.0.1", "protocol_port": 443,
-                "enabled": "true"}
-        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                "enabled": "notvalid"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
                           body)
 
     def test_invalid_protocol_port(self):

@@ -52,8 +52,8 @@ class TestLoadBalancer(object):
                           body)
 
     def test_invalid_enabled(self):
-        body = {"enabled": "true"}
-        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+        body = {"enabled": "notvalid"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
                           body)
 
 

@@ -39,8 +39,8 @@ class TestListener(object):
 
     def test_invalid_enabled(self):
         body = {"protocol": constants.PROTOCOL_HTTP, "protocol_port": 80,
-                "enabled": "true"}
-        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                "enabled": "notvalid"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
                           body)
 
     def test_invalid_protocol(self):
