@@ -38,6 +38,7 @@ _amphora_mock.compute_id = COMPUTE_ID
 _amphora_mock.lb_network_ip = LB_NET_IP
 _loadbalancer_mock = mock.MagicMock()
 _loadbalancer_mock.id = LB_ID
+_loadbalancer_mock.amphorae = [_amphora_mock]
 _tf_failure_mock = mock.Mock(spec=failure.Failure)
 
 
@@ -260,6 +261,30 @@ class TestDatabaseTasks(base.TestCase):
 
         self.assertRaises(exceptions.NoReadyAmphoraeException,
                           map_lb_to_amp.execute, self.loadbalancer_mock.id)
+
+    @mock.patch('octavia.db.repositories.AmphoraRepository.get',
+                return_value=_amphora_mock)
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
+                return_value=_loadbalancer_mock)
+    def test_mark_lb_amphorae_deleted_in_db(self,
+                                            mock_loadbalancer_repo_get,
+                                            mock_amphora_repo_get,
+                                            mock_generate_uuid,
+                                            mock_LOG,
+                                            mock_get_session,
+                                            mock_loadbalancer_repo_update,
+                                            mock_listener_repo_update,
+                                            mock_amphora_repo_update,
+                                            mock_amphora_repo_delete):
+
+        mark_amp_deleted_in_db = (database_tasks.
+                                  MarkLBAmphoraeDeletedInDB())
+        mark_amp_deleted_in_db.execute(_loadbalancer_mock)
+
+        repo.AmphoraRepository.update.assert_called_once_with(
+            'TEST',
+            id=AMP_ID,
+            status=constants.DELETED)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.get',
                 return_value=_amphora_mock)
@@ -681,6 +706,31 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             HM_ID,
             enabled=0)
+
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    def test_update_load_balancer_in_db(self,
+                                        mock_listner_repo_update,
+                                        mock_generate_uuid,
+                                        mock_LOG,
+                                        mock_get_session,
+                                        mock_loadbalancer_repo_update,
+                                        mock_listener_repo_update,
+                                        mock_amphora_repo_update,
+                                        mock_amphora_repo_delete):
+
+        update_load_balancer = database_tasks.UpdateLoadbalancerInDB()
+        update_load_balancer.execute(self.loadbalancer_mock,
+                                     {'name': 'test', 'description': 'test2'})
+
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            LB_ID,
+            name='test', description='test2')
+
+        # Test the revert
+
+        mock_listener_repo_update.reset_mock()
+        update_load_balancer.revert(self.listener_mock)
 
     @mock.patch('octavia.db.repositories.ListenerRepository.update')
     def test_update_listener_in_db(self,

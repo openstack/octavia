@@ -80,6 +80,19 @@ class CreateAmphoraInDB(BaseDatabaseTask):
         self.amphora_repo.delete(db_apis.get_session(), id=result)
 
 
+class MarkLBAmphoraeDeletedInDB(BaseDatabaseTask):
+    """Task to mark a list of amphora deleted in the Database."""
+
+    def execute(self, loadbalancer):
+        """Update amphorae statuses to DELETED in the database.
+
+        """
+        for amp in loadbalancer.amphorae:
+            LOG.debug(_LW("Marking amphora %s DELETED ") % amp.id)
+            self.amphora_repo.update(db_apis.get_session(),
+                                     id=amp.id, status=constants.DELETED)
+
+
 class DeleteHealthMonitorInDB(BaseDatabaseTask):
     """Delete the health monitor in the DB.
 
@@ -615,6 +628,38 @@ class MarkListenerPendingDeleteInDB(BaseDatabaseTask):
                      "for listener id %s"), listener.id)
         self.listener_repo.update(db_apis.get_session(), listener.id,
                                   provisioning_status=constants.ERROR)
+
+
+class UpdateLoadbalancerInDB(BaseDatabaseTask):
+    """Update the listener in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, loadbalancer, update_dict):
+        """Update the loadbalancer in the DB
+
+        :param loadbalancer: The listener to be updated
+        :param update_dict: The dictionary of updates to apply
+        :returns: None
+        """
+
+        LOG.debug("Update DB for listener id: %s " %
+                  loadbalancer.id)
+        self.loadbalancer_repo.update(db_apis.get_session(), loadbalancer.id,
+                                      **update_dict)
+
+    def revert(self, listener, *args, **kwargs):
+        """Mark the listener ERROR since the update couldn't happen
+
+        :returns: None
+        """
+
+        LOG.warn(_LW("Reverting update listener in DB "
+                     "for listener id %s"), listener.id)
+# TODO(johnsom) fix this to set the upper ojects to ERROR
+        self.listener_repo.update(db_apis.get_session(), listener.id,
+                                  enabled=0)
 
 
 class UpdateHealthMonInDB(BaseDatabaseTask):

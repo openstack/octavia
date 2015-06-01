@@ -258,6 +258,21 @@ class PlugVIP(BaseNetworkTask):
         self.network_driver.unplug_vip(loadbalancer, loadbalancer.vip)
 
 
+class UnplugVIP(BaseNetworkTask):
+    """Task to unplug the vip."""
+
+    def execute(self, loadbalancer):
+        """Unplug the vip."""
+
+        LOG.debug("Unplug vip on amphora")
+        try:
+            self.network_driver.unplug_vip(loadbalancer, loadbalancer.vip)
+        except Exception as e:
+            LOG.error(_LE("Unable to unplug vip from load balancer %(id)s: "
+                          "exception: %(ex)s"), id=loadbalancer.id,
+                      ex=e.message)
+
+
 class AllocateVIP(BaseNetworkTask):
     """Task to allocate a VIP."""
 
@@ -285,12 +300,12 @@ class AllocateVIP(BaseNetworkTask):
 class DeallocateVIP(BaseNetworkTask):
     """Task to deallocate a VIP."""
 
-    def execute(self, vip):
+    def execute(self, loadbalancer):
         """Deallocate a VIP."""
 
-        LOG.debug("Deallocating a VIP %s", vip.ip_address)
+        LOG.debug("Deallocating a VIP %s", loadbalancer.vip.ip_address)
 
-        self.network_driver.deallocate_vip(vip)
+        self.network_driver.deallocate_vip(loadbalancer.vip)
         return
 
 

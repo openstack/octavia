@@ -90,6 +90,34 @@ class ComputeCreate(BaseComputeTask):
                           " with exception %s"), e)
 
 
+class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
+    """Delete the amphorae on a load balancer.
+
+    Iterate through amphorae, deleting them
+    """
+
+    def execute(self, loadbalancer):
+        for amp in loadbalancer.amphorae:
+            try:
+                self.compute.delete(amphora_id=amp.compute_id)
+            except Exception as e:
+                LOG.error(_LE("Nova delete for amphora id: %(amp)s failed:"
+                              "%(exp)s"), {'amp': amp.id, 'exp': e})
+                raise e
+
+
+class ComputeDelete(BaseComputeTask):
+    def execute(self, amphora_id):
+        LOG.debug("Nova Delete execute for amphora with id %s" % amphora_id)
+
+        try:
+            self.compute.delete(amphora_id=amphora_id)
+        except Exception as e:
+            LOG.error(_LE("Nova delete for amphora id: %(amp)s failed:"
+                          "%(exp)s"), {'amp': amphora_id, 'exp': e})
+            raise e
+
+
 class ComputeWait(BaseComputeTask):
     """Wait for the compute driver to mark the amphora active."""
 

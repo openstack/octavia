@@ -46,6 +46,9 @@ class TestException(Exception):
         return repr(self.value)
 
 _amphora_mock = mock.MagicMock()
+_amphora_mock.compute_id = COMPUTE_ID
+_load_balancer_mock = mock.MagicMock()
+_load_balancer_mock.amphorae = [_amphora_mock]
 
 
 class TestComputeTasks(base.TestCase):
@@ -134,3 +137,19 @@ class TestComputeTasks(base.TestCase):
         self.assertRaises(exceptions.ComputeWaitTimeoutException,
                           computewait.execute,
                           _amphora_mock)
+
+    @mock.patch('stevedore.driver.DriverManager.driver')
+    def test_delete_amphorae_on_load_balancer(self, mock_driver):
+
+        delete_amps = compute_tasks.DeleteAmphoraeOnLoadBalancer()
+        delete_amps.execute(_load_balancer_mock)
+
+        mock_driver.delete.assert_called_once_with(amphora_id=COMPUTE_ID)
+
+    @mock.patch('stevedore.driver.DriverManager.driver')
+    def test_compute_delete(self, mock_driver):
+
+        delete_compute = compute_tasks.ComputeDelete()
+        delete_compute.execute(COMPUTE_ID)
+
+        mock_driver.delete.assert_called_once_with(amphora_id=COMPUTE_ID)
