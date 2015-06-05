@@ -1,0 +1,54 @@
+{#
+# Copyright 2015 Hewlett-Packard Development Company, L.P.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+#   Inspired by https://gist.github.com/gfrey/8472007
+#}
+
+description "Properly handle haproxy"
+
+start on startup
+
+env PID_PATH={{ haproxy_pid }}
+env BIN_PATH={{ haproxy_cmd }}
+env CONF_PATH={{ haproxy_cfg }}
+
+respawn
+respawn limit {{ respawn_count }} {{respawn_interval}}
+
+pre-start script
+    [ -r $CONF_PATH ]
+end script
+
+script
+exec /bin/bash <<EOF
+echo \$(date) Starting HAProxy
+$BIN_PATH -f $CONF_PATH -D -p $PID_PATH
+
+trap "$BIN_PATH -f $CONF_PATH -p $PID_PATH -sf \\\$(cat $PID_PATH)" SIGHUP
+trap "kill -TERM \\\$(cat $PID_PATH) && rm $PID_PATH;echo \\\$(date) Exiting HAProxy; exit 0" SIGTERM SIGINT
+
+while true; do # Iterate to keep job running.
+
+# Check if HAProxy has failed and re-spawn
+kill -0 \$(cat $PID_PATH)
+if [ \$? -ne 0 ]; then
+  echo \$(date) HAProxy failed. Respawning
+  exit 1
+fi
+
+sleep 1 # Don't sleep to long as signals will not be handled during sleep.
+done
+EOF
+end script

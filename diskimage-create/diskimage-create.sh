@@ -325,7 +325,7 @@ if [ "$AMP_ROOTPW" ]; then
     export DIB_PASSWORD=$AMP_ROOTPW
 fi
 
-# Add the Octavia Amphora agent element
+# Add the Octavia Amphora agent.py element
 AMP_element_sequence="$AMP_element_sequence amphora-agent"
 
 # Allow full elements override
