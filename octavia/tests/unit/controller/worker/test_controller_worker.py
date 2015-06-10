@@ -268,9 +268,10 @@ class TestControllerWorker(base.TestCase):
         cw.delete_listener(LB_ID)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
-                                    store={'listener': _listener_mock,
-                                           'vip': _vip_mock}))
+         assert_called_once_with(
+             _flow_mock, store={constants.LISTENER: _listener_mock,
+                                constants.VIP: _vip_mock,
+                                constants.LOADBALANCER: _load_balancer_mock}))
 
         _flow_mock.run.assert_called_once()
 

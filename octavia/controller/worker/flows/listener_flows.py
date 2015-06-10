@@ -47,13 +47,13 @@ class ListenerFlows(object):
         """
         delete_listener_flow = linear_flow.Flow(constants.DELETE_LISTENER_FLOW)
         delete_listener_flow.add(amphora_driver_tasks.ListenerDelete(
-            requires=['listener', 'vip']))
+            requires=[constants.LISTENER, constants.VIP]))
         delete_listener_flow.add(network_tasks.UpdateVIP(
             requires=constants.LOADBALANCER))
-        delete_listener_flow.add(database_tasks.MarkListenerDeletedInDB(
-            requires='listener'))
-        delete_listener_flow.add(database_tasks.
-                                 MarkLBActiveInDB(requires='loadbalancer'))
+        delete_listener_flow.add(database_tasks.DeleteListenerInDB(
+            requires=constants.LISTENER))
+        delete_listener_flow.add(database_tasks.MarkLBActiveInDB(
+            requires=constants.LOADBALANCER))
 
         return delete_listener_flow
 

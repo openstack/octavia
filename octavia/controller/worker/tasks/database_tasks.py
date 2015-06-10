@@ -153,6 +153,29 @@ class DeleteMemberInDB(BaseDatabaseTask):
 #                                operating_status=constants.ERROR)
 
 
+class DeleteListenerInDB(BaseDatabaseTask):
+    """Delete the listener in the DB."""
+
+    def execute(self, listener):
+        """Delete the listener in DB
+
+        :param listener: The listener to delete
+        :returns: None
+        """
+        LOG.debug(_LW("Delete in DB for listener id: %s") % listener.id)
+        self.listener_repo.delete(db_apis.get_session(), id=listener.id)
+
+    def revert(self, listener_id, *args, **kwargs):
+        """Mark the listener ERROR since the listener didn't delete
+
+        :returns: None
+        """
+
+        LOG.warn(_LW(
+            "Reverting mark listener delete in DB for listener id %s"),
+            listener_id)
+
+
 class DeletePoolInDB(BaseDatabaseTask):
     """Delete the pool in the DB.
 

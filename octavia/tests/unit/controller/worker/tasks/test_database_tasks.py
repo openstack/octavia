@@ -41,6 +41,8 @@ _loadbalancer_mock.id = LB_ID
 _loadbalancer_mock.amphorae = [_amphora_mock]
 _pool_mock = mock.MagicMock()
 _pool_mock.id = POOL_ID
+_listener_mock = mock.MagicMock()
+_listener_mock.id = LISTENER_ID
 _tf_failure_mock = mock.Mock(spec=failure.Failure)
 
 
@@ -110,6 +112,24 @@ class TestDatabaseTasks(base.TestCase):
 #            AMP_ID,
 #            status=constants.ERROR,
 #            compute_id=COMPUTE_ID)
+
+    @mock.patch('octavia.db.repositories.ListenerRepository.delete')
+    def test_delete_listener_in_db(self,
+                                   mock_listener_repo_delete,
+                                   mock_generate_uuid,
+                                   mock_LOG,
+                                   mock_get_session,
+                                   mock_loadbalancer_repo_update,
+                                   mock_listener_repo_update,
+                                   mock_amphora_repo_update,
+                                   mock_amphora_repo_delete):
+
+        delete_listener = database_tasks.DeleteListenerInDB()
+        delete_listener.execute(_listener_mock)
+
+        repo.ListenerRepository.delete.assert_called_once_with(
+            'TEST',
+            id=LISTENER_ID)
 
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.delete')
     def test_delete_health_monitor_in_db(self,
