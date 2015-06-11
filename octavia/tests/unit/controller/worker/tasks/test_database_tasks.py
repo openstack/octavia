@@ -39,6 +39,8 @@ _amphora_mock.lb_network_ip = LB_NET_IP
 _loadbalancer_mock = mock.MagicMock()
 _loadbalancer_mock.id = LB_ID
 _loadbalancer_mock.amphorae = [_amphora_mock]
+_pool_mock = mock.MagicMock()
+_pool_mock.id = POOL_ID
 _tf_failure_mock = mock.Mock(spec=failure.Failure)
 
 
@@ -178,11 +180,11 @@ class TestDatabaseTasks(base.TestCase):
                                mock_amphora_repo_delete):
 
         delete_pool = database_tasks.DeletePoolInDB()
-        delete_pool.execute(POOL_ID)
+        delete_pool.execute(_pool_mock)
 
         repo.PoolRepository.delete.assert_called_once_with(
             'TEST',
-            POOL_ID)
+            id=POOL_ID)
 
         # Test the revert
 

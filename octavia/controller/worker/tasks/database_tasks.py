@@ -159,16 +159,16 @@ class DeletePoolInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, pool_id):
+    def execute(self, pool):
         """Delete the pool in DB
 
-        :param pool_id: The pool ID to be deleted
+        :param pool: The pool to be deleted
         :returns: None
         """
 
         LOG.debug("Delete in DB for pool id: %s " %
-                  pool_id)
-        self.pool_repo.delete(db_apis.get_session(), pool_id)
+                  pool.id)
+        self.pool_repo.delete(db_apis.get_session(), id=pool.id)
 
     def revert(self, pool_id, *args, **kwargs):
         """Mark the pool ERROR since the delete couldn't happen

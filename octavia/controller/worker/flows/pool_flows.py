@@ -42,13 +42,14 @@ class PoolFlows(object):
         :returns: The flow for deleting a pool
         """
         delete_pool_flow = linear_flow.Flow(constants.DELETE_POOL_FLOW)
-        delete_pool_flow.add(model_tasks.
-                             DeleteModelObject(rebind={'object': 'pool'}))
+        delete_pool_flow.add(model_tasks.DeleteModelObject(
+            rebind={constants.OBJECT: constants.POOL}))
         delete_pool_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=['listener', 'vip']))
-        delete_pool_flow.add(database_tasks.DeletePoolInDB(requires='pool_id'))
+            requires=[constants.LISTENER, constants.VIP]))
+        delete_pool_flow.add(database_tasks.DeletePoolInDB(
+            requires=constants.POOL))
         delete_pool_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
-            requires=['loadbalancer', 'listener']))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
 
         return delete_pool_flow
 

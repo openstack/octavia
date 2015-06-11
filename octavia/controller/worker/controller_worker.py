@@ -417,16 +417,15 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         pool = self._pool_repo.get(db_apis.get_session(),
                                    id=pool_id)
 
+        load_balancer = pool.listener.load_balancer
         listener = pool.listener
-        listener.default_pool = pool
-        vip = listener.load_balancer.vip
+        vip = load_balancer.vip
 
-        delete_pool_tf = self._taskflow_load(self._pool_flows.
-                                             get_delete_pool_flow(),
-                                             store={'pool': pool,
-                                                    'pool_id': pool_id,
-                                                    'listener': listener,
-                                                    'vip': vip})
+        delete_pool_tf = self._taskflow_load(
+            self._pool_flows.get_delete_pool_flow(),
+            store={constants.POOL: pool, constants.LISTENER: listener,
+                   constants.LOADBALANCER: load_balancer,
+                   constants.VIP: vip})
         with tf_logging.DynamicLoggingListener(delete_pool_tf,
                                                log=LOG):
             delete_pool_tf.run()

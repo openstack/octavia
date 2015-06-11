@@ -107,6 +107,10 @@ class Pool(BaseDataModel):
         self.session_persistence = session_persistence
         self.listener = listener
 
+    def delete(self):
+        self.listener.default_pool = None
+        self.listener.default_pool_id = None
+
 
 class Member(BaseDataModel):
 

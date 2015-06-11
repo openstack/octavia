@@ -47,11 +47,10 @@ class TestPoolFlows(base.TestCase):
 
         self.assertIn('listener', pool_flow.requires)
         self.assertIn('loadbalancer', pool_flow.requires)
-        self.assertIn('pool', pool_flow.requires)
-        self.assertIn('pool_id', pool_flow.requires)
         self.assertIn('vip', pool_flow.requires)
+        self.assertIn('pool', pool_flow.requires)
 
-        self.assertEqual(len(pool_flow.requires), 5)
+        self.assertEqual(len(pool_flow.requires), 4)
         self.assertEqual(len(pool_flow.provides), 0)
 
     def test_get_update_pool_flow(self):
