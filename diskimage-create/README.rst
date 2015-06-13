@@ -32,7 +32,7 @@ git repositories one directory above the Octavia git repository.
  | /<some directory>/tripleo-image-elements
 
  | cd /<some directory>
- | git clone https://github.com/stackforge/octavia.git
+ | git clone https://github.com/openstack/octavia.git
  | git clone https://git.openstack.org/openstack/diskimage-builder.git
  | git clone https://git.openstack.org/openstack/tripleo-image-elements.git
 
@@ -160,7 +160,7 @@ ELEMENTS_REPO_PATH
 OCTAVIA_REPO_PATH
     - Directory containing octavia
     - <directory above the script location>
-    - Reference: https://github.com/stackforge/octavia
+    - Reference: https://github.com/openstack/octavia
 
 Container Support
 =================
