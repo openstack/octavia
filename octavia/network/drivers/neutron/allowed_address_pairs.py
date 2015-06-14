@@ -191,6 +191,12 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
             router_external=nw.get('router:external'))
 
     def deallocate_vip(self, vip):
+        port = self.neutron_client.show_port(vip.port_id)
+        admin_tenant_id = keystone.get_session().get_project_id()
+        if port.get('port').get('tenant_id') != admin_tenant_id:
+            LOG.info(_LI("Port {0} will not be deleted by Octavia as it was "
+                         "not created by Octavia.").format(vip.port_id))
+            return
         try:
             self.neutron_client.delete_port(vip.port_id)
         except neutron_client_exceptions.PortNotFoundClient as e:

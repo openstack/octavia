@@ -51,7 +51,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         client.list_extensions.return_value = {
             'extensions': [{'alias': allowed_address_pairs.AAP_EXT_ALIAS},
                            {'alias': allowed_address_pairs.SEC_GRP_EXT_ALIAS}]}
-        mock.patch('octavia.common.keystone.get_session').start()
+        self.k_session = mock.patch(
+            'octavia.common.keystone.get_session').start()
         self.driver = allowed_address_pairs.AllowedAddressPairsDriver()
 
     def test_check_extensions_loaded(self):
@@ -109,6 +110,12 @@ class TestAllowedAddressPairsDriver(base.TestCase):
 
     def test_deallocate_vip(self):
         vip = data_models.Vip(port_id='1')
+        admin_tenant_id = 'octavia'
+        session_mock = mock.MagicMock()
+        session_mock.get_project_id.return_value = admin_tenant_id
+        self.k_session.return_value = session_mock
+        show_port = self.driver.neutron_client.show_port
+        show_port.return_value = {'port': {'tenant_id': admin_tenant_id}}
         self.driver.deallocate_vip(vip)
         delete_port = self.driver.neutron_client.delete_port
         delete_port.side_effect = neutron_exceptions.PortNotFoundClient
@@ -117,6 +124,17 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         delete_port.side_effect = TypeError
         self.assertRaises(network_base.DeallocateVIPException,
                           self.driver.deallocate_vip, vip)
+
+    def test_deallocate_vip_when_port_not_owned_by_octavia(self):
+        vip = data_models.Vip(port_id='1')
+        session_mock = mock.MagicMock()
+        session_mock.get_project_id.return_value = 'octavia'
+        self.k_session.return_value = session_mock
+        show_port = self.driver.neutron_client.show_port
+        show_port.return_value = {'port': {'tenant_id': 'not-octavia'}}
+        delete_port = self.driver.neutron_client.delete_port
+        self.driver.deallocate_vip(vip)
+        self.assertFalse(delete_port.called)
 
     def test_plug_vip(self):
         interface_attach = self.driver.nova_client.servers.interface_attach
