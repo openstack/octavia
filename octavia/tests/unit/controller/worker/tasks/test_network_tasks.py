@@ -311,6 +311,12 @@ class TestNetworkTasks(base.TestCase):
         net.revert(["vip"], LB)
         mock_driver.unplug_vip.assert_called_once_with(LB, LB.vip)
 
+    def test_unplug_vip(self, mock_driver):
+        net = network_tasks.UnplugVIP()
+
+        net.execute(LB)
+        mock_driver.unplug_vip.assert_called_once_with(LB, LB.vip)
+
     def test_allocate_vip(self, mock_driver):
         net = network_tasks.AllocateVIP()
 
@@ -326,6 +332,7 @@ class TestNetworkTasks(base.TestCase):
 
     def test_deallocate_vip(self, mock_driver):
         net = network_tasks.DeallocateVIP()
-        vip_mock = mock.MagicMock()
-        net.execute(vip_mock)
-        mock_driver.deallocate_vip.assert_called_once_with(vip_mock)
+        vip = o_data_models.Vip()
+        lb = o_data_models.LoadBalancer(vip=vip)
+        net.execute(lb)
+        mock_driver.deallocate_vip.assert_called_once_with(lb.vip)

@@ -18,6 +18,7 @@ from taskflow.patterns import linear_flow
 
 from octavia.common import constants
 from octavia.controller.worker.tasks import amphora_driver_tasks
+from octavia.controller.worker.tasks import compute_tasks
 from octavia.controller.worker.tasks import controller_tasks
 from octavia.controller.worker.tasks import database_tasks
 from octavia.controller.worker.tasks import network_tasks
@@ -65,10 +66,17 @@ class LoadBalancerFlows(object):
         """
         delete_LB_flow = linear_flow.Flow(constants.DELETE_LOADBALANCER_FLOW)
         delete_LB_flow.add(controller_tasks.DeleteListenersOnLB(
-            requires='loadbalancer'))
-# TODO(johnsom) tear down the unplug vips? and networks
+            requires=constants.LOADBALANCER))
+        delete_LB_flow.add(network_tasks.UnplugVIP(
+            requires=constants.LOADBALANCER))
+        delete_LB_flow.add(compute_tasks.DeleteAmphoraeOnLoadBalancer(
+            requires=constants.LOADBALANCER))
+        delete_LB_flow.add(database_tasks.MarkLBAmphoraeDeletedInDB(
+            requires=constants.LOADBALANCER))
+        delete_LB_flow.add(network_tasks.DeallocateVIP(
+            requires=constants.LOADBALANCER))
         delete_LB_flow.add(database_tasks.MarkLBDeletedInDB(
-            requires='loadbalancer'))
+            requires=constants.LOADBALANCER))
 
         return delete_LB_flow
 
