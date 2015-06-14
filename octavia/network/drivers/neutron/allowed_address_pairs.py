@@ -18,6 +18,7 @@ from novaclient import client as nova_client
 from novaclient import exceptions as nova_client_exceptions
 from oslo_log import log as logging
 
+from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import keystone
 from octavia.i18n import _LE, _LI
@@ -133,8 +134,9 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
     def _update_security_group_rules(self, load_balancer, sec_grp_id):
         rules = self.neutron_client.list_security_group_rules(
             security_group_id=sec_grp_id)
-        updated_ports = [listener.protocol_port
-                         for listener in load_balancer.listeners]
+        updated_ports = [
+            listener.protocol_port for listener in load_balancer.listeners
+            if listener.provisioning_status != constants.PENDING_DELETE]
         # Just going to use port_range_max for now because we can assume that
         # port_range_max and min will be the same since this driver is
         # responsible for creating these rules
