@@ -99,25 +99,24 @@ class DeleteHealthMonitorInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, health_mon_id):
+    def execute(self, pool_id):
         """Delete the health monitor in DB
 
         :param health_mon_id: The health monitor id to delete
         :returns: None
         """
 
-        LOG.debug("DB delete health monitor for id: %s " %
-                  health_mon_id)
-        self.health_mon_repo.delete(db_apis.get_session(), health_mon_id)
+        LOG.debug("DB delete health monitor for id: %s " % pool_id)
+        self.health_mon_repo.delete(db_apis.get_session(), pool_id=pool_id)
 
-    def revert(self, health_mon_id, *args, **kwargs):
+    def revert(self, pool_id, *args, **kwargs):
         """Mark the health monitor ERROR since the mark active couldn't happen
 
         :returns: None
         """
 
         LOG.warn(_LW("Reverting mark health monitor delete in DB "
-                     "for health monitor id %s"), health_mon_id)
+                     "for health monitor on pool with id %s"), pool_id)
 # TODO(johnsom) fix this
 #        self.health_mon_repo.update(db_apis.get_session(), health_mon.id,
 #                                    provisioning_status=constants.ERROR)

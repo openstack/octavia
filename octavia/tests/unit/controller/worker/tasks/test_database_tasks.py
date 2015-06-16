@@ -30,7 +30,6 @@ else:
 
 AMP_ID = uuidutils.generate_uuid()
 COMPUTE_ID = uuidutils.generate_uuid()
-HM_ID = uuidutils.generate_uuid()
 LB_ID = uuidutils.generate_uuid()
 LB_NET_IP = '192.0.2.2'
 LISTENER_ID = uuidutils.generate_uuid()
@@ -63,7 +62,7 @@ class TestDatabaseTasks(base.TestCase):
     def setUp(self):
 
         self.health_mon_mock = mock.MagicMock()
-        self.health_mon_mock.pool_id = HM_ID
+        self.health_mon_mock.pool_id = POOL_ID
 
         self.listener_mock = mock.MagicMock()
         self.listener_mock.id = LISTENER_ID
@@ -148,21 +147,21 @@ class TestDatabaseTasks(base.TestCase):
                                          mock_amphora_repo_delete):
 
         delete_health_mon = database_tasks.DeleteHealthMonitorInDB()
-        delete_health_mon.execute(HM_ID)
+        delete_health_mon.execute(POOL_ID)
 
         repo.HealthMonitorRepository.delete.assert_called_once_with(
             'TEST',
-            HM_ID)
+            pool_id=POOL_ID)
 
         # Test the revert
 
         mock_health_mon_repo_delete.reset_mock()
-        delete_health_mon.revert(HM_ID)
+        delete_health_mon.revert(POOL_ID)
 
 # TODO(johnsom) fix once provisioning status added
 #        repo.HealthMonitorRepository.update.assert_called_once_with(
 #            'TEST',
-#            HM_ID,
+#            POOL_ID,
 #            provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.MemberRepository.delete')
@@ -720,7 +719,7 @@ class TestDatabaseTasks(base.TestCase):
 
         repo.HealthMonitorRepository.update.assert_called_once_with(
             'TEST',
-            HM_ID,
+            POOL_ID,
             delay=1, timeout=2)
 
         # Test the revert
@@ -731,7 +730,7 @@ class TestDatabaseTasks(base.TestCase):
 # TODO(johnsom) fix this to set the upper ojects to ERROR
         repo.HealthMonitorRepository.update.assert_called_once_with(
             'TEST',
-            HM_ID,
+            POOL_ID,
             enabled=0)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')

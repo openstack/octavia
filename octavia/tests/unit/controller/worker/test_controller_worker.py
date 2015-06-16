@@ -192,8 +192,9 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={'health_mon': _health_mon_mock,
-                                           'health_mon_id': HM_ID,
+                                           'pool_id': HM_ID,
                                            'listener': _listener_mock,
+                                           'loadbalancer': _load_balancer_mock,
                                            'vip': _vip_mock}))
 
         _flow_mock.run.assert_called_once()

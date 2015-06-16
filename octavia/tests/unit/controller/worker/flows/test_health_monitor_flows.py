@@ -48,7 +48,7 @@ class TestHealthMonitorFlows(base.TestCase):
         self.assertIsInstance(health_mon_flow, flow.Flow)
 
         self.assertIn('health_mon', health_mon_flow.requires)
-        self.assertIn('health_mon_id', health_mon_flow.requires)
+        self.assertIn('pool_id', health_mon_flow.requires)
         self.assertIn('listener', health_mon_flow.requires)
         self.assertIn('vip', health_mon_flow.requires)
 
