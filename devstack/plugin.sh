@@ -5,7 +5,7 @@
 function octavia_install {
 
     setup_develop $OCTAVIA_DIR
-    sudo apt-get -y install qemu kpartx
+    install_package qemu kpartx
     git_clone https://git.openstack.org/openstack/diskimage-builder.git $DEST/diskimage-builder master
     git_clone https://git.openstack.org/openstack/tripleo-image-elements.git $DEST/tripleo-image-elements master
     sudo pip install -r $DEST/diskimage-builder/requirements.txt
