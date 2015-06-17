@@ -12,8 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo import messaging
 from oslo_log import log as logging
+import oslo_messaging as messaging
 
 from octavia.common import constants
 from octavia.controller.worker import controller_worker

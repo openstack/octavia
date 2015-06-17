@@ -15,7 +15,7 @@
 
 import logging
 
-from oslo.config import cfg
+from oslo_config import cfg
 from stevedore import driver as stevedore_driver
 from taskflow import task
 from taskflow.types import failure

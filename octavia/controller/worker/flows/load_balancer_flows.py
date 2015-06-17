@@ -13,7 +13,7 @@
 # under the License.
 #
 
-from oslo.config import cfg
+from oslo_config import cfg
 from taskflow.patterns import linear_flow
 
 from octavia.common import constants

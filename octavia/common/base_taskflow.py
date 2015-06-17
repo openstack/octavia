@@ -14,7 +14,7 @@
 #
 
 import concurrent.futures
-from oslo.config import cfg
+from oslo_config import cfg
 from taskflow import engines as tf_engines
 
 

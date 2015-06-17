@@ -15,8 +15,8 @@
 
 import concurrent.futures
 import mock
-from oslo.config import cfg
-from oslo.config import fixture as oslo_fixture
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from taskflow import engines as tf_engines
 
 from octavia.common import base_taskflow

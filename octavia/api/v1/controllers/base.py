@@ -12,7 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo.config import cfg
+from oslo_config import cfg
 from pecan import rest
 from stevedore import driver as stevedore_driver
 
