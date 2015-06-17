@@ -195,12 +195,13 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         """
         listener = self._listener_repo.get(db_apis.get_session(),
                                            id=listener_id)
-        vip = listener.load_balancer.vip
+        load_balancer = listener.load_balancer
+        vip = load_balancer.vip
 
-        delete_listener_tf = self._taskflow_load(self._listener_flows.
-                                                 get_delete_listener_flow(),
-                                                 store={'listener': listener,
-                                                        'vip': vip})
+        delete_listener_tf = self._taskflow_load(
+            self._listener_flows.get_delete_listener_flow(),
+            store={constants.LOADBALANCER: load_balancer,
+                   constants.LISTENER: listener, constants.VIP: vip})
         with tf_logging.DynamicLoggingListener(delete_listener_tf,
                                                log=LOG):
             delete_listener_tf.run()
