@@ -16,6 +16,7 @@ import mock
 from neutronclient.common import exceptions as neutron_exceptions
 from novaclient.client import exceptions as nova_exceptions
 
+from octavia.common import constants
 from octavia.common import data_models
 from octavia.network import base as network_base
 from octavia.network.drivers.neutron import allowed_address_pairs
@@ -341,3 +342,25 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             }
         }
         create_rule.assert_called_once_with(expected_create_rule)
+
+    def test_update_vip_when_listener_deleted(self):
+        listeners = [data_models.Listener(protocol_port=80),
+                     data_models.Listener(
+                         protocol_port=443,
+                         provisioning_status=constants.PENDING_DELETE)]
+        lb = data_models.LoadBalancer(id='1', listeners=listeners)
+        list_sec_grps = self.driver.neutron_client.list_security_groups
+        list_sec_grps.return_value = {'security_groups': [{'id': 'secgrp-1'}]}
+        fake_rules = {
+            'security_group_rules': [
+                {'id': 'rule-80', 'port_range_max': 80},
+                {'id': 'rule-22', 'port_range_max': 443}
+            ]
+        }
+        list_rules = self.driver.neutron_client.list_security_group_rules
+        list_rules.return_value = fake_rules
+        delete_rule = self.driver.neutron_client.delete_security_group_rule
+        create_rule = self.driver.neutron_client.create_security_group_rule
+        self.driver.update_vip(lb)
+        delete_rule.assert_called_once_with('rule-22')
+        self.assertFalse(create_rule.called)
