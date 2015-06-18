@@ -11,7 +11,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 from oslo_utils import uuidutils
 
 from octavia.common import constants
@@ -122,7 +121,7 @@ class TestLoadBalancer(base.BaseAPITest):
         api_lb = response.json
         r_vip = api_lb.get('vip')
         self.assertIsNone(r_vip.get('network_id'))
-        self.assertEqual('lb2', api_lb.get('name'))
+        self.assertEqual('lb1', api_lb.get('name'))
         self.assertEqual('desc1', api_lb.get('description'))
         self.assertFalse(api_lb.get('enabled'))
         self.assertEqual(constants.PENDING_UPDATE,

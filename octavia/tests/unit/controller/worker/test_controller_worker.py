@@ -414,7 +414,8 @@ class TestControllerWorker(base.TestCase):
                                   mock_amp_repo_get):
 
         cw = controller_worker.ControllerWorker()
-        cw.update_load_balancer(LB_ID, 'TEST2')
+        change = 'TEST2'
+        cw.update_load_balancer(LB_ID, change)
 
         mock_lb_repo_get.assert_called_once_with(
             'TEST',
@@ -422,8 +423,9 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={'loadbalancer':
-                                           _load_balancer_mock}))
+                                    store={'update_dict': change,
+                                           'loadbalancer':
+                                               _load_balancer_mock}))
 
         _flow_mock.run.assert_called_once()
 

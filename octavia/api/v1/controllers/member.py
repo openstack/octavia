@@ -70,11 +70,11 @@ class MembersController(base.BaseController):
         member_dict['operating_status'] = constants.OFFLINE
         # Verify load balancer is in a mutable status.  If so it can be assumed
         # that the listener is also in a mutable status because a load balancer
-        # will only be ACTIVE when all it's listeners as ACTIVE.
+        # will only be ACTIVE when all its listeners as ACTIVE.
         if not self.repositories.test_and_set_lb_and_listener_prov_status(
                 session, self.load_balancer_id, self.listener_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE):
-            LOG.info(_LI("Member cannot be created because it's Load "
+            LOG.info(_LI("Member cannot be created because its Load "
                          "Balancer is in an immutable state."))
             lb_repo = self.repositories.load_balancer
             db_lb = lb_repo.get(session, id=self.load_balancer_id)
@@ -116,18 +116,16 @@ class MembersController(base.BaseController):
     def put(self, id, member):
         """Updates a pool member."""
         session = db_api.get_session()
-        old_db_member = self.repositories.member.get(session, id=id)
-        if not old_db_member:
-            LOG.info(_LI("Member %s cannot be updated because it's Load "
+        db_member = self.repositories.member.get(session, id=id)
+        if not db_member:
+            LOG.info(_LI("Member %s cannot be updated because its Load "
                          "Balancer is in an immutable state.") % id)
             LOG.info(_LI("Member %s not found") % id)
             raise exceptions.NotFound(
                 resource=data_models.Member._name(), id=id)
-        member_dict = member.to_dict(render_unsets=False)
-        member_dict['operating_status'] = old_db_member.operating_status
         # Verify load balancer is in a mutable status.  If so it can be assumed
         # that the listener is also in a mutable status because a load balancer
-        # will only be ACTIVE when all it's listeners as ACTIVE.
+        # will only be ACTIVE when all its listeners as ACTIVE.
         if not self.repositories.test_and_set_lb_and_listener_prov_status(
                 session, self.load_balancer_id, self.listener_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE):
@@ -136,30 +134,14 @@ class MembersController(base.BaseController):
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
         try:
-            self.repositories.member.update(session, id, **member_dict)
-        except oslo_exc.DBDuplicateEntry:
-            # Setting LB and Listener back to active because this is just a
-            # validation failure
-            self.repositories.load_balancer.update(
-                session, self.load_balancer_id,
-                provisioning_status=constants.ACTIVE)
-            self.repositories.listener.update(
-                session, self.listener_id,
-                provisioning_status=constants.ACTIVE)
-            raise exceptions.DuplicateMemberEntry(
-                ip_address=member_dict.get('ip_address'),
-                port=member_dict.get('protocol_port'))
-        db_member = self.repositories.member.get(session, id=id)
-        try:
-            LOG.info(_LI("Sending Update of Member %s to handler") %
-                     db_member.id)
-            self.handler.update(db_member)
+            LOG.info(_LI("Sending Update of Member %s to handler") % id)
+            self.handler.update(db_member, member)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.listener.update(
                     session, self.listener_id,
                     operating_status=constants.ERROR)
-        db_member = self.repositories.member.get(session, id=db_member.id)
+        db_member = self.repositories.member.get(session, id=id)
         return self._convert_db_to_type(db_member, member_types.MemberResponse)
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
@@ -173,11 +155,11 @@ class MembersController(base.BaseController):
                 resource=data_models.Member._name(), id=id)
         # Verify load balancer is in a mutable status.  If so it can be assumed
         # that the listener is also in a mutable status because a load balancer
-        # will only be ACTIVE when all it's listeners as ACTIVE.
+        # will only be ACTIVE when all its listeners as ACTIVE.
         if not self.repositories.test_and_set_lb_and_listener_prov_status(
                 session, self.load_balancer_id, self.listener_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE):
-            LOG.info(_LI("Member %s cannot be deleted because it's Load "
+            LOG.info(_LI("Member %s cannot be deleted because its Load "
                          "Balancer is in an immutable state.") % id)
             lb_repo = self.repositories.load_balancer
             db_lb = lb_repo.get(session, id=self.load_balancer_id)

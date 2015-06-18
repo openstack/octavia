@@ -155,56 +155,25 @@ class ListenersController(base.BaseController):
         """Updates a listener on a load balancer."""
         self._secure_data(listener)
         session = db_api.get_session()
-        old_db_listener = self.repositories.listener.get(session, id=id)
-        if not old_db_listener:
+        db_listener = self.repositories.listener.get(session, id=id)
+        if not db_listener:
             LOG.info(_LI("Listener %s not found.") % id)
             raise exceptions.NotFound(
                 resource=data_models.Listener._name(), id=id)
         # Verify load balancer is in a mutable status.  If so it can be assumed
         # that the listener is also in a mutable status because a load balancer
         # will only be ACTIVE when all it's listeners as ACTIVE.
-
         self._test_lb_status_put(session, id)
-        listener_dict = listener.to_dict(render_unsets=False)
-        listener_dict['operating_status'] = old_db_listener.operating_status
-        # NOTE(blogan): Throwing away because we should not store secure data
-        # in the database nor should we send it to a handler.
-        if 'tls_termination' in listener_dict:
-            del listener_dict['tls_termination']
         try:
-            self.repositories.listener.update(session, id, **listener_dict)
-        except odb_exceptions.DBDuplicateEntry:
-            # Setting LB and Listener back to active because this is just a
-            # validation failure
-            self.repositories.load_balancer.update(
-                session, self.load_balancer_id,
-                provisioning_status=constants.ACTIVE)
-            self.repositories.listener.update(
-                session, id, provisioning_status=constants.ACTIVE)
-            raise exceptions.DuplicateListenerEntry(
-                port=listener_dict.get('protocol_port'))
-        except odb_exceptions.DBError:
-            # Setting LB and Listener back to active because this is just a
-            # validation failure
-            self.repositories.load_balancer.update(
-                session, self.load_balancer_id,
-                provisioning_status=constants.ACTIVE)
-            self.repositories.listener.update(
-                session, id, provisioning_status=constants.ACTIVE)
-            raise exceptions.InvalidOption(value=listener_dict.get('protocol'),
-                                           option='protocol')
-        db_listener = self.repositories.listener.get(session, id=id)
-        try:
-            LOG.info(_LI("Sending Update of Listener %s to handler") %
-                     db_listener.id)
-            self.handler.update(db_listener)
+            LOG.info(_LI("Sending Update of Listener %s to handler") % id)
+            self.handler.update(db_listener, listener)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.listener.update(
-                    session, db_listener.id,
-                    provisioning_status=constants.ERROR)
-        db_lb = self.repositories.listener.get(session, id=db_listener.id)
-        return self._convert_db_to_type(db_lb, listener_types.ListenerResponse)
+                    session, id, provisioning_status=constants.ERROR)
+        db_listener = self.repositories.listener.get(session, id=id)
+        return self._convert_db_to_type(db_listener,
+                                        listener_types.ListenerResponse)
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
     def delete(self, id):

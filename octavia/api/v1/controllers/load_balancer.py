@@ -94,8 +94,8 @@ class LoadBalancersController(base.BaseController):
         session = db_api.get_session()
         # Purely to make lines smaller length
         lb_repo = self.repositories.load_balancer
-        old_db_lb = self.repositories.load_balancer.get(session, id=id)
-        if not old_db_lb:
+        db_lb = self.repositories.load_balancer.get(session, id=id)
+        if not db_lb:
             LOG.info(_LI("Load Balancer %s was not found.") % id)
             raise exceptions.NotFound(
                 resource=data_models.LoadBalancer._name(), id=id)
@@ -103,22 +103,18 @@ class LoadBalancersController(base.BaseController):
         if not lb_repo.test_and_set_provisioning_status(
                 session, id, constants.PENDING_UPDATE):
             LOG.info(_LI("Load Balancer %s is immutable.") % id)
-            raise exceptions.ImmutableObject(resource=old_db_lb._name(),
+            raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=id)
-        lb_dict = load_balancer.to_dict(render_unsets=False)
-        lb_dict['operating_status'] = old_db_lb.operating_status
-        self.repositories.load_balancer.update(
-            session, id, **lb_dict)
-        db_lb = self.repositories.load_balancer.get(session, id=id)
         try:
             LOG.info(_LI("Sending updated Load Balancer %s to the handler") %
-                     db_lb.id)
-            self.handler.update(db_lb)
+                     id)
+            self.handler.update(db_lb, load_balancer)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.load_balancer.update(
-                    session, db_lb.id, provisioning_status=constants.ERROR)
-        return self._convert_db_to_type(db_lb, lb_types.LoadBalancerResponse)
+                    session, id, provisioning_status=constants.ERROR)
+        lb = self.repositories.load_balancer.get(session, id=id)
+        return self._convert_db_to_type(lb, lb_types.LoadBalancerResponse)
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
     def delete(self, id):

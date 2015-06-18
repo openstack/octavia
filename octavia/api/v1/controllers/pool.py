@@ -154,8 +154,8 @@ class PoolsController(base.BaseController):
     def put(self, id, pool):
         """Updates a pool on a listener."""
         session = db_api.get_session()
-        old_db_pool = self.repositories.pool.get(session, id=id)
-        if not old_db_pool:
+        db_pool = self.repositories.pool.get(session, id=id)
+        if not db_pool:
             LOG.info(_LI("Pool %s not found.") % id)
             raise exceptions.NotFound(resource=data_models.Pool._name(), id=id)
         # Verify load balancer is in a mutable status.  If so it can be assumed
@@ -163,37 +163,15 @@ class PoolsController(base.BaseController):
         # will only be ACTIVE when all it's listeners as ACTIVE.
         self._test_lb_status_put(session)
 
-        pool_dict = pool.to_dict(render_unsets=False)
-        pool_dict['operating_status'] = old_db_pool.operating_status
-        sp_dict = pool_dict.pop('session_persistence', None)
-
         try:
-            self.repositories.update_pool_on_listener(session, id, pool_dict,
-                                                      sp_dict)
-        except odb_exceptions.DBError:
-            # Setting LB and Listener back to active because this is just a
-            # validation failure
-            self.repositories.load_balancer.update(
-                session, self.load_balancer_id,
-                provisioning_status=constants.ACTIVE)
-            self.repositories.listener.update(
-                session, self.listener_id,
-                provisioning_status=constants.ACTIVE)
-            # TODO(blogan): will have to do separate validation protocol
-            # before creation or update since the exception messages
-            # do not give any information as to what constraint failed
-            raise exceptions.InvalidOption(value='', option='')
-        db_pool = self.repositories.pool.get(session, id=id)
-        try:
-            LOG.info(_LI("Sending Update of Pool %s to handler") %
-                     db_pool.id)
-            self.handler.update(db_pool)
+            LOG.info(_LI("Sending Update of Pool %s to handler") % id)
+            self.handler.update(db_pool, pool)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.listener.update(
                     session, self.listener_id,
                     operating_status=constants.ERROR)
-        db_pool = self.repositories.pool.get(session, id=db_pool.id)
+        db_pool = self.repositories.pool.get(session, id=id)
         return self._convert_db_to_type(db_pool, pool_types.PoolResponse)
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
