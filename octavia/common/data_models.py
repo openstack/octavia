@@ -128,6 +128,12 @@ class Member(BaseDataModel):
         self.operating_status = operating_status
         self.pool = pool
 
+    def delete(self):
+        for mem in self.pool.members:
+            if mem.id == self.id:
+                self.pool.members.remove(mem)
+                break
+
 
 class Listener(BaseDataModel):
 

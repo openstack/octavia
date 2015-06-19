@@ -475,11 +475,12 @@ class TestControllerWorker(base.TestCase):
         cw.delete_member(MEMBER_ID)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
-                                    store={'member': _member_mock,
-                                           'member_id': MEMBER_ID,
-                                           'listener': _listener_mock,
-                                           'vip': _vip_mock}))
+            assert_called_once_with(
+                _flow_mock, store={'member': _member_mock,
+                                   'member_id': MEMBER_ID,
+                                   'listener': _listener_mock,
+                                   'vip': _vip_mock,
+                                   'loadbalancer': _load_balancer_mock}))
 
         _flow_mock.run.assert_called_once()
 

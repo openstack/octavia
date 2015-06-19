@@ -138,7 +138,7 @@ class DeleteMemberInDB(BaseDatabaseTask):
 
         LOG.debug("DB delete member for id: %s " %
                   member_id)
-        self.member_repo.delete(db_apis.get_session(), member_id)
+        self.member_repo.delete(db_apis.get_session(), id=member_id)
 
     def revert(self, member_id, *args, **kwargs):
         """Mark the member ERROR since the delete couldn't happen
