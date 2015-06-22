@@ -1,17 +1,17 @@
 # The order of packages is significant, because pip processes them in the order
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
-hacking>=0.9.1,<0.10
+hacking<0.10,>=0.9.1
 
-cliff>=1.10.0  # Apache-2.0
+cliff>=1.10.0 # Apache-2.0
 coverage>=3.6
 discover
 fixtures>=0.3.14
 mock>=1.0
 python-subunit>=0.0.18
 ordereddict
-oslotest>=1.5.1  # Apache-2.0
+oslotest>=1.5.1 # Apache-2.0
 testrepository>=0.0.18
-testtools>=0.9.36,!=1.2.0
+testtools>=1.4.0
 WebTest>=2.0
-doc8  # Apache-2.0
+doc8 # Apache-2.0
