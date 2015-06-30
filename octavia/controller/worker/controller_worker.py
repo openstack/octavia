@@ -342,14 +342,14 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         listener = member.pool.listener
         listener.default_pool = member.pool
-        vip = listener.load_balancer.vip
+        load_balancer = listener.load_balancer
+        vip = load_balancer.vip
 
-        delete_member_tf = self._taskflow_load(self._member_flows.
-                                               get_delete_member_flow(),
-                                               store={'member': member,
-                                                      'member_id': member_id,
-                                                      'listener': listener,
-                                                      'vip': vip})
+        delete_member_tf = self._taskflow_load(
+            self._member_flows.get_delete_member_flow(),
+            store={'member': member, 'member_id': member_id,
+                   'listener': listener, 'vip': vip,
+                   'loadbalancer': load_balancer})
         with tf_logging.DynamicLoggingListener(delete_member_tf,
                                                log=LOG):
             delete_member_tf.run()

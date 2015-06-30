@@ -176,7 +176,7 @@ class TestDatabaseTasks(base.TestCase):
 
         repo.MemberRepository.delete.assert_called_once_with(
             'TEST',
-            MEMBER_ID)
+            id=MEMBER_ID)
 
         # Test the revert
 
