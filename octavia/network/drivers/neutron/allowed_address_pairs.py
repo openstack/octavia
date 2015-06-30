@@ -174,7 +174,7 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
         except neutron_client_exceptions.PortNotFoundClient as e:
             raise base.PortNotFound(e.message)
         except Exception as e:
-            raise base.PlugVIPException(e.message)
+            raise base.PlugVIPException(str(e))
 
     def _add_vip_security_group_to_amphorae(self, load_balancer_id, amphora):
         sec_grp = self._get_lb_security_group(load_balancer_id)

@@ -14,15 +14,20 @@
 
 import logging
 
-import mock
 import pecan
 import pecan.testing
+import six
 
 from octavia.api import config as pconfig
 from octavia.common import constants
 from octavia.db import api as db_api
 from octavia.db import repositories
 from octavia.tests.functional.db import base as base_db_test
+
+if six.PY2:
+    import mock
+else:
+    import unittest.mock as mock
 
 
 LOG = logging.getLogger(__name__)

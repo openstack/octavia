@@ -15,5 +15,9 @@
 
 import gettext
 
+import six
 
-gettext.install('octavia', unicode=1)
+if six.PY2:
+    gettext.install('octavia', unicode=1)
+else:
+    gettext.install('octavia')

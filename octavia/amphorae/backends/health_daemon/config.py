@@ -15,7 +15,7 @@
 import collections
 import json
 
-import singleton
+import octavia.amphorae.backends.health_daemon.singleton as singleton
 
 
 @singleton.singleton

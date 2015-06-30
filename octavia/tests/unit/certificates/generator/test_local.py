@@ -38,7 +38,7 @@ class TestLocalGenerator(base.TestCase):
         ca_key = crypto.PKey()
         ca_key.generate_key(crypto.TYPE_RSA, 2048)
 
-        self.ca_private_key_passphrase = "Testing"
+        self.ca_private_key_passphrase = b"Testing"
         self.ca_private_key = crypto.dump_privatekey(
             crypto.FILETYPE_PEM,
             ca_key,
@@ -77,14 +77,17 @@ class TestLocalGenerator(base.TestCase):
             ca_digest=self.signing_digest
         )
 
-        self.assertIn("-----BEGIN CERTIFICATE-----", signed_cert)
+        self.assertIn("-----BEGIN CERTIFICATE-----",
+                      signed_cert.decode('ascii'))
 
         # Load the cert for specific tests
         cert = crypto.load_certificate(crypto.FILETYPE_PEM, signed_cert)
 
         # Make sure expiry time is accurate
-        expires = datetime.datetime.strptime(cert.get_notAfter(),
-                                             '%Y%m%d%H%M%SZ')
+        expires = datetime.datetime.strptime(
+            cert.get_notAfter().decode('ascii'),
+            '%Y%m%d%H%M%SZ'
+        )
         should_expire = (datetime.datetime.utcnow() +
                          datetime.timedelta(seconds=2 * 365 * 24 * 60 * 60))
         diff = should_expire - expires

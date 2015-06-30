@@ -13,16 +13,26 @@
 #    under the License.
 import os
 
-import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
+import six
 
 import octavia.certificates.common.cert as cert
 import octavia.certificates.manager.local as local_cert_mgr
 import octavia.tests.unit.base as base
 
+if six.PY2:
+    import __builtin__ as builtins
 
-class TestLocalGenerator(base.TestCase):
+    import mock
+else:
+
+    import builtins
+
+    import unittest.mock as mock
+
+
+class TestLocalManager(base.TestCase):
 
     def setUp(self):
         self.certificate = "My Certificate"
@@ -33,12 +43,12 @@ class TestLocalGenerator(base.TestCase):
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="certificates", storage_path="/tmp/")
 
-        super(TestLocalGenerator, self).setUp()
+        super(TestLocalManager, self).setUp()
 
     def _store_cert(self):
         file_mock = mock.mock_open()
         # Attempt to store the cert
-        with mock.patch('__builtin__.open', file_mock, create=True):
+        with mock.patch.object(builtins, 'open', file_mock):
             cert_id = local_cert_mgr.LocalCertManager.store_cert(
                 certificate=self.certificate,
                 intermediates=self.intermediates,
@@ -70,7 +80,7 @@ class TestLocalGenerator(base.TestCase):
     def _get_cert(self, cert_id):
         file_mock = mock.mock_open()
         # Attempt to retrieve the cert
-        with mock.patch('__builtin__.open', file_mock, create=True):
+        with mock.patch.object(builtins, 'open', file_mock):
             data = local_cert_mgr.LocalCertManager.get_cert(cert_id)
 
         # Verify the correct files were opened

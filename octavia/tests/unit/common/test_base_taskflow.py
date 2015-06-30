@@ -14,13 +14,18 @@
 #
 
 import concurrent.futures
-import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
+import six
 from taskflow import engines as tf_engines
 
 from octavia.common import base_taskflow
 import octavia.tests.unit.base as base
+
+if six.PY2:
+    import mock
+else:
+    import unittest.mock as mock
 
 MAX_WORKERS = 1
 

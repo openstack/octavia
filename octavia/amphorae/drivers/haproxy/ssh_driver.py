@@ -17,6 +17,7 @@ import time
 
 from oslo_log import log as logging
 import paramiko
+import six
 
 from octavia.amphorae.driver_exceptions import exceptions as exc
 from octavia.amphorae.drivers import driver_base as driver_base
@@ -198,7 +199,8 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
         return stdout, stderr
 
     def _connect(self, hostname):
-        for attempts in xrange(self.amp_config.connection_max_retries):
+        for attempts in six.moves.xrange(
+                self.amp_config.connection_max_retries):
             try:
                 self.client.connect(hostname=hostname,
                                     username=self.amp_config.username,
@@ -274,7 +276,7 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
         # Write data to temp file to prepare for upload
         for datum in data:
             temp = tempfile.NamedTemporaryFile(delete=True)
-            temp.write(datum)
+            temp.write(datum.encode('ascii'))
             temp.flush()
             temps.append(temp)
 

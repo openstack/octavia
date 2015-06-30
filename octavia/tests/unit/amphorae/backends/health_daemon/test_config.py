@@ -34,13 +34,17 @@ class TestConfig(base.TestCase):
                         matchers.raises(IOError))
 
     def test_config(self):
+        def check_update():
+            self.assertFalse(self.update_called)
+            self.update_called = True
+
         cfg = config.JSONFileConfig()
         cfg.set_filename(self.sampleconfig[1])
 
         # Check the singleton decorator
         self.assertIs(cfg, config.JSONFileConfig())
 
-        cfg.add_observer(self.check_update)
+        cfg.add_observer(check_update)
 
         self.update_called = False
         cfg.check_update()
@@ -60,13 +64,13 @@ class TestConfig(base.TestCase):
         self.assertIs(cfg['delay'], 5)
 
         # Check for removing an observer - Thanks Stephen
-        cfg.remove_observer(self.check_update)
+        cfg.remove_observer(check_update)
         self.update_called = False
         cfg.check_update()
         self.assertFalse(self.update_called)
 
         # Better add it back for the next test
-        cfg.add_observer(self.check_update)
+        cfg.add_observer(check_update)
 
         # Next, replace the file (new inode)
         self.remove_config_file()
@@ -79,10 +83,6 @@ class TestConfig(base.TestCase):
         self.assertTrue(self.update_called)
 
         self.assertIs(cfg['delay'], 3)
-
-    def check_update(self):
-        self.assertFalse(self.update_called)
-        self.update_called = True
 
     def setup_config_file(self):
         self.sampleconfig = tempfile.mkstemp()

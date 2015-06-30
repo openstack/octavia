@@ -15,12 +15,17 @@ import uuid
 
 from barbicanclient import containers
 from barbicanclient import secrets
-import mock
+import six
 
 import octavia.certificates.common.barbican as barbican_common
 import octavia.certificates.common.cert as cert
 import octavia.certificates.manager.barbican as barbican_cert_mgr
 import octavia.tests.unit.base as base
+
+if six.PY2:
+    import mock
+else:
+    import unittest.mock as mock
 
 
 class TestBarbicanManager(base.TestCase):
