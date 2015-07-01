@@ -97,7 +97,7 @@ class TestVip(base.BaseTypesTest):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
-    def test_invalid_network_id(self):
-        body = {"network_id": "invalid_uuid"}
+    def test_invalid_subnet_id(self):
+        body = {"subnet_id": "invalid_uuid"}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)

@@ -21,7 +21,7 @@ class VIP(base.BaseType):
     """Defines the response and acceptable POST request attributes."""
     ip_address = wtypes.wsattr(base.IPAddressType())
     port_id = wtypes.wsattr(wtypes.UuidType())
-    network_id = wtypes.wsattr(wtypes.UuidType())
+    subnet_id = wtypes.wsattr(wtypes.UuidType())
 
 
 class LoadBalancerResponse(base.BaseType):

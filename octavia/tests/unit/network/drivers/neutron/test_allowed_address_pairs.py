@@ -33,11 +33,13 @@ class MockNovaInterface(object):
 MOCK_NOVA_INTERFACE = MockNovaInterface()
 MOCK_NOVA_INTERFACE.net_id = '1'
 MOCK_NOVA_INTERFACE.port_id = '2'
-MOCK_NOVA_INTERFACE.fixed_ips = [{'ip_address': '10.0.0.1'}]
+MOCK_NOVA_INTERFACE.fixed_ips = [{'ip_address': '10.0.0.1', 'subnet_id': '10'}]
+MOCK_SUBNET = {'subnet': {'id': '10', 'network_id': '1'}}
 
 MOCK_NEUTRON_PORT = {'port': {'network_id': '1',
                               'id': '2',
-                              'fixed_ips': [{'ip_address': '10.0.0.1'}]}}
+                              'fixed_ips': [{'ip_address': '10.0.0.1',
+                                             'subnet_id': '10'}]}}
 
 
 class TestAllowedAddressPairsDriver(base.TestCase):
@@ -70,8 +72,9 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertEqual(
             MOCK_NEUTRON_PORT['port']['fixed_ips'][0]['ip_address'],
             vip.ip_address)
-        self.assertEqual(MOCK_NEUTRON_PORT['port']['network_id'],
-                         vip.network_id)
+        self.assertEqual(
+            MOCK_NEUTRON_PORT['port']['fixed_ips'][0]['subnet_id'],
+            vip.subnet_id)
         self.assertEqual(MOCK_NEUTRON_PORT['port']['id'], vip.port_id)
         self.assertEqual(fake_lb_id, vip.load_balancer_id)
 
@@ -165,7 +168,6 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                                  [{'ip_address': lb.vip.ip_address}]}}
         interface_list = self.driver.nova_client.servers.interface_list
         if1 = MOCK_NOVA_INTERFACE
-        if1.net_id = lb.vip.network_id
         if2 = MockNovaInterface()
         if2.net_id = '3'
         if2.port_id = '4'
@@ -193,23 +195,25 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertEqual(
             MOCK_NEUTRON_PORT['port']['fixed_ips'][0]['ip_address'],
             vip.ip_address)
-        self.assertEqual(MOCK_NEUTRON_PORT['port']['network_id'],
-                         vip.network_id)
+        self.assertEqual(
+            MOCK_NEUTRON_PORT['port']['fixed_ips'][0]['subnet_id'],
+            vip.subnet_id)
         self.assertEqual(MOCK_NEUTRON_PORT['port']['id'], vip.port_id)
         self.assertIsNone(vip.load_balancer_id)
 
         create_port = self.driver.neutron_client.create_port
         create_port.return_value = MOCK_NEUTRON_PORT
         fake_lb_vip = data_models.Vip(
-            network_id=MOCK_NEUTRON_PORT['port']['network_id'])
+            subnet_id=MOCK_NEUTRON_PORT['port']['fixed_ips'][0]['subnet_id'])
         fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip)
         vip = self.driver.allocate_vip(fake_lb)
         self.assertIsInstance(vip, data_models.Vip)
         self.assertEqual(
             MOCK_NEUTRON_PORT['port']['fixed_ips'][0]['ip_address'],
             vip.ip_address)
-        self.assertEqual(MOCK_NEUTRON_PORT['port']['network_id'],
-                         vip.network_id)
+        self.assertEqual(
+            MOCK_NEUTRON_PORT['port']['fixed_ips'][0]['subnet_id'],
+            vip.subnet_id)
         self.assertEqual(MOCK_NEUTRON_PORT['port']['id'], vip.port_id)
         self.assertIsNone(vip.load_balancer_id)
 
@@ -217,8 +221,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         lb = dmh.generate_load_balancer_tree()
         interface_list = self.driver.nova_client.servers.interface_list
         interface_list.reset_mock()
+        self.driver.neutron_client.show_subnet.return_value = MOCK_SUBNET
         if1 = MOCK_NOVA_INTERFACE
-        if1.net_id = lb.vip.network_id
         if2 = MockNovaInterface()
         if2.net_id = '3'
         if2.port_id = '4'

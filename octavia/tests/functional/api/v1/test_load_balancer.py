@@ -67,7 +67,7 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_get(self):
         vip = {'ip_address': '10.0.0.1',
                'port_id': uuidutils.generate_uuid(),
-               'network_id': uuidutils.generate_uuid()}
+               'subnet_id': uuidutils.generate_uuid()}
         lb = self.create_load_balancer(vip, name='lb1',
                                        description='test1_desc',
                                        enabled=False)
@@ -83,7 +83,7 @@ class TestLoadBalancer(base.BaseAPITest):
 
     def test_create_with_vip(self):
         vip = {'ip_address': '10.0.0.1',
-               'network_id': uuidutils.generate_uuid(),
+               'subnet_id': uuidutils.generate_uuid(),
                'port_id': uuidutils.generate_uuid()}
         lb_json = {'name': 'test1', 'description': 'test1_desc',
                    'vip': vip, 'enabled': False}
@@ -109,7 +109,7 @@ class TestLoadBalancer(base.BaseAPITest):
         self.post(self.LBS_PATH, lb_json, status=400)
 
     def test_create_with_nonuuid_vip_attributes(self):
-        lb_json = {'vip': {'network_id': 'HI'}}
+        lb_json = {'vip': {'subnet_id': 'HI'}}
         self.post(self.LBS_PATH, lb_json, status=400)
 
     def test_update(self):

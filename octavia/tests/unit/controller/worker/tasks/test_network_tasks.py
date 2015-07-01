@@ -33,9 +33,9 @@ else:
 AMPHORA_ID = 7
 COMPUTE_ID = uuidutils.generate_uuid()
 PORT_ID = uuidutils.generate_uuid()
-NETWORK_ID = uuidutils.generate_uuid()
+SUBNET_ID = uuidutils.generate_uuid()
 IP_ADDRESS = "172.24.41.1"
-VIP = o_data_models.Vip(port_id=PORT_ID, network_id=NETWORK_ID,
+VIP = o_data_models.Vip(port_id=PORT_ID, subnet_id=SUBNET_ID,
                         ip_address=IP_ADDRESS)
 LB = o_data_models.LoadBalancer(vip=VIP)
 

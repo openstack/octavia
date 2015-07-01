@@ -51,7 +51,7 @@ def generate_vip(load_balancer=None):
     global VIP_SEED
     VIP_SEED += 1
     vip = data_models.Vip(ip_address='10.0.0.{0}'.format(VIP_SEED),
-                          network_id='net{0}-id'.format(VIP_SEED),
+                          subnet_id='subnet{0}-id'.format(VIP_SEED),
                           port_id='port{0}-id'.format(VIP_SEED),
                           load_balancer=load_balancer)
     if load_balancer:

@@ -61,10 +61,10 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
     def _port_to_vip(self, port, load_balancer_id=None):
         port = port['port']
         ip_address = port['fixed_ips'][0]['ip_address']
-        network_id = port['network_id']
+        subnet_id = port['fixed_ips'][0]['subnet_id']
         port_id = port['id']
         return data_models.Vip(ip_address=ip_address,
-                               network_id=network_id,
+                               subnet_id=subnet_id,
                                port_id=port_id,
                                load_balancer_id=load_balancer_id)
 
@@ -213,12 +213,20 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
         if self.sec_grp_enabled:
             self._update_vip_security_group(load_balancer, vip)
         plugged_amphorae = []
+        try:
+            subnet = self.neutron_client.show_subnet(vip.subnet_id)
+        except Exception:
+            message = _LE('Error retrieving subnet {subnet_id}').format(
+                subnet_id=load_balancer.vip.subnet_id)
+            LOG.exception(message)
+            raise base.NetworkNotFound(message)
+        subnet = subnet['subnet']
         for amphora in load_balancer.amphorae:
             interface = self._get_plugged_interface(amphora.compute_id,
-                                                    vip.network_id)
+                                                    subnet['network_id'])
             if not interface:
                 interface = self._plug_amphora_vip(amphora.compute_id,
-                                                   vip.network_id)
+                                                   subnet['network_id'])
             self._add_vip_address_pair(interface.port_id, vip.ip_address)
             if self.sec_grp_enabled:
                 self._add_vip_security_group_to_amphorae(
@@ -231,10 +239,10 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
         return plugged_amphorae
 
     def allocate_vip(self, load_balancer):
-        if not load_balancer.vip.port_id and not load_balancer.vip.network_id:
+        if not load_balancer.vip.port_id and not load_balancer.vip.subnet_id:
             raise base.AllocateVIPException('Cannot allocate a vip '
                                             'without a port_id or '
-                                            'a network_id.')
+                                            'a subnet_id.')
         if load_balancer.vip.port_id:
             LOG.info(_LI('Port {port_id} already exists. Nothing to be '
                          'done.').format(port_id=load_balancer.vip.port_id))
@@ -245,14 +253,25 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
             except Exception:
                 message = _LE('Error retrieving info about port '
                               '{port_id}.').format(
-                    port_id=load_balancer.vip.port_id)
+                                  port_id=load_balancer.vip.port_id)
                 LOG.exception(message)
                 raise base.AllocateVIPException(message)
             return self._port_to_vip(port)
 
+        # Must retrieve the network_id from the subnet
+        try:
+            subnet = self.neutron_client.show_subnet(
+                load_balancer.vip.subnet_id)
+        except Exception:
+            message = _LE('Error retrieving subnet {subnet_id}').format(
+                subnet_id=load_balancer.vip.subnet_id)
+            LOG.exception(message)
+            raise base.NetworkNotFound(message)
+        subnet = subnet['subnet']
+
         # It can be assumed that network_id exists
         port = {'port': {'name': 'octavia-lb-' + load_balancer.id,
-                         'network_id': load_balancer.vip.network_id,
+                         'network_id': subnet['network_id'],
                          'admin_state_up': False,
                          'device_id': '',
                          'device_owner': ''}}
@@ -263,21 +282,30 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
         except Exception:
             message = _LE('Error creating neutron port on network '
                           '{network_id}.').format(
-                network_id=load_balancer.vip.network_id)
+                network_id=subnet['network_id'])
             LOG.exception(message)
             raise base.AllocateVIPException(message)
         return self._port_to_vip(new_port)
 
     def unplug_vip(self, load_balancer, vip):
+        try:
+            subnet = self.neutron_client.show_subnet(vip.subnet_id)
+        except Exception:
+            message = _LE('Error retrieving subnet {subnet_id}').format(
+                subnet_id=load_balancer.vip.subnet_id)
+            LOG.exception(message)
+            raise base.NetworkNotFound(message)
+        subnet = subnet['subnet']
+
         for amphora in load_balancer.amphorae:
             interface = self._get_plugged_interface(amphora.compute_id,
-                                                    vip.network_id)
+                                                    subnet['network_id'])
             if not interface:
                 # Thought about raising PluggedVIPNotFound exception but
                 # then that wouldn't evaluate all amphorae, so just continue
                 continue
             try:
-                self.unplug_network(amphora.compute_id, vip.network_id)
+                self.unplug_network(amphora.compute_id, subnet['network_id'])
             except Exception:
                 pass
             try:

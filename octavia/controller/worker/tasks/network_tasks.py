@@ -279,10 +279,10 @@ class AllocateVIP(BaseNetworkTask):
     def execute(self, loadbalancer):
         """Allocate a vip to the loadbalancer."""
 
-        LOG.debug("Allocate_vip port_id %s, network_id %s,"
+        LOG.debug("Allocate_vip port_id %s, subnet_id %s,"
                   "ip_address %s",
                   loadbalancer.vip.port_id,
-                  loadbalancer.vip.network_id,
+                  loadbalancer.vip.subnet_id,
                   loadbalancer.vip.ip_address)
         return self.network_driver.allocate_vip(loadbalancer)
 

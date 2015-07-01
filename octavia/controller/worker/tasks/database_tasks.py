@@ -241,7 +241,7 @@ class UpdateVIPAfterAllocation(BaseDatabaseTask):
 
     def execute(self, loadbalancer_id, vip):
         self.repos.vip.update(db_apis.get_session(), loadbalancer_id,
-                              port_id=vip.port_id, network_id=vip.network_id,
+                              port_id=vip.port_id, subnet_id=vip.subnet_id,
                               ip_address=vip.ip_address)
         return self.repos.load_balancer.get(db_apis.get_session(),
                                             id=loadbalancer_id)
