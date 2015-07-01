@@ -174,7 +174,12 @@ function octavia_stop {
     pids=$(ps aux | awk '/haproxy/ { print $2 }')
     [ ! -z "$pids" ] && sudo kill $pids
 }
-
+function octavia_configure_common {
+    if is_service_enabled $OCTAVIA_SERVICE; then
+        inicomment $NEUTRON_LBAAS_CONF service_providers service_provider
+        iniadd $NEUTRON_LBAAS_CONF service_providers service_provider $OCTAVIA_SERVICE_PROVIDER
+    fi
+}
 function octavia_cleanup {
 
     if [ ${OCTAVIA_AMP_IMAGE_NAME}x != x ] ; then
@@ -213,6 +218,7 @@ if is_service_enabled $OCTAVIA; then
         # Configure after the other layer 1 and 2 services have been configured
         # TODO: need to make sure this runs after LBaaS V2 configuration
         echo_summary "Configuring octavia"
+        octavia_configure_common
         octavia_configure
 
     elif [[ "$1" == "stack" && "$2" == "extra" ]]; then

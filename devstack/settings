@@ -49,6 +49,9 @@ OCTAVIA_API="o-api"
 OCTAVIA_CONSUMER="o-cw"
 OCTAVIA_HOUSEKEEPER="o-hk"
 OCTAVIA_HEALTHMANAGER="o-hm"
-
+OCTAVIA_SERVICE="octavia"
+NEUTRON_LBAAS_DIR=$DEST/neutron-lbaas
+NEUTRON_LBAAS_CONF=$NEUTRON_CONF_DIR/neutron_lbaas.conf
+OCTAVIA_SERVICE_PROVIDER=${OCTAVIA_SERVICE_PROVIDER:-"LOADBALANCERV2:Octavia:neutron_lbaas.drivers.octavia.driver.OctaviaDriver:default"}
 Q_SVC=${Q_SVC:-"q-svc"}
 LBAAS_V2=${LBAAS_V2:-"q-lbaasv2"}
