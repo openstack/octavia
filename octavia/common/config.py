@@ -113,6 +113,9 @@ haproxy_amphora_opts = [
     cfg.IntOpt('connection_retry_interval',
                default=5,
                help=_('Retry timeout between attempts in seconds.')),
+    cfg.StrOpt('cert_manager',
+               default='barbican_cert_manager',
+               help=_('Name of the cert manager to use')),
 
     # REST server
     cfg.StrOpt('bind_host', default='0.0.0.0',
@@ -135,7 +138,12 @@ haproxy_amphora_opts = [
     cfg.StrOpt('agent_server_network_dir',
                default='/etc/network/interfaces.d/',
                help=_("The directory where new network interfaces "
-                      "are located"))
+                      "are located")),
+    # REST client
+    cfg.StrOpt('client_cert', default='/etc/octavia/certs/client.pem',
+               help=_("The client certificate to talk to the agent")),
+    cfg.StrOpt('server_ca', default='/etc/octavia/certs/server_ca.pem',
+               help=_("The ca which signed the server certificates")),
 ]
 
 controller_worker_opts = [
@@ -160,6 +168,9 @@ controller_worker_opts = [
     cfg.ListOpt('amp_secgroup_list',
                 default='',
                 help=_('List of security groups to attach to the Amphora')),
+    cfg.StrOpt('client_ca',
+               default='/etc/octavia/certs/ca_01.pem',
+               help=_('Client CA for the amphora agent to use')),
     cfg.StrOpt('amphora_driver',
                default='amphora_noop_driver',
                help=_('Name of the amphora driver to use')),
@@ -168,7 +179,11 @@ controller_worker_opts = [
                help=_('Name of the compute driver to use')),
     cfg.StrOpt('network_driver',
                default='network_noop_driver',
-               help=_('Name of the network driver to use'))
+               help=_('Name of the network driver to use')),
+    cfg.StrOpt('cert_generator',
+               default='local_cert_generator',
+               help=_('Name of the cert generator to use'))
+
 ]
 
 task_flow_opts = [
@@ -194,6 +209,7 @@ cfg.CONF.register_cli_opts(core_cli_opts)
 cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
 cfg.CONF.register_opts(keystone_authtoken_v3_opts,
                        group='keystone_authtoken_v3')
+
 # Ensure that the control exchange is set correctly
 messaging.set_transport_defaults(control_exchange='octavia')
 _SQL_CONNECTION_DEFAULT = 'sqlite://'

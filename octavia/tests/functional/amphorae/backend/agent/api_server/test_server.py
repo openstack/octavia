@@ -349,7 +349,8 @@ class ServerTestCase(base.TestCase):
             details='No certificate with filename: test.pem',
             message='Certificate Not Found'),
             json.loads(rv.data))
-        mock_exists.assert_called_once_with('/tmp/123/test.pem')
+        mock_exists.assert_called_once_with(
+            '/var/lib/octavia/certs/123/test.pem')
 
         # wrong file name
         mock_exists.side_effect = [True]
@@ -363,7 +364,8 @@ class ServerTestCase(base.TestCase):
                              '/listeners/123/certificates/test.pem')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(OK, json.loads(rv.data))
-        mock_remove.assert_called_once_with('/tmp/123/test.pem')
+        mock_remove.assert_called_once_with(
+            '/var/lib/octavia/certs/123/test.pem')
 
     @mock.patch('os.path.exists')
     def test_get_certificate_md5(self, mock_exists):
@@ -381,7 +383,7 @@ class ServerTestCase(base.TestCase):
             details='No certificate with filename: test.pem',
             message='Certificate Not Found'),
             json.loads(rv.data))
-        mock_exists.assert_called_with('/tmp/123/test.pem')
+        mock_exists.assert_called_with('/var/lib/octavia/certs/123/test.pem')
 
         # wrong file name
         mock_exists.side_effect = [True]

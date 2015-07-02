@@ -46,12 +46,14 @@ class BaseComputeTask(task.Task):
 class ComputeCreate(BaseComputeTask):
     """Create the compute instance for a new amphora."""
 
-    def execute(self, amphora_id):
+    def execute(self, amphora_id, config_drive_files=None):
         """Create an amphora
 
         :returns: an amphora
         """
-        LOG.debug("Nova Create execute for amphora with id %s" % amphora_id)
+
+        LOG.debug("Nova Create execute for amphora with id %s"
+                  % amphora_id)
 
         try:
             compute_id = self.compute.build(
@@ -60,7 +62,8 @@ class ComputeCreate(BaseComputeTask):
                 image_id=CONF.controller_worker.amp_image_id,
                 key_name=CONF.controller_worker.amp_ssh_key_name,
                 sec_groups=CONF.controller_worker.amp_secgroup_list,
-                network_ids=[CONF.controller_worker.amp_network])
+                network_ids=[CONF.controller_worker.amp_network],
+                config_drive_files=config_drive_files)
 
             LOG.debug("Server created with id: %s for amphora id: %s" %
                       (compute_id, amphora_id))
@@ -88,6 +91,23 @@ class ComputeCreate(BaseComputeTask):
         except Exception as e:
             LOG.error(_LE("Reverting Nova create failed"
                           " with exception %s"), e)
+
+
+class CertComputeCreate(ComputeCreate):
+    def execute(self, amphora_id, server_pem):
+        """Create an amphora
+
+        :returns: an amphora
+        """
+
+        # load client certificate
+        with open(CONF.controller_worker.client_ca, 'r') as client_ca:
+            config_drive_files = {
+                # '/etc/octavia/octavia.conf'
+                '/etc/octavia/certs/server.pem': server_pem,
+                '/etc/octavia/certs/client_ca.pem': client_ca}
+            return super(CertComputeCreate, self).execute(amphora_id,
+                                                          config_drive_files)
 
 
 class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):

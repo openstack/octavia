@@ -78,10 +78,10 @@ class TestComputeTasks(base.TestCase):
     @mock.patch('stevedore.driver.DriverManager.driver')
     def test_compute_create(self, mock_driver):
 
-        mock_driver.build.side_effect = [COMPUTE_ID, TestException('test')]
-
-        # Test execute()
         createcompute = compute_tasks.ComputeCreate()
+
+        mock_driver.build.side_effect = [COMPUTE_ID, TestException('test')]
+        # Test execute()
         compute_id = createcompute.execute(_amphora_mock.id)
 
         # Validate that the build method was called properly
@@ -91,17 +91,65 @@ class TestComputeTasks(base.TestCase):
             image_id=AMP_IMAGE_ID,
             key_name=AMP_SSH_KEY_NAME,
             sec_groups=AMP_SEC_GROUPS,
-            network_ids=[AMP_NET])
+            network_ids=[AMP_NET],
+            config_drive_files=None)
 
         # Make sure it returns the expected compute_id
         assert(compute_id == COMPUTE_ID)
 
         # Test that a build exception is raised
-
         createcompute = compute_tasks.ComputeCreate()
         self.assertRaises(TestException,
                           createcompute.execute,
-                          _amphora_mock)
+                          _amphora_mock, 'test_cert')
+
+        # Test revert()
+
+        _amphora_mock.compute_id = COMPUTE_ID
+
+        createcompute = compute_tasks.ComputeCreate()
+        createcompute.revert(compute_id, _amphora_mock.id)
+
+        # Validate that the delete method was called properly
+        mock_driver.delete.assert_called_once_with(
+            COMPUTE_ID)
+
+        # Test that a delete exception is not raised
+
+        createcompute.revert(COMPUTE_ID, _amphora_mock.id)
+
+    @mock.patch('stevedore.driver.DriverManager.driver')
+    def test_compute_create_cert(self, mock_driver):
+
+        createcompute = compute_tasks.CertComputeCreate()
+
+        mock_driver.build.side_effect = [COMPUTE_ID, TestException('test')]
+        m = mock.mock_open(read_data='test')
+        with mock.patch('__builtin__.open', m, create=True):
+            # Test execute()
+            compute_id = createcompute.execute(_amphora_mock.id, 'test_cert')
+
+            # Validate that the build method was called properly
+            mock_driver.build.assert_called_once_with(
+                name="amphora-" + _amphora_mock.id,
+                amphora_flavor=AMP_FLAVOR_ID,
+                image_id=AMP_IMAGE_ID,
+                key_name=AMP_SSH_KEY_NAME,
+                sec_groups=AMP_SEC_GROUPS,
+                network_ids=[AMP_NET],
+                config_drive_files={
+                    '/etc/octavia/certs/server.pem': 'test_cert',
+                    '/etc/octavia/certs/client_ca.pem': m.return_value})
+
+        # Make sure it returns the expected compute_id
+        assert(compute_id == COMPUTE_ID)
+
+        # Test that a build exception is raised
+        with mock.patch('__builtin__.open', m, create=True):
+            createcompute = compute_tasks.ComputeCreate()
+            self.assertRaises(TestException,
+                              createcompute.execute,
+                              _amphora_mock, 'test_cert')
 
         # Test revert()
 

@@ -3,6 +3,7 @@ set -eux
 
 install-packages libffi-dev libssl-dev
 cd /opt/amphora-agent/
+pip install -r requirements.txt
 python setup.py install
 cp etc/init/octavia-agent.conf /etc/init/
 mkdir /etc/octavia
