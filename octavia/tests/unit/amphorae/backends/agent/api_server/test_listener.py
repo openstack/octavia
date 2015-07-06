@@ -13,12 +13,17 @@
 #    under the License.
 
 import mock
+import six
 
 from octavia.amphorae.backends.agent.api_server import listener
 from octavia.amphorae.drivers.haproxy.jinja import jinja_cfg
 from octavia.common import constants as consts
 import octavia.tests.unit.base as base
 from octavia.tests.unit.common.sample_configs import sample_configs
+
+BUILTINS = '__builtin__'
+if six.PY3:
+    BUILTINS = 'builtins'
 
 
 class ListenerTestCase(base.TestCase):
@@ -40,7 +45,7 @@ class ListenerTestCase(base.TestCase):
 
         m = mock.mock_open(read_data=rendered_obj)
 
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             res = listener._parse_haproxy_file('123')
             self.assertEqual('TERMINATED_HTTPS', res['mode'])
             self.assertEqual('/var/lib/octavia/sample_listener_id_1.sock',
@@ -60,7 +65,7 @@ class ListenerTestCase(base.TestCase):
 
         m = mock.mock_open(read_data=rendered_obj)
 
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             res = listener._parse_haproxy_file('123')
             self.assertEqual('TERMINATED_HTTPS', res['mode'])
             self.assertEqual('/var/lib/octavia/sample_listener_id_1.sock',
@@ -74,7 +79,7 @@ class ListenerTestCase(base.TestCase):
             sample_configs.sample_listener_tuple())
         m = mock.mock_open(read_data=rendered_obj)
 
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             res = listener._parse_haproxy_file('123')
             self.assertEqual('HTTP', res['mode'])
             self.assertEqual('/var/lib/octavia/sample_listener_id_1.sock',
@@ -86,7 +91,7 @@ class ListenerTestCase(base.TestCase):
             sample_configs.sample_listener_tuple(proto='HTTPS'))
         m = mock.mock_open(read_data=rendered_obj)
 
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             res = listener._parse_haproxy_file('123')
             self.assertEqual('TCP', res['mode'])
             self.assertEqual('/var/lib/octavia/sample_listener_id_1.sock',
@@ -96,7 +101,7 @@ class ListenerTestCase(base.TestCase):
         # Bogus format
         m = mock.mock_open(read_data='Bogus')
 
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             try:
                 res = listener._parse_haproxy_file('123')
                 self.fail("No Exception?")

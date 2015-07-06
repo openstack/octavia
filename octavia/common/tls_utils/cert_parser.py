@@ -76,7 +76,7 @@ def _split_x509s(xstr):
     """
     curr_pem_block = []
     inside_x509 = False
-    for line in xstr.replace("\r", "").split("\n"):
+    for line in xstr.replace(six.b("\r"), six.b("")).split(six.b("\n")):
         if inside_x509:
             curr_pem_block.append(line)
             if line == X509_END:

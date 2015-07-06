@@ -16,6 +16,7 @@
 import mock
 from oslo_utils import uuidutils
 import requests_mock
+import six
 
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy import rest_api_driver as driver
@@ -59,7 +60,7 @@ class HaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             self.amp, self.sl.id, 'fakeCN.pem')
         # this is called twice (last MD5 matches)
         self.driver.client.upload_cert_pem.assert_called_with(
-            self.amp, self.sl.id, 'fakeCN.pem', '')
+            self.amp, self.sl.id, 'fakeCN.pem', six.b(''))
         self.assertEqual(2, self.driver.client.upload_cert_pem.call_count)
         # upload only one config file
         self.driver.client.upload_config.assert_called_once_with(

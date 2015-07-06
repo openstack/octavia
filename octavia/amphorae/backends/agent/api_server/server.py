@@ -15,6 +15,7 @@
 import logging
 
 import flask
+import six
 from werkzeug import exceptions
 
 from octavia.amphorae.backends.agent import api_server
@@ -35,7 +36,7 @@ def make_json_error(ex):
     return response
 
 
-for code in exceptions.default_exceptions.iterkeys():
+for code in six.iterkeys(exceptions.default_exceptions):
     app.error_handler_spec[None][code] = make_json_error
 
 

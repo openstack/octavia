@@ -18,6 +18,7 @@ import subprocess
 
 import mock
 import netifaces
+import six
 
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import server
@@ -27,6 +28,10 @@ import octavia.tests.unit.base as base
 
 RANDOM_ERROR = 'random error'
 OK = dict(message='OK')
+
+BUILTINS = '__builtin__'
+if six.PY3:
+    BUILTINS = 'builtins'
 
 
 class ServerTestCase(base.TestCase):
@@ -45,14 +50,14 @@ class ServerTestCase(base.TestCase):
         m = mock.mock_open()
 
         # happy case upstart file exists
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/haproxy', data='test')
             self.assertEqual(202, rv.status_code)
             m.assert_called_once_with(
                 '/var/lib/octavia/123/haproxy.cfg.new', 'w')
             handle = m()
-            handle.write.assert_called_once_with('test')
+            handle.write.assert_called_once_with(six.b('test'))
             mock_subprocess.assert_called_once_with(
                 "haproxy -c -f /var/lib/octavia/123/haproxy.cfg.new".split(),
                 stderr=-2)
@@ -63,7 +68,7 @@ class ServerTestCase(base.TestCase):
         # exception writing
         m = mock.Mock()
         m.side_effect = Exception()  # open crashes
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/haproxy', data='test')
             self.assertEqual(500, rv.status_code)
@@ -73,14 +78,14 @@ class ServerTestCase(base.TestCase):
         m = mock.mock_open()
 
         # happy case upstart file exists
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/haproxy', data='test')
             self.assertEqual(202, rv.status_code)
             m.assert_any_call('/var/lib/octavia/123/haproxy.cfg.new', 'w')
             m.assert_any_call(util.UPSTART_DIR + '/haproxy-123.conf', 'w')
             handle = m()
-            handle.write.assert_any_call('test')
+            handle.write.assert_any_call(six.b('test'))
             # skip the template stuff
             mock_makedirs.assert_called_with('/var/lib/octavia/123')
 
@@ -88,16 +93,16 @@ class ServerTestCase(base.TestCase):
         mock_exists.return_value = True
         mock_subprocess.side_effect = [subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR)]
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/haproxy', data='test')
             self.assertEqual(400, rv.status_code)
             self.assertEqual(
                 {'message': 'Invalid request', u'details': u'random error'},
-                json.loads(rv.data))
+                json.loads(rv.data.decode('utf-8')))
             m.assert_called_with('/var/lib/octavia/123/haproxy.cfg.new', 'w')
             handle = m()
-            handle.write.assert_called_with('test')
+            handle.write.assert_called_with(six.b('test'))
             mock_subprocess.assert_called_with(
                 "haproxy -c -f /var/lib/octavia/123/haproxy.cfg.new".split(),
                 stderr=-2)
@@ -112,7 +117,7 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(
             {'message': 'Invalid Request',
              'details': 'Unknown action: error', },
-            json.loads(rv.data))
+            json.loads(rv.data.decode('utf-8')))
 
         mock_exists.return_value = False
         rv = self.app.put('/' + api_server.VERSION + '/listeners/123/start')
@@ -120,7 +125,7 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(
             {'message': 'Listener Not Found',
              'details': 'No listener with UUID: 123'},
-            json.loads(rv.data))
+            json.loads(rv.data.decode('utf-8')))
         mock_exists.assert_called_with('/var/lib/octavia/123/haproxy.cfg')
 
         mock_exists.return_value = True
@@ -130,7 +135,7 @@ class ServerTestCase(base.TestCase):
             {'message': 'OK',
              'details': 'Configuration file is valid\nhaproxy daemon for'
                         + ' 123 started'},
-            json.loads(rv.data))
+            json.loads(rv.data.decode('utf-8')))
         mock_subprocess.assert_called_with(
             ['/usr/sbin/service', 'haproxy-123', 'start'], stderr=-2)
 
@@ -143,7 +148,7 @@ class ServerTestCase(base.TestCase):
             {
                 'message': 'Error starting haproxy',
                 'details': RANDOM_ERROR,
-            }, json.loads(rv.data))
+            }, json.loads(rv.data.decode('utf-8')))
         mock_subprocess.assert_called_with(
             ['/usr/sbin/service', 'haproxy-123', 'start'], stderr=-2)
 
@@ -168,7 +173,7 @@ class ServerTestCase(base.TestCase):
             api_version='0.5',
             haproxy_version='1.4.24-2',
             hostname='test-host'),
-            json.loads(rv.data))
+            json.loads(rv.data.decode('utf-8')))
 
     @mock.patch('os.path.exists')
     @mock.patch('subprocess.check_output')
@@ -184,7 +189,7 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(
             {'message': 'Listener Not Found',
              'details': 'No listener with UUID: 123'},
-            json.loads(rv.data))
+            json.loads(rv.data.decode('utf-8')))
         mock_exists.assert_called_with('/var/lib/octavia/123/haproxy.cfg')
 
         # service is stopped + no upstart script
@@ -192,7 +197,7 @@ class ServerTestCase(base.TestCase):
         rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
         self.assertEqual(200, rv.status_code)
         self.assertEqual({u'message': u'OK'},
-                         json.loads(rv.data))
+                         json.loads(rv.data.decode('utf-8')))
         mock_rmtree.assert_called_with('/var/lib/octavia/123')
         mock_exists.assert_called_with('/etc/init/haproxy-123.conf')
         mock_exists.assert_any_called_with('/var/lib/octavia/123/haproxy.pid')
@@ -202,7 +207,7 @@ class ServerTestCase(base.TestCase):
         rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
         self.assertEqual(200, rv.status_code)
         self.assertEqual({u'message': u'OK'},
-                         json.loads(rv.data))
+                         json.loads(rv.data.decode('utf-8')))
         mock_remove.assert_called_once_with('/etc/init/haproxy-123.conf')
 
         # service is running + upstart script
@@ -211,7 +216,7 @@ class ServerTestCase(base.TestCase):
         rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
         self.assertEqual(200, rv.status_code)
         self.assertEqual({u'message': u'OK'},
-                         json.loads(rv.data))
+                         json.loads(rv.data.decode('utf-8')))
         mock_pid.assert_called_once_with('123')
         mock_check_output.assert_called_once_with(
             ['/usr/sbin/service', 'haproxy-123', 'stop'], stderr=-2)
@@ -224,13 +229,13 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(500, rv.status_code)
         self.assertEqual(
             {'details': 'random error', 'message': 'Error stopping haproxy'},
-            json.loads(rv.data))
+            json.loads(rv.data.decode('utf-8')))
         # that's the last call before exception
         mock_exists.assert_called_with('/proc/456')
 
     @mock.patch('os.path.exists')
     def test_get_haproxy(self, mock_exists):
-        CONTENT = "bibble\nbibble"
+        CONTENT = six.b("bibble\nbibble")
         mock_exists.side_effect = [False]
         rv = self.app.get('/' + api_server.VERSION + '/listeners/123/haproxy')
         self.assertEqual(404, rv.status_code)
@@ -238,7 +243,7 @@ class ServerTestCase(base.TestCase):
         mock_exists.side_effect = [True]
         m = mock.mock_open(read_data=CONTENT)
 
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.get('/' + api_server.VERSION +
                               '/listeners/123/haproxy')
             self.assertEqual(200, rv.status_code)
@@ -258,7 +263,7 @@ class ServerTestCase(base.TestCase):
         rv = self.app.get('/' + api_server.VERSION + '/listeners')
 
         self.assertEqual(200, rv.status_code)
-        self.assertFalse(json.loads(rv.data))
+        self.assertFalse(json.loads(rv.data.decode('utf-8')))
 
         # one listener ACTIVE
         mock_listener.side_effect = [['123']]
@@ -269,7 +274,7 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(200, rv.status_code)
         self.assertEqual(
             [{'status': consts.ACTIVE, 'type': 'test', 'uuid': '123'}],
-            json.loads(rv.data))
+            json.loads(rv.data.decode('utf-8')))
 
         # two listener one ACTIVE, one ERROR
         mock_listener.side_effect = [['123', '456']]
@@ -281,7 +286,7 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(
             [{'status': consts.ACTIVE, 'type': 'test', 'uuid': '123'},
              {'status': consts.ERROR, 'type': 'http', 'uuid': '456'}],
-            json.loads(rv.data))
+            json.loads(rv.data.decode('utf-8')))
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
                 + '_check_listener_status')
@@ -298,7 +303,7 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(
             {'message': 'Listener Not Found',
              'details': 'No listener with UUID: 123'},
-            json.loads(rv.data))
+            json.loads(rv.data.decode('utf-8')))
 
         # Listener not ACTIVE
         mock_parse.side_effect = [dict(mode='test')]
@@ -309,7 +314,7 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(dict(
             status=consts.ERROR,
             type='test',
-            uuid='123'), json.loads(rv.data))
+            uuid='123'), json.loads(rv.data.decode('utf-8')))
 
         # Listener ACTIVE
         mock_parse.side_effect = [dict(mode='test', stats_socket='blah')]
@@ -336,7 +341,7 @@ class ServerTestCase(base.TestCase):
                 members=[
                     {u'id-34833': u'DOWN'},
                     {u'id-34836': u'DOWN'}])]),
-            json.loads(rv.data))
+            json.loads(rv.data.decode('utf-8')))
 
     @mock.patch('os.path.exists')
     @mock.patch('os.remove')
@@ -348,7 +353,7 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(dict(
             details='No certificate with filename: test.pem',
             message='Certificate Not Found'),
-            json.loads(rv.data))
+            json.loads(rv.data.decode('utf-8')))
         mock_exists.assert_called_once_with(
             '/var/lib/octavia/certs/123/test.pem')
 
@@ -363,13 +368,13 @@ class ServerTestCase(base.TestCase):
         rv = self.app.delete('/' + api_server.VERSION +
                              '/listeners/123/certificates/test.pem')
         self.assertEqual(200, rv.status_code)
-        self.assertEqual(OK, json.loads(rv.data))
+        self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
         mock_remove.assert_called_once_with(
             '/var/lib/octavia/certs/123/test.pem')
 
     @mock.patch('os.path.exists')
     def test_get_certificate_md5(self, mock_exists):
-        CONTENT = "TestTest"
+        CONTENT = six.b("TestTest")
         mock_exists.side_effect = [False]
         rv = self.app.get('/' + api_server.VERSION +
                           '/listeners/123/certificates/test.pem')
@@ -382,7 +387,7 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(dict(
             details='No certificate with filename: test.pem',
             message='Certificate Not Found'),
-            json.loads(rv.data))
+            json.loads(rv.data.decode('utf-8')))
         mock_exists.assert_called_with('/var/lib/octavia/certs/123/test.pem')
 
         # wrong file name
@@ -395,12 +400,12 @@ class ServerTestCase(base.TestCase):
         mock_exists.side_effect = [True, True]
         m = mock.mock_open(read_data=CONTENT)
 
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.get('/' + api_server.VERSION +
                               '/listeners/123/certificates/test.pem')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(dict(md5sum=hashlib.md5(CONTENT).hexdigest()),
-                         json.loads(rv.data))
+                         json.loads(rv.data.decode('utf-8')))
 
     @mock.patch('os.path.exists')
     @mock.patch('os.fchmod')
@@ -423,25 +428,25 @@ class ServerTestCase(base.TestCase):
         mock_exists.side_effect = [True, True, True]
         m = mock.mock_open()
 
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/certificates/test.pem',
                               data='TestTest')
             self.assertEqual(200, rv.status_code)
-            self.assertEqual(OK, json.loads(rv.data))
+            self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
             handle = m()
-            handle.write.assert_called_once_with('TestTest')
+            handle.write.assert_called_once_with(six.b('TestTest'))
             mock_chmod.assert_called_once_with(handle.fileno(), 0o600)
 
         mock_exists.side_effect = [True, False]
         m = mock.mock_open()
 
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/certificates/test.pem',
                               data='TestTest')
             self.assertEqual(200, rv.status_code)
-            self.assertEqual(OK, json.loads(rv.data))
+            self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
             handle = m()
             mock_makedir.called_once_with('/var/lib/octavia/123')
 
@@ -455,7 +460,7 @@ class ServerTestCase(base.TestCase):
         rv = self.app.post('/' + api_server.VERSION + "/plug/network")
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
-                         json.loads(rv.data))
+                         json.loads(rv.data.decode('utf-8')))
 
         # No interface down
         mock_interfaces.side_effect = [['blah']]
@@ -463,14 +468,14 @@ class ServerTestCase(base.TestCase):
         rv = self.app.post('/' + api_server.VERSION + "/plug/network")
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
-                         json.loads(rv.data))
+                         json.loads(rv.data.decode('utf-8')))
         mock_ifaddress.assert_called_once_with('blah')
 
         # One Interface down, Happy Path
         mock_interfaces.side_effect = [['blah']]
         mock_ifaddress.side_effect = [['bla']]
         m = mock.mock_open()
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.post('/' + api_server.VERSION + "/plug/network")
             self.assertEqual(202, rv.status_code)
             m.assert_called_once_with(
@@ -490,13 +495,13 @@ class ServerTestCase(base.TestCase):
             7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR)]
         m = mock.mock_open()
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.post('/' + api_server.VERSION + "/plug/network")
             self.assertEqual(500, rv.status_code)
             self.assertEqual(
                 {'details': RANDOM_ERROR,
                  'message': 'Error plugging network'},
-                json.loads(rv.data))
+                json.loads(rv.data.decode('utf-8')))
 
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
@@ -512,7 +517,7 @@ class ServerTestCase(base.TestCase):
         rv = self.app.post('/' + api_server.VERSION + "/plug/vip/203.0.113.2")
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
-                         json.loads(rv.data))
+                         json.loads(rv.data.decode('utf-8')))
 
         # Two interfaces down
         mock_interfaces.side_effect = [['blah', 'blah2']]
@@ -520,13 +525,13 @@ class ServerTestCase(base.TestCase):
         rv = self.app.post('/' + api_server.VERSION + "/plug/vip/203.0.113.2")
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
-                         json.loads(rv.data))
+                         json.loads(rv.data.decode('utf-8')))
 
         # One Interface down, Happy Path
         mock_interfaces.side_effect = [['blah']]
         mock_ifaddress.side_effect = [['bla']]
         m = mock.mock_open()
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.post('/' + api_server.VERSION +
                                "/plug/vip/203.0.113.2")
             self.assertEqual(202, rv.status_code)
@@ -552,11 +557,11 @@ class ServerTestCase(base.TestCase):
                 7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
                 7, 'test', RANDOM_ERROR)]
         m = mock.mock_open()
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.post('/' + api_server.VERSION +
                                "/plug/vip/203.0.113.2")
             self.assertEqual(500, rv.status_code)
             self.assertEqual(
                 {'details': RANDOM_ERROR,
                  'message': 'Error plugging VIP'},
-                json.loads(rv.data))
+                json.loads(rv.data.decode('utf-8')))

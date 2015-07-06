@@ -30,6 +30,10 @@ if six.PY2:
 else:
     import unittest.mock as mock
 
+BUILTINS = '__builtin__'
+if six.PY3:
+    BUILTINS = 'builtins'
+
 AMP_FLAVOR_ID = 10
 AMP_IMAGE_ID = 11
 AMP_SSH_KEY_NAME = None
@@ -125,7 +129,7 @@ class TestComputeTasks(base.TestCase):
 
         mock_driver.build.side_effect = [COMPUTE_ID, TestException('test')]
         m = mock.mock_open(read_data='test')
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             # Test execute()
             compute_id = createcompute.execute(_amphora_mock.id, 'test_cert')
 
@@ -145,7 +149,7 @@ class TestComputeTasks(base.TestCase):
         assert(compute_id == COMPUTE_ID)
 
         # Test that a build exception is raised
-        with mock.patch('__builtin__.open', m, create=True):
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
             createcompute = compute_tasks.ComputeCreate()
             self.assertRaises(TestException,
                               createcompute.execute,

@@ -19,6 +19,7 @@ import time
 
 from oslo_log import log as logging
 import requests
+import six
 from stevedore import driver as stevedore_driver
 
 from octavia.amphorae.drivers import driver_base as driver_base
@@ -165,8 +166,9 @@ class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
         # TODO(ptoohill): Maybe this should be part of utils or manager?
         pem = tls_cert.intermediates[:]
         pem.extend([tls_cert.certificate, tls_cert.private_key])
+        map(six.b, pem)
 
-        return "\n".join(pem)
+        return six.b('\n').join(pem)
 
 
 # Check a custom hostname
@@ -217,13 +219,13 @@ class AmphoraAPIClient(object):
         headers['User-Agent'] = OCTAVIA_API_CLIENT
         self.ssl_adapter.uuid = amp.id
         # Keep retrying
-        for attempts in xrange(CONF.haproxy_amphora.connection_max_retries):
+        for a in six.moves.xrange(CONF.haproxy_amphora.connection_max_retries):
             try:
                 r = _request(**reqargs)
             except requests.ConnectionError:
                 LOG.warn(_LW("Could not talk  to instance"))
                 time.sleep(CONF.haproxy_amphora.connection_retry_interval)
-                if attempts >= CONF.haproxy_amphora.connection_max_retries:
+                if a >= CONF.haproxy_amphora.connection_max_retries:
                     raise exc.TimeOutException()
             else:
                 return r

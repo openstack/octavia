@@ -251,7 +251,7 @@ def get_listener_status(listener_id):
     # read stats socket
     q = query.HAProxyQuery(cfg['stats_socket'])
     servers = q.get_pool_status()
-    stats['pools'] = servers.values()
+    stats['pools'] = list(servers.values())
     return flask.jsonify(stats)
 
 
