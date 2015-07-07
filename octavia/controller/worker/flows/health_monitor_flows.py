@@ -47,7 +47,7 @@ class HealthMonitorFlows(object):
         delete_hm_flow.add(amphora_driver_tasks.ListenerUpdate(
             requires=['listener', 'vip']))
         delete_hm_flow.add(database_tasks.DeleteHealthMonitorInDB(
-            requires='health_mon_id'))
+            requires='pool_id'))
         delete_hm_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
             requires=['loadbalancer', 'listener']))
 

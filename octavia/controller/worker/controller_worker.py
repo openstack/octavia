@@ -119,17 +119,15 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                pool_id=pool_id)
 
         listener = health_mon.pool.listener
-        health_mon.pool.health_monitor = health_mon
         listener.default_pool = health_mon.pool
-        vip = health_mon.pool.listener.load_balancer.vip
+        vip = listener.load_balancer.vip
+        load_balancer = listener.load_balancer
 
-        delete_hm_tf = self._taskflow_load(self._health_monitor_flows.
-                                           get_delete_health_monitor_flow(),
-                                           store={'health_mon': health_mon,
-                                                  'health_mon_id':
-                                                      pool_id,
-                                                  'listener': listener,
-                                                  'vip': vip})
+        delete_hm_tf = self._taskflow_load(
+            self._health_monitor_flows.get_delete_health_monitor_flow(),
+            store={'health_mon': health_mon, 'pool_id': pool_id,
+                   'listener': listener, 'loadbalancer': load_balancer,
+                   'vip': vip})
         with tf_logging.DynamicLoggingListener(delete_hm_tf,
                                                log=LOG):
             delete_hm_tf.run()

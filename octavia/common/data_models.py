@@ -91,6 +91,9 @@ class HealthMonitor(BaseDataModel):
         self.enabled = enabled
         self.pool = pool
 
+    def delete(self):
+        self.pool.health_monitor = None
+
 
 class Pool(BaseDataModel):
 

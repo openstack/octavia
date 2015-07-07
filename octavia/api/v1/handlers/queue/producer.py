@@ -84,15 +84,17 @@ class BaseProducer(abstract_handler.BaseObjectHandler):
         method_name = "update_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
-    def delete(self, model):
+    def delete(self, data_model):
         """sends a delete message to the controller via oslo.messaging
 
-        :param model:
+        :param data_model:
         """
-        model_id = getattr(model, 'id', None)
-        if isinstance(model, data_models.HealthMonitor):
-            model_id = model.pool_id
-        kw = {"{0}_id".format(self.payload_class): model_id}
+        model_id = getattr(data_model, 'id', None)
+        p_class = self.payload_class
+        if isinstance(data_model, data_models.HealthMonitor):
+            model_id = data_model.pool_id
+            p_class = PoolProducer.PAYLOAD_CLASS
+        kw = {"{0}_id".format(p_class): model_id}
         method_name = "delete_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
