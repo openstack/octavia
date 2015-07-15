@@ -14,6 +14,7 @@
 
 from oslo_utils import uuidutils
 import six
+import sqlalchemy
 
 from octavia.common import constants
 from octavia.controller.healthmanager import update_health_mixin as healthmixin
@@ -32,36 +33,42 @@ class TestUpdateHealthMixin(base.TestCase):
         super(TestUpdateHealthMixin, self).setUp()
         self.hm = healthmixin.UpdateHealthMixin()
 
+        self.amphora_repo = mock.MagicMock()
         self.amphora_health_repo = mock.MagicMock()
         self.listener_repo = mock.MagicMock()
+        self.loadbalancer_repo = mock.MagicMock()
         self.member_repo = mock.MagicMock()
         self.pool_repo = mock.MagicMock()
 
+        self.hm.amphora_repo = self.amphora_repo
+        fake_lb = mock.MagicMock()
+        self.hm.amphora_repo.get_all_lbs_on_amphora.return_value = [fake_lb]
         self.hm.amphora_health_repo = self.amphora_health_repo
         self.hm.listener_repo = self.listener_repo
+        self.hm.listener_repo.count.return_value = 1
+        self.hm.loadbalancer_repo = self.loadbalancer_repo
         self.hm.member_repo = self.member_repo
         self.hm.pool_repo = self.pool_repo
 
     @mock.patch('octavia.db.api.get_session')
-    @mock.patch('sqlalchemy.sql.func.now')
-    def test_update_health_Online(self, lastupdate, session):
+    def test_update_health_Online(self, session):
 
         health = {
-            "amphora-status": constants.AMPHORA_UP,
-            "amphora-id": self.FAKE_UUID_1,
+            "id": self.FAKE_UUID_1,
             "listeners": {
-                "listener-id-1": {"listener-status": constants.ONLINE,
-                                  "members": {"member-id-1": constants.ONLINE}
+                "listener-id-1": {"status": constants.OPEN, "pools": {
+                    "pool-id-1": {"status": constants.UP,
+                                  "members": {"member-id-1": constants.UP}
                                   }
-
+                }
+                }
             }
         }
 
         session.return_value = 'blah'
-        lastupdate.return_value = '2014-02-12'
 
         self.hm.update_health(health)
-        self.assertTrue(self.amphora_health_repo.update.called)
+        self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
         for listener_id, listener in six.iteritems(
@@ -70,42 +77,241 @@ class TestUpdateHealthMixin(base.TestCase):
             self.listener_repo.update.assert_any_call(
                 'blah', listener_id, operating_status=constants.ONLINE)
 
-            for member_id, member in six.iteritems(
-                    listener.get('members', {})):
-                self.member_repo.update.assert_any_call(
-                    'blah', id=member_id, operating_status=constants.ONLINE)
+            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+
+                self.hm.pool_repo.update.assert_any_call(
+                    'blah', pool_id, operating_status=constants.ONLINE)
+
+                for member_id, member in six.iteritems(
+                        pool.get('members', {})):
+                    self.member_repo.update.assert_any_call(
+                        'blah', id=member_id,
+                        operating_status=constants.ONLINE)
+
+        self.hm.listener_repo.count.return_value = 2
+
+        self.hm.update_health(health)
 
     @mock.patch('octavia.db.api.get_session')
-    @mock.patch('sqlalchemy.sql.func.now')
-    def test_update_health_Error(self, lastupdate, session):
+    def test_update_health_member_down(self, session):
 
         health = {
-            "amphora-status": constants.AMPHORA_DOWN,
-            "amphora-id": self.FAKE_UUID_1,
+            "id": self.FAKE_UUID_1,
             "listeners": {
-                "listener-id-1": {"listener-status": constants.ERROR,
-                                  "members": {"member-id-1": constants.ERROR}
-                                  },
-                "listener-id-2": {"listener-status": constants.ERROR,
-                                  "members": {"member-id-2": constants.ERROR}
+                "listener-id-1": {"status": constants.OPEN, "pools": {
+                    "pool-id-1": {"status": constants.UP,
+                                  "members": {"member-id-1": constants.DOWN}
                                   }
+                }
+                }
             }
         }
 
         session.return_value = 'blah'
-        lastupdate.return_value = '2014-02-12'
 
         self.hm.update_health(health)
-        self.assertFalse(self.amphora_health_repo.update.called)
+        self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
         for listener_id, listener in six.iteritems(
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                'blah', listener_id, operating_status=constants.ERROR)
+                'blah', listener_id, operating_status=constants.ONLINE)
 
-            for member_id, member in six.iteritems(
-                    listener.get('members', {})):
-                self.member_repo.update.assert_any_call(
-                    'blah', id=member_id, operating_status=constants.ERROR)
+            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+
+                self.hm.pool_repo.update.assert_any_call(
+                    'blah', pool_id, operating_status=constants.DEGRADED)
+
+                for member_id, member in six.iteritems(
+                        pool.get('members', {})):
+
+                    self.member_repo.update.assert_any_call(
+                        'blah', id=member_id,
+                        operating_status=constants.ERROR)
+
+        self.hm.listener_repo.count.return_value = 2
+
+        self.hm.update_health(health)
+
+    @mock.patch('octavia.db.api.get_session')
+    def test_update_health_list_full_member_down(self, session):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {"status": constants.FULL, "pools": {
+                    "pool-id-1": {"status": constants.UP,
+                                  "members": {"member-id-1": constants.DOWN}
+                                  }
+                }
+                }
+            }
+        }
+
+        session.return_value = 'blah'
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # test listener, member
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
+
+            self.listener_repo.update.assert_any_call(
+                'blah', listener_id, operating_status=constants.DEGRADED)
+
+            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+
+                self.hm.pool_repo.update.assert_any_call(
+                    'blah', pool_id, operating_status=constants.DEGRADED)
+
+                for member_id, member in six.iteritems(
+                        pool.get('members', {})):
+
+                    self.member_repo.update.assert_any_call(
+                        'blah', id=member_id,
+                        operating_status=constants.ERROR)
+
+        self.hm.listener_repo.count.return_value = 2
+
+        self.hm.update_health(health)
+
+    @mock.patch('octavia.db.api.get_session')
+    def test_update_health_Error(self, session):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {"status": constants.OPEN, "pools": {
+                    "pool-id-1": {"status": constants.DOWN,
+                                  "members": {"member-id-1": constants.DOWN}
+                                  }
+                }
+                }
+            }
+        }
+
+        session.return_value = 'blah'
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # test listener, member
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
+
+            self.listener_repo.update.assert_any_call(
+                'blah', listener_id, operating_status=constants.ONLINE)
+
+            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+
+                self.hm.pool_repo.update.assert_any_call(
+                    'blah', pool_id, operating_status=constants.ERROR)
+
+                for member_id, member in six.iteritems(
+                        pool.get('members', {})):
+
+                    self.member_repo.update.assert_any_call(
+                        'blah', id=member_id, operating_status=constants.ERROR)
+
+    # Test the logic code paths
+    @mock.patch('octavia.db.api.get_session')
+    def test_update_health_Full(self, session):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {"status": constants.FULL, "pools": {
+                    "pool-id-1": {"status": constants.DOWN,
+                                  "members": {"member-id-1": constants.DOWN}
+                                  }
+                }
+                },
+                "listener-id-2": {"status": constants.FULL, "pools": {
+                    "pool-id-2": {"status": constants.UP,
+                                  "members": {"member-id-2": constants.UP}
+                                  }
+                }
+                },
+                "listener-id-3": {"status": constants.OPEN, "pools": {
+                    "pool-id-3": {"status": constants.UP,
+                                  "members": {"member-id-3": constants.UP,
+                                              "member-id-31": constants.DOWN}
+                                  }
+                }
+                },
+                "listener-id-4": {"status": "bogus", "pools": {
+                    "pool-id-4": {"status": "bogus",
+                                  "members": {"member-id-4": "bogus"}
+                                  }
+                }
+                }
+            }
+        }
+
+        session.return_value = 'blah'
+
+        self.hm.update_health(health)
+
+        # test listener
+        self.listener_repo.update.assert_any_call(
+            'blah', "listener-id-1", operating_status=constants.DEGRADED)
+        self.listener_repo.update.assert_any_call(
+            'blah', "listener-id-2", operating_status=constants.DEGRADED)
+        self.pool_repo.update.assert_any_call(
+            'blah', "pool-id-1", operating_status=constants.ERROR)
+        self.pool_repo.update.assert_any_call(
+            'blah', "pool-id-2", operating_status=constants.ONLINE)
+        self.pool_repo.update.assert_any_call(
+            'blah', "pool-id-3", operating_status=constants.DEGRADED)
+
+    # Test code paths where objects are not found in the database
+    @mock.patch('octavia.db.api.get_session')
+    def test_update_health_Not_Found(self, session):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {"status": constants.OPEN, "pools": {
+                    "pool-id-1": {"status": constants.UP,
+                                  "members": {"member-id-1": constants.UP}
+                                  }
+                }
+                }
+            }
+        }
+
+        session.return_value = 'blah'
+
+        self.hm.listener_repo.update.side_effect = (
+            [sqlalchemy.orm.exc.NoResultFound])
+        self.hm.member_repo.update.side_effect = (
+            [sqlalchemy.orm.exc.NoResultFound])
+        self.hm.pool_repo.update.side_effect = (
+            [sqlalchemy.orm.exc.NoResultFound])
+        self.hm.loadbalancer_repo.update.side_effect = (
+            [sqlalchemy.orm.exc.NoResultFound])
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # test listener, member
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
+
+            self.listener_repo.update.assert_any_call(
+                'blah', listener_id, operating_status=constants.ONLINE)
+
+            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+
+                self.hm.pool_repo.update.assert_any_call(
+                    'blah', pool_id, operating_status=constants.ONLINE)
+
+                for member_id, member in six.iteritems(
+                        pool.get('members', {})):
+
+                    self.member_repo.update.assert_any_call(
+                        'blah', id=member_id,
+                        operating_status=constants.ONLINE)

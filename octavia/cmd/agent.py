@@ -17,6 +17,8 @@
 # make sure PYTHONPATH includes the home directory if you didn't install
 
 import logging
+import multiprocessing as multiproc
+import os
 import ssl
 import sys
 
@@ -24,11 +26,14 @@ from oslo_config import cfg
 from werkzeug import serving
 
 from octavia.amphorae.backends.agent.api_server import server
+from octavia.amphorae.backends.health_daemon import health_daemon
 from octavia.common import service
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
+CONF.import_group('amphora_agent', 'octavia.common.config')
 CONF.import_group('haproxy_amphora', 'octavia.common.config')
+HM_SENDER_CMD_QUEUE = multiproc.Queue()
 
 
 # Hack: Use werkzeugs context
@@ -59,12 +64,21 @@ def main():
     # comment out to improve logging
     service.prepare_service(sys.argv)
 
+    # Workaround for an issue with the auto-reload used below in werkzeug
+    # Without it multiple health senders get started when werkzeug reloads
+    if not os.environ.get('WERKZEUG_RUN_MAIN'):
+        health_sender_proc = multiproc.Process(name='HM_sender',
+                                               target=health_daemon.run_sender,
+                                               args=(HM_SENDER_CMD_QUEUE,))
+        health_sender_proc.daemon = True
+        health_sender_proc.start()
+
     # We will only enforce that the client cert is from the good authority
     # todo(german): Watch this space for security improvements
     ctx = OctaviaSSLContext(ssl.PROTOCOL_SSLv23)
 
-    ctx.load_cert_chain(CONF.haproxy_amphora.agent_server_cert,
-                        ca=CONF.haproxy_amphora.agent_server_ca)
+    ctx.load_cert_chain(CONF.amphora_agent.agent_server_cert,
+                        ca=CONF.amphora_agent.agent_server_ca)
 
     # This will trigger a reload if any files change and
     # in particular the certificate file
@@ -74,4 +88,4 @@ def main():
                        use_debugger=CONF.debug,
                        ssl_context=ctx,
                        use_reloader=True,
-                       extra_files=[CONF.haproxy_amphora.agent_server_cert])
+                       extra_files=[CONF.amphora_agent.agent_server_cert])

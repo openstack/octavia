@@ -35,6 +35,15 @@ CONF.import_group('health_manager', 'octavia.common.config')
 class BaseRepository(object):
     model_class = None
 
+    def count(self, session, **filters):
+        """Retrieves a count of entities from the database.
+
+        :param session: A Sql Alchemy database session.
+        :param filters: Filters to decide which entities should be retrieved.
+        :returns: int
+        """
+        return session.query(self.model_class).filter_by(**filters).count()
+
     def create(self, session, **model_kwargs):
         """Base create method for a database entity.
 
@@ -296,6 +305,19 @@ class ListenerRepository(BaseRepository):
 class ListenerStatisticsRepository(BaseRepository):
     model_class = models.ListenerStatistics
 
+    def replace(self, session, listener_id, **model_kwargs):
+        """replace or insert listener into database."""
+        with session.begin(subtransactions=True):
+            count = session.query(self.model_class).filter_by(
+                listener_id=listener_id).count()
+            if count:
+                session.query(self.model_class).filter_by(
+                    listener_id=listener_id).update(model_kwargs,
+                                                    synchronize_session=False)
+            else:
+                model_kwargs['listener_id'] = listener_id
+                self.create(session, **model_kwargs)
+
     def update(self, session, listener_id, **model_kwargs):
         """Updates a listener's statistics by a listener's id."""
         with session.begin(subtransactions=True):
@@ -396,6 +418,19 @@ class AmphoraHealthRepository(BaseRepository):
             session.query(self.model_class).filter_by(
                 amphora_id=amphora_id).update(model_kwargs)
 
+    def replace(self, session, amphora_id, **model_kwargs):
+        """replace or insert amphora into database."""
+        with session.begin(subtransactions=True):
+            count = session.query(self.model_class).filter_by(
+                amphora_id=amphora_id).count()
+            if count:
+                session.query(self.model_class).filter_by(
+                    amphora_id=amphora_id).update(model_kwargs,
+                                                  synchronize_session=False)
+            else:
+                model_kwargs['amphora_id'] = amphora_id
+                self.create(session, **model_kwargs)
+
     def check_amphora_expired(self, session, amphora_id, exp_age=None):
         """check if a specific amphora is expired
 
@@ -420,10 +455,9 @@ class AmphoraHealthRepository(BaseRepository):
         :returns: [octavia.common.data_model]
         """
 
-        timestamp = CONF.health_manager.heartbeat_timeout
-
+        timeout = CONF.health_manager.heartbeat_timeout
         expired_time = datetime.datetime.utcnow() - datetime.timedelta(
-            seconds=timestamp)
+            seconds=timeout)
 
         with session.begin(subtransactions=True):
             amp = session.query(self.model_class).with_for_update().filter_by(

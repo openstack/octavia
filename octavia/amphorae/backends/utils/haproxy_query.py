@@ -90,8 +90,7 @@ class HAProxyQuery(object):
         """
 
         results = self._query(
-            'show stat {proxy_iid} {object_type}'
-            + '{server_id}'.format(
+            'show stat {proxy_iid} {object_type} {server_id}'.format(
                 proxy_iid=proxy_iid,
                 object_type=object_type,
                 server_id=server_id))
@@ -118,16 +117,16 @@ class HAProxyQuery(object):
             # pxname: pool, svname: server_name, status: status
 
             # All the way up is UP, otherwise call it DOWN
-            if line['status'] != consts.AMPHORA_UP:
-                line['status'] = consts.AMPHORA_DOWN
+            if line['status'] != consts.UP:
+                line['status'] = consts.DOWN
 
             if line['pxname'] not in final_results:
-                final_results[line['pxname']] = dict(members=[])
+                final_results[line['pxname']] = dict(members={})
 
             if line['svname'] == 'BACKEND':
                 final_results[line['pxname']]['uuid'] = line['pxname']
                 final_results[line['pxname']]['status'] = line['status']
             else:
-                final_results[line['pxname']]['members'].append(
-                    {line['svname']: line['status']})
+                final_results[line['pxname']]['members'][line['svname']] = (
+                    line['status'])
         return final_results

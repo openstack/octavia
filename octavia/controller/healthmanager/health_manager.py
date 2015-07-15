@@ -39,7 +39,7 @@ class HealthManager(object):
         with futures.ThreadPoolExecutor(max_workers=self.threads) as executor:
             try:
                 while True:
-                    time.sleep(CONF.health_manager.interval)
+                    time.sleep(CONF.health_manager.health_check_interval)
                     session = db_api.get_session()
                     LOG.debug("Starting amphora health check")
                     failover_count = 0

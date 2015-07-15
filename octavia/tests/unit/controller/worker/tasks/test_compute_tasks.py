@@ -83,12 +83,16 @@ class TestComputeTasks(base.TestCase):
 
         super(TestComputeTasks, self).setUp()
 
+    @mock.patch('jinja2.Environment.get_template')
+    @mock.patch('octavia.amphorae.backends.agent.'
+                'agent_jinja_cfg.AgentJinjaTemplater.'
+                'build_agent_config', return_value='test_conf')
     @mock.patch('stevedore.driver.DriverManager.driver')
-    def test_compute_create(self, mock_driver):
+    def test_compute_create(self, mock_driver, mock_conf, mock_jinja):
 
         createcompute = compute_tasks.ComputeCreate()
 
-        mock_driver.build.side_effect = [COMPUTE_ID, TestException('test')]
+        mock_driver.build.return_value = COMPUTE_ID
         # Test execute()
         compute_id = createcompute.execute(_amphora_mock.id, ports=[_port])
 
@@ -101,14 +105,16 @@ class TestComputeTasks(base.TestCase):
             sec_groups=AMP_SEC_GROUPS,
             network_ids=[AMP_NET],
             port_ids=[PORT_ID],
-            config_drive_files=None)
+            config_drive_files={'/etc/octavia/'
+                                'amphora-agent.conf': 'test_conf'})
 
         # Make sure it returns the expected compute_id
         assert(compute_id == COMPUTE_ID)
 
         # Test that a build exception is raised
         createcompute = compute_tasks.ComputeCreate()
-        self.assertRaises(TestException,
+
+        self.assertRaises(TypeError,
                           createcompute.execute,
                           _amphora_mock, config_drive_files='test_cert')
 
@@ -127,12 +133,16 @@ class TestComputeTasks(base.TestCase):
 
         createcompute.revert(COMPUTE_ID, _amphora_mock.id)
 
+    @mock.patch('jinja2.Environment.get_template')
+    @mock.patch('octavia.amphorae.backends.agent.'
+                'agent_jinja_cfg.AgentJinjaTemplater.'
+                'build_agent_config', return_value='test_conf')
     @mock.patch('stevedore.driver.DriverManager.driver')
-    def test_compute_create_cert(self, mock_driver):
+    def test_compute_create_cert(self, mock_driver, mock_conf, mock_jinja):
 
         createcompute = compute_tasks.CertComputeCreate()
 
-        mock_driver.build.side_effect = [COMPUTE_ID, TestException('test')]
+        mock_driver.build.return_value = COMPUTE_ID
         m = mock.mock_open(read_data='test')
         with mock.patch('%s.open' % BUILTINS, m, create=True):
             # Test execute()
@@ -150,7 +160,8 @@ class TestComputeTasks(base.TestCase):
                 port_ids=[],
                 config_drive_files={
                     '/etc/octavia/certs/server.pem': 'test_cert',
-                    '/etc/octavia/certs/client_ca.pem': m.return_value})
+                    '/etc/octavia/certs/client_ca.pem': m.return_value,
+                    '/etc/octavia/amphora-agent.conf': 'test_conf'})
 
         # Make sure it returns the expected compute_id
         assert(compute_id == COMPUTE_ID)
@@ -158,9 +169,10 @@ class TestComputeTasks(base.TestCase):
         # Test that a build exception is raised
         with mock.patch('%s.open' % BUILTINS, m, create=True):
             createcompute = compute_tasks.ComputeCreate()
-            self.assertRaises(TestException,
+            self.assertRaises(TypeError,
                               createcompute.execute,
-                              _amphora_mock, config_drive_files='test_cert')
+                              _amphora_mock,
+                              config_drive_files='test_cert')
 
         # Test revert()
 

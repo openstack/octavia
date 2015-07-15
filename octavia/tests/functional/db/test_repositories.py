@@ -13,6 +13,7 @@
 #    under the License.
 
 import datetime
+import random
 
 from oslo_utils import uuidutils
 
@@ -696,6 +697,47 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         self.assertIsNotNone(new_listener)
         self.assertIsNone(new_listener.stats)
 
+    def test_replace(self):
+        # Test the create path
+        bytes_in = random.randrange(1000000000)
+        bytes_out = random.randrange(1000000000)
+        active_conns = random.randrange(1000000000)
+        total_conns = random.randrange(1000000000)
+        self.assertIsNone(self.listener_stats_repo.get(
+            self.session, listener_id=self.listener.id))
+        self.listener_stats_repo.replace(self.session, self.listener.id,
+                                         bytes_in=bytes_in,
+                                         bytes_out=bytes_out,
+                                         active_connections=active_conns,
+                                         total_connections=total_conns)
+        obj = self.listener_stats_repo.get(self.session,
+                                           listener_id=self.listener.id)
+        self.assertIsNotNone(obj)
+        self.assertEqual(self.listener.id, obj.listener_id)
+        self.assertEqual(bytes_in, obj.bytes_in)
+        self.assertEqual(bytes_out, obj.bytes_out)
+        self.assertEqual(active_conns, obj.active_connections)
+        self.assertEqual(total_conns, obj.total_connections)
+
+        # Test the update path
+        bytes_in_2 = random.randrange(1000000000)
+        bytes_out_2 = random.randrange(1000000000)
+        active_conns_2 = random.randrange(1000000000)
+        total_conns_2 = random.randrange(1000000000)
+        self.listener_stats_repo.replace(self.session, self.listener.id,
+                                         bytes_in=bytes_in_2,
+                                         bytes_out=bytes_out_2,
+                                         active_connections=active_conns_2,
+                                         total_connections=total_conns_2)
+        obj = self.listener_stats_repo.get(self.session,
+                                           listener_id=self.listener.id)
+        self.assertIsNotNone(obj)
+        self.assertEqual(self.listener.id, obj.listener_id)
+        self.assertEqual(bytes_in_2, obj.bytes_in)
+        self.assertEqual(bytes_out_2, obj.bytes_out)
+        self.assertEqual(active_conns_2, obj.active_connections)
+        self.assertEqual(total_conns_2, obj.total_connections)
+
 
 class HealthMonitorRepositoryTest(BaseRepositoryTest):
 
@@ -1081,12 +1123,27 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         self.assertIsInstance(new_amphora, models.Amphora)
         self.assertEqual(amphora, new_amphora)
 
+    def test_count(self):
+        amphora = self.create_amphora(self.FAKE_UUID_1)
+        amp_count = self.amphora_repo.count(self.session, id=amphora.id)
+        self.assertEqual(amp_count, 1)
+
     def test_create(self):
         amphora = self.create_amphora(self.FAKE_UUID_1)
         self.assertEqual(self.FAKE_UUID_1, amphora.id)
         self.assertEqual(self.FAKE_UUID_3, amphora.compute_id)
         self.assertEqual(constants.ACTIVE, amphora.status)
         self.assertEqual(constants.ROLE_MASTER, amphora.role)
+
+    def test_exists_true(self):
+        amphora = self.create_amphora(self.FAKE_UUID_1)
+        exist = self.amphora_repo.exists(self.session, id=amphora.id)
+        self.assertTrue(exist)
+
+    def test_exists_false(self):
+        self.create_amphora(self.FAKE_UUID_1)
+        exist = self.amphora_repo.exists(self.session, id='test')
+        self.assertFalse(exist)
 
     def test_update(self):
         status_change = constants.PENDING_UPDATE
@@ -1170,6 +1227,26 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
             busy=False)
         return amphora_health
 
+    def test_replace(self):
+        amphora_id = uuidutils.generate_uuid()
+        now = datetime.datetime.utcnow()
+        self.assertIsNone(self.amphora_health_repo.get(
+            self.session, amphora_id=amphora_id))
+        self.amphora_health_repo.replace(self.session, amphora_id,
+                                         last_update=now)
+        obj = self.amphora_health_repo.get(self.session, amphora_id=amphora_id)
+        self.assertIsNotNone(obj)
+        self.assertEqual(amphora_id, obj.amphora_id)
+        self.assertEqual(now, obj.last_update)
+
+        now += datetime.timedelta(seconds=69)
+        self.amphora_health_repo.replace(self.session, amphora_id,
+                                         last_update=now)
+        obj = self.amphora_health_repo.get(self.session, amphora_id=amphora_id)
+        self.assertIsNotNone(obj)
+        self.assertEqual(amphora_id, obj.amphora_id)
+        self.assertEqual(now, obj.last_update)
+
     def test_get(self):
         amphora_health = self.create_amphora_health(self.amphora.id)
         new_amphora_health = self.amphora_health_repo.get(
@@ -1194,7 +1271,11 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
             self.session, self.amphora.id, exp_age)
         self.assertTrue(checkres)
 
-    def test_get_stale_amphorae(self):
+    def test_get_stale_amphora(self):
+        stale_amphora = self.amphora_health_repo.get_stale_amphora(
+            self.session)
+        self.assertIsNone(stale_amphora)
+
         self.create_amphora_health(self.amphora.id)
         stale_amphora = self.amphora_health_repo.get_stale_amphora(
             self.session)

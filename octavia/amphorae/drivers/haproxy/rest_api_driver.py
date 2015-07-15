@@ -22,6 +22,7 @@ import requests
 import six
 from stevedore import driver as stevedore_driver
 
+from octavia.amphorae.driver_exceptions import exceptions as driver_except
 from octavia.amphorae.drivers import driver_base as driver_base
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy.jinja import jinja_cfg
@@ -244,10 +245,10 @@ class AmphoraAPIClient(object):
                 LOG.warn(_LW("Could not talk  to instance"))
                 time.sleep(CONF.haproxy_amphora.connection_retry_interval)
                 if a >= CONF.haproxy_amphora.connection_max_retries:
-                    raise exc.TimeOutException()
+                    raise driver_except.TimeOutException()
             else:
                 return r
-        raise exc.UnavailableException()
+        raise driver_except.UnavailableException()
 
     def upload_config(self, amp, listener_id, config):
         r = self.put(

@@ -80,8 +80,16 @@ class InvalidOption(APIException):
     code = 400
 
 
+class InvalidHMACException(OctaviaException):
+    message = _("HMAC hashes didn't match")
+
+
 class MissingArguments(OctaviaException):
     message = _("Missing arguments.")
+
+
+class NetworkConfig(OctaviaException):
+    message = _("Unable to allocate network resource from config")
 
 
 class NeedsPassphrase(OctaviaException):

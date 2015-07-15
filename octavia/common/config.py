@@ -80,21 +80,59 @@ core_opts = [
                help=_('Name of the controller plugin to use'))
 ]
 
+# Options only used by the amphora agent
+amphora_agent_opts = [
+    cfg.StrOpt('agent_server_ca', default='/etc/octavia/certs/client_ca.pem',
+               help=_("The ca which signed the client certificates")),
+    cfg.StrOpt('agent_server_cert', default='/etc/octavia/certs/server.pem',
+               help=_("The server certificate for the agent.py server "
+                      "to use")),
+    cfg.StrOpt('agent_server_network_dir',
+               default='/etc/network/interfaces.d/',
+               help=_("The directory where new network interfaces "
+                      "are located")),
+    # Do not specify in octavia.conf, loaded at runtime
+    cfg.StrOpt('amphora_id', help=_("The amphora ID.")),
+]
+
 networking_opts = [
     cfg.StrOpt('lb_network_name', help=_('Name of amphora internal network')),
 ]
 
 healthmanager_opts = [
+    cfg.StrOpt('bind_ip', default='0.0.0.0',
+               help=_('IP address the controller will listen on for '
+                      'heart beats')),
+    cfg.IntOpt('bind_port', default=5555,
+               help=_('Port number the controller will listen on'
+                      'for heart beats')),
     cfg.IntOpt('failover_threads',
                default=10,
                help=_('Number of threads performing amphora failovers.')),
-    cfg.IntOpt('interval',
-               default=3,
-               help=_('Sleep time between health checks in seconds.')),
+    cfg.IntOpt('status_update_threads',
+               default=50,
+               help=_('Number of threads performing amphora failovers.')),
+    cfg.StrOpt('heartbeat_key',
+               help=_('key used to validate amphora sending'
+                      'the message'), secret=True),
     cfg.IntOpt('heartbeat_timeout',
-               default=10,
+               default=60,
                help=_('Interval, in seconds, to wait before failing over an '
                       'amphora.')),
+    cfg.IntOpt('health_check_interval',
+               default=3,
+               help=_('Sleep time between health checks in seconds.')),
+    cfg.IntOpt('sock_rlimit', default=0,
+               help=_(' sets the value of the heartbeat recv buffer')),
+
+    # Used by the health manager on the amphora
+    cfg.ListOpt('controller_ip_port_list',
+                help=_('List of controller ip and port pairs for the '
+                       'heartbeat receivers. Example [\'127.0.0.1:5555\', '
+                       '\'127.0.0.1:5555\']')),
+    cfg.IntOpt('heartbeat_interval',
+               default=10,
+               help=_('Sleep time between sending hearthbeats.'))
 ]
 
 oslo_messaging_opts = [
@@ -133,7 +171,7 @@ haproxy_amphora_opts = [
     # REST server
     cfg.StrOpt('bind_host', default='0.0.0.0',
                help=_("The host IP to bind to")),
-    cfg.IntOpt('bind_port', default=8443,
+    cfg.IntOpt('bind_port', default=9443,
                help=_("The port to bind to")),
     cfg.StrOpt('haproxy_cmd', default='/usr/sbin/haproxy',
                help=_("The full path to haproxy")),
@@ -143,15 +181,6 @@ haproxy_amphora_opts = [
                help=_("The respawn interval for haproxy's upstart script")),
     cfg.StrOpt('haproxy_cert_dir', default='/tmp/',
                help=_("The directory to store haproxy cert files in")),
-    cfg.StrOpt('agent_server_cert', default='/etc/octavia/certs/server.pem',
-               help=_("The server certificate for the agent.py server "
-                      "to use")),
-    cfg.StrOpt('agent_server_ca', default='/etc/octavia/certs/client_ca.pem',
-               help=_("The ca which signed the client certificates")),
-    cfg.StrOpt('agent_server_network_dir',
-               default='/etc/network/interfaces.d/',
-               help=_("The directory where new network interfaces "
-                      "are located")),
     # REST client
     cfg.StrOpt('client_cert', default='/etc/octavia/certs/client.pem',
                help=_("The client certificate to talk to the agent")),
@@ -236,6 +265,7 @@ house_keeping_opts = [
 
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
+cfg.CONF.register_opts(amphora_agent_opts, group='amphora_agent')
 cfg.CONF.register_opts(networking_opts, group='networking')
 cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
 cfg.CONF.register_opts(haproxy_amphora_opts, group='haproxy_amphora')

@@ -1,7 +1,0 @@
-{
-    "key": "asamplekey",
-    "delay": 2.5,
-    "destination": [ "::1", "127.1" ],
-    "port": 12345,
-    "id": "0dc47eda-872b-11e4-920b-000c294b76ae"
-}

@@ -22,17 +22,17 @@ MODE_OWNER = 0o600
 BUFFER = 1024
 
 CONF = cfg.CONF
-CONF.import_group('haproxy_amphora', 'octavia.common.config')
+CONF.import_group('amphora_agent', 'octavia.common.config')
 
 
 def upload_server_cert():
     stream = flask.request.stream
-    with open(CONF.haproxy_amphora.agent_server_cert, 'w') as crt_file:
+    with open(CONF.amphora_agent.agent_server_cert, 'w') as crt_file:
         b = stream.read(BUFFER)
         while b:
             crt_file.write(b)
             b = stream.read(BUFFER)
         os.fchmod(crt_file.fileno(), MODE_OWNER)  # only accessible by owner
 
-    return  flask.make_response(flask.jsonify({
+    return flask.make_response(flask.jsonify({
         'message': 'OK'}), 202)

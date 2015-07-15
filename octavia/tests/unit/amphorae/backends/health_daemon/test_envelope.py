@@ -15,6 +15,7 @@
 import uuid
 
 from octavia.amphorae.backends.health_daemon import status_message
+from octavia.common import exceptions
 from octavia.tests.unit import base
 
 
@@ -23,11 +24,16 @@ class TestEnvelope(base.TestCase):
         super(TestEnvelope, self).setUp()
 
     def test_message_hmac(self):
-        self.skipTest("This test is broken and will be fixed in CR# 201882")
-        statusMsg = {'seq': 42,
-                     'status': 'OK',
-                     'id': str(uuid.uuid4())}
-        sme = status_message.encode(statusMsg, 'samplekey1')
-
-        self.assertTrue(status_message.checkhmac(sme, 'samplekey1'))
-        self.assertFalse(status_message.checkhmac(sme, 'samplekey2'))
+        seq = 42
+        for i in range(0, 16):
+            statusMsg = {'seq': seq,
+                         'status': 'OK',
+                         'id': str(uuid.uuid4())}
+            envelope = status_message.wrap_envelope(statusMsg, 'samplekey1')
+            obj = status_message.unwrap_envelope(envelope, 'samplekey1')
+            self.assertEqual(obj['status'], 'OK')
+            self.assertEqual(obj['seq'], seq)
+            seq += 1
+            args = (envelope, 'samplekey?')
+            self.assertRaises(exceptions.InvalidHMACException,
+                              status_message.unwrap_envelope, *args)
