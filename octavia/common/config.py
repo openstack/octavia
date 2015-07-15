@@ -75,6 +75,9 @@ core_opts = [
     cfg.StrOpt('nova_region_name',
                help=_('Name of nova region to use. Useful if keystone manages'
                       ' more than one region.')),
+    cfg.StrOpt('octavia_plugins',
+               default='hot_plug_plugin',
+               help=_('Name of the controller plugin to use'))
 ]
 
 networking_opts = [
@@ -183,7 +186,6 @@ controller_worker_opts = [
     cfg.StrOpt('cert_generator',
                default='local_cert_generator',
                help=_('Name of the cert generator to use'))
-
 ]
 
 task_flow_opts = [

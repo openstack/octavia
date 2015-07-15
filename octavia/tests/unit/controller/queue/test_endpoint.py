@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_config import cfg
 import six
 
 from octavia.controller.queue import endpoint
@@ -29,19 +30,18 @@ class TestEndpoint(base.TestCase):
     def setUp(self):
         super(TestEndpoint, self).setUp()
 
+        cfg.CONF.import_group('controller_worker', 'octavia.common.config')
+        cfg.CONF.set_override('octavia_plugins', 'hot_plug_plugin')
+
         mock_class = mock.create_autospec(controller_worker.ControllerWorker)
         self.worker_patcher = mock.patch('octavia.controller.queue.endpoint.'
-                                         'controller_worker')
+                                         'stevedore_driver')
         self.worker_patcher.start().ControllerWorker = mock_class
+
         self.ep = endpoint.Endpoint()
         self.context = {}
         self.resource_updates = {}
         self.resource_id = 1234
-
-        def reset_patches():
-            self.worker_patcher.stop()
-
-        self.addCleanup(reset_patches)
 
     def test_create_load_balancer(self):
         self.ep.create_load_balancer(self.context, self.resource_id)
