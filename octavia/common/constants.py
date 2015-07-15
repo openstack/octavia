@@ -80,11 +80,14 @@ SUPPORTED_AMPHORA_TYPES = (AMPHORA_VM,)
 
 # Task/Flow constants
 AMPHORA = 'amphora'
+FAILOVER_AMPHORA = 'failover_amphora'
 AMPHORAE = 'amphorae'
 AMPHORA_ID = 'amphora_id'
+FAILOVER_AMPHORA_ID = 'failover_amphora_id'
 DELTA = 'delta'
 DELTAS = 'deltas'
 LISTENER = 'listener'
+LISTENERS = 'listeners'
 LOADBALANCER = 'loadbalancer'
 LOADBALANCER_ID = 'loadbalancer_id'
 COMPUTE_ID = 'compute_id'
@@ -99,6 +102,8 @@ SERVER_PEM = 'server_pem'
 VIP_NETWORK = 'vip_network'
 AMPHORAE_NETWORK_CONFIG = 'amphorae_network_config'
 ADDED_PORTS = 'added_ports'
+PORTS = 'ports'
+MEMBER_PORTS = 'member_ports'
 
 CREATE_AMPHORA_FLOW = 'octavia-create-amphora-flow'
 CREATE_AMPHORA_FOR_LB_FLOW = 'octavia-create-amp-for-lb-flow'
@@ -119,6 +124,7 @@ UPDATE_LISTENER_FLOW = 'octavia-update-listener-flow'
 UPDATE_LOADBALANCER_FLOW = 'octavia-update-loadbalancer-flow'
 UPDATE_MEMBER_FLOW = 'octavia-update-member-flow'
 UPDATE_POOL_FLOW = 'octavia-update-pool-flow'
+FAILOVER_AMPHORA_FLOW = 'octavia-failover-amphora-flow'
 
 # Task Names
 RELOAD_LB_AFTER_AMP_ASSOC = 'reload-lb-after-amp-assoc'

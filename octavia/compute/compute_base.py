@@ -47,10 +47,10 @@ class ComputeBase(object):
         pass
 
     @abc.abstractmethod
-    def delete(self, amphora_id):
+    def delete(self, compute_id):
         """Delete the specified amphora
 
-        :param amphora_id: The id of the amphora to delete
+        :param compute_id: The id of the amphora to delete
         """
         pass
 

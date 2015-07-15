@@ -43,6 +43,7 @@ AMP_WAIT = 12
 AMPHORA_ID = uuidutils.generate_uuid()
 COMPUTE_ID = uuidutils.generate_uuid()
 LB_NET_IP = '192.0.2.1'
+PORT_ID = uuidutils.generate_uuid()
 AUTH_VERSION = '2'
 
 
@@ -55,9 +56,12 @@ class TestException(Exception):
         return repr(self.value)
 
 _amphora_mock = mock.MagicMock()
+_amphora_mock.id = AMPHORA_ID
 _amphora_mock.compute_id = COMPUTE_ID
 _load_balancer_mock = mock.MagicMock()
 _load_balancer_mock.amphorae = [_amphora_mock]
+_port = mock.MagicMock()
+_port.id = PORT_ID
 
 
 class TestComputeTasks(base.TestCase):
@@ -86,7 +90,7 @@ class TestComputeTasks(base.TestCase):
 
         mock_driver.build.side_effect = [COMPUTE_ID, TestException('test')]
         # Test execute()
-        compute_id = createcompute.execute(_amphora_mock.id)
+        compute_id = createcompute.execute(_amphora_mock.id, ports=[_port])
 
         # Validate that the build method was called properly
         mock_driver.build.assert_called_once_with(
@@ -96,6 +100,7 @@ class TestComputeTasks(base.TestCase):
             key_name=AMP_SSH_KEY_NAME,
             sec_groups=AMP_SEC_GROUPS,
             network_ids=[AMP_NET],
+            port_ids=[PORT_ID],
             config_drive_files=None)
 
         # Make sure it returns the expected compute_id
@@ -105,7 +110,7 @@ class TestComputeTasks(base.TestCase):
         createcompute = compute_tasks.ComputeCreate()
         self.assertRaises(TestException,
                           createcompute.execute,
-                          _amphora_mock, 'test_cert')
+                          _amphora_mock, config_drive_files='test_cert')
 
         # Test revert()
 
@@ -131,7 +136,8 @@ class TestComputeTasks(base.TestCase):
         m = mock.mock_open(read_data='test')
         with mock.patch('%s.open' % BUILTINS, m, create=True):
             # Test execute()
-            compute_id = createcompute.execute(_amphora_mock.id, 'test_cert')
+            compute_id = createcompute.execute(_amphora_mock.id,
+                                               'test_cert')
 
             # Validate that the build method was called properly
             mock_driver.build.assert_called_once_with(
@@ -141,6 +147,7 @@ class TestComputeTasks(base.TestCase):
                 key_name=AMP_SSH_KEY_NAME,
                 sec_groups=AMP_SEC_GROUPS,
                 network_ids=[AMP_NET],
+                port_ids=[],
                 config_drive_files={
                     '/etc/octavia/certs/server.pem': 'test_cert',
                     '/etc/octavia/certs/client_ca.pem': m.return_value})
@@ -153,7 +160,7 @@ class TestComputeTasks(base.TestCase):
             createcompute = compute_tasks.ComputeCreate()
             self.assertRaises(TestException,
                               createcompute.execute,
-                              _amphora_mock, 'test_cert')
+                              _amphora_mock, config_drive_files='test_cert')
 
         # Test revert()
 
@@ -201,7 +208,7 @@ class TestComputeTasks(base.TestCase):
         delete_amps = compute_tasks.DeleteAmphoraeOnLoadBalancer()
         delete_amps.execute(_load_balancer_mock)
 
-        mock_driver.delete.assert_called_once_with(amphora_id=COMPUTE_ID)
+        mock_driver.delete.assert_called_once_with(compute_id=COMPUTE_ID)
 
     @mock.patch('stevedore.driver.DriverManager.driver')
     def test_compute_delete(self, mock_driver):
@@ -209,4 +216,4 @@ class TestComputeTasks(base.TestCase):
         delete_compute = compute_tasks.ComputeDelete()
         delete_compute.execute(_amphora_mock)
 
-        mock_driver.delete.assert_called_once_with(amphora_id=COMPUTE_ID)
+        mock_driver.delete.assert_called_once_with(compute_id=COMPUTE_ID)

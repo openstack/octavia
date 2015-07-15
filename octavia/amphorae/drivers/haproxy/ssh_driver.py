@@ -25,6 +25,7 @@ from octavia.amphorae.driver_exceptions import exceptions as exc
 from octavia.amphorae.drivers import driver_base as driver_base
 from octavia.amphorae.drivers.haproxy.jinja import jinja_cfg
 from octavia.common.config import cfg
+from octavia.common import constants
 from octavia.common.tls_utils import cert_parser
 from octavia.i18n import _LW
 
@@ -182,21 +183,21 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
                   load_balancer.id)
 
         for amp in load_balancer.amphorae:
-            # Connect to amphora
-            self._connect(hostname=amp.lb_network_ip)
+            if amp.status != constants.DELETED:
+                # Connect to amphora
+                self._connect(hostname=amp.lb_network_ip)
 
-            mac = amphorae_network_config.get(amp.id).vrrp_port.mac_address
-            stdout, _ = self._execute_command(
-                CMD_GREP_LINK_BY_MAC.format(mac_address=mac))
-            iface = stdout[:-2]
-            if not iface:
-                self.client.close()
-                continue
-            self._configure_amp_interface(
-                iface, secondary_ip=load_balancer.vip.ip_address)
-            self._configure_amp_routes(
-                iface, amphorae_network_config.get(amp.id))
-            self.client.close()
+                mac = amphorae_network_config.get(amp.id).vrrp_port.mac_address
+                stdout, _ = self._execute_command(
+                    CMD_GREP_LINK_BY_MAC.format(mac_address=mac))
+                iface = stdout[:-2]
+                if not iface:
+                    self.client.close()
+                    continue
+                self._configure_amp_interface(
+                    iface, secondary_ip=load_balancer.vip.ip_address)
+                self._configure_amp_routes(
+                    iface, amphorae_network_config.get(amp.id))
 
     def post_network_plug(self, amphora, port):
         self._connect(hostname=amphora.lb_network_ip)
@@ -278,27 +279,28 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
             temps.append(temp)
 
         for amp in amphorae:
-            # Connect to amphora
-            self._connect(hostname=amp.lb_network_ip)
+            if amp.status != constants.DELETED:
+                # Connect to amphora
+                self._connect(hostname=amp.lb_network_ip)
 
-            # Setup for file upload
-            if make_dir:
-                mkdir_cmd = 'mkdir -p {0}'.format(make_dir)
-                self._execute_command(mkdir_cmd, run_as_root=True)
-                chown_cmd = 'chown -R {0} {1}'.format(
-                    self.amp_config.username, make_dir)
-                self._execute_command(chown_cmd, run_as_root=True)
+                # Setup for file upload
+                if make_dir:
+                    mkdir_cmd = 'mkdir -p {0}'.format(make_dir)
+                    self._execute_command(mkdir_cmd, run_as_root=True)
+                    chown_cmd = 'chown -R {0} {1}'.format(
+                        self.amp_config.username, make_dir)
+                    self._execute_command(chown_cmd, run_as_root=True)
 
-            # Upload files to location
-            if temps:
-                sftp = self.client.open_sftp()
-                for temp in temps:
-                    sftp.put(temp.name, upload_dir)
+                # Upload files to location
+                if temps:
+                    sftp = self.client.open_sftp()
+                    for temp in temps:
+                        sftp.put(temp.name, upload_dir)
 
-            # Execute remaining commands
-            for command in commands:
-                self._execute_command(command, run_as_root=True)
-            self.client.close()
+                # Execute remaining commands
+                for command in commands:
+                    self._execute_command(command, run_as_root=True)
+                self.client.close()
 
         # Close the temp file
         for temp in temps:

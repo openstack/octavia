@@ -214,3 +214,13 @@ class AbstractNetworkDriver(object):
         :raises: NetworkException, PortNotFound
         """
         pass
+
+    @abc.abstractmethod
+    def failover_preparation(self, amphora):
+        """Prepare an amphora for failover.
+
+        :param amphora: amphora object to failover
+        :return: None
+        :raises: PortNotFound
+        """
+        pass

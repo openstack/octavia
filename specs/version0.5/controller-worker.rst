@@ -206,6 +206,15 @@ The Controller Worker library will provide the following methods:
         """
         raise NotImplementedError
 
+    def failover_amphora(self, amphora_id):
+        """Failover an amphora
+
+        :param amp_id: ID of the amphora to fail over
+        :returns: None
+        :raises AmphoraNotFound: The referenced Amphora was not found
+        """
+        raise NotImplementedError
+
 Alternatives
 ------------
 This code could be included in the Queue Consumer component of the controller.

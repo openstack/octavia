@@ -39,6 +39,8 @@ _vip_mock = mock.MagicMock()
 _LB_mock = mock.MagicMock()
 _amphorae_mock = [_amphora_mock]
 _network_mock = mock.MagicMock()
+_port_mock = mock.MagicMock()
+_ports_mock = [_port_mock]
 
 
 @mock.patch('octavia.db.repositories.AmphoraRepository.update')
@@ -204,10 +206,10 @@ class TestAmphoraDriverTasks(base.TestCase):
 
         amphora_post_network_plug_obj = (amphora_driver_tasks.
                                          AmphoraPostNetworkPlug())
-        amphora_post_network_plug_obj.execute(_amphora_mock)
+        amphora_post_network_plug_obj.execute(_amphora_mock, _ports_mock)
 
         (mock_driver.post_network_plug.
-            assert_called_once_with)(_amphora_mock)
+            assert_called_once_with)(_amphora_mock, _port_mock)
 
         # Test revert
         amp = amphora_post_network_plug_obj.revert(None, _amphora_mock)

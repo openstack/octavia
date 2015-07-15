@@ -62,6 +62,24 @@ class ListenerUpdate(BaseAmphoraTask):
         return None
 
 
+class ListenersUpdate(BaseAmphoraTask):
+    """Task to update amphora with all listeners' configurations."""
+
+    def execute(self, listeners, vip):
+        """Execute updates per listener for an amphora."""
+        for listener in listeners:
+            self.amphora_driver.update(listener, vip)
+
+    def revert(self, listeners, *args, **kwargs):
+        """Handle failed listeners updates."""
+
+        LOG.warn(_LW("Reverting listeners updates."))
+        for listener in listeners:
+            self.listener_repo.update(db_apis.get_session(), id=listener.id,
+                                      provisioning_status=constants.ERROR)
+        return None
+
+
 class ListenerStop(BaseAmphoraTask):
     """Task to stop the listener on the vip."""
 
@@ -93,6 +111,25 @@ class ListenerStart(BaseAmphoraTask):
         LOG.warn(_LW("Reverting listener start."))
         self.listener_repo.update(db_apis.get_session(), id=listener.id,
                                   provisioning_status=constants.ERROR)
+        return None
+
+
+class ListenersStart(BaseAmphoraTask):
+    """Task to start all listeners on the vip."""
+
+    def execute(self, listeners, vip):
+        """Execute listener start routines for listeners on an amphora."""
+        for listener in listeners:
+            self.amphora_driver.start(listener, vip)
+        LOG.debug("Started the listeners on the vip")
+
+    def revert(self, listeners, *args, **kwargs):
+        """Handle failed listeners starts."""
+
+        LOG.warn(_LW("Reverting listeners starts."))
+        for listener in listeners:
+            self.listener_repo.update(db_apis.get_session(), id=listener.id,
+                                      provisioning_status=constants.ERROR)
         return None
 
 
@@ -148,10 +185,13 @@ class AmphoraFinalize(BaseAmphoraTask):
 class AmphoraPostNetworkPlug(BaseAmphoraTask):
     """Task to notify the amphora post network plug."""
 
-    def execute(self, amphora):
+    def execute(self, amphora, ports):
         """Execute post_network_plug routine."""
-        self.amphora_driver.post_network_plug(amphora)
-        LOG.debug("Posted network plug for the compute instance")
+        for port in ports:
+            self.amphora_driver.post_network_plug(amphora, port)
+            LOG.debug("post_network_plug called on compute instance "
+                      "{compute_id} for port {port_id}".format(
+                          compute_id=amphora.compute_id, port_id=port.id))
 
     def revert(self, result, amphora, *args, **kwargs):
         """Handle a failed post network plug."""
@@ -167,16 +207,12 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
 
     def execute(self, loadbalancer, added_ports):
         """Execute post_network_plug routine."""
+        amp_post_plug = AmphoraPostNetworkPlug()
         for amphora in loadbalancer.amphorae:
             if amphora.id in added_ports:
-                for port in added_ports[amphora.id]:
-                    self.amphora_driver.post_network_plug(amphora, port)
-                    LOG.debug(
-                        "post_network_plug called on compute instance "
-                        "{compute_id} for port {port_id}".format(
-                            compute_id=amphora.compute_id, port_id=port.id))
+                amp_post_plug.execute(amphora, added_ports[amphora.id])
 
-    def revert(self, result, loadbalancer, deltas, *args, **kwargs):
+    def revert(self, result, loadbalancer, added_ports, *args, **kwargs):
         """Handle a failed post network plug."""
         if isinstance(result, failure.Failure):
             return

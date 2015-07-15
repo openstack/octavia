@@ -458,3 +458,22 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         with tf_logging.DynamicLoggingListener(update_pool_tf,
                                                log=LOG):
             update_pool_tf.run()
+
+    def failover_amphora(self, amphora_id):
+        """Perform failover operations for an amphora.
+
+        :param amphora_id: ID for amphora to failover
+        :returns: None
+        :raises AmphoraNotFound: The referenced amphora was not found
+        """
+
+        amp = self._amphora_repo.get(db_apis.get_session(),
+                                     id=amphora_id)
+
+        failover_amphora_tf = self._taskflow_load(
+            self._amphora_flows.get_failover_flow(),
+            store={constants.AMPHORA: amp,
+                   constants.LOADBALANCER_ID: amp.load_balancer_id})
+        with tf_logging.DynamicLoggingListener(failover_amphora_tf,
+                                               log=LOG):
+            failover_amphora_tf.run()
