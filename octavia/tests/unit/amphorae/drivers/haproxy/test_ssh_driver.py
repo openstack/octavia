@@ -75,11 +75,21 @@ class TestSshDriver(base.TestCase):
                 build_conf.assert_called_once_with(
                     listener, listener.default_tls_container,
                     listener.sni_containers)
-                self.driver.client.connect.assert_called_once()
-                self.driver.client.open_sftp().assert_called_once()
-                self.driver.client.open_sftp().put().assert_called_once()
-                self.driver.client.exec_command.assert_called_once()
-                self.driver.client.close.assert_called_once()
+                self.driver.client.connect.assert_called_once_with(
+                    hostname=listener.load_balancer.amphorae[0].lb_network_ip,
+                    key_filename=self.driver.amp_config.key_path,
+                    username=self.driver.amp_config.username)
+                self.driver.client.open_sftp.assert_called_once_with()
+                self.driver.client.open_sftp().put.assert_called_once_with(
+                    mock.ANY, mock.ANY
+                )
+                self.driver.client.exec_command.assert_has_calls([
+                    mock.call(mock.ANY),
+                    mock.call(mock.ANY),
+                    mock.call(mock.ANY),
+                    mock.call(mock.ANY)
+                ])
+                self.driver.client.close.assert_called_once_with()
 
     def test_stop(self):
         # Build sample Listener and VIP configs
@@ -89,9 +99,14 @@ class TestSshDriver(base.TestCase):
 
         # Execute driver method
         self.driver.start(listener, vip)
-        self.driver.client.connect.assert_called_once()
-        self.driver.client.exec_command.assert_called_once()
-        self.driver.client.close.assert_called_once()
+        self.driver.client.connect.assert_called_once_with(
+            hostname=listener.load_balancer.amphorae[0].lb_network_ip,
+            key_filename=self.driver.amp_config.key_path,
+            username=self.driver.amp_config.username)
+        self.driver.client.exec_command.assert_called_once_with(
+            'sudo haproxy -f {0}/{1}/haproxy.cfg -p {0}/{1}/{1}.pid'.format(
+                self.driver.amp_config.base_path, listener.id))
+        self.driver.client.close.assert_called_once_with()
 
     def test_start(self):
         # Build sample Listener and VIP configs
@@ -101,11 +116,17 @@ class TestSshDriver(base.TestCase):
 
         # Execute driver method
         self.driver.start(listener, vip)
-        self.driver.client.connect.assert_called_once()
-        self.driver.client.exec_command.assert_called_once()
-        self.driver.client.close.assert_called_once()
+        self.driver.client.connect.assert_called_once_with(
+            hostname=listener.load_balancer.amphorae[0].lb_network_ip,
+            key_filename=self.driver.amp_config.key_path,
+            username=self.driver.amp_config.username)
+        self.driver.client.exec_command.assert_called_once_with(
+            'sudo haproxy -f {0}/{1}/haproxy.cfg -p {0}/{1}/{1}.pid'.format(
+                self.driver.amp_config.base_path, listener.id))
+        self.driver.client.close.assert_called_once_with()
 
     def test_delete(self):
+
         # Build sample Listener and VIP configs
         listener = sample_configs.sample_listener_tuple(
             tls=True, sni=True)
@@ -115,9 +136,18 @@ class TestSshDriver(base.TestCase):
         self.driver.delete(listener, vip)
 
         # Verify call
-        self.driver.client.connect.assert_called_once()
-        self.driver.client.exec_command.assert_called_once()
-        self.driver.client.close.assert_called_once()
+        self.driver.client.connect.assert_called_once_with(
+            hostname=listener.load_balancer.amphorae[0].lb_network_ip,
+            key_filename=self.driver.amp_config.key_path,
+            username=self.driver.amp_config.username)
+        exec_command_calls = [
+            mock.call('sudo kill -9 $(cat {0}/sample_listener_id_1'
+                      '/sample_listener_id_1.pid)'
+                      .format(self.driver.amp_config.base_path)),
+            mock.call('sudo rm -rf {0}/sample_listener_id_1'.format(
+                      self.driver.amp_config.base_path))]
+        self.driver.client.exec_command.assert_has_calls(exec_command_calls)
+        self.driver.client.close.assert_called_once_with()
 
     def test_get_info(self):
         pass
@@ -157,10 +187,11 @@ class TestSshDriver(base.TestCase):
                                  mock.call().get_intermediates()]
                     bbq.assert_has_calls(calls_bbq)
 
-                    self.driver.client.open_sftp().put(
-                        mock.ANY, '{0}/{1}/certificates/{2}'.format(
-                            self.driver.amp_config.base_path, listener.id,
-                            pem)).assert_called_once()
+                    self.driver.client.open_sftp().put.assert_has_calls([
+                        mock.call(mock.ANY, mock.ANY),
+                        mock.call(mock.ANY, mock.ANY),
+                        mock.call(mock.ANY, mock.ANY),
+                    ])
 
     def test_get_primary_cn(self):
         cert = mock.MagicMock()

@@ -43,20 +43,24 @@ MOCK_NEUTRON_PORT = {'port': {'network_id': '1',
 
 
 class TestAllowedAddressPairsDriver(base.TestCase):
+    k_session = None
+    driver = None
 
     def setUp(self):
         super(TestAllowedAddressPairsDriver, self).setUp()
-        neutron_patcher = mock.patch('neutronclient.neutron.client.Client',
-                                     autospec=True)
-        mock.patch('novaclient.client.Client', autospec=True).start()
-        neutron_client = neutron_patcher.start()
-        client = neutron_client(allowed_address_pairs.NEUTRON_VERSION)
-        client.list_extensions.return_value = {
-            'extensions': [{'alias': allowed_address_pairs.AAP_EXT_ALIAS},
-                           {'alias': allowed_address_pairs.SEC_GRP_EXT_ALIAS}]}
-        self.k_session = mock.patch(
-            'octavia.common.keystone.get_session').start()
-        self.driver = allowed_address_pairs.AllowedAddressPairsDriver()
+        with mock.patch('neutronclient.neutron.client.Client',
+                        autospec=True) as neutron_client:
+            with mock.patch('novaclient.client.Client', autospec=True):
+                client = neutron_client(allowed_address_pairs.NEUTRON_VERSION)
+                client.list_extensions.return_value = {
+                    'extensions': [
+                        {'alias': allowed_address_pairs.AAP_EXT_ALIAS},
+                        {'alias': allowed_address_pairs.SEC_GRP_EXT_ALIAS}
+                    ]
+                }
+                self.k_session = mock.patch(
+                    'octavia.common.keystone.get_session').start()
+                self.driver = allowed_address_pairs.AllowedAddressPairsDriver()
 
     def test_check_extensions_loaded(self):
         list_extensions = self.driver.neutron_client.list_extensions

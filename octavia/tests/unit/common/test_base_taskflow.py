@@ -65,5 +65,5 @@ class TestBaseTaskFlowEngine(base.TestCase):
             engine_conf='TESTENGINE',
             executor='TESTEXECUTOR')
 
-        _engine_mock.compile.assert_called_once()
-        _engine_mock.prepare.assert_called_once()
+        _engine_mock.compile.assert_called_once_with()
+        _engine_mock.prepare.assert_called_once_with()

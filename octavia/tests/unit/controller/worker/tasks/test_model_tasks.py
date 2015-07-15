@@ -38,7 +38,7 @@ class TestObjectUpdateTasks(base.TestCase):
         delete_object = model_tasks.DeleteModelObject()
         delete_object.execute(self.listener_mock)
 
-        self.listener_mock.delete.assert_called_once()
+        self.listener_mock.delete.assert_called_once_with()
 
     def test_update_listener(self):
 

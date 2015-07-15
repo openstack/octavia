@@ -35,6 +35,8 @@ if six.PY3:
 
 
 class ServerTestCase(base.TestCase):
+    app = None
+
     def setUp(self):
         self.app = server.app.test_client()
         super(ServerTestCase, self).setUp()
@@ -200,7 +202,7 @@ class ServerTestCase(base.TestCase):
                          json.loads(rv.data.decode('utf-8')))
         mock_rmtree.assert_called_with('/var/lib/octavia/123')
         mock_exists.assert_called_with('/etc/init/haproxy-123.conf')
-        mock_exists.assert_any_called_with('/var/lib/octavia/123/haproxy.pid')
+        mock_exists.assert_any_call('/var/lib/octavia/123/haproxy.pid')
 
         # service is stopped + upstart script
         mock_exists.side_effect = [True, False, True]
@@ -235,7 +237,7 @@ class ServerTestCase(base.TestCase):
 
     @mock.patch('os.path.exists')
     def test_get_haproxy(self, mock_exists):
-        CONTENT = six.b("bibble\nbibble")
+        CONTENT = "bibble\nbibble"
         mock_exists.side_effect = [False]
         rv = self.app.get('/' + api_server.VERSION + '/listeners/123/haproxy')
         self.assertEqual(404, rv.status_code)
@@ -247,7 +249,7 @@ class ServerTestCase(base.TestCase):
             rv = self.app.get('/' + api_server.VERSION +
                               '/listeners/123/haproxy')
             self.assertEqual(200, rv.status_code)
-            self.assertEqual(CONTENT, rv.data)
+            self.assertEqual(six.b(CONTENT), rv.data)
             self.assertEqual('text/plain; charset=utf-8',
                              rv.headers['Content-Type'])
 
@@ -374,7 +376,7 @@ class ServerTestCase(base.TestCase):
 
     @mock.patch('os.path.exists')
     def test_get_certificate_md5(self, mock_exists):
-        CONTENT = six.b("TestTest")
+        CONTENT = "TestTest"
         mock_exists.side_effect = [False]
         rv = self.app.get('/' + api_server.VERSION +
                           '/listeners/123/certificates/test.pem')
@@ -397,14 +399,14 @@ class ServerTestCase(base.TestCase):
                           data='TestTest')
         self.assertEqual(400, rv.status_code)
 
-        mock_exists.side_effect = [True, True]
         m = mock.mock_open(read_data=CONTENT)
-
+        mock_exists.return_value = True
+        mock_exists.side_effect = None
         with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.get('/' + api_server.VERSION +
                               '/listeners/123/certificates/test.pem')
         self.assertEqual(200, rv.status_code)
-        self.assertEqual(dict(md5sum=hashlib.md5(CONTENT).hexdigest()),
+        self.assertEqual(dict(md5sum=hashlib.md5(six.b(CONTENT)).hexdigest()),
                          json.loads(rv.data.decode('utf-8')))
 
     @mock.patch('os.path.exists')

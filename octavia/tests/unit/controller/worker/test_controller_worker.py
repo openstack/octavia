@@ -102,15 +102,17 @@ class TestControllerWorker(base.TestCase):
                             mock_health_mon_repo_get,
                             mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         amp = cw.create_amphora()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with('TEST'))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
-        _flow_mock.storage.fetch.assert_called_once()
+        _flow_mock.storage.fetch.assert_called_once_with('amphora')
 
         assert (amp == AMP_ID)
 
@@ -129,6 +131,8 @@ class TestControllerWorker(base.TestCase):
                             mock_health_mon_repo_get,
                             mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.delete_amphora(AMP_ID)
 
@@ -140,7 +144,7 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with('TEST',
                                     store={'amphora': _amphora_mock}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
                 'health_monitor_flows.HealthMonitorFlows.'
@@ -158,6 +162,8 @@ class TestControllerWorker(base.TestCase):
                                    mock_health_mon_repo_get,
                                    mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.create_health_monitor(_health_mon_mock)
 
@@ -168,7 +174,7 @@ class TestControllerWorker(base.TestCase):
                                            'loadbalancer': _load_balancer_mock,
                                            'vip': _vip_mock}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
                 'health_monitor_flows.HealthMonitorFlows.'
@@ -186,6 +192,8 @@ class TestControllerWorker(base.TestCase):
                                    mock_health_mon_repo_get,
                                    mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.delete_health_monitor(HM_ID)
 
@@ -197,7 +205,7 @@ class TestControllerWorker(base.TestCase):
                                            'loadbalancer': _load_balancer_mock,
                                            'vip': _vip_mock}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
                 'health_monitor_flows.HealthMonitorFlows.'
@@ -215,6 +223,8 @@ class TestControllerWorker(base.TestCase):
                                    mock_health_mon_repo_get,
                                    mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.update_health_monitor(_health_mon_mock.id,
                                  HEALTH_UPDATE_DICT)
@@ -227,7 +237,7 @@ class TestControllerWorker(base.TestCase):
                                            'vip': _vip_mock,
                                            'update_dict': HEALTH_UPDATE_DICT}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
                 'listener_flows.ListenerFlows.get_create_listener_flow',
@@ -244,6 +254,8 @@ class TestControllerWorker(base.TestCase):
                              mock_health_mon_repo_get,
                              mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.create_listener(LB_ID)
 
@@ -253,7 +265,7 @@ class TestControllerWorker(base.TestCase):
                                            'loadbalancer': _load_balancer_mock,
                                            'vip': _vip_mock}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
                 'listener_flows.ListenerFlows.get_delete_listener_flow',
@@ -270,6 +282,8 @@ class TestControllerWorker(base.TestCase):
                              mock_health_mon_repo_get,
                              mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.delete_listener(LB_ID)
 
@@ -279,7 +293,7 @@ class TestControllerWorker(base.TestCase):
                                 constants.VIP: _vip_mock,
                                 constants.LOADBALANCER: _load_balancer_mock}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
                 'listener_flows.ListenerFlows.get_update_listener_flow',
@@ -296,6 +310,8 @@ class TestControllerWorker(base.TestCase):
                              mock_health_mon_repo_get,
                              mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.update_listener(LB_ID, LISTENER_UPDATE_DICT)
 
@@ -307,7 +323,7 @@ class TestControllerWorker(base.TestCase):
                                            'update_dict':
                                                LISTENER_UPDATE_DICT}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
                 'LoadBalancerFlows.get_create_load_balancer_flow',
@@ -333,6 +349,8 @@ class TestControllerWorker(base.TestCase):
                                   mock_amp_repo_get):
 
         # Test code path with an existing READY amphora
+        _flow_mock.reset_mock()
+
         store = {constants.LOADBALANCER_ID: LB_ID}
         cw = controller_worker.ControllerWorker()
         cw.create_load_balancer(LB_ID)
@@ -340,7 +358,7 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock, store=store))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
         self.assertFalse(mock_get_create_amp_for_lb_flow.called)
 
@@ -390,6 +408,8 @@ class TestControllerWorker(base.TestCase):
                                   mock_health_mon_repo_get,
                                   mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.delete_load_balancer(LB_ID)
 
@@ -402,7 +422,7 @@ class TestControllerWorker(base.TestCase):
                                     store={'loadbalancer':
                                            _load_balancer_mock}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
                 'LoadBalancerFlows.get_update_load_balancer_flow',
@@ -419,6 +439,8 @@ class TestControllerWorker(base.TestCase):
                                   mock_health_mon_repo_get,
                                   mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         change = 'TEST2'
         cw.update_load_balancer(LB_ID, change)
@@ -433,7 +455,7 @@ class TestControllerWorker(base.TestCase):
                                            'loadbalancer':
                                                _load_balancer_mock}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
                 'member_flows.MemberFlows.get_create_member_flow',
@@ -450,6 +472,8 @@ class TestControllerWorker(base.TestCase):
                            mock_health_mon_repo_get,
                            mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.create_member(MEMBER_ID)
 
@@ -460,7 +484,7 @@ class TestControllerWorker(base.TestCase):
                                            'loadbalancer': _load_balancer_mock,
                                            'vip': _vip_mock}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
                 'member_flows.MemberFlows.get_delete_member_flow',
@@ -477,6 +501,8 @@ class TestControllerWorker(base.TestCase):
                            mock_health_mon_repo_get,
                            mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.delete_member(MEMBER_ID)
 
@@ -488,7 +514,7 @@ class TestControllerWorker(base.TestCase):
                                    'vip': _vip_mock,
                                    'loadbalancer': _load_balancer_mock}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
                 'member_flows.MemberFlows.get_update_member_flow',
@@ -505,6 +531,8 @@ class TestControllerWorker(base.TestCase):
                            mock_health_mon_repo_get,
                            mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.update_member(MEMBER_ID, MEMBER_UPDATE_DICT)
 
@@ -516,7 +544,7 @@ class TestControllerWorker(base.TestCase):
                                            'vip': _vip_mock,
                                            'update_dict': MEMBER_UPDATE_DICT}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
                 'pool_flows.PoolFlows.get_create_pool_flow',
@@ -533,6 +561,8 @@ class TestControllerWorker(base.TestCase):
                          mock_health_mon_repo_get,
                          mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.create_pool(POOL_ID)
 
@@ -543,7 +573,7 @@ class TestControllerWorker(base.TestCase):
                                            'loadbalancer': _load_balancer_mock,
                                            'vip': _vip_mock}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
                 'pool_flows.PoolFlows.get_delete_pool_flow',
@@ -560,6 +590,8 @@ class TestControllerWorker(base.TestCase):
                          mock_health_mon_repo_get,
                          mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.delete_pool(POOL_ID)
 
@@ -570,7 +602,7 @@ class TestControllerWorker(base.TestCase):
                                            'loadbalancer': _load_balancer_mock,
                                            'vip': _vip_mock}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
                 'pool_flows.PoolFlows.get_update_pool_flow',
@@ -587,6 +619,8 @@ class TestControllerWorker(base.TestCase):
                          mock_health_mon_repo_get,
                          mock_amp_repo_get):
 
+        _flow_mock.reset_mock()
+
         cw = controller_worker.ControllerWorker()
         cw.update_pool(POOL_ID, POOL_UPDATE_DICT)
 
@@ -598,4 +632,4 @@ class TestControllerWorker(base.TestCase):
                                            'vip': _vip_mock,
                                            'update_dict': POOL_UPDATE_DICT}))
 
-        _flow_mock.run.assert_called_once()
+        _flow_mock.run.assert_called_once_with()

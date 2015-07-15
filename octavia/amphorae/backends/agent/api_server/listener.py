@@ -22,6 +22,7 @@ import subprocess
 
 import flask
 import jinja2
+import six
 from werkzeug import exceptions
 
 from octavia.amphorae.backends.agent.api_server import util
@@ -71,7 +72,7 @@ def get_haproxy_config(listener_id):
     with open(util.config_path(listener_id), 'r') as file:
         cfg = file.read()
         resp = flask.Response(cfg, mimetype='text/plain', )
-        resp.headers['ETag'] = hashlib.md5(cfg).hexdigest()
+        resp.headers['ETag'] = hashlib.md5(six.b(cfg)).hexdigest()
         return resp
 
 
@@ -280,15 +281,17 @@ def get_certificate_md5(listener_id, filename):
     _check_listener_exists(listener_id)
     _check_ssl_filename_format(filename)
 
-    if not os.path.exists(_cert_file_path(listener_id, filename)):
+    cert_path = _cert_file_path(listener_id, filename)
+    path_exists = os.path.exists(cert_path)
+    if not path_exists:
         return flask.make_response(flask.jsonify(dict(
             message='Certificate Not Found',
             details="No certificate with filename: {f}".format(
                 f=filename))), 404)
 
-    with open(_cert_file_path(listener_id, filename), 'r') as crt_file:
+    with open(cert_path, 'r') as crt_file:
         cert = crt_file.read()
-        md5 = hashlib.md5(cert).hexdigest()
+        md5 = hashlib.md5(six.b(cert)).hexdigest()
         resp = flask.jsonify(dict(md5sum=md5))
         resp.headers['ETag'] = md5
         return resp

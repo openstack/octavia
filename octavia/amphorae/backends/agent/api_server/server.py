@@ -44,13 +44,13 @@ for code in six.iterkeys(exceptions.default_exceptions):
 # https://127.0.0.1:8443/0.5/listeners/123/haproxy
 @app.route('/' + api_server.VERSION + '/listeners/<listener_id>/haproxy',
            methods=['PUT'])
-def upload_happroxy_config(listener_id):
+def upload_haproxy_config(listener_id):
     return listener.upload_haproxy_config(listener_id)
 
 
 @app.route('/' + api_server.VERSION + '/listeners/<listener_id>/haproxy',
            methods=['GET'])
-def get_happroxy_config(listener_id):
+def get_haproxy_config(listener_id):
     return listener.get_haproxy_config(listener_id)
 
 
