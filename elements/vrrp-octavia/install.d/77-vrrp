@@ -1,0 +1,9 @@
+#!/bin/bash
+set -eux
+
+#Checks out keepalived version 1.2.13, compiles and installs binaries.
+cd /opt/vrrp-octavia/
+git checkout v1.2.13
+./configure
+make
+make install
