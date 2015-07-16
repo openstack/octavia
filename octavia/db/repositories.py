@@ -352,6 +352,17 @@ class AmphoraRepository(BaseRepository):
             data_model_list = [model.to_data_model() for model in lb_list]
             return data_model_list
 
+    def get_spare_amphora_count(self, session):
+        """Get the count of the spare amphora.
+
+        :returns: Number of current spare amphora.
+        """
+        with session.begin(subtransactions=True):
+            count = session.query(self.model_class).filter_by(
+                status=constants.AMPHORA_READY, load_balancer_id=None).count()
+
+        return count
+
 
 class SNIRepository(BaseRepository):
     model_class = models.SNI
@@ -379,18 +390,20 @@ class AmphoraHealthRepository(BaseRepository):
             session.query(self.model_class).filter_by(
                 amphora_id=amphora_id).update(model_kwargs)
 
-    def check_amphora_expired(self, session, amphora_id, timestamp=None):
+    def check_amphora_expired(self, session, amphora_id, exp_age=None):
         """check if a specific amphora is expired
 
         :param session: A Sql Alchemy database session.
         :param amphora_id: id of an amphora object
-        :param timestamp: A standard datetime which is used to see if an
+        :param exp_age: A standard datetime which is used to see if an
         amphora needs to be updated (default: now - 10s)
         :returns: boolean
         """
-        if not timestamp:
+        if not exp_age:
             timestamp = datetime.datetime.utcnow() - datetime.timedelta(
                 seconds=10)
+        else:
+            timestamp = datetime.datetime.utcnow() - exp_age
         amphora_health = self.get(session, amphora_id=amphora_id)
         return amphora_health.last_update < timestamp
 

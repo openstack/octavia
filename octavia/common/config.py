@@ -205,6 +205,22 @@ certificate_opts = [
                help='Name of the cert generator to use'),
 ]
 
+house_keeping_opts = [
+    cfg.IntOpt('spare_check_interval',
+               default=30,
+               help=_('Spare check interval in seconds')),
+    cfg.IntOpt('spare_amphora_pool_size',
+               default=0,
+               help=_('Number of spare amphorae')),
+    cfg.IntOpt('cleanup_interval',
+               default=30,
+               help=_('DB cleanup interval in seconds')),
+    cfg.IntOpt('amphora_expiry_age',
+               default=604800,
+               help=_('Amphora expiry age in seconds'))
+
+]
+
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_opts(networking_opts, group='networking')
@@ -213,6 +229,7 @@ cfg.CONF.register_opts(haproxy_amphora_opts, group='haproxy_amphora')
 cfg.CONF.register_opts(controller_worker_opts, group='controller_worker')
 cfg.CONF.register_opts(task_flow_opts, group='task_flow')
 cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
+cfg.CONF.register_opts(house_keeping_opts, group='house_keeping')
 cfg.CONF.register_cli_opts(core_cli_opts)
 cfg.CONF.register_opts(certificate_opts, group='certificates')
 cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
