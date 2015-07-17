@@ -23,7 +23,7 @@ from taskflow import task
 CONF = cfg.CONF
 CONF.import_group('controller_worker', 'octavia.common.config')
 LOG = logging.getLogger(__name__)
-CERT_VALIDITY = 365
+CERT_VALIDITY = 2 * 365 * 24 * 60 * 60
 
 
 class BaseCertTask(task.Task):

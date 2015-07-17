@@ -30,4 +30,4 @@ class TestCertTasks(base.TestCase):
         self.assertEqual(
             pem, dummy_cert.get_certificate() + dummy_cert.get_private_key())
         mock_driver.generate_cert_key_pair.assert_called_once_with(
-            cn='123', validity=365)
+            cn='123', validity=cert_task.CERT_VALIDITY)
