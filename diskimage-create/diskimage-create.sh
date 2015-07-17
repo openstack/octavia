@@ -148,6 +148,8 @@ AMP_IMAGESIZE=${AMP_IMAGESIZE:-5}
 
 OCTAVIA_ELEMENTS_PATH=$OCTAVIA_REPO_PATH/elements
 
+
+
 if ! [ -d $OCTAVIA_ELEMENTS_PATH ]; then
     echo "ERROR: Octavia elements directory not found at: " $OCTAVIA_ELEMENTS_PATH " Exiting."
     exit 1
@@ -327,6 +329,9 @@ fi
 
 # Add the Octavia Amphora agent.py element
 AMP_element_sequence="$AMP_element_sequence amphora-agent"
+
+# Add the vrrp Octacia element
+AMP_element_sequence="$AMP_element_sequence vrrp-octavia"
 
 # Allow full elements override
 if [ "$DIB_ELEMENTS" ]; then

@@ -86,5 +86,17 @@ else
     echo "HAProxy package found in the Amphora image"
 fi
 
+# Check for KeepAlived
+virt-inspector $AMP_IMAGE_LOCATION | \
+    virt-inspector --xpath \
+    '/operatingsystems/operatingsystem/applications/application/name[text()="keepalived"]' \
+    | grep -q '<name>keepalived</name>'
+if [ $? != 0 ]; then
+    echo "ERROR: Amphora image is missing the keepalived package"
+    exit 1
+else
+    echo "keepalived package found in the Amphora image"
+fi
 echo "Amphora image looks good."
+
 exit 0
