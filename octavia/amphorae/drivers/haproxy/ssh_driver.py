@@ -204,7 +204,7 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
         self.client.close()
 
     def _execute_command(self, command, run_as_root=False):
-        if run_as_root:
+        if run_as_root and not self._is_root():
             command = "sudo {0}".format(command)
         _, stdout, stderr = self.client.exec_command(command)
         stdout = stdout.read()
@@ -315,3 +315,6 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
         # Close the temp file
         for temp in temps:
             temp.close()
+
+    def _is_root(self):
+        return cfg.CONF.haproxy_amphora.username == 'root'
