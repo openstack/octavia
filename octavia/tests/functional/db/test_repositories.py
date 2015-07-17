@@ -97,7 +97,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
     def test_create_load_balancer_and_vip(self):
         lb = {'name': 'test1', 'description': 'desc1', 'enabled': True,
               'provisioning_status': constants.PENDING_UPDATE,
-              'operating_status': constants.OFFLINE}
+              'operating_status': constants.OFFLINE,
+              'topology': constants.TOPOLOGY_ACTIVE_STANDBY}
         vip = {'ip_address': '10.0.0.1',
                'port_id': uuidutils.generate_uuid(),
                'subnet_id': uuidutils.generate_uuid()}
@@ -1069,7 +1070,8 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
                                            status=constants.ACTIVE,
                                            lb_network_ip=self.FAKE_IP,
                                            vrrp_ip=self.FAKE_IP,
-                                           ha_ip=self.FAKE_IP)
+                                           ha_ip=self.FAKE_IP,
+                                           role=constants.ROLE_MASTER)
         return amphora
 
     def test_get(self):
@@ -1083,6 +1085,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         self.assertEqual(self.FAKE_UUID_1, amphora.id)
         self.assertEqual(self.FAKE_UUID_3, amphora.compute_id)
         self.assertEqual(constants.ACTIVE, amphora.status)
+        self.assertEqual(constants.ROLE_MASTER, amphora.role)
 
     def test_update(self):
         status_change = constants.PENDING_UPDATE

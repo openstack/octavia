@@ -173,7 +173,7 @@ class LoadBalancer(BaseDataModel):
 
     def __init__(self, id=None, tenant_id=None, name=None, description=None,
                  provisioning_status=None, operating_status=None, enabled=None,
-                 vip=None, listeners=None, amphorae=None):
+                 topology=None, vip=None, listeners=None, amphorae=None):
         self.id = id
         self.tenant_id = tenant_id
         self.name = name
@@ -182,6 +182,7 @@ class LoadBalancer(BaseDataModel):
         self.operating_status = operating_status
         self.enabled = enabled
         self.vip = vip
+        self.topology = topology
         self.listeners = listeners or []
         self.amphorae = amphorae or []
 
@@ -224,7 +225,7 @@ class Amphora(BaseDataModel):
     def __init__(self, id=None, load_balancer_id=None, compute_id=None,
                  status=None, lb_network_ip=None, vrrp_ip=None,
                  ha_ip=None, vrrp_port_id=None, ha_port_id=None,
-                 load_balancer=None):
+                 load_balancer=None, role=None):
         self.id = id
         self.load_balancer_id = load_balancer_id
         self.compute_id = compute_id
@@ -234,6 +235,7 @@ class Amphora(BaseDataModel):
         self.ha_ip = ha_ip
         self.vrrp_port_id = vrrp_port_id
         self.ha_port_id = ha_port_id
+        self.role = role
         self.load_balancer = load_balancer
 
 

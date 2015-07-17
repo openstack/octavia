@@ -65,6 +65,10 @@ class OctaviaDBTestBase(test_base.DbTestCase):
         self._seed_lookup_table(
             session, constants.SUPPORTED_SP_TYPES,
             models.SessionPersistenceType)
+        self._seed_lookup_table(session, constants.SUPPORTED_AMPHORA_ROLES,
+                                models.AmphoraRoles)
+        self._seed_lookup_table(session, constants.SUPPORTED_LB_TOPOLOGIES,
+                                models.LBTopology)
 
     def _seed_lookup_table(self, session, name_list, model_cls):
         for name in name_list:

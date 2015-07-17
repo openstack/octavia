@@ -42,6 +42,16 @@ class Algorithm(base_models.BASE, base_models.LookupTableMixin):
     __tablename__ = "algorithm"
 
 
+class AmphoraRoles(base_models.BASE, base_models.LookupTableMixin):
+
+    __tablename__ = "amphora_roles"
+
+
+class LBTopology(base_models.BASE, base_models.LookupTableMixin):
+
+    __tablename__ = "lb_topology"
+
+
 class SessionPersistenceType(base_models.BASE, base_models.LookupTableMixin):
 
     __tablename__ = "session_persistence_type"
@@ -212,6 +222,10 @@ class LoadBalancer(base_models.BASE, base_models.IdMixin,
         sa.ForeignKey("operating_status.name",
                       name="fk_load_balancer_operating_status_name"),
         nullable=False)
+    topology = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("lb_topology.name", name="fk_lb_topology_name"),
+        nullable=True)
     enabled = sa.Column(sa.Boolean, nullable=False)
     amphorae = orm.relationship("Amphora", uselist=True,
                                 backref=orm.backref("load_balancer",
@@ -326,6 +340,10 @@ class Amphora(base_models.BASE):
     ha_ip = sa.Column(sa.String(64), nullable=True)
     vrrp_port_id = sa.Column(sa.String(36), nullable=True)
     ha_port_id = sa.Column(sa.String(36), nullable=True)
+    role = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("amphora_roles.name", name="fk_amphora_roles_name"),
+        nullable=True)
     status = sa.Column(
         sa.String(36),
         sa.ForeignKey("provisioning_status.name",
