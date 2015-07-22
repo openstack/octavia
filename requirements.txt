@@ -45,4 +45,4 @@ networkx>=1.8
 Flask<1.0,>=0.10
 netifaces>=0.10.4
 
-cryptography>=0.8.2 # Apache-2.0
+cryptography>=0.9.1 # Apache-2.0
