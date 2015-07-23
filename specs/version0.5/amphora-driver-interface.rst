@@ -89,11 +89,14 @@ Establish a base class to model the desire functionality:
             for that network on that instance.
             """
 
-        def post_vip_plug(self, load_balancer):
+        def post_vip_plug(self, load_balancer, amphorae_network_config):
             """OPTIONAL - called after plug_vip method of the network driver.
 
             This is to do any additional work needed on the amphorae to plug
             the vip, such as bring up interfaces.
+
+            amphorae_network_config is a dictionary of objects that include
+            network specific information about each amphora's connections.
             """
 
         def start_health_check(self, health_mixin):

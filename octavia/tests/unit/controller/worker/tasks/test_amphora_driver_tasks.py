@@ -27,6 +27,7 @@ else:
     import unittest.mock as mock
 
 AMP_ID = uuidutils.generate_uuid()
+COMPUTE_ID = uuidutils.generate_uuid()
 LISTENER_ID = uuidutils.generate_uuid()
 LB_ID = uuidutils.generate_uuid()
 
@@ -37,6 +38,7 @@ _listener_mock.id = LISTENER_ID
 _vip_mock = mock.MagicMock()
 _LB_mock = mock.MagicMock()
 _amphorae_mock = [_amphora_mock]
+_network_mock = mock.MagicMock()
 
 
 @mock.patch('octavia.db.repositories.AmphoraRepository.update')
@@ -45,13 +47,13 @@ _amphorae_mock = [_amphora_mock]
 @mock.patch('octavia.controller.worker.tasks.amphora_driver_tasks.LOG')
 @mock.patch('oslo_utils.uuidutils.generate_uuid', return_value=AMP_ID)
 @mock.patch('stevedore.driver.DriverManager.driver')
-class TestDatabaseTasks(base.TestCase):
+class TestAmphoraDriverTasks(base.TestCase):
 
     def setUp(self):
 
         _LB_mock.amphorae = _amphora_mock
         _LB_mock.id = LB_ID
-        super(TestDatabaseTasks, self).setUp()
+        super(TestAmphoraDriverTasks, self).setUp()
 
     def test_listener_update(self,
                              mock_driver,
@@ -222,14 +224,16 @@ class TestDatabaseTasks(base.TestCase):
                                         mock_get_session,
                                         mock_listener_repo_update,
                                         mock_amphora_repo_update):
-
+        mock_driver.get_network.return_value = _network_mock
+        _amphora_mock.id = AMP_ID
+        _amphora_mock.compute_id = COMPUTE_ID
         _LB_mock.amphorae = [_amphora_mock]
         amphora_post_network_plug_obj = (amphora_driver_tasks.
                                          AmphoraePostNetworkPlug())
         amphora_post_network_plug_obj.execute(_LB_mock)
 
         (mock_driver.post_network_plug.
-            assert_called_once_with)(_amphora_mock)
+            assert_called_once_with(_amphora_mock))
 
         # Test revert
         amp = amphora_post_network_plug_obj.revert(None, _LB_mock)
@@ -250,12 +254,12 @@ class TestDatabaseTasks(base.TestCase):
                                    mock_listener_repo_update,
                                    mock_amphora_repo_update):
 
-        amphora_post_vip_plug_obj = (amphora_driver_tasks.
-                                     AmphoraPostVIPPlug())
-        amphora_post_vip_plug_obj.execute(_LB_mock)
+        amphorae_net_config_mock = mock.Mock()
+        amphora_post_vip_plug_obj = amphora_driver_tasks.AmphoraPostVIPPlug()
+        amphora_post_vip_plug_obj.execute(_LB_mock, amphorae_net_config_mock)
 
-        (mock_driver.post_vip_plug.
-            assert_called_once_with)(_LB_mock)
+        mock_driver.post_vip_plug.assert_called_once_with(
+            _LB_mock, amphorae_net_config_mock)
 
         # Test revert
         amp = amphora_post_vip_plug_obj.revert(None, _LB_mock)

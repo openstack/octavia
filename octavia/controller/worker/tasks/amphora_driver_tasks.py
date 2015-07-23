@@ -40,7 +40,6 @@ class BaseAmphoraTask(task.Task):
             name=CONF.controller_worker.amphora_driver,
             invoke_on_load=True
         ).driver
-
         self.amphora_repo = repo.AmphoraRepository()
         self.listener_repo = repo.ListenerRepository()
         self.loadbalancer_repo = repo.LoadBalancerRepository()
@@ -185,9 +184,10 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
 class AmphoraPostVIPPlug(BaseAmphoraTask):
     """Task to notify the amphora post VIP plug."""
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer, amphorae_network_config):
         """Execute post_vip_routine."""
-        self.amphora_driver.post_vip_plug(loadbalancer)
+        self.amphora_driver.post_vip_plug(
+            loadbalancer, amphorae_network_config)
         LOG.debug("Notfied amphora of vip plug")
 
     def revert(self, result, loadbalancer, *args, **kwargs):

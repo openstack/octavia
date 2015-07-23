@@ -19,6 +19,7 @@ import six
 
 @six.add_metaclass(abc.ABCMeta)
 class AmphoraLoadBalancerDriver(object):
+
     @abc.abstractmethod
     def update(self, listener, vip):
         """Update the amphora with a new configuration
@@ -134,12 +135,16 @@ class AmphoraLoadBalancerDriver(object):
         """
         pass
 
-    def post_vip_plug(self, load_balancer):
+    def post_vip_plug(self, load_balancer, amphorae_network_config):
         """Called after network driver has allocated and plugged the VIP
 
         :param load_balancer: A load balancer that just had its vip allocated
                               and plugged in the network driver.
         :type load_balancer: octavia.common.data_models.LoadBalancer
+        :param amphorae_network_config: A data model containing information
+                                        about the subnets and ports that an
+                                        amphorae owns.
+        :type vip_network: octavia.network.data_models.AmphoraNetworkConfig
         :returns: None
         """
         pass

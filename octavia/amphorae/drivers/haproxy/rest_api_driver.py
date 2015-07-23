@@ -99,7 +99,7 @@ class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
     def finalize_amphora(self, amphora):
         pass
 
-    def post_vip_plug(self, load_balancer):
+    def post_vip_plug(self, load_balancer, amphorae_network_config):
         for amp in load_balancer.amphorae:
             self.client.plug_vip(amp, load_balancer.vip.ip_address)
 
