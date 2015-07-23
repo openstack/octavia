@@ -59,6 +59,10 @@ class NetworkNotFound(NetworkException):
     pass
 
 
+class SubnetNotFound(NetworkException):
+    pass
+
+
 class VIPConfigurationNotFound(NetworkException):
     pass
 
@@ -182,11 +186,31 @@ class AbstractNetworkDriver(object):
         pass
 
     @abc.abstractmethod
-    def get_network(self, network_id=None, subnet_id=None):
-        """Retrieves network from network id or subnet id   .
+    def get_network(self, network_id):
+        """Retrieves network from network id.
 
         :param network_id: id of an network to retrieve
-        :param subnet_id: id of an subnet to retrieve network
         :return: octavia.network.data_models.Network
         :raises: NetworkException, NetworkNotFound
         """
+        pass
+
+    @abc.abstractmethod
+    def get_subnet(self, subnet_id):
+        """Retrieves subnet from subnet id.
+
+        :param subnet_id: id of a subnet to retrieve
+        :return: octavia.network.data_models.Subnet
+        :raises: NetworkException, SubnetNotFound
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_port(self, port_id):
+        """Retrieves port from port id.
+
+        :param port_id: id of a port to retrieve
+        :return: octavia.network.data_models.Port
+        :raises: NetworkException, PortNotFound
+        """
+        pass

@@ -40,6 +40,8 @@ class TestNoopNetworkDriver(base.TestCase):
         self.vip = models.Vip()
         self.vip.ip_address = "10.0.0.1"
         self.amphora_id = self.FAKE_UUID_1
+        self.compute_id = self.FAKE_UUID_2
+        self.subnet_id = self.FAKE_UUID_3
 
     def test_allocate_vip(self):
         self.driver.allocate_vip(self.load_balancer)
@@ -78,11 +80,13 @@ class TestNoopNetworkDriver(base.TestCase):
                              self.ip_address)])
 
     def test_unplug_network(self):
-        self.driver.unplug_network(self.amphora_id, self.network_id)
-        self.assertEqual((self.amphora_id, self.network_id,
+        self.driver.unplug_network(self.amphora_id, self.network_id,
+                                   ip_address=self.ip_address)
+        self.assertEqual((self.amphora_id, self.network_id, self.ip_address,
                           'unplug_network'),
                          self.driver.driver.networkconfigconfig[(
-                             self.amphora_id, self.network_id)])
+                             self.amphora_id, self.network_id,
+                             self.ip_address)])
 
     def test_get_plugged_networks(self):
         self.driver.get_plugged_networks(self.amphora_id)
@@ -96,3 +100,24 @@ class TestNoopNetworkDriver(base.TestCase):
                          self.driver.driver.networkconfigconfig[(
                              self.load_balancer
                          )])
+
+    def test_get_network(self):
+        self.driver.get_network(self.network_id)
+        self.assertEqual(
+            (self.network_id, 'get_network'),
+            self.driver.driver.networkconfigconfig[self.network_id]
+        )
+
+    def test_get_subnet(self):
+        self.driver.get_subnet(self.subnet_id)
+        self.assertEqual(
+            (self.subnet_id, 'get_subnet'),
+            self.driver.driver.networkconfigconfig[self.subnet_id]
+        )
+
+    def test_get_port(self):
+        self.driver.get_port(self.port_id)
+        self.assertEqual(
+            (self.port_id, 'get_port'),
+            self.driver.driver.networkconfigconfig[self.port_id]
+        )

@@ -24,6 +24,7 @@ from octavia.common import keystone
 from octavia.i18n import _LE, _LI
 from octavia.network import base
 from octavia.network import data_models as network_models
+from octavia.network.drivers.neutron import utils
 
 
 LOG = logging.getLogger(__name__)
@@ -58,15 +59,18 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
                          'will not manage any security groups.'))
             self.sec_grp_enabled = False
 
-    def _port_to_vip(self, port, load_balancer_id=None):
+    def _port_to_vip(self, port, load_balancer):
         port = port['port']
-        ip_address = port['fixed_ips'][0]['ip_address']
-        subnet_id = port['fixed_ips'][0]['subnet_id']
+        fixed_ip = {}
+        for port_fixed_ip in port['fixed_ips']:
+            if port_fixed_ip['subnet_id'] == load_balancer.vip.subnet_id:
+                fixed_ip = port_fixed_ip
+                break
         port_id = port['id']
-        return data_models.Vip(ip_address=ip_address,
-                               subnet_id=subnet_id,
+        return data_models.Vip(ip_address=fixed_ip.get('ip_address'),
+                               subnet_id=fixed_ip.get('subnet_id'),
                                port_id=port_id,
-                               load_balancer_id=load_balancer_id)
+                               load_balancer_id=load_balancer.id)
 
     def _nova_interface_to_octavia_interface(self, amphora_id, nova_interface):
         ip_address = nova_interface.fixed_ips[0]['ip_address']
@@ -181,17 +185,6 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
         self.nova_client.servers.add_security_group(
             amphora.compute_id, sec_grp.get('id'))
 
-    def _map_network_to_data_model(self, network):
-        nw = network.get('network')
-        return network_models.Network(
-            id=nw.get('id'), name=nw.get('name'), subnets=nw.get('subnets'),
-            tenant_id=nw.get('tenant_id'),
-            admin_state_up=nw.get('admin_state_up'), mtu=nw.get('mtu'),
-            provider_network_type=nw.get('provider:network_type'),
-            provider_physical_network=nw.get('provider:physical_network'),
-            provider_segmentation_id=nw.get('provider:segmentation_id'),
-            router_external=nw.get('router:external'))
-
     def deallocate_vip(self, vip):
         port = self.neutron_client.show_port(vip.port_id)
         admin_tenant_id = keystone.get_session().get_project_id()
@@ -235,7 +228,9 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
                 id=amphora.id,
                 compute_id=amphora.compute_id,
                 vrrp_ip=interface.ip_address,
-                ha_ip=vip.ip_address))
+                ha_ip=vip.ip_address,
+                vrrp_port_id=interface.port_id,
+                ha_port_id=vip.port_id))
         return plugged_amphorae
 
     def allocate_vip(self, load_balancer):
@@ -256,7 +251,7 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
                                   port_id=load_balancer.vip.port_id)
                 LOG.exception(message)
                 raise base.AllocateVIPException(message)
-            return self._port_to_vip(port)
+            return self._port_to_vip(port, load_balancer)
 
         # Must retrieve the network_id from the subnet
         try:
@@ -285,7 +280,7 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
                 network_id=subnet['network_id'])
             LOG.exception(message)
             raise base.AllocateVIPException(message)
-        return self._port_to_vip(new_port)
+        return self._port_to_vip(new_port, load_balancer)
 
     def unplug_vip(self, load_balancer, vip):
         try:
@@ -397,30 +392,53 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
         sec_grp = self._get_lb_security_group(load_balancer.id)
         self._update_security_group_rules(load_balancer, sec_grp.get('id'))
 
-    def get_network(self, network_id=None, subnet_id=None):
-        network = None
+    def get_network(self, network_id):
         try:
-            if network_id:
-                network = self.neutron_client.show_network(network_id)
-            elif subnet_id:
-                subnet = (self.neutron_client.show_subnet(subnet_id)
-                          .get('subnet').get('network_id'))
-                network = self.neutron_client.show_network(subnet)
-        except base.NetworkNotFound:
+            network = self.neutron_client.show_network(network_id)
+            return utils.convert_network_dict_to_model(network)
+        except neutron_client_exceptions.NotFound:
             message = _LE('Network not found '
-                          '(network id: {network_id} '
-                          'and subnet id: {subnet_id}.').format(
-                network_id=network_id,
-                subnet_id=subnet_id)
+                          '(network id: {network_id}.').format(
+                network_id=network_id)
             LOG.exception(message)
             raise base.NetworkNotFound(message)
         except Exception:
             message = _LE('Error retrieving network '
-                          '(network id: {network_id} '
-                          'and subnet id: {subnet_id}.').format(
-                network_id=network_id,
+                          '(network id: {network_id}.').format(
+                network_id=network_id)
+            LOG.exception(message)
+            raise base.NetworkException(message)
+
+    def get_subnet(self, subnet_id):
+        try:
+            subnet = self.neutron_client.show_subnet(subnet_id)
+            return utils.convert_subnet_dict_to_model(subnet)
+        except neutron_client_exceptions.NotFound:
+            message = _LE('Subnet not found '
+                          '(subnet id: {subnet_id}.').format(
+                subnet_id=subnet_id)
+            LOG.exception(message)
+            raise base.SubnetNotFound(message)
+        except Exception:
+            message = _LE('Error retrieving subnet '
+                          '(subnet id: {subnet_id}.').format(
                 subnet_id=subnet_id)
             LOG.exception(message)
             raise base.NetworkException(message)
 
-        return self._map_network_to_data_model(network)
+    def get_port(self, port_id):
+        try:
+            port = self.neutron_client.show_port(port_id)
+            return utils.convert_port_dict_to_model(port)
+        except neutron_client_exceptions.NotFound:
+            message = _LE('Port not found '
+                          '(port id: {port_id}.').format(
+                port_id=port_id)
+            LOG.exception(message)
+            raise base.PortNotFound(message)
+        except Exception:
+            message = _LE('Error retrieving port '
+                          '(port id: {port_id}.').format(
+                port_id=port_id)
+            LOG.exception(message)
+            raise base.NetworkException(message)

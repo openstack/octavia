@@ -16,6 +16,7 @@
 import logging
 
 from oslo_config import cfg
+import six
 from stevedore import driver as stevedore_driver
 from taskflow import task
 from taskflow.types import failure
@@ -63,7 +64,7 @@ class CalculateDelta(BaseNetworkTask):
         :returns the delta
         """
 
-        deltas = []
+        deltas = {}
         for amphora in loadbalancer.amphorae:
 
             LOG.debug("Calculating network delta for amphora id: %s"
@@ -71,11 +72,12 @@ class CalculateDelta(BaseNetworkTask):
 
             # Figure out what networks we want
             # seed with lb network(s)
+            subnet = self.network_driver.get_subnet(loadbalancer.vip.subnet_id)
             desired_network_ids = {CONF.controller_worker.amp_network,
-                                   loadbalancer.vip.network_id}
+                                   subnet.network_id}
 
             if not loadbalancer.listeners:
-                return []
+                return {}
 
             for listener in loadbalancer.listeners:
                 if (not listener.default_pool) or (
@@ -101,10 +103,9 @@ class CalculateDelta(BaseNetworkTask):
             add_ids = desired_network_ids - set(actual_network_nics)
             add_nics = list(data_models.Interface(
                 network_id=net_id) for net_id in add_ids)
-            deltas.append(data_models.Delta(amphora_id=amphora.id,
-                                            compute_id=amphora.compute_id,
-                                            add_nics=add_nics,
-                                            delete_nics=delete_nics))
+            deltas[amphora.id] = data_models.Delta(
+                amphora_id=amphora.id, compute_id=amphora.compute_id,
+                add_nics=add_nics, delete_nics=delete_nics)
 
         return deltas
 
@@ -200,28 +201,26 @@ class HandleNetworkDeltas(BaseNetworkTask):
     def execute(self, deltas):
         """Handle network plugging based off deltas."""
 
-        for delta in deltas:
+        for amp_id, delta in six.iteritems(deltas):
             for nic in delta.add_nics:
                 self.network_driver.plug_network(delta.compute_id,
                                                  nic.network_id)
-
             for nic in delta.delete_nics:
                 try:
                     self.network_driver.unplug_network(delta.compute_id,
                                                        nic.network_id)
-                except base.NetworkNotFound as e:
+                except base.NetworkNotFound:
                     LOG.debug("Network %d not found ", nic.network_id)
-                    pass
                 except Exception as e:
                     LOG.error(
-                        _LE("Unable to unplug network - exception: %s"),
-                        str(e))
-                    pass
+                        _LE("Unable to unplug network - exception: %s"), e)
 
-    def revert(self, deltas):
+    def revert(self, result, deltas):
         """Handle a network plug or unplug failures."""
 
-        for delta in deltas:
+        if isinstance(result, failure.Failure):
+            return
+        for amp_id, delta in six.iteritems(deltas):
             LOG.warn(_LW("Unable to plug networks for amp id %s"),
                      delta.amphora_id)
             if not delta:
@@ -316,3 +315,32 @@ class UpdateVIP(BaseNetworkTask):
         LOG.debug("Updating VIP of load_balancer %s." % loadbalancer.id)
 
         self.network_driver.update_vip(loadbalancer)
+
+
+class GetAmphoraeNetworkConfigs(BaseNetworkTask):
+    """Task to retrieve amphorae network details."""
+
+    def execute(self, loadbalancer):
+        LOG.debug("Retrieving vip network details.")
+        vip_subnet = self.network_driver.get_subnet(loadbalancer.vip.subnet_id)
+        vip_port = self.network_driver.get_port(loadbalancer.vip.port_id)
+        amp_net_configs = {}
+        for amp in loadbalancer.amphorae:
+            LOG.debug("Retrieving network details for "
+                      "amphora {0}".format(amp.id))
+            vrrp_port = self.network_driver.get_port(amp.vrrp_port_id)
+            vrrp_subnet = self.network_driver.get_subnet(
+                vrrp_port.get_subnet_id(amp.vrrp_ip))
+            ha_port = self.network_driver.get_port(amp.ha_port_id)
+            ha_subnet = self.network_driver.get_subnet(
+                ha_port.get_subnet_id(amp.ha_ip))
+            amp_net_configs[amp.id] = data_models.AmphoraNetworkConfig(
+                amphora=amp,
+                vip_subnet=vip_subnet,
+                vip_port=vip_port,
+                vrrp_subnet=vrrp_subnet,
+                vrrp_port=vrrp_port,
+                ha_subnet=ha_subnet,
+                ha_port=ha_port
+            )
+        return amp_net_configs

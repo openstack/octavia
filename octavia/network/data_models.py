@@ -53,3 +53,60 @@ class Network(data_models.BaseDataModel):
         self.provider_physical_network = provider_physical_network
         self.provider_segmentation_id = provider_segmentation_id
         self.router_external = router_external
+        self.mtu = mtu
+
+
+class Subnet(data_models.BaseDataModel):
+
+    def __init__(self, id=None, name=None, network_id=None, tenant_id=None,
+                 gateway_ip=None, cidr=None, ip_version=None):
+        self.id = id
+        self.name = name
+        self.network_id = network_id
+        self.tenant_id = tenant_id
+        self.gateway_ip = gateway_ip
+        self.cidr = cidr
+        self.ip_version = ip_version
+
+
+class Port(data_models.BaseDataModel):
+
+    def __init__(self, id=None, name=None, device_id=None, device_owner=None,
+                 mac_address=None, network_id=None, status=None,
+                 tenant_id=None, admin_state_up=None, fixed_ips=None):
+        self.id = id
+        self.name = name
+        self.device_id = device_id
+        self.device_owner = device_owner
+        self.mac_address = mac_address
+        self.network_id = network_id
+        self.status = status
+        self.tenant_id = tenant_id
+        self.admin_state_up = admin_state_up
+        self.fixed_ips = fixed_ips or []
+
+    def get_subnet_id(self, fixed_ip_address):
+        for fixed_ip in self.fixed_ips:
+            if fixed_ip.ip_address == fixed_ip_address:
+                return fixed_ip.subnet_id
+
+
+class FixedIP(data_models.BaseDataModel):
+
+    def __init__(self, subnet_id=None, ip_address=None):
+        self.subnet_id = subnet_id
+        self.ip_address = ip_address
+
+
+class AmphoraNetworkConfig(data_models.BaseDataModel):
+
+    def __init__(self, amphora=None, vip_subnet=None, vip_port=None,
+                 vrrp_subnet=None, vrrp_port=None, ha_subnet=None,
+                 ha_port=None):
+        self.amphora = amphora
+        self.vip_subnet = vip_subnet
+        self.vip_port = vip_port
+        self.vrrp_subnet = vrrp_subnet
+        self.vrrp_port = vrrp_port
+        self.ha_subnet = ha_subnet
+        self.ha_port = ha_port

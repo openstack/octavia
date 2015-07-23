@@ -59,12 +59,12 @@ class NoopManager(object):
         self.networkconfigconfig[(amphora_id, network_id, ip_address)] = (
             amphora_id, network_id, ip_address, 'plug_network')
 
-    def unplug_network(self, amphora_id, network_id):
+    def unplug_network(self, amphora_id, network_id, ip_address=None):
         LOG.debug("Network %s no-op, unplug_network amphora_id %s, "
                   "network_id %s",
                   self.__class__.__name__, amphora_id, network_id)
-        self.networkconfigconfig[(amphora_id, network_id)] = (
-            amphora_id, network_id, 'unplug_network')
+        self.networkconfigconfig[(amphora_id, network_id, ip_address)] = (
+            amphora_id, network_id, ip_address, 'unplug_network')
 
     def get_plugged_networks(self, amphora_id):
         LOG.debug("Network %s no-op, get_plugged_networks amphora_id %s",
@@ -77,11 +77,20 @@ class NoopManager(object):
                   self.__class__.__name__, load_balancer)
         self.networkconfigconfig[load_balancer] = (load_balancer, 'update_vip')
 
-    def get_network(self, network_id=None, subnet_id=None):
+    def get_network(self, network_id):
         LOG.debug("Network %s no-op, get_network network_id %s",
                   self.__class__.__name__, network_id)
-        self.networkconfigconfig[network_id, subnet_id] = (
-            network_id, subnet_id, 'get_network')
+        self.networkconfigconfig[network_id] = (network_id, 'get_network')
+
+    def get_subnet(self, subnet_id):
+        LOG.debug("Subnet %s no-op, get_subnet subnet_id %s",
+                  self.__class__.__name__, subnet_id)
+        self.networkconfigconfig[subnet_id] = (subnet_id, 'get_subnet')
+
+    def get_port(self, port_id):
+        LOG.debug("Port %s no-op, get_port port_id %s",
+                  self.__class__.__name__, port_id)
+        self.networkconfigconfig[port_id] = (port_id, 'get_port')
 
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
@@ -104,8 +113,9 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def plug_network(self, amphora_id, network_id, ip_address=None):
         self.driver.plug_network(amphora_id, network_id, ip_address)
 
-    def unplug_network(self, amphora_id, network_id):
-        self.driver.unplug_network(amphora_id, network_id)
+    def unplug_network(self, amphora_id, network_id, ip_address=None):
+        self.driver.unplug_network(amphora_id, network_id,
+                                   ip_address=ip_address)
 
     def get_plugged_networks(self, amphora_id):
         self.driver.get_plugged_networks(amphora_id)
@@ -113,5 +123,11 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def update_vip(self, load_balancer):
         self.driver.update_vip(load_balancer)
 
-    def get_network(self, network_id=None, subnet_id=None):
-        self.driver.get_network(network_id, subnet_id)
+    def get_network(self, network_id):
+        self.driver.get_network(network_id)
+
+    def get_subnet(self, subnet_id):
+        self.driver.get_subnet(subnet_id)
+
+    def get_port(self, port_id):
+        self.driver.get_port(port_id)

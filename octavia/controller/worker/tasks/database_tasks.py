@@ -252,7 +252,9 @@ class UpdateAmphoraVIPData(BaseDatabaseTask):
         for amp_data in amps_data:
             self.repos.amphora.update(db_apis.get_session(), amp_data.id,
                                       vrrp_ip=amp_data.vrrp_ip,
-                                      ha_ip=amp_data.ha_ip)
+                                      ha_ip=amp_data.ha_ip,
+                                      vrrp_port_id=amp_data.vrrp_port_id,
+                                      ha_port_id=amp_data.ha_port_id)
 
 
 class MapLoadbalancerToAmphora(BaseDatabaseTask):

@@ -84,6 +84,41 @@ New data models:
     * provider_physical_network
     * provider_segmentation_id
     * router_external
+    * mtu
+
+* class Subnet
+    * id
+    * name
+    * network_id
+    * tenant_id
+    * gateway_ip
+    * cidr
+    * ip_version
+
+* class Port
+    * id
+    * name
+    * device_id
+    * device_owner
+    * mac_address
+    * network_id
+    * status
+    * tenant_id
+    * admin_state_up
+    * fixed_ips - list of FixedIP objects
+
+* FixedIP
+    * subnet_id
+    * ip_address
+
+* AmphoraNetworkConfig
+    * amphora - Amphora object
+    * vip_subnet - Subnet object
+    * vip_port - Port object
+    * vrrp_subnet - Subnet object
+    * vrrp_port - Port object
+    * ha_subnet - Subnet object
+    * ha_port - Port object
 
 New Exceptions defined in the octavia.network package:
 
@@ -97,6 +132,7 @@ New Exceptions defined in the octavia.network package:
 * UnplugNetworkException
 * VIPInUse
 * PortNotFound
+* SubnetNotFound
 * NetworkNotFound
 * VIPConfigurationNotFound
 * AmphoraNotFound
@@ -179,13 +215,26 @@ class AbstractNetworkDriver
       of the passed in loadbalancer
     * loadbalancer: instance of a data_models.LoadBalancer
 
-* get_network(network_id=None, subnet_id=None):
+* get_network(network_id):
 
-    * Retrieves the network from network_id or subnet_id
+    * Retrieves the network from network_id
     * network_id = id of an network to retrieve
-    * subnet_id = id of an subnet to retrieve network
     * returns = Network data model
     * raises NetworkException, NetworkNotFound
+
+* get_subnet(subnet_id):
+
+    * Retrieves the subnet from subnet_id
+    * subnet_id = id of a subnet to retrieve
+    * returns = Subnet data model
+    * raises NetworkException, SubnetNotFound
+
+* get_port(port_id):
+
+    * Retrieves the port from port_id
+    * port_id = id of a port to retrieve
+    * returns = Port data model
+    * raises NetworkException, PortNotFound
 
 Alternatives
 ------------
@@ -199,16 +248,11 @@ Data model impact
 * The Interface data model defined above will just be a class.  We may later
   decide that it needs to be stored in the database, but we can optimize on
   that in a later review if needed.
-* Remove floating_ip_id from VIP model and migration
-* Remove floating_ip_network_id from VIP model and migration
-* Rename net_port_id to just port_id in VIP model and migration
-* Rename subnet_id to network_id in VIP model and migration
 
 REST API impact
 ---------------
 
-* Remove floating_ip_id from WSME VIP type
-* Remove floating_ip_network_id from WSME VIP type
+None
 
 Security impact
 ---------------
