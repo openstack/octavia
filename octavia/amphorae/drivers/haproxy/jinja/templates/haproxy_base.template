@@ -30,4 +30,6 @@ defaults
     timeout client {{ timeout_client | default('50000', true) }}
     timeout server {{ timeout_server | default('50000', true) }}
 
+{% block peers %}{% endblock peers %}
+
 {% block proxies %}{% endblock proxies %}

@@ -17,7 +17,6 @@ import logging
 
 from octavia.common import base_taskflow
 from octavia.common import constants
-from octavia.common import exceptions
 from octavia.controller.worker.flows import amphora_flows
 from octavia.controller.worker.flows import health_monitor_flows
 from octavia.controller.worker.flows import listener_flows
@@ -28,8 +27,10 @@ from octavia.db import api as db_apis
 from octavia.db import repositories as repo
 from octavia.i18n import _LI
 
+from oslo_config import cfg
 from taskflow.listeners import logging as tf_logging
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -252,23 +253,37 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         # https://review.openstack.org/#/c/98946/
 
         store = {constants.LOADBALANCER_ID: load_balancer_id}
+
+        topology = CONF.controller_worker.loadbalancer_topology
+
+        if topology == constants.TOPOLOGY_SINGLE:
+            store[constants.UPDATE_DICT] = {constants.LOADBALANCER_TOPOLOGY:
+                                            constants.TOPOLOGY_SINGLE}
+        elif topology == constants.TOPOLOGY_ACTIVE_STANDBY:
+            store[constants.UPDATE_DICT] = {constants.LOADBALANCER_TOPOLOGY:
+                                            constants.TOPOLOGY_ACTIVE_STANDBY}
+        # blogan and sbalukoff asked to remove the else check here
+        # as it is also checked later in the flow create code
+
         create_lb_tf = self._taskflow_load(
-            self._lb_flows.get_create_load_balancer_flow(), store=store)
+            self._lb_flows.get_create_load_balancer_flow(
+                topology=CONF.controller_worker.loadbalancer_topology),
+            store=store)
         with tf_logging.DynamicLoggingListener(create_lb_tf,
                                                log=LOG):
-            try:
-                create_lb_tf.run()
-            except exceptions.NoReadyAmphoraeException:
-                create_amp_lb_tf = self._taskflow_load(
-                    self._amphora_flows.get_create_amphora_for_lb_flow(),
-                    store=store)
-
-                with tf_logging.DynamicLoggingListener(create_amp_lb_tf,
-                                                       log=LOG):
-                    try:
-                        create_amp_lb_tf.run()
-                    except exceptions.ComputeBuildException as e:
-                        raise exceptions.NoSuitableAmphoraException(msg=e.msg)
+            create_lb_tf.run()
+            # Ideally the following flow should be integrated with the
+            # create_active_standby flow. This is not possible with the
+            # current version of taskflow as it flatten out the flows.
+            # Bug report: https://bugs.launchpad.net/taskflow/+bug/1479466
+            post_lb_amp_assoc = self._taskflow_load(
+                self._lb_flows.get_post_lb_amp_association_flow(
+                    prefix='post-amphora-association',
+                    topology=CONF.controller_worker.loadbalancer_topology),
+                store=store)
+            with tf_logging.DynamicLoggingListener(post_lb_amp_assoc,
+                                                   log=LOG):
+                post_lb_amp_assoc.run()
 
     def delete_load_balancer(self, load_balancer_id):
         """Deletes a load balancer by de-allocating Amphorae.

@@ -448,8 +448,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             server=n_constants.MOCK_COMPUTE_ID, port_id=port2.get('id'))
 
     def test_update_vip(self):
-        listeners = [data_models.Listener(protocol_port=80),
-                     data_models.Listener(protocol_port=443)]
+        listeners = [data_models.Listener(protocol_port=80, peer_port=1024),
+                     data_models.Listener(protocol_port=443, peer_port=1025)]
         lb = data_models.LoadBalancer(id='1', listeners=listeners)
         list_sec_grps = self.driver.neutron_client.list_security_groups
         list_sec_grps.return_value = {'security_groups': [{'id': 'secgrp-1'}]}
@@ -465,7 +465,25 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         create_rule = self.driver.neutron_client.create_security_group_rule
         self.driver.update_vip(lb)
         delete_rule.assert_called_once_with('rule-22')
-        expected_create_rule = {
+        expected_create_rule_1 = {
+            'security_group_rule': {
+                'security_group_id': 'secgrp-1',
+                'direction': 'ingress',
+                'protocol': 'TCP',
+                'port_range_min': 1024,
+                'port_range_max': 1024
+            }
+        }
+        expected_create_rule_2 = {
+            'security_group_rule': {
+                'security_group_id': 'secgrp-1',
+                'direction': 'ingress',
+                'protocol': 'TCP',
+                'port_range_min': 1025,
+                'port_range_max': 1025
+            }
+        }
+        expected_create_rule_3 = {
             'security_group_rule': {
                 'security_group_id': 'secgrp-1',
                 'direction': 'ingress',
@@ -474,7 +492,9 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 'port_range_max': 443
             }
         }
-        create_rule.assert_called_once_with(expected_create_rule)
+        create_rule.assert_has_calls([mock.call(expected_create_rule_1),
+                                      mock.call(expected_create_rule_2),
+                                      mock.call(expected_create_rule_3)])
 
     def test_update_vip_when_listener_deleted(self):
         listeners = [data_models.Listener(protocol_port=80),
@@ -496,7 +516,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         create_rule = self.driver.neutron_client.create_security_group_rule
         self.driver.update_vip(lb)
         delete_rule.assert_called_once_with('rule-22')
-        self.assertFalse(create_rule.called)
+        self.assertTrue(create_rule.called)
 
     def test_update_vip_when_no_listeners(self):
         listeners = []
@@ -512,10 +532,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         list_rules = self.driver.neutron_client.list_security_group_rules
         list_rules.return_value = fake_rules
         delete_rule = self.driver.neutron_client.delete_security_group_rule
-        create_rule = self.driver.neutron_client.create_security_group_rule
         self.driver.update_vip(lb)
         delete_rule.assert_called_once_with('ssh-rule')
-        self.assertFalse(create_rule.called)
 
     def test_failover_preparation(self):
         ports = {"ports": [

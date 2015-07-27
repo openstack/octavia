@@ -15,20 +15,21 @@
 
 import logging
 
+from oslo_config import cfg
 from oslo_utils import uuidutils
 from taskflow import task
 from taskflow.types import failure
 
 from octavia.common import constants
 from octavia.common import data_models
-from octavia.common import exceptions
 import octavia.common.tls_utils.cert_parser as cert_parser
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
 from octavia.i18n import _LI, _LW
 
-
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
+CONF.import_group('keepalived_vrrp', 'octavia.common.config')
 
 
 class BaseDatabaseTask(task.Task):
@@ -237,6 +238,14 @@ class ReloadLoadBalancer(BaseDatabaseTask):
                                           id=loadbalancer_id)
 
 
+class ReloadListener(BaseDatabaseTask):
+    """Reload listener data from database."""
+
+    def execute(self, listener):
+        """Reloads listener in DB."""
+        return self.listener_repo.get(db_apis.get_session(), id=listener.id)
+
+
 class UpdateVIPAfterAllocation(BaseDatabaseTask):
 
     def execute(self, loadbalancer_id, vip):
@@ -255,7 +264,8 @@ class UpdateAmphoraVIPData(BaseDatabaseTask):
                                       vrrp_ip=amp_data.vrrp_ip,
                                       ha_ip=amp_data.ha_ip,
                                       vrrp_port_id=amp_data.vrrp_port_id,
-                                      ha_port_id=amp_data.ha_port_id)
+                                      ha_port_id=amp_data.ha_port_id,
+                                      vrrp_id=1)
 
 
 class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
@@ -281,22 +291,79 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
                   unable to allocate an Amphora
         """
 
-        LOG.debug("Allocating an Amphora for load balancer with id %s",
+        LOG.debug("Allocating an Amphora for load balancer with id %s" %
                   loadbalancer_id)
 
         amp = self.amphora_repo.allocate_and_associate(
             db_apis.get_session(),
             loadbalancer_id)
         if amp is None:
-            LOG.debug("No Amphora available for load balancer with id %s",
+            LOG.debug("No Amphora available for load balancer with id %s" %
                       loadbalancer_id)
-            raise exceptions.NoReadyAmphoraeException()
+            return None
 
-        LOG.info(_LI("Allocated Amphora with id %(amp)s for load balancer "
-                     "with id %(lb)s"),
-                 {"amp": amp.id, "lb": loadbalancer_id})
+        LOG.debug("Allocated Amphora with id %s for load balancer "
+                  "with id %s" % (amp.id, loadbalancer_id))
 
         return amp.id
+
+
+class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
+    """Alter the amphora role in DB."""
+
+    def _execute(self, amphora, amp_role, vrrp_priority):
+        LOG.debug("Mark %s in DB for amphora: %s" %
+                  (amp_role, amphora.id))
+        self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                                 role=amp_role,
+                                 vrrp_priority=vrrp_priority)
+
+    def _revert(self, result, amphora):
+        """Assigns None role and vrrp_priority."""
+
+        if isinstance(result, failure.Failure):
+            return
+
+        LOG.warn(_LW("Reverting amphora role in DB for amp "
+                     "id %(amp)s"),
+                 {'amp': amphora.id})
+        self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                                 role=None,
+                                 vrrp_priority=None)
+
+
+class MarkAmphoraMasterInDB(_MarkAmphoraRoleAndPriorityInDB):
+    """Alter the amphora role to: MASTER."""
+
+    def execute(self, amphora):
+        """Mark amphora as allocated to a load balancer in DB."""
+        amp_role = constants.ROLE_MASTER
+        self._execute(amphora, amp_role, constants.ROLE_MASTER_PRIORITY)
+
+    def revert(self, result, amphora):
+        self._revert(result, amphora)
+
+
+class MarkAmphoraBackupInDB(_MarkAmphoraRoleAndPriorityInDB):
+    """Alter the amphora role to: Backup."""
+
+    def execute(self, amphora):
+        amp_role = constants.ROLE_BACKUP
+        self._execute(amphora, amp_role, constants.ROLE_BACKUP_PRIORITY)
+
+    def revert(self, result, amphora):
+        self._revert(result, amphora)
+
+
+class MarkAmphoraStandAloneInDB(_MarkAmphoraRoleAndPriorityInDB):
+    """Alter the amphora role to: Standalone."""
+
+    def execute(self, amphora):
+        amp_role = constants.ROLE_STANDALONE
+        self._execute(amphora, amp_role, None)
+
+    def revert(self, result, amphora):
+        self._revert(result, amphora)
 
 
 class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
@@ -685,7 +752,7 @@ class MarkListenerPendingDeleteInDB(BaseDatabaseTask):
 
 
 class UpdateLoadbalancerInDB(BaseDatabaseTask):
-    """Update the listener in the DB.
+    """Update the loadbalancer in the DB.
 
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
@@ -698,7 +765,8 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for listener id: %s ", loadbalancer.id)
+        LOG.debug("Update DB for loadbalancer id: %s " %
+                  loadbalancer.id)
         self.loadbalancer_repo.update(db_apis.get_session(), loadbalancer.id,
                                       **update_dict)
 
@@ -710,7 +778,7 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
 
         LOG.warn(_LW("Reverting update listener in DB "
                      "for listener id %s"), listener.id)
-# TODO(johnsom) fix this to set the upper ojects to ERROR
+# TODO(johnsom) fix this to set the upper objects to ERROR
         self.listener_repo.update(db_apis.get_session(), listener.id,
                                   enabled=0)
 
@@ -868,3 +936,49 @@ class GetVipFromLoadbalancer(BaseDatabaseTask):
 
     def execute(self, loadbalancer):
         return loadbalancer.vip
+
+
+class CreateVRRPGroupForLB(BaseDatabaseTask):
+
+    def execute(self, loadbalancer):
+        loadbalancer.vrrp_group = self.repos.vrrpgroup.create(
+            db_apis.get_session(),
+            load_balancer_id=loadbalancer.id,
+            vrrp_group_name=str(loadbalancer.id).replace('-', ''),
+            vrrp_auth_type=constants.VRRP_AUTH_DEFAULT,
+            vrrp_auth_pass=uuidutils.generate_uuid().replace('-', '')[0:7],
+            advert_int=CONF.keepalived_vrrp.vrrp_advert_int)
+        return loadbalancer
+
+
+class AllocateListenerPeerPort(BaseDatabaseTask):
+    """Get a new peer port number for a listener."""
+
+    def execute(self, listener):
+        """Allocate a peer port (TCP port)
+
+        :param listener: The listener to be marked deleted
+        :returns: None
+        """
+        max_peer_port = 0
+        for listener in listener.load_balancer.listeners:
+            if listener.peer_port > max_peer_port:
+                max_peer_port = listener.peer_port
+
+        if max_peer_port == 0:
+            port = constants.HAPROXY_BASE_PEER_PORT
+        else:
+            port = max_peer_port + 1
+
+        self.listener_repo.update(db_apis.get_session(), listener.id,
+                                  peer_port=port)
+
+        return self.listener_repo.get(db_apis.get_session(), id=listener.id)
+
+    def revert(self, listener, *args, **kwargs):
+        """nulls the peer port
+
+        :returns: None
+        """
+        self.listener_repo.update(db_apis.get_session(), listener.id,
+                                  peer_port=None)

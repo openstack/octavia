@@ -132,6 +132,7 @@ class Repositories(object):
         self.amphora = AmphoraRepository()
         self.sni = SNIRepository()
         self.amphorahealth = AmphoraHealthRepository()
+        self.vrrpgroup = VRRPGroupRepository()
 
     def create_load_balancer_and_vip(self, session, lb_dict, vip_dict):
         """Inserts load balancer and vip entities into the database.
@@ -507,3 +508,13 @@ class AmphoraHealthRepository(BaseRepository):
             amp.busy = True
 
         return amp.to_data_model()
+
+
+class VRRPGroupRepository(BaseRepository):
+    model_class = models.VRRPGroup
+
+    def update(self, session, load_balancer_id, **model_kwargs):
+        """Updates a VRRPGroup entry for by load_balancer_id."""
+        with session.begin(subtransactions=True):
+            session.query(self.model_class).filter_by(
+                load_balancer_id=load_balancer_id).update(model_kwargs)

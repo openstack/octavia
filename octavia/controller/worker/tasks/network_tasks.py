@@ -224,7 +224,6 @@ class HandleNetworkDeltas(BaseNetworkTask):
 
     def execute(self, deltas):
         """Handle network plugging based off deltas."""
-
         added_ports = {}
         for amp_id, delta in six.iteritems(deltas):
             added_ports[amp_id] = []

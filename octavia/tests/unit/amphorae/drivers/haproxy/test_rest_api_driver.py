@@ -33,6 +33,7 @@ FAKE_SUBNET_INFO = {'subnet_cidr': FAKE_CIDR,
                     'gateway': FAKE_GATEWAY,
                     'mac_address': '123'}
 FAKE_UUID_1 = uuidutils.generate_uuid()
+FAKE_VRRP_IP = '10.1.0.1'
 
 
 class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
@@ -156,6 +157,11 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.post_network_plug(self.amp, self.port)
         self.driver.client.plug_network.assert_called_once_with(
             self.amp, dict(mac_address='123'))
+
+    def test_get_vrrp_interface(self):
+        self.driver.get_vrrp_interface(self.amp)
+        self.driver.client.get_interface.assert_called_once_with(
+            self.amp, self.amp.vrrp_ip)
 
 
 class TestAmphoraAPIClientTest(base.TestCase):
@@ -453,7 +459,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_invalid_cert_pem(self, m):
         m.put("{base}/listeners/{listener_id}/certificates/{filename}".format(
             base=self.base_url, listener_id=FAKE_UUID_1,
-            filename=FAKE_PEM_FILENAME), status_code=403)
+            filename=FAKE_PEM_FILENAME), status_code=400)
         self.assertRaises(exc.InvalidRequest, self.driver.upload_cert_pem,
                           self.amp, FAKE_UUID_1, FAKE_PEM_FILENAME,
                           "some_file")
@@ -494,7 +500,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
 
     @requests_mock.mock()
     def test_update_invalid_cert_for_rotation(self, m):
-        m.put("{base}/certificate".format(base=self.base_url), status_code=403)
+        m.put("{base}/certificate".format(base=self.base_url), status_code=400)
         self.assertRaises(exc.InvalidRequest,
                           self.driver.update_cert_for_rotation, self.amp,
                           "some_file")
@@ -612,19 +618,24 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_config(self, m):
         config = {"name": "fake_config"}
         m.put(
-            "{base}/listeners/{listener_id}/haproxy".format(
-                base=self.base_url, listener_id=FAKE_UUID_1),
+            "{base}/listeners/{"
+            "amphora_id}/{listener_id}/haproxy".format(
+                amphora_id=self.amp.id, base=self.base_url,
+                listener_id=FAKE_UUID_1),
             json=config)
-        self.driver.upload_config(self.amp, FAKE_UUID_1, config)
+        self.driver.upload_config(self.amp, FAKE_UUID_1,
+                                  config)
         self.assertTrue(m.called)
 
     @requests_mock.mock()
     def test_upload_invalid_config(self, m):
         config = '{"name": "bad_config"}'
         m.put(
-            "{base}/listeners/{listener_id}/haproxy".format(
-                base=self.base_url, listener_id=FAKE_UUID_1),
-            status_code=403)
+            "{base}/listeners/{"
+            "amphora_id}/{listener_id}/haproxy".format(
+                amphora_id=self.amp.id, base=self.base_url,
+                listener_id=FAKE_UUID_1),
+            status_code=400)
         self.assertRaises(exc.InvalidRequest, self.driver.upload_config,
                           self.amp, FAKE_UUID_1, config)
 
@@ -632,8 +643,10 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_config_unauthorized(self, m):
         config = '{"name": "bad_config"}'
         m.put(
-            "{base}/listeners/{listener_id}/haproxy".format(
-                base=self.base_url, listener_id=FAKE_UUID_1),
+            "{base}/listeners/{"
+            "amphora_id}/{listener_id}/haproxy".format(
+                amphora_id=self.amp.id, base=self.base_url,
+                listener_id=FAKE_UUID_1),
             status_code=401)
         self.assertRaises(exc.Unauthorized, self.driver.upload_config,
                           self.amp, FAKE_UUID_1, config)
@@ -642,8 +655,10 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_config_server_error(self, m):
         config = '{"name": "bad_config"}'
         m.put(
-            "{base}/listeners/{listener_id}/haproxy".format(
-                base=self.base_url, listener_id=FAKE_UUID_1),
+            "{base}/listeners/{"
+            "amphora_id}/{listener_id}/haproxy".format(
+                amphora_id=self.amp.id, base=self.base_url,
+                listener_id=FAKE_UUID_1),
             status_code=500)
         self.assertRaises(exc.InternalServerError, self.driver.upload_config,
                           self.amp, FAKE_UUID_1, config)
@@ -652,8 +667,10 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_config_service_unavailable(self, m):
         config = '{"name": "bad_config"}'
         m.put(
-            "{base}/listeners/{listener_id}/haproxy".format(
-                base=self.base_url, listener_id=FAKE_UUID_1),
+            "{base}/listeners/{"
+            "amphora_id}/{listener_id}/haproxy".format(
+                amphora_id=self.amp.id, base=self.base_url,
+                listener_id=FAKE_UUID_1),
             status_code=503)
         self.assertRaises(exc.ServiceUnavailable, self.driver.upload_config,
                           self.amp, FAKE_UUID_1, config)
@@ -673,3 +690,36 @@ class TestAmphoraAPIClientTest(base.TestCase):
         )
         self.driver.plug_network(self.amp, self.port_info)
         self.assertTrue(m.called)
+
+    @requests_mock.mock()
+    def test_upload_vrrp_config(self, m):
+        config = '{"name": "bad_config"}'
+        m.put("{base}/vrrp/upload".format(
+            base=self.base_url)
+        )
+        self.driver.upload_vrrp_config(self.amp, config)
+        self.assertTrue(m.called)
+
+    @requests_mock.mock()
+    def test_vrrp_action(self, m):
+        action = 'start'
+        m.put("{base}/vrrp/{action}".format(base=self.base_url, action=action))
+        self.driver._vrrp_action(action, self.amp)
+        self.assertTrue(m.called)
+
+    @requests_mock.mock()
+    def test_get_interface(self, m):
+        interface = [{"interface": "eth1"}]
+        ip_addr = '10.0.0.1'
+        m.get("{base}/interface/{ip_addr}".format(base=self.base_url,
+                                                  ip_addr=ip_addr),
+              json=interface)
+        self.driver.get_interface(self.amp, ip_addr)
+        self.assertTrue(m.called)
+
+        m.register_uri('GET',
+                       self.base_url + '/interface/' + ip_addr,
+                       status_code=500, reason='FAIL', json='FAIL')
+        self.assertRaises(exc.InternalServerError,
+                          self.driver.get_interface,
+                          self.amp, ip_addr)

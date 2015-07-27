@@ -22,7 +22,7 @@ from oslo_db import options as db_options
 from oslo_log import log as logging
 import oslo_messaging as messaging
 
-
+from octavia.common import constants
 from octavia.common import utils
 from octavia.i18n import _LI
 from octavia import version
@@ -178,6 +178,9 @@ haproxy_amphora_opts = [
     cfg.IntOpt('connection_retry_interval',
                default=5,
                help=_('Retry timeout between attempts in seconds.')),
+    cfg.StrOpt('haproxy_stick_size', default='10k',
+               help=_('Size of the HAProxy stick table. Accepts k, m, g '
+                      'suffixes.  Example: 10k')),
 
     # REST server
     cfg.IPOpt('bind_host', default='0.0.0.0',
@@ -239,7 +242,13 @@ controller_worker_opts = [
                help=_('Name of the network driver to use')),
     cfg.StrOpt('cert_generator',
                default='local_cert_generator',
-               help=_('Name of the cert generator to use'))
+               help=_('Name of the cert generator to use')),
+    cfg.StrOpt('loadbalancer_topology',
+               default=constants.TOPOLOGY_SINGLE,
+               choices=constants.SUPPORTED_LB_TOPOLOGIES,
+               help=_('Load balancer topology configuration. '
+                      'SINGLE - One amphora per load balancer. '
+                      'ACTIVE_STANDBY - Two amphora per load balancer.'))
 ]
 
 task_flow_opts = [
@@ -289,6 +298,33 @@ house_keeping_opts = [
 
 ]
 
+keepalived_vrrp_opts = [
+    cfg.IntOpt('vrrp_advert_int',
+               default=1,
+               help=_('Amphora role and priority advertisement interval '
+                      'in seconds.')),
+    cfg.IntOpt('vrrp_check_interval',
+               default=5,
+               help=_('VRRP health check script run interval in seconds.')),
+    cfg.IntOpt('vrrp_fail_count',
+               default=2,
+               help=_('Number of successive failure before transition to a '
+                      'fail state.')),
+    cfg.IntOpt('vrrp_success_count',
+               default=2,
+               help=_('Number of successive failure before transition to a '
+                      'success state.')),
+    cfg.IntOpt('vrrp_garp_refresh_interval',
+               default=5,
+               help=_('Time in seconds between gratuitous ARP announcements '
+                      'from the MASTER.')),
+    cfg.IntOpt('vrrp_garp_refresh_count',
+               default=2,
+               help=_('Number of gratuitous ARP announcements to make on '
+                      'each refresh interval.'))
+
+]
+
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_opts(amphora_agent_opts, group='amphora_agent')
@@ -296,6 +332,7 @@ cfg.CONF.register_opts(networking_opts, group='networking')
 cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
 cfg.CONF.register_opts(haproxy_amphora_opts, group='haproxy_amphora')
 cfg.CONF.register_opts(controller_worker_opts, group='controller_worker')
+cfg.CONF.register_opts(keepalived_vrrp_opts, group='keepalived_vrrp')
 cfg.CONF.register_opts(task_flow_opts, group='task_flow')
 cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
 cfg.CONF.register_opts(house_keeping_opts, group='house_keeping')

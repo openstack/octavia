@@ -175,3 +175,7 @@ class NoSuitableAmphoraException(OctaviaException):
 # on the instance
 class ComputeWaitTimeoutException(OctaviaException):
     message = _LI('Waiting for compute to go active timeout.')
+
+
+class InvalidTopology(OctaviaException):
+    message = _LE('Invalid topology specified: %(topology)s')

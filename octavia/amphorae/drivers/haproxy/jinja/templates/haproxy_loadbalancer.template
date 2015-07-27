@@ -18,6 +18,11 @@
 {% set usergroup = user_group %}
 {% set sock_path = stats_sock %}
 
+{% block peers %}
+{% from 'haproxy_proxies.template' import peers_macro%}
+{{ peers_macro(constants, loadbalancer.listener) }}
+{% endblock peers %}
+
 {% block proxies %}
 {% from 'haproxy_proxies.template' import frontend_macro as frontend_macro, backend_macro%}
 {% for listener in loadbalancer.listeners %}

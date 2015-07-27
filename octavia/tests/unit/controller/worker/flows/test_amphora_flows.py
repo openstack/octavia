@@ -13,6 +13,7 @@
 # under the License.
 #
 
+import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from taskflow.patterns import linear_flow as flow
@@ -65,41 +66,85 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(0, len(amp_flow.requires))
 
     def test_get_create_amphora_for_lb_flow(self):
+        cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_ssh_driver',
+                              group='controller_worker')
 
-        amp_flow = self.AmpFlow.get_create_amphora_for_lb_flow()
+        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+            'SOMEPREFIX', constants.ROLE_STANDALONE)
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+
         self.assertIn(constants.AMPHORA, amp_flow.provides)
-        self.assertIn(constants.LOADBALANCER, amp_flow.provides)
-        self.assertIn(constants.VIP, amp_flow.provides)
-        self.assertIn(constants.AMPS_DATA, amp_flow.provides)
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
 
-        self.assertEqual(8, len(amp_flow.provides))
+        self.assertEqual(4, len(amp_flow.provides))
         self.assertEqual(1, len(amp_flow.requires))
 
     def test_get_cert_create_amphora_for_lb_flow(self):
         cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
                               group='controller_worker')
         self.AmpFlow = amphora_flows.AmphoraFlows()
-        amp_flow = self.AmpFlow.get_create_amphora_for_lb_flow()
+
+        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+            'SOMEPREFIX', constants.ROLE_STANDALONE)
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+
         self.assertIn(constants.AMPHORA, amp_flow.provides)
-        self.assertIn(constants.LOADBALANCER, amp_flow.provides)
-        self.assertIn(constants.VIP, amp_flow.provides)
-        self.assertIn(constants.AMPS_DATA, amp_flow.provides)
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.assertIn(constants.SERVER_PEM, amp_flow.provides)
 
-        self.assertEqual(9, len(amp_flow.provides))
+        self.assertEqual(5, len(amp_flow.provides))
+        self.assertEqual(1, len(amp_flow.requires))
+
+    def test_get_cert_master_create_amphora_for_lb_flow(self):
+        cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
+                              group='controller_worker')
+        self.AmpFlow = amphora_flows.AmphoraFlows()
+
+        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+            'SOMEPREFIX', constants.ROLE_MASTER)
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.assertIn(constants.SERVER_PEM, amp_flow.provides)
+
+        self.assertEqual(5, len(amp_flow.provides))
+        self.assertEqual(1, len(amp_flow.requires))
+
+    def test_get_cert_backup_create_amphora_for_lb_flow(self):
+        cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
+                              group='controller_worker')
+        self.AmpFlow = amphora_flows.AmphoraFlows()
+
+        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+            'SOMEPREFIX', constants.ROLE_BACKUP)
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.assertIn(constants.SERVER_PEM, amp_flow.provides)
+
+        self.assertEqual(5, len(amp_flow.provides))
         self.assertEqual(1, len(amp_flow.requires))
 
     def test_get_delete_amphora_flow(self):
@@ -112,6 +157,24 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertEqual(0, len(amp_flow.provides))
         self.assertEqual(1, len(amp_flow.requires))
+
+    def test_allocate_amp_to_lb_decider(self):
+        history = mock.MagicMock()
+        values = mock.MagicMock(side_effect=[['TEST'], [None]])
+        history.values = values
+        result = self.AmpFlow._allocate_amp_to_lb_decider(history)
+        self.assertTrue(result)
+        result = self.AmpFlow._allocate_amp_to_lb_decider(history)
+        self.assertFalse(result)
+
+    def test_create_new_amp_for_lb_decider(self):
+        history = mock.MagicMock()
+        values = mock.MagicMock(side_effect=[[None], ['TEST']])
+        history.values = values
+        result = self.AmpFlow._create_new_amp_for_lb_decider(history)
+        self.assertTrue(result)
+        result = self.AmpFlow._create_new_amp_for_lb_decider(history)
+        self.assertFalse(result)
 
     def test_get_failover_flow(self):
 

@@ -28,6 +28,7 @@ from werkzeug import exceptions
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.amphorae.backends.utils import haproxy_query as query
 from octavia.common import constants as consts
+from octavia.common import utils as octavia_utils
 
 LOG = logging.getLogger(__name__)
 BUFFER = 100
@@ -78,13 +79,16 @@ def get_haproxy_config(listener_id):
 
 """Upload the haproxy config
 
+:param amphora_id: The id of the amphora to update
 :param listener_id: The id of the listener
 """
 
 
-def upload_haproxy_config(listener_id):
+def upload_haproxy_config(amphora_id, listener_id):
     stream = Wrapped(flask.request.stream)
-
+    # We have to hash here because HAProxy has a string length limitation
+    # in the configuration file "peer <peername>" lines
+    peer_name = octavia_utils.base64_sha1_string(amphora_id).rstrip('=')
     if not os.path.exists(util.haproxy_dir(listener_id)):
         os.makedirs(util.haproxy_dir(listener_id))
 
@@ -96,7 +100,8 @@ def upload_haproxy_config(listener_id):
             b = stream.read(BUFFER)
 
     # use haproxy to check the config
-    cmd = "haproxy -c -f {config_file}".format(config_file=name)
+    cmd = "haproxy -c -L {peer} -f {config_file}".format(config_file=name,
+                                                         peer=peer_name)
 
     try:
         subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
@@ -113,6 +118,7 @@ def upload_haproxy_config(listener_id):
     if not os.path.exists(util.upstart_path(listener_id)):
         with open(util.upstart_path(listener_id), 'w') as text_file:
             text = template.render(
+                peer_name=peer_name,
                 haproxy_pid=util.pid_path(listener_id),
                 haproxy_cmd=util.CONF.haproxy_amphora.haproxy_cmd,
                 haproxy_cfg=util.config_path(listener_id),
@@ -136,17 +142,24 @@ def start_stop_listener(listener_id, action):
 
     _check_listener_exists(listener_id)
 
+    # Since this script should be created at LB create time
+    # we can check for this path to see if VRRP is enabled
+    # on this amphora and not write the file if VRRP is not in use
+    if os.path.exists(util.keepalived_check_script_path()):
+        vrrp_check_script_update(listener_id, action)
+
     cmd = ("/usr/sbin/service haproxy-{listener_id} {action}".format(
         listener_id=listener_id, action=action))
 
     try:
         subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        LOG.debug("Failed to %(action)s HAProxy service: %(err)s",
-                  {'action': action, 'err': e})
-        return flask.make_response(flask.jsonify(dict(
-            message="Error {0}ing haproxy".format(action),
-            details=e.output)), 500)
+        if 'Job is already running' not in e.output:
+            LOG.debug("Failed to %(action)s HAProxy service: %(err)s",
+                      {'action': action, 'err': e})
+            return flask.make_response(flask.jsonify(dict(
+                message="Error {0}ing haproxy".format(action),
+                details=e.output)), 500)
     if action in ['stop', 'reload']:
         return flask.make_response(flask.jsonify(
             dict(message='OK',
@@ -369,3 +382,20 @@ def _cert_dir(listener_id):
 
 def _cert_file_path(listener_id, filename):
     return os.path.join(_cert_dir(listener_id), filename)
+
+
+def vrrp_check_script_update(listener_id, action):
+    listener_ids = util.get_listeners()
+    if action == 'stop':
+        listener_ids.remove(listener_id)
+    args = []
+    for listener_id in listener_ids:
+        args.append(util.haproxy_sock_path(listener_id))
+
+    if not os.path.exists(util.keepalived_dir()):
+        os.makedirs(util.keepalived_dir())
+        os.makedirs(util.keepalived_check_scripts_dir())
+
+    cmd = 'haproxy-vrrp-check {args}; exit $?'.format(args=' '.join(args))
+    with open(util.haproxy_check_script_path(), 'w') as text_file:
+        text_file.write(cmd)

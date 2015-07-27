@@ -102,6 +102,7 @@ AMPHORAE_NETWORK_CONFIG = 'amphorae_network_config'
 ADDED_PORTS = 'added_ports'
 PORTS = 'ports'
 MEMBER_PORTS = 'member_ports'
+LOADBALANCER_TOPOLOGY = 'topology'
 
 CERT_ROTATE_AMPHORA_FLOW = 'octavia-cert-rotate-amphora-flow'
 CREATE_AMPHORA_FLOW = 'octavia-create-amphora-flow'
@@ -126,6 +127,42 @@ UPDATE_MEMBER_FLOW = 'octavia-update-member-flow'
 UPDATE_POOL_FLOW = 'octavia-update-pool-flow'
 WAIT_FOR_AMPHORA = 'wait-for-amphora'
 
+FAILOVER_AMPHORA_FLOW = 'octavia-failover-amphora-flow'
+
+POST_MAP_AMP_TO_LB_SUBFLOW = 'octavia-post-map-amp-to-lb-subflow'
+CREATE_AMP_FOR_LB_SUBFLOW = 'octavia-create-amp-for-lb-subflow'
+GET_AMPHORA_FOR_LB_SUBFLOW = 'octavia-get-amphora-for-lb-subflow'
+POST_LB_AMP_ASSOCIATION_SUBFLOW = (
+    'octavia-post-loadbalancer-amp_association-subflow')
+
+MAP_LOADBALANCER_TO_AMPHORA = 'octavia-mapload-balancer-to-amphora'
+RELOAD_AMPHORA = 'octavia-reload-amphora'
+CREATE_AMPHORA_INDB = 'octavia-create-amphora-indb'
+GENERATE_SERVER_PEM = 'octavia-generate-serverpem'
+UPDATE_CERT_EXPIRATION = 'octavia-update-cert-expiration'
+CERT_COMPUTE_CREATE = 'octavia-cert-compute-create'
+COMPUTE_CREATE = 'octavia-compute-create'
+UPDATE_AMPHORA_COMPUTEID = 'octavia-update-amphora-computeid'
+MARK_AMPHORA_BOOTING_INDB = 'octavia-mark-amphora-booting-indb'
+WAIT_FOR_AMPHORA = 'octavia-wait_for_amphora'
+COMPUTE_WAIT = 'octavia-compute-wait'
+UPDATE_AMPHORA_INFO = 'octavia-update-amphora-info'
+AMPHORA_FINALIZE = 'octavia-amphora-finalize'
+MARK_AMPHORA_ALLOCATED_INDB = 'octavia-mark-amphora-allocated-indb'
+RELOADLOAD_BALANCER = 'octavia-reloadload-balancer'
+MARK_LB_ACTIVE_INDB = 'octavia-mark-lb-active-indb'
+MARK_AMP_MASTER_INDB = 'octavia-mark-amp-master-indb'
+MARK_AMP_BACKUP_INDB = 'octavia-mark-amp-backup-indb'
+MARK_AMP_STANDALONE_INDB = 'octavia-mark-amp-standalone-indb'
+GET_VRRP_SUBFLOW = 'octavia-get-vrrp-subflow'
+AMP_VRRP_UPDATE = 'octavia-amphora-vrrp-update'
+AMP_VRRP_START = 'octavia-amphora-vrrp-start'
+AMP_VRRP_STOP = 'octavia-amphora-vrrp-stop'
+AMP_UPDATE_VRRP_INTF = 'octavia-amphora-update-vrrp-intf'
+CREATE_VRRP_GROUP_FOR_LB = 'octavia-create-vrrp-group-for-lb'
+CREATE_VRRP_SECURITY_RULES = 'octavia-create-vrrp-security-rules'
+
+
 # Task Names
 RELOAD_LB_AFTER_AMP_ASSOC = 'reload-lb-after-amp-assoc'
 RELOAD_LB_AFTER_PLUG_VIP = 'reload-lb-after-plug-vip'
@@ -137,10 +174,9 @@ NOVA_VERSIONS = (NOVA_1, NOVA_2, NOVA_3)
 
 RPC_NAMESPACE_CONTROLLER_AGENT = 'controller'
 
-TOPOLOGY_SINGLE = 'SINGLE'
-TOPOLOGY_STATUS_OK = 'OK'
 
 # Active standalone roles and topology
+TOPOLOGY_SINGLE = 'SINGLE'
 TOPOLOGY_ACTIVE_STANDBY = 'ACTIVE_STANDBY'
 ROLE_MASTER = 'MASTER'
 ROLE_BACKUP = 'BACKUP'
@@ -148,6 +184,23 @@ ROLE_STANDALONE = 'STANDALONE'
 
 SUPPORTED_LB_TOPOLOGIES = (TOPOLOGY_ACTIVE_STANDBY, TOPOLOGY_SINGLE)
 SUPPORTED_AMPHORA_ROLES = (ROLE_BACKUP, ROLE_MASTER, ROLE_STANDALONE)
+
+TOPOLOGY_STATUS_OK = 'OK'
+
+ROLE_MASTER_PRIORITY = 100
+ROLE_BACKUP_PRIORITY = 90
+
+VRRP_AUTH_DEFAULT = 'PASS'
+VRRP_AUTH_AH = 'AH'
+SUPPORTED_VRRP_AUTH = (VRRP_AUTH_DEFAULT, VRRP_AUTH_AH)
+
+KEEPALIVED_CMD = '/usr/local/sbin/keepalived '
+# The DEFAULT_VRRP_ID value needs to be variable for multi tenant support
+# per amphora in the future
+DEFAULT_VRRP_ID = 1
+VRRP_PROTOCOL_NUM = 112
+AUTH_HEADER_PROTOCOL_NUMBER = 51
+
 
 AGENT_API_TEMPLATES = '/templates'
 AGENT_CONF_TEMPLATE = 'amphora_agent_conf.template'
@@ -166,6 +219,13 @@ DOWN = 'DOWN'
 # DOWN = HAProxy backend has no working servers
 HAPROXY_BACKEND_STATUSES = (UP, DOWN)
 
+
 NO_CHECK = 'no check'
 
 HAPROXY_MEMBER_STATUSES = (UP, DOWN, NO_CHECK)
+
+API_VERSION = '0.5'
+
+HAPROXY_BASE_PEER_PORT = 1025
+KEEPALIVED_CONF = 'keepalived.conf.j2'
+CHECK_SCRIPT_CONF = 'keepalived_check_script.conf.j2'

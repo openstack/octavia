@@ -19,8 +19,9 @@ from webob import exc
 def check_exception(response):
     status_code = response.status_code
     responses = {
+        400: InvalidRequest,
         401: Unauthorized,
-        403: InvalidRequest,
+        403: Forbidden,
         404: NotFound,
         405: InvalidRequest,
         409: Conflict,
@@ -42,13 +43,18 @@ class APIException(exc.HTTPClientError):
         super(APIException, self).__init__(detail=self.msg)
 
 
+class InvalidRequest(APIException):
+    msg = "Invalid request"
+    code = 400
+
+
 class Unauthorized(APIException):
     msg = "Unauthorized"
     code = 401
 
 
-class InvalidRequest(APIException):
-    msg = "Invalid request"
+class Forbidden(APIException):
+    msg = "Forbidden"
     code = 403
 
 

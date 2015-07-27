@@ -17,7 +17,9 @@ import os
 import jinja2
 import six
 
+from octavia.common.config import cfg
 from octavia.common import constants
+from octavia.common import utils as octavia_utils
 
 PROTOCOL_MAP = {
     constants.PROTOCOL_TCP: 'tcp',
@@ -41,6 +43,9 @@ BASE_CRT_DIR = BASE_PATH + '/certs'
 HAPROXY_TEMPLATE = os.path.abspath(
     os.path.join(os.path.dirname(__file__),
                  'templates/haproxy_listener.template'))
+
+CONF = cfg.CONF
+CONF.import_group('haproxy_amphora', 'octavia.common.config')
 
 JINJA_ENV = None
 
@@ -104,6 +109,7 @@ class JinjaTemplater(object):
                 loader=template_loader,
                 trim_blocks=True,
                 lstrip_blocks=True)
+        JINJA_ENV.filters['hash_amp_id'] = octavia_utils.base64_sha1_string
         return JINJA_ENV.get_template(os.path.basename(self.haproxy_template))
 
     def render_loadbalancer_obj(self, listener,
@@ -144,7 +150,8 @@ class JinjaTemplater(object):
         return {
             'name': loadbalancer.name,
             'vip_address': loadbalancer.vip.ip_address,
-            'listener': listener
+            'listener': listener,
+            'topology': loadbalancer.topology
         }
 
     def _transform_listener(self, listener, tls_cert):
@@ -156,7 +163,10 @@ class JinjaTemplater(object):
             'id': listener.id,
             'protocol_port': listener.protocol_port,
             'protocol_mode': PROTOCOL_MAP[listener.protocol],
-            'protocol': listener.protocol
+            'protocol': listener.protocol,
+            'peer_port': listener.peer_port,
+            'topology': listener.load_balancer.topology,
+            'amphorae': listener.load_balancer.amphorae
         }
         if listener.connection_limit and listener.connection_limit > -1:
             ret_value['connection_limit'] = listener.connection_limit
@@ -185,7 +195,8 @@ class JinjaTemplater(object):
             'health_monitor': '',
             'session_persistence': '',
             'enabled': pool.enabled,
-            'operating_status': pool.operating_status
+            'operating_status': pool.operating_status,
+            'stick_size': CONF.haproxy_amphora.haproxy_stick_size
         }
         members = [self._transform_member(x) for x in pool.members]
         ret_value['members'] = members

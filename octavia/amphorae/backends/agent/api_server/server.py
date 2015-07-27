@@ -21,6 +21,7 @@ from werkzeug import exceptions
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import amphora_info
 from octavia.amphorae.backends.agent.api_server import certificate_update
+from octavia.amphorae.backends.agent.api_server import keepalived
 from octavia.amphorae.backends.agent.api_server import listener
 from octavia.amphorae.backends.agent.api_server import plug
 
@@ -42,12 +43,11 @@ for code in six.iterkeys(exceptions.default_exceptions):
     app.error_handler_spec[None][code] = make_json_error
 
 
-# Tested with curl -k -XPUT --data-binary @/tmp/test.txt
-# https://127.0.0.1:9443/0.5/listeners/123/haproxy
-@app.route('/' + api_server.VERSION + '/listeners/<listener_id>/haproxy',
+@app.route('/' + api_server.VERSION +
+           '/listeners/<amphora_id>/<listener_id>/haproxy',
            methods=['PUT'])
-def upload_haproxy_config(listener_id):
-    return listener.upload_haproxy_config(listener_id)
+def upload_haproxy_config(amphora_id, listener_id):
+    return listener.upload_haproxy_config(amphora_id, listener_id)
 
 
 @app.route('/' + api_server.VERSION + '/listeners/<listener_id>/haproxy',
@@ -142,3 +142,18 @@ def plug_network():
 @app.route('/' + api_server.VERSION + '/certificate', methods=['PUT'])
 def upload_cert():
     return certificate_update.upload_server_cert()
+
+
+@app.route('/' + api_server.VERSION + '/vrrp/upload', methods=['PUT'])
+def upload_vrrp_config():
+    return keepalived.upload_keepalived_config()
+
+
+@app.route('/' + api_server.VERSION + '/vrrp/<action>', methods=['PUT'])
+def manage_service_vrrp(action):
+    return keepalived.manager_keepalived_service(action)
+
+
+@app.route('/' + api_server.VERSION + '/interface/<ip_addr>', methods=['GET'])
+def get_interface(ip_addr):
+    return amphora_info.get_interface(ip_addr)
