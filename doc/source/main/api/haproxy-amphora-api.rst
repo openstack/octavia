@@ -1217,3 +1217,107 @@ Plug Network
         'message': 'No suitable network interface found',
       }
 
+
+Upload SSL server certificate PEM file for Controller Communication
+-------------------------------------------------------------------
+
+* **URL:** /*:version*/certificate
+* **Method:** PUT
+
+* **Data params:** Certificate data. (PEM file should be a concatenation of
+  unencrypted RSA key, certificate and chain, in that order)
+* **Success Response:**
+
+  * Code: 201
+
+    * Content: OK
+
+* **Error Response:**
+
+  * Code: 400
+
+    * Content: No certififcate found
+
+  * Code: 400
+
+    * Content: No RSA key found
+
+  * Code: 400
+
+    * Content: Certificate and key do not match
+
+  * Code: 404
+
+    * Content: Not Found
+
+  * Code: 503
+
+    * Content: Topology transition in progress
+
+* **Response:**
+
+| OK
+
+**Notes:**
+Since certificates might be valid for a time smaller than the amphora is in
+existence this add a way to rotate them. Once the certificate is uploaded the
+agent is being recycled so depending on the implementation the service might
+not be available for soem time.
+
+**Examples:**
+
+* Success code 201:
+
+::
+
+  PUT URI:
+  https://octavia-haproxy-img-00328.local/v0.1/certificate
+  (Put data should contain the certificate information, concatenated as
+  described above)
+
+  JSON Response:
+  {
+    'message': 'OK'
+  }
+
+* Error code 400:
+
+::
+
+  PUT URI:
+  https://octavia-haproxy-img-00328.local/v0.1/certificates
+  (If PUT data does not contain a certificate)
+
+  JSON Response:
+  {
+    'message': 'No certificate found'
+  }
+
+* Error code 400:
+
+::
+
+  PUT URI:
+  https://octavia-haproxy-img-00328.local/v0.1/certificate
+  (If PUT data does not contain an RSA key)
+
+  JSON Response:
+  {
+    'message': 'No RSA key found'
+  }
+
+* Error code 400:
+
+::
+
+  PUT URI:
+  https://octavia-haproxy-img-00328.local/v0.1/certificate
+  (If the first certificate and the RSA key do not have the same modulus.)
+
+  JSON Response:
+  {
+    'message': 'Certificate and key do not match'
+  }
+
+* Error code 404:
+
