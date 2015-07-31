@@ -25,7 +25,6 @@ from octavia.amphorae.driver_exceptions import exceptions as exc
 from octavia.amphorae.drivers import driver_base as driver_base
 from octavia.amphorae.drivers.haproxy.jinja import jinja_cfg
 from octavia.common.config import cfg
-from octavia.common import data_models as data_models
 from octavia.common.tls_utils import cert_parser
 from octavia.i18n import _LW
 
@@ -82,8 +81,7 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
         certs = self._process_tls_certificates(listener)
 
         # Generate HaProxy configuration from listener object
-        config = self.jinja.build_config(listener, certs['tls_cert'],
-                                         certs['sni_certs'])
+        config = self.jinja.build_config(listener, certs['tls_cert'])
 
         # Build a list of commands to send to the exec method
         commands = ['chmod 600 {0}/haproxy.cfg'.format(conf_path),
@@ -241,46 +239,28 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
 
         return TLS_CERT and SNI_CERTS
         """
-        tls_cert = None
-        sni_certs = []
-
         data = []
 
-        if listener.tls_certificate_id:
-            tls_cert = self._map_cert_tls_container(
-                self.cert_manager.get_cert(listener.tls_certificate_id,
-                                           check_only=True))
+        certs = cert_parser.load_certificates_data(
+            self.barbican_client, listener)
+        sni_containers = certs['sni_certs']
+        tls_cert = certs['tls_cert']
+        if certs['tls_cert'] is not None:
             data.append(cert_parser.build_pem(tls_cert))
-        if listener.sni_containers:
-            for sni_cont in listener.sni_containers:
-                cert_container = self._map_cert_tls_container(
-                    self.cert_manager.get_cert(sni_cont.tls_container.id,
-                                               check_only=True))
-                sni_certs.append(cert_container)
-                data.append(cert_parser.build_pem(cert_container))
+        if sni_containers:
+            for sni_cont in sni_containers:
+                data.append(cert_parser.build_pem(sni_cont))
 
         if data:
             cert_dir = os.path.join(self.amp_config.base_cert_dir, listener.id)
             listener_cert = '{0}/{1}.pem'.format(cert_dir, tls_cert.primary_cn)
-
             self._exec_on_amphorae(
                 listener.load_balancer.amphorae, [
                     'chmod 600 {0}/*.pem'.format(cert_dir)],
                 make_dir=cert_dir,
                 data=data, upload_dir=listener_cert)
 
-        return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
-
-    def _get_primary_cn(self, tls_cert):
-        """Returns primary CN for Certificate."""
-        return cert_parser.get_host_names(tls_cert.get_certificate())['cn']
-
-    def _map_cert_tls_container(self, cert):
-        return data_models.TLSContainer(
-            primary_cn=self._get_primary_cn(cert),
-            private_key=cert.get_private_key(),
-            certificate=cert.get_certificate(),
-            intermediates=cert.get_intermediates())
+        return certs
 
     def _exec_on_amphorae(self, amphorae, commands, make_dir=None, data=None,
                           upload_dir=None):

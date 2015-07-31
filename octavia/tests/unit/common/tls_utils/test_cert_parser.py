@@ -15,11 +15,16 @@
 
 import six
 
+from octavia.common import data_models
 import octavia.common.exceptions as exceptions
 import octavia.common.tls_utils.cert_parser as cert_parser
 from octavia.tests.unit import base
 from octavia.tests.unit.common.sample_configs import sample_configs
 
+if six.PY2:
+    import mock
+else:
+    import unittest.mock as mock
 
 ALT_EXT_CRT = """-----BEGIN CERTIFICATE-----
 MIIGqjCCBZKgAwIBAgIJAIApBg8slSSiMA0GCSqGSIb3DQEBBQUAMIGLMQswCQYD
@@ -257,9 +262,60 @@ class TestTLSParseUtils(base.TestCase):
         for i in six.moves.xrange(0, len(imds)):
             self.assertEqual(EXPECTED_IMD_SUBJS[i], imds[i].get_subject().CN)
 
+    def test_load_certificates(self):
+        listener = sample_configs.sample_listener_tuple(tls=True, sni=True)
+        client = mock.MagicMock()
+        with mock.patch.object(cert_parser,
+                               'get_host_names') as cp:
+            with mock.patch.object(cert_parser,
+                                   '_map_cert_tls_container'):
+                cp.return_value = {'cn': 'fakeCN'}
+                cert_parser.load_certificates_data(client, listener)
+
+                # Ensure upload_cert is called three times
+                calls_cert_mngr = [
+                    mock.call.get_cert('cont_id_1', check_only=True),
+                    mock.call.get_cert('cont_id_2', check_only=True),
+                    mock.call.get_cert('cont_id_3', check_only=True)
+                ]
+                client.assert_has_calls(calls_cert_mngr)
+
+    @mock.patch('octavia.certificates.common.cert.Cert')
+    def test_map_cert_tls_container(self, cert_mock):
+        tls = data_models.TLSContainer(primary_cn='fakeCN',
+                                       certificate='imaCert',
+                                       private_key='imaPrivateKey',
+                                       intermediates=['imainter1',
+                                                      'imainter2'])
+        cert_mock.get_private_key.return_value = tls.private_key
+        cert_mock.get_certificate.return_value = tls.certificate
+        cert_mock.get_intermediates.return_value = tls.intermediates
+        with mock.patch.object(cert_parser, 'get_host_names') as cp:
+            cp.return_value = {'cn': 'fakeCN'}
+            self.assertEqual(
+                tls.primary_cn, cert_parser._map_cert_tls_container(
+                    cert_mock).primary_cn)
+            self.assertEqual(
+                tls.certificate, cert_parser._map_cert_tls_container(
+                    cert_mock).certificate)
+            self.assertEqual(
+                tls.private_key, cert_parser._map_cert_tls_container(
+                    cert_mock).private_key)
+            self.assertEqual(
+                tls.intermediates, cert_parser._map_cert_tls_container(
+                    cert_mock).intermediates)
+
     def test_build_pem(self):
         expected = 'imainter\nimainter2\nimacert\nimakey'
         tls_tupe = sample_configs.sample_tls_container_tuple(
             certificate='imacert', private_key='imakey',
             intermediates=['imainter', 'imainter2'])
         self.assertEqual(expected, cert_parser.build_pem(tls_tupe))
+
+    def test_get_primary_cn(self):
+        cert = mock.MagicMock()
+
+        with mock.patch.object(cert_parser, 'get_host_names') as cp:
+            cp.return_value = {'cn': 'fakeCN'}
+            cn = cert_parser.get_primary_cn(cert)
+            self.assertEqual('fakeCN', cn)

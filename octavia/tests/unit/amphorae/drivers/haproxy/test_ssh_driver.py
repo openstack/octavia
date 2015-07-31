@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+import os
 
 from oslo_config import cfg
 from oslo_log import log
@@ -87,8 +88,7 @@ class TestSshDriver(base.TestCase):
                 # Verify calls
                 process_tls_patch.assert_called_once_with(listener)
                 build_conf.assert_called_once_with(
-                    listener, listener.default_tls_container,
-                    listener.sni_containers)
+                    listener, listener.default_tls_container)
                 self.driver.client.connect.assert_called_once_with(
                     hostname=listener.load_balancer.amphorae[0].lb_network_ip,
                     key_filename=self.driver.amp_config.key_path,
@@ -174,79 +174,57 @@ class TestSshDriver(base.TestCase):
 
     def test_process_tls_certificates(self):
         listener = sample_configs.sample_listener_tuple(tls=True, sni=True)
-        with mock.patch.object(cert_parser, 'build_pem') as pem:
-            with mock.patch.object(self.driver.cert_manager,
-                                   'get_cert') as bbq:
+
+        with mock.patch.object(cert_parser, 'build_pem') as bp:
+            with mock.patch.object(cert_parser,
+                                   'load_certificates_data') as cd:
                 with mock.patch.object(cert_parser,
                                        'get_host_names') as cp:
-                    cp.return_value = {'cn': 'fakeCN'}
-                    pem.return_value = 'imapem.pem'
-                    self.driver._process_tls_certificates(listener)
+                    with mock.patch.object(self.driver,
+                                           '_exec_on_amphorae') as ea:
+                        self.driver.barbican_client = mock.MagicMock()
+                        cp.return_value = {'cn': 'fakeCN'}
+                        pem = 'imapem'
+                        bp.return_value = pem
+                        tls_cont = data_models.TLSContainer(
+                            primary_cn='fakecn',
+                            certificate='fakecert',
+                            private_key='fakepk')
+                        sni_cont1 = data_models.TLSContainer(
+                            primary_cn='fakecn1',
+                            certificate='fakecert',
+                            private_key='fakepk')
+                        sni_cont2 = data_models.TLSContainer(
+                            primary_cn='fakecn2',
+                            certificate='fakecert',
+                            private_key='fakepk')
+                        cd.return_value = {'tls_cert': tls_cont,
+                                           'sni_certs': [sni_cont1, sni_cont2]}
 
-                    # Ensure upload_cert is called three times
-                    calls_bbq = [mock.call(listener.default_tls_container.id,
-                                           check_only=True),
-                                 mock.call().get_certificate(),
-                                 mock.call().get_private_key(),
-                                 mock.call().get_certificate(),
-                                 mock.call().get_intermediates(),
-                                 mock.call('cont_id_2', check_only=True),
-                                 mock.call().get_certificate(),
-                                 mock.call().get_private_key(),
-                                 mock.call().get_certificate(),
-                                 mock.call().get_intermediates(),
-                                 mock.call('cont_id_3', check_only=True),
-                                 mock.call().get_certificate(),
-                                 mock.call().get_private_key(),
-                                 mock.call().get_certificate(),
-                                 mock.call().get_intermediates()]
-                    bbq.assert_has_calls(calls_bbq)
+                        self.driver._process_tls_certificates(listener)
 
-                    self.driver.client.open_sftp().put.assert_has_calls([
-                        mock.call(mock.ANY, mock.ANY),
-                        mock.call(mock.ANY, mock.ANY),
-                        mock.call(mock.ANY, mock.ANY),
-                    ])
+                        # Ensure upload_cert is called three times
+                        calls_bbq = [mock.call(self.driver.barbican_client,
+                                               listener)]
+                        cd.assert_has_calls(calls_bbq)
 
-    def test_build_pem(self):
-        expected = 'imainter\nimainter2\nimacert\nimakey'
-        tls_tupe = sample_configs.sample_tls_container_tuple(
-            certificate='imacert', private_key='imakey',
-            intermediates=['imainter', 'imainter2'])
-        self.assertEqual(expected, cert_parser.build_pem(tls_tupe))
+                        calls_bp = [
+                            mock.call(tls_cont),
+                            mock.call(sni_cont1),
+                            mock.call(sni_cont2)]
+                        bp.assert_has_calls(calls_bp)
 
-    def test_get_primary_cn(self):
-        cert = mock.MagicMock()
+                        cert_dir = os.path.join(
+                            self.driver.amp_config.base_cert_dir, listener.id)
+                        cmd = 'chmod 600 {base_path}/*.pem'.format(
+                            base_path=cert_dir)
+                        listener_cert = '{0}/fakecn.pem'.format(cert_dir)
 
-        with mock.patch.object(cert_parser, 'get_host_names') as cp:
-            cp.return_value = {'cn': 'fakeCN'}
-            cn = self.driver._get_primary_cn(cert)
-            self.assertEqual('fakeCN', cn)
-
-    def test_map_cert_tls_container(self):
-        tls = data_models.TLSContainer(primary_cn='fakeCN',
-                                       certificate='imaCert',
-                                       private_key='imaPrivateKey',
-                                       intermediates=['imainter1',
-                                                      'imainter2'])
-        cert = mock.MagicMock()
-        cert.get_private_key.return_value = tls.private_key
-        cert.get_certificate.return_value = tls.certificate
-        cert.get_intermediates.return_value = tls.intermediates
-        with mock.patch.object(cert_parser, 'get_host_names') as cp:
-            cp.return_value = {'cn': 'fakeCN'}
-            self.assertEqual(tls.primary_cn,
-                             self.driver._map_cert_tls_container(
-                                 cert).primary_cn)
-            self.assertEqual(tls.certificate,
-                             self.driver._map_cert_tls_container(
-                                 cert).certificate)
-            self.assertEqual(tls.private_key,
-                             self.driver._map_cert_tls_container(
-                                 cert).private_key)
-            self.assertEqual(tls.intermediates,
-                             self.driver._map_cert_tls_container(
-                                 cert).intermediates)
+                        ea.assert_has_calls([
+                            mock.call(listener.load_balancer.amphorae,
+                                      [cmd], make_dir=cert_dir,
+                                      data=[pem, pem, pem],
+                                      upload_dir=listener_cert)])
 
     @mock.patch.object(ssh_driver.HaproxyManager, '_execute_command')
     def test_post_vip_plug_no_down_links(self, exec_command):

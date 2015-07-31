@@ -20,6 +20,7 @@ from OpenSSL import SSL
 from oslo_log import log as logging
 import six
 
+from octavia.common import data_models as data_models
 import octavia.common.exceptions as exceptions
 
 
@@ -155,3 +156,37 @@ def build_pem(tls_container):
             pem = tls_container.intermediates[:]
         pem.extend([tls_container.certificate, tls_container.private_key])
         return "\n".join(pem)
+
+
+def load_certificates_data(cert_mngr, listener):
+        """Load TLS certificate data from the listener.
+
+        return TLS_CERT and SNI_CERTS
+        """
+        tls_cert = None
+        sni_certs = []
+
+        if listener.tls_certificate_id:
+            tls_cert = _map_cert_tls_container(
+                cert_mngr.get_cert(listener.tls_certificate_id,
+                                   check_only=True))
+        if listener.sni_containers:
+            for sni_cont in listener.sni_containers:
+                cert_container = _map_cert_tls_container(
+                    cert_mngr.get_cert(sni_cont.tls_container.id,
+                                       check_only=True))
+                sni_certs.append(cert_container)
+        return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
+
+
+def _map_cert_tls_container(cert):
+        return data_models.TLSContainer(
+            primary_cn=get_primary_cn(cert),
+            private_key=cert.get_private_key(),
+            certificate=cert.get_certificate(),
+            intermediates=cert.get_intermediates())
+
+
+def get_primary_cn(tls_cert):
+        """Returns primary CN for Certificate."""
+        return get_host_names(tls_cert.get_certificate())['cn']
