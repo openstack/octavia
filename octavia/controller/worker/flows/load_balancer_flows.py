@@ -103,8 +103,12 @@ class LoadBalancerFlows(object):
             name=constants.RELOAD_LB_AFTER_PLUG_VIP,
             requires=constants.LOADBALANCER_ID,
             provides=constants.LOADBALANCER))
+        new_LB_net_subflow.add(network_tasks.GetAmphoraeNetworkConfigs(
+            requires=constants.LOADBALANCER,
+            provides=constants.AMPHORAE_NETWORK_CONFIG))
         new_LB_net_subflow.add(amphora_driver_tasks.AmphoraPostVIPPlug(
-            requires=constants.LOADBALANCER))
+            requires=(constants.LOADBALANCER,
+                      constants.AMPHORAE_NETWORK_CONFIG)))
 
         return new_LB_net_subflow
 

@@ -29,6 +29,22 @@ from octavia.common.tls_utils import cert_parser
 from octavia.i18n import _LW
 
 LOG = logging.getLogger(__name__)
+NEUTRON_VERSION = '2.0'
+VIP_ROUTE_TABLE = 'vip'
+
+# ip and route commands
+CMD_DHCLIENT = "dhclient {0}"
+CMD_ADD_IP_ADDR = "ip addr add {0}/24 dev {1}"
+CMD_SHOW_IP_ADDR = "ip addr show {0}"
+CMD_GREP_DOWN_LINKS = "ip link | grep DOWN -m 1 | awk '{print $2}'"
+CMD_CREATE_VIP_ROUTE_TABLE = (
+    "su -c 'echo \"1 {0}\" >> /etc/iproute2/rt_tables'"
+)
+CMD_ADD_ROUTE_TO_TABLE = "ip route add {0} dev {1} table {2}"
+CMD_ADD_DEFAULT_ROUTE_TO_TABLE = ("ip route add default via {0} "
+                                  "dev {1} table {2}")
+CMD_ADD_RULE_FROM_NET_TO_TABLE = "ip rule add from {0} table {1}"
+CMD_ADD_RULE_TO_NET_TO_TABLE = "ip rule add to {0} table {1}"
 
 
 class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
@@ -128,7 +144,36 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
                   self.__class__.__name__, amphora.id)
         self.amphoraconfig[amphora.id] = (amphora.id, 'finalize amphora')
 
-    def post_vip_plug(self, load_balancer):
+    def _configure_amp_routes(self, vip_iface, amp_net_config):
+        subnet = amp_net_config.vip_subnet
+        command = CMD_CREATE_VIP_ROUTE_TABLE.format(VIP_ROUTE_TABLE)
+        self._execute_command(command, run_as_root=True)
+        command = CMD_ADD_ROUTE_TO_TABLE.format(
+            subnet.cidr, vip_iface, VIP_ROUTE_TABLE)
+        self._execute_command(command, run_as_root=True)
+        command = CMD_ADD_DEFAULT_ROUTE_TO_TABLE.format(
+            subnet.gateway_ip, vip_iface, VIP_ROUTE_TABLE)
+        self._execute_command(command, run_as_root=True)
+        command = CMD_ADD_RULE_FROM_NET_TO_TABLE.format(
+            subnet.cidr, VIP_ROUTE_TABLE)
+        self._execute_command(command, run_as_root=True)
+        command = CMD_ADD_RULE_TO_NET_TO_TABLE.format(
+            subnet.cidr, VIP_ROUTE_TABLE)
+        self._execute_command(command, run_as_root=True)
+
+    def _configure_amp_interface(self, iface, secondary_ip=None):
+        # just grab the ip from dhcp
+        command = CMD_DHCLIENT.format(iface)
+        self._execute_command(command, run_as_root=True)
+        if secondary_ip:
+            # add secondary_ip
+            command = CMD_ADD_IP_ADDR.format(secondary_ip, iface)
+            self._execute_command(command, run_as_root=True)
+        # log interface details
+        command = CMD_SHOW_IP_ADDR.format(iface)
+        self._execute_command(command)
+
+    def post_vip_plug(self, load_balancer, amphorae_network_config):
         LOG.debug("Add vip to interface for all amphora on %s",
                   load_balancer.id)
 
@@ -136,55 +181,25 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
             # Connect to amphora
             self._connect(hostname=amp.lb_network_ip)
 
-            stdout, _ = self._execute_command(
-                "ip link | grep DOWN -m 1 | awk '{print $2}'")
+            stdout, _ = self._execute_command(CMD_GREP_DOWN_LINKS)
             iface = stdout[:-2]
             if not iface:
                 self.client.close()
                 continue
-
-            vip = load_balancer.vip.ip_address
-            sections = vip.split('.')[:3]
-            sections.append('255')
-            broadcast = '.'.join(sections)
-            command = ("sh -c 'echo \"\nauto {0} {0}:0\n"
-                       "iface {0} inet dhcp\n\niface {0}:0 inet static\n"
-                       "address {1}\nbroadcast {2}\nnetmask {3}\" "
-                       ">> /etc/network/interfaces'".format(
-                           iface, vip, broadcast, '255.255.255.0'))
-            self._execute_command(command, run_as_root=True)
-            # sanity ifdown for interface
-            command = "ifdown {0}".format(iface)
-            self._execute_command(command, run_as_root=True)
-            # sanity ifdown for static ip
-            command = "ifdown {0}:0".format(iface)
-            self._execute_command(command, run_as_root=True)
-            # ifup for interface
-            command = "ifup {0}".format(iface)
-            self._execute_command(command, run_as_root=True)
-            # ifup for static ip
-            command = "ifup {0}:0".format(iface)
-            self._execute_command(command, run_as_root=True)
+            self._configure_amp_interface(
+                iface, secondary_ip=load_balancer.vip.ip_address)
+            self._configure_amp_routes(
+                iface, amphorae_network_config.get(amp.id))
             self.client.close()
 
     def post_network_plug(self, amphora):
         self._connect(hostname=amphora.lb_network_ip)
-        stdout, _ = self._execute_command(
-            "ip link | grep DOWN -m 1 | awk '{print $2}'")
+        stdout, _ = self._execute_command(CMD_GREP_DOWN_LINKS)
         iface = stdout[:-2]
         if not iface:
             self.client.close()
             return
-        # make interface come up on boot
-        command = ("sh -c 'echo \"\nauto {0}\niface {0} inet dhcp\" "
-                   ">> /etc/network/interfaces'".format(iface))
-        self._execute_command(command, run_as_root=True)
-        # ifdown for sanity
-        command = "ifdown {0}".format(iface)
-        self._execute_command(command, run_as_root=True)
-        # ifup to bring it up
-        command = "ifup {0}".format(iface)
-        self._execute_command(command, run_as_root=True)
+        self._configure_amp_interface(iface)
         self.client.close()
 
     def _execute_command(self, command, run_as_root=False):

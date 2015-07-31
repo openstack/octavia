@@ -16,7 +16,8 @@ from oslo_log import log as logging
 from oslo_utils import uuidutils
 
 from octavia.amphorae.drivers.noop_driver import driver as driver
-from octavia.db import models as models
+from octavia.common import data_models
+from octavia.network import data_models as network_models
 from octavia.tests.unit import base as base
 
 
@@ -38,18 +39,28 @@ class LoggingMixIn(base.TestCase):
         self.assertEqual('test update health', self.mixin.health)
 
 
-class NoopAmphoraLoadBalancerDriver(base.TestCase):
+class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
     FAKE_UUID_1 = uuidutils.generate_uuid()
 
     def setUp(self):
-        super(NoopAmphoraLoadBalancerDriver, self).setUp()
+        super(TestNoopAmphoraLoadBalancerDriver, self).setUp()
         self.driver = driver.NoopAmphoraLoadBalancerDriver()
-        self.listener = models.Listener()
+        self.listener = data_models.Listener()
         self.listener.protocol_port = 80
-        self.vip = models.Vip()
+        self.vip = data_models.Vip()
         self.vip.ip_address = "10.0.0.1"
-        self.amphora = models.Amphora()
+        self.amphora = data_models.Amphora()
         self.amphora.id = self.FAKE_UUID_1
+        self.load_balancer = data_models.LoadBalancer(
+            id=FAKE_UUID_1, amphorae=[self.amphora], vip=self.vip,
+            listeners=[self.listener])
+        self.network = network_models.Network(id=self.FAKE_UUID_1)
+        self.amphorae_net_configs = {
+            self.amphora.id:
+                network_models.AmphoraNetworkConfig(
+                    amphora=self.amphora,
+                    vip_subnet=network_models.Subnet(id=self.FAKE_UUID_1))
+        }
 
     def test_update(self):
         self.driver.update(self.listener, self.vip)
@@ -102,3 +113,14 @@ class NoopAmphoraLoadBalancerDriver(base.TestCase):
         self.assertEqual((self.amphora.id, 'post_network_plug'),
                          self.driver.driver.amphoraconfig[
                              self.amphora.id])
+
+    def test_post_vip_plug(self):
+        self.driver.post_vip_plug(self.load_balancer,
+                                  self.amphorae_net_configs)
+        expected_method_and_args = (self.load_balancer.id,
+                                    self.amphorae_net_configs,
+                                    'post_vip_plug')
+        actual_method_and_args = self.driver.driver.amphoraconfig[(
+            self.load_balancer.id, id(self.amphorae_net_configs)
+        )]
+        self.assertEqual(expected_method_and_args, actual_method_and_args)

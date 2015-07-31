@@ -109,7 +109,7 @@ class HaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         pass
 
     def test_post_vip_plug(self):
-        self.driver.post_vip_plug(self.lb)
+        self.driver.post_vip_plug(self.lb, mock.Mock())
         self.driver.client.plug_vip.assert_called_once_with(
             self.amp, self.lb.vip.ip_address)
 

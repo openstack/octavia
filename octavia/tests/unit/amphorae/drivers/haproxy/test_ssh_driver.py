@@ -23,6 +23,7 @@ from octavia.certificates.manager import barbican
 from octavia.common import data_models
 from octavia.common.tls_utils import cert_parser
 from octavia.db import models as models
+from octavia.network import data_models as network_models
 from octavia.tests.unit import base
 from octavia.tests.unit.common.sample_configs import sample_configs
 
@@ -32,6 +33,14 @@ else:
     import unittest.mock as mock
 
 LOG = log.getLogger(__name__)
+
+MOCK_NETWORK_ID = '1'
+MOCK_SUBNET_ID = '2'
+MOCK_PORT_ID = '3'
+MOCK_COMPUTE_ID = '4'
+MOCK_AMP_ID = '5'
+MOCK_IP_ADDRESS = '10.0.0.1'
+MOCK_CIDR = '10.0.0.0/24'
 
 
 class TestSshDriver(base.TestCase):
@@ -232,3 +241,92 @@ class TestSshDriver(base.TestCase):
             certificate='imacert', private_key='imakey',
             intermediates=['imainter', 'imainter2'])
         self.assertEqual(expected, self.driver._build_pem(tls_tupe))
+
+    @mock.patch.object(ssh_driver.HaproxyManager, '_execute_command')
+    def test_post_vip_plug_no_down_links(self, exec_command):
+        amps = [data_models.Amphora(id=MOCK_AMP_ID, compute_id=MOCK_COMPUTE_ID,
+                                    lb_network_ip=MOCK_IP_ADDRESS)]
+        vip = data_models.Vip(ip_address=MOCK_IP_ADDRESS)
+        lb = data_models.LoadBalancer(amphorae=amps, vip=vip)
+        vip_network = network_models.Network(id=MOCK_NETWORK_ID)
+        exec_command.return_value = ('', '')
+        self.driver.post_vip_plug(lb, vip_network)
+        exec_command.assert_called_once_with(ssh_driver.CMD_GREP_DOWN_LINKS)
+
+    @mock.patch.object(ssh_driver.HaproxyManager, '_execute_command')
+    def test_post_vip_plug(self, exec_command):
+        amps = [data_models.Amphora(id=MOCK_AMP_ID, compute_id=MOCK_COMPUTE_ID,
+                                    lb_network_ip=MOCK_IP_ADDRESS)]
+        vip = data_models.Vip(ip_address=MOCK_IP_ADDRESS)
+        lb = data_models.LoadBalancer(amphorae=amps, vip=vip)
+        vip_subnet = network_models.Subnet(id=MOCK_SUBNET_ID,
+                                           gateway_ip=MOCK_IP_ADDRESS,
+                                           cidr=MOCK_CIDR)
+        vip_port = network_models.Port(id=MOCK_PORT_ID,
+                                       device_id=MOCK_COMPUTE_ID)
+        amphorae_net_config = {amps[0].id: network_models.AmphoraNetworkConfig(
+            amphora=amps[0],
+            vip_subnet=vip_subnet,
+            vip_port=vip_port
+        )}
+        iface = 'eth1'
+        exec_command.return_value = ('{0}: '.format(iface), '')
+        self.driver.post_vip_plug(lb, amphorae_net_config)
+        grep_call = mock.call(ssh_driver.CMD_GREP_DOWN_LINKS)
+        dhclient_call = mock.call(ssh_driver.CMD_DHCLIENT.format(iface),
+                                  run_as_root=True)
+        add_ip_call = mock.call(ssh_driver.CMD_ADD_IP_ADDR.format(
+            MOCK_IP_ADDRESS, iface), run_as_root=True)
+        show_ip_call = mock.call(ssh_driver.CMD_SHOW_IP_ADDR.format(iface))
+        create_vip_table_call = mock.call(
+            ssh_driver.CMD_CREATE_VIP_ROUTE_TABLE.format(
+                ssh_driver.VIP_ROUTE_TABLE),
+            run_as_root=True
+        )
+        add_route_call = mock.call(
+            ssh_driver.CMD_ADD_ROUTE_TO_TABLE.format(
+                MOCK_CIDR, iface, ssh_driver.VIP_ROUTE_TABLE),
+            run_as_root=True
+        )
+        add_default_route_call = mock.call(
+            ssh_driver.CMD_ADD_DEFAULT_ROUTE_TO_TABLE.format(
+                MOCK_IP_ADDRESS, iface, ssh_driver.VIP_ROUTE_TABLE),
+            run_as_root=True
+        )
+        add_rule_from_call = mock.call(
+            ssh_driver.CMD_ADD_RULE_FROM_NET_TO_TABLE.format(
+                MOCK_CIDR, ssh_driver.VIP_ROUTE_TABLE),
+            run_as_root=True
+        )
+        add_rule_to_call = mock.call(
+            ssh_driver.CMD_ADD_RULE_TO_NET_TO_TABLE.format(
+                MOCK_CIDR, ssh_driver.VIP_ROUTE_TABLE),
+            run_as_root=True
+        )
+        exec_command.assert_has_calls([grep_call, dhclient_call, add_ip_call,
+                                       show_ip_call, create_vip_table_call,
+                                       add_route_call, add_default_route_call,
+                                       add_rule_from_call, add_rule_to_call])
+        self.assertEqual(9, exec_command.call_count)
+
+    @mock.patch.object(ssh_driver.HaproxyManager, '_execute_command')
+    def test_post_network_plug_no_down_links(self, exec_command):
+        amp = data_models.Amphora(id=MOCK_AMP_ID, compute_id=MOCK_COMPUTE_ID,
+                                  lb_network_ip=MOCK_IP_ADDRESS)
+        exec_command.return_value = ('', '')
+        self.driver.post_network_plug(amp)
+        exec_command.assert_called_once_with(ssh_driver.CMD_GREP_DOWN_LINKS)
+
+    @mock.patch.object(ssh_driver.HaproxyManager, '_execute_command')
+    def test_post_network_plug(self, exec_command):
+        amp = data_models.Amphora(id=MOCK_AMP_ID, compute_id=MOCK_COMPUTE_ID,
+                                  lb_network_ip=MOCK_IP_ADDRESS)
+        iface = 'eth1'
+        exec_command.return_value = ('{0}: '.format(iface), '')
+        self.driver.post_network_plug(amp)
+        grep_call = mock.call(ssh_driver.CMD_GREP_DOWN_LINKS)
+        dhclient_call = mock.call(ssh_driver.CMD_DHCLIENT.format(iface),
+                                  run_as_root=True)
+        show_ip_call = mock.call(ssh_driver.CMD_SHOW_IP_ADDR.format(iface))
+        exec_command.assert_has_calls([grep_call, dhclient_call, show_ip_call])
+        self.assertEqual(3, exec_command.call_count)

@@ -85,6 +85,12 @@ class NoopManager(object):
                   self.__class__.__name__, amphora.id)
         self.amphoraconfig[amphora.id] = (amphora.id, 'post_network_plug')
 
+    def post_vip_plug(self, load_balancer, amphorae_network_config):
+        LOG.debug("Amphora %s no-op, post vip plug load balancer %s",
+                  self.__class__.__name__, load_balancer.id)
+        self.amphoraconfig[(load_balancer.id, id(amphorae_network_config))] = (
+            load_balancer.id, amphorae_network_config, 'post_vip_plug')
+
 
 class NoopAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
     def __init__(self):
@@ -122,3 +128,7 @@ class NoopAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
     def post_network_plug(self, amphora):
 
         self.driver.post_network_plug(amphora)
+
+    def post_vip_plug(self, load_balancer, amphorae_network_config):
+
+        self.driver.post_vip_plug(load_balancer, amphorae_network_config)
