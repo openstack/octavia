@@ -508,15 +508,27 @@ class ServerTestCase(base.TestCase):
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
     @mock.patch('subprocess.check_output')
-    def test_plug_VIP(self, mock_check_output, mock_ifaddress,
+    @mock.patch('pyroute2.IPRoute')
+    def test_plug_VIP(self, mock_pyroute2, mock_check_output, mock_ifaddress,
                       mock_interfaces):
+
+        subnet_info = {'subnet_cidr': '10.0.0.0/24', 'gateway': '10.0.0.1'}
+
         # malformated ip
+        rv = self.app.post('/' + api_server.VERSION + '/plug/vip/error',
+                           data=json.dumps(subnet_info),
+                           content_type='application/json')
+        self.assertEqual(400, rv.status_code)
+
+        # No subnet info
         rv = self.app.post('/' + api_server.VERSION + '/plug/vip/error')
         self.assertEqual(400, rv.status_code)
 
         # No interface at all
         mock_interfaces.side_effect = [[]]
-        rv = self.app.post('/' + api_server.VERSION + "/plug/vip/203.0.113.2")
+        rv = self.app.post('/' + api_server.VERSION + "/plug/vip/203.0.113.2",
+                           content_type='application/json',
+                           data=json.dumps(subnet_info))
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
@@ -524,7 +536,9 @@ class ServerTestCase(base.TestCase):
         # Two interfaces down
         mock_interfaces.side_effect = [['blah', 'blah2']]
         mock_ifaddress.side_effect = [['blabla'], ['blabla']]
-        rv = self.app.post('/' + api_server.VERSION + "/plug/vip/203.0.113.2")
+        rv = self.app.post('/' + api_server.VERSION + "/plug/vip/203.0.113.2",
+                           content_type='application/json',
+                           data=json.dumps(subnet_info))
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
@@ -535,7 +549,9 @@ class ServerTestCase(base.TestCase):
         m = mock.mock_open()
         with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.post('/' + api_server.VERSION +
-                               "/plug/vip/203.0.113.2")
+                               "/plug/vip/203.0.113.2",
+                               content_type='application/json',
+                               data=json.dumps(subnet_info))
             self.assertEqual(202, rv.status_code)
             m.assert_called_once_with(
                 '/etc/network/interfaces.d/blah.cfg', 'w')
@@ -561,7 +577,9 @@ class ServerTestCase(base.TestCase):
         m = mock.mock_open()
         with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.post('/' + api_server.VERSION +
-                               "/plug/vip/203.0.113.2")
+                               "/plug/vip/203.0.113.2",
+                               content_type='application/json',
+                               data=json.dumps(subnet_info))
             self.assertEqual(500, rv.status_code)
             self.assertEqual(
                 {'details': RANDOM_ERROR,

@@ -330,6 +330,9 @@ fi
 # Add the Octavia Amphora agent.py element
 AMP_element_sequence="$AMP_element_sequence amphora-agent"
 
+# Add pyroute2 element
+AMP_element_sequence="$AMP_element_sequence pyroute2"
+
 # Add the vrrp Octacia element
 AMP_element_sequence="$AMP_element_sequence vrrp-octavia"
 

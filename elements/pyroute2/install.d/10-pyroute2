@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -eux
+
+pip install -U 'pyroute2>=0.3.10'

@@ -20,6 +20,7 @@ import subprocess
 import flask
 import jinja2
 import netifaces
+import pyroute2
 from werkzeug import exceptions
 
 from octavia.amphorae.backends.agent.api_server import util
@@ -37,7 +38,7 @@ template_port = j2_env.get_template(ETH_X_VIP_CONF)
 template_vip = j2_env.get_template(ETH_PORT_CONF)
 
 
-def plug_vip(vip):
+def plug_vip(vip, subnet_cidr, gateway):
     # validate vip
     try:
         socket.inet_aton(vip)
@@ -67,6 +68,41 @@ def plug_vip(vip):
     _bring_if_down("{interface}:0".format(interface=interface))
     _bring_if_up("{interface}".format(interface=interface), 'VIP')
     _bring_if_up("{interface}:0".format(interface=interface), 'VIP')
+
+    # Setup policy based routes for the amphora
+
+    ip = pyroute2.IPRoute()
+
+    cidr_split = subnet_cidr.split('/')
+
+    num_interface = ip.link_lookup(ifname=interface)
+
+    ip.route('add',
+             dst=cidr_split[0],
+             mask=int(cidr_split[1]),
+             oif=num_interface,
+             table=1,
+             rtproto='RTPROT_BOOT',
+             rtscope='RT_SCOPE_LINK')
+
+    ip.route('add',
+             dst='0.0.0.0',
+             gateway=gateway,
+             oif=num_interface,
+             table=1,
+             rtproto='RTPROT_BOOT')
+
+    ip.rule('add',
+            table=1,
+            action='FR_ACT_TO_TBL',
+            src=cidr_split[0],
+            src_len=int(cidr_split[1]))
+
+    ip.rule('add',
+            table=1,
+            action='FR_ACT_TO_TBL',
+            dst=cidr_split[0],
+            dst_len=int(cidr_split[1]))
 
     return flask.make_response(flask.jsonify(dict(
         message="OK",

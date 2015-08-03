@@ -35,6 +35,7 @@ virt-df -a $AMP_IMAGE_LOCATION | \
     grep -q "amphora-x64-haproxy.qcow2:/dev/sda1[ \t]*5015940[ \t]*.*"
 if [ $? != 0 ]; then
     echo "ERROR: Amphora image did not pass the default size test"
+    echo "On Ubuntu you may need to run 'sudo chmod 0644 /boot/vmlinuz*' for libguestfs"
     exit 1
 else
     echo "Amphora image size is correct"

@@ -1084,7 +1084,11 @@ Plug VIP
 
      * *:ip* = the vip's ip address
 
-* **Data params:** none
+* **Data params:**
+
+ * *subnet_cidr*: The vip subnet in cidr notation
+ * *gateway*: The vip subnet gateway address
+
 * **Success Response:**
 
   * Code: 202
@@ -1095,6 +1099,7 @@ Plug VIP
   * Code: 400
 
     * Content: Invalid IP
+    * Content: Invalid subnet information
 
   * Code: 404
 
@@ -1128,6 +1133,12 @@ Plug VIP
 
   POST URL:
   https://octavia-haproxy-img-00328.local/v0.1/plug/vip/203.0.113.2
+
+  JSON POST parameters:
+  {
+    'subnet_cidr': '203.0.113.0/24',
+    'gateway': '203.0.113.1'
+  }
 
   JSON Response:
       {
