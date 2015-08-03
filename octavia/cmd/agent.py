@@ -66,7 +66,12 @@ def main():
     ctx.load_cert_chain(CONF.haproxy_amphora.agent_server_cert,
                         ca=CONF.haproxy_amphora.agent_server_ca)
 
-    server.app.run(host=CONF.haproxy_amphora.bind_host,
-                   port=CONF.haproxy_amphora.bind_port,
-                   debug=CONF.debug,
-                   ssl_context=ctx)
+    # This will trigger a reload if any files change and
+    # in particular the certificate file
+    serving.run_simple(hostname=CONF.haproxy_amphora.bind_host,
+                       port=CONF.haproxy_amphora.bind_port,
+                       application=server.app,
+                       use_debugger=CONF.debug,
+                       ssl_context=ctx,
+                       use_reloader=True,
+                       extra_files=[CONF.haproxy_amphora.agent_server_cert])

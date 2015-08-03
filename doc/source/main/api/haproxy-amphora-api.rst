@@ -1239,7 +1239,7 @@ Upload SSL server certificate PEM file for Controller Communication
   unencrypted RSA key, certificate and chain, in that order)
 * **Success Response:**
 
-  * Code: 201
+  * Code: 202
 
     * Content: OK
 
@@ -1257,13 +1257,6 @@ Upload SSL server certificate PEM file for Controller Communication
 
     * Content: Certificate and key do not match
 
-  * Code: 404
-
-    * Content: Not Found
-
-  * Code: 503
-
-    * Content: Topology transition in progress
 
 * **Response:**
 
@@ -1277,7 +1270,7 @@ not be available for soem time.
 
 **Examples:**
 
-* Success code 201:
+* Success code 202:
 
 ::
 
@@ -1330,5 +1323,4 @@ not be available for soem time.
     'message': 'Certificate and key do not match'
   }
 
-* Error code 404:
 

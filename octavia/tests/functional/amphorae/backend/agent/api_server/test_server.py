@@ -21,6 +21,7 @@ import netifaces
 import six
 
 from octavia.amphorae.backends.agent import api_server
+from octavia.amphorae.backends.agent.api_server import certificate_update
 from octavia.amphorae.backends.agent.api_server import server
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants as consts
@@ -451,6 +452,22 @@ class ServerTestCase(base.TestCase):
             self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
             handle = m()
             mock_makedir.called_once_with('/var/lib/octavia/123')
+
+    @mock.patch('os.fchmod')
+    def test_upload_server_certificate(self, mock_chmod):
+        certificate_update.BUFFER = 5  # test the while loop
+        m = mock.mock_open()
+
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
+            rv = self.app.put('/' + api_server.VERSION +
+                              '/certificate',
+                              data='TestTest')
+            self.assertEqual(202, rv.status_code)
+            self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
+            handle = m()
+            handle.write.assert_any_call(six.b('TestT'))
+            handle.write.assert_any_call(six.b('est'))
+            mock_chmod.assert_called_once_with(handle.fileno(), 0o600)
 
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
