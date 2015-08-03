@@ -43,16 +43,20 @@ class BarbicanCert(cert.Cert):
         self._cert_container = cert_container
 
     def get_certificate(self):
-        return self._cert_container.certificate.payload
+        if self._cert_container.certificate:
+            return self._cert_container.certificate.payload
 
     def get_intermediates(self):
-        return self._cert_container.intermediates.payload
+        if self._cert_container.intermediates:
+            return self._cert_container.intermediates.payload
 
     def get_private_key(self):
-        return self._cert_container.private_key.payload
+        if self._cert_container.private_key:
+            return self._cert_container.private_key.payload
 
     def get_private_key_passphrase(self):
-        return self._cert_container.private_key_passphrase.payload
+        if self._cert_container.private_key_passphrase:
+            return self._cert_container.private_key_passphrase.payload
 
 
 class BarbicanAuth(object):

@@ -25,13 +25,16 @@ BUILTINS = '__builtin__'
 if six.PY3:
     BUILTINS = 'builtins'
 
+BASE_AMP_PATH = '/var/lib/octavia'
+BASE_CRT_PATH = BASE_AMP_PATH + '/certs'
+
 
 class ListenerTestCase(base.TestCase):
     def setUp(self):
         super(ListenerTestCase, self).setUp()
         self.jinja_cfg = jinja_cfg.JinjaTemplater(
-            base_amp_path='/var/lib/octavia',
-            base_crt_dir='/listeners')
+            base_amp_path=BASE_AMP_PATH,
+            base_crt_dir=BASE_CRT_PATH)
 
     def test_parse_haproxy_config(self):
         # template_tls
@@ -51,7 +54,7 @@ class ListenerTestCase(base.TestCase):
             self.assertEqual('/var/lib/octavia/sample_listener_id_1.sock',
                              res['stats_socket'])
             self.assertEqual(
-                '/var/lib/octavia/listeners/sample_listener_id_1/FakeCN.pem',
+                '/var/lib/octavia/certs/sample_listener_id_1/FakeCN.pem',
                 res['ssl_crt'])
 
         # render_template_tls_no_sni
@@ -68,10 +71,10 @@ class ListenerTestCase(base.TestCase):
         with mock.patch('%s.open' % BUILTINS, m, create=True):
             res = listener._parse_haproxy_file('123')
             self.assertEqual('TERMINATED_HTTPS', res['mode'])
-            self.assertEqual('/var/lib/octavia/sample_listener_id_1.sock',
+            self.assertEqual(BASE_AMP_PATH + '/sample_listener_id_1.sock',
                              res['stats_socket'])
             self.assertEqual(
-                '/var/lib/octavia/listeners/sample_listener_id_1/FakeCN.pem',
+                BASE_CRT_PATH + '/sample_listener_id_1/FakeCN.pem',
                 res['ssl_crt'])
 
         # render_template_http
@@ -82,7 +85,7 @@ class ListenerTestCase(base.TestCase):
         with mock.patch('%s.open' % BUILTINS, m, create=True):
             res = listener._parse_haproxy_file('123')
             self.assertEqual('HTTP', res['mode'])
-            self.assertEqual('/var/lib/octavia/sample_listener_id_1.sock',
+            self.assertEqual(BASE_AMP_PATH + '/sample_listener_id_1.sock',
                              res['stats_socket'])
             self.assertIsNone(res['ssl_crt'])
 
@@ -94,7 +97,7 @@ class ListenerTestCase(base.TestCase):
         with mock.patch('%s.open' % BUILTINS, m, create=True):
             res = listener._parse_haproxy_file('123')
             self.assertEqual('TCP', res['mode'])
-            self.assertEqual('/var/lib/octavia/sample_listener_id_1.sock',
+            self.assertEqual(BASE_AMP_PATH + '/sample_listener_id_1.sock',
                              res['stats_socket'])
             self.assertIsNone(res['ssl_crt'])
 

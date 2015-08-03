@@ -21,6 +21,7 @@ from octavia.amphorae.drivers.haproxy.jinja import jinja_cfg
 from octavia.amphorae.drivers.haproxy import ssh_driver
 from octavia.certificates.manager import barbican
 from octavia.common import data_models
+from octavia.common import keystone
 from octavia.common.tls_utils import cert_parser
 from octavia.db import models as models
 from octavia.network import data_models as network_models
@@ -46,8 +47,11 @@ MOCK_CIDR = '10.0.0.0/24'
 class TestSshDriver(base.TestCase):
     FAKE_UUID_1 = uuidutils.generate_uuid()
 
-    def setUp(self):
+    @mock.patch('octavia.common.keystone.get_session',
+                return_value=mock.MagicMock)
+    def setUp(self, mock_session):
         super(TestSshDriver, self).setUp()
+        mock.MagicMock(keystone.get_session())
         self.driver = ssh_driver.HaproxyManager()
         self.listener = sample_configs.sample_listener_tuple()
         self.vip = sample_configs.sample_vip_tuple()
@@ -169,27 +173,28 @@ class TestSshDriver(base.TestCase):
 
     def test_process_tls_certificates(self):
         listener = sample_configs.sample_listener_tuple(tls=True, sni=True)
-        with mock.patch.object(self.driver, '_build_pem') as pem:
+        with mock.patch.object(cert_parser, 'build_pem') as pem:
             with mock.patch.object(self.driver.barbican_client,
                                    'get_cert') as bbq:
                 with mock.patch.object(cert_parser,
                                        'get_host_names') as cp:
                     cp.return_value = {'cn': 'fakeCN'}
-                    pem.return_value = 'imapem'
+                    pem.return_value = 'imapem.pem'
                     self.driver._process_tls_certificates(listener)
 
                     # Ensure upload_cert is called three times
-                    calls_bbq = [mock.call(listener.default_tls_container.id),
+                    calls_bbq = [mock.call(listener.default_tls_container.id,
+                                           check_only=True),
                                  mock.call().get_certificate(),
                                  mock.call().get_private_key(),
                                  mock.call().get_certificate(),
                                  mock.call().get_intermediates(),
-                                 mock.call('cont_id_2'),
+                                 mock.call('cont_id_2', check_only=True),
                                  mock.call().get_certificate(),
                                  mock.call().get_private_key(),
                                  mock.call().get_certificate(),
                                  mock.call().get_intermediates(),
-                                 mock.call('cont_id_3'),
+                                 mock.call('cont_id_3', check_only=True),
                                  mock.call().get_certificate(),
                                  mock.call().get_private_key(),
                                  mock.call().get_certificate(),
@@ -240,7 +245,7 @@ class TestSshDriver(base.TestCase):
         tls_tupe = sample_configs.sample_tls_container_tuple(
             certificate='imacert', private_key='imakey',
             intermediates=['imainter', 'imainter2'])
-        self.assertEqual(expected, self.driver._build_pem(tls_tupe))
+        self.assertEqual(expected, cert_parser.build_pem(tls_tupe))
 
     @mock.patch.object(ssh_driver.HaproxyManager, '_execute_command')
     def test_post_vip_plug_no_down_links(self, exec_command):

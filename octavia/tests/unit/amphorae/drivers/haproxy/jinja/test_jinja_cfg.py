@@ -23,7 +23,7 @@ class TestHaproxyCfg(base.TestCase):
         super(TestHaproxyCfg, self).setUp()
         self.jinja_cfg = jinja_cfg.JinjaTemplater(
             base_amp_path='/var/lib/octavia',
-            base_crt_dir='/listeners')
+            base_crt_dir='/var/lib/octavia/certs')
 
     def test_get_template(self):
         template = self.jinja_cfg._get_template()
@@ -35,9 +35,9 @@ class TestHaproxyCfg(base.TestCase):
               "    maxconn 98\n"
               "    option forwardfor\n"
               "    bind 10.0.0.2:443 "
-              "ssl crt /var/lib/octavia/listeners/"
+              "ssl crt /var/lib/octavia/certs/"
               "sample_listener_id_1/FakeCN.pem "
-              "crt /var/lib/octavia/listeners/sample_listener_id_1\n"
+              "crt /var/lib/octavia/certs/sample_listener_id_1\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1\n\n")
         be = ("backend sample_pool_id_1\n"
@@ -73,7 +73,7 @@ class TestHaproxyCfg(base.TestCase):
               "    maxconn 98\n"
               "    option forwardfor\n"
               "    bind 10.0.0.2:443 "
-              "ssl crt /var/lib/octavia/listeners/"
+              "ssl crt /var/lib/octavia/certs/"
               "sample_listener_id_1/FakeCN.pem\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1\n\n")

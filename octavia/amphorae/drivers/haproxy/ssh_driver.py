@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+import os
 import socket
 import tempfile
 import time
@@ -238,27 +239,31 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
         """
         tls_cert = None
         sni_certs = []
-        cert_dir = '{0}/{1}/certificates'.format(self.amp_config.base_path,
-                                                 listener.id)
 
         data = []
 
         if listener.tls_certificate_id:
             tls_cert = self._map_cert_tls_container(
-                self.barbican_client.get_cert(listener.tls_certificate_id))
-            data.append(self._build_pem(tls_cert))
+                self.barbican_client.get_cert(listener.tls_certificate_id,
+                                              check_only=True))
+            data.append(cert_parser.build_pem(tls_cert))
         if listener.sni_containers:
             for sni_cont in listener.sni_containers:
                 bbq_container = self._map_cert_tls_container(
-                    self.barbican_client.get_cert(sni_cont.tls_container.id))
+                    self.barbican_client.get_cert(sni_cont.tls_container.id,
+                                                  check_only=True))
                 sni_certs.append(bbq_container)
-                data.append(self._build_pem(bbq_container))
+                data.append(cert_parser.build_pem(bbq_container))
 
         if data:
+            cert_dir = os.path.join(self.amp_config.base_cert_dir, listener.id)
+            listener_cert = '{0}/{1}.pem'.format(cert_dir, tls_cert.primary_cn)
+
             self._exec_on_amphorae(
                 listener.load_balancer.amphorae, [
                     'chmod 600 {0}/*.pem'.format(cert_dir)],
-                make_dir=cert_dir, data=data, upload_dir=cert_dir)
+                make_dir=cert_dir,
+                data=data, upload_dir=listener_cert)
 
         return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
 
@@ -272,17 +277,6 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
             private_key=cert.get_private_key(),
             certificate=cert.get_certificate(),
             intermediates=cert.get_intermediates())
-
-    def _build_pem(self, tls_cert):
-        """Concatenate TLS Certificate fields to create a PEM
-
-        encoded certificate file
-        """
-        # TODO(ptoohill): Maybe this should be part of utils or manager?
-        pem = tls_cert.intermediates[:]
-        pem.extend([tls_cert.certificate, tls_cert.private_key])
-
-        return "\n".join(pem)
 
     def _exec_on_amphorae(self, amphorae, commands, make_dir=None, data=None,
                           upload_dir=None):

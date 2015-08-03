@@ -35,7 +35,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
     @staticmethod
     def store_cert(certificate, private_key, intermediates=None,
                    private_key_passphrase=None, expiration=None,
-                   name='Octavia TLS Cert', **kwargs):
+                   name='Octavia TLS Cert'):
         """Stores a certificate in the certificate manager.
 
         :param certificate: PEM encoded TLS certificate
@@ -113,14 +113,14 @@ class BarbicanCertManager(cert_mgr.CertManager):
                 ).format(str(e)))
 
     @staticmethod
-    def get_cert(cert_ref, service_name='Octavia', resource_ref=None,
-                 check_only=False, **kwargs):
+    def get_cert(cert_ref, resource_ref=None, check_only=False,
+                 service_name='Octavia'):
         """Retrieves the specified cert and registers as a consumer.
 
         :param cert_ref: the UUID of the cert to retrieve
-        :param service_name: Friendly name for the consuming service
         :param resource_ref: Full HATEOAS reference to the consuming resource
         :param check_only: Read Certificate data without registering
+        :param service_name: Friendly name for the consuming service
 
         :return: octavia.certificates.common.Cert representation of the
                  certificate data
@@ -150,13 +150,12 @@ class BarbicanCertManager(cert_mgr.CertManager):
                 ).format(cert_ref, str(e)))
 
     @staticmethod
-    def delete_cert(cert_ref, service_name='Octavia', resource_ref=None,
-                    **kwargs):
+    def delete_cert(cert_ref, resource_ref=None, service_name='Octavia'):
         """Deregister as a consumer for the specified cert.
 
         :param cert_ref: the UUID of the cert to retrieve
-        :param service_name: Friendly name for the consuming service
         :param resource_ref: Full HATEOAS reference to the consuming resource
+        :param service_name: Friendly name for the consuming service
 
         :raises Exception: if deregistration fails
         """

@@ -17,6 +17,7 @@ from cryptography.hazmat import backends
 from cryptography import x509
 from OpenSSL import crypto
 from OpenSSL import SSL
+from oslo_log import log as logging
 import six
 
 import octavia.common.exceptions as exceptions
@@ -24,6 +25,8 @@ import octavia.common.exceptions as exceptions
 
 X509_BEG = "-----BEGIN CERTIFICATE-----"
 X509_END = "-----END CERTIFICATE-----"
+
+LOG = logging.getLogger(__name__)
 
 
 def validate_cert(certificate, private_key=None,
@@ -76,7 +79,7 @@ def _split_x509s(xstr):
     """
     curr_pem_block = []
     inside_x509 = False
-    for line in xstr.replace(six.b("\r"), six.b("")).split(six.b("\n")):
+    for line in xstr.replace("\r", "").split("\n"):
         if inside_x509:
             curr_pem_block.append(line)
             if line == X509_END:
@@ -101,19 +104,27 @@ def get_host_names(certificate):
     the SubjectAltNames of the certificate.
     """
     try:
+        certificate = certificate.encode('ascii')
         cert = x509.load_pem_x509_certificate(certificate,
                                               backends.default_backend())
-        ext = cert.extensions.get_extension_for_oid(
-            x509.OID_SUBJECT_ALTERNATIVE_NAME
-        )
         cn = cert.subject.get_attributes_for_oid(x509.OID_COMMON_NAME)[0]
-
         host_names = {
             'cn': cn.value.lower(),
-            'dns_names': ext.value.get_values_for_type(x509.DNSName)
+            'dns_names': []
         }
+        try:
+            ext = cert.extensions.get_extension_for_oid(
+                x509.OID_SUBJECT_ALTERNATIVE_NAME
+            )
+            host_names['dns_names'] = ext.value.get_values_for_type(
+                x509.DNSName)
+        except x509.ExtensionNotFound:
+            LOG.debug("{0} extension not found".format(
+                x509.OID_SUBJECT_ALTERNATIVE_NAME))
+
         return host_names
-    except Exception:
+    except Exception as e:
+        LOG.exception(e)
         raise exceptions.UnreadableCert
 
 
@@ -129,3 +140,18 @@ def _get_x509_from_pem_bytes(certificate_pem):
     except Exception:
         raise exceptions.UnreadableCert
     return x509
+
+
+def build_pem(tls_container):
+        """Concatenate TLS container fields to create a PEM
+
+        encoded certificate file
+
+        :param tls_container: Object container TLS certificates
+        :returns: Pem encoded certificate file
+        """
+        pem = []
+        if tls_container.intermediates:
+            pem = tls_container.intermediates[:]
+        pem.extend([tls_container.certificate, tls_container.private_key])
+        return "\n".join(pem)
