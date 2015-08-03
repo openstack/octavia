@@ -132,7 +132,7 @@ def _load():
 def _get_networks():
     networks = dict()
     for interface in netifaces.interfaces():
-        if not interface.startswith('eth'):
+        if not interface.startswith('eth') or ":" in interface:
             continue
         networks[interface] = dict(
             network_tx=_get_network_bytes(interface, 'tx'),
