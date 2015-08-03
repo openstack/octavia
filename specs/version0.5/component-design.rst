@@ -44,9 +44,9 @@ The only sensitive data used in Octavia 0.5 are the TLS private keys used with
 TERMINATED_HTTPS functionality. However, the back-end storage aspect of these
 secrets will be handled by Barbican.
 
-Octavia VMs will also need to keep copies of these secrets locally in order
-to facilitate seamless service restarts. These local stores should be made
-on a memory filesystem.
+Octavia amphorae will also need to keep copies of these secrets locally in
+order to facilitate seamless service restarts. These local stores should be
+made on a memory filesystem.
 
 
 Notifications impact

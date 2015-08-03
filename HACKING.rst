@@ -40,8 +40,8 @@ system, advanced logic behind decisions, or otherwise a high degree of
 intelligence should be done by centralized components (ex. controllers) within
 the Octavia system. Examples of this might include:
 * Generating haproxy configuration files
-* Managing the lifecycle of Octavia VMs
-* Moving a loadbalancer instance from one Octavia VM to another.
+* Managing the lifecycle of Octavia amphorae
+* Moving a loadbalancer instance from one Octavia amphora to another.
 
 On the other hand, tasks done extremely often, or which entail a significant
 load on the system should be pushed as far out to the most horizontally
@@ -57,7 +57,7 @@ that will be present in a large operator environment.
 
 Also, as a secondary benefit of centralizing intelligence, minor feature
 additions and bugfixes can often be accomplished in a large operator
-environment without having to touch every Octavia VM running in said
+environment without having to touch every Octavia amphora running in said
 environment.
 
 All APIs are versioned
@@ -71,10 +71,10 @@ in other components.
 
 It is also likely that in very large deployments, there might be tens- or
 hundreds-of-thousands of individual instances of a given component deployed
-(most likely, the Octavia VMs). It is unreasonable to expect a large operator
-to update all of these components at once. Therefore it is likely that for a
-significant amount of time during a roll-out of a new version, both the old
-and new versions of a given component must be able to be controlled or
+(most likely, the Octavia amphorae). It is unreasonable to expect a large
+operator to update all of these components at once. Therefore it is likely that
+for a significant amount of time during a roll-out of a new version, both the
+old and new versions of a given component must be able to be controlled or
 otherwise interfaced with by the new components.
 
 Both of the above considerations can be allowed for if we use versioning of
