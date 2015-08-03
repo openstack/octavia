@@ -83,14 +83,12 @@ class CalculateDelta(BaseNetworkTask):
                 if (not listener.default_pool) or (
                         not listener.default_pool.members):
                     continue
-                desired_network_ids.update(
-                    list(
-                        self.network_driver.get_network(
-                            subnet_id=member.subnet_id).id
-                        for member in listener.default_pool.members
-                        if member.subnet_id
-                    )
-                )
+                member_networks = [
+                    self.network_driver.get_subnet(member.subnet_id).network_id
+                    for member in listener.default_pool.members
+                    if member.subnet_id
+                ]
+                desired_network_ids.update(member_networks)
 
             nics = self.network_driver.get_plugged_networks(amphora.compute_id)
             # assume we don't have two nics in the same network
