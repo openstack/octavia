@@ -21,7 +21,7 @@ LOG = logging.getLogger(__name__)
 
 
 def convert_subnet_dict_to_model(subnet_dict):
-    subnet = subnet_dict.get('subnet') or subnet_dict
+    subnet = subnet_dict.get('subnet', subnet_dict)
     return network_models.Subnet(id=subnet.get('id'), name=subnet.get('name'),
                                  network_id=subnet.get('network_id'),
                                  tenant_id=subnet.get('tenant_id'),
@@ -32,7 +32,7 @@ def convert_subnet_dict_to_model(subnet_dict):
 
 
 def convert_port_dict_to_model(port_dict):
-    port = port_dict.get('port') or port_dict
+    port = port_dict.get('port', port_dict)
     fixed_ips = [network_models.FixedIP(subnet_id=fixed_ip.get('subnet_id'),
                                         ip_address=fixed_ip.get('ip_address'))
                  for fixed_ip in port.get('fixed_ips', [])]
@@ -51,7 +51,7 @@ def convert_port_dict_to_model(port_dict):
 
 
 def convert_network_dict_to_model(network_dict):
-    nw = network_dict.get('network') or network_dict
+    nw = network_dict.get('network', network_dict)
     return network_models.Network(
         id=nw.get('id'),
         name=nw.get('name'),
@@ -64,3 +64,9 @@ def convert_network_dict_to_model(network_dict):
         provider_segmentation_id=nw.get('provider:segmentation_id'),
         router_external=nw.get('router:external')
     )
+
+
+def convert_fixed_ip_dict_to_model(fixed_ip_dict):
+    fixed_ip = fixed_ip_dict.get('fixed_ip', fixed_ip_dict)
+    return network_models.FixedIP(subnet_id=fixed_ip.get('subnet_id'),
+                                  ip_address=fixed_ip.get('ip_address'))

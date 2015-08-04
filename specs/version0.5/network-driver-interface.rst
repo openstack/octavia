@@ -66,7 +66,7 @@ New data models:
     * id
     * network_id - (neutron subnet)
     * amphora_id
-    * ip_address - (IPv4 or IPv6)
+    * fixed_ips
 
 * class Delta
     * amphora_id
@@ -157,7 +157,7 @@ class AbstractNetworkDriver
 
     * vip = instance of a VIP
     * returns list of Amphora
-    * raises PlugVIPException
+    * raises PlugVIPException, PortNotFound
 
 * unplug_vip(loadbalancer, vip)
 
@@ -174,7 +174,7 @@ class AbstractNetworkDriver
       connection of a load balancer.
     * loadbalancer = instance of a data_models.LoadBalancer
     * returns VIP instance
-    * raises AllocateVIPException, PortNotFound, NetworkNotFound
+    * raises AllocateVIPException, PortNotFound, SubnetNotFound
 
 * deallocate_vip(vip)
 
@@ -183,31 +183,31 @@ class AbstractNetworkDriver
     * returns None
     * raises DeallocateVIPException, VIPInUse, VIPConfigurationNotFound
 
-* plug_network(amphora_id, network_id, ip_address=None)
+* plug_network(compute_id, network_id, ip_address=None)
 
     * Connects an existing amphora to an existing network.
-    * amphora = id of an amphora in the compute service
+    * compute_id = id of an amphora in the compute service
     * network_id = id of the network to attach
     * ip_address = ip address to attempt to be assigned to interface
     * returns Interface instance
     * raises PlugNetworkException, AmphoraNotFound, NetworkNotFound
 
-* unplug_network(amphora_id, network_id, ip_address=None)
+* unplug_network(compute_id, network_id, ip_address=None)
 
     * Disconnects an existing amphora from an existing network. If ip_address
       is not specified then all interfaces on that network will be unplugged.
-    * amphora = id of an amphora in the compute service to unplug
+    * compute_id = id of an amphora in the compute service to unplug
     * network_id = id of network to unplug amphora
     * ip_address = ip address of interface to unplug
     * returns None
-    * raises UnplugNetworkException, AmphoraNotFound, NetworkNotFound
+    * raises UnplugNetworkException, AmphoraNotFound, NetworkNotFound,
+             NetworkException
 
-* get_plugged_networks(amphora_id):
+* get_plugged_networks(compute_id):
 
     * Retrieves the current plugged networking configuration
-    * amphora_id = id of an amphora in the compute service
+    * compute_id = id of an amphora in the compute service
     * returns = list of Instance instances
-    * raises AmphoraNotFound
 
 * update_vip(loadbalancer):
 

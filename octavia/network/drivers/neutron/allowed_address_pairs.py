@@ -13,7 +13,6 @@
 #    under the License.
 
 from neutronclient.common import exceptions as neutron_client_exceptions
-from neutronclient.neutron import client as neutron_client
 from novaclient import client as nova_client
 from novaclient import exceptions as nova_client_exceptions
 from oslo_log import log as logging
@@ -23,73 +22,43 @@ from octavia.common import data_models
 from octavia.common import keystone
 from octavia.i18n import _LE, _LI
 from octavia.network import base
-from octavia.network import data_models as network_models
+from octavia.network.drivers.neutron import base as neutron_base
 from octavia.network.drivers.neutron import utils
 
 
 LOG = logging.getLogger(__name__)
-NEUTRON_VERSION = '2.0'
 NOVA_VERSION = '2'
 AAP_EXT_ALIAS = 'allowed-address-pairs'
-SEC_GRP_EXT_ALIAS = 'security-group'
 VIP_SECURITY_GRP_PREFIX = 'lb-'
 
 
-class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
+class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
     def __init__(self):
-        self.sec_grp_enabled = True
-        self.neutron_client = neutron_client.Client(
-            NEUTRON_VERSION, session=keystone.get_session())
-        self._check_extensions_loaded()
+        super(AllowedAddressPairsDriver, self).__init__()
+        self._check_aap_loaded()
         self.nova_client = nova_client.Client(
             NOVA_VERSION, session=keystone.get_session())
 
-    def _check_extensions_loaded(self):
-        extensions = self.neutron_client.list_extensions()
-        extensions = extensions.get('extensions')
-        aliases = [ext.get('alias') for ext in extensions]
+    def _check_aap_loaded(self):
+        aliases = [ext.get('alias') for ext in self._extensions]
         if AAP_EXT_ALIAS not in aliases:
             raise base.NetworkException(
                 'The {alias} extension is not enabled in neutron.  This '
                 'driver cannot be used with the {alias} extension '
                 'disabled.'.format(alias=AAP_EXT_ALIAS))
-        if SEC_GRP_EXT_ALIAS not in aliases:
-            LOG.info(_LI('Neutron security groups are disabled.  This driver'
-                         'will not manage any security groups.'))
-            self.sec_grp_enabled = False
-
-    def _port_to_vip(self, port, load_balancer):
-        port = port['port']
-        fixed_ip = {}
-        for port_fixed_ip in port['fixed_ips']:
-            if port_fixed_ip['subnet_id'] == load_balancer.vip.subnet_id:
-                fixed_ip = port_fixed_ip
-                break
-        port_id = port['id']
-        return data_models.Vip(ip_address=fixed_ip.get('ip_address'),
-                               subnet_id=fixed_ip.get('subnet_id'),
-                               port_id=port_id,
-                               load_balancer_id=load_balancer.id)
-
-    def _nova_interface_to_octavia_interface(self, amphora_id, nova_interface):
-        ip_address = nova_interface.fixed_ips[0]['ip_address']
-        return network_models.Interface(amphora_id=amphora_id,
-                                        network_id=nova_interface.net_id,
-                                        port_id=nova_interface.port_id,
-                                        ip_address=ip_address)
 
     def _get_interfaces_to_unplug(self, interfaces, network_id,
                                   ip_address=None):
         ret = []
-        for interface_ in interfaces:
-            if interface_.net_id == network_id:
+        for interface in interfaces:
+            if interface.network_id == network_id:
                 if ip_address:
-                    for fixed_ip in interface_.fixed_ips:
-                        if ip_address == fixed_ip.get('ip_address'):
-                            ret.append(interface_)
+                    for fixed_ip in interface.fixed_ips:
+                        if ip_address == fixed_ip.ip_address:
+                            ret.append(interface)
                 else:
-                    ret.append(interface_)
+                    ret.append(interface)
         return ret
 
     def _get_plugged_interface(self, compute_id, network_id):
@@ -112,14 +81,7 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
 
     def _add_vip_address_pair(self, port_id, vip_address):
         try:
-            aap = {
-                'port': {
-                    'allowed_address_pairs': [
-                        {'ip_address': vip_address}
-                    ]
-                }
-            }
-            self.neutron_client.update_port(port_id, aap)
+            self._add_allowed_address_pair_to_port(port_id, vip_address)
         except neutron_client_exceptions.PortNotFoundClient as e:
                 raise base.PortNotFound(e.message)
         except Exception:
@@ -132,7 +94,7 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
     def _get_lb_security_group(self, load_balancer_id):
         sec_grp_name = VIP_SECURITY_GRP_PREFIX + load_balancer_id
         sec_grps = self.neutron_client.list_security_groups(name=sec_grp_name)
-        if len(sec_grps.get('security_groups')):
+        if sec_grps and sec_grps.get('security_groups'):
             return sec_grps.get('security_groups')[0]
 
     def _update_security_group_rules(self, load_balancer, sec_grp_id):
@@ -153,49 +115,40 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
                 self.neutron_client.delete_security_group_rule(rule.get('id'))
 
         for port in add_ports:
-            rule = {
-                'security_group_rule': {
-                    'security_group_id': sec_grp_id,
-                    'direction': 'ingress',
-                    'protocol': 'TCP',
-                    'port_range_min': port,
-                    'port_range_max': port
-                }
-            }
-            self.neutron_client.create_security_group_rule(rule)
+            self._create_security_group_rule(sec_grp_id, 'TCP', port_min=port,
+                                             port_max=port)
 
     def _update_vip_security_group(self, load_balancer, vip):
         sec_grp = self._get_lb_security_group(load_balancer.id)
         if not sec_grp:
             sec_grp_name = VIP_SECURITY_GRP_PREFIX + load_balancer.id
-            new_sec_grp = {'security_group': {'name': sec_grp_name}}
-            sec_grp = self.neutron_client.create_security_group(new_sec_grp)
-            sec_grp = sec_grp['security_group']
+            sec_grp = self._create_security_group(sec_grp_name)
         self._update_security_group_rules(load_balancer, sec_grp.get('id'))
-        port_update = {'port': {'security_groups': [sec_grp.get('id')]}}
+        self._add_vip_security_group_to_port(load_balancer.id, vip.port_id)
+
+    def _add_vip_security_group_to_port(self, load_balancer_id, port_id):
+        sec_grp = self._get_lb_security_group(load_balancer_id)
         try:
-            self.neutron_client.update_port(vip.port_id, port_update)
-        except neutron_client_exceptions.PortNotFoundClient as e:
-            raise base.PortNotFound(e.message)
-        except Exception as e:
+            self._add_security_group_to_port(sec_grp.get('id'), port_id)
+        except base.PortNotFound as e:
+            raise e
+        except base.NetworkException as e:
             raise base.PlugVIPException(str(e))
 
-    def _add_vip_security_group_to_amphorae(self, load_balancer_id, amphora):
-        sec_grp = self._get_lb_security_group(load_balancer_id)
-        self.nova_client.servers.add_security_group(
-            amphora.compute_id, sec_grp.get('id'))
-
     def deallocate_vip(self, vip):
-        port = self.neutron_client.show_port(vip.port_id)
+        try:
+            port = self.get_port(vip.port_id)
+        except base.PortNotFound:
+            msg = ("Can't deallocate VIP because the vip port {0} cannot be "
+                   "found in neutron".format(vip.port_id))
+            raise base.VIPConfigurationNotFound(msg)
         admin_tenant_id = keystone.get_session().get_project_id()
-        if port.get('port').get('tenant_id') != admin_tenant_id:
+        if port.tenant_id != admin_tenant_id:
             LOG.info(_LI("Port {0} will not be deleted by Octavia as it was "
                          "not created by Octavia.").format(vip.port_id))
             return
         try:
             self.neutron_client.delete_port(vip.port_id)
-        except neutron_client_exceptions.PortNotFoundClient as e:
-            raise base.VIPConfigurationNotFound(e.message)
         except Exception:
             message = _LE('Error deleting VIP port_id {port_id} from '
                           'neutron').format(port_id=vip.port_id)
@@ -206,28 +159,26 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
         if self.sec_grp_enabled:
             self._update_vip_security_group(load_balancer, vip)
         plugged_amphorae = []
-        try:
-            subnet = self.neutron_client.show_subnet(vip.subnet_id)
-        except Exception:
-            message = _LE('Error retrieving subnet {subnet_id}').format(
-                subnet_id=load_balancer.vip.subnet_id)
-            LOG.exception(message)
-            raise base.NetworkNotFound(message)
-        subnet = subnet['subnet']
+        subnet = self.get_subnet(vip.subnet_id)
         for amphora in load_balancer.amphorae:
             interface = self._get_plugged_interface(amphora.compute_id,
-                                                    subnet['network_id'])
+                                                    subnet.network_id)
             if not interface:
                 interface = self._plug_amphora_vip(amphora.compute_id,
-                                                   subnet['network_id'])
+                                                   subnet.network_id)
             self._add_vip_address_pair(interface.port_id, vip.ip_address)
             if self.sec_grp_enabled:
-                self._add_vip_security_group_to_amphorae(
-                    load_balancer.id, amphora)
+                self._add_vip_security_group_to_port(load_balancer.id,
+                                                     interface.port_id)
+            vrrp_ip = None
+            for fixed_ip in interface.fixed_ips:
+                if fixed_ip.subnet_id == subnet.id:
+                    vrrp_ip = fixed_ip.ip_address
+                    break
             plugged_amphorae.append(data_models.Amphora(
                 id=amphora.id,
                 compute_id=amphora.compute_id,
-                vrrp_ip=interface.ip_address,
+                vrrp_ip=vrrp_ip,
                 ha_ip=vip.ip_address,
                 vrrp_port_id=interface.port_id,
                 ha_port_id=vip.port_id))
@@ -241,66 +192,45 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
         if load_balancer.vip.port_id:
             LOG.info(_LI('Port {port_id} already exists. Nothing to be '
                          'done.').format(port_id=load_balancer.vip.port_id))
-            try:
-                port = self.neutron_client.show_port(load_balancer.vip.port_id)
-            except neutron_client_exceptions.PortNotFoundClient as e:
-                raise base.PortNotFound(e.message)
-            except Exception:
-                message = _LE('Error retrieving info about port '
-                              '{port_id}.').format(
-                                  port_id=load_balancer.vip.port_id)
-                LOG.exception(message)
-                raise base.AllocateVIPException(message)
+            port = self.get_port(load_balancer.vip.port_id)
             return self._port_to_vip(port, load_balancer)
 
         # Must retrieve the network_id from the subnet
-        try:
-            subnet = self.neutron_client.show_subnet(
-                load_balancer.vip.subnet_id)
-        except Exception:
-            message = _LE('Error retrieving subnet {subnet_id}').format(
-                subnet_id=load_balancer.vip.subnet_id)
-            LOG.exception(message)
-            raise base.NetworkNotFound(message)
-        subnet = subnet['subnet']
+        subnet = self.get_subnet(load_balancer.vip.subnet_id)
 
         # It can be assumed that network_id exists
         port = {'port': {'name': 'octavia-lb-' + load_balancer.id,
-                         'network_id': subnet['network_id'],
+                         'network_id': subnet.network_id,
                          'admin_state_up': False,
                          'device_id': '',
                          'device_owner': ''}}
         try:
             new_port = self.neutron_client.create_port(port)
-        except neutron_client_exceptions.NetworkNotFoundClient as e:
-            raise base.NetworkNotFound(e.message)
         except Exception:
             message = _LE('Error creating neutron port on network '
                           '{network_id}.').format(
-                network_id=subnet['network_id'])
+                network_id=subnet.network_id)
             LOG.exception(message)
             raise base.AllocateVIPException(message)
+        new_port = utils.convert_port_dict_to_model(new_port)
         return self._port_to_vip(new_port, load_balancer)
 
     def unplug_vip(self, load_balancer, vip):
         try:
-            subnet = self.neutron_client.show_subnet(vip.subnet_id)
-        except Exception:
-            message = _LE('Error retrieving subnet {subnet_id}').format(
-                subnet_id=load_balancer.vip.subnet_id)
-            LOG.exception(message)
-            raise base.NetworkNotFound(message)
-        subnet = subnet['subnet']
-
+            subnet = self.get_subnet(vip.subnet_id)
+        except base.SubnetNotFound:
+            msg = ("Can't unplug vip because vip subnet {0} was not "
+                   "found").format(vip.subnet_id)
+            raise base.PluggedVIPNotFound(msg)
         for amphora in load_balancer.amphorae:
             interface = self._get_plugged_interface(amphora.compute_id,
-                                                    subnet['network_id'])
+                                                    subnet.network_id)
             if not interface:
                 # Thought about raising PluggedVIPNotFound exception but
                 # then that wouldn't evaluate all amphorae, so just continue
                 continue
             try:
-                self.unplug_network(amphora.compute_id, subnet['network_id'])
+                self.unplug_network(amphora.compute_id, subnet.network_id)
             except Exception:
                 pass
             try:
@@ -318,7 +248,7 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
 
     def plug_network(self, compute_id, network_id, ip_address=None):
         try:
-            interface_ = self.nova_client.servers.interface_attach(
+            interface = self.nova_client.servers.interface_attach(
                 server=compute_id, net_id=network_id, fixed_ip=ip_address,
                 port_id=None)
         except nova_client_exceptions.NotFound as e:
@@ -334,36 +264,14 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
             LOG.exception(message)
             raise base.PlugNetworkException(message)
 
-        return self._nova_interface_to_octavia_interface(compute_id,
-                                                         interface_)
-
-    def get_plugged_networks(self, amphora_id):
-        try:
-            interfaces = self.nova_client.servers.interface_list(
-                server=amphora_id)
-        except Exception:
-            message = _LE('Error retrieving plugged networks for amphora '
-                          '{amphora_id}.').format(amphora_id=amphora_id)
-            LOG.exception(message)
-            raise base.NetworkException(message)
-        return [self._nova_interface_to_octavia_interface(
-                amphora_id, interface_) for interface_ in interfaces]
+        return self._nova_interface_to_octavia_interface(compute_id, interface)
 
     def unplug_network(self, compute_id, network_id, ip_address=None):
-        try:
-            interfaces = self.nova_client.servers.interface_list(
-                server=compute_id)
-        except nova_client_exceptions.NotFound as e:
-            raise base.AmphoraNotFound(e.message)
-        except Exception:
-            message = _LE('Error retrieving nova interfaces for amphora '
-                          '(compute_id: {compute_id}) on network {network_id} '
-                          'with ip {ip_address}.').format(
-                compute_id=compute_id,
-                network_id=network_id,
-                ip_address=ip_address)
-            LOG.exception(message)
-            raise base.NetworkException(message)
+        interfaces = self.get_plugged_networks(compute_id)
+        if not interfaces:
+            msg = ('Amphora with compute id {compute_id} does not have any '
+                   'plugged networks').format(compute_id=compute_id)
+            raise base.AmphoraNotFound(msg)
         unpluggers = self._get_interfaces_to_unplug(interfaces, network_id,
                                                     ip_address=ip_address)
         try:
@@ -391,54 +299,3 @@ class AllowedAddressPairsDriver(base.AbstractNetworkDriver):
     def update_vip(self, load_balancer):
         sec_grp = self._get_lb_security_group(load_balancer.id)
         self._update_security_group_rules(load_balancer, sec_grp.get('id'))
-
-    def get_network(self, network_id):
-        try:
-            network = self.neutron_client.show_network(network_id)
-            return utils.convert_network_dict_to_model(network)
-        except neutron_client_exceptions.NotFound:
-            message = _LE('Network not found '
-                          '(network id: {network_id}.').format(
-                network_id=network_id)
-            LOG.exception(message)
-            raise base.NetworkNotFound(message)
-        except Exception:
-            message = _LE('Error retrieving network '
-                          '(network id: {network_id}.').format(
-                network_id=network_id)
-            LOG.exception(message)
-            raise base.NetworkException(message)
-
-    def get_subnet(self, subnet_id):
-        try:
-            subnet = self.neutron_client.show_subnet(subnet_id)
-            return utils.convert_subnet_dict_to_model(subnet)
-        except neutron_client_exceptions.NotFound:
-            message = _LE('Subnet not found '
-                          '(subnet id: {subnet_id}.').format(
-                subnet_id=subnet_id)
-            LOG.exception(message)
-            raise base.SubnetNotFound(message)
-        except Exception:
-            message = _LE('Error retrieving subnet '
-                          '(subnet id: {subnet_id}.').format(
-                subnet_id=subnet_id)
-            LOG.exception(message)
-            raise base.NetworkException(message)
-
-    def get_port(self, port_id):
-        try:
-            port = self.neutron_client.show_port(port_id)
-            return utils.convert_port_dict_to_model(port)
-        except neutron_client_exceptions.NotFound:
-            message = _LE('Port not found '
-                          '(port id: {port_id}.').format(
-                port_id=port_id)
-            LOG.exception(message)
-            raise base.PortNotFound(message)
-        except Exception:
-            message = _LE('Error retrieving port '
-                          '(port id: {port_id}.').format(
-                port_id=port_id)
-            LOG.exception(message)
-            raise base.NetworkException(message)
