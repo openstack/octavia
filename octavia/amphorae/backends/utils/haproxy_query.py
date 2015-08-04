@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import csv
 import socket
 
 from octavia.common import constants as consts
@@ -62,8 +63,12 @@ class HAProxyQuery(object):
     def show_info(self):
         """Get and parse output from 'show info' command."""
         results = self._query('show info')
-        list_results = results.split('\n')
-        return list_results
+
+        dict_results = dict()
+        for r in results.split('\n'):
+            vals = r.split(":", 1)
+            dict_results[vals[0].strip()] = vals[1].strip()
+        return dict_results
 
     def show_stat(self, proxy_iid=-1, object_type=-1, server_id=-1):
         """Get and parse output from 'show status' command.
@@ -90,8 +95,9 @@ class HAProxyQuery(object):
                 proxy_iid=proxy_iid,
                 object_type=object_type,
                 server_id=server_id))
-        list_results = results.split('\n')
-        return list_results
+        list_results = results[2:].split('\n')
+        csv_reader = csv.DictReader(list_results)
+        return [row for row in csv_reader]
 
     def get_pool_status(self):
         """Get status for each server and the pool as a whole.
@@ -108,21 +114,20 @@ class HAProxyQuery(object):
         results = self.show_stat(object_type=6)  # servers + pool
 
         final_results = {}
-        for line in results[1:]:
-            elements = line.split(',')
-            # 0-pool  1 - server name, 17 - status
+        for line in results:
+            # pxname: pool, svname: server_name, status: status
 
             # All the way up is UP, otherwise call it DOWN
-            if elements[17] != consts.AMPHORA_UP:
-                elements[17] = consts.AMPHORA_DOWN
+            if line['status'] != consts.AMPHORA_UP:
+                line['status'] = consts.AMPHORA_DOWN
 
-            if elements[0] not in final_results:
-                final_results[elements[0]] = dict(members=[])
+            if line['pxname'] not in final_results:
+                final_results[line['pxname']] = dict(members=[])
 
-            if elements[1] == 'BACKEND':
-                final_results[elements[0]]['uuid'] = elements[0]
-                final_results[elements[0]]['status'] = elements[17]
+            if line['svname'] == 'BACKEND':
+                final_results[line['pxname']]['uuid'] = line['pxname']
+                final_results[line['pxname']]['status'] = line['status']
             else:
-                final_results[elements[0]]['members'].append(
-                    {elements[1]: elements[17]})
+                final_results[line['pxname']]['members'].append(
+                    {line['svname']: line['status']})
         return final_results
