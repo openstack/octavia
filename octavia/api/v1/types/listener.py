@@ -36,6 +36,7 @@ class ListenerResponse(base.BaseType):
     protocol_port = wtypes.wsattr(wtypes.IntegerType())
     connection_limit = wtypes.wsattr(wtypes.IntegerType())
     tls_certificate_id = wtypes.wsattr(wtypes.StringType(max_length=255))
+    sni_containers = [wtypes.StringType(max_length=255)]
 
 
 class ListenerPOST(base.BaseType):
@@ -49,6 +50,7 @@ class ListenerPOST(base.BaseType):
     connection_limit = wtypes.wsattr(wtypes.IntegerType())
     tls_certificate_id = wtypes.wsattr(wtypes.StringType(max_length=255))
     tls_termination = wtypes.wsattr(TLSTermination)
+    sni_containers = [wtypes.StringType(max_length=255)]
 
 
 class ListenerPUT(base.BaseType):
@@ -61,3 +63,4 @@ class ListenerPUT(base.BaseType):
     connection_limit = wtypes.wsattr(wtypes.IntegerType())
     tls_certificate_id = wtypes.wsattr(wtypes.StringType(max_length=255))
     tls_termination = wtypes.wsattr(TLSTermination)
+    sni_containers = [wtypes.StringType(max_length=255)]

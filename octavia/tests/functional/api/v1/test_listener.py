@@ -74,10 +74,13 @@ class TestListener(base.BaseAPITest):
         self.get(listener_path, status=404)
 
     def test_create(self, **optionals):
+        sni1 = uuidutils.generate_uuid()
+        sni2 = uuidutils.generate_uuid()
         lb_listener = {'name': 'listener1', 'description': 'desc1',
                        'enabled': False, 'protocol': constants.PROTOCOL_HTTP,
                        'protocol_port': 80, 'connection_limit': 10,
-                       'tls_certificate_id': uuidutils.generate_uuid()}
+                       'tls_certificate_id': uuidutils.generate_uuid(),
+                       'sni_containers': [sni1, sni2]}
         lb_listener.update(optionals)
         response = self.post(self.listeners_path, lb_listener)
         listener_api = response.json
@@ -88,6 +91,12 @@ class TestListener(base.BaseAPITest):
         for key, value in optionals.items():
             self.assertEqual(value, lb_listener.get(key))
         lb_listener['id'] = listener_api.get('id')
+        lb_listener.pop('sni_containers')
+        sni_ex = [sni1, sni2]
+        sni_resp = listener_api.pop('sni_containers')
+        self.assertEqual(2, len(sni_resp))
+        for sni in sni_resp:
+            self.assertTrue(sni in sni_ex)
         self.assertEqual(lb_listener, listener_api)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
@@ -111,7 +120,8 @@ class TestListener(base.BaseAPITest):
 
     def test_create_defaults(self):
         defaults = {'name': None, 'description': None, 'enabled': True,
-                    'connection_limit': None, 'tls_certificate_id': None}
+                    'connection_limit': None, 'tls_certificate_id': None,
+                    'sni_containers': []}
         lb_listener = {'protocol': constants.PROTOCOL_HTTP,
                        'protocol_port': 80}
         response = self.post(self.listeners_path, lb_listener)

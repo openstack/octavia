@@ -83,8 +83,16 @@ class ListenersController(base.BaseController):
         Update the load balancer db when provisioning status changes.
         """
         try:
+            sni_container_ids = listener_dict.pop('sni_containers')
             db_listener = self.repositories.listener.create(
                 session, **listener_dict)
+            if sni_container_ids is not None:
+                for container_id in sni_container_ids:
+                    sni_dict = {'listener_id': db_listener.id,
+                                'tls_container_id': container_id}
+                    self.repositories.sni.create(session, **sni_dict)
+                db_listener = self.repositories.listener.get(session,
+                                                             id=db_listener.id)
         except odb_exceptions.DBDuplicateEntry as de:
             # Setting LB back to active because this is just a validation
             # failure
@@ -134,7 +142,6 @@ class ListenersController(base.BaseController):
             del listener_dict['tls_termination']
         # This is the extra validation layer for wrong protocol or duplicate
         # listeners on the same load balancer.
-
         return self._validate_listeners(session, lb_repo, listener_dict)
 
     def _test_lb_status_put(self, session, id):

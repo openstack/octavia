@@ -16,6 +16,7 @@ from oslo_config import cfg
 from pecan import rest
 from stevedore import driver as stevedore_driver
 
+from octavia.api.v1.types import listener as listener_types
 from octavia.api.v1.types import load_balancer as lb_types
 from octavia.api.v1.types import pool as pool_types
 from octavia.db import repositories
@@ -52,6 +53,9 @@ class BaseController(rest.RestController):
                 api_type.session_persistence = (
                     pool_types.SessionPersistenceResponse.from_data_model(
                         db_obj.session_persistence))
+            elif to_type == listener_types.ListenerResponse:
+                api_type.sni_containers = [sni_c.tls_container_id
+                                           for sni_c in db_obj.sni_containers]
             return api_type
         if isinstance(db_entity, list):
             converted = [_convert(db_obj) for db_obj in db_entity]
