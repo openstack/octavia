@@ -55,6 +55,9 @@ class TestNetworkTasks(base.TestCase):
         network_tasks.LOG = mock.MagicMock()
         self.amphora_mock = mock.MagicMock()
         self.load_balancer_mock = mock.MagicMock()
+        self.vip_mock = mock.MagicMock()
+        self.vip_mock.subnet_id = SUBNET_ID
+        self.load_balancer_mock.vip = self.vip_mock
         self.load_balancer_mock.amphorae = []
         self.amphora_mock.id = AMPHORA_ID
         self.amphora_mock.compute_id = COMPUTE_ID
@@ -99,7 +102,9 @@ class TestNetworkTasks(base.TestCase):
         pool_mock.members = [member_mock]
         member_mock.subnet_id = 1
 
-        mock_driver.get_network.return_value = data_models.Network(id=2)
+        mock_driver.get_subnet.reset_mock()
+        mock_driver.get_subnet.return_value = data_models.Subnet(id=2,
+                                                                 network_id=3)
 
         ndm = data_models.Delta(amphora_id=self.amphora_mock.id,
                                 compute_id=self.amphora_mock.compute_id,
@@ -108,7 +113,11 @@ class TestNetworkTasks(base.TestCase):
         self.assertEqual({self.amphora_mock.id: ndm},
                          net.execute(self.load_balancer_mock))
 
-        mock_driver.get_network.assert_called_once_with(subnet_id=1)
+        vip_subnet_call = mock.call(self.vip_mock.subnet_id)
+        member_subnet_call = mock.call(member_mock.subnet_id)
+        mock_driver.get_subnet.assert_has_calls([vip_subnet_call,
+                                                 member_subnet_call])
+        self.assertEqual(2, mock_driver.get_subnet.call_count)
 
         mock_driver.get_plugged_networks.return_value = _interface(2)
         self.assertEqual(empty_deltas, net.execute(self.load_balancer_mock))
