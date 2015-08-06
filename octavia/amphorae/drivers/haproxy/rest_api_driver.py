@@ -15,6 +15,7 @@
 
 import functools
 import hashlib
+import json
 import time
 
 from oslo_log import log as logging
@@ -101,7 +102,12 @@ class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
 
     def post_vip_plug(self, load_balancer, amphorae_network_config):
         for amp in load_balancer.amphorae:
-            self.client.plug_vip(amp, load_balancer.vip.ip_address)
+            subnet = amphorae_network_config.get(amp.id).vip_subnet
+            subnet_info = {'subnet_cidr': subnet.cidr,
+                           'gateway': subnet.gateway_ip}
+            self.client.plug_vip(amp,
+                                 load_balancer.vip.ip_address,
+                                 subnet_info)
 
     def post_network_plug(self, amphora):
         self.client.plug_network(amphora)
@@ -296,6 +302,8 @@ class AmphoraAPIClient(object):
         r = self.post(amp, 'plug/network')
         return exc.check_exception(r)
 
-    def plug_vip(self, amp, vip):
-        r = self.post(amp, 'plug/vip/{vip}'.format(vip=vip))
+    def plug_vip(self, amp, vip, subnet_info):
+        r = self.post(amp,
+                      'plug/vip/{vip}'.format(vip=vip),
+                      json=json.dumps(subnet_info))
         return exc.check_exception(r)

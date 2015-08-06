@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import json
 import logging
 
 import flask
@@ -111,7 +112,17 @@ def delete_certificate(listener_id, filename):
 
 @app.route('/' + api_server.VERSION + '/plug/vip/<vip>', methods=['POST'])
 def plug_vip(vip):
-    return plug.plug_vip(vip)
+    # Catch any issues with the subnet info json
+    try:
+        request_json = flask.request.data.decode('utf8')
+        subnet_info = json.loads(request_json)
+        assert 'subnet_cidr' in subnet_info
+        assert 'gateway' in subnet_info
+    except Exception:
+        raise exceptions.BadRequest(description='Invalid subnet information')
+    return plug.plug_vip(vip,
+                         subnet_info['subnet_cidr'],
+                         subnet_info['gateway'])
 
 
 @app.route('/' + api_server.VERSION + '/plug/network', methods=['POST'])
