@@ -21,8 +21,10 @@ from werkzeug import exceptions
 
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import amphora_info
+from octavia.amphorae.backends.agent.api_server import certificate_update
 from octavia.amphorae.backends.agent.api_server import listener
 from octavia.amphorae.backends.agent.api_server import plug
+
 
 LOG = logging.getLogger(__name__)
 
@@ -128,3 +130,8 @@ def plug_vip(vip):
 @app.route('/' + api_server.VERSION + '/plug/network', methods=['POST'])
 def plug_network():
     return plug.plug_network()
+
+
+@app.route('/' + api_server.VERSION + '/certificate', methods=['PUT'])
+def upload_cert():
+    return certificate_update.upload_server_cert()
