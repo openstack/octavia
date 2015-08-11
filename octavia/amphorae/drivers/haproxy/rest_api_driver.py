@@ -15,7 +15,6 @@
 
 import functools
 import hashlib
-import json
 import time
 
 from oslo_log import log as logging
@@ -305,5 +304,5 @@ class AmphoraAPIClient(object):
     def plug_vip(self, amp, vip, subnet_info):
         r = self.post(amp,
                       'plug/vip/{vip}'.format(vip=vip),
-                      json=json.dumps(subnet_info))
+                      json=subnet_info)
         return exc.check_exception(r)
