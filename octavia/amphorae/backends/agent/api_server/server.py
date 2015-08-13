@@ -12,7 +12,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import json
 import logging
 
 import flask
@@ -116,8 +115,8 @@ def delete_certificate(listener_id, filename):
 def plug_vip(vip):
     # Catch any issues with the subnet info json
     try:
-        request_json = flask.request.data.decode('utf8')
-        subnet_info = json.loads(request_json)
+        subnet_info = flask.request.get_json()
+        assert type(subnet_info) is dict
         assert 'subnet_cidr' in subnet_info
         assert 'gateway' in subnet_info
     except Exception:
