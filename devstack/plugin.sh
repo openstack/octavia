@@ -207,7 +207,7 @@ function octavia_cleanup {
 if is_service_enabled $OCTAVIA; then
 
     if ! is_service_enabled $Q_SVC || ! is_service_enabled $LBAAS_V2; then
-        die "The neutron $Q-SVC and $LBAAS_V2 services must be enabled to use $OCTAVIA"
+        die "The neutron $Q_SVC and $LBAAS_V2 services must be enabled to use $OCTAVIA"
     fi
 
     if [[ "$1" == "stack" && "$2" == "install" ]]; then
