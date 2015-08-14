@@ -45,7 +45,7 @@ class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
         self.client = AmphoraAPIClient()
         self.cert_manager = stevedore_driver.DriverManager(
             namespace='octavia.cert_manager',
-            name=CONF.haproxy_amphora.cert_manager,
+            name=CONF.certificates.cert_manager,
             invoke_on_load=True,
         ).driver
         self.jinja = jinja_cfg.JinjaTemplater(

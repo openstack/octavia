@@ -116,9 +116,6 @@ haproxy_amphora_opts = [
     cfg.IntOpt('connection_retry_interval',
                default=5,
                help=_('Retry timeout between attempts in seconds.')),
-    cfg.StrOpt('cert_manager',
-               default='barbican_cert_manager',
-               help=_('Name of the cert manager to use')),
 
     # REST server
     cfg.StrOpt('bind_host', default='0.0.0.0',
@@ -199,6 +196,15 @@ task_flow_opts = [
 
 core_cli_opts = []
 
+certificate_opts = [
+    cfg.StrOpt('cert_manager',
+               default='local_cert_manager',
+               help='Name of the cert manager to use'),
+    cfg.StrOpt('cert_generator',
+               default='local_cert_generator',
+               help='Name of the cert generator to use'),
+]
+
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_opts(networking_opts, group='networking')
@@ -208,6 +214,7 @@ cfg.CONF.register_opts(controller_worker_opts, group='controller_worker')
 cfg.CONF.register_opts(task_flow_opts, group='task_flow')
 cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
 cfg.CONF.register_cli_opts(core_cli_opts)
+cfg.CONF.register_opts(certificate_opts, group='certificates')
 cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
 cfg.CONF.register_opts(keystone_authtoken_v3_opts,
                        group='keystone_authtoken_v3')

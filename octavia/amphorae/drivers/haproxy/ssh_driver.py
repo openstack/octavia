@@ -19,11 +19,11 @@ import time
 from oslo_log import log as logging
 import paramiko
 import six
+from stevedore import driver as stevedore_driver
 
 from octavia.amphorae.driver_exceptions import exceptions as exc
 from octavia.amphorae.drivers import driver_base as driver_base
 from octavia.amphorae.drivers.haproxy.jinja import jinja_cfg
-from octavia.certificates.manager import barbican
 from octavia.common.config import cfg
 from octavia.common import data_models as data_models
 from octavia.common.tls_utils import cert_parser
@@ -57,7 +57,11 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
         self.amphoraconfig = {}
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.barbican_client = barbican.BarbicanCertManager()
+        self.cert_manager = stevedore_driver.DriverManager(
+            namespace='octavia.cert_manager',
+            name=cfg.CONF.certificates.cert_manager,
+            invoke_on_load=True,
+        ).driver
         self.jinja = jinja_cfg.JinjaTemplater(
             base_amp_path=self.amp_config.base_path,
             base_crt_dir=self.amp_config.base_cert_dir,
@@ -244,16 +248,16 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
 
         if listener.tls_certificate_id:
             tls_cert = self._map_cert_tls_container(
-                self.barbican_client.get_cert(listener.tls_certificate_id,
-                                              check_only=True))
+                self.cert_manager.get_cert(listener.tls_certificate_id,
+                                           check_only=True))
             data.append(cert_parser.build_pem(tls_cert))
         if listener.sni_containers:
             for sni_cont in listener.sni_containers:
-                bbq_container = self._map_cert_tls_container(
-                    self.barbican_client.get_cert(sni_cont.tls_container.id,
-                                                  check_only=True))
-                sni_certs.append(bbq_container)
-                data.append(cert_parser.build_pem(bbq_container))
+                cert_container = self._map_cert_tls_container(
+                    self.cert_manager.get_cert(sni_cont.tls_container.id,
+                                               check_only=True))
+                sni_certs.append(cert_container)
+                data.append(cert_parser.build_pem(cert_container))
 
         if data:
             cert_dir = os.path.join(self.amp_config.base_cert_dir, listener.id)

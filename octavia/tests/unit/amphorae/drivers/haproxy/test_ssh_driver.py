@@ -19,7 +19,7 @@ import six
 
 from octavia.amphorae.drivers.haproxy.jinja import jinja_cfg
 from octavia.amphorae.drivers.haproxy import ssh_driver
-from octavia.certificates.manager import barbican
+from octavia.certificates.manager import cert_mgr
 from octavia.common import data_models
 from octavia.common import keystone
 from octavia.common.tls_utils import cert_parser
@@ -57,8 +57,8 @@ class TestSshDriver(base.TestCase):
         self.vip = sample_configs.sample_vip_tuple()
         self.amphora = models.Amphora()
         self.amphora.id = self.FAKE_UUID_1
-        self.driver.barbican_client = mock.Mock(
-            spec=barbican.BarbicanCertManager)
+        self.driver.cert_manager = mock.Mock(
+            spec=cert_mgr.CertManager)
         self.driver.client = mock.Mock(spec=paramiko.SSHClient)
         self.driver.client.exec_command.return_value = (
             mock.Mock(), mock.Mock(), mock.Mock())
@@ -174,7 +174,7 @@ class TestSshDriver(base.TestCase):
     def test_process_tls_certificates(self):
         listener = sample_configs.sample_listener_tuple(tls=True, sni=True)
         with mock.patch.object(cert_parser, 'build_pem') as pem:
-            with mock.patch.object(self.driver.barbican_client,
+            with mock.patch.object(self.driver.cert_manager,
                                    'get_cert') as bbq:
                 with mock.patch.object(cert_parser,
                                        'get_host_names') as cp:
