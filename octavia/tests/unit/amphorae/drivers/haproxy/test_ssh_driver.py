@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from oslo_config import cfg
 from oslo_log import log
 from oslo_utils import uuidutils
 import paramiko
@@ -207,6 +208,13 @@ class TestSshDriver(base.TestCase):
                         mock.call(mock.ANY, mock.ANY),
                     ])
 
+    def test_build_pem(self):
+        expected = 'imainter\nimainter2\nimacert\nimakey'
+        tls_tupe = sample_configs.sample_tls_container_tuple(
+            certificate='imacert', private_key='imakey',
+            intermediates=['imainter', 'imainter2'])
+        self.assertEqual(expected, cert_parser.build_pem(tls_tupe))
+
     def test_get_primary_cn(self):
         cert = mock.MagicMock()
 
@@ -239,13 +247,6 @@ class TestSshDriver(base.TestCase):
             self.assertEqual(tls.intermediates,
                              self.driver._map_cert_tls_container(
                                  cert).intermediates)
-
-    def test_build_pem(self):
-        expected = 'imainter\nimainter2\nimacert\nimakey'
-        tls_tupe = sample_configs.sample_tls_container_tuple(
-            certificate='imacert', private_key='imakey',
-            intermediates=['imainter', 'imainter2'])
-        self.assertEqual(expected, cert_parser.build_pem(tls_tupe))
 
     @mock.patch.object(ssh_driver.HaproxyManager, '_execute_command')
     def test_post_vip_plug_no_down_links(self, exec_command):
@@ -335,3 +336,9 @@ class TestSshDriver(base.TestCase):
         show_ip_call = mock.call(ssh_driver.CMD_SHOW_IP_ADDR.format(iface))
         exec_command.assert_has_calls([grep_call, dhclient_call, show_ip_call])
         self.assertEqual(3, exec_command.call_count)
+
+    def test_is_root(self):
+        cfg.CONF.set_override('username', 'root', group='haproxy_amphora')
+        self.assertTrue(self.driver._is_root())
+        cfg.CONF.set_override('username', 'blah', group='haproxy_amphora')
+        self.assertFalse(self.driver._is_root())
