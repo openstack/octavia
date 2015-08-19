@@ -67,8 +67,9 @@ function octavia_configure {
 
     iniset $OCTAVIA_CONF DEFAULT api_handler queue_producer
 
-    iniset $OCTAVIA_CONF oslo_messaging rabbit_port 5672
-    iniset $OCTAVIA_CONF oslo_messaging rabbit_hosts localhost:5672
+    iniset $OCTAVIA_CONF oslo_messaging_rabbit rabbit_port 5672
+    iniset $OCTAVIA_CONF oslo_messaging_rabbit rabbit_hosts localhost:5672
+
     iniset $OCTAVIA_CONF oslo_messaging rpc_thread_pool_size 2
     iniset $OCTAVIA_CONF oslo_messaging topic octavia_prov
 
