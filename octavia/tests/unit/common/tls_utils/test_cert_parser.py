@@ -12,6 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import datetime
 
 import mock
 import six
@@ -316,3 +317,11 @@ class TestTLSParseUtils(base.TestCase):
             cp.return_value = {'cn': 'fakeCN'}
             cn = cert_parser.get_primary_cn(cert)
             self.assertEqual('fakeCN', cn)
+
+    def test_get_cert_expiration(self):
+        exp_date = cert_parser.get_cert_expiration(ALT_EXT_CRT)
+        self.assertEqual(datetime.datetime(2025, 5, 18, 20, 33, 23), exp_date)
+
+        # test the exception
+        self.assertRaises(exceptions.UnreadableCert,
+                              cert_parser.get_cert_expiration, 'bad-cert-file')

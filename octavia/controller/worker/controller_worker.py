@@ -26,6 +26,7 @@ from octavia.controller.worker.flows import member_flows
 from octavia.controller.worker.flows import pool_flows
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
+from octavia.i18n import _LI
 
 from taskflow.listeners import logging as tf_logging
 
@@ -486,3 +487,25 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         with tf_logging.DynamicLoggingListener(failover_amphora_tf,
                                                log=LOG):
             failover_amphora_tf.run()
+
+    def amphora_cert_rotation(self, amphora_id):
+        """Perform cert rotation for an amphora.
+
+        :param amphora_id: ID for amphora to rotate
+        :returns: None
+        :raises AmphoraNotFound: The referenced amphora was not found
+        """
+
+        amp = self._amphora_repo.get(db_apis.get_session(),
+                                     id=amphora_id)
+        LOG.info(_LI("Start amphora cert rotation, amphora's id is: %s")
+                 % amp.id)
+
+        certrotation_amphora_tf = self._taskflow_load(
+            self._amphora_flows.cert_rotate_amphora_flow(),
+            store={constants.AMPHORA: amp,
+                   constants.AMPHORA_ID: amp.id})
+
+        with tf_logging.DynamicLoggingListener(certrotation_amphora_tf,
+                                               log=LOG):
+            certrotation_amphora_tf.run()

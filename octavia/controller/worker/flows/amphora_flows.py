@@ -25,7 +25,6 @@ from octavia.controller.worker.tasks import compute_tasks
 from octavia.controller.worker.tasks import database_tasks
 from octavia.controller.worker.tasks import network_tasks
 
-
 CONF = cfg.CONF
 CONF.import_group('controller_worker', 'octavia.common.config')
 
@@ -52,6 +51,11 @@ class AmphoraFlows(object):
         if self.REST_AMPHORA_DRIVER:
             create_amphora_flow.add(cert_task.GenerateServerPEMTask(
                                     provides=constants.SERVER_PEM))
+
+            create_amphora_flow.add(
+                database_tasks.UpdateAmphoraDBCertExpiration(
+                    requires=(constants.AMPHORA_ID, constants.SERVER_PEM)))
+
             create_amphora_flow.add(compute_tasks.CertComputeCreate(
                 requires=(constants.AMPHORA_ID, constants.SERVER_PEM),
                 provides=constants.COMPUTE_ID))
@@ -98,6 +102,11 @@ class AmphoraFlows(object):
         if self.REST_AMPHORA_DRIVER:
             create_amp_for_lb_flow.add(cert_task.GenerateServerPEMTask(
                 provides=constants.SERVER_PEM))
+
+            create_amp_for_lb_flow.add(
+                database_tasks.UpdateAmphoraDBCertExpiration(
+                    requires=(constants.AMPHORA_ID, constants.SERVER_PEM)))
+
             create_amp_for_lb_flow.add(compute_tasks.CertComputeCreate(
                 requires=(constants.AMPHORA_ID, constants.SERVER_PEM),
                 provides=constants.COMPUTE_ID))
@@ -249,3 +258,35 @@ class AmphoraFlows(object):
             requires=(constants.AMPHORA, constants.LOADBALANCER_ID)))
 
         return failover_amphora_flow
+
+    def cert_rotate_amphora_flow(self):
+        """Implement rotation for amphora's cert.
+
+         1. Create a new certificate
+         2. Upload the cert to amphora
+         3. update the newly created certificate info to amphora
+         4. update the cert_busy flag to be false after rotation
+
+        :returns: The flow for updating an amphora
+        """
+        rotated_amphora_flow = linear_flow.Flow(
+            constants.CERT_ROTATE_AMPHORA_FLOW)
+
+        # create a new certificate, the returned value is the newly created
+        # certificate
+        rotated_amphora_flow.add(cert_task.GenerateServerPEMTask(
+            provides=constants.SERVER_PEM))
+
+        # update it in amphora task
+        rotated_amphora_flow.add(amphora_driver_tasks.AmphoraCertUpload(
+            requires=(constants.AMPHORA, constants.SERVER_PEM)))
+
+        # update the newly created certificate info to amphora
+        rotated_amphora_flow.add(database_tasks.UpdateAmphoraDBCertExpiration(
+            requires=(constants.AMPHORA_ID, constants.SERVER_PEM)))
+
+        # update the cert_busy flag to be false after rotation
+        rotated_amphora_flow.add(database_tasks.UpdateAmphoraCertBusyToFalse(
+            requires=constants.AMPHORA))
+
+        return rotated_amphora_flow

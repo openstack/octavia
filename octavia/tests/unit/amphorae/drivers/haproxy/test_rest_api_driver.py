@@ -16,6 +16,7 @@
 import mock
 from oslo_utils import uuidutils
 import requests_mock
+import six
 
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy import rest_api_driver as driver
@@ -34,10 +35,10 @@ FAKE_SUBNET_INFO = {'subnet_cidr': FAKE_CIDR,
 FAKE_UUID_1 = uuidutils.generate_uuid()
 
 
-class HaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
+class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
 
     def setUp(self):
-        super(HaproxyAmphoraLoadBalancerDriverTest, self).setUp()
+        super(TestHaproxyAmphoraLoadBalancerDriverTest, self).setUp()
         self.driver = driver.HaproxyAmphoraLoadBalancerDriver()
 
         self.driver.cert_manager = mock.MagicMock()
@@ -110,6 +111,11 @@ class HaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.client.start_listener.assert_called_once_with(
             self.amp, self.sl.id)
 
+    def test_upload_cert_amp(self):
+        self.driver.upload_cert_amp(self.amp, six.b('test'))
+        self.driver.client.update_cert_for_rotation.assert_called_once_with(
+            self.amp, six.b('test'))
+
     def test_stop(self):
         # Execute driver method
         self.driver.stop(self.sl, self.sv)
@@ -152,10 +158,10 @@ class HaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             self.amp, dict(mac_address='123'))
 
 
-class AmphoraAPIClientTest(base.TestCase):
+class TestAmphoraAPIClientTest(base.TestCase):
 
     def setUp(self):
-        super(AmphoraAPIClientTest, self).setUp()
+        super(TestAmphoraAPIClientTest, self).setUp()
         self.driver = driver.AmphoraAPIClient()
         self.base_url = "https://127.0.0.1:9443/0.5"
         self.amp = models.Amphora(lb_network_ip='127.0.0.1', compute_id='123')
@@ -477,6 +483,41 @@ class AmphoraAPIClientTest(base.TestCase):
             filename=FAKE_PEM_FILENAME), status_code=503)
         self.assertRaises(exc.ServiceUnavailable, self.driver.upload_cert_pem,
                           self.amp, FAKE_UUID_1, FAKE_PEM_FILENAME,
+                          "some_file")
+
+    @requests_mock.mock()
+    def test_update_cert_for_rotation(self, m):
+        m.put("{base}/certificate".format(base=self.base_url))
+        resp_body = self.driver.update_cert_for_rotation(self.amp,
+                                                         "some_file")
+        self.assertEqual(200, resp_body.status_code)
+
+    @requests_mock.mock()
+    def test_update_invalid_cert_for_rotation(self, m):
+        m.put("{base}/certificate".format(base=self.base_url), status_code=403)
+        self.assertRaises(exc.InvalidRequest,
+                          self.driver.update_cert_for_rotation, self.amp,
+                          "some_file")
+
+    @requests_mock.mock()
+    def test_update_cert_for_rotation_unauthorized(self, m):
+        m.put("{base}/certificate".format(base=self.base_url), status_code=401)
+        self.assertRaises(exc.Unauthorized,
+                          self.driver.update_cert_for_rotation, self.amp,
+                          "some_file")
+
+    @requests_mock.mock()
+    def test_update_cert_for_rotation_error(self, m):
+        m.put("{base}/certificate".format(base=self.base_url), status_code=500)
+        self.assertRaises(exc.InternalServerError,
+                          self.driver.update_cert_for_rotation, self.amp,
+                          "some_file")
+
+    @requests_mock.mock()
+    def test_update_cert_for_rotation_unavailable(self, m):
+        m.put("{base}/certificate".format(base=self.base_url), status_code=503)
+        self.assertRaises(exc.ServiceUnavailable,
+                          self.driver.update_cert_for_rotation, self.amp,
                           "some_file")
 
     @requests_mock.mock()

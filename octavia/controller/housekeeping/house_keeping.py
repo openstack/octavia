@@ -14,6 +14,7 @@
 
 import datetime
 
+from concurrent import futures
 from oslo_config import cfg
 from oslo_log import log as logging
 
@@ -78,4 +79,31 @@ class DatabaseCleanup(object):
                                                           exp_age):
                 LOG.info(_LI('Attempting to delete Amphora id : %s'), amp.id)
                 self.amp_repo.delete(session, id=amp.id)
-                LOG.info(_LI('Deleted Amphora id : %s'), amp.id)
+                LOG.info(_LI('Deleted Amphora id : %s') % amp.id)
+
+
+class CertRotation(object):
+    def __init__(self):
+        self.threads = CONF.house_keeping.cert_rotate_threads
+        self.cw = cw.ControllerWorker()
+
+    def rotate(self):
+        """Check the amphora db table for expiring auth certs."""
+        amp_repo = repo.AmphoraRepository()
+
+        with futures.ThreadPoolExecutor(max_workers=self.threads) as executor:
+            try:
+                session = db_api.get_session()
+                rotation_count = 0
+                while True:
+                    amp = amp_repo.get_cert_expiring_amphora(session)
+                    if not amp:
+                        break
+                    rotation_count += 1
+                    LOG.debug("Cert expired amphora's id is: %s", amp.id)
+                    executor.submit(self.cw.amphora_cert_rotation, amp.id)
+                if rotation_count > 0:
+                    LOG.info(_LI("Rotated certificates for %s ampohra") %
+                             rotation_count)
+            finally:
+                executor.shutdown(wait=True)

@@ -22,9 +22,11 @@ from taskflow.types import failure
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+import octavia.common.tls_utils.cert_parser as cert_parser
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
 from octavia.i18n import _LI, _LW
+
 
 LOG = logging.getLogger(__name__)
 
@@ -54,7 +56,8 @@ class CreateAmphoraInDB(BaseDatabaseTask):
 
         amphora = self.amphora_repo.create(db_apis.get_session(),
                                            id=uuidutils.generate_uuid(),
-                                           status=constants.PENDING_CREATE)
+                                           status=constants.PENDING_CREATE,
+                                           cert_busy=False)
 
         LOG.info(_LI("Created Amphora in DB with id %s"), amphora.id)
         return amphora.id
@@ -472,6 +475,24 @@ class UpdateAmphoraInfo(BaseDatabaseTask):
         self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  lb_network_ip=compute_obj.lb_network_ip)
         return self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
+
+
+class UpdateAmphoraDBCertExpiration(BaseDatabaseTask):
+    """Update the amphora expiration date with new cert file date."""
+
+    def execute(self, amphora_id, server_pem):
+        LOG.debug("Update DB cert expiry date of amphora id: %s", amphora_id)
+        cert_expiration = cert_parser.get_cert_expiration(server_pem)
+        LOG.debug("Certificate expiration date is %s ", cert_expiration)
+        self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                 cert_expiration=cert_expiration)
+
+
+class UpdateAmphoraCertBusyToFalse(BaseDatabaseTask):
+    """Update the amphora cert_busy flag to be false."""
+    def execute(self, amphora):
+        self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                                 cert_busy=False)
 
 
 class MarkLBActiveInDB(BaseDatabaseTask):

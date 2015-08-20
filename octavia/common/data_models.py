@@ -225,7 +225,8 @@ class Amphora(BaseDataModel):
     def __init__(self, id=None, load_balancer_id=None, compute_id=None,
                  status=None, lb_network_ip=None, vrrp_ip=None,
                  ha_ip=None, vrrp_port_id=None, ha_port_id=None,
-                 load_balancer=None, role=None):
+                 load_balancer=None, role=None, cert_expiration=None,
+                 cert_busy=False):
         self.id = id
         self.load_balancer_id = load_balancer_id
         self.compute_id = compute_id
@@ -237,6 +238,8 @@ class Amphora(BaseDataModel):
         self.ha_port_id = ha_port_id
         self.role = role
         self.load_balancer = load_balancer
+        self.cert_expiration = cert_expiration
+        self.cert_busy = cert_busy
 
 
 class AmphoraHealth(BaseDataModel):

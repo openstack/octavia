@@ -123,7 +123,9 @@ class ModelTestMixin(object):
                   'ha_ip': self.FAKE_IP,
                   'vrrp_port_id': self.FAKE_UUID_1,
                   'ha_port_id': self.FAKE_UUID_2,
-                  'lb_network_ip': self.FAKE_IP}
+                  'lb_network_ip': self.FAKE_IP,
+                  'cert_expiration': datetime.datetime.utcnow(),
+                  'cert_busy': False}
         kwargs.update(overrides)
         return self._insert(session, models.Amphora, kwargs)
 

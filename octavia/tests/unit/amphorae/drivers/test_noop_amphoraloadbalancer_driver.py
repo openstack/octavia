@@ -62,6 +62,7 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
                     amphora=self.amphora,
                     vip_subnet=network_models.Subnet(id=self.FAKE_UUID_1))
         }
+        self.pem_file = 'test_pem_file'
 
     def test_update(self):
         self.driver.update(self.listener, self.vip)
@@ -125,3 +126,10 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
             self.load_balancer.id, id(self.amphorae_net_configs)
         )]
         self.assertEqual(expected_method_and_args, actual_method_and_args)
+
+    def test_upload_cert_amp(self):
+        self.driver.upload_cert_amp(self.amphora, self.pem_file)
+        self.assertEqual(
+            (self.amphora.id, self.pem_file, 'update_amp_cert_file'),
+            self.driver.driver.amphoraconfig[(
+                self.amphora.id, self.pem_file)])

@@ -185,6 +185,19 @@ class AmphoraLoadBalancerDriver(object):
         """
         pass
 
+    def upload_cert_amp(self, amphora, pem_file):
+        """upload cert info to amphora
+
+
+        :param amphora: amphora object, needs id and network ip(s)
+        :type amphora: object
+        :param pem_file: a certificate file
+        :type pem_file: file object
+
+        upload cert file to amphora for Controller Communication
+        """
+        pass
+
 
 @six.add_metaclass(abc.ABCMeta)
 class HealthMixin(object):

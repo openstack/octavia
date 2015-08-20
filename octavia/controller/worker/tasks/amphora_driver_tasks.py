@@ -239,3 +239,12 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       id=loadbalancer.id,
                                       status=constants.ERROR)
+
+
+class AmphoraCertUpload(BaseAmphoraTask):
+    """Upload a certificate to the amphora."""
+
+    def execute(self, amphora, server_pem):
+        """Execute cert_update_amphora routine."""
+        LOG.debug("Upload cert in amphora REST driver")
+        self.amphora_driver.upload_cert_amp(amphora, server_pem)

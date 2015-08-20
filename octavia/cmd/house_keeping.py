@@ -34,6 +34,7 @@ CONF.import_group('house_keeping', 'octavia.common.config')
 
 spare_amp_thread_event = threading.Event()
 db_cleanup_thread_event = threading.Event()
+cert_rotate_thread_event = threading.Event()
 
 
 def spare_amphora_check():
@@ -65,6 +66,18 @@ def db_cleanup():
         time.sleep(interval)
 
 
+def cert_rotation():
+    """Perform certificate rotation."""
+    interval = CONF.house_keeping.cert_interval
+    LOG.info(
+        _LI("Expiring certificate check interval is set to %d sec") % interval)
+    cert_rotate = house_keeping.CertRotation()
+    while cert_rotate_thread_event.is_set():
+        LOG.debug("Initiating certification rotation ...")
+        cert_rotate.rotate()
+        time.sleep(interval)
+
+
 def main():
     service.prepare_service(sys.argv)
 
@@ -85,6 +98,12 @@ def main():
     db_cleanup_thread_event.set()
     db_cleanup_thread.start()
 
+    # Thread to perform certificate rotation
+    cert_rotate_thread = threading.Thread(target=cert_rotation)
+    cert_rotate_thread.daemon = True
+    cert_rotate_thread_event.set()
+    cert_rotate_thread.start()
+
     # Try-Exception block should be at the end to gracefully exit threads
     try:
         while True:
@@ -93,6 +112,8 @@ def main():
         LOG.info(_LI("Attempting to gracefully terminate House-Keeping"))
         spare_amp_thread_event.clear()
         db_cleanup_thread_event.clear()
+        cert_rotate_thread_event.clear()
         spare_amp_thread.join()
         db_cleanup_thread.join()
+        cert_rotate_thread.join()
         LOG.info(_LI("House-Keeping process terminated"))

@@ -274,7 +274,18 @@ house_keeping_opts = [
                help=_('DB cleanup interval in seconds')),
     cfg.IntOpt('amphora_expiry_age',
                default=604800,
-               help=_('Amphora expiry age in seconds'))
+               help=_('Amphora expiry age in seconds')),
+    cfg.IntOpt('cert_interval',
+               default=3600,
+               help=_('Certificate check interval in seconds')),
+    # 14 days for cert expiry buffer
+    cfg.IntOpt('cert_expiry_buffer',
+               default=1209600,
+               help=_('Seconds until certificate expiration')),
+    cfg.IntOpt('cert_rotate_threads',
+               default=10,
+               help=_('Number of threads performing amphora certificate'
+                      ' rotation'))
 
 ]
 

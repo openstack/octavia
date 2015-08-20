@@ -24,6 +24,16 @@ import octavia.tests.unit.base as base
 
 CONF = cfg.CONF
 CONF.import_group('house_keeping', 'octavia.common.config')
+AMPHORA_ID = uuidutils.generate_uuid()
+
+
+class TestException(Exception):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
 
 
 class TestSpareCheck(base.TestCase):
@@ -122,3 +132,63 @@ class TestDatabaseCleanup(base.TestCase):
         self.assertTrue(self.amp_repo.get_all.called)
         self.assertTrue(self.amp_health_repo.check_amphora_expired.called)
         self.assertFalse(self.amp_repo.delete.called)
+
+
+class TestCertRotation(base.TestCase):
+    def setUp(self):
+        super(TestCertRotation, self).setUp()
+
+    @mock.patch('octavia.controller.worker.controller_worker.'
+                'ControllerWorker.amphora_cert_rotation')
+    @mock.patch('octavia.db.repositories.AmphoraRepository.'
+                'get_cert_expiring_amphora')
+    @mock.patch('octavia.db.api.get_session')
+    def test_cert_rotation_expired_amphora_with_exception(self, session,
+                                                          cert_exp_amp_mock,
+                                                          amp_cert_mock
+                                                          ):
+        amphora = mock.MagicMock()
+        amphora.id = AMPHORA_ID
+
+        session.return_value = session
+        cert_exp_amp_mock.side_effect = [amphora, TestException(
+            'break_while')]
+
+        cr = house_keeping.CertRotation()
+        self.assertRaises(TestException, cr.rotate)
+        amp_cert_mock.assert_called_once_with(AMPHORA_ID)
+
+    @mock.patch('octavia.controller.worker.controller_worker.'
+                'ControllerWorker.amphora_cert_rotation')
+    @mock.patch('octavia.db.repositories.AmphoraRepository.'
+                'get_cert_expiring_amphora')
+    @mock.patch('octavia.db.api.get_session')
+    def test_cert_rotation_expired_amphora_without_exception(self, session,
+                                                             cert_exp_amp_mock,
+                                                             amp_cert_mock
+                                                             ):
+        amphora = mock.MagicMock()
+        amphora.id = AMPHORA_ID
+
+        session.return_value = session
+        cert_exp_amp_mock.side_effect = [amphora, None]
+
+        cr = house_keeping.CertRotation()
+
+        self.assertEqual(None, cr.rotate())
+        amp_cert_mock.assert_called_once_with(AMPHORA_ID)
+
+    @mock.patch('octavia.controller.worker.controller_worker.'
+                'ControllerWorker.amphora_cert_rotation')
+    @mock.patch('octavia.db.repositories.AmphoraRepository.'
+                'get_cert_expiring_amphora')
+    @mock.patch('octavia.db.api.get_session')
+    def test_cert_rotation_non_expired_amphora(self, session,
+                                               cert_exp_amp_mock,
+                                               amp_cert_mock):
+
+        session.return_value = session
+        cert_exp_amp_mock.return_value = None
+        cr = house_keeping.CertRotation()
+        cr.rotate()
+        self.assertFalse(amp_cert_mock.called)

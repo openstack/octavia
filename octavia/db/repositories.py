@@ -27,9 +27,11 @@ from octavia.common import constants
 from octavia.common import exceptions
 from octavia.db import models
 
+
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 CONF.import_group('health_manager', 'octavia.common.config')
+CONF.import_group('house_keeping', 'octavia.common.config')
 
 
 class BaseRepository(object):
@@ -401,6 +403,30 @@ class AmphoraRepository(BaseRepository):
                 status=constants.AMPHORA_READY, load_balancer_id=None).count()
 
         return count
+
+    def get_cert_expiring_amphora(self, session):
+        """Retrieves an amphora whose cert is close to expiring..
+
+        :param session: A Sql Alchemy database session.
+        :returns: one amphora with expiring certificate
+        """
+        # get amphorae with certs that will expire within the
+        # configured buffer period, so we can rotate their certs ahead of time
+        expired_seconds = CONF.house_keeping.cert_expiry_buffer
+        expired_date = datetime.datetime.utcnow() + datetime.timedelta(
+            seconds=expired_seconds)
+
+        with session.begin(subtransactions=True):
+            amp = session.query(self.model_class).with_for_update().filter_by(
+                cert_busy=False).filter(
+                self.model_class.cert_expiration < expired_date).first()
+
+            if amp is None:
+                return None
+
+            amp.cert_busy = True
+
+        return amp.to_data_model()
 
 
 class SNIRepository(BaseRepository):

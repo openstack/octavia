@@ -340,6 +340,10 @@ class Amphora(base_models.BASE):
     ha_ip = sa.Column(sa.String(64), nullable=True)
     vrrp_port_id = sa.Column(sa.String(36), nullable=True)
     ha_port_id = sa.Column(sa.String(36), nullable=True)
+    cert_expiration = sa.Column(sa.DateTime(timezone=True), default=None,
+                                nullable=True)
+    cert_busy = sa.Column(sa.Boolean(), default=False, nullable=False)
+
     role = sa.Column(
         sa.String(36),
         sa.ForeignKey("amphora_roles.name", name="fk_amphora_roles_name"),

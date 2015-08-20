@@ -270,3 +270,17 @@ class TestAmphoraDriverTasks(base.TestCase):
             status=constants.ERROR)
 
         self.assertIsNone(amp)
+
+    def test_amphora_cert_upload(self,
+                                 mock_driver,
+                                 mock_generate_uuid,
+                                 mock_log,
+                                 mock_get_session,
+                                 mock_listener_repo_update,
+                                 mock_amphora_repo_update):
+        pem_file_mock = 'test-perm-file'
+        amphora_cert_upload_mock = amphora_driver_tasks.AmphoraCertUpload()
+        amphora_cert_upload_mock.execute(_amphora_mock, pem_file_mock)
+
+        mock_driver.upload_cert_amp.assert_called_once_with(
+            _amphora_mock, pem_file_mock)

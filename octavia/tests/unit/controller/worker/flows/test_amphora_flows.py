@@ -133,3 +133,17 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertEqual(2, len(amp_flow.requires))
         self.assertEqual(12, len(amp_flow.provides))
+
+    def test_cert_rotate_amphora_flow(self):
+        cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
+                              group='controller_worker')
+        self.AmpFlow = amphora_flows.AmphoraFlows()
+
+        amp_rotate_flow = self.AmpFlow.cert_rotate_amphora_flow()
+        self.assertIsInstance(amp_rotate_flow, flow.Flow)
+
+        self.assertIn(constants.SERVER_PEM, amp_rotate_flow.provides)
+        self.assertIn(constants.AMPHORA, amp_rotate_flow.requires)
+
+        self.assertEqual(1, len(amp_rotate_flow.provides))
+        self.assertEqual(2, len(amp_rotate_flow.requires))

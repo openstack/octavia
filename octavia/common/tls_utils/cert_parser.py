@@ -107,6 +107,7 @@ def get_host_names(certificate):
     """
     try:
         certificate = certificate.encode('ascii')
+
         cert = x509.load_pem_x509_certificate(certificate,
                                               backends.default_backend())
         cn = cert.subject.get_attributes_for_oid(x509.OID_COMMON_NAME)[0]
@@ -127,6 +128,23 @@ def get_host_names(certificate):
         return host_names
     except Exception:
         LOG.exception(_LE("Unreadable certificate."))
+        raise exceptions.UnreadableCert
+
+
+def get_cert_expiration(certificate_pem):
+    """Extract the expiration date from the Pem encoded X509 certificate
+
+    :param certificate_pem: Certificate in PEM format
+    :returns: Expiration date of certificate_pem
+    """
+    try:
+        certificate = certificate_pem.encode('ascii')
+
+        cert = x509.load_pem_x509_certificate(certificate,
+                                              backends.default_backend())
+        return cert.not_valid_after
+    except Exception as e:
+        LOG.exception(e)
         raise exceptions.UnreadableCert
 
 

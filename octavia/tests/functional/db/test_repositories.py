@@ -15,12 +15,18 @@
 import datetime
 import random
 
+from oslo_config import cfg
+from oslo_log import log as logging
 from oslo_utils import uuidutils
 
 from octavia.common import constants
 from octavia.common import data_models as models
 from octavia.db import repositories as repo
 from octavia.tests.functional.db import base
+
+LOG = logging.getLogger(__name__)
+CONF = cfg.CONF
+CONF.import_group('house_keeping', 'octavia.common.config')
 
 
 class BaseRepositoryTest(base.OctaviaDBTestBase):
@@ -1108,13 +1114,16 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
             operating_status=constants.ONLINE, enabled=True)
 
     def create_amphora(self, amphora_id):
+        expiration = datetime.datetime.utcnow()
         amphora = self.amphora_repo.create(self.session, id=amphora_id,
                                            compute_id=self.FAKE_UUID_3,
                                            status=constants.ACTIVE,
                                            lb_network_ip=self.FAKE_IP,
                                            vrrp_ip=self.FAKE_IP,
                                            ha_ip=self.FAKE_IP,
-                                           role=constants.ROLE_MASTER)
+                                           role=constants.ROLE_MASTER,
+                                           cert_expiration=expiration,
+                                           cert_busy=False)
         return amphora
 
     def test_get(self):
@@ -1207,6 +1216,37 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
                                  status=constants.AMPHORA_READY)
         count = self.amphora_repo.get_spare_amphora_count(self.session)
         self.assertEqual(2, count)
+
+    def test_get_none_cert_expired_amphora(self):
+        # test with no expired amphora
+        amp = self.amphora_repo.get_cert_expiring_amphora(self.session)
+        self.assertIsNone(amp)
+
+        amphora = self.create_amphora(self.FAKE_UUID_1)
+
+        expired_interval = CONF.house_keeping.cert_expiry_buffer
+        expiration = datetime.datetime.utcnow() + datetime.timedelta(
+            seconds=2 * expired_interval)
+
+        self.amphora_repo.update(self.session, amphora.id,
+                                 cert_expiration=expiration)
+        amp = self.amphora_repo.get_cert_expiring_amphora(self.session)
+        self.assertIsNone(amp)
+
+    def test_get_cert_expired_amphora(self):
+        # test with expired amphora
+        amphora2 = self.create_amphora(self.FAKE_UUID_2)
+
+        expiration = datetime.datetime.utcnow() + datetime.timedelta(
+            seconds=1)
+        self.amphora_repo.update(self.session, amphora2.id,
+                                 cert_expiration=expiration)
+
+        cert_expired_amphora = self.amphora_repo.get_cert_expiring_amphora(
+            self.session)
+
+        self.assertEqual(cert_expired_amphora.cert_expiration, expiration)
+        self.assertEqual(cert_expired_amphora.id, amphora2.id)
 
 
 class AmphoraHealthRepositoryTest(BaseRepositoryTest):

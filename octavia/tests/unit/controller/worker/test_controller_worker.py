@@ -44,6 +44,7 @@ _member_mock = mock.MagicMock()
 _pool_mock = mock.MagicMock()
 _create_map_flow_mock = mock.MagicMock()
 _amphora_mock.load_balancer_id = LB_ID
+_amphora_mock.id = AMP_ID
 
 
 @mock.patch('octavia.db.repositories.AmphoraRepository.get',
@@ -680,4 +681,28 @@ class TestControllerWorker(base.TestCase):
                        constants.LOADBALANCER_ID:
                            _amphora_mock.load_balancer_id}))
 
+        _flow_mock.run.assert_called_once_with()
+
+    @mock.patch('octavia.controller.worker.flows.'
+                'amphora_flows.AmphoraFlows.cert_rotate_amphora_flow',
+                return_value=_flow_mock)
+    def test_amphora_cert_rotation(self,
+                                   mock_get_update_listener_flow,
+                                   mock_api_get_session,
+                                   mock_dyn_log_listener,
+                                   mock_taskflow_load,
+                                   mock_pool_repo_get,
+                                   mock_member_repo_get,
+                                   mock_listener_repo_get,
+                                   mock_lb_repo_get,
+                                   mock_health_mon_repo_get,
+                                   mock_amp_repo_get):
+        _flow_mock.reset_mock()
+        cw = controller_worker.ControllerWorker()
+        cw.amphora_cert_rotation(AMP_ID)
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+         assert_called_once_with(_flow_mock,
+                                 store={constants.AMPHORA: _amphora_mock,
+                                        constants.AMPHORA_ID:
+                                            _amphora_mock.id}))
         _flow_mock.run.assert_called_once_with()

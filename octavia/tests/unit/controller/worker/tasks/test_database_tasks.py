@@ -44,6 +44,43 @@ _pool_mock.id = POOL_ID
 _listener_mock = mock.MagicMock()
 _listener_mock.id = LISTENER_ID
 _tf_failure_mock = mock.Mock(spec=failure.Failure)
+_cert_mock = mock.MagicMock()
+_pem_mock = """Junk
+-----BEGIN CERTIFICATE-----
+MIIBhDCCAS6gAwIBAgIGAUo7hO/eMA0GCSqGSIb3DQEBCwUAMA8xDTALBgNVBAMT
+BElNRDIwHhcNMTQxMjExMjI0MjU1WhcNMjUxMTIzMjI0MjU1WjAPMQ0wCwYDVQQD
+EwRJTUQzMFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKHIPXo2pfD5dpnpVDVz4n43
+zn3VYsjz/mgOZU0WIWjPA97mvulb7mwb4/LB4ijOMzHj9XfwP75GiOFxYFs8O80C
+AwEAAaNwMG4wDwYDVR0TAQH/BAUwAwEB/zA8BgNVHSMENTAzgBS6rfnABCO3oHEz
+NUUtov2hfXzfVaETpBEwDzENMAsGA1UEAxMESU1EMYIGAUo7hO/DMB0GA1UdDgQW
+BBRiLW10LVJiFO/JOLsQFev0ToAcpzANBgkqhkiG9w0BAQsFAANBABtdF+89WuDi
+TC0FqCocb7PWdTucaItD9Zn55G8KMd93eXrOE/FQDf1ScC+7j0jIHXjhnyu6k3NV
+8el/x5gUHlc=
+-----END CERTIFICATE-----
+Junk should be ignored by x509 splitter
+-----BEGIN CERTIFICATE-----
+MIIBhDCCAS6gAwIBAgIGAUo7hO/DMA0GCSqGSIb3DQEBCwUAMA8xDTALBgNVBAMT
+BElNRDEwHhcNMTQxMjExMjI0MjU1WhcNMjUxMTIzMjI0MjU1WjAPMQ0wCwYDVQQD
+EwRJTUQyMFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJYHqnsisVKTlwVaCSa2wdrv
+CeJJzqpEVV0RVgAAF6FXjX2Tioii+HkXMR9zFgpE1w4yD7iu9JDb8yTdNh+NxysC
+AwEAAaNwMG4wDwYDVR0TAQH/BAUwAwEB/zA8BgNVHSMENTAzgBQt3KvN8ncGj4/s
+if1+wdvIMCoiE6ETpBEwDzENMAsGA1UEAxMEcm9vdIIGAUo7hO+mMB0GA1UdDgQW
+BBS6rfnABCO3oHEzNUUtov2hfXzfVTANBgkqhkiG9w0BAQsFAANBAIlJODvtmpok
+eoRPOb81MFwPTTGaIqafebVWfBlR0lmW8IwLhsOUdsQqSzoeypS3SJUBpYT1Uu2v
+zEDOmgdMsBY=
+-----END CERTIFICATE-----
+Junk should be thrown out like junk
+-----BEGIN CERTIFICATE-----
+MIIBfzCCASmgAwIBAgIGAUo7hO+mMA0GCSqGSIb3DQEBCwUAMA8xDTALBgNVBAMT
+BHJvb3QwHhcNMTQxMjExMjI0MjU1WhcNMjUxMTIzMjI0MjU1WjAPMQ0wCwYDVQQD
+EwRJTUQxMFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAI+tSJxr60ogwXFmgqbLMW7K
+3fkQnh9sZBi7Qo6AzUnfe/AhXoisib651fOxKXCbp57IgzLTv7O9ygq3I+5fQqsC
+AwEAAaNrMGkwDwYDVR0TAQH/BAUwAwEB/zA3BgNVHSMEMDAugBR73ZKSpjbsz9tZ
+URkvFwpIO7gB4KETpBEwDzENMAsGA1UEAxMEcm9vdIIBATAdBgNVHQ4EFgQULdyr
+zfJ3Bo+P7In9fsHbyDAqIhMwDQYJKoZIhvcNAQELBQADQQBenkZ2k7RgZqgj+dxA
+D7BF8MN1oUAOpyYqAjkGddSEuMyNmwtHKZI1dyQ0gBIQdiU9yAG2oTbUIK4msbBV
+uJIQ
+-----END CERTIFICATE-----"""
 
 
 @mock.patch('octavia.db.repositories.AmphoraRepository.delete')
@@ -92,7 +129,8 @@ class TestDatabaseTasks(base.TestCase):
         repo.AmphoraRepository.create.assert_called_once_with(
             'TEST',
             id=AMP_ID,
-            status=constants.PENDING_CREATE)
+            status=constants.PENDING_CREATE,
+            cert_busy=False)
 
         assert(amp_id == _amphora_mock.id)
 
@@ -615,6 +653,41 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             LB_ID,
             provisioning_status=constants.ERROR)
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.get_cert_expiration',
+                return_value=_cert_mock)
+    def test_update_amphora_db_cert_exp(self,
+                                        mock_generate_uuid,
+                                        mock_LOG,
+                                        mock_get_session,
+                                        mock_loadbalancer_repo_update,
+                                        mock_listener_repo_update,
+                                        mock_amphora_repo_update,
+                                        mock_amphora_repo_delete,
+                                        mock_get_cert_exp):
+
+        update_amp_cert = database_tasks.UpdateAmphoraDBCertExpiration()
+        update_amp_cert.execute(_amphora_mock.id, _pem_mock)
+
+        repo.AmphoraRepository.update.assert_called_once_with(
+            'TEST',
+            AMP_ID,
+            cert_expiration=_cert_mock)
+
+    def test_update_amphora_cert_busy_to_false(self,
+                                               mock_generate_uuid,
+                                               mock_LOG,
+                                               mock_get_session,
+                                               mock_loadbalancer_repo_update,
+                                               mock_listener_repo_update,
+                                               mock_amphora_repo_update,
+                                               mock_amphora_repo_delete):
+        amp_cert_busy_to_F = database_tasks.UpdateAmphoraCertBusyToFalse()
+        amp_cert_busy_to_F.execute(_amphora_mock)
+        repo.AmphoraRepository.update.assert_called_once_with(
+            'TEST',
+            AMP_ID,
+            cert_busy=False)
 
     def test_mark_LB_active_in_db(self,
                                   mock_generate_uuid,

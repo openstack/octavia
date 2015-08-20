@@ -79,6 +79,12 @@ class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
                 else:
                     self.client.start_listener(amp, listener.id)
 
+    def upload_cert_amp(self, amp, pem):
+        LOG.debug("Amphora %s updating cert in REST driver "
+                  "with amphora id %s,",
+                  self.__class__.__name__, amp.id)
+        self.client.update_cert_for_rotation(amp, pem)
+
     def _apply(self, func, listener=None, *args):
         for amp in listener.load_balancer.amphorae:
             if amp.status != constants.DELETED:
@@ -248,6 +254,10 @@ class AmphoraAPIClient(object):
             'listeners/{listener_id}/certificates/{filename}'.format(
                 listener_id=listener_id, filename=pem_filename),
             data=pem_file)
+        return exc.check_exception(r)
+
+    def update_cert_for_rotation(self, amp, pem_file):
+        r = self.put(amp, 'certificate', data=pem_file)
         return exc.check_exception(r)
 
     def get_cert_md5sum(self, amp, listener_id, pem_filename):
