@@ -242,7 +242,7 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
         data = []
 
         certs = cert_parser.load_certificates_data(
-            self.barbican_client, listener)
+            self.cert_manager, listener)
         sni_containers = certs['sni_certs']
         tls_cert = certs['tls_cert']
         if certs['tls_cert'] is not None:

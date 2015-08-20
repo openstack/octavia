@@ -204,7 +204,7 @@ class TestSshDriver(base.TestCase):
                         self.driver._process_tls_certificates(listener)
 
                         # Ensure upload_cert is called three times
-                        calls_bbq = [mock.call(self.driver.barbican_client,
+                        calls_bbq = [mock.call(self.driver.cert_manager,
                                                listener)]
                         cd.assert_has_calls(calls_bbq)
 
