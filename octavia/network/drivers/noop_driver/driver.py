@@ -52,25 +52,25 @@ class NoopManager(object):
                                   vip.ip_address)] = (load_balancer, vip,
                                                       'unplug_vip')
 
-    def plug_network(self, amphora_id, network_id, ip_address=None):
-        LOG.debug("Network %s no-op, plug_network amphora_id %s, network_id "
-                  "%s, ip_address %s", self.__class__.__name__, amphora_id,
+    def plug_network(self, compute_id, network_id, ip_address=None):
+        LOG.debug("Network %s no-op, plug_network compute_id %s, network_id "
+                  "%s, ip_address %s", self.__class__.__name__, compute_id,
                   network_id, ip_address)
-        self.networkconfigconfig[(amphora_id, network_id, ip_address)] = (
-            amphora_id, network_id, ip_address, 'plug_network')
+        self.networkconfigconfig[(compute_id, network_id, ip_address)] = (
+            compute_id, network_id, ip_address, 'plug_network')
 
-    def unplug_network(self, amphora_id, network_id, ip_address=None):
-        LOG.debug("Network %s no-op, unplug_network amphora_id %s, "
+    def unplug_network(self, compute_id, network_id, ip_address=None):
+        LOG.debug("Network %s no-op, unplug_network compute_id %s, "
                   "network_id %s",
-                  self.__class__.__name__, amphora_id, network_id)
-        self.networkconfigconfig[(amphora_id, network_id, ip_address)] = (
-            amphora_id, network_id, ip_address, 'unplug_network')
+                  self.__class__.__name__, compute_id, network_id)
+        self.networkconfigconfig[(compute_id, network_id, ip_address)] = (
+            compute_id, network_id, ip_address, 'unplug_network')
 
-    def get_plugged_networks(self, amphora_id):
+    def get_plugged_networks(self, compute_id):
         LOG.debug("Network %s no-op, get_plugged_networks amphora_id %s",
-                  self.__class__.__name__, amphora_id)
-        self.networkconfigconfig[amphora_id] = (
-            amphora_id, 'get_plugged_networks')
+                  self.__class__.__name__, compute_id)
+        self.networkconfigconfig[compute_id] = (
+            compute_id, 'get_plugged_networks')
 
     def update_vip(self, load_balancer):
         LOG.debug("Network %s no-op, update_vip load_balancer %s",

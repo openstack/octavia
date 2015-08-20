@@ -17,13 +17,13 @@ from octavia.common import data_models
 
 class Interface(data_models.BaseDataModel):
 
-    def __init__(self, id=None, amphora_id=None, network_id=None,
-                 ip_address=None, port_id=None):
+    def __init__(self, id=None, compute_id=None, network_id=None,
+                 fixed_ips=None, port_id=None):
         self.id = id
-        self.amphora_id = amphora_id
+        self.compute_id = compute_id
         self.network_id = network_id
         self.port_id = port_id
-        self.ip_address = ip_address
+        self.fixed_ips = fixed_ips
 
 
 class Delta(data_models.BaseDataModel):

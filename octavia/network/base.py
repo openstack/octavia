@@ -92,7 +92,7 @@ class AbstractNetworkDriver(object):
 
         :param load_balancer: octavia.common.data_models.LoadBalancer instance
         :return: octavia.common.data_models.VIP
-        :raises: AllocateVIPException, PortNotFound, NetworkNotFound
+        :raises: AllocateVIPException, PortNotFound, SubnetNotFound
         """
         pass
 
@@ -119,7 +119,7 @@ class AbstractNetworkDriver(object):
         :return: dict consisting of amphora_id as key and bind_ip as value.
                  bind_ip is the ip that the amphora should listen on to
                  receive traffic to load balance.
-        :raises: PlugVIPException
+        :raises: PlugVIPException, PortNotFound
         """
         pass
 
@@ -138,10 +138,10 @@ class AbstractNetworkDriver(object):
         pass
 
     @abc.abstractmethod
-    def plug_network(self, amphora_id, network_id, ip_address=None):
+    def plug_network(self, compute_id, network_id, ip_address=None):
         """Connects an existing amphora to an existing network.
 
-        :param amphora_id: id of an amphora in the compute service
+        :param compute_id: id of an amphora in the compute service
         :param network_id: id of a network
         :param ip_address: ip address to attempt to be assigned to interface
         :return: octavia.network.data_models.Interface instance
@@ -149,27 +149,27 @@ class AbstractNetworkDriver(object):
         """
 
     @abc.abstractmethod
-    def unplug_network(self, amphora_id, network_id, ip_address=None):
+    def unplug_network(self, compute_id, network_id, ip_address=None):
         """Disconnects an existing amphora from an existing network.
 
         If ip_address is not specificed, all the interfaces plugged on
         network_id should be unplugged.
 
-        :param amphora_id: id of an amphora in the compute service
+        :param compute_id: id of an amphora in the compute service
         :param network_id: id of a network
         :param ip_address: specific ip_address to unplug
         :return: None
-        :raises: UnplugNetworkException, AmphoraNotFound, NetworkNotFound
+        :raises: UnplugNetworkException, AmphoraNotFound, NetworkNotFound,
+                 NetworkException
         """
         pass
 
     @abc.abstractmethod
-    def get_plugged_networks(self, amphora_id):
+    def get_plugged_networks(self, compute_id):
         """Retrieves the current plugged networking configuration.
 
-        :param amphora_id: id of an amphora in the compute service
+        :param compute_id: id of an amphora in the compute service
         :return: [octavia.network.data_models.Instance]
-        :raises: AmphoraNotFound
         """
 
     def update_vip(self, load_balancer):
