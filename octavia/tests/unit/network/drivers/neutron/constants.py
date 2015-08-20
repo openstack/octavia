@@ -30,9 +30,11 @@ MOCK_SUBNET = {'subnet': {'id': MOCK_SUBNET_ID, 'network_id': MOCK_NETWORK_ID}}
 MOCK_NOVA_INTERFACE.net_id = MOCK_NETWORK_ID
 MOCK_NOVA_INTERFACE.port_id = MOCK_PORT_ID
 MOCK_NOVA_INTERFACE.fixed_ips = [{'ip_address': MOCK_IP_ADDRESS}]
+MOCK_DEVICE_OWNER = 'Moctavia'
 
 MOCK_NEUTRON_PORT = {'port': {'network_id': MOCK_NETWORK_ID,
                               'device_id': MOCK_COMPUTE_ID,
+                              'device_owner': MOCK_DEVICE_OWNER,
                               'id': MOCK_PORT_ID,
                               'fixed_ips': [{'ip_address': MOCK_IP_ADDRESS,
                                              'subnet_id': MOCK_SUBNET_ID}]}}

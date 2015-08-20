@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
+
 import mock
 from neutronclient.common import exceptions as neutron_exceptions
 from novaclient.client import exceptions as nova_exceptions
@@ -77,25 +79,33 @@ class TestAllowedAddressPairsDriver(base.TestCase):
 
     def test_deallocate_vip(self):
         vip = data_models.Vip(port_id='1')
-        admin_tenant_id = 'octavia'
-        session_mock = mock.MagicMock()
-        session_mock.get_project_id.return_value = admin_tenant_id
-        self.k_session.return_value = session_mock
         show_port = self.driver.neutron_client.show_port
-        show_port.return_value = {'port': {'tenant_id': admin_tenant_id}}
+        show_port.return_value = {'port': {
+            'device_owner': allowed_address_pairs.OCTAVIA_OWNER}}
         self.driver.deallocate_vip(vip)
+
+    def test_deallocate_vip_when_delete_port_fails(self):
+        vip = data_models.Vip(port_id='1')
+        show_port = self.driver.neutron_client.show_port
+        show_port.return_value = {'port': {
+            'device_owner': allowed_address_pairs.OCTAVIA_OWNER}}
         delete_port = self.driver.neutron_client.delete_port
         delete_port.side_effect = TypeError
         self.assertRaises(network_base.DeallocateVIPException,
                           self.driver.deallocate_vip, vip)
 
+    def test_deallocate_vip_when_port_not_found(self):
+        vip = data_models.Vip(port_id='1')
+        show_port = self.driver.neutron_client.show_port
+        show_port.side_effect = neutron_exceptions.PortNotFoundClient
+        self.assertRaises(network_base.VIPConfigurationNotFound,
+                          self.driver.deallocate_vip, vip)
+
     def test_deallocate_vip_when_port_not_owned_by_octavia(self):
         vip = data_models.Vip(port_id='1')
-        session_mock = mock.MagicMock()
-        session_mock.get_project_id.return_value = 'octavia'
-        self.k_session.return_value = session_mock
         show_port = self.driver.neutron_client.show_port
-        show_port.return_value = {'port': {'tenant_id': 'not-octavia'}}
+        show_port.return_value = {'port': {
+            'device_owner': 'neutron:LOADBALANCERV2'}}
         delete_port = self.driver.neutron_client.delete_port
         self.driver.deallocate_vip(vip)
         self.assertFalse(delete_port.called)
@@ -214,11 +224,30 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertEqual(fake_lb.id, vip.load_balancer_id)
 
     def test_allocate_vip_when_only_subnet_provided(self):
+        port_create_dict = copy.copy(n_constants.MOCK_NEUTRON_PORT)
+        port_create_dict['port']['device_owner'] = (
+            allowed_address_pairs.OCTAVIA_OWNER)
+        port_create_dict['port']['device_id'] = 'lb-1'
         create_port = self.driver.neutron_client.create_port
-        create_port.return_value = n_constants.MOCK_NEUTRON_PORT
+        create_port.return_value = port_create_dict
+        show_subnet = self.driver.neutron_client.show_subnet
+        show_subnet.return_value = {'subnet': {
+            'id': n_constants.MOCK_SUBNET_ID,
+            'network_id': n_constants.MOCK_NETWORK_ID
+        }}
         fake_lb_vip = data_models.Vip(subnet_id=n_constants.MOCK_SUBNET_ID)
         fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip)
         vip = self.driver.allocate_vip(fake_lb)
+        exp_create_port_call = {
+            'port': {
+                'name': 'octavia-lb-1',
+                'network_id': n_constants.MOCK_NETWORK_ID,
+                'device_id': 'lb-1',
+                'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+                'admin_state_up': False
+            }
+        }
+        create_port.assert_called_once_with(exp_create_port_call)
         self.assertIsInstance(vip, data_models.Vip)
         self.assertEqual(n_constants.MOCK_IP_ADDRESS, vip.ip_address)
         self.assertEqual(n_constants.MOCK_SUBNET_ID, vip.subnet_id)
