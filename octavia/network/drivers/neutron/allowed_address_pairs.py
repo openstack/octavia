@@ -30,6 +30,7 @@ LOG = logging.getLogger(__name__)
 NOVA_VERSION = '2'
 AAP_EXT_ALIAS = 'allowed-address-pairs'
 VIP_SECURITY_GRP_PREFIX = 'lb-'
+OCTAVIA_OWNER = 'Octavia'
 
 
 class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
@@ -142,8 +143,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             msg = ("Can't deallocate VIP because the vip port {0} cannot be "
                    "found in neutron".format(vip.port_id))
             raise base.VIPConfigurationNotFound(msg)
-        admin_tenant_id = keystone.get_session().get_project_id()
-        if port.tenant_id != admin_tenant_id:
+        if port.device_owner != OCTAVIA_OWNER:
             LOG.info(_LI("Port {0} will not be deleted by Octavia as it was "
                          "not created by Octavia.").format(vip.port_id))
             return
@@ -202,8 +202,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         port = {'port': {'name': 'octavia-lb-' + load_balancer.id,
                          'network_id': subnet.network_id,
                          'admin_state_up': False,
-                         'device_id': '',
-                         'device_owner': ''}}
+                         'device_id': 'lb-{0}'.format(load_balancer.id),
+                         'device_owner': OCTAVIA_OWNER}}
         try:
             new_port = self.neutron_client.create_port(port)
         except Exception:
