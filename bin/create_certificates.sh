@@ -1,4 +1,4 @@
-#! bin/bash
+#!/bin/bash
 
 # USAGE: <certificate directory> <openssl.cnf (example in etc/certificate)
 #Those are certificates for testing will be generated
@@ -75,7 +75,3 @@ echo "Note: For production use the ca issuing the client certificate and the ca 
 echo "certificate need to be different so a hacker can't just use the server certificate from a"
 echo "compromised amphora to control all the others."
 echo "\nTo use the certificates copy them to the directory specified in the octavia.conf"
-
-
-
-
