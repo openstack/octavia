@@ -140,7 +140,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         list_security_groups.side_effect = lsc_side_effect
 
         interface_attach = self.driver.nova_client.servers.interface_attach
-        interface_attach.side_effect = nova_exceptions.NotFound
+        interface_attach.side_effect = nova_exceptions.NotFound(404, "Network")
         self.assertRaises(network_base.PlugVIPException,
                           self.driver.plug_vip, lb, lb.vip)
 

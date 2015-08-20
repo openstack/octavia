@@ -254,8 +254,10 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         except nova_client_exceptions.NotFound as e:
             if 'Instance' in e.message:
                 raise base.AmphoraNotFound(e.message)
-            if 'Network' in e.message:
+            elif 'Network' in e.message:
                 raise base.NetworkNotFound(e.message)
+            else:
+                raise base.PlugNetworkException(e.message)
         except Exception:
             message = _LE('Error plugging amphora (compute_id: {compute_id}) '
                           'into network {network_id}.').format(
