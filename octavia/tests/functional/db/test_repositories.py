@@ -28,6 +28,7 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
     FAKE_UUID_1 = uuidutils.generate_uuid()
     FAKE_UUID_2 = uuidutils.generate_uuid()
     FAKE_UUID_3 = uuidutils.generate_uuid()
+    FAKE_EXP_AGE = 10
 
     def setUp(self):
         super(BaseRepositoryTest, self).setUp()
@@ -1137,6 +1138,19 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         self.assertIsNotNone(lb_list)
         self.assertIn(self.lb, lb_list)
 
+    def test_get_spare_amphora_count(self):
+        count = self.amphora_repo.get_spare_amphora_count(self.session)
+        self.assertEqual(count, 0)
+
+        amphora1 = self.create_amphora(self.FAKE_UUID_1)
+        self.amphora_repo.update(self.session, amphora1.id,
+                                 status=constants.AMPHORA_READY)
+        amphora2 = self.create_amphora(self.FAKE_UUID_2)
+        self.amphora_repo.update(self.session, amphora2.id,
+                                 status=constants.AMPHORA_READY)
+        count = self.amphora_repo.get_spare_amphora_count(self.session)
+        self.assertEqual(count, 2)
+
 
 class AmphoraHealthRepositoryTest(BaseRepositoryTest):
     def setUp(self):
@@ -1164,9 +1178,19 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
         self.assertEqual(amphora_health, new_amphora_health)
 
     def test_check_amphora_out_of_date(self):
+        """When exp_age is None."""
         self.create_amphora_health(self.amphora.id)
         checkres = self.amphora_health_repo.check_amphora_expired(
             self.session, self.amphora.id)
+        self.assertTrue(checkres)
+
+    def test_check_amphora_expired_with_exp_age(self):
+        """When exp_age is passed as an argument."""
+        exp_age = datetime.timedelta(
+            seconds=self.FAKE_EXP_AGE)
+        self.create_amphora_health(self.amphora.id)
+        checkres = self.amphora_health_repo.check_amphora_expired(
+            self.session, self.amphora.id, exp_age)
         self.assertTrue(checkres)
 
     def test_get_expired_amphorae(self):
