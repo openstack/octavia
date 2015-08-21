@@ -207,6 +207,6 @@ class TestComputeTasks(base.TestCase):
     def test_compute_delete(self, mock_driver):
 
         delete_compute = compute_tasks.ComputeDelete()
-        delete_compute.execute(COMPUTE_ID)
+        delete_compute.execute(_amphora_mock)
 
         mock_driver.delete.assert_called_once_with(amphora_id=COMPUTE_ID)
