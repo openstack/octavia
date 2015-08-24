@@ -17,13 +17,14 @@
 Common classes for Barbican certificate handling
 """
 
+import abc
+
 from barbicanclient import client as barbican_client
 from oslo_config import cfg
 from oslo_log import log as logging
-from oslo_utils import excutils
+import six
 
 from octavia.certificates.common import cert
-from octavia.common import keystone
 from octavia.i18n import _LE
 
 
@@ -59,22 +60,13 @@ class BarbicanCert(cert.Cert):
             return self._cert_container.private_key_passphrase.payload
 
 
+@six.add_metaclass(abc.ABCMeta)
 class BarbicanAuth(object):
-    _barbican_client = None
-
-    @classmethod
-    def get_barbican_client(cls):
+    @abc.abstractmethod
+    def get_barbican_client(self, project_id):
         """Creates a Barbican client object.
 
+        :param project_id: Project ID that the request will be used for
         :return: a Barbican Client object
         :raises Exception: if the client cannot be created
         """
-        if not cls._barbican_client:
-            try:
-                cls._barbican_client = barbican_client.Client(
-                    session=keystone.get_session()
-                )
-            except Exception:
-                with excutils.save_and_reraise_exception():
-                    LOG.exception(_LE("Error creating Barbican client"))
-        return cls._barbican_client

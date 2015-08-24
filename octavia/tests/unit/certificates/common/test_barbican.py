@@ -16,40 +16,7 @@ from barbicanclient import client as barbican_client
 import mock
 
 import octavia.certificates.common.barbican as barbican_common
-from octavia.common import keystone
 import octavia.tests.unit.base as base
-
-
-class TestBarbicanAuth(base.TestCase):
-
-    def setUp(self):
-        # Reset the client
-        barbican_common.BarbicanAuth._barbican_client = None
-        keystone._SESSION = None
-
-        super(TestBarbicanAuth, self).setUp()
-
-    def test_get_barbican_client(self):
-        # There should be no existing client
-        self.assertIsNone(keystone._SESSION)
-
-        # Mock out the keystone session and get the client
-        keystone._SESSION = mock.MagicMock()
-        bc1 = barbican_common.BarbicanAuth.get_barbican_client()
-
-        # Our returned client should also be the saved client
-        self.assertIsInstance(
-            barbican_common.BarbicanAuth._barbican_client,
-            barbican_client.Client
-        )
-        self.assertIs(
-            barbican_common.BarbicanAuth._barbican_client,
-            bc1
-        )
-
-        # Getting the session again should return the same object
-        bc2 = barbican_common.BarbicanAuth.get_barbican_client()
-        self.assertIs(bc1, bc2)
 
 
 class TestBarbicanCert(base.TestCase):

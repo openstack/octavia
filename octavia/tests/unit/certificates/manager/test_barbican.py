@@ -24,6 +24,9 @@ import octavia.certificates.manager.barbican as barbican_cert_mgr
 import octavia.tests.unit.base as base
 
 
+PROJECT_ID = "12345"
+
+
 class TestBarbicanManager(base.TestCase):
 
     def setUp(self):
@@ -57,22 +60,32 @@ class TestBarbicanManager(base.TestCase):
         self.secret3 = mock.Mock(spec=secrets.Secret)
         self.secret4 = mock.Mock(spec=secrets.Secret)
 
+        # Mock out the client
+        self.bc = mock.Mock()
+        barbican_auth = mock.Mock(spec=barbican_common.BarbicanAuth)
+        barbican_auth.get_barbican_client.return_value = self.bc
+
+        self.cert_manager = barbican_cert_mgr.BarbicanCertManager()
+        self.cert_manager.auth = barbican_auth
+
         super(TestBarbicanManager, self).setUp()
 
     def test_store_cert(self):
         # Mock out the client
-        bc = mock.MagicMock()
-        bc.containers.create_certificate.return_value = self.empty_container
-        barbican_common.BarbicanAuth._barbican_client = bc
+        self.bc.containers.create_certificate.return_value = (
+            self.empty_container)
 
         # Attempt to store a cert
-        barbican_cert_mgr.BarbicanCertManager.store_cert(
+        container_ref = self.cert_manager.store_cert(
+            project_id=PROJECT_ID,
             certificate=self.certificate,
             private_key=self.private_key,
             intermediates=self.intermediates,
             private_key_passphrase=self.private_key_passphrase,
             name=self.name
         )
+
+        self.assertEqual(self.empty_container.container_ref, container_ref)
 
         # create_secret should be called four times with our data
         calls = [
@@ -85,32 +98,32 @@ class TestBarbicanManager(base.TestCase):
             mock.call(payload=self.private_key_passphrase, expiration=None,
                       name=mock.ANY)
         ]
-        bc.secrets.create.assert_has_calls(calls, any_order=True)
+        self.bc.secrets.create.assert_has_calls(calls, any_order=True)
 
         # create_certificate should be called once
-        self.assertEqual(1, bc.containers.create_certificate.call_count)
+        self.assertEqual(1, self.bc.containers.create_certificate.call_count)
 
         # Container should be stored once
         self.empty_container.store.assert_called_once_with()
 
     def test_store_cert_failure(self):
         # Mock out the client
-        bc = mock.MagicMock()
-        bc.containers.create_certificate.return_value = self.empty_container
+        self.bc.containers.create_certificate.return_value = (
+            self.empty_container)
         test_secrets = [
             self.secret1,
             self.secret2,
             self.secret3,
             self.secret4
         ]
-        bc.secrets.create.side_effect = test_secrets
+        self.bc.secrets.create.side_effect = test_secrets
         self.empty_container.store.side_effect = ValueError()
-        barbican_common.BarbicanAuth._barbican_client = bc
 
         # Attempt to store a cert
         self.assertRaises(
             ValueError,
-            barbican_cert_mgr.BarbicanCertManager.store_cert,
+            self.cert_manager.store_cert,
+            project_id=PROJECT_ID,
             certificate=self.certificate,
             private_key=self.private_key,
             intermediates=self.intermediates,
@@ -129,10 +142,10 @@ class TestBarbicanManager(base.TestCase):
             mock.call(payload=self.private_key_passphrase, expiration=None,
                       name=mock.ANY)
         ]
-        bc.secrets.create.assert_has_calls(calls, any_order=True)
+        self.bc.secrets.create.assert_has_calls(calls, any_order=True)
 
         # create_certificate should be called once
-        self.assertEqual(1, bc.containers.create_certificate.call_count)
+        self.assertEqual(1, self.bc.containers.create_certificate.call_count)
 
         # Container should be stored once
         self.empty_container.store.assert_called_once_with()
@@ -143,19 +156,18 @@ class TestBarbicanManager(base.TestCase):
 
     def test_get_cert(self):
         # Mock out the client
-        bc = mock.MagicMock()
-        bc.containers.register_consumer.return_value = self.container
-        barbican_common.BarbicanAuth._barbican_client = bc
+        self.bc.containers.register_consumer.return_value = self.container
 
         # Get the container data
-        data = barbican_cert_mgr.BarbicanCertManager.get_cert(
+        data = self.cert_manager.get_cert(
+            project_id=PROJECT_ID,
             cert_ref=self.container_ref,
             resource_ref=self.container_ref,
             service_name='Octavia'
         )
 
         # 'register_consumer' should be called once with the container_ref
-        bc.containers.register_consumer.assert_called_once_with(
+        self.bc.containers.register_consumer.assert_called_once_with(
             container_ref=self.container_ref,
             url=self.container_ref,
             name='Octavia'
@@ -173,18 +185,16 @@ class TestBarbicanManager(base.TestCase):
                          self.private_key_passphrase.payload)
 
     def test_get_cert_no_registration(self):
-        # Mock out the client
-        bc = mock.MagicMock()
-        bc.containers.get.return_value = self.container
-        barbican_common.BarbicanAuth._barbican_client = bc
+        self.bc.containers.get.return_value = self.container
 
         # Get the container data
-        data = barbican_cert_mgr.BarbicanCertManager.get_cert(
+        data = self.cert_manager.get_cert(
+            project_id=PROJECT_ID,
             cert_ref=self.container_ref, check_only=True
         )
 
         # 'get' should be called once with the container_ref
-        bc.containers.get.assert_called_once_with(
+        self.bc.containers.get.assert_called_once_with(
             container_ref=self.container_ref
         )
 
@@ -200,40 +210,17 @@ class TestBarbicanManager(base.TestCase):
                          self.private_key_passphrase.payload)
 
     def test_delete_cert(self):
-        # Mock out the client
-        bc = mock.MagicMock()
-        barbican_common.BarbicanAuth._barbican_client = bc
-
         # Attempt to deregister as a consumer
-        barbican_cert_mgr.BarbicanCertManager.delete_cert(
+        self.cert_manager.delete_cert(
+            project_id=PROJECT_ID,
             cert_ref=self.container_ref,
             resource_ref=self.container_ref,
             service_name='Octavia'
         )
 
         # remove_consumer should be called once with the container_ref
-        bc.containers.remove_consumer.assert_called_once_with(
+        self.bc.containers.remove_consumer.assert_called_once_with(
             container_ref=self.container_ref,
             url=self.container_ref,
             name='Octavia'
         )
-
-    def test_actually_delete_cert(self):
-        # Mock out the client
-        bc = mock.MagicMock()
-        bc.containers.get.return_value = self.container
-        barbican_common.BarbicanAuth._barbican_client = bc
-
-        # Attempt to store a cert
-        barbican_cert_mgr.BarbicanCertManager._actually_delete_cert(
-            cert_ref=self.container_ref
-        )
-
-        # All secrets should be deleted
-        self.container.certificate.delete.assert_called_once_with()
-        self.container.private_key.delete.assert_called_once_with()
-        self.container.intermediates.delete.assert_called_once_with()
-        self.container.private_key_passphrase.delete.assert_called_once_with()
-
-        # Container should be deleted once
-        self.container.delete.assert_called_once_with()
