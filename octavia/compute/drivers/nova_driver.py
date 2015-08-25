@@ -12,15 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from novaclient import client as nova_client
 from oslo_config import cfg
 from oslo_log import log as logging
-from oslo_utils import excutils
 
+from octavia.common import clients
 from octavia.common import constants
 from octavia.common import data_models as models
 from octavia.common import exceptions
-from octavia.common import keystone
 from octavia.compute import compute_base
 from octavia.i18n import _LE
 
@@ -37,7 +35,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
     def __init__(self, region=None):
         super(VirtualMachineManager, self).__init__()
         # Must initialize nova api
-        self._nova_client = NovaAuth.get_nova_client(region)
+        self._nova_client = clients.NovaAuth.get_nova_client(region)
         self.manager = self._nova_client.servers
 
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
@@ -144,26 +142,3 @@ class VirtualMachineManager(compute_base.ComputeBase):
             lb_network_ip=lb_network_ip
         )
         return response
-
-
-class NovaAuth(object):
-    _nova_client = None
-
-    @classmethod
-    def get_nova_client(cls, region):
-        """Create nova client object.
-
-        :param region: The region of the service
-        :return: a Nova Client object.
-        :raises Exception: if the client cannot be created
-        """
-        if not cls._nova_client:
-            try:
-                cls._nova_client = nova_client.Client(
-                    constants.NOVA_2, session=keystone.get_session(),
-                    region_name=region
-                )
-            except Exception:
-                with excutils.save_and_reraise_exception():
-                    LOG.exception(_LE("Error creating Nova client."))
-        return cls._nova_client

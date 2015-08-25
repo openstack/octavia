@@ -39,7 +39,7 @@ class BaseComputeTask(task.Task):
             namespace='octavia.compute.drivers',
             name=CONF.controller_worker.compute_driver,
             invoke_on_load=True,
-            invoke_kwds={'region': CONF.nova_region_name}
+            invoke_kwds={'region': CONF.os_region_name}
         ).driver
 
 

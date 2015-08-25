@@ -14,6 +14,7 @@
 
 import mock
 
+from octavia.common import clients
 from octavia.common import data_models
 from octavia.network import data_models as network_models
 from octavia.network.drivers.neutron import base as neutron_base
@@ -37,9 +38,9 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
 
     def setUp(self):
         super(TestBaseNeutronNetworkDriver, self).setUp()
-        with mock.patch('neutronclient.neutron.client.Client',
+        with mock.patch('octavia.common.clients.neutron_client.Client',
                         autospec=True) as neutron_client:
-            client = neutron_client(neutron_base.NEUTRON_VERSION)
+            client = neutron_client(clients.NEUTRON_VERSION)
             client.list_extensions.return_value = {
                 'extensions': [
                     {'alias': neutron_base.SEC_GRP_EXT_ALIAS}

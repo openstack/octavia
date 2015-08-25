@@ -13,11 +13,10 @@
 #    under the License.
 
 from neutronclient.common import exceptions as neutron_client_exceptions
-from neutronclient.neutron import client as neutron_client
 from oslo_log import log as logging
 
+from octavia.common import clients
 from octavia.common import data_models
-from octavia.common import keystone
 from octavia.i18n import _LE, _LI
 from octavia.network import base
 from octavia.network import data_models as network_models
@@ -25,16 +24,14 @@ from octavia.network.drivers.neutron import utils
 
 
 LOG = logging.getLogger(__name__)
-NEUTRON_VERSION = '2.0'
 SEC_GRP_EXT_ALIAS = 'security-group'
 
 
 class BaseNeutronDriver(base.AbstractNetworkDriver):
 
-    def __init__(self):
+    def __init__(self, region=None):
         self.sec_grp_enabled = True
-        self.neutron_client = neutron_client.Client(
-            NEUTRON_VERSION, session=keystone.get_session())
+        self.neutron_client = clients.NeutronAuth.get_neutron_client(region)
         extensions = self.neutron_client.list_extensions()
         self._extensions = extensions.get('extensions')
         self._check_sec_grps()

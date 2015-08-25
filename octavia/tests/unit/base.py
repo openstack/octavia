@@ -15,7 +15,7 @@
 import mock
 import testtools
 
-from octavia.compute.drivers import nova_driver
+from octavia.common import clients
 
 
 class TestCase(testtools.TestCase):
@@ -26,4 +26,5 @@ class TestCase(testtools.TestCase):
         self.addCleanup(self.clean_caches)
 
     def clean_caches(self):
-        nova_driver.NovaAuth._nova_client = None
+        clients.NovaAuth.nova_client = None
+        clients.NeutronAuth.neutron_client = None
