@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
 import testtools
 
 
@@ -19,3 +20,4 @@ class TestCase(testtools.TestCase):
 
     def setUp(self):
         super(TestCase, self).setUp()
+        self.addCleanup(mock.patch.stopall)
