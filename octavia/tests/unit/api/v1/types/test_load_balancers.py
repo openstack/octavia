@@ -82,9 +82,8 @@ class TestVip(base.BaseTypesTest):
     _type = lb_type.VIP
 
     def test_vip(self):
-        body = {"vip": {"ip_address": "10.0.0.1",
-                        "port_id": uuidutils.generate_uuid(),
-                        "network_id": uuidutils.generate_uuid()}}
+        body = {"ip_address": "10.0.0.1",
+                "port_id": uuidutils.generate_uuid()}
         wsme_json.fromjson(self._type, body)
 
     def test_invalid_ip_address(self):

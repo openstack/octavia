@@ -115,6 +115,6 @@ class TestHealthMonitorPUT(base.BaseTypesTest, TestHealthMonitor):
     _type = hm_type.HealthMonitorPUT
 
     def test_health_monitor(self):
-        body = {"protocol": constants.PROTOCOL_HTTPS}
+        body = {"http_method": constants.PROTOCOL_HTTPS}
         hm = wsme_json.fromjson(self._type, body)
         self.assertEqual(wsme_types.Unset, hm.enabled)

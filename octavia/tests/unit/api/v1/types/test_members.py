@@ -32,12 +32,12 @@ class TestMemberPOST(base.BaseTypesTest):
         self.assertEqual(wsme_types.Unset, member.subnet_id)
 
     def test_address_mandatory(self):
-        body = {"name": "test"}
+        body = {}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
     def test_protocol_mandatory(self):
-        body = {"name": "test"}
+        body = {}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 

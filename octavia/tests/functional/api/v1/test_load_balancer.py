@@ -133,20 +133,9 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_update_with_vip(self):
         lb = self.create_load_balancer({}, name='lb1', description='desc1',
                                        enabled=False)
-        lb_json = {'vip': {'network_id': '1234'}}
+        lb_json = {'vip': {'subnet_id': '1234'}}
         lb = self.set_lb_status(lb.get('id'))
-        response = self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json)
-        api_lb = response.json
-        r_vip = api_lb.get('vip')
-        self.assertIsNone(r_vip.get('network_id'))
-        self.assertEqual('lb1', api_lb.get('name'))
-        self.assertEqual('desc1', api_lb.get('description'))
-        self.assertFalse(api_lb.get('enabled'))
-        self.assertEqual(constants.PENDING_UPDATE,
-                         api_lb.get('provisioning_status'))
-        self.assertEqual(lb.get('operational_status'),
-                         api_lb.get('operational_status'))
-        self.assert_final_lb_statuses(api_lb.get('id'))
+        self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json, status=400)
 
     def test_update_bad_lb_id(self):
         path = self.LB_PATH.format(lb_id='SEAN-CONNERY')
@@ -155,7 +144,7 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_update_pending_create(self):
         lb = self.create_load_balancer({}, name='lb1', description='desc1',
                                        enabled=False)
-        lb_json = {'vip': {'network_id': '1234'}}
+        lb_json = {'name': 'Roberto'}
         self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json, status=409)
 
     def test_delete_pending_create(self):
@@ -166,7 +155,7 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_update_pending_update(self):
         lb = self.create_load_balancer({}, name='lb1', description='desc1',
                                        enabled=False)
-        lb_json = {'vip': {'network_id': '1234'}}
+        lb_json = {'name': 'Bob'}
         lb = self.set_lb_status(lb.get('id'))
         self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json)
         self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json, status=409)
@@ -174,7 +163,7 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_delete_pending_update(self):
         lb = self.create_load_balancer({}, name='lb1', description='desc1',
                                        enabled=False)
-        lb_json = {'vip': {'network_id': '1234'}}
+        lb_json = {'name': 'Steve'}
         lb = self.set_lb_status(lb.get('id'))
         self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json)
         self.delete(self.LB_PATH.format(lb_id=lb.get('id')), status=409)
@@ -184,7 +173,7 @@ class TestLoadBalancer(base.BaseAPITest):
                                        enabled=False)
         lb = self.set_lb_status(lb.get('id'))
         self.delete(self.LB_PATH.format(lb_id=lb.get('id')))
-        lb_json = {'vip': {'network_id': '1234'}}
+        lb_json = {'name': 'John'}
         self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json, status=409)
 
     def test_delete_pending_delete(self):
