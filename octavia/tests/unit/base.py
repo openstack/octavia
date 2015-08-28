@@ -15,9 +15,15 @@
 import mock
 import testtools
 
+from octavia.compute.drivers import nova_driver
+
 
 class TestCase(testtools.TestCase):
 
     def setUp(self):
         super(TestCase, self).setUp()
         self.addCleanup(mock.patch.stopall)
+        self.addCleanup(self.clean_caches)
+
+    def clean_caches(self):
+        nova_driver.NovaAuth._nova_client = None
