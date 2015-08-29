@@ -59,6 +59,9 @@ function octavia_configure {
 
     iniset $OCTAVIA_CONF controller_worker amp_flavor_id ${OCTAVIA_AMP_FLAVOR_ID}
 
+    # Setting for compute timeout
+    iniset $OCTAVIA_CONF controller_worker amp_active_retries ${OCTAVIA_AMP_ACTIVE_RETRIES}
+
     # Setting other required default options
     iniset $OCTAVIA_CONF controller_worker amphora_driver amphora_haproxy_ssh_driver
     #iniset $OCTAVIA_CONF controller_worker amphora_driver amphora_haproxy_rest_driver
