@@ -22,7 +22,6 @@ from octavia.controller.worker.flows import load_balancer_flows
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import cert_task
 from octavia.controller.worker.tasks import compute_tasks
-from octavia.controller.worker.tasks import controller_tasks
 from octavia.controller.worker.tasks import database_tasks
 
 
@@ -145,11 +144,12 @@ class AmphoraFlows(object):
         """
 
         delete_amphora_flow = linear_flow.Flow(constants.DELETE_AMPHORA_FLOW)
-        delete_amphora_flow.add(controller_tasks.DeleteLoadBalancersOnAmp(
-                                requires='amphora'))
-# TODO(johnsom) make this just delete it
         delete_amphora_flow.add(database_tasks.
                                 MarkAmphoraPendingDeleteInDB(
                                     requires='amphora'))
-
+        delete_amphora_flow.add(compute_tasks.ComputeDelete(
+            requires='amphora'))
+        delete_amphora_flow.add(database_tasks.
+                                MarkAmphoraDeletedInDB(
+                                    requires='amphora'))
         return delete_amphora_flow

@@ -127,14 +127,15 @@ class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
 
 
 class ComputeDelete(BaseComputeTask):
-    def execute(self, amphora_id):
-        LOG.debug("Nova Delete execute for amphora with id %s" % amphora_id)
+    def execute(self, amphora):
+        compute_id = amphora.compute_id
+        LOG.debug("Nova Delete execute for amphora with id %s" % compute_id)
 
         try:
-            self.compute.delete(amphora_id=amphora_id)
+            self.compute.delete(amphora_id=compute_id)
         except Exception as e:
             LOG.error(_LE("Nova delete for amphora id: %(amp)s failed:"
-                          "%(exp)s"), {'amp': amphora_id, 'exp': e})
+                          "%(exp)s"), {'amp': compute_id, 'exp': e})
             raise e
 
 
