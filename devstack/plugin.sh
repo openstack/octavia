@@ -59,9 +59,6 @@ function octavia_configure {
 
     iniset $OCTAVIA_CONF controller_worker amp_flavor_id ${OCTAVIA_AMP_FLAVOR_ID}
 
-    # Setting for compute timeout
-    iniset $OCTAVIA_CONF controller_worker amp_active_retries ${OCTAVIA_AMP_ACTIVE_RETRIES}
-
     # Setting other required default options
     iniset $OCTAVIA_CONF controller_worker amphora_driver amphora_haproxy_rest_driver
     iniset $OCTAVIA_CONF controller_worker compute_driver compute_nova_driver
@@ -74,6 +71,9 @@ function octavia_configure {
 
     iniset $OCTAVIA_CONF oslo_messaging rpc_thread_pool_size 2
     iniset $OCTAVIA_CONF oslo_messaging topic octavia_prov
+
+    # Setting neutron request_poll_timeout
+    iniset $NEUTRON_CONF octavia request_poll_timeout 3000
 
     # Uncomment other default options
     iniuncomment $OCTAVIA_CONF haproxy_amphora username
@@ -137,6 +137,10 @@ function configure_octavia_tempest {
     fi
 }
 
+function create_amphora_flavor {
+    nova flavor-create --is-public False m1.amphora ${OCTAVIA_AMP_FLAVOR_ID} 1024 5 1
+}
+
 function octavia_start {
 
     # Several steps in this function would more logically be in the configure function, but
@@ -148,6 +152,8 @@ function octavia_start {
 
     OCTAVIA_AMP_IMAGE_ID=$(glance image-list | grep ${OCTAVIA_AMP_IMAGE_NAME} | awk '{print $2}')
     iniset $OCTAVIA_CONF controller_worker amp_image_id ${OCTAVIA_AMP_IMAGE_ID}
+
+    create_amphora_flavor
 
     # Create a management network.
     build_mgmt_network
