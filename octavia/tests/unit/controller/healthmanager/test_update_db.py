@@ -12,23 +12,31 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import random
+
 import mock
+from oslo_config import cfg
 from oslo_utils import uuidutils
 import six
 import sqlalchemy
 
 from octavia.common import constants
-from octavia.controller.healthmanager import update_health_mixin as healthmixin
-import octavia.tests.unit.base as base
+from octavia.common import data_models
+from octavia.controller.healthmanager import update_db
+from octavia.tests.unit import base
 
 
-class TestUpdateHealthMixin(base.TestCase):
+class TestUpdateHealthDb(base.TestCase):
     FAKE_UUID_1 = uuidutils.generate_uuid()
 
     def setUp(self):
-        super(TestUpdateHealthMixin, self).setUp()
-        self.hm = healthmixin.UpdateHealthMixin()
-
+        super(TestUpdateHealthDb, self).setUp()
+        cfg.CONF.set_override(group='health_manager',
+                              name='event_streamer_driver',
+                              override='queue_event_streamer')
+        self.hm = update_db.UpdateHealthDb()
+        self.event_client = mock.MagicMock()
+        self.hm.event_streamer.client = self.event_client
         self.amphora_repo = mock.MagicMock()
         self.amphora_health_repo = mock.MagicMock()
         self.listener_repo = mock.MagicMock()
@@ -47,6 +55,33 @@ class TestUpdateHealthMixin(base.TestCase):
         self.hm.pool_repo = self.pool_repo
 
     @mock.patch('octavia.db.api.get_session')
+    def test_update_health_event_stream(self, session):
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {"status": constants.OPEN, "pools": {
+                    "pool-id-1": {"status": constants.UP,
+                                  "members": {"member-id-1": constants.UP}
+                                  }
+                }
+                }
+            }
+        }
+        self.hm.update_health(health)
+        self.event_client.cast.assert_any_call(
+            {}, 'update_info', container={
+                'info_type': 'listener', 'info_id': 'listener-id-1',
+                'info_payload': {'operating_status': 'ONLINE'}})
+        self.event_client.cast.assert_any_call(
+            {}, 'update_info', container={
+                'info_type': 'member', 'info_id': 'member-id-1',
+                'info_payload': {'operating_status': 'ONLINE'}})
+        self.event_client.cast.assert_any_call(
+            {}, 'update_info', container={
+                'info_type': 'pool', 'info_id': 'pool-id-1',
+                'info_payload': {'operating_status': 'ONLINE'}})
+
+    @mock.patch('octavia.db.api.get_session')
     def test_update_health_Online(self, session):
 
         health = {
@@ -62,7 +97,6 @@ class TestUpdateHealthMixin(base.TestCase):
         }
 
         session.return_value = 'blah'
-
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
 
@@ -81,7 +115,7 @@ class TestUpdateHealthMixin(base.TestCase):
                 for member_id, member in six.iteritems(
                         pool.get('members', {})):
                     self.member_repo.update.assert_any_call(
-                        'blah', id=member_id,
+                        'blah', member_id,
                         operating_status=constants.ONLINE)
 
         self.hm.listener_repo.count.return_value = 2
@@ -124,7 +158,7 @@ class TestUpdateHealthMixin(base.TestCase):
                         pool.get('members', {})):
 
                     self.member_repo.update.assert_any_call(
-                        'blah', id=member_id,
+                        'blah', member_id,
                         operating_status=constants.ERROR)
 
         self.hm.listener_repo.count.return_value = 2
@@ -168,7 +202,7 @@ class TestUpdateHealthMixin(base.TestCase):
                         pool.get('members', {})):
 
                     self.member_repo.update.assert_any_call(
-                        'blah', id=member_id,
+                        'blah', member_id,
                         operating_status=constants.NO_MONITOR)
 
         self.hm.listener_repo.count.return_value = 2
@@ -211,7 +245,7 @@ class TestUpdateHealthMixin(base.TestCase):
                         pool.get('members', {})):
 
                     self.member_repo.update.assert_any_call(
-                        'blah', id=member_id,
+                        'blah', member_id,
                         operating_status=constants.ERROR)
 
         self.hm.listener_repo.count.return_value = 2
@@ -254,7 +288,7 @@ class TestUpdateHealthMixin(base.TestCase):
                         pool.get('members', {})):
 
                     self.member_repo.update.assert_any_call(
-                        'blah', id=member_id, operating_status=constants.ERROR)
+                        'blah', member_id, operating_status=constants.ERROR)
 
     # Test the logic code paths
     @mock.patch('octavia.db.api.get_session')
@@ -353,5 +387,100 @@ class TestUpdateHealthMixin(base.TestCase):
                         pool.get('members', {})):
 
                     self.member_repo.update.assert_any_call(
-                        'blah', id=member_id,
+                        'blah', member_id,
                         operating_status=constants.ONLINE)
+
+    def test_update_health_no_status_change(self):
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {
+                    "status": constants.OPEN, "pools": {
+                        "pool-id-1": {
+                            "status": constants.UP, "members": {
+                                "member-id-1": constants.UP
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        db_lb = data_models.LoadBalancer(
+            id=self.FAKE_UUID_1, operating_status=constants.ONLINE
+        )
+        db_listener = data_models.Listener(
+            id='listener-id-', operating_status=constants.ONLINE,
+            load_balancer_id=self.FAKE_UUID_1
+        )
+        db_pool = data_models.Pool(
+            id='pool-id-1', operating_status=constants.ONLINE
+        )
+        db_member = data_models.Member(
+            id='member-id-1', operating_status=constants.ONLINE
+        )
+        self.listener_repo.get.return_value = db_listener
+        self.pool_repo.get.return_value = db_pool
+        self.member_repo.get.return_value = db_member
+        self.loadbalancer_repo.get.return_value = db_lb
+        self.hm.update_health(health)
+        self.event_client.cast.assert_not_called()
+        self.loadbalancer_repo.update.assert_not_called()
+        self.listener_repo.update.assert_not_called()
+        self.pool_repo.update.assert_not_called()
+        self.member_repo.update.assert_not_called()
+
+
+class TestUpdateStatsDb(base.TestCase):
+
+    def setUp(self):
+        super(TestUpdateStatsDb, self).setUp()
+        self.sm = update_db.UpdateStatsDb()
+        self.event_client = mock.MagicMock()
+        self.sm.event_streamer.client = self.event_client
+
+        self.listener_stats_repo = mock.MagicMock()
+        self.sm.listener_stats_repo = self.listener_stats_repo
+
+        self.bytes_in = random.randrange(1000000000)
+        self.bytes_out = random.randrange(1000000000)
+        self.active_conns = random.randrange(1000000000)
+        self.total_conns = random.randrange(1000000000)
+        self.loadbalancer_id = uuidutils.generate_uuid()
+        self.listener_id = uuidutils.generate_uuid()
+
+    @mock.patch('octavia.db.api.get_session')
+    def test_update_stats(self, session):
+
+        health = {
+            "id": self.loadbalancer_id,
+            "listeners": {
+                self.listener_id: {"status": constants.OPEN,
+                                   "stats": {"conns": self.active_conns,
+                                             "totconns": self.total_conns,
+                                             "rx": self.bytes_in,
+                                             "tx": self.bytes_out},
+                                   "pools": {"pool-id-1":
+                                             {"status": constants.UP,
+                                              "members":
+                                              {"member-id-1": constants.ONLINE}
+                                              }
+                                             }
+                                   }}}
+
+        session.return_value = 'blah'
+
+        self.sm.update_stats(health)
+
+        self.listener_stats_repo.replace.assert_called_once_with(
+            'blah', self.listener_id, bytes_in=self.bytes_in,
+            bytes_out=self.bytes_out, active_connections=self.active_conns,
+            total_connections=self.total_conns)
+        self.event_client.cast.assert_called_once_with(
+            {}, 'update_info', container={
+                'info_type': 'listener_stats',
+                'info_id': self.listener_id,
+                'info_payload': {
+                    'bytes_in': self.bytes_in,
+                    'total_connections': self.total_conns,
+                    'active_connections': self.active_conns,
+                    'bytes_out': self.bytes_out}})

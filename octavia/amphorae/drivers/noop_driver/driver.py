@@ -19,7 +19,7 @@ from octavia.amphorae.drivers import driver_base as driver_base
 LOG = logging.getLogger(__name__)
 
 
-class LoggingMixIn(driver_base.HealthMixin, driver_base.StatsMixin):
+class LoggingUpdate(object):
     def update_stats(self, stats):
         LOG.debug("Amphora %s no-op, update stats %s",
                   self.__class__.__name__, stats)
