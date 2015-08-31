@@ -12,7 +12,7 @@ requests>=2.5.2
 iso8601>=0.1.9
 jsonrpclib
 keystonemiddleware>=2.0.0
-netaddr>=0.7.12
+netaddr!=0.7.16,>=0.7.12
 python-neutronclient<3,>=2.6.0
 WebOb>=1.2.3
 six>=1.9.0
