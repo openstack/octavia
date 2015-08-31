@@ -331,7 +331,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
     def delete_member(self, member_id):
         """Deletes a pool member.
 
-        :param memberr_id: ID of the member to delete
+        :param member_id: ID of the member to delete
         :returns: None
         :raises MemberNotFound: The referenced member was not found
         """
