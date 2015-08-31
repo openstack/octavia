@@ -447,3 +447,22 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.driver.update_vip(lb)
         delete_rule.assert_called_once_with('rule-22')
         self.assertFalse(create_rule.called)
+
+    def test_update_vip_when_no_listeners(self):
+        listeners = []
+        lb = data_models.LoadBalancer(id='1', listeners=listeners)
+        list_sec_grps = self.driver.neutron_client.list_security_groups
+        list_sec_grps.return_value = {'security_groups': [{'id': 'secgrp-1'}]}
+        fake_rules = {
+            'security_group_rules': [
+                {'id': 'all-egress', 'protocol': None, 'direction': 'egress'},
+                {'id': 'ssh-rule', 'protocol': 'TCP', 'port_range_max': 22}
+            ]
+        }
+        list_rules = self.driver.neutron_client.list_security_group_rules
+        list_rules.return_value = fake_rules
+        delete_rule = self.driver.neutron_client.delete_security_group_rule
+        create_rule = self.driver.neutron_client.create_security_group_rule
+        self.driver.update_vip(lb)
+        delete_rule.assert_called_once_with('ssh-rule')
+        self.assertFalse(create_rule.called)

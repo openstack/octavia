@@ -108,7 +108,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         # port_range_max and min will be the same since this driver is
         # responsible for creating these rules
         old_ports = [rule.get('port_range_max')
-                     for rule in rules.get('security_group_rules', [])]
+                     for rule in rules.get('security_group_rules', [])
+                     if rule.get('direction') != 'egress']
         add_ports = set(updated_ports) - set(old_ports)
         del_ports = set(old_ports) - set(updated_ports)
         for rule in rules.get('security_group_rules', []):
