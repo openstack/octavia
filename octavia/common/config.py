@@ -72,9 +72,9 @@ core_opts = [
                help=_('CA file for novaclient to verify server certificates')),
     cfg.BoolOpt('nova_api_insecure', default=False,
                 help=_("If True, ignore any SSL validation issues")),
-    cfg.StrOpt('nova_region_name',
-               help=_('Name of nova region to use. Useful if keystone manages'
-                      ' more than one region.')),
+    cfg.StrOpt('os_region_name',
+               help=_('Region in Identity service catalog to use for '
+                      'communication with the OpenStack services.')),
     cfg.StrOpt('octavia_plugins',
                default='hot_plug_plugin',
                help=_('Name of the controller plugin to use'))

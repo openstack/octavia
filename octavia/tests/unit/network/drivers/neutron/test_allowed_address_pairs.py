@@ -18,6 +18,7 @@ import mock
 from neutronclient.common import exceptions as neutron_exceptions
 from novaclient.client import exceptions as nova_exceptions
 
+from octavia.common import clients
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.network import base as network_base
@@ -35,10 +36,11 @@ class TestAllowedAddressPairsDriver(base.TestCase):
 
     def setUp(self):
         super(TestAllowedAddressPairsDriver, self).setUp()
-        with mock.patch('neutronclient.neutron.client.Client',
+        with mock.patch('octavia.common.clients.neutron_client.Client',
                         autospec=True) as neutron_client:
-            with mock.patch('novaclient.client.Client', autospec=True):
-                client = neutron_client(neutron_base.NEUTRON_VERSION)
+            with mock.patch('octavia.common.clients.nova_client.Client',
+                            autospec=True):
+                client = neutron_client(clients.NEUTRON_VERSION)
                 client.list_extensions.return_value = {
                     'extensions': [
                         {'alias': allowed_address_pairs.AAP_EXT_ALIAS},
