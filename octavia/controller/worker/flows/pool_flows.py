@@ -30,7 +30,7 @@ class PoolFlows(object):
         """
         create_pool_flow = linear_flow.Flow(constants.CREATE_POOL_FLOW)
         create_pool_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LISTENER, constants.VIP]))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
         create_pool_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
             requires=[constants.LOADBALANCER, constants.LISTENER]))
 
@@ -45,7 +45,7 @@ class PoolFlows(object):
         delete_pool_flow.add(model_tasks.DeleteModelObject(
             rebind={constants.OBJECT: constants.POOL}))
         delete_pool_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LISTENER, constants.VIP]))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
         delete_pool_flow.add(database_tasks.DeletePoolInDB(
             requires=constants.POOL))
         delete_pool_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
@@ -64,7 +64,7 @@ class PoolFlows(object):
                                  rebind={constants.OBJECT: constants.POOL},
                                  requires=[constants.UPDATE_DICT]))
         update_pool_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LISTENER, constants.VIP]))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
         update_pool_flow.add(database_tasks.UpdatePoolInDB(
             requires=[constants.POOL, constants.UPDATE_DICT]))
         update_pool_flow.add(database_tasks.MarkLBAndListenerActiveInDB(

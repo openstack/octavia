@@ -39,7 +39,7 @@ class MemberFlows(object):
             requires=(constants.LOADBALANCER, constants.ADDED_PORTS)
         ))
         create_member_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=(constants.LISTENER, constants.VIP)))
+            requires=(constants.LOADBALANCER, constants.LISTENER)))
         create_member_flow.add(database_tasks.
                                MarkLBAndListenerActiveInDB(
                                    requires=(constants.LOADBALANCER,
@@ -57,9 +57,9 @@ class MemberFlows(object):
                                DeleteModelObject(rebind={constants.OBJECT:
                                                          constants.MEMBER}))
         delete_member_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LISTENER, constants.VIP]))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
         delete_member_flow.add(database_tasks.DeleteMemberInDB(
-            requires=constants.MEMBER_ID))
+            requires=constants.MEMBER))
         delete_member_flow.add(database_tasks.
                                MarkLBAndListenerActiveInDB(
                                    requires=[constants.LOADBALANCER,
@@ -78,7 +78,7 @@ class MemberFlows(object):
                                    rebind={constants.OBJECT: constants.MEMBER},
                                    requires=[constants.UPDATE_DICT]))
         update_member_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LISTENER, constants.VIP]))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
         update_member_flow.add(database_tasks.UpdateMemberInDB(
             requires=[constants.MEMBER, constants.UPDATE_DICT]))
         update_member_flow.add(database_tasks.

@@ -48,14 +48,14 @@ class BaseAmphoraTask(task.Task):
 class ListenerUpdate(BaseAmphoraTask):
     """Task to update an amphora with new configuration for the listener."""
 
-    def execute(self, listener, vip):
+    def execute(self, loadbalancer, listener):
         """Execute listener update routines for an amphora."""
         # Ideally this shouldn't be needed. This is a workaround, for a not
         # very well understood bug not related to Octavia.
         # https://bugs.launchpad.net/octavia/+bug/1492493
         listener = self.listener_repo.get(db_apis.get_session(),
                                           id=listener.id)
-        self.amphora_driver.update(listener, vip)
+        self.amphora_driver.update(listener, loadbalancer.vip)
         LOG.debug("Updated amphora with new configuration for listener")
 
     def revert(self, listener, *args, **kwargs):
@@ -88,9 +88,9 @@ class ListenersUpdate(BaseAmphoraTask):
 class ListenerStop(BaseAmphoraTask):
     """Task to stop the listener on the vip."""
 
-    def execute(self, listener, vip):
+    def execute(self, loadbalancer, listener):
         """Execute listener stop routines for an amphora."""
-        self.amphora_driver.stop(listener, vip)
+        self.amphora_driver.stop(listener, loadbalancer.vip)
         LOG.debug("Stopped the listener on the vip")
 
     def revert(self, listener, *args, **kwargs):
@@ -105,9 +105,9 @@ class ListenerStop(BaseAmphoraTask):
 class ListenerStart(BaseAmphoraTask):
     """Task to start the listener on the vip."""
 
-    def execute(self, listener, vip):
+    def execute(self, loadbalancer, listener):
         """Execute listener start routines for an amphora."""
-        self.amphora_driver.start(listener, vip)
+        self.amphora_driver.start(listener, loadbalancer.vip)
         LOG.debug("Started the listener on the vip")
 
     def revert(self, listener, *args, **kwargs):
@@ -141,9 +141,9 @@ class ListenersStart(BaseAmphoraTask):
 class ListenerDelete(BaseAmphoraTask):
     """Task to delete the listener on the vip."""
 
-    def execute(self, listener, vip):
+    def execute(self, loadbalancer, listener):
         """Execute listener delete routines for an amphora."""
-        self.amphora_driver.delete(listener, vip)
+        self.amphora_driver.delete(listener, loadbalancer.vip)
         LOG.debug("Deleted the listener on the vip")
 
     def revert(self, listener, *args, **kwargs):

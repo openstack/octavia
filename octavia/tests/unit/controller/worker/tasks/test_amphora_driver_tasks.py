@@ -32,7 +32,10 @@ _amphora_mock = mock.MagicMock()
 _amphora_mock.id = AMP_ID
 _listener_mock = mock.MagicMock()
 _listener_mock.id = LISTENER_ID
+_load_balancer_mock = mock.MagicMock()
+_load_balancer_mock.id = LB_ID
 _vip_mock = mock.MagicMock()
+_load_balancer_mock.vip = _vip_mock
 _LB_mock = mock.MagicMock()
 _amphorae_mock = [_amphora_mock]
 _network_mock = mock.MagicMock()
@@ -67,10 +70,9 @@ class TestAmphoraDriverTasks(base.TestCase):
                              mock_amphora_repo_update):
 
         listener_update_obj = amphora_driver_tasks.ListenerUpdate()
-        listener_update_obj.execute(_listener_mock, _vip_mock)
+        listener_update_obj.execute(_load_balancer_mock, _listener_mock)
 
-        mock_driver.update.assert_called_once_with(
-            _listener_mock, _vip_mock)
+        mock_driver.update.assert_called_once_with(_listener_mock, _vip_mock)
 
         # Test the revert
         amp = listener_update_obj.revert(_listener_mock)
@@ -90,10 +92,9 @@ class TestAmphoraDriverTasks(base.TestCase):
                            mock_amphora_repo_update):
 
         listener_stop_obj = amphora_driver_tasks.ListenerStop()
-        listener_stop_obj.execute(_listener_mock, _vip_mock)
+        listener_stop_obj.execute(_load_balancer_mock, _listener_mock)
 
-        mock_driver.stop.assert_called_once_with(
-            _listener_mock, _vip_mock)
+        mock_driver.stop.assert_called_once_with(_listener_mock, _vip_mock)
 
         # Test the revert
         amp = listener_stop_obj.revert(_listener_mock)
@@ -113,10 +114,9 @@ class TestAmphoraDriverTasks(base.TestCase):
                             mock_amphora_repo_update):
 
         listener_start_obj = amphora_driver_tasks.ListenerStart()
-        listener_start_obj.execute(_listener_mock, _vip_mock)
+        listener_start_obj.execute(_load_balancer_mock, _listener_mock)
 
-        mock_driver.start.assert_called_once_with(
-            _listener_mock, _vip_mock)
+        mock_driver.start.assert_called_once_with(_listener_mock, _vip_mock)
 
         # Test the revert
         amp = listener_start_obj.revert(_listener_mock)
@@ -136,10 +136,9 @@ class TestAmphoraDriverTasks(base.TestCase):
                              mock_amphora_repo_update):
 
         listener_delete_obj = amphora_driver_tasks.ListenerDelete()
-        listener_delete_obj.execute(_listener_mock, _vip_mock)
+        listener_delete_obj.execute(_load_balancer_mock, _listener_mock)
 
-        mock_driver.delete.assert_called_once_with(
-            _listener_mock, _vip_mock)
+        mock_driver.delete.assert_called_once_with(_listener_mock, _vip_mock)
 
         # Test the revert
         amp = listener_delete_obj.revert(_listener_mock)

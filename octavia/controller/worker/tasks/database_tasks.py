@@ -133,24 +133,24 @@ class DeleteMemberInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, member_id):
+    def execute(self, member):
         """Delete the member in the DB
 
-        :param member_id: The member ID to be deleted
+        :param member: The member to be deleted
         :returns: None
         """
 
-        LOG.debug("DB delete member for id: %s ", member_id)
-        self.member_repo.delete(db_apis.get_session(), id=member_id)
+        LOG.debug("DB delete member for id: %s ", member.id)
+        self.member_repo.delete(db_apis.get_session(), id=member.id)
 
-    def revert(self, member_id, *args, **kwargs):
+    def revert(self, member, *args, **kwargs):
         """Mark the member ERROR since the delete couldn't happen
 
         :returns: None
         """
 
         LOG.warn(_LW("Reverting delete in DB "
-                     "for member id %s"), member_id)
+                     "for member id %s"), member.id)
 # TODO(johnsom) fix this
 #        self.member_repo.update(db_apis.get_session(), member.id,
 #                                operating_status=constants.ERROR)

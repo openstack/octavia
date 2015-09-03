@@ -209,7 +209,7 @@ class TestDatabaseTasks(base.TestCase):
                                  mock_amphora_repo_delete):
 
         delete_member = database_tasks.DeleteMemberInDB()
-        delete_member.execute(MEMBER_ID)
+        delete_member.execute(self.member_mock)
 
         repo.MemberRepository.delete.assert_called_once_with(
             'TEST',
@@ -218,7 +218,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert
 
         mock_member_repo_delete.reset_mock()
-        delete_member.revert(MEMBER_ID)
+        delete_member.revert(self.member_mock)
 
 # TODO(johnsom) Fix
 #        repo.MemberRepository.delete.assert_called_once_with(

@@ -30,7 +30,7 @@ class HealthMonitorFlows(object):
         """
         create_hm_flow = linear_flow.Flow(constants.CREATE_HEALTH_MONITOR_FLOW)
         create_hm_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LISTENER, constants.VIP]))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
         create_hm_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
             requires=[constants.LOADBALANCER, constants.LISTENER]))
 
@@ -46,7 +46,7 @@ class HealthMonitorFlows(object):
                            DeleteModelObject(rebind={constants.OBJECT:
                                                      constants.HEALTH_MON}))
         delete_hm_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LISTENER, constants.VIP]))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
         delete_hm_flow.add(database_tasks.DeleteHealthMonitorInDB(
             requires=constants.POOL_ID))
         delete_hm_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
@@ -65,7 +65,7 @@ class HealthMonitorFlows(object):
                                rebind={constants.OBJECT: constants.HEALTH_MON},
                                requires=[constants.UPDATE_DICT]))
         update_hm_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LISTENER, constants.VIP]))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
         update_hm_flow.add(database_tasks.UpdateHealthMonInDB(
             requires=[constants.HEALTH_MON, constants.UPDATE_DICT]))
         update_hm_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
