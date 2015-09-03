@@ -117,7 +117,8 @@ class HAProxyQuery(object):
             # pxname: pool, svname: server_name, status: status
 
             # All the way up is UP, otherwise call it DOWN
-            if line['status'] != consts.UP:
+            if (line['status'] != consts.UP and
+                    line['status'] != consts.NO_CHECK):
                 line['status'] = consts.DOWN
 
             if line['pxname'] not in final_results:

@@ -136,6 +136,50 @@ class TestUpdateHealthMixin(base.TestCase):
         self.hm.update_health(health)
 
     @mock.patch('octavia.db.api.get_session')
+    def test_update_health_member_no_check(self, session):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {"status": constants.OPEN, "pools": {
+                    "pool-id-1": {"status": constants.UP,
+                                  "members": {"member-id-1":
+                                              constants.NO_CHECK}
+                                  }
+                }
+                }
+            }
+        }
+
+        session.return_value = 'blah'
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # test listener, member
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
+
+            self.listener_repo.update.assert_any_call(
+                'blah', listener_id, operating_status=constants.ONLINE)
+
+            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+
+                self.hm.pool_repo.update.assert_any_call(
+                    'blah', pool_id, operating_status=constants.ONLINE)
+
+                for member_id, member in six.iteritems(
+                        pool.get('members', {})):
+
+                    self.member_repo.update.assert_any_call(
+                        'blah', id=member_id,
+                        operating_status=constants.NO_MONITOR)
+
+        self.hm.listener_repo.count.return_value = 2
+
+        self.hm.update_health(health)
+
+    @mock.patch('octavia.db.api.get_session')
     def test_update_health_list_full_member_down(self, session):
 
         health = {
