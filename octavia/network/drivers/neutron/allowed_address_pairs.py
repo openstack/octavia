@@ -13,13 +13,12 @@
 #    under the License.
 
 from neutronclient.common import exceptions as neutron_client_exceptions
-from novaclient import client as nova_client
 from novaclient import exceptions as nova_client_exceptions
 from oslo_log import log as logging
 
+from octavia.common import clients
 from octavia.common import constants
 from octavia.common import data_models
-from octavia.common import keystone
 from octavia.i18n import _LE, _LI
 from octavia.network import base
 from octavia.network.drivers.neutron import base as neutron_base
@@ -27,7 +26,6 @@ from octavia.network.drivers.neutron import utils
 
 
 LOG = logging.getLogger(__name__)
-NOVA_VERSION = '2'
 AAP_EXT_ALIAS = 'allowed-address-pairs'
 VIP_SECURITY_GRP_PREFIX = 'lb-'
 OCTAVIA_OWNER = 'Octavia'
@@ -35,11 +33,10 @@ OCTAVIA_OWNER = 'Octavia'
 
 class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
-    def __init__(self):
-        super(AllowedAddressPairsDriver, self).__init__()
+    def __init__(self, region=None):
+        super(AllowedAddressPairsDriver, self).__init__(region=region)
         self._check_aap_loaded()
-        self.nova_client = nova_client.Client(
-            NOVA_VERSION, session=keystone.get_session())
+        self.nova_client = clients.NovaAuth.get_nova_client(region)
 
     def _check_aap_loaded(self):
         aliases = [ext.get('alias') for ext in self._extensions]
