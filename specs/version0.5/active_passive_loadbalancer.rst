@@ -40,30 +40,32 @@ tenant's backend services as follows:
 
 * The following diagram illustrates the Active/Standby topology.
 
-┌────────┐
-│ Tenant │
-│Service │
-│  (1)   │
-├────────┘        ┌───────────┐
-│ ┌────────┐ ┌────┤  Master   ├────┐
-│ │ Tenant │ │VIP │  Amphora  │IP1 │
-│ │Service │ └──┬─┼─────┬─────┼─┬──┘
-│ │   (M)  │    │ │MGMT │VRRP │ │
-│ ├────────┘    │ │ IP  │ IP1 │ │
-│ │  Tenant     │ └──┬──┴┬────┘ │
-│ │ Network     │    │   │      │   ┌─────────────────┐ Floating ┌─────────┐
-▼─▼─────────────▲────┼───▼─▲────▼─▲─┤     Router      │    IP    │         │
-▲───────────────┼────▼─▲───┼──────┼─┤Floating <-> VIP ◀──────────┤ Internet│
-│  Management   │      │   │      │ │                 │          │         │
-│    (MGMT)     │      │   │      │ └─────────────────┘          └─────────┘
-│   Network     │   ┌──┴──┬┴────┐ │
-│           Paired  │MGMT │VRRP │ │
-│               │   │ IP  │ IP2 │ │
-┌───────────┐   │   ├─────┴─────┤ │
-│  Octavia  │  ┌┴───┤  Backup   ├─┴──┐
-│Controller │  │VIP │  Amphora  │IP2 │
-│    (s)    │  └────┴───────────┴────┘
-└───────────┘
+asciiflow::
+
+ +--------+
+ | Tenant |
+ |Service |
+ |  (1)   |
+ +--------+        +-----------+
+ | +--------+ +----+  Master   +----+
+ | | Tenant | |VIP |  Amphora  |IP1 |
+ | |Service | +--+-+-----+-----+-+--+
+ | |   (M)  |    | |MGMT |VRRP | |
+ | +--------+    | | IP  | IP1 | |
+ | |  Tenant     | +--+--++----+ |
+ | | Network     |    |   |      |   +-----------------+ Floating +---------+
+ v-v-------------^----+---v-^----v-^-+     Router      |    IP    |         |
+ ^---------------+----v-^---+------+-+Floating <-> VIP <----------+ Internet|
+ |  Management   |      |   |      | |                 |          |         |
+ |    (MGMT)     |      |   |      | +-----------------+          +---------+
+ |   Network     |   +--+--++----+ |
+ |           Paired  |MGMT |VRRP | |
+ |               |   | IP  | IP2 | |
+ +-----------+   |   +-----+-----+ |
+ |  Octavia  |  ++---+  Backup   +-+--+
+ |Controller |  |VIP |  Amphora  |IP2 |
+ |    (s)    |  +----+-----------+----+
+ +-----------+
 
 * The newly introduced VRRP IPs shall communicate on the same tenant network
   (see security impact for more details).
@@ -135,9 +137,30 @@ The data model of the Octavia database shall be impacted as follows:
 
 * New value tables for the loadbalancer topology and the amphorae roles.
 
+* New columns in the amphora table shall indicate the VRRP priority, the VRRP
+  ID, and the VRRP interface of the amphora.
+
+* A new column in the listener table shall indicate the TCP port used for
+  listener internal data synchronization.
+
+* VRRP groups define the common VRRP configurations for all listeners on an
+  amphora. A new table shall hold the VRRP groups main configuration
+  primitives including at least: VRRP authentication information, role and
+  priority advertisement interval. Each Active/Standby loadbalancer defines one
+  and only one VRRP group.
 
 REST API impact
 ---------------
+
+** Changes to amphora API: see [11] **
+
+PUT /listeners/{amphora_id}/{listener_id}/haproxy
+
+PUT /vrrp/upload
+
+PUT /vrrp/{action}
+
+GET /interface/{ip_addr}
 
 ** Changes to operator API: see [10] **
 
@@ -262,6 +285,12 @@ shall be active (i.e. serving end-user) at any point in time. If the Master
 amphora is healthy, the backup one shall remain idle until it receives no
 VRRP advertisements from the master.
 
+The VRRP requires executing health checks in the amphorae at fine grain
+granularity period. The health checks shall be as lightweight as possible
+such that VRRP is able to execute all check scripts within a predefined
+interval. If the check scripts failed to run within this predefined interval,
+VRRP may become unstable and may alternate the amphorae roles between MASTER
+and BACKUP incorrectly.
 
 Other deployer impact
 ---------------------
@@ -288,7 +317,7 @@ Implementation
 Assignee(s)
 -----------
 
-Sherif Abdelwahab (sherif)
+Sherif Abdelwahab (abdelwas)
 
 Work Items
 ----------
@@ -338,13 +367,23 @@ References
 
 [1] Implementing High Availability Instances with Neutron using VRRP
 http://goo.gl/eP71g7
+
 [2] RFC3768 Virtual Router Redundancy Protocol (VRRP)
+
 [3] https://review.openstack.org/#/c/38230/
+
 [4] http://www.keepalived.org/LVS-NAT-Keepalived-HOWTO.html
+
 [5] http://www.formilux.org/archives/haproxy/1003/3259.html
+
 [6] https://blueprints.launchpad.net/octavia/+spec/base-image
+
 [7] https://blueprints.launchpad.net/octavia/+spec/controller-worker
+
 [8] https://blueprints.launchpad.net/octavia/+spec/amphora-driver-interface
+
 [9] https://blueprints.launchpad.net/octavia/+spec/controller
+
 [10] https://blueprints.launchpad.net/octavia/+spec/operator-api
+
 [11] doc/main/api/haproxy-amphora-api.rst
