@@ -118,8 +118,8 @@ def plug_network():
         text = template_port.render(interface=interface)
         text_file.write(text)
 
-    _bring_if_down("{interface}:0".format(interface=interface))
-    _bring_if_up("{interface}:0".format(interface=interface), 'network')
+    _bring_if_down(interface)
+    _bring_if_up(interface, 'network')
 
     return flask.make_response(flask.jsonify(dict(
         message="OK",

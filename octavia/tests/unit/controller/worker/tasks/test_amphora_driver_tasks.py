@@ -230,13 +230,15 @@ class TestAmphoraDriverTasks(base.TestCase):
         _LB_mock.amphorae = [_amphora_mock]
         amphora_post_network_plug_obj = (amphora_driver_tasks.
                                          AmphoraePostNetworkPlug())
-        amphora_post_network_plug_obj.execute(_LB_mock)
+        _deltas_mock = {_amphora_mock.id: mock.Mock()}
+        amphora_post_network_plug_obj.execute(_LB_mock, _deltas_mock)
 
         (mock_driver.post_network_plug.
             assert_called_once_with(_amphora_mock))
 
         # Test revert
-        amp = amphora_post_network_plug_obj.revert(None, _LB_mock)
+        amp = amphora_post_network_plug_obj.revert(None, _LB_mock,
+                                                   _deltas_mock)
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
             id=AMP_ID,

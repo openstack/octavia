@@ -505,7 +505,7 @@ class ServerTestCase(base.TestCase):
                 'auto blah blah:0\n'
                 'iface blah inet dhcp')
             mock_check_output.assert_called_with(
-                ['ifup', 'blah:0'], stderr=-2)
+                ['ifup', 'blah'], stderr=-2)
 
         # same as above but ifup fails
         mock_interfaces.side_effect = [['blah']]
