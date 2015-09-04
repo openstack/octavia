@@ -63,8 +63,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF controller_worker amp_active_retries ${OCTAVIA_AMP_ACTIVE_RETRIES}
 
     # Setting other required default options
-    iniset $OCTAVIA_CONF controller_worker amphora_driver amphora_haproxy_ssh_driver
-    #iniset $OCTAVIA_CONF controller_worker amphora_driver amphora_haproxy_rest_driver
+    iniset $OCTAVIA_CONF controller_worker amphora_driver amphora_haproxy_rest_driver
     iniset $OCTAVIA_CONF controller_worker compute_driver compute_nova_driver
     iniset $OCTAVIA_CONF controller_worker network_driver allowed_address_pairs_driver
 
