@@ -13,7 +13,7 @@ function octavia_install {
 
 function build_octavia_worker_image {
 
-    TOKEN=$(keystone token-get | grep ' id ' | get_field 2)
+    TOKEN=$(openstack token issue | grep ' id ' | get_field 2)
     die_if_not_set $LINENO TOKEN "Keystone failed to get token."
 
     # TODO(ptoohill): Tempfix..? -o option stopped working and it no longer saves image to working dir...
