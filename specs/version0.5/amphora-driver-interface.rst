@@ -82,11 +82,15 @@ Establish a base class to model the desire functionality:
             """
             pass
 
-        def post_network_plug(self, amphora):
+        def post_network_plug(self, amphora, port):
             """OPTIONAL - called after adding a compute instance to a network.
 
             This will perform any necessary actions to allow for connectivity
             for that network on that instance.
+
+            port is an instance of octavia.network.data_models.Port.  It
+            contains information about the port, subnet, and network that
+            was just plugged.
             """
 
         def post_vip_plug(self, load_balancer, amphorae_network_config):

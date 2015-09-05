@@ -102,14 +102,22 @@ class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
     def post_vip_plug(self, load_balancer, amphorae_network_config):
         for amp in load_balancer.amphorae:
             subnet = amphorae_network_config.get(amp.id).vip_subnet
-            subnet_info = {'subnet_cidr': subnet.cidr,
-                           'gateway': subnet.gateway_ip}
+            # NOTE(blogan): using the vrrp port here because that is what the
+            # allowed address pairs network driver sets this particular port
+            # to.  This does expose a bit of tight coupling between the network
+            # driver and amphora driver.  We will need to revisit this to
+            # try and remove this tight coupling.
+            port = amphorae_network_config.get(amp.id).vrrp_port
+            net_info = {'subnet_cidr': subnet.cidr,
+                        'gateway': subnet.gateway_ip,
+                        'mac_address': port.mac_address}
             self.client.plug_vip(amp,
                                  load_balancer.vip.ip_address,
-                                 subnet_info)
+                                 net_info)
 
-    def post_network_plug(self, amphora):
-        self.client.plug_network(amphora)
+    def post_network_plug(self, amphora, port):
+        port_info = {'mac_address': port.mac_address}
+        self.client.plug_network(amphora, port_info)
 
     def _process_tls_certificates(self, listener):
         """Processes TLS data from the listener.
@@ -297,12 +305,13 @@ class AmphoraAPIClient(object):
                 listener_id=listener_id, filename=pem_filename))
         return exc.check_exception(r)
 
-    def plug_network(self, amp):
-        r = self.post(amp, 'plug/network')
+    def plug_network(self, amp, port):
+        r = self.post(amp, 'plug/network',
+                      json=port)
         return exc.check_exception(r)
 
-    def plug_vip(self, amp, vip, subnet_info):
+    def plug_vip(self, amp, vip, net_info):
         r = self.post(amp,
                       'plug/vip/{vip}'.format(vip=vip),
-                      json=subnet_info)
+                      json=net_info)
         return exc.check_exception(r)

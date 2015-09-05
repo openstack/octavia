@@ -165,12 +165,16 @@ class AmphoraPostNetworkPlug(BaseAmphoraTask):
 class AmphoraePostNetworkPlug(BaseAmphoraTask):
     """Task to notify the amphorae post network plug."""
 
-    def execute(self, loadbalancer, deltas):
+    def execute(self, loadbalancer, added_ports):
         """Execute post_network_plug routine."""
         for amphora in loadbalancer.amphorae:
-            if amphora.id in deltas and deltas[amphora.id].add_nics:
-                self.amphora_driver.post_network_plug(amphora)
-                LOG.debug("Posted network plug for the compute instance")
+            if amphora.id in added_ports:
+                for port in added_ports[amphora.id]:
+                    self.amphora_driver.post_network_plug(amphora, port)
+                    LOG.debug(
+                        "post_network_plug called on compute instance "
+                        "{compute_id} for port {port_id}".format(
+                            compute_id=amphora.compute_id, port_id=port.id))
 
     def revert(self, result, loadbalancer, deltas, *args, **kwargs):
         """Handle a failed post network plug."""

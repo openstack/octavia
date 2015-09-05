@@ -34,9 +34,9 @@ class MemberFlows(object):
             requires=constants.LOADBALANCER,
             provides=constants.DELTAS))
         create_member_flow.add(network_tasks.HandleNetworkDeltas(
-            requires=constants.DELTAS))
+            requires=constants.DELTAS, provides=constants.ADDED_PORTS))
         create_member_flow.add(amphora_driver_tasks.AmphoraePostNetworkPlug(
-            requires=(constants.LOADBALANCER, constants.DELTAS)
+            requires=(constants.LOADBALANCER, constants.ADDED_PORTS)
         ))
         create_member_flow.add(amphora_driver_tasks.ListenerUpdate(
             requires=(constants.LISTENER, constants.VIP)))

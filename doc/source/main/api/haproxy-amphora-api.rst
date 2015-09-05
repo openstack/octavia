@@ -1088,6 +1088,7 @@ Plug VIP
 
  * *subnet_cidr*: The vip subnet in cidr notation
  * *gateway*: The vip subnet gateway address
+ * *mac_address*: The mac address of the interface to plug
 
 * **Success Response:**
 
@@ -1137,7 +1138,8 @@ Plug VIP
   JSON POST parameters:
   {
     'subnet_cidr': '203.0.113.0/24',
-    'gateway': '203.0.113.1'
+    'gateway': '203.0.113.1',
+    'mac_address': '78:31:c1:ce:0b:3c'
   }
 
   JSON Response:
@@ -1176,7 +1178,10 @@ Plug Network
 * **Method:** POST
 * **URL params:** none
 
-* **Data params:** none
+* **Data params:**
+
+ * *mac_address*: The mac address of the interface to plug
+
 * **Success Response:**
 
   * Code: 202
@@ -1211,6 +1216,11 @@ Plug Network
 
   POST URL:
   https://octavia-haproxy-img-00328.local/v0.1/plug/network/
+
+  JSON POST parameters:
+  {
+    'mac_address': '78:31:c1:ce:0b:3c'
+  }
 
   JSON Response:
       {

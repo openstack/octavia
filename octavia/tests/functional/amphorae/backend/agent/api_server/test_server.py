@@ -474,9 +474,13 @@ class ServerTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     def test_plug_network(self, mock_check_output, mock_ifaddress,
                           mock_interfaces):
+        port_info = {'mac_address': '123'}
+
         # No interface at all
         mock_interfaces.side_effect = [[]]
-        rv = self.app.post('/' + api_server.VERSION + "/plug/network")
+        rv = self.app.post('/' + api_server.VERSION + "/plug/network",
+                           content_type='application/json',
+                           data=json.dumps(port_info))
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
@@ -484,7 +488,9 @@ class ServerTestCase(base.TestCase):
         # No interface down
         mock_interfaces.side_effect = [['blah']]
         mock_ifaddress.side_effect = [[netifaces.AF_INET]]
-        rv = self.app.post('/' + api_server.VERSION + "/plug/network")
+        rv = self.app.post('/' + api_server.VERSION + "/plug/network",
+                           content_type='application/json',
+                           data=json.dumps(port_info))
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
@@ -492,10 +498,13 @@ class ServerTestCase(base.TestCase):
 
         # One Interface down, Happy Path
         mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [['bla']]
+        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
+                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
         m = mock.mock_open()
         with mock.patch('%s.open' % BUILTINS, m, create=True):
-            rv = self.app.post('/' + api_server.VERSION + "/plug/network")
+            rv = self.app.post('/' + api_server.VERSION + "/plug/network",
+                               content_type='application/json',
+                               data=json.dumps(port_info))
             self.assertEqual(202, rv.status_code)
             m.assert_called_once_with(
                 '/etc/network/interfaces.d/blah.cfg', 'w')
@@ -509,13 +518,16 @@ class ServerTestCase(base.TestCase):
 
         # same as above but ifup fails
         mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [['bla']]
+        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
+                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
         mock_check_output.side_effect = [subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR)]
         m = mock.mock_open()
         with mock.patch('%s.open' % BUILTINS, m, create=True):
-            rv = self.app.post('/' + api_server.VERSION + "/plug/network")
+            rv = self.app.post('/' + api_server.VERSION + "/plug/network",
+                               content_type='application/json',
+                               data=json.dumps(port_info))
             self.assertEqual(500, rv.status_code)
             self.assertEqual(
                 {'details': RANDOM_ERROR,
@@ -529,7 +541,9 @@ class ServerTestCase(base.TestCase):
     def test_plug_VIP(self, mock_pyroute2, mock_check_output, mock_ifaddress,
                       mock_interfaces):
 
-        subnet_info = {'subnet_cidr': '10.0.0.0/24', 'gateway': '10.0.0.1'}
+        subnet_info = {'subnet_cidr': '10.0.0.0/24',
+                       'gateway': '10.0.0.1',
+                       'mac_address': '123'}
 
         # malformated ip
         rv = self.app.post('/' + api_server.VERSION + '/plug/vip/error',
@@ -562,7 +576,8 @@ class ServerTestCase(base.TestCase):
 
         # One Interface down, Happy Path
         mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [['bla']]
+        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
+                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
         m = mock.mock_open()
         with mock.patch('%s.open' % BUILTINS, m, create=True):
             rv = self.app.post('/' + api_server.VERSION +
@@ -585,7 +600,8 @@ class ServerTestCase(base.TestCase):
                 ['ifup', 'blah:0'], stderr=-2)
 
         mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [['blah']]
+        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
+                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
         mock_check_output.side_effect = [
             'unplug1',
             subprocess.CalledProcessError(

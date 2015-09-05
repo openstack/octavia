@@ -65,6 +65,7 @@ class TestSshDriver(base.TestCase):
         self.driver.client.exec_command.return_value = (
             mock.Mock(), mock.Mock(), mock.Mock())
         self.driver.amp_config = mock.MagicMock()
+        self.port = network_models.Port(mac_address='123')
 
     def test_update(self):
         with mock.patch.object(
@@ -232,10 +233,14 @@ class TestSshDriver(base.TestCase):
                                     lb_network_ip=MOCK_IP_ADDRESS)]
         vip = data_models.Vip(ip_address=MOCK_IP_ADDRESS)
         lb = data_models.LoadBalancer(amphorae=amps, vip=vip)
-        vip_network = network_models.Network(id=MOCK_NETWORK_ID)
+        amphorae_net_config = {amps[0].id: network_models.AmphoraNetworkConfig(
+            amphora=amps[0],
+            vrrp_port=self.port
+        )}
         exec_command.return_value = ('', '')
-        self.driver.post_vip_plug(lb, vip_network)
-        exec_command.assert_called_once_with(ssh_driver.CMD_GREP_DOWN_LINKS)
+        self.driver.post_vip_plug(lb, amphorae_net_config)
+        exec_command.assert_called_once_with(
+            ssh_driver.CMD_GREP_LINK_BY_MAC.format(mac_address='123'))
 
     @mock.patch.object(ssh_driver.HaproxyManager, '_execute_command')
     def test_post_vip_plug(self, exec_command):
@@ -251,12 +256,14 @@ class TestSshDriver(base.TestCase):
         amphorae_net_config = {amps[0].id: network_models.AmphoraNetworkConfig(
             amphora=amps[0],
             vip_subnet=vip_subnet,
-            vip_port=vip_port
+            vip_port=vip_port,
+            vrrp_port=self.port
         )}
         iface = 'eth1'
         exec_command.return_value = ('{0}: '.format(iface), '')
         self.driver.post_vip_plug(lb, amphorae_net_config)
-        grep_call = mock.call(ssh_driver.CMD_GREP_DOWN_LINKS)
+        grep_call = mock.call(
+            ssh_driver.CMD_GREP_LINK_BY_MAC.format(mac_address='123'))
         dhclient_call = mock.call(ssh_driver.CMD_DHCLIENT.format(iface),
                                   run_as_root=True)
         add_ip_call = mock.call(ssh_driver.CMD_ADD_IP_ADDR.format(
@@ -298,8 +305,9 @@ class TestSshDriver(base.TestCase):
         amp = data_models.Amphora(id=MOCK_AMP_ID, compute_id=MOCK_COMPUTE_ID,
                                   lb_network_ip=MOCK_IP_ADDRESS)
         exec_command.return_value = ('', '')
-        self.driver.post_network_plug(amp)
-        exec_command.assert_called_once_with(ssh_driver.CMD_GREP_DOWN_LINKS)
+        self.driver.post_network_plug(amp, self.port)
+        exec_command.assert_called_once_with(
+            ssh_driver.CMD_GREP_LINK_BY_MAC.format(mac_address='123'))
 
     @mock.patch.object(ssh_driver.HaproxyManager, '_execute_command')
     def test_post_network_plug(self, exec_command):
@@ -307,8 +315,9 @@ class TestSshDriver(base.TestCase):
                                   lb_network_ip=MOCK_IP_ADDRESS)
         iface = 'eth1'
         exec_command.return_value = ('{0}: '.format(iface), '')
-        self.driver.post_network_plug(amp)
-        grep_call = mock.call(ssh_driver.CMD_GREP_DOWN_LINKS)
+        self.driver.post_network_plug(amp, self.port)
+        grep_call = mock.call(
+            ssh_driver.CMD_GREP_LINK_BY_MAC.format(mac_address='123'))
         dhclient_call = mock.call(ssh_driver.CMD_DHCLIENT.format(iface),
                                   run_as_root=True)
         show_ip_call = mock.call(ssh_driver.CMD_SHOW_IP_ADDR.format(iface))

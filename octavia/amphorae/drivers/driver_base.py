@@ -149,11 +149,13 @@ class AmphoraLoadBalancerDriver(object):
         """
         pass
 
-    def post_network_plug(self, amphora):
+    def post_network_plug(self, amphora, port):
         """Called after amphora added to network
 
         :param amphora: amphora object, needs id and network ip(s)
         :type amphora: object
+        :param port: contains information of the plugged port
+        :type port: octavia.network.data_models.Port
 
         This method is optional to implement.  After adding an amphora to a
         network, there may be steps necessary on the amphora to allow it to
