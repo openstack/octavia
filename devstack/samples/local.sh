@@ -50,6 +50,7 @@ if is_service_enabled nova; then
     ssh-keygen -R ${IP2}
 
     # Run a simple web server on the instances
+    chmod 0755 ${TOP_DIR}/webserver.sh
     scp -i ${DEVSTACK_LBAAS_SSH_KEY} -o StrictHostKeyChecking=no ${TOP_DIR}/webserver.sh cirros@${IP1}:webserver.sh
     scp -i ${DEVSTACK_LBAAS_SSH_KEY} -o StrictHostKeyChecking=no ${TOP_DIR}/webserver.sh cirros@${IP2}:webserver.sh
 
