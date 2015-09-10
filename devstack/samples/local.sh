@@ -35,7 +35,7 @@ if is_service_enabled nova; then
     nova secgroup-add-rule default icmp -1 -1 0.0.0.0/0
 
     # Boot some instances
-    NOVA_BOOT_ARGS="--key-name ${DEVSTACK_LBAAS_SSH_KEY_NAME} --image $(nova image-list | awk '/ cirros-0.3.0-x86_64-disk / {print $2}') --flavor 1 --nic net-id=$(neutron net-list | awk '/ private / {print $2}')"
+    NOVA_BOOT_ARGS="--key-name ${DEVSTACK_LBAAS_SSH_KEY_NAME} --image $(nova image-list | awk '/ cirros-0.3.4-x86_64-disk / {print $2}') --flavor 1 --nic net-id=$(neutron net-list | awk '/ private / {print $2}')"
 
     nova boot ${NOVA_BOOT_ARGS} node1
     nova boot ${NOVA_BOOT_ARGS} node2
