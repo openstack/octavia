@@ -129,7 +129,8 @@ class ModelTestMixin(object):
 
     def create_amphora_health(self, session, **overrides):
         kwargs = {'amphora_id': self.FAKE_UUID_1,
-                  'last_update': datetime.date.today()}
+                  'last_update': datetime.date.today(),
+                  'busy': True}
         kwargs.update(overrides)
         return self._insert(session, models.AmphoraHealth, kwargs)
 

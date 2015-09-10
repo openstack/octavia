@@ -84,6 +84,19 @@ networking_opts = [
     cfg.StrOpt('lb_network_name', help=_('Name of amphora internal network')),
 ]
 
+healthmanager_opts = [
+    cfg.IntOpt('failover_threads',
+               default=10,
+               help=_('Number of threads performing amphora failovers.')),
+    cfg.IntOpt('interval',
+               default=3,
+               help=_('Sleep time between health checks in seconds.')),
+    cfg.IntOpt('heartbeat_timeout',
+               default=10,
+               help=_('Interval, in seconds, to wait before failing over an '
+                      'amphora.')),
+]
+
 oslo_messaging_opts = [
     cfg.StrOpt('topic'),
 ]
@@ -232,6 +245,7 @@ cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
 cfg.CONF.register_opts(house_keeping_opts, group='house_keeping')
 cfg.CONF.register_cli_opts(core_cli_opts)
 cfg.CONF.register_opts(certificate_opts, group='certificates')
+cfg.CONF.register_cli_opts(healthmanager_opts, group='health_manager')
 cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
 cfg.CONF.register_opts(keystone_authtoken_v3_opts,
                        group='keystone_authtoken_v3')
