@@ -73,7 +73,8 @@ class Port(data_models.BaseDataModel):
 
     def __init__(self, id=None, name=None, device_id=None, device_owner=None,
                  mac_address=None, network_id=None, status=None,
-                 tenant_id=None, admin_state_up=None, fixed_ips=None):
+                 tenant_id=None, admin_state_up=None, fixed_ips=None,
+                 network=None):
         self.id = id
         self.name = name
         self.device_id = device_id
@@ -84,6 +85,7 @@ class Port(data_models.BaseDataModel):
         self.tenant_id = tenant_id
         self.admin_state_up = admin_state_up
         self.fixed_ips = fixed_ips or []
+        self.network = network
 
     def get_subnet_id(self, fixed_ip_address):
         for fixed_ip in self.fixed_ips:
@@ -93,9 +95,10 @@ class Port(data_models.BaseDataModel):
 
 class FixedIP(data_models.BaseDataModel):
 
-    def __init__(self, subnet_id=None, ip_address=None):
+    def __init__(self, subnet_id=None, ip_address=None, subnet=None):
         self.subnet_id = subnet_id
         self.ip_address = ip_address
+        self.subnet = subnet
 
 
 class AmphoraNetworkConfig(data_models.BaseDataModel):

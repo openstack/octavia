@@ -38,7 +38,7 @@ template_port = j2_env.get_template(ETH_X_VIP_CONF)
 template_vip = j2_env.get_template(ETH_PORT_CONF)
 
 
-def plug_vip(vip, subnet_cidr, gateway):
+def plug_vip(vip, subnet_cidr, gateway, mac_address):
     # validate vip
     try:
         socket.inet_aton(vip)
@@ -46,7 +46,7 @@ def plug_vip(vip, subnet_cidr, gateway):
         return flask.make_response(flask.jsonify(dict(
             message="Invalid VIP")), 400)
 
-    interface = _interface_down()
+    interface = _interface_by_mac(mac_address)
 
     # assume for now only a fixed subnet size
     sections = vip.split('.')[:3]
@@ -110,8 +110,8 @@ def plug_vip(vip, subnet_cidr, gateway):
             vip=vip, interface=interface))), 202)
 
 
-def plug_network():
-    interface = _interface_down()
+def plug_network(mac_address):
+    interface = _interface_by_mac(mac_address)
 
     # write interface file
     with open(util.get_network_interface_file(interface), 'w') as text_file:
@@ -127,17 +127,15 @@ def plug_network():
             interface=interface))), 202)
 
 
-def _interface_down():
-    # Find the interface which is down
-    down = [interface for interface in netifaces.interfaces() if
-            netifaces.AF_INET not in netifaces.ifaddresses(interface)]
-    if len(down) != 1:
-        # There should only be ONE interface being plugged; if there is
-        # none down or more than one we have a problem...
-        raise exceptions.HTTPException(
-            response=flask.make_response(flask.jsonify(dict(
-                details="No suitable network interface found")), 404))
-    return down[0]
+def _interface_by_mac(mac):
+    for interface in netifaces.interfaces():
+        if netifaces.AF_LINK in netifaces.ifaddresses(interface):
+            for link in netifaces.ifaddresses(interface)[netifaces.AF_LINK]:
+                if link.get('addr') == mac:
+                    return interface
+    raise exceptions.HTTPException(
+        response=flask.make_response(flask.jsonify(dict(
+            details="No suitable network interface found")), 404))
 
 
 def _bring_if_up(params, what):

@@ -36,7 +36,8 @@ VIP_ROUTE_TABLE = 'vip'
 CMD_DHCLIENT = "dhclient {0}"
 CMD_ADD_IP_ADDR = "ip addr add {0}/24 dev {1}"
 CMD_SHOW_IP_ADDR = "ip addr show {0}"
-CMD_GREP_DOWN_LINKS = "ip link | grep DOWN -m 1 | awk '{print $2}'"
+CMD_GREP_LINK_BY_MAC = ("ip link | grep {mac_address} -m 1 -B 1 "
+                        "| awk 'NR==1{{print $2}}'")
 CMD_CREATE_VIP_ROUTE_TABLE = (
     "su -c 'echo \"1 {0}\" >> /etc/iproute2/rt_tables'"
 )
@@ -184,7 +185,9 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
             # Connect to amphora
             self._connect(hostname=amp.lb_network_ip)
 
-            stdout, _ = self._execute_command(CMD_GREP_DOWN_LINKS)
+            mac = amphorae_network_config.get(amp.id).vrrp_port.mac_address
+            stdout, _ = self._execute_command(
+                CMD_GREP_LINK_BY_MAC.format(mac_address=mac))
             iface = stdout[:-2]
             if not iface:
                 self.client.close()
@@ -195,9 +198,10 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
                 iface, amphorae_network_config.get(amp.id))
             self.client.close()
 
-    def post_network_plug(self, amphora):
+    def post_network_plug(self, amphora, port):
         self._connect(hostname=amphora.lb_network_ip)
-        stdout, _ = self._execute_command(CMD_GREP_DOWN_LINKS)
+        stdout, _ = self._execute_command(
+            CMD_GREP_LINK_BY_MAC.format(mac_address=port.mac_address))
         iface = stdout[:-2]
         if not iface:
             self.client.close()

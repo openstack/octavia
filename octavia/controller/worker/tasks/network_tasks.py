@@ -200,10 +200,18 @@ class HandleNetworkDeltas(BaseNetworkTask):
     def execute(self, deltas):
         """Handle network plugging based off deltas."""
 
+        added_ports = {}
         for amp_id, delta in six.iteritems(deltas):
+            added_ports[amp_id] = []
             for nic in delta.add_nics:
-                self.network_driver.plug_network(delta.compute_id,
-                                                 nic.network_id)
+                interface = self.network_driver.plug_network(delta.compute_id,
+                                                             nic.network_id)
+                port = self.network_driver.get_port(interface.port_id)
+                port.network = self.network_driver.get_network(port.network_id)
+                for fixed_ip in port.fixed_ips:
+                    fixed_ip.subnet = self.network_driver.get_subnet(
+                        fixed_ip.subnet_id)
+                added_ports[amp_id].append(port)
             for nic in delta.delete_nics:
                 try:
                     self.network_driver.unplug_network(delta.compute_id,
@@ -213,6 +221,7 @@ class HandleNetworkDeltas(BaseNetworkTask):
                 except Exception as e:
                     LOG.error(
                         _LE("Unable to unplug network - exception: %s"), e)
+        return added_ports
 
     def revert(self, result, deltas):
         """Handle a network plug or unplug failures."""

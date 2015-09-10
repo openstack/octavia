@@ -115,20 +115,28 @@ def delete_certificate(listener_id, filename):
 def plug_vip(vip):
     # Catch any issues with the subnet info json
     try:
-        subnet_info = flask.request.get_json()
-        assert type(subnet_info) is dict
-        assert 'subnet_cidr' in subnet_info
-        assert 'gateway' in subnet_info
+        net_info = flask.request.get_json()
+        assert type(net_info) is dict
+        assert 'subnet_cidr' in net_info
+        assert 'gateway' in net_info
+        assert 'mac_address' in net_info
     except Exception:
         raise exceptions.BadRequest(description='Invalid subnet information')
     return plug.plug_vip(vip,
-                         subnet_info['subnet_cidr'],
-                         subnet_info['gateway'])
+                         net_info['subnet_cidr'],
+                         net_info['gateway'],
+                         net_info['mac_address'])
 
 
 @app.route('/' + api_server.VERSION + '/plug/network', methods=['POST'])
 def plug_network():
-    return plug.plug_network()
+    try:
+        port_info = flask.request.get_json()
+        assert type(port_info) is dict
+        assert 'mac_address' in port_info
+    except Exception:
+        raise exceptions.BadRequest(description='Invalid port information')
+    return plug.plug_network(port_info['mac_address'])
 
 
 @app.route('/' + api_server.VERSION + '/certificate', methods=['PUT'])

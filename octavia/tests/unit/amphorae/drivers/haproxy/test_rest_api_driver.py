@@ -21,6 +21,7 @@ import six
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy import rest_api_driver as driver
 from octavia.db import models
+from octavia.network import data_models as network_models
 from octavia.tests.unit import base as base
 from octavia.tests.unit.common.sample_configs import sample_configs
 
@@ -29,7 +30,8 @@ FAKE_GATEWAY = '10.0.0.1'
 FAKE_IP = 'fake'
 FAKE_PEM_FILENAME = "file_name"
 FAKE_SUBNET_INFO = {'subnet_cidr': FAKE_CIDR,
-                    'gateway': FAKE_GATEWAY}
+                    'gateway': FAKE_GATEWAY,
+                    'mac_address': '123'}
 FAKE_UUID_1 = uuidutils.generate_uuid()
 
 
@@ -48,6 +50,7 @@ class HaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.amp = self.sl.load_balancer.amphorae[0]
         self.sv = sample_configs.sample_vip_tuple()
         self.lb = self.sl.load_balancer
+        self.port = network_models.Port(mac_address='123')
 
     @mock.patch('octavia.common.tls_utils.cert_parser.get_host_names')
     def test_update(self, mock_cert):
@@ -119,13 +122,15 @@ class HaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         amphorae_network_config = mock.MagicMock()
         amphorae_network_config.get().vip_subnet.cidr = FAKE_CIDR
         amphorae_network_config.get().vip_subnet.gateway_ip = FAKE_GATEWAY
+        amphorae_network_config.get().vrrp_port = self.port
         self.driver.post_vip_plug(self.lb, amphorae_network_config)
         self.driver.client.plug_vip.assert_called_once_with(
             self.amp, self.lb.vip.ip_address, FAKE_SUBNET_INFO)
 
     def test_post_network_plug(self):
-        self.driver.post_network_plug(self.amp)
-        self.driver.client.plug_network.assert_called_once_with(self.amp)
+        self.driver.post_network_plug(self.amp, self.port)
+        self.driver.client.plug_network.assert_called_once_with(
+            self.amp, dict(mac_address='123'))
 
 
 class AmphoraAPIClientTest(base.TestCase):
@@ -135,6 +140,7 @@ class AmphoraAPIClientTest(base.TestCase):
         self.driver = driver.AmphoraAPIClient()
         self.base_url = "https://127.0.0.1:8443/0.5"
         self.amp = models.Amphora(lb_network_ip='127.0.0.1', compute_id='123')
+        self.port_info = dict(mac_address='123')
 
     @requests_mock.mock()
     def test_get_info(self, m):
@@ -605,5 +611,5 @@ class AmphoraAPIClientTest(base.TestCase):
         m.post("{base}/plug/network".format(
             base=self.base_url)
         )
-        self.driver.plug_network(self.amp)
+        self.driver.plug_network(self.amp, self.port_info)
         self.assertTrue(m.called)

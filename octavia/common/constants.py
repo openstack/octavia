@@ -98,6 +98,7 @@ OBJECT = 'object'
 SERVER_PEM = 'server_pem'
 VIP_NETWORK = 'vip_network'
 AMPHORAE_NETWORK_CONFIG = 'amphorae_network_config'
+ADDED_PORTS = 'added_ports'
 
 CREATE_AMPHORA_FLOW = 'octavia-create-amphora-flow'
 CREATE_AMPHORA_FOR_LB_FLOW = 'octavia-create-amp-for-lb-flow'
