@@ -31,12 +31,13 @@ class ListenerFlows(object):
         """
         create_listener_flow = linear_flow.Flow(constants.CREATE_LISTENER_FLOW)
         create_listener_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=['listener', 'vip']))
+            requires=[constants.LISTENER, constants.VIP]))
         create_listener_flow.add(network_tasks.UpdateVIP(
             requires=constants.LOADBALANCER))
         create_listener_flow.add(database_tasks.
                                  MarkLBAndListenerActiveInDB(
-                                     requires=['loadbalancer', 'listener']))
+                                     requires=[constants.LOADBALANCER,
+                                               constants.LISTENER]))
 
         return create_listener_flow
 
@@ -65,14 +66,15 @@ class ListenerFlows(object):
         update_listener_flow = linear_flow.Flow(constants.UPDATE_LISTENER_FLOW)
         update_listener_flow.add(model_tasks.
                                  UpdateAttributes(
-                                     rebind={'object': 'listener'},
-                                     requires=['update_dict']))
+                                     rebind={'object': constants.LISTENER},
+                                     requires=[constants.UPDATE_DICT]))
         update_listener_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=['listener', 'vip']))
+            requires=[constants.LISTENER, constants.VIP]))
         update_listener_flow.add(database_tasks.UpdateListenerInDB(
-            requires=['listener', 'update_dict']))
+            requires=[constants.LISTENER, constants.UPDATE_DICT]))
         update_listener_flow.add(database_tasks.
                                  MarkLBAndListenerActiveInDB(
-                                     requires=['loadbalancer', 'listener']))
+                                     requires=[constants.LOADBALANCER,
+                                               constants.LISTENER]))
 
         return update_listener_flow

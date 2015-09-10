@@ -54,14 +54,16 @@ class MemberFlows(object):
         """
         delete_member_flow = linear_flow.Flow(constants.DELETE_MEMBER_FLOW)
         delete_member_flow.add(model_tasks.
-                               DeleteModelObject(rebind={'object': 'member'}))
+                               DeleteModelObject(rebind={'object':
+                                                         constants.MEMBER}))
         delete_member_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=['listener', 'vip']))
+            requires=[constants.LISTENER, constants.VIP]))
         delete_member_flow.add(database_tasks.DeleteMemberInDB(
-            requires='member_id'))
+            requires=constants.MEMBER_ID))
         delete_member_flow.add(database_tasks.
                                MarkLBAndListenerActiveInDB(
-                                   requires=['loadbalancer', 'listener']))
+                                   requires=[constants.LOADBALANCER,
+                                             constants.LISTENER]))
 
         return delete_member_flow
 
@@ -73,14 +75,15 @@ class MemberFlows(object):
         update_member_flow = linear_flow.Flow(constants.UPDATE_MEMBER_FLOW)
         update_member_flow.add(model_tasks.
                                UpdateAttributes(
-                                   rebind={'object': 'member'},
-                                   requires=['update_dict']))
+                                   rebind={'object': constants.MEMBER},
+                                   requires=[constants.UPDATE_DICT]))
         update_member_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=['listener', 'vip']))
+            requires=[constants.LISTENER, constants.VIP]))
         update_member_flow.add(database_tasks.UpdateMemberInDB(
-            requires=['member', 'update_dict']))
+            requires=[constants.MEMBER, constants.UPDATE_DICT]))
         update_member_flow.add(database_tasks.
                                MarkLBAndListenerActiveInDB(
-                                   requires=['loadbalancer', 'listener']))
+                                   requires=[constants.LOADBALANCER,
+                                             constants.LISTENER]))
 
         return update_member_flow

@@ -30,9 +30,9 @@ class HealthMonitorFlows(object):
         """
         create_hm_flow = linear_flow.Flow(constants.CREATE_HEALTH_MONITOR_FLOW)
         create_hm_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=['listener', 'vip']))
+            requires=[constants.LISTENER, constants.VIP]))
         create_hm_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
-            requires=['loadbalancer', 'listener']))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
 
         return create_hm_flow
 
@@ -43,13 +43,14 @@ class HealthMonitorFlows(object):
         """
         delete_hm_flow = linear_flow.Flow(constants.DELETE_HEALTH_MONITOR_FLOW)
         delete_hm_flow.add(model_tasks.
-                           DeleteModelObject(rebind={'object': 'health_mon'}))
+                           DeleteModelObject(rebind={'object':
+                                                     constants.HEALTH_MON}))
         delete_hm_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=['listener', 'vip']))
+            requires=[constants.LISTENER, constants.VIP]))
         delete_hm_flow.add(database_tasks.DeleteHealthMonitorInDB(
-            requires='pool_id'))
+            requires=constants.POOL_ID))
         delete_hm_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
-            requires=['loadbalancer', 'listener']))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
 
         return delete_hm_flow
 
@@ -61,13 +62,13 @@ class HealthMonitorFlows(object):
         update_hm_flow = linear_flow.Flow(constants.UPDATE_HEALTH_MONITOR_FLOW)
         update_hm_flow.add(model_tasks.
                            UpdateAttributes(
-                               rebind={'object': 'health_mon'},
-                               requires=['update_dict']))
+                               rebind={'object': constants.HEALTH_MON},
+                               requires=[constants.UPDATE_DICT]))
         update_hm_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=['listener', 'vip']))
+            requires=[constants.LISTENER, constants.VIP]))
         update_hm_flow.add(database_tasks.UpdateHealthMonInDB(
-            requires=['health_mon', 'update_dict']))
+            requires=[constants.HEALTH_MON, constants.UPDATE_DICT]))
         update_hm_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
-            requires=['loadbalancer', 'listener']))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
 
         return update_hm_flow

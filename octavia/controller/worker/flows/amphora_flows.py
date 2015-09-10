@@ -147,12 +147,12 @@ class AmphoraFlows(object):
         delete_amphora_flow = linear_flow.Flow(constants.DELETE_AMPHORA_FLOW)
         delete_amphora_flow.add(database_tasks.
                                 MarkAmphoraPendingDeleteInDB(
-                                    requires='amphora'))
+                                    requires=constants.AMPHORA))
         delete_amphora_flow.add(compute_tasks.ComputeDelete(
-            requires='amphora'))
+            requires=constants.AMPHORA))
         delete_amphora_flow.add(database_tasks.
                                 MarkAmphoraDeletedInDB(
-                                    requires='amphora'))
+                                    requires=constants.AMPHORA))
         return delete_amphora_flow
 
     def get_failover_flow(self):
