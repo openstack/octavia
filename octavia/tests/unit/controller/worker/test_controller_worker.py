@@ -32,6 +32,7 @@ LB_ID = uuidutils.generate_uuid()
 POOL_ID = uuidutils.generate_uuid()
 HM_ID = uuidutils.generate_uuid()
 MEMBER_ID = uuidutils.generate_uuid()
+COMPUTE_ID = uuidutils.generate_uuid()
 HEALTH_UPDATE_DICT = {'delay': 1, 'timeout': 2}
 LISTENER_UPDATE_DICT = {'name': 'test', 'description': 'test2'}
 MEMBER_UPDATE_DICT = {'weight': 1, 'ip_address': '10.0.0.0'}
@@ -46,6 +47,7 @@ _load_balancer_mock = mock.MagicMock()
 _member_mock = mock.MagicMock()
 _pool_mock = mock.MagicMock()
 _create_map_flow_mock = mock.MagicMock()
+_amphora_mock.load_balancer_id = LB_ID
 
 
 @mock.patch('octavia.db.repositories.AmphoraRepository.get',
@@ -631,5 +633,34 @@ class TestControllerWorker(base.TestCase):
                                            'loadbalancer': _load_balancer_mock,
                                            'vip': _vip_mock,
                                            'update_dict': POOL_UPDATE_DICT}))
+
+        _flow_mock.run.assert_called_once_with()
+
+    @mock.patch('octavia.controller.worker.flows.'
+                'amphora_flows.AmphoraFlows.get_failover_flow',
+                return_value=_flow_mock)
+    def test_failover_amphora(self,
+                              mock_get_update_listener_flow,
+                              mock_api_get_session,
+                              mock_dyn_log_listener,
+                              mock_taskflow_load,
+                              mock_pool_repo_get,
+                              mock_member_repo_get,
+                              mock_listener_repo_get,
+                              mock_lb_repo_get,
+                              mock_health_mon_repo_get,
+                              mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+
+        cw = controller_worker.ControllerWorker()
+        cw.failover_amphora(AMP_ID)
+
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+            assert_called_once_with(
+                _flow_mock,
+                store={constants.AMPHORA: _amphora_mock,
+                       constants.LOADBALANCER_ID:
+                           _amphora_mock.load_balancer_id}))
 
         _flow_mock.run.assert_called_once_with()

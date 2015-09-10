@@ -112,3 +112,24 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertEqual(len(amp_flow.provides), 0)
         self.assertEqual(len(amp_flow.requires), 1)
+
+    def test_get_failover_flow(self):
+
+        amp_flow = self.AmpFlow.get_failover_flow()
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.AMPHORA, amp_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+        self.assertIn(constants.FAILOVER_AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.assertIn(constants.AMPS_DATA, amp_flow.provides)
+        self.assertIn(constants.PORTS, amp_flow.provides)
+        self.assertIn(constants.LISTENERS, amp_flow.provides)
+        self.assertIn(constants.LOADBALANCER, amp_flow.provides)
+
+        self.assertEqual(len(amp_flow.requires), 2)
+        self.assertEqual(len(amp_flow.provides), 12)

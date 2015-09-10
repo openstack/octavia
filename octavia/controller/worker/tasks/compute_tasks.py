@@ -46,7 +46,7 @@ class BaseComputeTask(task.Task):
 class ComputeCreate(BaseComputeTask):
     """Create the compute instance for a new amphora."""
 
-    def execute(self, amphora_id, config_drive_files=None):
+    def execute(self, amphora_id, ports=None, config_drive_files=None):
         """Create an amphora
 
         :returns: an amphora
@@ -63,6 +63,7 @@ class ComputeCreate(BaseComputeTask):
                 key_name=CONF.controller_worker.amp_ssh_key_name,
                 sec_groups=CONF.controller_worker.amp_secgroup_list,
                 network_ids=[CONF.controller_worker.amp_network],
+                port_ids=[port.id for port in ports] if ports else [],
                 config_drive_files=config_drive_files)
 
             LOG.debug("Server created with id: %s for amphora id: %s" %
@@ -94,7 +95,7 @@ class ComputeCreate(BaseComputeTask):
 
 
 class CertComputeCreate(ComputeCreate):
-    def execute(self, amphora_id, server_pem):
+    def execute(self, amphora_id, server_pem, ports=None):
         """Create an amphora
 
         :returns: an amphora
@@ -106,8 +107,8 @@ class CertComputeCreate(ComputeCreate):
                 # '/etc/octavia/octavia.conf'
                 '/etc/octavia/certs/server.pem': server_pem,
                 '/etc/octavia/certs/client_ca.pem': client_ca}
-            return super(CertComputeCreate, self).execute(amphora_id,
-                                                          config_drive_files)
+            return super(CertComputeCreate, self).execute(
+                amphora_id, ports=ports, config_drive_files=config_drive_files)
 
 
 class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
@@ -119,7 +120,7 @@ class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
     def execute(self, loadbalancer):
         for amp in loadbalancer.amphorae:
             try:
-                self.compute.delete(amphora_id=amp.compute_id)
+                self.compute.delete(compute_id=amp.compute_id)
             except Exception as e:
                 LOG.error(_LE("Nova delete for amphora id: %(amp)s failed:"
                               "%(exp)s"), {'amp': amp.id, 'exp': e})
@@ -128,14 +129,13 @@ class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
 
 class ComputeDelete(BaseComputeTask):
     def execute(self, amphora):
-        compute_id = amphora.compute_id
-        LOG.debug("Nova Delete execute for amphora with id %s" % compute_id)
+        LOG.debug("Nova Delete execute for amphora with id %s" % amphora.id)
 
         try:
-            self.compute.delete(amphora_id=compute_id)
+            self.compute.delete(compute_id=amphora.compute_id)
         except Exception as e:
             LOG.error(_LE("Nova delete for amphora id: %(amp)s failed:"
-                          "%(exp)s"), {'amp': compute_id, 'exp': e})
+                          "%(exp)s"), {'amp': amphora.id, 'exp': e})
             raise e
 
 

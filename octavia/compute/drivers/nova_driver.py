@@ -40,7 +40,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
 
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
               key_name=None, sec_groups=None, network_ids=None,
-              config_drive_files=None, user_data=None):
+              port_ids=None, config_drive_files=None, user_data=None):
         '''Create a new virtual machine.
 
         :param name: optional name for amphora
@@ -49,6 +49,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
         :param key_name: keypair to add to the virtual machine
         :param sec_groups: Security group IDs for virtual machine
         :param network_ids: Network IDs to include on virtual machine
+        :param port_ids: Port IDs to include on virtual machine
         :param config_drive_files:  An optional dict of files to overwrite on
         the server upon boot. Keys are file names (i.e. /etc/passwd)
         and values are the file contents (either as a string or as
@@ -63,9 +64,13 @@ class VirtualMachineManager(compute_base.ComputeBase):
         '''
 
         try:
+            network_ids = network_ids or []
+            port_ids = port_ids or []
             nics = []
-            for net_id in network_ids:
-                nics.append({"net-id": net_id})
+            if network_ids:
+                nics.extend([{"net-id": net_id} for net_id in network_ids])
+            if port_ids:
+                nics.extend([{"port-id": port_id} for port_id in port_ids])
 
             amphora = self.manager.create(
                 name=name, image=image_id, flavor=amphora_flavor,
@@ -81,13 +86,13 @@ class VirtualMachineManager(compute_base.ComputeBase):
             LOG.exception(_LE("Error building nova virtual machine."))
             raise exceptions.ComputeBuildException()
 
-    def delete(self, amphora_id):
+    def delete(self, compute_id):
         '''Delete a virtual machine.
 
-        :param amphora_id: virtual machine UUID
+        :param compute_id: virtual machine UUID
         '''
         try:
-            self.manager.delete(server=amphora_id)
+            self.manager.delete(server=compute_id)
         except Exception:
             LOG.exception(_LE("Error deleting nova virtual machine."))
             raise exceptions.ComputeDeleteException()

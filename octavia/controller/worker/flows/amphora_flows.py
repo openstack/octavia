@@ -23,6 +23,7 @@ from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import cert_task
 from octavia.controller.worker.tasks import compute_tasks
 from octavia.controller.worker.tasks import database_tasks
+from octavia.controller.worker.tasks import network_tasks
 
 
 CONF = cfg.CONF
@@ -153,3 +154,94 @@ class AmphoraFlows(object):
                                 MarkAmphoraDeletedInDB(
                                     requires='amphora'))
         return delete_amphora_flow
+
+    def get_failover_flow(self):
+        """Creates a flow to failover a stale amphora
+
+        :returns: The flow for amphora failover
+        """
+
+        failover_amphora_flow = linear_flow.Flow(
+            constants.FAILOVER_AMPHORA_FLOW)
+        failover_amphora_flow.add(
+            network_tasks.RetrievePortIDsOnAmphoraExceptLBNetwork(
+                requires=constants.AMPHORA, provides=constants.PORTS))
+        failover_amphora_flow.add(network_tasks.FailoverPreparationForAmphora(
+            requires=constants.AMPHORA))
+        failover_amphora_flow.add(compute_tasks.ComputeDelete(
+            requires=constants.AMPHORA))
+        failover_amphora_flow.add(database_tasks.MarkAmphoraDeletedInDB(
+            requires=constants.AMPHORA))
+        failover_amphora_flow.add(database_tasks.CreateAmphoraInDB(
+                                  provides=constants.AMPHORA_ID))
+        failover_amphora_flow.add(
+            database_tasks.GetUpdatedFailoverAmpNetworkDetailsAsList(
+                requires=(constants.AMPHORA_ID, constants.AMPHORA),
+                provides=constants.AMPS_DATA))
+        if self.REST_AMPHORA_DRIVER:
+            failover_amphora_flow.add(cert_task.GenerateServerPEMTask(
+                                      provides=constants.SERVER_PEM))
+            failover_amphora_flow.add(compute_tasks.CertComputeCreate(
+                requires=(constants.AMPHORA_ID, constants.SERVER_PEM),
+                provides=constants.COMPUTE_ID))
+        else:
+            failover_amphora_flow.add(compute_tasks.ComputeCreate(
+                requires=constants.AMPHORA_ID, provides=constants.COMPUTE_ID))
+        failover_amphora_flow.add(database_tasks.UpdateAmphoraComputeId(
+            requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
+        failover_amphora_flow.add(
+            database_tasks.AssociateFailoverAmphoraWithLBID(
+                requires=(constants.AMPHORA_ID, constants.LOADBALANCER_ID)))
+        failover_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
+            requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
+        wait_flow = linear_flow.Flow('wait_for_amphora',
+                                     retry=retry.Times(CONF.
+                                                       controller_worker.
+                                                       amp_active_retries))
+        wait_flow.add(compute_tasks.ComputeWait(
+            requires=constants.COMPUTE_ID,
+            provides=constants.COMPUTE_OBJ))
+        wait_flow.add(database_tasks.UpdateAmphoraInfo(
+            requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
+            provides=constants.AMPHORA))
+        failover_amphora_flow.add(wait_flow)
+        failover_amphora_flow.add(database_tasks.ReloadAmphora(
+            requires=constants.AMPHORA_ID,
+            provides=constants.FAILOVER_AMPHORA))
+        failover_amphora_flow.add(amphora_driver_tasks.AmphoraFinalize(
+            rebind={constants.AMPHORA: constants.FAILOVER_AMPHORA},
+            requires=constants.AMPHORA))
+        failover_amphora_flow.add(database_tasks.UpdateAmphoraVIPData(
+            requires=constants.AMPS_DATA))
+        failover_amphora_flow.add(database_tasks.ReloadLoadBalancer(
+            requires=constants.LOADBALANCER_ID,
+            provides=constants.LOADBALANCER))
+        failover_amphora_flow.add(network_tasks.GetAmphoraeNetworkConfigs(
+            requires=constants.LOADBALANCER,
+            provides=constants.AMPHORAE_NETWORK_CONFIG))
+        failover_amphora_flow.add(database_tasks.GetListenersFromLoadbalancer(
+            requires=constants.LOADBALANCER, provides=constants.LISTENERS))
+        failover_amphora_flow.add(database_tasks.GetVipFromLoadbalancer(
+            requires=constants.LOADBALANCER, provides=constants.VIP))
+        failover_amphora_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=(constants.LISTENERS, constants.VIP)))
+        failover_amphora_flow.add(amphora_driver_tasks.AmphoraPostVIPPlug(
+            requires=(constants.LOADBALANCER,
+                      constants.AMPHORAE_NETWORK_CONFIG)))
+        failover_amphora_flow.add(
+            network_tasks.GetMemberPorts(
+                rebind={constants.AMPHORA: constants.FAILOVER_AMPHORA},
+                requires=(constants.LOADBALANCER, constants.AMPHORA),
+                provides=constants.MEMBER_PORTS
+            ))
+        failover_amphora_flow.add(amphora_driver_tasks.AmphoraPostNetworkPlug(
+            rebind={constants.AMPHORA: constants.FAILOVER_AMPHORA,
+                    constants.PORTS: constants.MEMBER_PORTS},
+            requires=(constants.AMPHORA, constants.PORTS)))
+        failover_amphora_flow.add(amphora_driver_tasks.ListenersStart(
+            requires=(constants.LISTENERS, constants.VIP)))
+        failover_amphora_flow.add(database_tasks.MarkAmphoraAllocatedInDB(
+            rebind={constants.AMPHORA: constants.FAILOVER_AMPHORA},
+            requires=(constants.AMPHORA, constants.LOADBALANCER_ID)))
+
+        return failover_amphora_flow

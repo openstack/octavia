@@ -272,6 +272,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             msg = ('Amphora with compute id {compute_id} does not have any '
                    'plugged networks').format(compute_id=compute_id)
             raise base.AmphoraNotFound(msg)
+
         unpluggers = self._get_interfaces_to_unplug(interfaces, network_id,
                                                     ip_address=ip_address)
         try:
@@ -299,3 +300,24 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
     def update_vip(self, load_balancer):
         sec_grp = self._get_lb_security_group(load_balancer.id)
         self._update_security_group_rules(load_balancer, sec_grp.get('id'))
+
+    def failover_preparation(self, amphora):
+        interfaces = self.get_plugged_networks(compute_id=amphora.compute_id)
+
+        ports = []
+        for interface_ in interfaces:
+            port = self.get_port(port_id=interface_.port_id)
+            ips = port.fixed_ips
+            lb_network = False
+            for ip in ips:
+                if ip.ip_address == amphora.lb_network_ip:
+                    lb_network = True
+            if not lb_network:
+                ports.append(port)
+
+        for port in ports:
+            try:
+                self.neutron_client.update_port(port.id,
+                                                {'port': {'device_id': ''}})
+            except neutron_client_exceptions.NotFound:
+                raise base.PortNotFound()

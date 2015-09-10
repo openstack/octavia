@@ -38,6 +38,11 @@ IP_ADDRESS = "172.24.41.1"
 VIP = o_data_models.Vip(port_id=PORT_ID, subnet_id=SUBNET_ID,
                         ip_address=IP_ADDRESS)
 LB = o_data_models.LoadBalancer(vip=VIP)
+FIRST_IP = {"ip_address": IP_ADDRESS, "subnet_id": SUBNET_ID}
+FIXED_IPS = [FIRST_IP]
+INTERFACE = data_models.Interface(id=uuidutils.generate_uuid(),
+                                  compute_id=COMPUTE_ID, fixed_ips=FIXED_IPS,
+                                  port_id=PORT_ID)
 
 
 class TestException(Exception):
@@ -85,7 +90,8 @@ class TestNetworkTasks(base.TestCase):
         self.amphora_mock.load_balancer = self.load_balancer_mock
         self.load_balancer_mock.amphorae = [self.amphora_mock]
         self.load_balancer_mock.listeners = None
-        self.assertEqual(EMPTY, net.execute(self.load_balancer_mock))
+        self.assertEqual({self.amphora_mock.id: None},
+                         net.execute(self.load_balancer_mock))
 
         listener_mock = mock.MagicMock()
         self.load_balancer_mock.listeners = [listener_mock]
@@ -354,3 +360,10 @@ class TestNetworkTasks(base.TestCase):
         lb = o_data_models.LoadBalancer(vip=vip)
         net.execute(lb)
         mock_driver.deallocate_vip.assert_called_once_with(lb.vip)
+
+    def test_failover_preparation_for_amphora(self, mock_driver):
+        failover = network_tasks.FailoverPreparationForAmphora()
+        amphora = o_data_models.Amphora(id=AMPHORA_ID,
+                                        lb_network_ip=IP_ADDRESS)
+        failover.execute(amphora)
+        mock_driver.failover_preparation.assert_called_once_with(amphora)

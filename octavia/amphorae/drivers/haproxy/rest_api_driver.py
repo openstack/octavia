@@ -26,6 +26,7 @@ from octavia.amphorae.drivers import driver_base as driver_base
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy.jinja import jinja_cfg
 from octavia.common.config import cfg
+from octavia.common import constants
 from octavia.common import data_models as data_models
 from octavia.common.tls_utils import cert_parser
 from octavia.i18n import _LW
@@ -66,20 +67,22 @@ class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
                                          certs['sni_certs'])
 
         for amp in listener.load_balancer.amphorae:
-            self.client.upload_config(amp, listener.id, config)
-            # todo (german): add a method to REST interface to reload or start
-            #                without having to check
-            # Is that listener running?
-            r = self.client.get_listener_status(amp,
-                                                listener.id)
-            if r['status'] == 'ACTIVE':
-                self.client.reload_listener(amp, listener.id)
-            else:
-                self.client.start_listener(amp, listener.id)
+            if amp.status != constants.DELETED:
+                self.client.upload_config(amp, listener.id, config)
+                # todo (german): add a method to REST interface to reload or
+                #                start without having to check
+                # Is that listener running?
+                r = self.client.get_listener_status(amp,
+                                                    listener.id)
+                if r['status'] == 'ACTIVE':
+                    self.client.reload_listener(amp, listener.id)
+                else:
+                    self.client.start_listener(amp, listener.id)
 
     def _apply(self, func, listener=None, *args):
         for amp in listener.load_balancer.amphorae:
-            func(amp, listener.id, *args)
+            if amp.status != constants.DELETED:
+                func(amp, listener.id, *args)
 
     def stop(self, listener, vip):
         self._apply(self.client.stop_listener, listener)
@@ -101,19 +104,21 @@ class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
 
     def post_vip_plug(self, load_balancer, amphorae_network_config):
         for amp in load_balancer.amphorae:
-            subnet = amphorae_network_config.get(amp.id).vip_subnet
-            # NOTE(blogan): using the vrrp port here because that is what the
-            # allowed address pairs network driver sets this particular port
-            # to.  This does expose a bit of tight coupling between the network
-            # driver and amphora driver.  We will need to revisit this to
-            # try and remove this tight coupling.
-            port = amphorae_network_config.get(amp.id).vrrp_port
-            net_info = {'subnet_cidr': subnet.cidr,
-                        'gateway': subnet.gateway_ip,
-                        'mac_address': port.mac_address}
-            self.client.plug_vip(amp,
-                                 load_balancer.vip.ip_address,
-                                 net_info)
+            if amp.status != constants.DELETED:
+                subnet = amphorae_network_config.get(amp.id).vip_subnet
+                # NOTE(blogan): using the vrrp port here because that
+                # is what the allowed address pairs network driver sets
+                # this particular port to.  This does expose a bit of
+                # tight coupling between the network driver and amphora
+                # driver.  We will need to revisit this to try and remove
+                # this tight coupling.
+                port = amphorae_network_config.get(amp.id).vrrp_port
+                net_info = {'subnet_cidr': subnet.cidr,
+                            'gateway': subnet.gateway_ip,
+                            'mac_address': port.mac_address}
+                self.client.plug_vip(amp,
+                                     load_balancer.vip.ip_address,
+                                     net_info)
 
     def post_network_plug(self, amphora, port):
         port_info = {'mac_address': port.mac_address}

@@ -92,6 +92,10 @@ class NoopManager(object):
                   self.__class__.__name__, port_id)
         self.networkconfigconfig[port_id] = (port_id, 'get_port')
 
+    def failover_preparation(self, amphora):
+        LOG.debug("failover %s no-op, failover_preparation, amphora id %s",
+                  self.__class__.__name__, amphora.id)
+
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def __init__(self, region=None):
@@ -131,3 +135,6 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def get_port(self, port_id):
         self.driver.get_port(port_id)
+
+    def failover_preparation(self, amphora):
+        self.driver.failover_preparation(amphora)

@@ -34,6 +34,23 @@ class TestAllowedAddressPairsDriver(base.TestCase):
     k_session = None
     driver = None
 
+    SUBNET_ID_1 = "5"
+    SUBNET_ID_2 = "8"
+    FIXED_IP_ID_1 = "6"
+    FIXED_IP_ID_2 = "8"
+    NETWORK_ID_1 = "7"
+    NETWORK_ID_2 = "10"
+    IP_ADDRESS_1 = "10.0.0.2"
+    IP_ADDRESS_2 = "12.0.0.2"
+    AMPHORA_ID = "1"
+    LB_ID = "2"
+    COMPUTE_ID = "3"
+    ACTIVE = "ACTIVE"
+    LB_NET_IP = "10.0.0.2"
+    LB_NET_PORT_ID = "6"
+    HA_PORT_ID = "8"
+    HA_IP = "12.0.0.2"
+
     def setUp(self):
         super(TestAllowedAddressPairsDriver, self).setUp()
         with mock.patch('octavia.common.clients.neutron_client.Client',
@@ -468,3 +485,34 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.driver.update_vip(lb)
         delete_rule.assert_called_once_with('ssh-rule')
         self.assertFalse(create_rule.called)
+
+    def test_failover_preparation(self):
+        ports = {"ports": [
+            {"fixed_ips": [{"subnet_id": self.SUBNET_ID_1,
+                            "ip_address": self.IP_ADDRESS_1}],
+             "id": self.FIXED_IP_ID_1, "network_id": self.NETWORK_ID_1},
+            {"fixed_ips": [{"subnet_id": self.SUBNET_ID_2,
+                            "ip_address": self.IP_ADDRESS_2}],
+             "id": self.FIXED_IP_ID_2, "network_id": self.NETWORK_ID_2}]}
+        self.driver.neutron_client.list_ports.return_value = ports
+        self.driver.neutron_client.show_port = mock.Mock(
+            side_effect=self._failover_show_port_side_effect)
+        port_update = self.driver.neutron_client.update_port
+        amphora = data_models.Amphora(
+            id=self.AMPHORA_ID, load_balancer_id=self.LB_ID,
+            compute_id=self.COMPUTE_ID, status=self.ACTIVE,
+            lb_network_ip=self.LB_NET_IP, ha_port_id=self.HA_PORT_ID,
+            ha_ip=self.HA_IP)
+        self.driver.failover_preparation(amphora)
+        port_update.assert_called_once_with(ports["ports"][1].get("id"),
+                                            {'port': {'device_id': ''}})
+
+    def _failover_show_port_side_effect(self, port_id):
+        if port_id == self.LB_NET_PORT_ID:
+            return {"fixed_ips": [{"subnet_id": self.SUBNET_ID_1,
+                                   "ip_address": self.IP_ADDRESS_1}],
+                    "id": self.FIXED_IP_ID_1, "network_id": self.NETWORK_ID_1}
+        if port_id == self.HA_PORT_ID:
+            return {"fixed_ips": [{"subnet_id": self.SUBNET_ID_2,
+                                   "ip_address": self.IP_ADDRESS_2}],
+                    "id": self.FIXED_IP_ID_2, "network_id": self.NETWORK_ID_2}

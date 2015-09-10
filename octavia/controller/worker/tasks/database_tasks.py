@@ -20,6 +20,7 @@ from taskflow import task
 from taskflow.types import failure
 
 from octavia.common import constants
+from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
@@ -255,6 +256,18 @@ class UpdateAmphoraVIPData(BaseDatabaseTask):
                                       ha_ip=amp_data.ha_ip,
                                       vrrp_port_id=amp_data.vrrp_port_id,
                                       ha_port_id=amp_data.ha_port_id)
+
+
+class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
+
+    def execute(self, amphora_id, loadbalancer_id):
+        self.repos.amphora.associate(db_apis.get_session(),
+                                     load_balancer_id=loadbalancer_id,
+                                     amphora_id=amphora_id)
+
+    def revert(self, amphora_id):
+        self.repos.amphora.update(db_apis.get_session(), amphora_id,
+                                  loadbalancer_id=None)
 
 
 class MapLoadbalancerToAmphora(BaseDatabaseTask):
@@ -812,3 +825,34 @@ class UpdatePoolInDB(BaseDatabaseTask):
 # TODO(johnsom) fix this to set the upper ojects to ERROR
         self.pool_repo.update(db_apis.get_session(), pool.id,
                               enabled=0)
+
+
+class GetUpdatedFailoverAmpNetworkDetailsAsList(BaseDatabaseTask):
+    """Task to retrieve amphora network details."""
+
+    def execute(self, amphora_id, amphora):
+        amp_net_configs = [data_models.Amphora(
+            id=amphora_id,
+            vrrp_ip=amphora.vrrp_ip,
+            ha_ip=amphora.ha_ip,
+            vrrp_port_id=amphora.vrrp_port_id,
+            ha_port_id=amphora.ha_port_id)]
+        return amp_net_configs
+
+
+class GetListenersFromLoadbalancer(BaseDatabaseTask):
+    """Task to pull the listener from a loadbalancer."""
+
+    def execute(self, loadbalancer):
+        listeners = []
+        for listener in loadbalancer.listeners:
+            l = self.listener_repo.get(db_apis.get_session(), id=listener.id)
+            listeners.append(l)
+        return listeners
+
+
+class GetVipFromLoadbalancer(BaseDatabaseTask):
+    """Task to pull the vip from a loadbalancer."""
+
+    def execute(self, loadbalancer):
+        return loadbalancer.vip

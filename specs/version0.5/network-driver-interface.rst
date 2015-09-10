@@ -236,6 +236,13 @@ class AbstractNetworkDriver
     * returns = Port data model
     * raises NetworkException, PortNotFound
 
+* failover_preparation(amphora):
+
+    * Prepare an amphora for failover
+    * amphora = amphora data model
+    * returns = None
+    * raises PortNotFound
+
 Alternatives
 ------------
 

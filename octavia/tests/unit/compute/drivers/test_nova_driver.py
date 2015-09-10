@@ -67,6 +67,7 @@ class TestNovaClient(base.TestCase):
                                         key_name=1,
                                         sec_groups=1,
                                         network_ids=[1],
+                                        port_ids=[2],
                                         user_data='Blah',
                                         config_drive_files='Files Blah')
 
@@ -74,7 +75,7 @@ class TestNovaClient(base.TestCase):
 
         self.manager.manager.create.assert_called_with(
             name="amphora_name",
-            nics=[{'net-id': 1}],
+            nics=[{'net-id': 1}, {'port-id': 2}],
             image=1,
             flavor=1,
             key_name=1,
