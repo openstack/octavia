@@ -19,6 +19,7 @@ def list_opts():
     return [
         ('DEFAULT',
          itertools.chain(octavia.common.config.core_opts)),
+        ('amphora_agent', octavia.common.config.amphora_agent_opts),
         ('networking', octavia.common.config.networking_opts),
         ('oslo_messaging', octavia.common.config.oslo_messaging_opts),
         ('keystone_authtoken_v3',

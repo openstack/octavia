@@ -18,6 +18,7 @@ import os
 from oslo_config import cfg
 
 CONF = cfg.CONF
+CONF.import_group('amphora_agent', 'octavia.common.config')
 CONF.import_group('haproxy_amphora', 'octavia.common.config')
 UPSTART_DIR = '/etc/init'
 
@@ -31,7 +32,7 @@ def haproxy_dir(listener_id):
 
 
 def pid_path(listener_id):
-    return os.path.join(haproxy_dir(listener_id), 'haproxy.pid')
+    return os.path.join(haproxy_dir(listener_id), listener_id + '.pid')
 
 
 def config_path(listener_id):
@@ -63,5 +64,5 @@ def is_listener_running(listener_id):
 
 
 def get_network_interface_file(interface):
-    return os.path.join(CONF.haproxy_amphora.agent_server_network_dir,
+    return os.path.join(CONF.amphora_agent.agent_server_network_dir,
                         interface + '.cfg')

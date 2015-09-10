@@ -42,12 +42,6 @@ SUPPORTED_PROTOCOLS = (PROTOCOL_TCP, PROTOCOL_HTTPS, PROTOCOL_HTTP,
 #       the provisioning_status table
 # Amphora has been allocated to a load balancer
 AMPHORA_ALLOCATED = 'ALLOCATED'
-# Amphora healthy with listener(s) deployed
-# TODO(johnsom) This doesn't exist
-AMPHORA_UP = 'UP'
-# Amphora unhealthy with listener(s) deployed
-# TODO(johnsom) This doesn't exist
-AMPHORA_DOWN = 'DOWN'
 # Amphora is being built
 AMPHORA_BOOTING = 'BOOTING'
 # Amphora is ready to be allocated to a load balancer
@@ -65,9 +59,8 @@ SUPPORTED_PROVISIONING_STATUSES = (ACTIVE, AMPHORA_ALLOCATED,
                                    PENDING_UPDATE, DELETED, ERROR)
 MUTABLE_STATUSES = (ACTIVE,)
 
-SUPPORTED_AMPHORA_STATUSES = (AMPHORA_ALLOCATED, AMPHORA_UP, AMPHORA_DOWN,
-                              AMPHORA_BOOTING, AMPHORA_READY, DELETED,
-                              PENDING_DELETE)
+SUPPORTED_AMPHORA_STATUSES = (AMPHORA_ALLOCATED, AMPHORA_BOOTING,
+                              AMPHORA_READY, DELETED, PENDING_DELETE)
 
 ONLINE = 'ONLINE'
 OFFLINE = 'OFFLINE'
@@ -150,3 +143,18 @@ SUPPORTED_LB_TOPOLOGIES = (TOPOLOGY_ACTIVE_STANDBY, TOPOLOGY_SINGLE)
 SUPPORTED_AMPHORA_ROLES = (ROLE_BACKUP, ROLE_MASTER, ROLE_STANDALONE)
 
 AGENT_API_TEMPLATES = '/templates'
+AGENT_CONF_TEMPLATE = 'amphora_agent_conf.template'
+
+OPEN = 'OPEN'
+FULL = 'FULL'
+
+# OPEN = HAProxy listener status nbconn < maxconn
+# FULL = HAProxy listener status not nbconn < maxconn
+HAPROXY_LISTENER_STATUSES = (OPEN, FULL)
+
+UP = 'UP'
+DOWN = 'DOWN'
+
+# UP = HAProxy backend has working or no servers
+# DOWN = HAProxy backend has no working servers
+HAPROXY_BACKEND_STATUSES = (UP, DOWN)

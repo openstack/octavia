@@ -43,7 +43,7 @@ for code in six.iterkeys(exceptions.default_exceptions):
 
 
 # Tested with curl -k -XPUT --data-binary @/tmp/test.txt
-# https://127.0.0.1:8443/0.5/listeners/123/haproxy
+# https://127.0.0.1:9443/0.5/listeners/123/haproxy
 @app.route('/' + api_server.VERSION + '/listeners/<listener_id>/haproxy',
            methods=['PUT'])
 def upload_haproxy_config(listener_id):

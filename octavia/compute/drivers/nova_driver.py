@@ -106,11 +106,11 @@ class VirtualMachineManager(compute_base.ComputeBase):
         try:
             amphora = self.get_amphora(amphora_id=amphora_id)
             if amphora and amphora.status == 'ACTIVE':
-                return constants.AMPHORA_UP
+                return constants.UP
         except Exception:
             LOG.exception(_LE("Error retrieving nova virtual machine status."))
             raise exceptions.ComputeStatusException()
-        return constants.AMPHORA_DOWN
+        return constants.DOWN
 
     def get_amphora(self, amphora_id):
         '''Retrieve the information in nova of a virtual machine.

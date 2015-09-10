@@ -64,6 +64,8 @@ function octavia_configure {
     iniset $OCTAVIA_CONF controller_worker compute_driver compute_nova_driver
     iniset $OCTAVIA_CONF controller_worker network_driver allowed_address_pairs_driver
 
+    iniset $OCTAVIA_CONF health_manager heartbeat_key ${OCTAVIA_HEALTH_KEY}
+
     iniset $OCTAVIA_CONF DEFAULT api_handler queue_producer
 
     iniset $OCTAVIA_CONF oslo_messaging_rabbit rabbit_port 5672
@@ -118,7 +120,7 @@ function build_mgmt_network {
     neutron security-group-create lb-mgmt-sec-grp
     neutron security-group-rule-create --protocol icmp lb-mgmt-sec-grp
     neutron security-group-rule-create --protocol tcp --port-range-min 22 --port-range-max 22 lb-mgmt-sec-grp
-    neutron security-group-rule-create --protocol tcp --port-range-min 8443 --port-range-max 8443 lb-mgmt-sec-grp
+    neutron security-group-rule-create --protocol tcp --port-range-min 9443 --port-range-max 9443 lb-mgmt-sec-grp
 
     OCTAVIA_MGMT_SEC_GRP_ID=$(nova secgroup-list | awk ' / lb-mgmt-sec-grp / {print $2}')
     iniset ${OCTAVIA_CONF} controller_worker amp_secgroup_list ${OCTAVIA_MGMT_SEC_GRP_ID}

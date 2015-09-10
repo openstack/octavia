@@ -13,7 +13,7 @@
 #
 #Example for client use:
 #
-#curl -k -v --key client.key --cacert ca_01.pem --cert client.pem https://0.0.0.0:8443/
+#curl -k -v --key client.key --cacert ca_01.pem --cert client.pem https://0.0.0.0:9443/
 #
 #
 #Notes:

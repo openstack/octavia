@@ -21,6 +21,7 @@ from stevedore import driver as stevedore_driver
 from taskflow import task
 from taskflow.types import failure
 
+from octavia.amphorae.backends.agent import agent_jinja_cfg
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.i18n import _LE, _LW
@@ -46,7 +47,7 @@ class BaseComputeTask(task.Task):
 class ComputeCreate(BaseComputeTask):
     """Create the compute instance for a new amphora."""
 
-    def execute(self, amphora_id, ports=None, config_drive_files=None):
+    def execute(self, amphora_id, ports=None, config_drive_files={}):
         """Create an amphora
 
         :returns: an amphora
@@ -56,6 +57,9 @@ class ComputeCreate(BaseComputeTask):
                   % amphora_id)
 
         try:
+            agent_cfg = agent_jinja_cfg.AgentJinjaTemplater()
+            config_drive_files['/etc/octavia/amphora-agent.conf'] = (
+                agent_cfg.build_agent_config(amphora_id))
             compute_id = self.compute.build(
                 name="amphora-" + amphora_id,
                 amphora_flavor=CONF.controller_worker.amp_flavor_id,

@@ -105,7 +105,7 @@ class TestNovaClient(base.TestCase):
 
     def test_status(self):
         status = self.manager.status(self.amphora.id)
-        self.assertEqual(constants.AMPHORA_UP, status)
+        self.assertEqual(constants.UP, status)
 
     def test_bad_status(self):
         self.manager.manager.get.side_effect = Exception

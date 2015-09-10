@@ -203,7 +203,7 @@ class ServerTestCase(base.TestCase):
                          json.loads(rv.data.decode('utf-8')))
         mock_rmtree.assert_called_with('/var/lib/octavia/123')
         mock_exists.assert_called_with('/etc/init/haproxy-123.conf')
-        mock_exists.assert_any_call('/var/lib/octavia/123/haproxy.pid')
+        mock_exists.assert_any_call('/var/lib/octavia/123/123.pid')
 
         # service is stopped + upstart script
         mock_exists.side_effect = [True, False, True]
@@ -339,7 +339,7 @@ class ServerTestCase(base.TestCase):
             type='test',
             uuid='123',
             pools=[dict(
-                status=consts.AMPHORA_DOWN,
+                status=consts.DOWN,
                 uuid='tcp-servers',
                 members=[
                     {u'id-34833': u'DOWN'},

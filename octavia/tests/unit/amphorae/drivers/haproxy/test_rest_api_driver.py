@@ -138,7 +138,7 @@ class AmphoraAPIClientTest(base.TestCase):
     def setUp(self):
         super(AmphoraAPIClientTest, self).setUp()
         self.driver = driver.AmphoraAPIClient()
-        self.base_url = "https://127.0.0.1:8443/0.5"
+        self.base_url = "https://127.0.0.1:9443/0.5"
         self.amp = models.Amphora(lb_network_ip='127.0.0.1', compute_id='123')
         self.port_info = dict(mac_address='123')
 
