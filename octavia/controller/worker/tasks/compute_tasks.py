@@ -47,12 +47,13 @@ class BaseComputeTask(task.Task):
 class ComputeCreate(BaseComputeTask):
     """Create the compute instance for a new amphora."""
 
-    def execute(self, amphora_id, ports=None, config_drive_files={}):
+    def execute(self, amphora_id, ports=None, config_drive_files=None):
         """Create an amphora
 
         :returns: an amphora
         """
-
+        ports = ports or []
+        config_drive_files = config_drive_files or {}
         LOG.debug("Nova Create execute for amphora with id %s"
                   % amphora_id)
 
@@ -67,7 +68,7 @@ class ComputeCreate(BaseComputeTask):
                 key_name=CONF.controller_worker.amp_ssh_key_name,
                 sec_groups=CONF.controller_worker.amp_secgroup_list,
                 network_ids=[CONF.controller_worker.amp_network],
-                port_ids=[port.id for port in ports] if ports else [],
+                port_ids=[port.id for port in ports],
                 config_drive_files=config_drive_files)
 
             LOG.debug("Server created with id: %s for amphora id: %s" %

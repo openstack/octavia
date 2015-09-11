@@ -64,6 +64,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF controller_worker compute_driver compute_nova_driver
     iniset $OCTAVIA_CONF controller_worker network_driver allowed_address_pairs_driver
 
+    iniuncomment $OCTAVIA_CONF health_manager heartbeat_key
     iniset $OCTAVIA_CONF health_manager heartbeat_key ${OCTAVIA_HEALTH_KEY}
 
     iniset $OCTAVIA_CONF DEFAULT api_handler queue_producer
