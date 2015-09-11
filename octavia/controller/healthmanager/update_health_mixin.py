@@ -149,6 +149,8 @@ class UpdateHealthMixin(driver_base.HealthMixin):
                             pool_status = constants.DEGRADED
                             if lb_status == constants.ONLINE:
                                 lb_status = constants.DEGRADED
+                    elif status == constants.NO_CHECK:
+                        member_status = constants.NO_MONITOR
                     else:
                         LOG.warn(_LW('Member %(mem)s reported status of '
                                      '%(status)s'), {'mem': member_id,
