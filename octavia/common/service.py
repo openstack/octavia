@@ -16,7 +16,6 @@ from oslo_config import cfg
 from oslo_log import log
 
 from octavia.common import config
-from octavia.i18n import _LI
 
 LOG = log.getLogger(__name__)
 
@@ -25,6 +24,5 @@ def prepare_service(argv=None):
     """Sets global config from config file and sets up logging."""
     argv = argv or []
     config.init(argv[1:])
-    LOG.info(_LI('Starting Octavia API server'))
     log.set_defaults()
     config.setup_logging(cfg.CONF)
