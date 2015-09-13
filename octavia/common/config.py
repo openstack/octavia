@@ -111,7 +111,7 @@ healthmanager_opts = [
                help=_('Number of threads performing amphora failovers.')),
     cfg.IntOpt('status_update_threads',
                default=50,
-               help=_('Number of threads performing amphora failovers.')),
+               help=_('Number of threads performing amphora status update.')),
     cfg.StrOpt('heartbeat_key',
                help=_('key used to validate amphora sending'
                       'the message'), secret=True),
