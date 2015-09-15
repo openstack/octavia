@@ -12,14 +12,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import time
+
 from neutronclient.common import exceptions as neutron_client_exceptions
 from novaclient import exceptions as nova_client_exceptions
+from oslo_config import cfg
 from oslo_log import log as logging
 
 from octavia.common import clients
 from octavia.common import constants
 from octavia.common import data_models
-from octavia.i18n import _LE, _LI
+from octavia.i18n import _LE, _LI, _LW
 from octavia.network import base
 from octavia.network.drivers.neutron import base as neutron_base
 from octavia.network.drivers.neutron import utils
@@ -134,6 +137,35 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         except base.NetworkException as e:
             raise base.PlugVIPException(str(e))
 
+    def _delete_vip_security_group(self, sec_grp):
+        """Deletes a security group in neutron.
+
+        Retries upon an exception because removing a security group from
+        a neutron port does not happen immediately.
+        """
+        attempts = 0
+        while attempts <= cfg.CONF.networking.max_retries:
+            try:
+                self.neutron_client.delete_security_group(sec_grp)
+                LOG.info(_LI("Deleted security group {0}.").format(
+                    sec_grp))
+                return
+            except neutron_client_exceptions.NotFound:
+                message = _LI("Security group {0} not found, will assume it is"
+                              " already deleted").format(sec_grp)
+                LOG.info(message)
+                return
+            except Exception:
+                message = _LW("Attempt {0} to remove security group {1} "
+                              "failed.").format(attempts + 1, sec_grp)
+                LOG.warning(message)
+            attempts += 1
+            time.sleep(cfg.CONF.networking.retry_interval)
+        message = _LE("All attempts to remove security group {0} have "
+                      "failed.").format(sec_grp)
+        LOG.exception(message)
+        raise base.DeallocateVIPException(message)
+
     def deallocate_vip(self, vip):
         try:
             port = self.get_port(vip.port_id)
@@ -144,6 +176,18 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         if port.device_owner != OCTAVIA_OWNER:
             LOG.info(_LI("Port {0} will not be deleted by Octavia as it was "
                          "not created by Octavia.").format(vip.port_id))
+            if self.sec_grp_enabled:
+                sec_grp = self._get_lb_security_group(vip.load_balancer.id)
+                sec_grp = sec_grp.get('id')
+                LOG.info(_LI("Removing security group {0} from port "
+                             "{1}").format(sec_grp, vip.port_id))
+                raw_port = self.neutron_client.show_port(port.id)
+                sec_grps = raw_port.get('port', {}).get('security_groups', [])
+                if sec_grp in sec_grps:
+                    sec_grps.remove(sec_grp)
+                port_update = {'port': {'security_groups': sec_grps}}
+                self.neutron_client.update_port(port.id, port_update)
+                self._delete_vip_security_group(sec_grp)
             return
         try:
             self.neutron_client.delete_port(vip.port_id)
@@ -152,6 +196,10 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                           'neutron').format(port_id=vip.port_id)
             LOG.exception(message)
             raise base.DeallocateVIPException(message)
+        if self.sec_grp_enabled:
+            sec_grp = self._get_lb_security_group(vip.load_balancer.id)
+            sec_grp = sec_grp.get('id')
+            self._delete_vip_security_group(sec_grp)
 
     def plug_vip(self, load_balancer, vip):
         if self.sec_grp_enabled:

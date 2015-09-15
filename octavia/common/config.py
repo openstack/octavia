@@ -97,6 +97,12 @@ amphora_agent_opts = [
 
 networking_opts = [
     cfg.StrOpt('lb_network_name', help=_('Name of amphora internal network')),
+    cfg.IntOpt('max_retries', default=5,
+               help=_('The maximum attempts to retry an action with the '
+                      'networking service.')),
+    cfg.IntOpt('retry_interval', default=1,
+               help=_('Seconds to wait before retrying an action with the '
+                      'networking service.'))
 ]
 
 healthmanager_opts = [
