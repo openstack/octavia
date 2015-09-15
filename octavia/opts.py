@@ -25,6 +25,7 @@ def list_opts():
         ('keystone_authtoken_v3',
          octavia.common.config.keystone_authtoken_v3_opts),
         ('haproxy_amphora', octavia.common.config.haproxy_amphora_opts),
+        ('health_manager', octavia.common.config.healthmanager_opts),
         ('controller_worker', octavia.common.config.controller_worker_opts),
         ('task_flow', octavia.common.config.task_flow_opts),
         ('certificates', octavia.common.config.certificate_opts),
