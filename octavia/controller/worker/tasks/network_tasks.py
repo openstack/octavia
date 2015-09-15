@@ -339,7 +339,13 @@ class DeallocateVIP(BaseNetworkTask):
 
         LOG.debug("Deallocating a VIP %s", loadbalancer.vip.ip_address)
 
-        self.network_driver.deallocate_vip(loadbalancer.vip)
+        # NOTE(blogan): this is kind of ugly but sufficient for now.  Drivers
+        # will need access to the load balancer that the vip is/was attached
+        # to.  However the data model serialization for the vip does not give a
+        # backref to the loadbalancer if accessed through the loadbalancer.
+        vip = loadbalancer.vip
+        vip.load_balancer = loadbalancer
+        self.network_driver.deallocate_vip(vip)
         return
 
 

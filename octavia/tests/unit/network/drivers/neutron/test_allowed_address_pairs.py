@@ -97,11 +97,25 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertEqual([], unpluggers)
 
     def test_deallocate_vip(self):
-        vip = data_models.Vip(port_id='1')
+        lb = dmh.generate_load_balancer_tree()
+        lb.vip.load_balancer = lb
+        vip = lb.vip
+        sec_grp_id = 'lb-sec-grp1'
         show_port = self.driver.neutron_client.show_port
         show_port.return_value = {'port': {
             'device_owner': allowed_address_pairs.OCTAVIA_OWNER}}
+        delete_port = self.driver.neutron_client.delete_port
+        delete_sec_grp = self.driver.neutron_client.delete_security_group
+        list_security_groups = self.driver.neutron_client.list_security_groups
+        security_groups = {
+            'security_groups': [
+                {'id': sec_grp_id}
+            ]
+        }
+        list_security_groups.return_value = security_groups
         self.driver.deallocate_vip(vip)
+        delete_port.assert_called_once_with(vip.port_id)
+        delete_sec_grp.assert_called_once_with(sec_grp_id)
 
     def test_deallocate_vip_when_delete_port_fails(self):
         vip = data_models.Vip(port_id='1')
@@ -121,12 +135,29 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                           self.driver.deallocate_vip, vip)
 
     def test_deallocate_vip_when_port_not_owned_by_octavia(self):
-        vip = data_models.Vip(port_id='1')
+        lb = dmh.generate_load_balancer_tree()
+        lb.vip.load_balancer = lb
+        vip = lb.vip
+        sec_grp_id = 'lb-sec-grp1'
         show_port = self.driver.neutron_client.show_port
         show_port.return_value = {'port': {
-            'device_owner': 'neutron:LOADBALANCERV2'}}
+            'id': vip.port_id,
+            'device_owner': 'neutron:LOADBALANCERV2',
+            'security_groups': [sec_grp_id]}}
         delete_port = self.driver.neutron_client.delete_port
+        update_port = self.driver.neutron_client.update_port
+        delete_sec_grp = self.driver.neutron_client.delete_security_group
+        list_security_groups = self.driver.neutron_client.list_security_groups
+        security_groups = {
+            'security_groups': [
+                {'id': sec_grp_id}
+            ]
+        }
+        list_security_groups.return_value = security_groups
         self.driver.deallocate_vip(vip)
+        expected_port_update = {'port': {'security_groups': []}}
+        update_port.assert_called_once_with(vip.port_id, expected_port_update)
+        delete_sec_grp.assert_called_once_with(sec_grp_id)
         self.assertFalse(delete_port.called)
 
     def test_deallocate_vip_when_vip_port_not_found(self):

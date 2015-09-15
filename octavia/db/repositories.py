@@ -301,6 +301,17 @@ class ListenerRepository(BaseRepository):
         listener = self.get(session, id=id)
         return bool(listener.default_pool)
 
+    def update(self, session, id, **model_kwargs):
+        with session.begin(subtransactions=True):
+            listener_db = session.query(self.model_class).filter_by(
+                id=id).first()
+            sni_containers = model_kwargs.pop('sni_containers', [])
+            for container_ref in sni_containers:
+                sni = models.SNI(listener_id=id,
+                                 tls_certificate_id=container_ref)
+                listener_db.sni_containers.append(sni)
+            listener_db.update(model_kwargs)
+
 
 class ListenerStatisticsRepository(BaseRepository):
     model_class = models.ListenerStatistics
