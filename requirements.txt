@@ -3,7 +3,7 @@
 # process, which may cause wedges in the gate later.
 alembic>=0.8.0
 pecan>=1.0.0
-pbr<2.0,>=1.6
+pbr>=1.6
 SQLAlchemy<1.1.0,>=0.9.9
 anyjson>=0.3.3
 Babel>=1.3
