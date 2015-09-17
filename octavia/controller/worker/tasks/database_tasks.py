@@ -465,7 +465,6 @@ class UpdateAmphoraComputeId(BaseDatabaseTask):
     def execute(self, amphora_id, compute_id):
         self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  compute_id=compute_id)
-        return self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
 
 
 class UpdateAmphoraInfo(BaseDatabaseTask):
