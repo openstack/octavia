@@ -5,10 +5,12 @@
 function octavia_install {
 
     setup_develop $OCTAVIA_DIR
-    install_package qemu kpartx
-    git_clone https://git.openstack.org/openstack/diskimage-builder.git $DEST/diskimage-builder master
-    git_clone https://git.openstack.org/openstack/tripleo-image-elements.git $DEST/tripleo-image-elements master
-    sudo pip install -r $DEST/diskimage-builder/requirements.txt
+    if ! [ "$AMPHORA_IMAGE_NAME" == 'amphora-x64-haproxy' ]; then
+        install_package qemu kpartx
+        git_clone https://git.openstack.org/openstack/diskimage-builder.git $DEST/diskimage-builder master
+        git_clone https://git.openstack.org/openstack/tripleo-image-elements.git $DEST/tripleo-image-elements master
+        sudo pip install -r $DEST/diskimage-builder/requirements.txt
+    fi
 }
 
 function build_octavia_worker_image {
@@ -18,7 +20,7 @@ function build_octavia_worker_image {
 
     # TODO(ptoohill): Tempfix..? -o option stopped working and it no longer saves image to working dir...
     if ! [ -f $OCTAVIA_AMP_IMAGE_FILE ]; then
-        $OCTAVIA_DIR/diskimage-create/diskimage-create.sh
+        $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -s 2
         # $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -o $OCTAVIA_AMP_IMAGE_NAME
     fi
     upload_image file://${OCTAVIA_AMP_IMAGE_FILE} $TOKEN
@@ -141,7 +143,7 @@ function configure_octavia_tempest {
 }
 
 function create_amphora_flavor {
-    nova flavor-create --is-public False m1.amphora ${OCTAVIA_AMP_FLAVOR_ID} 1024 5 1
+    nova flavor-create --is-public False m1.amphora ${OCTAVIA_AMP_FLAVOR_ID} 1024 2 1
 }
 
 function octavia_start {
@@ -151,7 +153,9 @@ function octavia_start {
 
     nova keypair-add --pub-key ${OCTAVIA_AMP_SSH_KEY_PATH}.pub ${OCTAVIA_AMP_SSH_KEY_NAME}
 
-    build_octavia_worker_image
+    if ! [ "$AMPHORA_IMAGE_NAME" == 'amphora-x64-haproxy' ]; then
+        build_octavia_worker_image
+    fi
 
     OCTAVIA_AMP_IMAGE_ID=$(glance image-list | grep ${OCTAVIA_AMP_IMAGE_NAME} | awk '{print $2}')
     iniset $OCTAVIA_CONF controller_worker amp_image_id ${OCTAVIA_AMP_IMAGE_ID}
@@ -220,6 +224,15 @@ if is_service_enabled $OCTAVIA; then
 
     if ! is_service_enabled $Q_SVC || ! is_service_enabled $LBAAS_V2; then
         die "The neutron $Q_SVC and $LBAAS_V2 services must be enabled to use $OCTAVIA"
+    fi
+
+    # Check if an amphora image is already loaded
+    AMPHORA_IMAGE_NAME=$(nova image-list | awk '/ amphora-x64-haproxy / {print $4}')
+    export AMPHORA_IMAGE_NAME
+
+    if [ "$AMPHORA_IMAGE_NAME" == 'amphora-x64-haproxy' ]; then
+        echo "Found existing amphora image: $AMPHORA_IMAGE_NAME"
+        echo "Skipping amphora image build"
     fi
 
     if [[ "$1" == "stack" && "$2" == "install" ]]; then
