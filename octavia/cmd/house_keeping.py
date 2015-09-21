@@ -42,7 +42,7 @@ def spare_amphora_check():
 
     spare_amp = house_keeping.SpareAmphora()
     while spare_amp_thread_event.is_set():
-        LOG.info(_LI("Initiating spare amphora check..."))
+        LOG.debug("Initiating spare amphora check...")
         spare_amp.spare_check()
         time.sleep(interval)
 
@@ -52,10 +52,12 @@ def db_cleanup():
     # Read the interval from CONF
     interval = CONF.house_keeping.cleanup_interval
     LOG.info(_LI("DB cleanup interval is set to %d sec") % interval)
+    LOG.info(_LI('Amphora expiry age is %s seconds') %
+             CONF.house_keeping.amphora_expiry_age)
 
     db_cleanup = house_keeping.DatabaseCleanup()
     while db_cleanup_thread_event.is_set():
-        LOG.info(_LI("Initiating the cleanup of old amphora..."))
+        LOG.debug("Initiating the cleanup of old amphora...")
         db_cleanup.delete_old_amphorae()
         time.sleep(interval)
 

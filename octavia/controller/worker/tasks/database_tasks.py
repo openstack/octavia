@@ -24,7 +24,7 @@ from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
-from octavia.i18n import _LW
+from octavia.i18n import _LI, _LW
 
 LOG = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class CreateAmphoraInDB(BaseDatabaseTask):
                                            id=uuidutils.generate_uuid(),
                                            status=constants.PENDING_CREATE)
 
-        LOG.debug("Created Amphora in DB with id %s" % amphora.id)
+        LOG.info(_LI("Created Amphora in DB with id %s") % amphora.id)
         return amphora.id
 
     def revert(self, result, *args, **kwargs):
@@ -292,8 +292,8 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
                       loadbalancer_id)
             raise exceptions.NoReadyAmphoraeException()
 
-        LOG.debug("Allocated Amphora with id %s for load balancer "
-                  "with id %s" % (amp.id, loadbalancer_id))
+        LOG.info(_LI("Allocated Amphora with id %(amp)s for load balancer "
+                 "with id %(lb)s") % {"amp": amp.id, "lb": loadbalancer_id})
 
         return amp.id
 
@@ -308,9 +308,10 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
     def execute(self, amphora, loadbalancer_id):
         """Mark amphora as allocated to a load balancer in DB."""
 
-        LOG.debug("Mark ALLOCATED in DB for amphora: %s with compute id %s "
-                  "for load balancer: %s" %
-                  (amphora.id, amphora.compute_id, loadbalancer_id))
+        LOG.info(_LI("Mark ALLOCATED in DB for amphora: %(amp)s with "
+                     "compute id %(comp)s for load balancer: %(lb)s") %
+                 {"amp": amphora.id, "comp": amphora.compute_id,
+                  "lb": loadbalancer_id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.AMPHORA_ALLOCATED,
                                  compute_id=amphora.compute_id,
@@ -441,8 +442,9 @@ class MarkAmphoraReadyInDB(BaseDatabaseTask):
     def execute(self, amphora):
         """Mark amphora as ready in DB."""
 
-        LOG.debug("Mark BOOTING in DB for amphora: %s with compute id %s" %
-                  (amphora.id, amphora.compute_id))
+        LOG.info(_LI("Mark READY in DB for amphora: %(amp)s with compute "
+                     "id %(comp)s") % {"amp": amphora.id,
+                                       "comp": amphora.compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.AMPHORA_READY,
                                  compute_id=amphora.compute_id,
@@ -484,8 +486,8 @@ class MarkLBActiveInDB(BaseDatabaseTask):
     def execute(self, loadbalancer):
         """Mark the load balancer as active in DB."""
 
-        LOG.debug("Mark ACTIVE in DB for load balancer id: %s" %
-                  loadbalancer.id)
+        LOG.info(_LI("Mark ACTIVE in DB for load balancer id: %s") %
+                 loadbalancer.id)
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
                                       provisioning_status=constants.ACTIVE)
