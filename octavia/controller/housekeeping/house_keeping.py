@@ -41,23 +41,23 @@ class SpareAmphora(object):
         session = db_api.get_session()
         conf_spare_cnt = CONF.house_keeping.spare_amphora_pool_size
         curr_spare_cnt = self.amp_repo.get_spare_amphora_count(session)
-        LOG.info(_LI("Required Spare Amphora count : %d") % conf_spare_cnt)
-        LOG.info(_LI("Current Spare Amphora count : %d") % curr_spare_cnt)
+        LOG.debug("Required Spare Amphora count : %d" % conf_spare_cnt)
+        LOG.debug("Current Spare Amphora count : %d" % curr_spare_cnt)
         diff_count = conf_spare_cnt - curr_spare_cnt
 
         # When the current spare amphora is less than required
         if diff_count > 0:
-            LOG.info(_LI("Current spare amphora are fewer than required"))
-            LOG.info(_LI("Initiating creation of %d amphora ...") % diff_count)
+            LOG.info(_LI("Initiating creation of %d spare amphora.") %
+                     diff_count)
 
             # Call Amphora Create Flow diff_count times
             for i in range(1, diff_count + 1):
-                LOG.info(_LI("Starting amphorae number %d ...") % i)
+                LOG.debug("Starting amphorae number %d ..." % i)
                 self.cw.create_amphora()
 
         else:
-            LOG.info(_LI("Current spare amphora count satisfies the "
-                         "requirement"))
+            LOG.debug(_LI("Current spare amphora count satisfies the "
+                          "requirement"))
 
 
 class DatabaseCleanup(object):
@@ -69,7 +69,6 @@ class DatabaseCleanup(object):
         """Checks the DB for old amphora and deletes them based on it's age."""
         exp_age = datetime.timedelta(
             seconds=CONF.house_keeping.amphora_expiry_age)
-        LOG.info(_LI('Amphora expiry age is %s seconds') % exp_age)
 
         session = db_api.get_session()
         amphora = self.amp_repo.get_all(session, status=constants.DELETED)
