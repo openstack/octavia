@@ -55,7 +55,7 @@ version() {
 
 # Figure out where our directory is located
 if [ -z $OCTAVIA_REPO_PATH ]; then
-    AMP_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    AMP_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
     OCTAVIA_REPO_PATH=${OCTAVIA_REPO_PATH:-${AMP_DIR%/*}}
 fi
 
