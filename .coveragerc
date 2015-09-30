@@ -4,4 +4,4 @@ source = octavia
 omit = octavia/tests/*,octavia/openstack/*
 
 [report]
-ignore-errors = True
+ignore_errors = True
