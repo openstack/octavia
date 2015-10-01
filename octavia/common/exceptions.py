@@ -141,19 +141,19 @@ class ImmutableObject(APIException):
 
 
 class ComputeBuildException(OctaviaException):
-    message = _LE('Failed to build nova instance.')
+    message = _LE('Failed to build compute instance.')
 
 
 class ComputeDeleteException(OctaviaException):
-    message = _LE('Failed to delete nova instance.')
+    message = _LE('Failed to delete compute instance.')
 
 
 class ComputeGetException(OctaviaException):
-    message = _LE('Failed to retrieve nova instance.')
+    message = _LE('Failed to retrieve compute instance.')
 
 
 class ComputeStatusException(OctaviaException):
-    message = _LE('Failed to retrieve nova instance status.')
+    message = _LE('Failed to retrieve compute instance status.')
 
 
 class IDAlreadyExists(OctaviaException):
@@ -171,7 +171,7 @@ class NoSuitableAmphoraException(OctaviaException):
 
 # This is an internal use exception for the taskflow work flow
 # and will not be exposed to the customer.  This means it is a
-# normal part of operation while waiting for nova to go active
+# normal part of operation while waiting for compute to go active
 # on the instance
 class ComputeWaitTimeoutException(OctaviaException):
     message = _LI('Waiting for compute to go active timeout.')

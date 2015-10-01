@@ -41,7 +41,7 @@ class ComputeBase(object):
         metadata server this can be a file type object as well or
         a string
 
-        :raises NovaBuildException: if nova failed to build virtual machine
+        :raises ComputeBuildException: if compute failed to build amphora
         :returns: UUID of amphora
         """
         pass
@@ -59,7 +59,7 @@ class ComputeBase(object):
         """Check whether the specified amphora is up
 
         :param amphora_id: the ID of the desired amphora
-        :returns: The nova "status" response ("ONLINE" or "OFFLINE")
+        :returns: The compute "status" response ("ONLINE" or "OFFLINE")
         """
         pass
 

@@ -54,7 +54,7 @@ class ComputeCreate(BaseComputeTask):
         """
         ports = ports or []
         config_drive_files = config_drive_files or {}
-        LOG.debug("Nova Create execute for amphora with id %s"
+        LOG.debug("Compute create execute for amphora with id %s"
                   % amphora_id)
 
         try:
@@ -76,7 +76,7 @@ class ComputeCreate(BaseComputeTask):
             return compute_id
 
         except Exception as e:
-            LOG.error(_LE("Nova create for amphora id: %(amp)s "
+            LOG.error(_LE("Compute create for amphora id: %(amp)s "
                           "failed: %(exp)s"),
                       {'amp': amphora_id, 'exp': e})
             raise e
@@ -89,13 +89,13 @@ class ComputeCreate(BaseComputeTask):
         if isinstance(result, failure.Failure):
             return
         compute_id = result
-        LOG.warn(_LW("Reverting Nova create for amphora with id"
+        LOG.warn(_LW("Reverting compute create for amphora with id"
                      "%(amp)s and compute id: %(comp)s"),
                  {'amp': amphora_id, 'comp': compute_id})
         try:
             self.compute.delete(compute_id)
         except Exception as e:
-            LOG.error(_LE("Reverting Nova create failed"
+            LOG.error(_LE("Reverting compute create failed"
                           " with exception %s"), e)
 
 
@@ -127,19 +127,19 @@ class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
             try:
                 self.compute.delete(compute_id=amp.compute_id)
             except Exception as e:
-                LOG.error(_LE("Nova delete for amphora id: %(amp)s failed:"
+                LOG.error(_LE("Compute delete for amphora id: %(amp)s failed:"
                               "%(exp)s"), {'amp': amp.id, 'exp': e})
                 raise e
 
 
 class ComputeDelete(BaseComputeTask):
     def execute(self, amphora):
-        LOG.debug("Nova Delete execute for amphora with id %s" % amphora.id)
+        LOG.debug("Compute delete execute for amphora with id %s" % amphora.id)
 
         try:
             self.compute.delete(compute_id=amphora.compute_id)
         except Exception as e:
-            LOG.error(_LE("Nova delete for amphora id: %(amp)s failed:"
+            LOG.error(_LE("Compute delete for amphora id: %(amp)s failed:"
                           "%(exp)s"), {'amp': amphora.id, 'exp': e})
             raise e
 
