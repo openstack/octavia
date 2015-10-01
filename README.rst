@@ -2,7 +2,20 @@
 Octavia
 =======
 
+.. image:: https://img.shields.io/pypi/v/octavia.svg
+    :target: https://pypi.python.org/pypi/octavia/
+    :alt: Latest Version
+
+.. image:: https://img.shields.io/pypi/dm/octavia.svg
+    :target: https://pypi.python.org/pypi/octavia/
+    :alt: Downloads
+
 Operator-grade open source scalable load balancer.
+
+* Free software: Apache license
+* Documentation: http://docs.openstack.org/developer/octavia
+* Source: http://git.openstack.org/cgit/openstack/octavia
+* Bugs: http://bugs.launchpad.net/octavia/
 
 The Octavia project seeks to become the standard operator-grade load balancer
 in use in large OpenStack deployments. Note that it is not competing with the
