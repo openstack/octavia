@@ -134,7 +134,7 @@ class ComputeDelete(BaseComputeTask):
         LOG.debug("Compute Delete execute for amphora with id %s", amphora.id)
 
         try:
-            self.compute.delete(compute_id=amphora.compute_id)
+            self.compute.delete(amphora.compute_id)
         except Exception:
             LOG.exception(_LE("Compute delete for amphora id: %s failed"),
                           amphora.id)

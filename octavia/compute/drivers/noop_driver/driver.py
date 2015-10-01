@@ -45,23 +45,23 @@ class NoopManager(object):
         compute_id = uuidutils.generate_uuid()
         return compute_id
 
-    def delete(self, amphora_id):
-        LOG.debug("Compute %s no-op, amphora_id %s",
-                  self.__class__.__name__, amphora_id)
-        self.computeconfig[amphora_id] = (amphora_id, 'delete')
+    def delete(self, compute_id):
+        LOG.debug("Compute %s no-op, compute_id %s",
+                  self.__class__.__name__, compute_id)
+        self.computeconfig[compute_id] = (compute_id, 'delete')
 
-    def status(self, amphora_id):
-        LOG.debug("Compute %s no-op, amphora_id %s",
-                  self.__class__.__name__, amphora_id)
-        self.computeconfig[amphora_id] = (amphora_id, 'status')
+    def status(self, compute_id):
+        LOG.debug("Compute %s no-op, compute_id %s",
+                  self.__class__.__name__, compute_id)
+        self.computeconfig[compute_id] = (compute_id, 'status')
         return constants.UP
 
-    def get_amphora(self, amphora_id):
-        LOG.debug("Compute %s no-op, amphora_id %s",
-                  self.__class__.__name__, amphora_id)
-        self.computeconfig[amphora_id] = (amphora_id, 'get_amphora')
+    def get_amphora(self, compute_id):
+        LOG.debug("Compute %s no-op, compute_id %s",
+                  self.__class__.__name__, compute_id)
+        self.computeconfig[compute_id] = (compute_id, 'get_amphora')
         return data_models.Amphora(
-            compute_id=amphora_id,
+            compute_id=compute_id,
             status=constants.ACTIVE,
             lb_network_ip='192.0.2.1'
         )
@@ -81,11 +81,11 @@ class NoopComputeDriver(driver_base.ComputeBase):
                                        config_drive_files, user_data, port_ids)
         return compute_id
 
-    def delete(self, amphora_id):
-        self.driver.delete(amphora_id)
+    def delete(self, compute_id):
+        self.driver.delete(compute_id)
 
-    def status(self, amphora_id):
-        return self.driver.status(amphora_id)
+    def status(self, compute_id):
+        return self.driver.status(compute_id)
 
-    def get_amphora(self, amphora_id):
-        return self.driver.get_amphora(amphora_id)
+    def get_amphora(self, compute_id):
+        return self.driver.get_amphora(compute_id)

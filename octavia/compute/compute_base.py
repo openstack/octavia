@@ -55,19 +55,19 @@ class ComputeBase(object):
         pass
 
     @abc.abstractmethod
-    def status(self, amphora_id):
+    def status(self, compute_id):
         """Check whether the specified amphora is up
 
-        :param amphora_id: the ID of the desired amphora
+        :param compute_id: the ID of the desired amphora
         :returns: The compute "status" response ("ONLINE" or "OFFLINE")
         """
         pass
 
     @abc.abstractmethod
-    def get_amphora(self, amphora_id):
+    def get_amphora(self, compute_id):
         """Retrieve an amphora object
 
-        :param amphora_id: the id of the desired amphora
+        :param compute_id: the id of the desired amphora
         :returns: the amphora object
         """
         pass

@@ -97,14 +97,14 @@ class VirtualMachineManager(compute_base.ComputeBase):
             LOG.exception(_LE("Error deleting nova virtual machine."))
             raise exceptions.ComputeDeleteException()
 
-    def status(self, amphora_id):
+    def status(self, compute_id):
         '''Retrieve the status of a virtual machine.
 
-        :param amphora_id: virtual machine UUID
+        :param compute_id: virtual machine UUID
         :returns: constant of amphora status
         '''
         try:
-            amphora = self.get_amphora(amphora_id=amphora_id)
+            amphora = self.get_amphora(compute_id)
             if amphora and amphora.status == 'ACTIVE':
                 return constants.UP
         except Exception:
@@ -112,7 +112,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
             raise exceptions.ComputeStatusException()
         return constants.DOWN
 
-    def get_amphora(self, amphora_id):
+    def get_amphora(self, compute_id):
         '''Retrieve the information in nova of a virtual machine.
 
         :param amphora_id: virtual machine UUID
@@ -120,7 +120,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
         '''
         # utilize nova client ServerManager 'get' method to retrieve info
         try:
-            amphora = self.manager.get(amphora_id)
+            amphora = self.manager.get(compute_id)
         except Exception:
             LOG.exception(_LE("Error retrieving nova virtual machine."))
             raise exceptions.ComputeGetException()
