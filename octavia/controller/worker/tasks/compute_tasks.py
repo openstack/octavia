@@ -54,8 +54,7 @@ class ComputeCreate(BaseComputeTask):
         """
         ports = ports or []
         config_drive_files = config_drive_files or {}
-        LOG.debug("Compute create execute for amphora with id %s"
-                  % amphora_id)
+        LOG.debug("Compute create execute for amphora with id %s", amphora_id)
 
         try:
             agent_cfg = agent_jinja_cfg.AgentJinjaTemplater()
@@ -71,15 +70,14 @@ class ComputeCreate(BaseComputeTask):
                 port_ids=[port.id for port in ports],
                 config_drive_files=config_drive_files)
 
-            LOG.debug("Server created with id: %s for amphora id: %s" %
+            LOG.debug("Server created with id: %s for amphora id: %s",
                       (compute_id, amphora_id))
             return compute_id
 
-        except Exception as e:
-            LOG.error(_LE("Compute create for amphora id: %(amp)s "
-                          "failed: %(exp)s"),
-                      {'amp': amphora_id, 'exp': e})
-            raise e
+        except Exception:
+            LOG.exception(_LE("Compute create for amphora id: %s failed"),
+                          amphora_id)
+            raise
 
     def revert(self, result, amphora_id, *args, **kwargs):
         """This method will revert the creation of the
@@ -94,9 +92,8 @@ class ComputeCreate(BaseComputeTask):
                  {'amp': amphora_id, 'comp': compute_id})
         try:
             self.compute.delete(compute_id)
-        except Exception as e:
-            LOG.error(_LE("Reverting compute create failed"
-                          " with exception %s"), e)
+        except Exception:
+            LOG.exception(_LE("Reverting compute create failed"))
 
 
 class CertComputeCreate(ComputeCreate):
@@ -126,22 +123,22 @@ class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
         for amp in loadbalancer.amphorae:
             try:
                 self.compute.delete(amp.compute_id)
-            except Exception as e:
-                LOG.error(_LE("Compute delete for amphora id: %(amp)s failed:"
-                              "%(exp)s"), {'amp': amp.id, 'exp': e})
-                raise e
+            except Exception:
+                LOG.exception(_LE("Compute delete for amphora id: %s failed"),
+                              amp.id)
+                raise
 
 
 class ComputeDelete(BaseComputeTask):
     def execute(self, amphora):
-        LOG.debug("Compute delete execute for amphora with id %s" % amphora.id)
+        LOG.debug("Compute Delete execute for amphora with id %s", amphora.id)
 
         try:
             self.compute.delete(compute_id=amphora.compute_id)
-        except Exception as e:
-            LOG.error(_LE("Compute delete for amphora id: %(amp)s failed:"
-                          "%(exp)s"), {'amp': amphora.id, 'exp': e})
-            raise e
+        except Exception:
+            LOG.exception(_LE("Compute delete for amphora id: %s failed"),
+                          amphora.id)
+            raise
 
 
 class ComputeWait(BaseComputeTask):

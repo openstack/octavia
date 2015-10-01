@@ -48,12 +48,12 @@ class HealthManager(object):
                         if amp is None:
                             break
                         failover_count += 1
-                        LOG.info(_LI("Stale amphora's id is: %s") %
+                        LOG.info(_LI("Stale amphora's id is: %s"),
                                  amp.amphora_id)
                         executor.submit(self.cw.failover_amphora,
                                         amp.amphora_id)
                     if failover_count > 0:
-                        LOG.info(_LI("Failed over %s amphora") %
+                        LOG.info(_LI("Failed over %s amphora"),
                                  failover_count)
             finally:
                 executor.shutdown(wait=True)

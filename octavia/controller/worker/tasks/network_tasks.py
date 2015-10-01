@@ -50,7 +50,7 @@ class CalculateAmphoraDelta(BaseNetworkTask):
     default_provides = constants.DELTA
 
     def execute(self, loadbalancer, amphora):
-        LOG.debug("Calculating network delta for amphora id: %s" % amphora.id)
+        LOG.debug("Calculating network delta for amphora id: %s", amphora.id)
 
         # Figure out what networks we want
         # seed with lb network(s)
@@ -129,7 +129,7 @@ class GetPlumbedNetworks(BaseNetworkTask):
     def execute(self, amphora):
         """Get plumbed networks for the amphora."""
 
-        LOG.debug("Getting plumbed networks for amphora id: %s" % amphora.id)
+        LOG.debug("Getting plumbed networks for amphora id: %s", amphora.id)
 
         return self.network_driver.get_plugged_networks(amphora.compute_id)
 
@@ -143,10 +143,10 @@ class PlugNetworks(BaseNetworkTask):
     def execute(self, amphora, delta):
         """Update the amphora networks for the delta."""
 
-        LOG.debug("Plug or unplug networks for amphora id: %s" % amphora.id)
+        LOG.debug("Plug or unplug networks for amphora id: %s", amphora.id)
 
         if not delta:
-            LOG.debug("No network deltas for amphora id: %s" % amphora.id)
+            LOG.debug("No network deltas for amphora id: %s", amphora.id)
             return None
 
         # add nics
@@ -181,20 +181,18 @@ class UnPlugNetworks(BaseNetworkTask):
 
         LOG.debug("Unplug network for amphora")
         if not delta:
-            LOG.debug("No network deltas for amphora id: %s" % amphora.id)
+            LOG.debug("No network deltas for amphora id: %s", amphora.id)
             return None
 
         for nic in delta.delete_nics:
             try:
                 self.network_driver.unplug_network(amphora.compute_id,
                                                    nic.network_id)
-            except base.NetworkNotFound as e:
-                LOG.debug("Network %d not found ", nic.network_id)
+            except base.NetworkNotFound:
+                LOG.debug("Network %d not found", nic.network_id)
                 pass
-            except Exception as e:
-                LOG.error(
-                    _LE("Unable to unplug network - exception: %s"),
-                    str(e))
+            except Exception:
+                LOG.exception(_LE("Unable to unplug network"))
                 pass  # Todo(german) follow up if that makes sense
 
 
@@ -245,9 +243,8 @@ class HandleNetworkDeltas(BaseNetworkTask):
                                                        nic.network_id)
                 except base.NetworkNotFound:
                     LOG.debug("Network %d not found ", nic.network_id)
-                except Exception as e:
-                    LOG.error(
-                        _LE("Unable to unplug network - exception: %s"), e)
+                except Exception:
+                    LOG.exception(_LE("Unable to unplug network"))
         return added_ports
 
     def revert(self, result, deltas):
@@ -275,7 +272,7 @@ class PlugVIP(BaseNetworkTask):
     def execute(self, loadbalancer):
         """Plumb a vip to an amphora."""
 
-        LOG.debug("Plumbing VIP for loadbalancer id: %s" % loadbalancer.id)
+        LOG.debug("Plumbing VIP for loadbalancer id: %s", loadbalancer.id)
 
         amps_data = self.network_driver.plug_vip(loadbalancer,
                                                  loadbalancer.vip)
@@ -301,10 +298,9 @@ class UnplugVIP(BaseNetworkTask):
         LOG.debug("Unplug vip on amphora")
         try:
             self.network_driver.unplug_vip(loadbalancer, loadbalancer.vip)
-        except Exception as e:
-            LOG.error(_LE("Unable to unplug vip from load balancer"
-                          "{id}: exception: {ex}").format(id=loadbalancer.id,
-                                                          ex=e.message))
+        except Exception:
+            LOG.exception(_LE("Unable to unplug vip from load balancer %s"),
+                          loadbalancer.id)
 
 
 class AllocateVIP(BaseNetworkTask):
@@ -353,7 +349,7 @@ class UpdateVIP(BaseNetworkTask):
     """Task to update a VIP."""
 
     def execute(self, loadbalancer):
-        LOG.debug("Updating VIP of load_balancer %s." % loadbalancer.id)
+        LOG.debug("Updating VIP of load_balancer %s.", loadbalancer.id)
 
         self.network_driver.update_vip(loadbalancer)
 
@@ -368,8 +364,7 @@ class GetAmphoraeNetworkConfigs(BaseNetworkTask):
         amp_net_configs = {}
         for amp in loadbalancer.amphorae:
             if amp.status != constants.DELETED:
-                LOG.debug("Retrieving network details for "
-                          "amphora {0}".format(amp.id))
+                LOG.debug("Retrieving network details for amphora %s", amp.id)
                 vrrp_port = self.network_driver.get_port(amp.vrrp_port_id)
                 vrrp_subnet = self.network_driver.get_subnet(
                     vrrp_port.get_subnet_id(amp.vrrp_ip))
@@ -392,7 +387,7 @@ class FailoverPreparationForAmphora(BaseNetworkTask):
     """Task to prepare an amphora for failover."""
 
     def execute(self, amphora):
-        LOG.debug("Prepare amphora %s for failover." % amphora.id)
+        LOG.debug("Prepare amphora %s for failover.", amphora.id)
 
         self.network_driver.failover_preparation(amphora)
 
@@ -401,7 +396,7 @@ class RetrievePortIDsOnAmphoraExceptLBNetwork(BaseNetworkTask):
     """Task retrieving all the port ids on an amphora, except lb network."""
 
     def execute(self, amphora):
-        LOG.debug("Retrieve all but the lb network port id on amphora %s." %
+        LOG.debug("Retrieve all but the lb network port id on amphora %s.",
                   amphora.id)
 
         interfaces = self.network_driver.get_plugged_networks(

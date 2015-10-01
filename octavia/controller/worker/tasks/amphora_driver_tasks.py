@@ -190,8 +190,8 @@ class AmphoraPostNetworkPlug(BaseAmphoraTask):
         for port in ports:
             self.amphora_driver.post_network_plug(amphora, port)
             LOG.debug("post_network_plug called on compute instance "
-                      "{compute_id} for port {port_id}".format(
-                          compute_id=amphora.compute_id, port_id=port.id))
+                      "%(compute_id)s for port %(port_id)s",
+                      {"compute_id": amphora.compute_id, "port_id": port.id})
 
     def revert(self, result, amphora, *args, **kwargs):
         """Handle a failed post network plug."""
