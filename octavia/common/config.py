@@ -329,7 +329,7 @@ def setup_logging(conf):
 #         raise cfg.ConfigFilesNotFoundError(
 #             config_files=[cfg.CONF.api_paste_config])
 #     config_path = os.path.abspath(config_path)
-#     LOG.info(_("Config paste file: %s"), config_path)
+#     LOG.info(_LI("Config paste file: %s"), config_path)
 
 #     try:
 #         app = deploy.loadapp("config:%s" % config_path, name=app_name)

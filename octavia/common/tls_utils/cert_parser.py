@@ -22,6 +22,7 @@ import six
 
 from octavia.common import data_models as data_models
 import octavia.common.exceptions as exceptions
+from octavia.i18n import _LE
 
 
 X509_BEG = "-----BEGIN CERTIFICATE-----"
@@ -120,12 +121,12 @@ def get_host_names(certificate):
             host_names['dns_names'] = ext.value.get_values_for_type(
                 x509.DNSName)
         except x509.ExtensionNotFound:
-            LOG.debug("{0} extension not found".format(
-                x509.OID_SUBJECT_ALTERNATIVE_NAME))
+            LOG.debug("%s extension not found",
+                      x509.OID_SUBJECT_ALTERNATIVE_NAME)
 
         return host_names
-    except Exception as e:
-        LOG.exception(e)
+    except Exception:
+        LOG.exception(_LE("Unreadable certificate."))
         raise exceptions.UnreadableCert
 
 
