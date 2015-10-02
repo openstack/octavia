@@ -101,7 +101,7 @@ def upload_haproxy_config(listener_id):
     try:
         subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        LOG.debug("Failed to verify haproxy file: {0}".format(e))
+        LOG.debug("Failed to verify haproxy file: %s", e)
         os.remove(name)  # delete file
         return flask.make_response(flask.jsonify(dict(
             message="Invalid request",
@@ -142,7 +142,8 @@ def start_stop_listener(listener_id, action):
     try:
         subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        LOG.debug("Failed to {0} HAProxy service: {1}".format(action, e))
+        LOG.debug("Failed to %(action)s HAProxy service: %(err)s",
+                  {'action': action, 'err': e})
         return flask.make_response(flask.jsonify(dict(
             message="Error {0}ing haproxy".format(action),
             details=e.output)), 500)
@@ -171,7 +172,7 @@ def delete_listener(listener_id):
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            LOG.debug("Failed to stop HAProxy service: {0}".format(e))
+            LOG.debug("Failed to stop HAProxy service: %s", e)
             return flask.make_response(flask.jsonify(dict(
                 message="Error stopping haproxy",
                 details=e.output)), 500)

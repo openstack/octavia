@@ -225,7 +225,7 @@ class AmphoraAPIClient(object):
             version=API_VERSION)
 
     def request(self, method, amp, path='/', **kwargs):
-        LOG.debug("request url " + path)
+        LOG.debug("request url %s", path)
         _request = getattr(self.session, method.lower())
         _url = self._base_url(amp.lb_network_ip) + path
 

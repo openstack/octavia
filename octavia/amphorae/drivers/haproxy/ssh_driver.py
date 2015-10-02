@@ -216,9 +216,9 @@ class HaproxyManager(driver_base.AmphoraLoadBalancerDriver):
         _, stdout, stderr = self.client.exec_command(command)
         stdout = stdout.read()
         stderr = stderr.read()
-        LOG.debug('Sent command {0}'.format(command))
-        LOG.debug('Returned stdout: {0}'.format(stdout))
-        LOG.debug('Returned stderr: {0}'.format(stderr))
+        LOG.debug('Sent command %s', command)
+        LOG.debug('Returned stdout: %s', stdout)
+        LOG.debug('Returned stderr: %s', stderr)
         return stdout, stderr
 
     def _connect(self, hostname):
