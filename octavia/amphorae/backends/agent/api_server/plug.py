@@ -144,7 +144,7 @@ def _bring_if_up(params, what):
     try:
         subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        LOG.debug("Failed to if up {0}".format(e))
+        LOG.debug("Failed to if up %s", e)
         raise exceptions.HTTPException(
             response=flask.make_response(flask.jsonify(dict(
                 message='Error plugging {0}'.format(what),

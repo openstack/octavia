@@ -41,9 +41,8 @@ class UDPStatusGetter(object):
         self.ip = cfg.CONF.health_manager.bind_ip
         self.port = cfg.CONF.health_manager.bind_port
         self.sockaddr = None
-        LOG.info(_LI(
-            'attempting to listen on {0} port {1}').format(
-                self.ip, self.port))
+        LOG.info(_LI('attempting to listen on %(ip)s port %(port)s'),
+                 {'ip': self.ip, 'port': self.port})
         self.sock = None
         self.update(self.key, self.ip, self.port)
 
@@ -69,7 +68,7 @@ class UDPStatusGetter(object):
             self.sock.bind((ip, port))
             if cfg.CONF.health_manager.sock_rlimit > 0:
                 rlimit = cfg.CONF.health_manager.sock_rlimit
-                LOG.info(_LI("setting sock rlimit to {0}").format(rlimit))
+                LOG.info(_LI("setting sock rlimit to %s"), rlimit)
                 self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF,
                                      rlimit)
             break  # just used the first addr getaddrinfo finds
