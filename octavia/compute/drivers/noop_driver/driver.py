@@ -13,7 +13,10 @@
 # under the License.
 
 from oslo_log import log as logging
+from oslo_utils import uuidutils
 
+from octavia.common import constants
+from octavia.common import data_models
 from octavia.compute import compute_base as driver_base
 
 LOG = logging.getLogger(__name__)
@@ -26,19 +29,21 @@ class NoopManager(object):
 
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
               key_name=None, sec_groups=None, network_ids=None,
-              config_drive_files=None, user_data=None):
+              config_drive_files=None, user_data=None, port_ids=None):
         LOG.debug("Compute %s no-op, build name %s, amphora_flavor %s, "
                   "image_id %s, key_name %s, sec_groups %s, network_ids %s,"
-                  "config_drive_files %s, user_data %s",
+                  "config_drive_files %s, user_data %s, port_ids %s",
                   self.__class__.__name__, name, amphora_flavor, image_id,
                   key_name, sec_groups, network_ids, config_drive_files,
-                  user_data)
+                  user_data, port_ids)
         self.computeconfig[(name, amphora_flavor, image_id, key_name,
-                            sec_groups, network_ids, config_drive_files,
-                            user_data)] = (name, amphora_flavor,
-                                           image_id, key_name, sec_groups,
-                                           network_ids, config_drive_files,
-                                           user_data, 'build')
+                            user_data)] = (
+            name, amphora_flavor,
+            image_id, key_name, sec_groups,
+            network_ids, config_drive_files,
+            user_data, port_ids, 'build')
+        compute_id = uuidutils.generate_uuid()
+        return compute_id
 
     def delete(self, amphora_id):
         LOG.debug("Compute %s no-op, amphora_id %s",
@@ -49,11 +54,17 @@ class NoopManager(object):
         LOG.debug("Compute %s no-op, amphora_id %s",
                   self.__class__.__name__, amphora_id)
         self.computeconfig[amphora_id] = (amphora_id, 'status')
+        return constants.UP
 
     def get_amphora(self, amphora_id):
         LOG.debug("Compute %s no-op, amphora_id %s",
                   self.__class__.__name__, amphora_id)
         self.computeconfig[amphora_id] = (amphora_id, 'get_amphora')
+        return data_models.Amphora(
+            compute_id=amphora_id,
+            status=constants.ACTIVE,
+            lb_network_ip='192.0.2.1'
+        )
 
 
 class NoopComputeDriver(driver_base.ComputeBase):
@@ -63,17 +74,18 @@ class NoopComputeDriver(driver_base.ComputeBase):
 
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
               key_name=None, sec_groups=None, network_ids=None,
-              config_drive_files=None, user_data=None):
+              config_drive_files=None, user_data=None, port_ids=None):
 
-        self.driver.build(name, amphora_flavor, image_id, key_name,
-                          sec_groups, network_ids, config_drive_files,
-                          user_data)
+        compute_id = self.driver.build(name, amphora_flavor, image_id,
+                                       key_name, sec_groups, network_ids,
+                                       config_drive_files, user_data, port_ids)
+        return compute_id
 
     def delete(self, amphora_id):
         self.driver.delete(amphora_id)
 
     def status(self, amphora_id):
-        self.driver.status(amphora_id)
+        return self.driver.status(amphora_id)
 
     def get_amphora(self, amphora_id):
-        self.driver.get_amphora(amphora_id)
+        return self.driver.get_amphora(amphora_id)

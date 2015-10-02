@@ -220,7 +220,7 @@ class TestComputeTasks(base.TestCase):
         delete_amps = compute_tasks.DeleteAmphoraeOnLoadBalancer()
         delete_amps.execute(_load_balancer_mock)
 
-        mock_driver.delete.assert_called_once_with(compute_id=COMPUTE_ID)
+        mock_driver.delete.assert_called_once_with(COMPUTE_ID)
 
     @mock.patch('stevedore.driver.DriverManager.driver')
     def test_compute_delete(self, mock_driver):
