@@ -204,21 +204,21 @@ class LoadBalancerHandler(abstract_handler.BaseObjectHandler):
 
     def create(self, load_balancer_id):
         LOG.info(_LI("%(entity)s handling the creation of "
-                 "load balancer %(id)s") %
+                     "load balancer %(id)s"),
                  {"entity": self.__class__.__name__, "id": load_balancer_id})
         simulate_controller(load_balancer_id, create=True)
 
     def update(self, old_lb, load_balancer):
         validate_input(data_models.LoadBalancer, load_balancer)
         LOG.info(_LI("%(entity)s handling the update of "
-                 "load balancer %(id)s") %
+                     "load balancer %(id)s"),
                  {"entity": self.__class__.__name__, "id": old_lb.id})
         load_balancer.id = old_lb.id
         simulate_controller(load_balancer, update=True)
 
     def delete(self, load_balancer_id):
         LOG.info(_LI("%(entity)s handling the deletion of "
-                 "load balancer %(id)s") %
+                     "load balancer %(id)s"),
                  {"entity": self.__class__.__name__, "id": load_balancer_id})
         simulate_controller(load_balancer_id, delete=True)
 
@@ -226,19 +226,19 @@ class LoadBalancerHandler(abstract_handler.BaseObjectHandler):
 class ListenerHandler(abstract_handler.BaseObjectHandler):
 
     def create(self, listener_id):
-        LOG.info(_LI("%(entity)s handling the creation of listener %(id)s") %
+        LOG.info(_LI("%(entity)s handling the creation of listener %(id)s"),
                  {"entity": self.__class__.__name__, "id": listener_id})
         simulate_controller(listener_id, create=True)
 
     def update(self, old_listener, listener):
         validate_input(data_models.Listener, listener)
-        LOG.info(_LI("%(entity)s handling the update of listener %(id)s") %
+        LOG.info(_LI("%(entity)s handling the update of listener %(id)s"),
                  {"entity": self.__class__.__name__, "id": old_listener.id})
         listener.id = old_listener.id
         simulate_controller(listener, update=True)
 
     def delete(self, listener_id):
-        LOG.info(_LI("%(entity)s handling the deletion of listener %(id)s") %
+        LOG.info(_LI("%(entity)s handling the deletion of listener %(id)s"),
                  {"entity": self.__class__.__name__, "id": listener_id})
         simulate_controller(listener_id, delete=True)
 
@@ -246,19 +246,19 @@ class ListenerHandler(abstract_handler.BaseObjectHandler):
 class PoolHandler(abstract_handler.BaseObjectHandler):
 
     def create(self, pool_id):
-        LOG.info(_LI("%(entity)s handling the creation of pool %(id)s") %
+        LOG.info(_LI("%(entity)s handling the creation of pool %(id)s"),
                  {"entity": self.__class__.__name__, "id": pool_id})
         simulate_controller(pool_id, create=True)
 
     def update(self, old_pool, pool):
         validate_input(data_models.Pool, pool)
-        LOG.info(_LI("%(entity)s handling the update of pool %(id)s") %
+        LOG.info(_LI("%(entity)s handling the update of pool %(id)s"),
                  {"entity": self.__class__.__name__, "id": old_pool.id})
         pool.id = old_pool.id
         simulate_controller(pool, update=True)
 
     def delete(self, pool_id):
-        LOG.info(_LI("%(entity)s handling the deletion of pool %(id)s") %
+        LOG.info(_LI("%(entity)s handling the deletion of pool %(id)s"),
                  {"entity": self.__class__.__name__, "id": pool_id})
         simulate_controller(pool_id, delete=True)
 
@@ -267,41 +267,42 @@ class HealthMonitorHandler(abstract_handler.BaseObjectHandler):
 
     def create(self, pool_id):
         LOG.info(_LI("%(entity)s handling the creation of health monitor "
-                 "on pool  %(id)s") % {"entity": self.__class__.__name__,
-                                       "id": pool_id})
+                     "on pool  %(id)s"),
+                 {"entity": self.__class__.__name__, "id": pool_id})
         simulate_controller(pool_id, create=True)
 
     def update(self, old_health_monitor, health_monitor):
         validate_input(data_models.HealthMonitor, health_monitor)
         LOG.info(_LI("%(entity)s handling the update of health monitor "
-                 "on pool %(id)s") % {"entity": self.__class__.__name__,
-                                      "id": old_health_monitor.pool_id})
+                     "on pool %(id)s"),
+                 {"entity": self.__class__.__name__,
+                  "id": old_health_monitor.pool_id})
         health_monitor.pool_id = old_health_monitor.pool_id
         simulate_controller(health_monitor, update=True)
 
     def delete(self, pool_id):
         LOG.info(_LI("%(entity)s handling the deletion of health monitor "
-                 "on pool %(id)s") % {"entity": self.__class__.__name__,
-                                      "id": pool_id})
+                     "on pool %(id)s"),
+                 {"entity": self.__class__.__name__, "id": pool_id})
         simulate_controller(pool_id, delete=True)
 
 
 class MemberHandler(abstract_handler.BaseObjectHandler):
 
     def create(self, member_id):
-        LOG.info(_LI("%(entity)s handling the creation of member %(id)s") %
+        LOG.info(_LI("%(entity)s handling the creation of member %(id)s"),
                  {"entity": self.__class__.__name__, "id": member_id})
         simulate_controller(member_id, create=True)
 
     def update(self, old_member, member):
         validate_input(data_models.Member, member)
-        LOG.info(_LI("%(entity)s handling the update of member %(id)s") %
+        LOG.info(_LI("%(entity)s handling the update of member %(id)s"),
                  {"entity": self.__class__.__name__, "id": old_member.id})
         member.id = old_member.id
         simulate_controller(member, update=True)
 
     def delete(self, member_id):
-        LOG.info(_LI("%(entity)s handling the deletion of member %(id)s") %
+        LOG.info(_LI("%(entity)s handling the deletion of member %(id)s"),
                  {"entity": self.__class__.__name__, "id": member_id})
         simulate_controller(member_id, delete=True)
 
