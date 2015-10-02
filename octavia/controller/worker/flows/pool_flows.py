@@ -61,7 +61,7 @@ class PoolFlows(object):
         update_pool_flow = linear_flow.Flow(constants.UPDATE_POOL_FLOW)
         update_pool_flow.add(model_tasks.
                              UpdateAttributes(
-                                 rebind={'object': constants.POOL},
+                                 rebind={constants.OBJECT: constants.POOL},
                                  requires=[constants.UPDATE_DICT]))
         update_pool_flow.add(amphora_driver_tasks.ListenerUpdate(
             requires=[constants.LISTENER, constants.VIP]))

@@ -43,7 +43,7 @@ class HealthMonitorFlows(object):
         """
         delete_hm_flow = linear_flow.Flow(constants.DELETE_HEALTH_MONITOR_FLOW)
         delete_hm_flow.add(model_tasks.
-                           DeleteModelObject(rebind={'object':
+                           DeleteModelObject(rebind={constants.OBJECT:
                                                      constants.HEALTH_MON}))
         delete_hm_flow.add(amphora_driver_tasks.ListenerUpdate(
             requires=[constants.LISTENER, constants.VIP]))
@@ -62,7 +62,7 @@ class HealthMonitorFlows(object):
         update_hm_flow = linear_flow.Flow(constants.UPDATE_HEALTH_MONITOR_FLOW)
         update_hm_flow.add(model_tasks.
                            UpdateAttributes(
-                               rebind={'object': constants.HEALTH_MON},
+                               rebind={constants.OBJECT: constants.HEALTH_MON},
                                requires=[constants.UPDATE_DICT]))
         update_hm_flow.add(amphora_driver_tasks.ListenerUpdate(
             requires=[constants.LISTENER, constants.VIP]))
