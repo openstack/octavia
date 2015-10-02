@@ -46,7 +46,7 @@ class MembersController(base.BaseController):
         session = db_api.get_session()
         db_member = self.repositories.member.get(session, id=id)
         if not db_member:
-            LOG.info(_LI("Member %s not found") % id)
+            LOG.info(_LI("Member %s not found"), id)
             raise exceptions.NotFound(
                 resource=data_models.Member._name(), id=id)
         return self._convert_db_to_type(db_member, member_types.MemberResponse)
@@ -99,7 +99,7 @@ class MembersController(base.BaseController):
                     ip_address=member_dict.get('ip_address'),
                     port=member_dict.get('protocol_port'))
         try:
-            LOG.info(_LI("Sending Creation of Member %s to handler") %
+            LOG.info(_LI("Sending Creation of Member %s to handler"),
                      db_member.id)
             self.handler.create(db_member)
         except Exception:
@@ -119,8 +119,8 @@ class MembersController(base.BaseController):
         db_member = self.repositories.member.get(session, id=id)
         if not db_member:
             LOG.info(_LI("Member %s cannot be updated because its Load "
-                         "Balancer is in an immutable state.") % id)
-            LOG.info(_LI("Member %s not found") % id)
+                         "Balancer is in an immutable state."), id)
+            LOG.info(_LI("Member %s not found"), id)
             raise exceptions.NotFound(
                 resource=data_models.Member._name(), id=id)
         # Verify load balancer is in a mutable status.  If so it can be assumed
@@ -134,7 +134,7 @@ class MembersController(base.BaseController):
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
         try:
-            LOG.info(_LI("Sending Update of Member %s to handler") % id)
+            LOG.info(_LI("Sending Update of Member %s to handler"), id)
             self.handler.update(db_member, member)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
@@ -150,7 +150,7 @@ class MembersController(base.BaseController):
         session = db_api.get_session()
         db_member = self.repositories.member.get(session, id=id)
         if not db_member:
-            LOG.info(_LI("Member %s not found") % id)
+            LOG.info(_LI("Member %s not found"), id)
             raise exceptions.NotFound(
                 resource=data_models.Member._name(), id=id)
         # Verify load balancer is in a mutable status.  If so it can be assumed
@@ -160,14 +160,14 @@ class MembersController(base.BaseController):
                 session, self.load_balancer_id, self.listener_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE):
             LOG.info(_LI("Member %s cannot be deleted because its Load "
-                         "Balancer is in an immutable state.") % id)
+                         "Balancer is in an immutable state."), id)
             lb_repo = self.repositories.load_balancer
             db_lb = lb_repo.get(session, id=self.load_balancer_id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
         db_member = self.repositories.member.get(session, id=id)
         try:
-            LOG.info(_LI("Sending Deletion of Member %s to handler") %
+            LOG.info(_LI("Sending Deletion of Member %s to handler"),
                      db_member.id)
             self.handler.delete(db_member)
         except Exception:

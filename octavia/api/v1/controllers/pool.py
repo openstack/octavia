@@ -48,7 +48,7 @@ class PoolsController(base.BaseController):
         session = db_api.get_session()
         db_pool = self.repositories.pool.get(session, id=id)
         if not db_pool:
-            LOG.info(_LI("Pool %s not found.") % id)
+            LOG.info(_LI("Pool %s not found."), id)
             raise exceptions.NotFound(resource=data_models.Pool._name(), id=id)
         return self._convert_db_to_type(db_pool, pool_types.PoolResponse)
 
@@ -103,7 +103,7 @@ class PoolsController(base.BaseController):
             # do not give any information as to what constraint failed
             raise exceptions.InvalidOption(value='', option='')
         try:
-            LOG.info(_LI("Sending Creation of Pool %s to handler") %
+            LOG.info(_LI("Sending Creation of Pool %s to handler"),
                      db_pool.id)
             self.handler.create(db_pool)
         except Exception:
@@ -143,7 +143,7 @@ class PoolsController(base.BaseController):
                 session, self.load_balancer_id, self.listener_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE):
             LOG.info(_LI("Pool %s cannot be updated because the Load "
-                         "Balancer is in an immutable state") % id)
+                         "Balancer is in an immutable state"), id)
             lb_repo = self.repositories.load_balancer
             db_lb = lb_repo.get(session, id=self.load_balancer_id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
@@ -156,7 +156,7 @@ class PoolsController(base.BaseController):
         session = db_api.get_session()
         db_pool = self.repositories.pool.get(session, id=id)
         if not db_pool:
-            LOG.info(_LI("Pool %s not found.") % id)
+            LOG.info(_LI("Pool %s not found."), id)
             raise exceptions.NotFound(resource=data_models.Pool._name(), id=id)
         # Verify load balancer is in a mutable status.  If so it can be assumed
         # that the listener is also in a mutable status because a load balancer
@@ -164,7 +164,7 @@ class PoolsController(base.BaseController):
         self._test_lb_status_put(session)
 
         try:
-            LOG.info(_LI("Sending Update of Pool %s to handler") % id)
+            LOG.info(_LI("Sending Update of Pool %s to handler"), id)
             self.handler.update(db_pool, pool)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
@@ -180,7 +180,7 @@ class PoolsController(base.BaseController):
         session = db_api.get_session()
         db_pool = self.repositories.pool.get(session, id=id)
         if not db_pool:
-            LOG.info(_LI("Pool %s not found.") % id)
+            LOG.info(_LI("Pool %s not found."), id)
             raise exceptions.NotFound(resource=data_models.Pool._name(), id=id)
         # Verify load balancer is in a mutable status.  If so it can be assumed
         # that the listener is also in a mutable status because a load balancer
@@ -189,14 +189,14 @@ class PoolsController(base.BaseController):
                 session, self.load_balancer_id, self.listener_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE):
             LOG.info(_LI("Pool %s cannot be deleted because the Load "
-                         "Balancer is in an immutable state") % id)
+                         "Balancer is in an immutable state"), id)
             lb_repo = self.repositories.load_balancer
             db_lb = lb_repo.get(session, id=self.load_balancer_id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
         db_pool = self.repositories.pool.get(session, id=id)
         try:
-            LOG.info(_LI("Sending Deletion of Pool %s to handler") %
+            LOG.info(_LI("Sending Deletion of Pool %s to handler"),
                      db_pool.id)
             self.handler.delete(db_pool)
         except Exception:
@@ -222,7 +222,7 @@ class PoolsController(base.BaseController):
             remainder = remainder[1:]
             db_pool = self.repositories.pool.get(session, id=pool_id)
             if not db_pool:
-                LOG.info(_LI("Pool %s not found.") % pool_id)
+                LOG.info(_LI("Pool %s not found."), pool_id)
                 raise exceptions.NotFound(resource=data_models.Pool._name(),
                                           id=pool_id)
             return member.MembersController(
@@ -233,7 +233,7 @@ class PoolsController(base.BaseController):
             remainder = remainder[1:]
             db_pool = self.repositories.pool.get(session, id=pool_id)
             if not db_pool:
-                LOG.info(_LI("Pool %s not found.") % pool_id)
+                LOG.info(_LI("Pool %s not found."), pool_id)
                 raise exceptions.NotFound(resource=data_models.Pool._name(),
                                           id=pool_id)
             return health_monitor.HealthMonitorController(

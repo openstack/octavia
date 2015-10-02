@@ -53,7 +53,7 @@ class ListenersController(base.BaseController):
         db_listener = self.repositories.listener.get(
             session, load_balancer_id=self.load_balancer_id, id=id)
         if not db_listener:
-            LOG.info(_LI("Listener %s not found.") % id)
+            LOG.info(_LI("Listener %s not found."), id)
             raise exceptions.NotFound(
                 resource=data_models.Listener._name(), id=id)
         return self._convert_db_to_type(db_listener,
@@ -73,7 +73,7 @@ class ListenersController(base.BaseController):
         if not lb_repo.test_and_set_provisioning_status(
                 session, self.load_balancer_id, constants.PENDING_UPDATE):
             db_lb = lb_repo.get(session, id=self.load_balancer_id)
-            LOG.info(_LI("Load Balancer %s is immutable.") % db_lb.id)
+            LOG.info(_LI("Load Balancer %s is immutable."), db_lb.id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
 
@@ -111,7 +111,7 @@ class ListenersController(base.BaseController):
             raise exceptions.InvalidOption(value=listener_dict.get('protocol'),
                                            option='protocol')
         try:
-            LOG.info(_LI("Sending Creation of Listener %s to handler") %
+            LOG.info(_LI("Sending Creation of Listener %s to handler"),
                      db_listener.id)
             self.handler.create(db_listener)
         except Exception:
@@ -149,7 +149,7 @@ class ListenersController(base.BaseController):
         if not self.repositories.test_and_set_lb_and_listener_prov_status(
                 session, self.load_balancer_id, id, constants.PENDING_UPDATE,
                 constants.PENDING_UPDATE):
-            LOG.info(_LI("Load Balancer %s is immutable.") %
+            LOG.info(_LI("Load Balancer %s is immutable."),
                      self.load_balancer_id)
             lb_repo = self.repositories.load_balancer
             db_lb = lb_repo.get(session, id=self.load_balancer_id)
@@ -164,7 +164,7 @@ class ListenersController(base.BaseController):
         session = db_api.get_session()
         db_listener = self.repositories.listener.get(session, id=id)
         if not db_listener:
-            LOG.info(_LI("Listener %s not found.") % id)
+            LOG.info(_LI("Listener %s not found."), id)
             raise exceptions.NotFound(
                 resource=data_models.Listener._name(), id=id)
         # Verify load balancer is in a mutable status.  If so it can be assumed
@@ -172,7 +172,7 @@ class ListenersController(base.BaseController):
         # will only be ACTIVE when all it's listeners as ACTIVE.
         self._test_lb_status_put(session, id)
         try:
-            LOG.info(_LI("Sending Update of Listener %s to handler") % id)
+            LOG.info(_LI("Sending Update of Listener %s to handler"), id)
             self.handler.update(db_listener, listener)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
@@ -188,7 +188,7 @@ class ListenersController(base.BaseController):
         session = db_api.get_session()
         db_listener = self.repositories.listener.get(session, id=id)
         if not db_listener:
-            LOG.info(_LI("Listener %s not found.") % id)
+            LOG.info(_LI("Listener %s not found."), id)
             raise exceptions.NotFound(
                 resource=data_models.Listener._name(), id=id)
         # Verify load balancer is in a mutable status.  If so it can be assumed
@@ -203,7 +203,7 @@ class ListenersController(base.BaseController):
                                              id=self.load_balancer_id)
         db_listener = self.repositories.listener.get(session, id=id)
         try:
-            LOG.info(_LI("Sending Deletion of Listener %s to handler") %
+            LOG.info(_LI("Sending Deletion of Listener %s to handler"),
                      db_listener.id)
             self.handler.delete(db_listener)
         except Exception:
@@ -229,7 +229,7 @@ class ListenersController(base.BaseController):
             db_listener = self.repositories.listener.get(
                 session, id=listener_id)
             if not db_listener:
-                LOG.info(_LI("Listener %s not found.") % listener_id)
+                LOG.info(_LI("Listener %s not found."), listener_id)
                 raise exceptions.NotFound(
                     resource=data_models.Listener._name(), id=listener_id)
             return pool.PoolsController(load_balancer_id=self.load_balancer_id,

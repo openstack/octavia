@@ -48,7 +48,7 @@ class HealthMonitorController(base.BaseController):
         db_hm = self.repositories.health_monitor.get(
             session, pool_id=self.pool_id)
         if not db_hm:
-            LOG.info(_LI("Health Monitor for Pool %s was not found") %
+            LOG.info(_LI("Health Monitor for Pool %s was not found"),
                      self.pool_id)
             raise exceptions.NotFound(
                 resource=data_models.HealthMonitor._name(), id=id)
@@ -75,7 +75,7 @@ class HealthMonitorController(base.BaseController):
                 session, self.load_balancer_id, self.listener_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE):
             LOG.info(_LI("Health Monitor for Pool %s cannot be updated "
-                         "because the Load Balancer is immutable.") %
+                         "because the Load Balancer is immutable."),
                      self.pool_id)
             lb_repo = self.repositories.load_balancer
             db_lb = lb_repo.get(session, id=self.load_balancer_id)
@@ -96,7 +96,7 @@ class HealthMonitorController(base.BaseController):
                                            option='type')
         try:
             LOG.info(_LI("Sending Creation of Health Monitor for Pool %s to "
-                         "handler") % self.pool_id)
+                         "handler"), self.pool_id)
             self.handler.create(db_hm)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
@@ -120,7 +120,7 @@ class HealthMonitorController(base.BaseController):
         db_hm = self.repositories.health_monitor.get(
             session, pool_id=self.pool_id)
         if not db_hm:
-            LOG.info(_LI("Health Monitor for Pool %s was not found") %
+            LOG.info(_LI("Health Monitor for Pool %s was not found"),
                      self.pool_id)
             raise exceptions.NotFound(
                 resource=data_models.HealthMonitor._name(), id=id)
@@ -131,7 +131,7 @@ class HealthMonitorController(base.BaseController):
                 session, self.load_balancer_id, self.listener_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE):
             LOG.info(_LI("Health Monitor for Pool %s cannot be updated "
-                         "because the Load Balancer is immutable.") %
+                         "because the Load Balancer is immutable."),
                      self.pool_id)
             lb_repo = self.repositories.load_balancer
             db_lb = lb_repo.get(session, id=self.load_balancer_id)
@@ -139,7 +139,7 @@ class HealthMonitorController(base.BaseController):
                                              id=self.load_balancer_id)
         try:
             LOG.info(_LI("Sending Update of Health Monitor for Pool %s to "
-                         "handler") % self.pool_id)
+                         "handler"), self.pool_id)
             self.handler.update(db_hm, health_monitor)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
@@ -158,7 +158,7 @@ class HealthMonitorController(base.BaseController):
             session, pool_id=self.pool_id)
         if not db_hm:
             LOG.info(_LI("Health Monitor for Pool %s cannot be updated "
-                         "because the Load Balancer is immutable.") %
+                         "because the Load Balancer is immutable."),
                      self.pool_id)
             raise exceptions.NotFound(
                 resource=data_models.HealthMonitor._name(), id=id)
@@ -176,7 +176,7 @@ class HealthMonitorController(base.BaseController):
                                                      pool_id=self.pool_id)
         try:
             LOG.info(_LI("Sending Deletion of Health Monitor for Pool %s to "
-                         "handler") % self.pool_id)
+                         "handler"), self.pool_id)
             self.handler.delete(db_hm)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):

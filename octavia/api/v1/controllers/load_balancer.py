@@ -45,7 +45,7 @@ class LoadBalancersController(base.BaseController):
         load_balancer = self.repositories.load_balancer.get(
             session, id=id)
         if not load_balancer:
-            LOG.info(_LI("Load Balancer %s was not found.") % id)
+            LOG.info(_LI("Load Balancer %s was not found."), id)
             raise exceptions.NotFound(
                 resource=data_models.LoadBalancer._name(), id=id)
         return self._convert_db_to_type(load_balancer,
@@ -77,7 +77,7 @@ class LoadBalancersController(base.BaseController):
             raise exceptions.IDAlreadyExists()
         # Handler will be responsible for sending to controller
         try:
-            LOG.info(_LI("Sending created Load Balancer %s to the handler") %
+            LOG.info(_LI("Sending created Load Balancer %s to the handler"),
                      db_lb.id)
             self.handler.create(db_lb)
         except Exception:
@@ -96,17 +96,17 @@ class LoadBalancersController(base.BaseController):
         lb_repo = self.repositories.load_balancer
         db_lb = self.repositories.load_balancer.get(session, id=id)
         if not db_lb:
-            LOG.info(_LI("Load Balancer %s was not found.") % id)
+            LOG.info(_LI("Load Balancer %s was not found."), id)
             raise exceptions.NotFound(
                 resource=data_models.LoadBalancer._name(), id=id)
         # Check load balancer is in a mutable status
         if not lb_repo.test_and_set_provisioning_status(
                 session, id, constants.PENDING_UPDATE):
-            LOG.info(_LI("Load Balancer %s is immutable.") % id)
+            LOG.info(_LI("Load Balancer %s is immutable."), id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=id)
         try:
-            LOG.info(_LI("Sending updated Load Balancer %s to the handler") %
+            LOG.info(_LI("Sending updated Load Balancer %s to the handler"),
                      id)
             self.handler.update(db_lb, load_balancer)
         except Exception:
@@ -124,18 +124,18 @@ class LoadBalancersController(base.BaseController):
         lb_repo = self.repositories.load_balancer
         db_lb = self.repositories.load_balancer.get(session, id=id)
         if not db_lb:
-            LOG.info(_LI("Load Balancer %s was not found.") % id)
+            LOG.info(_LI("Load Balancer %s was not found."), id)
             raise exceptions.NotFound(
                 resource=data_models.LoadBalancer._name(), id=id)
         # Check load balancer is in a mutable status
         if not lb_repo.test_and_set_provisioning_status(
                 session, id, constants.PENDING_DELETE):
-            LOG.info(_LI("Load Balancer %s is immutable.") % id)
+            LOG.info(_LI("Load Balancer %s is immutable."), id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=id)
         db_lb = self.repositories.load_balancer.get(session, id=id)
         try:
-            LOG.info(_LI("Sending deleted Load Balancer %s to the handler") %
+            LOG.info(_LI("Sending deleted Load Balancer %s to the handler"),
                      db_lb.id)
             self.handler.delete(db_lb)
         except Exception:
@@ -156,7 +156,7 @@ class LoadBalancersController(base.BaseController):
             remainder = remainder[1:]
             db_lb = self.repositories.load_balancer.get(session, id=lb_id)
             if not db_lb:
-                LOG.info(_LI("Load Balancer %s was not found.") % lb_id)
+                LOG.info(_LI("Load Balancer %s was not found."), lb_id)
                 raise exceptions.NotFound(
                     resource=data_models.LoadBalancer._name(), id=lb_id)
             return listener.ListenersController(
