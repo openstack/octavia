@@ -1,4 +1,9 @@
 actdiag
+# NOTE(tonyb) Pillow isn't directly needed but it's pulled in via
+#  Collecting Pillow (from blockdiag-> ...)
+# So cap as per global-requirements until https://launchpad.net/bugs/1501995
+# is properly fixed
+Pillow>=2.4.0,<3.0.0 # MIT
 blockdiag
 docutils==0.11
 nwdiag
