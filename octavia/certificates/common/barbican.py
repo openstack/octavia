@@ -74,8 +74,7 @@ class BarbicanAuth(object):
                 cls._barbican_client = barbican_client.Client(
                     session=keystone.get_session()
                 )
-            except Exception as e:
+            except Exception:
                 with excutils.save_and_reraise_exception():
-                    LOG.error(_LE(
-                        "Error creating Barbican client: %s"), e)
+                    LOG.exception(_LE("Error creating Barbican client"))
         return cls._barbican_client

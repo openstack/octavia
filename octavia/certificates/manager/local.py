@@ -88,9 +88,8 @@ class LocalCertManager(cert_mgr.CertManager):
                  certificate data
         :raises CertificateStorageException: if certificate retrieval fails
         """
-        LOG.info(_LI(
-            "Loading certificate {0} from the local filesystem."
-        ).format(cert_ref))
+        LOG.info(_LI("Loading certificate %s from the local filesystem."),
+                 cert_ref)
 
         filename_base = os.path.join(CONF.certificates.storage_path, cert_ref)
 
@@ -105,9 +104,7 @@ class LocalCertManager(cert_mgr.CertManager):
             with open(filename_certificate, 'r') as cert_file:
                 cert_data['certificate'] = cert_file.read()
         except IOError:
-            LOG.error(_LE(
-                "Failed to read certificate for {0}."
-            ).format(cert_ref))
+            LOG.error(_LE("Failed to read certificate for %s."), cert_ref)
             raise exceptions.CertificateStorageException(
                 msg="Certificate could not be read."
             )
@@ -115,9 +112,7 @@ class LocalCertManager(cert_mgr.CertManager):
             with open(filename_private_key, 'r') as key_file:
                 cert_data['private_key'] = key_file.read()
         except IOError:
-            LOG.error(_LE(
-                "Failed to read private key for {0}."
-            ).format(cert_ref))
+            LOG.error(_LE("Failed to read private key for %s"), cert_ref)
             raise exceptions.CertificateStorageException(
                 msg="Private Key could not be read."
             )
@@ -144,9 +139,8 @@ class LocalCertManager(cert_mgr.CertManager):
 
         :raises CertificateStorageException: if certificate deletion fails
         """
-        LOG.info(_LI(
-            "Deleting certificate {0} from the local filesystem."
-        ).format(cert_ref))
+        LOG.info(_LI("Deleting certificate %s from the local filesystem."),
+                 cert_ref)
 
         filename_base = os.path.join(CONF.certificates.storage_path, cert_ref)
 
@@ -161,7 +155,5 @@ class LocalCertManager(cert_mgr.CertManager):
             os.remove(filename_intermediates)
             os.remove(filename_pkp)
         except IOError as ioe:
-            LOG.error(_LE(
-                "Failed to delete certificate {0}."
-            ).format(cert_ref))
+            LOG.error(_LE("Failed to delete certificate %s"), cert_ref)
             raise exceptions.CertificateStorageException(message=ioe.message)
