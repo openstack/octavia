@@ -56,7 +56,7 @@ class CreateAmphoraInDB(BaseDatabaseTask):
                                            id=uuidutils.generate_uuid(),
                                            status=constants.PENDING_CREATE)
 
-        LOG.info(_LI("Created Amphora in DB with id %s") % amphora.id)
+        LOG.info(_LI("Created Amphora in DB with id %s"), amphora.id)
         return amphora.id
 
     def revert(self, result, *args, **kwargs):
@@ -89,7 +89,7 @@ class MarkLBAmphoraeDeletedInDB(BaseDatabaseTask):
 
         """
         for amp in loadbalancer.amphorae:
-            LOG.debug(_LW("Marking amphora %s DELETED ") % amp.id)
+            LOG.debug("Marking amphora %s DELETED ", amp.id)
             self.amphora_repo.update(db_apis.get_session(),
                                      id=amp.id, status=constants.DELETED)
 
@@ -107,7 +107,7 @@ class DeleteHealthMonitorInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("DB delete health monitor for id: %s " % pool_id)
+        LOG.debug("DB delete health monitor for id: %s ", pool_id)
         self.health_mon_repo.delete(db_apis.get_session(), pool_id=pool_id)
 
     def revert(self, pool_id, *args, **kwargs):
@@ -136,8 +136,7 @@ class DeleteMemberInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("DB delete member for id: %s " %
-                  member_id)
+        LOG.debug("DB delete member for id: %s ", member_id)
         self.member_repo.delete(db_apis.get_session(), id=member_id)
 
     def revert(self, member_id, *args, **kwargs):
@@ -162,7 +161,7 @@ class DeleteListenerInDB(BaseDatabaseTask):
         :param listener: The listener to delete
         :returns: None
         """
-        LOG.debug(_LW("Delete in DB for listener id: %s") % listener.id)
+        LOG.debug("Delete in DB for listener id: %s", listener.id)
         self.listener_repo.delete(db_apis.get_session(), id=listener.id)
 
     def revert(self, listener_id, *args, **kwargs):
@@ -189,8 +188,7 @@ class DeletePoolInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Delete in DB for pool id: %s " %
-                  pool.id)
+        LOG.debug("Delete in DB for pool id: %s ", pool.id)
         self.pool_repo.delete(db_apis.get_session(), id=pool.id)
 
     def revert(self, pool_id, *args, **kwargs):
@@ -216,8 +214,7 @@ class ReloadAmphora(BaseDatabaseTask):
         :returns: The amphora object
         """
 
-        LOG.debug("Get amphora from DB for amphora id: %s " %
-                  amphora_id)
+        LOG.debug("Get amphora from DB for amphora id: %s ", amphora_id)
         return self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
 
 
@@ -231,7 +228,7 @@ class ReloadLoadBalancer(BaseDatabaseTask):
         :returns: The load balancer object
         """
 
-        LOG.debug("Get load balancer from DB for load balancer id: %s " %
+        LOG.debug("Get load balancer from DB for load balancer id: %s ",
                   loadbalancer_id)
         return self.loadbalancer_repo.get(db_apis.get_session(),
                                           id=loadbalancer_id)
@@ -281,19 +278,20 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
                   unable to allocate an Amphora
         """
 
-        LOG.debug("Allocating an Amphora for load balancer with id %s" %
+        LOG.debug("Allocating an Amphora for load balancer with id %s",
                   loadbalancer_id)
 
         amp = self.amphora_repo.allocate_and_associate(
             db_apis.get_session(),
             loadbalancer_id)
         if amp is None:
-            LOG.debug("No Amphora available for load balancer with id %s" %
+            LOG.debug("No Amphora available for load balancer with id %s",
                       loadbalancer_id)
             raise exceptions.NoReadyAmphoraeException()
 
         LOG.info(_LI("Allocated Amphora with id %(amp)s for load balancer "
-                 "with id %(lb)s") % {"amp": amp.id, "lb": loadbalancer_id})
+                     "with id %(lb)s"),
+                 {"amp": amp.id, "lb": loadbalancer_id})
 
         return amp.id
 
@@ -309,7 +307,7 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
         """Mark amphora as allocated to a load balancer in DB."""
 
         LOG.info(_LI("Mark ALLOCATED in DB for amphora: %(amp)s with "
-                     "compute id %(comp)s for load balancer: %(lb)s") %
+                     "compute id %(comp)s for load balancer: %(lb)s"),
                  {"amp": amphora.id, "comp": amphora.compute_id,
                   "lb": loadbalancer_id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
@@ -337,7 +335,7 @@ class MarkAmphoraBootingInDB(BaseDatabaseTask):
     def execute(self, amphora_id, compute_id):
         """Mark amphora booting in DB."""
 
-        LOG.debug("Mark BOOTING in DB for amphora: %s with compute id %s" %
+        LOG.debug("Mark BOOTING in DB for amphora: %s with compute id %s",
                   (amphora_id, compute_id))
         self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  status=constants.AMPHORA_BOOTING,
@@ -366,8 +364,7 @@ class MarkAmphoraDeletedInDB(BaseDatabaseTask):
     def execute(self, amphora):
         """Mark the amphora as pending delete in DB."""
 
-        LOG.debug("Mark DELETED in DB for amphora: %s "
-                  "with compute id %s" %
+        LOG.debug("Mark DELETED in DB for amphora: %s with compute id %s",
                   (amphora.id, amphora.compute_id))
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.DELETED)
@@ -392,7 +389,7 @@ class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
         """Mark the amphora as pending delete in DB."""
 
         LOG.debug("Mark PENDING DELETE in DB for amphora: %s "
-                  "with compute id %s" %
+                  "with compute id %s",
                   (amphora.id, amphora.compute_id))
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.PENDING_DELETE)
@@ -417,7 +414,7 @@ class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
         """Mark the amphora as pending upate in DB."""
 
         LOG.debug("Mark PENDING UPDATE in DB for amphora: %s "
-                  "with compute id %s" %
+                  "with compute id %s",
                   (amphora.id, amphora.compute_id))
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.PENDING_UPDATE)
@@ -443,8 +440,8 @@ class MarkAmphoraReadyInDB(BaseDatabaseTask):
         """Mark amphora as ready in DB."""
 
         LOG.info(_LI("Mark READY in DB for amphora: %(amp)s with compute "
-                     "id %(comp)s") % {"amp": amphora.id,
-                                       "comp": amphora.compute_id})
+                     "id %(comp)s"),
+                 {"amp": amphora.id, "comp": amphora.compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.AMPHORA_READY,
                                  compute_id=amphora.compute_id,
@@ -486,7 +483,7 @@ class MarkLBActiveInDB(BaseDatabaseTask):
     def execute(self, loadbalancer):
         """Mark the load balancer as active in DB."""
 
-        LOG.info(_LI("Mark ACTIVE in DB for load balancer id: %s") %
+        LOG.info(_LI("Mark ACTIVE in DB for load balancer id: %s"),
                  loadbalancer.id)
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
@@ -511,7 +508,7 @@ class MarkLBDeletedInDB(BaseDatabaseTask):
     def execute(self, loadbalancer):
         """Mark the load balancer as deleted in DB."""
 
-        LOG.debug("Mark DELETED in DB for load balancer id: %s" %
+        LOG.debug("Mark DELETED in DB for load balancer id: %s",
                   loadbalancer.id)
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
@@ -536,7 +533,7 @@ class MarkLBPendingDeleteInDB(BaseDatabaseTask):
     def execute(self, loadbalancer):
         """Mark the load balancer as pending delete in DB."""
 
-        LOG.debug("Mark PENDING DELETE in DB for load balancer id: %s" %
+        LOG.debug("Mark PENDING DELETE in DB for load balancer id: %s",
                   loadbalancer.id)
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
@@ -563,7 +560,7 @@ class MarkLBAndListenerActiveInDB(BaseDatabaseTask):
         """Mark the load balancer and listener as active in DB."""
 
         LOG.debug("Mark ACTIVE in DB for load balancer id: %s "
-                  "and listener id: %s" % (loadbalancer.id, listener.id))
+                  "and listener id: %s", (loadbalancer.id, listener.id))
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
                                       provisioning_status=constants.ACTIVE)
@@ -598,8 +595,7 @@ class MarkListenerActiveInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Mark ACTIVE in DB for listener id: %s " %
-                  listener.id)
+        LOG.debug("Mark ACTIVE in DB for listener id: %s ", listener.id)
         self.listener_repo.update(db_apis.get_session(), listener.id,
                                   provisioning_status=constants.ACTIVE)
 
@@ -628,8 +624,7 @@ class MarkListenerDeletedInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Mark DELETED in DB for listener id: %s " %
-                  listener.id)
+        LOG.debug("Mark DELETED in DB for listener id: %s ", listener.id)
         self.listener_repo.update(db_apis.get_session(), listener.id,
                                   provisioning_status=constants.DELETED)
 
@@ -654,7 +649,7 @@ class MarkListenerPendingDeleteInDB(BaseDatabaseTask):
     def execute(self, listener):
         """Mark the listener as pending delete in DB."""
 
-        LOG.debug("Mark PENDING DELETE in DB for listener id: %s" %
+        LOG.debug("Mark PENDING DELETE in DB for listener id: %s",
                   listener.id)
         self.listener_repo.update(db_apis.get_session(), listener.id,
                                   provisioning_status=constants.PENDING_DELETE)
@@ -682,8 +677,7 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for listener id: %s " %
-                  loadbalancer.id)
+        LOG.debug("Update DB for listener id: %s ", loadbalancer.id)
         self.loadbalancer_repo.update(db_apis.get_session(), loadbalancer.id,
                                       **update_dict)
 
@@ -714,8 +708,7 @@ class UpdateHealthMonInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for health monitor id: %s " %
-                  health_mon.pool_id)
+        LOG.debug("Update DB for health monitor id: %s ", health_mon.pool_id)
         self.health_mon_repo.update(db_apis.get_session(), health_mon.pool_id,
                                     **update_dict)
 
@@ -746,8 +739,7 @@ class UpdateListenerInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for listener id: %s " %
-                  listener.id)
+        LOG.debug("Update DB for listener id: %s ", listener.id)
         self.listener_repo.update(db_apis.get_session(), listener.id,
                                   **update_dict)
 
@@ -778,8 +770,7 @@ class UpdateMemberInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for member id: %s " %
-                  member.id)
+        LOG.debug("Update DB for member id: %s ", member.id)
         self.member_repo.update(db_apis.get_session(), member.id,
                                 **update_dict)
 
@@ -810,8 +801,7 @@ class UpdatePoolInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for pool id: %s " %
-                  pool.id)
+        LOG.debug("Update DB for pool id: %s ", pool.id)
         self.pool_repo.update(db_apis.get_session(), pool.id,
                               **update_dict)
 

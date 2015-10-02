@@ -41,8 +41,8 @@ class SpareAmphora(object):
         session = db_api.get_session()
         conf_spare_cnt = CONF.house_keeping.spare_amphora_pool_size
         curr_spare_cnt = self.amp_repo.get_spare_amphora_count(session)
-        LOG.debug("Required Spare Amphora count : %d" % conf_spare_cnt)
-        LOG.debug("Current Spare Amphora count : %d" % curr_spare_cnt)
+        LOG.debug("Required Spare Amphora count : %d", conf_spare_cnt)
+        LOG.debug("Current Spare Amphora count : %d", curr_spare_cnt)
         diff_count = conf_spare_cnt - curr_spare_cnt
 
         # When the current spare amphora is less than required
@@ -52,7 +52,7 @@ class SpareAmphora(object):
 
             # Call Amphora Create Flow diff_count times
             for i in range(1, diff_count + 1):
-                LOG.debug("Starting amphorae number %d ..." % i)
+                LOG.debug("Starting amphorae number %d ...", i)
                 self.cw.create_amphora()
 
         else:
@@ -76,6 +76,6 @@ class DatabaseCleanup(object):
         for amp in amphora:
             if self.amp_health_repo.check_amphora_expired(session, amp.id,
                                                           exp_age):
-                LOG.info(_LI('Attempting to delete Amphora id : %s') % amp.id)
+                LOG.info(_LI('Attempting to delete Amphora id : %s'), amp.id)
                 self.amp_repo.delete(session, id=amp.id)
-                LOG.info(_LI('Deleted Amphora id : %s') % amp.id)
+                LOG.info(_LI('Deleted Amphora id : %s'), amp.id)

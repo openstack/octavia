@@ -41,53 +41,53 @@ class Endpoint(object):
         ).driver
 
     def create_load_balancer(self, context, load_balancer_id):
-        LOG.info(_LI('Creating load balancer \'%s\'...') % load_balancer_id)
+        LOG.info(_LI('Creating load balancer \'%s\'...'), load_balancer_id)
         self.worker.create_load_balancer(load_balancer_id)
 
     def update_load_balancer(self, context, load_balancer_id,
                              load_balancer_updates):
-        LOG.info(_LI('Updating load balancer \'%s\'...') % load_balancer_id)
+        LOG.info(_LI('Updating load balancer \'%s\'...'), load_balancer_id)
         self.worker.update_load_balancer(load_balancer_id,
                                          load_balancer_updates)
 
     def delete_load_balancer(self, context, load_balancer_id):
-        LOG.info(_LI('Deleting load balancer \'%s\'...') % load_balancer_id)
+        LOG.info(_LI('Deleting load balancer \'%s\'...'), load_balancer_id)
         self.worker.delete_load_balancer(load_balancer_id)
 
     def create_listener(self, context, listener_id):
-        LOG.info(_LI('Creating listener \'%s\'...') % listener_id)
+        LOG.info(_LI('Creating listener \'%s\'...'), listener_id)
         self.worker.create_listener(listener_id)
 
     def update_listener(self, context, listener_id, listener_updates):
-        LOG.info(_LI('Updating listener \'%s\'...') % listener_id)
+        LOG.info(_LI('Updating listener \'%s\'...'), listener_id)
         self.worker.update_listener(listener_id, listener_updates)
 
     def delete_listener(self, context, listener_id):
-        LOG.info(_LI('Deleting listener \'%s\'...') % listener_id)
+        LOG.info(_LI('Deleting listener \'%s\'...'), listener_id)
         self.worker.delete_listener(listener_id)
 
     def create_pool(self, context, pool_id):
-        LOG.info(_LI('Creating pool \'%s\'...') % pool_id)
+        LOG.info(_LI('Creating pool \'%s\'...'), pool_id)
         self.worker.create_pool(pool_id)
 
     def update_pool(self, context, pool_id, pool_updates):
-        LOG.info(_LI('Updating pool \'%s\'...') % pool_id)
+        LOG.info(_LI('Updating pool \'%s\'...'), pool_id)
         self.worker.update_pool(pool_id, pool_updates)
 
     def delete_pool(self, context, pool_id):
-        LOG.info(_LI('Deleting pool \'%s\'...') % pool_id)
+        LOG.info(_LI('Deleting pool \'%s\'...'), pool_id)
         self.worker.delete_pool(pool_id)
 
     def create_health_monitor(self, context, pool_id):
-        LOG.info(_LI('Creating health monitor on pool \'%s\'...') % pool_id)
+        LOG.info(_LI('Creating health monitor on pool \'%s\'...'), pool_id)
         self.worker.create_health_monitor(pool_id)
 
     def update_health_monitor(self, context, pool_id, health_monitor_updates):
-        LOG.info(_LI('Updating health monitor on pool \'%s\'...') % pool_id)
+        LOG.info(_LI('Updating health monitor on pool \'%s\'...'), pool_id)
         self.worker.update_health_monitor(pool_id, health_monitor_updates)
 
     def delete_health_monitor(self, context, pool_id):
-        LOG.info(_LI('Deleting health monitor on pool \'%s\'...') % pool_id)
+        LOG.info(_LI('Deleting health monitor on pool \'%s\'...'), pool_id)
         self.worker.delete_health_monitor(pool_id)
 
     def create_member(self, context, member_id):
