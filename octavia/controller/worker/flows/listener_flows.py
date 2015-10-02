@@ -66,7 +66,8 @@ class ListenerFlows(object):
         update_listener_flow = linear_flow.Flow(constants.UPDATE_LISTENER_FLOW)
         update_listener_flow.add(model_tasks.
                                  UpdateAttributes(
-                                     rebind={'object': constants.LISTENER},
+                                     rebind={constants.OBJECT:
+                                             constants.LISTENER},
                                      requires=[constants.UPDATE_DICT]))
         update_listener_flow.add(amphora_driver_tasks.ListenerUpdate(
             requires=[constants.LISTENER, constants.VIP]))

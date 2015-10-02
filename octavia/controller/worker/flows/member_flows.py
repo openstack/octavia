@@ -54,7 +54,7 @@ class MemberFlows(object):
         """
         delete_member_flow = linear_flow.Flow(constants.DELETE_MEMBER_FLOW)
         delete_member_flow.add(model_tasks.
-                               DeleteModelObject(rebind={'object':
+                               DeleteModelObject(rebind={constants.OBJECT:
                                                          constants.MEMBER}))
         delete_member_flow.add(amphora_driver_tasks.ListenerUpdate(
             requires=[constants.LISTENER, constants.VIP]))
@@ -75,7 +75,7 @@ class MemberFlows(object):
         update_member_flow = linear_flow.Flow(constants.UPDATE_MEMBER_FLOW)
         update_member_flow.add(model_tasks.
                                UpdateAttributes(
-                                   rebind={'object': constants.MEMBER},
+                                   rebind={constants.OBJECT: constants.MEMBER},
                                    requires=[constants.UPDATE_DICT]))
         update_member_flow.add(amphora_driver_tasks.ListenerUpdate(
             requires=[constants.LISTENER, constants.VIP]))

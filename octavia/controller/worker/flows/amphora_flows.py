@@ -61,7 +61,7 @@ class AmphoraFlows(object):
                 provides=constants.COMPUTE_ID))
         create_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
-        wait_flow = linear_flow.Flow('wait_for_amphora',
+        wait_flow = linear_flow.Flow(constants.WAIT_FOR_AMPHORA,
                                      retry=retry.Times(CONF.
                                                        controller_worker.
                                                        amp_active_retries))
@@ -105,7 +105,7 @@ class AmphoraFlows(object):
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
         create_amp_for_lb_flow.add(database_tasks.MarkAmphoraBootingInDB(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
-        wait_flow = linear_flow.Flow('wait_for_amphora',
+        wait_flow = linear_flow.Flow(constants.WAIT_FOR_AMPHORA,
                                      retry=retry.Times(CONF.
                                                        controller_worker.
                                                        amp_active_retries))
@@ -194,7 +194,7 @@ class AmphoraFlows(object):
                 requires=(constants.AMPHORA_ID, constants.LOADBALANCER_ID)))
         failover_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
-        wait_flow = linear_flow.Flow('wait_for_amphora',
+        wait_flow = linear_flow.Flow(constants.WAIT_FOR_AMPHORA,
                                      retry=retry.Times(CONF.
                                                        controller_worker.
                                                        amp_active_retries))
