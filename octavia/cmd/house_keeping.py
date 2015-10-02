@@ -38,7 +38,7 @@ def spare_amphora_check():
 
     # Read the interval from CONF
     interval = CONF.house_keeping.spare_check_interval
-    LOG.info(_LI("Spare check interval is set to %d sec") % interval)
+    LOG.info(_LI("Spare check interval is set to %d sec"), interval)
 
     spare_amp = house_keeping.SpareAmphora()
     while spare_amp_thread_event.is_set():
@@ -51,8 +51,8 @@ def db_cleanup():
     """Perform db cleanup for old amphora."""
     # Read the interval from CONF
     interval = CONF.house_keeping.cleanup_interval
-    LOG.info(_LI("DB cleanup interval is set to %d sec") % interval)
-    LOG.info(_LI('Amphora expiry age is %s seconds') %
+    LOG.info(_LI("DB cleanup interval is set to %d sec"), interval)
+    LOG.info(_LI('Amphora expiry age is %s seconds'),
              CONF.house_keeping.amphora_expiry_age)
 
     db_cleanup = house_keeping.DatabaseCleanup()
@@ -66,7 +66,7 @@ def main():
     service.prepare_service(sys.argv)
 
     timestamp = str(datetime.datetime.utcnow())
-    LOG.info(_LI("Starting house keeping at %s") % timestamp)
+    LOG.info(_LI("Starting house keeping at %s"), timestamp)
 
     # Thread to perform spare amphora check
     spare_amp_thread = threading.Thread(target=spare_amphora_check)
