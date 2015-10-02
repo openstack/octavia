@@ -59,7 +59,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
         metadata server this can be a file type object as well or
         a string
 
-        :raises NovaBuildException: if nova failed to build virtual machine
+        :raises ComputeBuildException: if nova failed to build virtual machine
         :returns: UUID of amphora
         '''
 
