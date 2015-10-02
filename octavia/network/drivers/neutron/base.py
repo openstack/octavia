@@ -113,9 +113,8 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
         try:
             ports = self.neutron_client.list_ports(device_id=compute_id)
         except Exception:
-            message = ('Error retrieving plugged networks for compute '
-                       'device {compute_id}.').format(compute_id=compute_id)
-            LOG.debug(message)
+            LOG.debug('Error retrieving plugged networks for compute '
+                      'device %s.', compute_id)
             ports = {'ports': []}
         return [self._port_to_octavia_interface(
                 compute_id, port) for port in ports['ports']]

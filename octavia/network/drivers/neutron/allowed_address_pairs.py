@@ -147,18 +147,16 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         while attempts <= cfg.CONF.networking.max_retries:
             try:
                 self.neutron_client.delete_security_group(sec_grp)
-                LOG.info(_LI("Deleted security group {0}.").format(
-                    sec_grp))
+                LOG.info(_LI("Deleted security group %s"), sec_grp)
                 return
             except neutron_client_exceptions.NotFound:
-                message = _LI("Security group {0} not found, will assume it is"
-                              " already deleted").format(sec_grp)
-                LOG.info(message)
+                LOG.info(_LI("Security group %s not found, will assume it is "
+                             "already deleted"), sec_grp)
                 return
             except Exception:
-                message = _LW("Attempt {0} to remove security group {1} "
-                              "failed.").format(attempts + 1, sec_grp)
-                LOG.warning(message)
+                LOG.warning(_LW("Attempt %(attempt)s to remove security group "
+                                "%(sg)s failed."),
+                            {'attempt': attempts + 1, 'sg': sec_grp})
             attempts += 1
             time.sleep(cfg.CONF.networking.retry_interval)
         message = _LE("All attempts to remove security group {0} have "
@@ -174,13 +172,14 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                    "found in neutron".format(vip.port_id))
             raise base.VIPConfigurationNotFound(msg)
         if port.device_owner != OCTAVIA_OWNER:
-            LOG.info(_LI("Port {0} will not be deleted by Octavia as it was "
-                         "not created by Octavia.").format(vip.port_id))
+            LOG.info(_LI("Port %s will not be deleted by Octavia as it was "
+                         "not created by Octavia."), vip.port_id)
             if self.sec_grp_enabled:
                 sec_grp = self._get_lb_security_group(vip.load_balancer.id)
                 sec_grp = sec_grp.get('id')
-                LOG.info(_LI("Removing security group {0} from port "
-                             "{1}").format(sec_grp, vip.port_id))
+                LOG.info(
+                    _LI("Removing security group %(sg)s from port %(port)s"),
+                    {'sg': sec_grp, 'port': vip.port_id})
                 raw_port = self.neutron_client.show_port(port.id)
                 sec_grps = raw_port.get('port', {}).get('security_groups', [])
                 if sec_grp in sec_grps:
@@ -236,8 +235,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                                             'without a port_id or '
                                             'a subnet_id.')
         if load_balancer.vip.port_id:
-            LOG.info(_LI('Port {port_id} already exists. Nothing to be '
-                         'done.').format(port_id=load_balancer.vip.port_id))
+            LOG.info(_LI('Port %s already exists. Nothing to be done.'),
+                     load_balancer.vip.port_id)
             port = self.get_port(load_balancer.vip.port_id)
             return self._port_to_vip(port, load_balancer)
 
