@@ -1,6 +1,9 @@
-=====================================
-Octavia Reference HAProxy Amphora API
-=====================================
+===========================
+Octavia HAProxy Amphora API
+===========================
+
+Introduction
+============
 This document describes the API interface between the reference haproxy driver
 and its corresponding haproxy-based amphorae.
 
@@ -68,7 +71,6 @@ In no case should the amphora assume it ever has direct access to the Octavia
 database. Also, sensitive data (like TLS certificates) should be stored in
 a secure way (ex. memory filesystem).
 
-===
 API
 ===
 

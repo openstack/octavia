@@ -4,18 +4,52 @@
 Main
 ====
 
+Getting started
+---------------
+
+.. toctree::
+   :maxdepth: 1
+
+   main/glossary.rst
+
+For developers
+--------------
+
+.. toctree::
+   :maxdepth: 1
+
+   main/CONSTITUTION.rst
+   main/HACKING.rst
+
+====
+APIs
+====
+
 .. toctree::
    :glob:
    :maxdepth: 1
 
-   main/*
-   main/*/*
+   api/*
+
+====================
+Design Documentation
+====================
+
+Version 0.5
+-----------
+
+.. toctree::
+   :glob:
+   :maxdepth: 1
+
+   design/version0.5/*
 
 ======================
 Project Specifications
 ======================
 
-Version 0.5 specs:
+Version 0.5
+-----------
 
 .. toctree::
    :glob:
@@ -23,25 +57,14 @@ Version 0.5 specs:
 
    specs/version0.5/*
 
-Version 1:
+Version 1
+---------
 
 .. toctree::
    :glob:
    :maxdepth: 1
 
    specs/version1/*
-
-====================
-Design Documentation
-====================
-
-Version 0.5:
-
-.. toctree::
-   :glob:
-   :maxdepth: 1
-
-   design/version0.5/*
 
 ==================
 Indices and tables
