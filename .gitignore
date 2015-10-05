@@ -22,3 +22,4 @@ subunit.log
 *.mo
 *.sw?
 *~
+.eggs/
