@@ -10,6 +10,7 @@ Getting started
 .. toctree::
    :maxdepth: 1
 
+   main/introduction.rst
    main/glossary.rst
 
 For users
@@ -27,6 +28,7 @@ For developers
 .. toctree::
    :maxdepth: 1
 
+   guides/dev-quick-start.rst
    main/CONSTITUTION.rst
    main/HACKING.rst
    devref/flows.rst
@@ -38,6 +40,7 @@ For operators
 .. toctree::
    :maxdepth: 1
 
+   guides/dev-quick-start.rst
    main/configref.rst
 
 ====
