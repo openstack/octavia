@@ -200,6 +200,8 @@ haproxy_amphora_opts = [
                help=_("The client certificate to talk to the agent")),
     cfg.StrOpt('server_ca', default='/etc/octavia/certs/server_ca.pem',
                help=_("The ca which signed the server certificates")),
+    cfg.BoolOpt('use_upstart', default=True,
+                help=_("If False, use sysvinit.")),
 ]
 
 controller_worker_opts = [

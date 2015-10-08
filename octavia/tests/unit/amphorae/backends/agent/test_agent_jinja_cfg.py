@@ -36,6 +36,7 @@ class AgentJinjaTestCase(base.TestCase):
                          agent_server_network_dir='/etc/network/interfaces.d/')
         self.conf.config(group="haproxy_amphora",
                          base_cert_dir='/var/lib/octavia/certs')
+        self.conf.config(group="haproxy_amphora", use_upstart='True')
         self.conf.config(group="haproxy_amphora", base_path='/var/lib/octavia')
         self.conf.config(group="haproxy_amphora", bind_host='0.0.0.0')
         self.conf.config(group="haproxy_amphora", bind_port=9443)
@@ -62,7 +63,8 @@ class AgentJinjaTestCase(base.TestCase):
                            'bind_port = 9443\n'
                            'haproxy_cmd = /usr/sbin/haproxy\n'
                            'respawn_count = 2\n'
-                           'respawn_interval = 2\n\n'
+                           'respawn_interval = 2\n'
+                           'use_upstart = True\n\n'
                            '[health_manager]\n'
                            'controller_ip_port_list = 192.0.2.10:5555\n'
                            'heartbeat_interval = 10\n'
@@ -82,6 +84,7 @@ class AgentJinjaTestCase(base.TestCase):
         ajc = agent_jinja_cfg.AgentJinjaTemplater()
         self.conf.config(group="amphora_agent",
                          agent_server_network_file='/etc/network/interfaces')
+        self.conf.config(group="haproxy_amphora", use_upstart='False')
         expected_config = ('\n[DEFAULT]\n'
                            'debug = False\n\n'
                            '[haproxy_amphora]\n'
@@ -91,7 +94,8 @@ class AgentJinjaTestCase(base.TestCase):
                            'bind_port = 9443\n'
                            'haproxy_cmd = /usr/sbin/haproxy\n'
                            'respawn_count = 2\n'
-                           'respawn_interval = 2\n\n'
+                           'respawn_interval = 2\n'
+                           'use_upstart = False\n\n'
                            '[health_manager]\n'
                            'controller_ip_port_list = 192.0.2.10:5555\n'
                            'heartbeat_interval = 10\n'
