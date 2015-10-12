@@ -55,6 +55,7 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
             id=FAKE_UUID_1, amphorae=[self.amphora], vip=self.vip,
             listeners=[self.listener])
         self.network = network_models.Network(id=self.FAKE_UUID_1)
+        self.port = network_models.Port(id=uuidutils.generate_uuid())
         self.amphorae_net_configs = {
             self.amphora.id:
                 network_models.AmphoraNetworkConfig(
@@ -109,10 +110,10 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
                              self.amphora.id])
 
     def test_post_network_plug(self):
-        self.driver.post_network_plug(self.amphora)
-        self.assertEqual((self.amphora.id, 'post_network_plug'),
-                         self.driver.driver.amphoraconfig[
-                             self.amphora.id])
+        self.driver.post_network_plug(self.amphora, self.port)
+        self.assertEqual((self.amphora.id, self.port.id, 'post_network_plug'),
+                         self.driver.driver.amphoraconfig[(
+                             self.amphora.id, self.port.id)])
 
     def test_post_vip_plug(self):
         self.driver.post_vip_plug(self.load_balancer,

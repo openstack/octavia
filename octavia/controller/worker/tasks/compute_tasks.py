@@ -125,7 +125,7 @@ class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
     def execute(self, loadbalancer):
         for amp in loadbalancer.amphorae:
             try:
-                self.compute.delete(compute_id=amp.compute_id)
+                self.compute.delete(amp.compute_id)
             except Exception as e:
                 LOG.error(_LE("Nova delete for amphora id: %(amp)s failed:"
                               "%(exp)s"), {'amp': amp.id, 'exp': e})
