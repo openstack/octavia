@@ -134,8 +134,8 @@ healthmanager_opts = [
     # Used by the health manager on the amphora
     cfg.ListOpt('controller_ip_port_list',
                 help=_('List of controller ip and port pairs for the '
-                       'heartbeat receivers. Example [\'127.0.0.1:5555\', '
-                       '\'127.0.0.1:5555\']'),
+                       'heartbeat receivers. Example 127.0.0.1:5555, '
+                       '192.168.0.1:5555'),
                 default=[]),
     cfg.IntOpt('heartbeat_interval',
                default=10,
