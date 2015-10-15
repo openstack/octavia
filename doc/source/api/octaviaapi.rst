@@ -1,5 +1,5 @@
-Using Octavia's Operator API
-============================
+Octavia API
+===========
 
 Authentication
 --------------
