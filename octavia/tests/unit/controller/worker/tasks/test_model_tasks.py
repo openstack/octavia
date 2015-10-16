@@ -13,15 +13,10 @@
 # under the License.
 #
 
-import six
+import mock
 
 from octavia.controller.worker.tasks import model_tasks
 import octavia.tests.unit.base as base
-
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 
 class TestObjectUpdateTasks(base.TestCase):

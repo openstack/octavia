@@ -11,18 +11,14 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import uuid
 
+import mock
 from OpenSSL import crypto
-import six
 
 import octavia.certificates.generator.barbican as barbican_cert_gen
 import octavia.tests.unit.base as base
-
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 
 class TestBarbicanGenerator(base.TestCase):

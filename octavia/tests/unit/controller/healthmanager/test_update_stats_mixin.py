@@ -14,17 +14,12 @@
 
 import random
 
+import mock
 from oslo_utils import uuidutils
-import six
 
 from octavia.common import constants
 from octavia.controller.healthmanager import update_stats_mixin as statsmixin
 import octavia.tests.unit.base as base
-
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 
 class TestUpdateStatsMixin(base.TestCase):

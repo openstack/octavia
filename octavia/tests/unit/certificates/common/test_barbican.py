@@ -13,16 +13,11 @@
 #    under the License.
 
 from barbicanclient import client as barbican_client
-import six
+import mock
 
 import octavia.certificates.common.barbican as barbican_common
 from octavia.common import keystone
 import octavia.tests.unit.base as base
-
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 
 class TestBarbicanAuth(base.TestCase):

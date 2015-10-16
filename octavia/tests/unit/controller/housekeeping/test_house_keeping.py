@@ -12,19 +12,15 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import mock
 from oslo_config import cfg
 from oslo_utils import uuidutils
-import six
 
 from octavia.common import constants
 from octavia.controller.housekeeping import house_keeping
 from octavia.db import repositories as repo
 import octavia.tests.unit.base as base
 
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 CONF = cfg.CONF
 CONF.import_group('house_keeping', 'octavia.common.config')

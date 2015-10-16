@@ -11,13 +11,14 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+
 import os
 
+import mock
 from oslo_config import cfg
 from oslo_log import log
 from oslo_utils import uuidutils
 import paramiko
-import six
 
 from octavia.amphorae.drivers.haproxy.jinja import jinja_cfg
 from octavia.amphorae.drivers.haproxy import ssh_driver
@@ -30,10 +31,6 @@ from octavia.network import data_models as network_models
 from octavia.tests.unit import base
 from octavia.tests.unit.common.sample_configs import sample_configs
 
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 LOG = log.getLogger(__name__)
 

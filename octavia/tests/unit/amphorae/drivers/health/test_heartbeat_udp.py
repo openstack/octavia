@@ -17,18 +17,14 @@ import binascii
 import random
 import socket
 
+import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
-import six
 
 from octavia.amphorae.drivers.health import heartbeat_udp
 from octavia.common import exceptions
 from octavia.tests.unit import base
 
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 FAKE_ID = 1
 KEY = 'TEST'
