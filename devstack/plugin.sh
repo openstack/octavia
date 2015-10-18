@@ -5,7 +5,7 @@
 function octavia_install {
 
     setup_develop $OCTAVIA_DIR
-    if ! [ "$AMPHORA_IMAGE_NAME" == 'amphora-x64-haproxy' ]; then
+    if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
         install_package qemu kpartx
         git_clone https://git.openstack.org/openstack/diskimage-builder.git $DEST/diskimage-builder master
         git_clone https://git.openstack.org/openstack/tripleo-image-elements.git $DEST/tripleo-image-elements master
@@ -153,7 +153,7 @@ function octavia_start {
 
     nova keypair-add --pub-key ${OCTAVIA_AMP_SSH_KEY_PATH}.pub ${OCTAVIA_AMP_SSH_KEY_NAME}
 
-    if ! [ "$AMPHORA_IMAGE_NAME" == 'amphora-x64-haproxy' ]; then
+    if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
         build_octavia_worker_image
     fi
 
@@ -230,9 +230,16 @@ if is_service_enabled $OCTAVIA; then
     AMPHORA_IMAGE_NAME=$(nova image-list | awk '/ amphora-x64-haproxy / {print $4}')
     export AMPHORA_IMAGE_NAME
 
+    if [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
+        echo "Found DISABLE_AMP_IMAGE_BUILD == True"
+        echo "Skipping amphora image build"
+    fi
+
     if [ "$AMPHORA_IMAGE_NAME" == 'amphora-x64-haproxy' ]; then
         echo "Found existing amphora image: $AMPHORA_IMAGE_NAME"
         echo "Skipping amphora image build"
+        DISABLE_AMP_IMAGE_BUILD=True
+        export DISABLE_AMP_IMAGE_BUILD
     fi
 
     if [[ "$1" == "stack" && "$2" == "install" ]]; then
