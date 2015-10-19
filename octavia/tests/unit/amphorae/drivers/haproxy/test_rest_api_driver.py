@@ -16,7 +16,6 @@
 import mock
 from oslo_utils import uuidutils
 import requests_mock
-import six
 
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy import rest_api_driver as driver
@@ -42,6 +41,7 @@ class HaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver = driver.HaproxyAmphoraLoadBalancerDriver()
 
         self.driver.cert_manager = mock.MagicMock()
+        self.driver.cert_parser = mock.MagicMock()
         self.driver.client = mock.MagicMock()
         self.driver.jinja = mock.MagicMock()
 
@@ -52,9 +52,17 @@ class HaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.lb = self.sl.load_balancer
         self.port = network_models.Port(mac_address='123')
 
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.get_host_names')
-    def test_update(self, mock_cert):
-        mock_cert.return_value = {'cn': 'fakeCN'}
+    def test_update(self, mock_cert, mock_load_crt):
+        mock_cert.return_value = {'cn': 'aFakeCN'}
+        sconts = []
+        for sni_container in self.sl.sni_containers:
+            sconts.append(sni_container.tls_container)
+        mock_load_crt.return_value = {
+            'tls_cert': self.sl.default_tls_container,
+            'sni_certs': sconts
+        }
         self.driver.client.get_cert_md5sum.side_effect = [
             exc.NotFound, 'Fake_MD5', 'd41d8cd98f00b204e9800998ecf8427e']
         self.driver.jinja.build_config.side_effect = ['fake_config']
@@ -67,11 +75,22 @@ class HaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         # verify result
         # this is called 3 times
         self.driver.client.get_cert_md5sum.assert_called_with(
-            self.amp, self.sl.id, 'fakeCN.pem')
-        # this is called twice (last MD5 matches)
-        self.driver.client.upload_cert_pem.assert_called_with(
-            self.amp, self.sl.id, 'fakeCN.pem', six.b(''))
-        self.assertEqual(2, self.driver.client.upload_cert_pem.call_count)
+            self.amp, self.sl.id, 'aFakeCN.pem')
+        # this is called three times (last MD5 matches)
+        fp1 = ('--imainter1--\n\n--imainter1too--\n'
+               '\n--imapem1--\n\n--imakey1--\n')
+        fp2 = ('--imainter2--\n\n--imainter2too--\n'
+               '\n--imapem2--\n\n--imakey2--\n')
+        fp3 = ('--imainter3--\n\n--imainter3too--\n'
+               '\n--imapem3--\n\n--imakey3--\n')
+        ucp_calls = [
+            mock.call(self.amp, self.sl.id, 'aFakeCN.pem', fp1),
+            mock.call(self.amp, self.sl.id, 'aFakeCN.pem', fp2),
+            mock.call(self.amp, self.sl.id, 'aFakeCN.pem', fp3)
+        ]
+        self.driver.client.upload_cert_pem.assert_has_calls(ucp_calls,
+                                                            any_order=True)
+        self.assertEqual(3, self.driver.client.upload_cert_pem.call_count)
         # upload only one config file
         self.driver.client.upload_config.assert_called_once_with(
             self.amp, self.sl.id, 'fake_config')

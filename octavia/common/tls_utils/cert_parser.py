@@ -156,7 +156,8 @@ def build_pem(tls_container):
         if tls_container.intermediates:
             pem = tls_container.intermediates[:]
         pem.extend([tls_container.certificate, tls_container.private_key])
-        return "\n".join(pem)
+
+        return '\n'.join(pem)
 
 
 def load_certificates_data(cert_mngr, listener):
