@@ -92,7 +92,7 @@ class TestBarbicanManager(base.TestCase):
         bc.secrets.create.assert_has_calls(calls, any_order=True)
 
         # create_certificate should be called once
-        self.assertEqual(bc.containers.create_certificate.call_count, 1)
+        self.assertEqual(1, bc.containers.create_certificate.call_count)
 
         # Container should be stored once
         self.empty_container.store.assert_called_once_with()
@@ -136,7 +136,7 @@ class TestBarbicanManager(base.TestCase):
         bc.secrets.create.assert_has_calls(calls, any_order=True)
 
         # create_certificate should be called once
-        self.assertEqual(bc.containers.create_certificate.call_count, 1)
+        self.assertEqual(1, bc.containers.create_certificate.call_count)
 
         # Container should be stored once
         self.empty_container.store.assert_called_once_with()

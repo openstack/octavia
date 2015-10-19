@@ -41,8 +41,8 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertIn(constants.LOADBALANCER_ID, lb_flow.requires)
 
-        self.assertEqual(len(lb_flow.provides), 6)
-        self.assertEqual(len(lb_flow.requires), 1)
+        self.assertEqual(6, len(lb_flow.provides))
+        self.assertEqual(1, len(lb_flow.requires))
 
     def test_get_delete_load_balancer_flow(self):
 
@@ -52,8 +52,8 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertIn('loadbalancer', lb_flow.requires)
 
-        self.assertEqual(len(lb_flow.provides), 0)
-        self.assertEqual(len(lb_flow.requires), 1)
+        self.assertEqual(0, len(lb_flow.provides))
+        self.assertEqual(1, len(lb_flow.requires))
 
     def test_get_new_LB_networking_subflow(self):
 
@@ -68,8 +68,8 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.LOADBALANCER, lb_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, lb_flow.requires)
 
-        self.assertEqual(len(lb_flow.provides), 4)
-        self.assertEqual(len(lb_flow.requires), 2)
+        self.assertEqual(4, len(lb_flow.provides))
+        self.assertEqual(2, len(lb_flow.requires))
 
     def test_get_update_load_balancer_flow(self):
 
@@ -79,5 +79,5 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertIn('loadbalancer', lb_flow.requires)
 
-        self.assertEqual(len(lb_flow.provides), 0)
-        self.assertEqual(len(lb_flow.requires), 2)
+        self.assertEqual(0, len(lb_flow.provides))
+        self.assertEqual(2, len(lb_flow.requires))

@@ -43,7 +43,7 @@ class TestHealthManagerCMD(base.TestCase):
         self.assertRaisesRegexp(Exception, 'break',
                                 health_manager.hm_listener)
         mock_getter.assert_called_once_with(mock_health(), mock_stats())
-        self.assertEqual(getter_mock.check.call_count, 2)
+        self.assertEqual(2, getter_mock.check.call_count)
 
     @mock.patch('octavia.controller.healthmanager.'
                 'health_manager.HealthManager')
@@ -56,7 +56,7 @@ class TestHealthManagerCMD(base.TestCase):
         self.assertRaisesRegexp(Exception, 'break',
                                 health_manager.hm_health_check)
         mock_health.assert_called_once_with()
-        self.assertEqual(hm_mock.health_check.call_count, 2)
+        self.assertEqual(2, hm_mock.health_check.call_count)
 
     @mock.patch('multiprocessing.Process')
     @mock.patch('octavia.common.service.prepare_service')

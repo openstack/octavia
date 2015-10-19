@@ -36,8 +36,8 @@ class TestListenerFlows(base.TestCase):
         self.assertIn('loadbalancer', listener_flow.requires)
         self.assertIn('vip', listener_flow.requires)
 
-        self.assertEqual(len(listener_flow.requires), 3)
-        self.assertEqual(len(listener_flow.provides), 0)
+        self.assertEqual(3, len(listener_flow.requires))
+        self.assertEqual(0, len(listener_flow.provides))
 
     def test_get_delete_listener_flow(self):
 
@@ -49,8 +49,8 @@ class TestListenerFlows(base.TestCase):
         self.assertIn('loadbalancer', listener_flow.requires)
         self.assertIn('vip', listener_flow.requires)
 
-        self.assertEqual(len(listener_flow.requires), 3)
-        self.assertEqual(len(listener_flow.provides), 0)
+        self.assertEqual(3, len(listener_flow.requires))
+        self.assertEqual(0, len(listener_flow.provides))
 
     def test_get_update_listener_flow(self):
 
@@ -63,5 +63,5 @@ class TestListenerFlows(base.TestCase):
         self.assertIn('vip', listener_flow.requires)
         self.assertIn('update_dict', listener_flow.requires)
 
-        self.assertEqual(len(listener_flow.requires), 4)
-        self.assertEqual(len(listener_flow.provides), 0)
+        self.assertEqual(4, len(listener_flow.requires))
+        self.assertEqual(0, len(listener_flow.provides))

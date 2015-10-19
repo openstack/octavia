@@ -1126,7 +1126,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
     def test_count(self):
         amphora = self.create_amphora(self.FAKE_UUID_1)
         amp_count = self.amphora_repo.count(self.session, id=amphora.id)
-        self.assertEqual(amp_count, 1)
+        self.assertEqual(1, amp_count)
 
     def test_create(self):
         amphora = self.create_amphora(self.FAKE_UUID_1)
@@ -1197,7 +1197,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
 
     def test_get_spare_amphora_count(self):
         count = self.amphora_repo.get_spare_amphora_count(self.session)
-        self.assertEqual(count, 0)
+        self.assertEqual(0, count)
 
         amphora1 = self.create_amphora(self.FAKE_UUID_1)
         self.amphora_repo.update(self.session, amphora1.id,
@@ -1206,7 +1206,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         self.amphora_repo.update(self.session, amphora2.id,
                                  status=constants.AMPHORA_READY)
         count = self.amphora_repo.get_spare_amphora_count(self.session)
-        self.assertEqual(count, 2)
+        self.assertEqual(2, count)
 
 
 class AmphoraHealthRepositoryTest(BaseRepositoryTest):
@@ -1279,7 +1279,7 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
         self.create_amphora_health(self.amphora.id)
         stale_amphora = self.amphora_health_repo.get_stale_amphora(
             self.session)
-        self.assertEqual(stale_amphora.amphora_id, self.amphora.id)
+        self.assertEqual(self.amphora.id, stale_amphora.amphora_id)
 
     def test_create(self):
         amphora_health = self.create_amphora_health(self.FAKE_UUID_1)
@@ -1288,7 +1288,7 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
         oldcreatetime = amphora_health.last_update
 
         diff = newcreatedtime - oldcreatetime
-        self.assertEqual(diff.seconds, 600)
+        self.assertEqual(600, diff.seconds)
 
     def test_update(self):
         d = datetime.datetime.today()

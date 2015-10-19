@@ -384,7 +384,7 @@ class TestControllerWorker(base.TestCase):
 
         mock_eng.run.assert_any_call()
 
-        self.assertEqual(mock_eng.run.call_count, 2)
+        self.assertEqual(2, mock_eng.run.call_count)
 
         mock_eng.reset()
         mock_eng.run = mock.MagicMock(

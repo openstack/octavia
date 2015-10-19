@@ -71,7 +71,7 @@ class TestHeartbeatUDP(base.TestCase):
             None, None)
 
         self.mock_getaddrinfo.assert_called_with(IP, PORT, 0, 2)
-        self.assertEqual(self.udp_status_getter.sockaddr, 5)
+        self.assertEqual(5, self.udp_status_getter.sockaddr)
         self.mock_socket.assert_called_with(1, socket.SOCK_DGRAM)
         bind_mock.assert_called_once_with((IP, PORT))
 
@@ -98,8 +98,8 @@ class TestHeartbeatUDP(base.TestCase):
         bin_msg = binascii.unhexlify(sample_msg)
         recvfrom.return_value = bin_msg, 2
         (obj, srcaddr) = getter.dorecv()
-        self.assertEqual(srcaddr, 2)
-        self.assertEqual(obj, {"testkey": "TEST"})
+        self.assertEqual(2, srcaddr)
+        self.assertEqual({"testkey": "TEST"}, obj)
 
     def test_check(self):
         mock_dorecv = mock.Mock()

@@ -31,8 +31,8 @@ class TestEnvelope(base.TestCase):
                          'id': str(uuid.uuid4())}
             envelope = status_message.wrap_envelope(statusMsg, 'samplekey1')
             obj = status_message.unwrap_envelope(envelope, 'samplekey1')
-            self.assertEqual(obj['status'], 'OK')
-            self.assertEqual(obj['seq'], seq)
+            self.assertEqual('OK', obj['status'])
+            self.assertEqual(seq, obj['seq'])
             seq += 1
             args = (envelope, 'samplekey?')
             self.assertRaises(exceptions.InvalidHMACException,
