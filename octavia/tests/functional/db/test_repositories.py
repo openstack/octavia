@@ -438,7 +438,7 @@ class MemberRepositoryTest(BaseRepositoryTest):
         self.assertEqual("10.0.0.1", new_member.ip_address)
         self.assertEqual(80, new_member.protocol_port)
         self.assertEqual(constants.ONLINE, new_member.operating_status)
-        self.assertEqual(True, new_member.enabled)
+        self.assertTrue(new_member.enabled)
 
     def test_update(self):
         ip_address_change = "10.0.0.2"
@@ -558,7 +558,7 @@ class ListenerRepositoryTest(BaseRepositoryTest):
         self.assertEqual(self.load_balancer.id, new_listener.load_balancer_id)
         self.assertEqual(constants.ACTIVE, new_listener.provisioning_status)
         self.assertEqual(constants.ONLINE, new_listener.operating_status)
-        self.assertEqual(True, new_listener.enabled)
+        self.assertTrue(new_listener.enabled)
 
     def test_update(self):
         name_change = "new_listener_name"
@@ -776,7 +776,7 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
         self.assertEqual("POST", new_hm.http_method)
         self.assertEqual("http://localhost:80/index.php", new_hm.url_path)
         self.assertEqual("200", new_hm.expected_codes)
-        self.assertEqual(True, new_hm.enabled)
+        self.assertTrue(new_hm.enabled)
 
     def test_update(self):
         delay_change = 2
@@ -828,7 +828,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         self.assertEqual("lb_description", lb.description)
         self.assertEqual(constants.ACTIVE, lb.provisioning_status)
         self.assertEqual(constants.ONLINE, lb.operating_status)
-        self.assertEqual(True, lb.enabled)
+        self.assertTrue(lb.enabled)
 
     def test_update(self):
         name_change = "load_balancer_name"
