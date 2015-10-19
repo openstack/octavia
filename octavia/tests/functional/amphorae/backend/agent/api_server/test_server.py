@@ -379,12 +379,8 @@ class ServerTestCase(base.TestCase):
     @mock.patch('os.path.exists')
     def test_get_certificate_md5(self, mock_exists):
         CONTENT = "TestTest"
-        mock_exists.side_effect = [False]
-        rv = self.app.get('/' + api_server.VERSION +
-                          '/listeners/123/certificates/test.pem')
-        self.assertEqual(404, rv.status_code)
 
-        mock_exists.side_effect = [True, False]
+        mock_exists.side_effect = [False]
         rv = self.app.get('/' + api_server.VERSION +
                           '/listeners/123/certificates/test.pem')
         self.assertEqual(404, rv.status_code)
@@ -416,12 +412,6 @@ class ServerTestCase(base.TestCase):
     @mock.patch('os.makedirs')
     def test_upload_certificate_md5(self, mock_makedir, mock_chmod,
                                     mock_exists):
-        mock_exists.side_effect = [False]
-        rv = self.app.put('/' + api_server.VERSION +
-                          '/listeners/123/certificates/test.pem',
-                          data='TestTest')
-        self.assertEqual(404, rv.status_code)
-
         # wrong file name
         mock_exists.side_effect = [True]
         rv = self.app.put('/' + api_server.VERSION +
