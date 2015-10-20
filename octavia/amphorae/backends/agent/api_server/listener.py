@@ -257,8 +257,9 @@ def get_listener_status(listener_id):
     return flask.jsonify(stats)
 
 
-def upload_certificate(listener_id, filename):
-    _check_listener_exists(listener_id)
+def upload_certificate(listener_id, filename, check_listener=True):
+    if check_listener:
+        _check_listener_exists(listener_id)
     _check_ssl_filename_format(filename)
 
     # create directory if not already there
