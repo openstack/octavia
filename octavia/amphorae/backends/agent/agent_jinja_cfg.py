@@ -43,6 +43,8 @@ class AgentJinjaTemplater(object):
              'agent_server_cert': CONF.amphora_agent.agent_server_cert,
              'agent_server_network_dir':
                  CONF.amphora_agent.agent_server_network_dir,
+             'agent_server_network_file':
+                 CONF.amphora_agent.agent_server_network_file,
              'amphora_id': amphora_id,
              'base_cert_dir': CONF.haproxy_amphora.base_cert_dir,
              'base_path': CONF.haproxy_amphora.base_path,
