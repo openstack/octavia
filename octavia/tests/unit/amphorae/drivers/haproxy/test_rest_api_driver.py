@@ -93,7 +93,7 @@ class HaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.assertEqual(3, self.driver.client.upload_cert_pem.call_count)
         # upload only one config file
         self.driver.client.upload_config.assert_called_once_with(
-            self.amp, self.sl.id, 'fake_config')
+            self.amp, self.sl.id, 'fake_config', check_listener=False)
         # start should be called once
         self.driver.client.reload_listener.assert_called_once_with(
             self.amp, self.sl.id)
