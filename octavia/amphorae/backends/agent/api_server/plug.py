@@ -131,7 +131,7 @@ def _interface_by_mac(mac):
     for interface in netifaces.interfaces():
         if netifaces.AF_LINK in netifaces.ifaddresses(interface):
             for link in netifaces.ifaddresses(interface)[netifaces.AF_LINK]:
-                if link.get('addr') == mac:
+                if link.get('addr', '').lower() == mac.lower():
                     return interface
     raise exceptions.HTTPException(
         response=flask.make_response(flask.jsonify(dict(
