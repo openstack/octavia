@@ -13,6 +13,7 @@
 # under the License.
 #
 
+import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
@@ -23,12 +24,9 @@ import octavia.tests.unit.base as base
 
 if six.PY2:
     import Queue as queue
-
-    import mock
 else:
     import queue
 
-    import unittest.mock as mock
 
 LISTENER_ID1 = uuidutils.generate_uuid()
 LISTENER_ID2 = uuidutils.generate_uuid()

@@ -13,18 +13,14 @@
 # under the License.
 #
 
+import mock
 from oslo_utils import uuidutils
-import six
 
 from octavia.controller.worker import controller_worker
 from octavia.controller.worker.tasks import controller_tasks
 from octavia.db import repositories as repo
 import octavia.tests.unit.base as base
 
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 AMP_ID = uuidutils.generate_uuid()
 LB1_ID = uuidutils.generate_uuid()

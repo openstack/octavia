@@ -12,18 +12,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import mock
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import uuidutils
-import six
 
 from octavia.controller.healthmanager import health_manager as healthmanager
 import octavia.tests.unit.base as base
 
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)

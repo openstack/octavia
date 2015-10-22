@@ -13,21 +13,16 @@
 # under the License.
 #
 
+import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
-import six
 
 from octavia.common import data_models as o_data_models
 from octavia.controller.worker.tasks import network_tasks
 from octavia.network import base as net_base
 from octavia.network import data_models
 import octavia.tests.unit.base as base
-
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 
 AMPHORA_ID = 7

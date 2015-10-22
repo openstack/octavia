@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
 import six
 
 from octavia.common import data_models
@@ -21,10 +22,6 @@ import octavia.common.tls_utils.cert_parser as cert_parser
 from octavia.tests.unit import base
 from octavia.tests.unit.common.sample_configs import sample_configs
 
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 ALT_EXT_CRT = """-----BEGIN CERTIFICATE-----
 MIIGqjCCBZKgAwIBAgIJAIApBg8slSSiMA0GCSqGSIb3DQEBBQUAMIGLMQswCQYD

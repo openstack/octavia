@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import mock
 from oslo_utils import uuidutils
 import six
 import sqlalchemy
@@ -19,11 +20,6 @@ import sqlalchemy
 from octavia.common import constants
 from octavia.controller.healthmanager import update_health_mixin as healthmixin
 import octavia.tests.unit.base as base
-
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 
 class TestUpdateHealthMixin(base.TestCase):

@@ -11,8 +11,10 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import os
 
+import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 import six
@@ -23,13 +25,8 @@ import octavia.tests.unit.base as base
 
 if six.PY2:
     import __builtin__ as builtins
-
-    import mock
 else:
-
     import builtins
-
-    import unittest.mock as mock
 
 
 class TestLocalManager(base.TestCase):

@@ -12,15 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import six
+import mock
 
 from octavia.cmd import health_manager
 from octavia.tests.unit import base
-
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 
 class TestHealthManagerCMD(base.TestCase):

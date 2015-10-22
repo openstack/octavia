@@ -24,9 +24,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
 from oslo_config import fixture
 import oslo_messaging as messaging
-import six
 
 from octavia.api.v1.handlers.queue import producer
 from octavia.api.v1.types import health_monitor
@@ -37,11 +37,6 @@ from octavia.api.v1.types import pool
 from octavia.common import config
 from octavia.common import data_models
 from octavia.tests.unit import base
-
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 
 class TestProducer(base.TestCase):

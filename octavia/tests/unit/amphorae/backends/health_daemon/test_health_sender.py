@@ -16,17 +16,13 @@ import binascii
 import random
 import socket
 
+import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
-import six
 
 from octavia.amphorae.backends.health_daemon import health_sender
 from octavia.tests.unit import base
 
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 IP = '192.0.2.15'
 IP_PORT = '192.0.2.10:5555', '192.0.2.10:5555'

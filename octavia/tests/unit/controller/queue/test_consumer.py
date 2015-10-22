@@ -12,18 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
 from oslo_config import cfg
 import oslo_messaging as messaging
-import six
 
 from octavia.controller.queue import consumer
 from octavia.controller.queue import endpoint
 from octavia.tests.unit import base
-
-if six.PY2:
-    import mock
-else:
-    import unittest.mock as mock
 
 
 class TestConsumer(base.TestCase):
