@@ -53,7 +53,7 @@ class TestSpareCheck(base.TestCase):
         self.assertTrue(self.amp_repo.get_spare_amphora_count.called)
         DIFF_CNT = self.FAKE_CNF_SPAR1 - self.FAKE_CUR_SPAR1
 
-        self.assertEqual(self.cw.create_amphora.call_count, DIFF_CNT)
+        self.assertEqual(DIFF_CNT, self.cw.create_amphora.call_count)
 
     @mock.patch('octavia.db.api.get_session')
     def test_spare_check_no_diff_count(self, session):
@@ -67,7 +67,7 @@ class TestSpareCheck(base.TestCase):
         DIFF_CNT = self.FAKE_CNF_SPAR2 - self.FAKE_CUR_SPAR2
 
         self.assertEqual(0, DIFF_CNT)
-        self.assertEqual(self.cw.create_amphora.call_count, DIFF_CNT)
+        self.assertEqual(DIFF_CNT, self.cw.create_amphora.call_count)
 
 
 class TestDatabaseCleanup(base.TestCase):

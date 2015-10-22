@@ -37,8 +37,8 @@ class TestHealthMonitorFlows(base.TestCase):
         self.assertIn('loadbalancer', health_mon_flow.requires)
         self.assertIn('vip', health_mon_flow.requires)
 
-        self.assertEqual(len(health_mon_flow.requires), 3)
-        self.assertEqual(len(health_mon_flow.provides), 0)
+        self.assertEqual(3, len(health_mon_flow.requires))
+        self.assertEqual(0, len(health_mon_flow.provides))
 
     def test_get_delete_health_monitor_flow(self):
 
@@ -52,8 +52,8 @@ class TestHealthMonitorFlows(base.TestCase):
         self.assertIn('listener', health_mon_flow.requires)
         self.assertIn('vip', health_mon_flow.requires)
 
-        self.assertEqual(len(health_mon_flow.requires), 5)
-        self.assertEqual(len(health_mon_flow.provides), 0)
+        self.assertEqual(5, len(health_mon_flow.requires))
+        self.assertEqual(0, len(health_mon_flow.provides))
 
     def test_get_update_health_monitor_flow(self):
 
@@ -68,5 +68,5 @@ class TestHealthMonitorFlows(base.TestCase):
         self.assertIn('health_mon', health_mon_flow.requires)
         self.assertIn('update_dict', health_mon_flow.requires)
 
-        self.assertEqual(len(health_mon_flow.requires), 5)
-        self.assertEqual(len(health_mon_flow.provides), 0)
+        self.assertEqual(5, len(health_mon_flow.requires))
+        self.assertEqual(0, len(health_mon_flow.provides))

@@ -235,7 +235,7 @@ class TestHealthDaemon(base.TestCase):
 
         health_daemon.build_stats_message()
 
-        self.assertEqual(mock_get_stats.call_count, 1)
+        self.assertEqual(1, mock_get_stats.call_count)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'util.is_listener_running')

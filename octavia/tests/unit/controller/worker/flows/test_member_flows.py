@@ -36,8 +36,8 @@ class TestMemberFlows(base.TestCase):
         self.assertIn('loadbalancer', member_flow.requires)
         self.assertIn('vip', member_flow.requires)
 
-        self.assertEqual(len(member_flow.requires), 3)
-        self.assertEqual(len(member_flow.provides), 2)
+        self.assertEqual(3, len(member_flow.requires))
+        self.assertEqual(2, len(member_flow.provides))
 
     def test_get_delete_member_flow(self):
 
@@ -51,8 +51,8 @@ class TestMemberFlows(base.TestCase):
         self.assertIn('member_id', member_flow.requires)
         self.assertIn('vip', member_flow.requires)
 
-        self.assertEqual(len(member_flow.requires), 5)
-        self.assertEqual(len(member_flow.provides), 0)
+        self.assertEqual(5, len(member_flow.requires))
+        self.assertEqual(0, len(member_flow.provides))
 
     def test_get_update_member_flow(self):
 
@@ -65,5 +65,5 @@ class TestMemberFlows(base.TestCase):
         self.assertIn('vip', member_flow.requires)
         self.assertIn('update_dict', member_flow.requires)
 
-        self.assertEqual(len(member_flow.requires), 5)
-        self.assertEqual(len(member_flow.provides), 0)
+        self.assertEqual(5, len(member_flow.requires))
+        self.assertEqual(0, len(member_flow.provides))

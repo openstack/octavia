@@ -45,8 +45,8 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
 
-        self.assertEqual(len(amp_flow.provides), 3)
-        self.assertEqual(len(amp_flow.requires), 0)
+        self.assertEqual(3, len(amp_flow.provides))
+        self.assertEqual(0, len(amp_flow.requires))
 
     def test_get_create_amphora_flow_cert(self):
         cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
@@ -61,8 +61,8 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
 
-        self.assertEqual(len(amp_flow.provides), 4)
-        self.assertEqual(len(amp_flow.requires), 0)
+        self.assertEqual(4, len(amp_flow.provides))
+        self.assertEqual(0, len(amp_flow.requires))
 
     def test_get_create_amphora_for_lb_flow(self):
 
@@ -79,8 +79,8 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
 
-        self.assertEqual(len(amp_flow.provides), 8)
-        self.assertEqual(len(amp_flow.requires), 1)
+        self.assertEqual(8, len(amp_flow.provides))
+        self.assertEqual(1, len(amp_flow.requires))
 
     def test_get_cert_create_amphora_for_lb_flow(self):
         cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
@@ -99,8 +99,8 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
 
-        self.assertEqual(len(amp_flow.provides), 9)
-        self.assertEqual(len(amp_flow.requires), 1)
+        self.assertEqual(9, len(amp_flow.provides))
+        self.assertEqual(1, len(amp_flow.requires))
 
     def test_get_delete_amphora_flow(self):
 
@@ -110,8 +110,8 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIn(constants.AMPHORA, amp_flow.requires)
 
-        self.assertEqual(len(amp_flow.provides), 0)
-        self.assertEqual(len(amp_flow.requires), 1)
+        self.assertEqual(0, len(amp_flow.provides))
+        self.assertEqual(1, len(amp_flow.requires))
 
     def test_get_failover_flow(self):
 
@@ -131,5 +131,5 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, amp_flow.provides)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
 
-        self.assertEqual(len(amp_flow.requires), 2)
-        self.assertEqual(len(amp_flow.provides), 12)
+        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(12, len(amp_flow.provides))
