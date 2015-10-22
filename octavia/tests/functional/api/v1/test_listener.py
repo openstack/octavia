@@ -96,7 +96,7 @@ class TestListener(base.BaseAPITest):
         sni_resp = listener_api.pop('sni_containers')
         self.assertEqual(2, len(sni_resp))
         for sni in sni_resp:
-            self.assertTrue(sni in sni_ex)
+            self.assertIn(sni, sni_ex)
         self.assertEqual(lb_listener, listener_api)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
