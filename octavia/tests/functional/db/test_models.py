@@ -743,7 +743,7 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertEqual(self.FAKE_UUID_1, lb.tenant_id)
         self.assertEqual(self.FAKE_UUID_1, lb.id)
         self.assertEqual(constants.ACTIVE, lb.provisioning_status)
-        self.assertEqual(True, lb.enabled)
+        self.assertTrue(lb.enabled)
 
     def check_vip_data_model(self, vip):
         self.assertEqual(self.FAKE_UUID_1, vip.load_balancer_id)
@@ -755,7 +755,7 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertEqual(80, listener.protocol_port)
         self.assertEqual(constants.ACTIVE, listener.provisioning_status)
         self.assertEqual(constants.ONLINE, listener.operating_status)
-        self.assertEqual(True, listener.enabled)
+        self.assertTrue(listener.enabled)
 
     def check_sni_data_model(self, sni):
         self.assertEqual(self.FAKE_UUID_1, sni.listener_id)
@@ -774,7 +774,7 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertEqual(constants.PROTOCOL_HTTP, pool.protocol)
         self.assertEqual(constants.LB_ALGORITHM_ROUND_ROBIN, pool.lb_algorithm)
         self.assertEqual(constants.ONLINE, pool.operating_status)
-        self.assertEqual(True, pool.enabled)
+        self.assertTrue(pool.enabled)
 
     def check_session_persistence_data_model(self, sp):
         self.assertEqual(self.pool.id, sp.pool_id)
@@ -786,7 +786,7 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertEqual(1, hm.timeout)
         self.assertEqual(1, hm.fall_threshold)
         self.assertEqual(1, hm.rise_threshold)
-        self.assertEqual(True, hm.enabled)
+        self.assertTrue(hm.enabled)
 
     def check_member_data_model(self, member):
         self.assertEqual(self.FAKE_UUID_1, member.tenant_id)
@@ -795,7 +795,7 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertEqual('10.0.0.1', member.ip_address)
         self.assertEqual(80, member.protocol_port)
         self.assertEqual(constants.ONLINE, member.operating_status)
-        self.assertEqual(True, member.enabled)
+        self.assertTrue(member.enabled)
 
     def check_amphora_data_model(self, amphora):
         self.assertEqual(self.FAKE_UUID_1, amphora.id)
