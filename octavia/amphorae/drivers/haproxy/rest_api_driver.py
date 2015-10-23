@@ -68,8 +68,7 @@ class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
 
         for amp in listener.load_balancer.amphorae:
             if amp.status != constants.DELETED:
-                self.client.upload_config(amp, listener.id,
-                                          config, check_listener=False)
+                self.client.upload_config(amp, listener.id, config)
                 # todo (german): add a method to REST interface to reload or
                 #                start without having to check
                 # Is that listener running?
