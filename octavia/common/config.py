@@ -30,8 +30,8 @@ from octavia import version
 LOG = logging.getLogger(__name__)
 
 core_opts = [
-    cfg.StrOpt('bind_host', default='0.0.0.0',
-               help=_("The host IP to bind to")),
+    cfg.IPOpt('bind_host', default='0.0.0.0',
+              help=_("The host IP to bind to")),
     cfg.IntOpt('bind_port', default=9876,
                help=_("The port to bind to")),
     cfg.StrOpt('api_handler', default='simulated_handler',
@@ -106,9 +106,9 @@ networking_opts = [
 ]
 
 healthmanager_opts = [
-    cfg.StrOpt('bind_ip', default='0.0.0.0',
-               help=_('IP address the controller will listen on for '
-                      'heart beats')),
+    cfg.IPOpt('bind_ip', default='0.0.0.0',
+              help=_('IP address the controller will listen on for '
+                     'heart beats')),
     cfg.IntOpt('bind_port', default=5555,
                help=_('Port number the controller will listen on'
                       'for heart beats')),
@@ -176,8 +176,8 @@ haproxy_amphora_opts = [
                help=_('Retry timeout between attempts in seconds.')),
 
     # REST server
-    cfg.StrOpt('bind_host', default='0.0.0.0',
-               help=_("The host IP to bind to")),
+    cfg.IPOpt('bind_host', default='0.0.0.0',
+              help=_("The host IP to bind to")),
     cfg.IntOpt('bind_port', default=9443,
                help=_("The port to bind to")),
     cfg.StrOpt('haproxy_cmd', default='/usr/sbin/haproxy',
