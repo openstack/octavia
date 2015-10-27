@@ -58,6 +58,27 @@ class HackingTestCase(base.BaseTestCase):
         self.assertEqual(0, len(list(checks.assert_true_instance(
             "self.assertTrue()"))))
 
+    def test_assert_equal_or_not_none(self):
+        self.assertEqual(1, len(list(checks.assert_equal_or_not_none(
+            "self.assertEqual(A, None)"))))
+
+        self.assertEqual(1, len(list(checks.assert_equal_or_not_none(
+            "self.assertEqual(None, A)"))))
+
+        self.assertEqual(1, len(list(checks.assert_equal_or_not_none(
+            "self.assertNotEqual(A, None)"))))
+
+        self.assertEqual(1, len(list(checks.assert_equal_or_not_none(
+            "self.assertNotEqual(None, A)"))))
+
+        self.assertEqual(0,
+                         len(list(checks.assert_equal_or_not_none(
+                             "self.assertIsNone()"))))
+
+        self.assertEqual(0,
+                         len(list(checks.assert_equal_or_not_none(
+                             "self.assertIsNotNone()"))))
+
     def test_assert_equal_in(self):
         self.assertEqual(1, len(list(checks.assert_equal_in(
             "self.assertEqual(a in b, True)"))))
