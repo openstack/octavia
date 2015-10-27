@@ -93,8 +93,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             possible_repo = getattr(self.repos, attr, None)
             message = ('Class Repositories is not expected to have %s instance'
                        ' variable as a repository.' % attr)
-            self.assertFalse(isinstance(possible_repo, repo.BaseRepository),
-                             msg=message)
+            self.assertNotIsInstance(possible_repo, repo.BaseRepository,
+                                     msg=message)
 
     def test_create_load_balancer_and_vip(self):
         lb = {'name': 'test1', 'description': 'desc1', 'enabled': True,

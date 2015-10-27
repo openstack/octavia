@@ -168,7 +168,7 @@ class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
             models.Pool).filter_by(id=pool.id).first()
         self.assertIsNotNone(new_pool.members)
         self.assertEqual(2, len(new_pool.members))
-        self.assertTrue(isinstance(new_pool.members[0], models.Member))
+        self.assertIsInstance(new_pool.members[0], models.Member)
 
     def test_health_monitor_relationship(self):
         pool = self.create_pool(self.session)
@@ -176,8 +176,8 @@ class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_pool = self.session.query(models.Pool).filter_by(
             id=pool.id).first()
         self.assertIsNotNone(new_pool.health_monitor)
-        self.assertTrue(isinstance(new_pool.health_monitor,
-                                   models.HealthMonitor))
+        self.assertIsInstance(new_pool.health_monitor,
+                              models.HealthMonitor)
 
     def test_session_persistence_relationship(self):
         pool = self.create_pool(self.session)
@@ -185,8 +185,8 @@ class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_pool = self.session.query(models.Pool).filter_by(
             id=pool.id).first()
         self.assertIsNotNone(new_pool.session_persistence)
-        self.assertTrue(isinstance(new_pool.session_persistence,
-                                   models.SessionPersistence))
+        self.assertIsInstance(new_pool.session_persistence,
+                              models.SessionPersistence)
 
     def test_listener_relationship(self):
         pool = self.create_pool(self.session)
@@ -194,7 +194,7 @@ class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_pool = self.session.query(models.Pool).filter_by(
             id=pool.id).first()
         self.assertIsNotNone(new_pool.listener)
-        self.assertTrue(isinstance(new_pool.listener, models.Listener))
+        self.assertIsInstance(new_pool.listener, models.Listener)
 
 
 class MemberModelTest(base.OctaviaDBTestBase, ModelTestMixin):
@@ -233,7 +233,7 @@ class MemberModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_member = self.session.query(models.Member).filter_by(
             id=member.id).first()
         self.assertIsNotNone(new_member.pool)
-        self.assertTrue(isinstance(new_member.pool, models.Pool))
+        self.assertIsInstance(new_member.pool, models.Pool)
 
 
 class SessionPersistenceModelTest(base.OctaviaDBTestBase, ModelTestMixin):
@@ -268,7 +268,7 @@ class SessionPersistenceModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_persistence = self.session.query(
             models.SessionPersistence).filter_by(pool_id=self.pool.id).first()
         self.assertIsNotNone(new_persistence.pool)
-        self.assertTrue(isinstance(new_persistence.pool, models.Pool))
+        self.assertIsInstance(new_persistence.pool, models.Pool)
 
 
 class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
@@ -300,8 +300,7 @@ class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_listener = self.session.query(
             models.Listener).filter_by(id=listener.id).first()
         self.assertIsNotNone(new_listener.load_balancer)
-        self.assertTrue(isinstance(new_listener.load_balancer,
-                                   models.LoadBalancer))
+        self.assertIsInstance(new_listener.load_balancer, models.LoadBalancer)
 
     def test_listener_statistics_relationship(self):
         listener = self.create_listener(self.session)
@@ -309,8 +308,7 @@ class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_listener = self.session.query(models.Listener).filter_by(
             id=listener.id).first()
         self.assertIsNotNone(new_listener.stats)
-        self.assertTrue(isinstance(new_listener.stats,
-                                   models.ListenerStatistics))
+        self.assertIsInstance(new_listener.stats, models.ListenerStatistics)
 
     def test_pool_relationship(self):
         pool = self.create_pool(self.session)
@@ -318,7 +316,7 @@ class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_listener = self.session.query(models.Listener).filter_by(
             id=listener.id).first()
         self.assertIsNotNone(new_listener.default_pool)
-        self.assertTrue(isinstance(new_listener.default_pool, models.Pool))
+        self.assertIsInstance(new_listener.default_pool, models.Pool)
 
     def test_sni_relationship(self):
         listener = self.create_listener(self.session)
@@ -362,7 +360,7 @@ class ListenerStatisticsModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_stats = self.session.query(models.ListenerStatistics).filter_by(
             listener_id=self.listener.id).first()
         self.assertIsNotNone(new_stats.listener)
-        self.assertTrue(isinstance(new_stats.listener, models.Listener))
+        self.assertIsInstance(new_stats.listener, models.Listener)
 
 
 class HealthMonitorModelTest(base.OctaviaDBTestBase, ModelTestMixin):
@@ -398,7 +396,7 @@ class HealthMonitorModelTest(base.OctaviaDBTestBase, ModelTestMixin):
             models.HealthMonitor).filter_by(
                 pool_id=health_monitor.pool_id).first()
         self.assertIsNotNone(new_health_monitor.pool)
-        self.assertTrue(isinstance(new_health_monitor.pool, models.Pool))
+        self.assertIsInstance(new_health_monitor.pool, models.Pool)
 
 
 class LoadBalancerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
@@ -480,7 +478,7 @@ class VipModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_vip = self.session.query(models.Vip).filter_by(
             load_balancer_id=self.load_balancer.id).first()
         self.assertIsNotNone(new_vip.load_balancer)
-        self.assertTrue(isinstance(new_vip.load_balancer, models.LoadBalancer))
+        self.assertIsInstance(new_vip.load_balancer, models.LoadBalancer)
 
 
 class SNIModelTest(base.OctaviaDBTestBase, ModelTestMixin):
@@ -513,7 +511,7 @@ class SNIModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_sni = self.session.query(models.SNI).filter_by(
             listener_id=self.listener.id).first()
         self.assertIsNotNone(new_sni.listener)
-        self.assertTrue(isinstance(new_sni.listener, models.Listener))
+        self.assertIsInstance(new_sni.listener, models.Listener)
 
 
 class AmphoraModelTest(base.OctaviaDBTestBase, ModelTestMixin):
