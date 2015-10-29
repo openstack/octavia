@@ -8,10 +8,10 @@ As such, we tend to follow Neutron conventions regarding coding style.
 
 Octavia Specific Commandments
 -----------------------------
-- [N316] Change assertTrue(isinstance(A, B)) by optimal assert like
+- [O316] Change assertTrue(isinstance(A, B)) by optimal assert like
   assertIsInstance(A, B).
-- [N320] Validate that LOG messages, except debug ones, have translations
-- [N334] Change assertTrue/False(A in/not in B, message) to the more specific
+- [O320] Validate that LOG messages, except debug ones, have translations
+- [O334] Change assertTrue/False(A in/not in B, message) to the more specific
   assertIn/NotIn(A, B, message)
 
 Creating Unit Tests

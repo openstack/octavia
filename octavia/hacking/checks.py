@@ -55,6 +55,18 @@ for level, hint in six.iteritems(_all_log_levels):
     }
     log_translation_hints.append(re.compile(r))
 
+assert_trueinst_re = re.compile(
+    r"(.)*assertTrue\(isinstance\((\w|\.|\'|\"|\[|\])+, "
+    "(\w|\.|\'|\"|\[|\])+\)\)")
+assert_equal_in_end_with_true_or_false_re = re.compile(
+    r"assertEqual\((\w|[][.'\"])+ in (\w|[][.'\", ])+, (True|False)\)")
+assert_equal_in_start_with_true_or_false_re = re.compile(
+    r"assertEqual\((True|False), (\w|[][.'\"])+ in (\w|[][.'\", ])+\)")
+assert_equal_with_true_re = re.compile(
+    r"assertEqual\(True,")
+assert_equal_with_false_re = re.compile(
+    r"assertEqual\(False,")
+
 
 def _directory_to_check_translation(filename):
     return True
@@ -119,7 +131,43 @@ def no_translate_debug_logs(logical_line, filename):
     """
     if _directory_to_check_translation(filename) and logical_line.startswith(
             "LOG.debug(_("):
-            yield(0, "O319 Don't translate debug level logs")
+        yield(0, "O319 Don't translate debug level logs")
+
+
+def assert_true_instance(logical_line):
+    """Check for assertTrue(isinstance(a, b)) sentences
+
+    O316
+    """
+    if assert_trueinst_re.match(logical_line):
+        yield (0, "O316: assertTrue(isinstance(a, b)) sentences not allowed")
+
+
+def assert_equal_true_or_false(logical_line):
+    """Check for assertEqual(True, A) or assertEqual(False, A) sentences
+
+    O323
+    """
+    res = (assert_equal_with_true_re.search(logical_line) or
+           assert_equal_with_false_re.search(logical_line))
+    if res:
+        yield (0, "O323: assertEqual(True, A) or assertEqual(False, A) "
+               "sentences not allowed")
+
+
+def assert_equal_in(logical_line):
+    """Check for assertEqual(A in B, True), assertEqual(True, A in B),
+
+    assertEqual(A in B, False) or assertEqual(False, A in B) sentences
+
+    O338
+    """
+    res = (assert_equal_in_start_with_true_or_false_re.search(logical_line) or
+           assert_equal_in_end_with_true_or_false_re.search(logical_line))
+    if res:
+        yield (0, "O338: Use assertIn/NotIn(A, B) rather than "
+               "assertEqual(A in B, True/False) when checking collection "
+               "contents.")
 
 
 def factory(register):
@@ -127,3 +175,6 @@ def factory(register):
     register(use_jsonutils)
     register(no_author_tags)
     register(no_translate_debug_logs)
+    register(assert_true_instance)
+    register(assert_equal_true_or_false)
+    register(assert_equal_in)
