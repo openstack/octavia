@@ -39,6 +39,8 @@ Response Codes
 
   - Example:  Malformed JSON in request body
 
+- ``401`` - Unauthorized: Access is denied due to invalid credentials
+
 - ``404`` - The requested resource does not exist
 
 - ``409`` - The request has a conflict with existing resources
@@ -102,17 +104,19 @@ List Load Balancers
 
 Retrieve a list of load balancers.
 
-+----------------+--------------------------+
-| Request Type   | ``GET``                  |
-+----------------+--------------------------+
-| Endpoint       | ``URL/v1/loadbalancers`` |
-+----------------+---------+----------------+
-|                | Success | 200            |
-| Response Codes +---------+----------------+
-|                | Error   | 401, 404, 500  |
-+----------------+---------+----------------+
++----------------+-------------------------------+
+| Request Type   | ``GET``                       |
++----------------+-------------------------------+
+| Endpoint       | ``URL/v1/loadbalancers``      |
++----------------+---------+---------------------+
+|                | Success | 200                 |
+| Response Codes +---------+---------------------+
+|                | Error   | 400, 401, 404, 500  |
++----------------+---------+---------------------+
 
 **Response Example**::
+
+
 
     [
         {
@@ -122,7 +126,6 @@ Retrieve a list of load balancers.
                 'network_id': 'uuid',
                 'ip_address': '192.0.2.1'
             },
-            'tenant_id': 'uuid',
             'name': 'lb_name',
             'description': 'lb_description',
             'enabled': true,
@@ -156,7 +159,6 @@ Retrieve details of a load balancer.
             'network_id': 'uuid',
             'ip_address': '192.0.2.1'
         },
-        'tenant_id': 'uuid',
         'name': 'lb_name',
         'description': 'lb_description',
         'enabled': true,
@@ -177,7 +179,7 @@ Create a load balancer.
 +----------------+---------+--------------------+
 |                | Success | 202                |
 | Response Codes +---------+--------------------+
-|                | Error   | 401, 400, 404, 500 |
+|                | Error   | 400, 401, 404, 500 |
 +----------------+---------+--------------------+
 
 |
@@ -202,12 +204,10 @@ Create a load balancer.
 
     {
         'vip': {
-            'port_id': 'uuid'
+            'subnet_id': 'uuid'
         },
-        'tenant_id': 'uuid',
         'name': 'lb_name',
-        'description': "lb_description',
-        'enabled': true
+        'description': 'lb_description',
     }
 
 **Response Example**::
@@ -216,10 +216,9 @@ Create a load balancer.
         'id': 'uuid',
         'vip':{
             'port_id': 'uuid',
-            'network_id': 'uuid',
+            'subnet_id': 'uuid',
             'ip_address': '192.0.2.1'
         },
-        'tenant_id': 'uuid',
         'name': 'lb_name',
         'description': 'lb_description',
         'enabled': true,
@@ -272,9 +271,8 @@ Modify mutable fields of a load balancer.
             'network_id': 'uuid',
             'ip_address': '192.0.2.1'
         },
-        'tenant_id': 'uuid',
-        'name': 'lb_name',
-        'description': 'lb_description',
+        'name': 'diff_lb_name',
+        'description': 'diff_lb_description',
         'enabled': true,
         'provisioning_status': 'PENDING_CREATE',
         'operating_status': 'OFFLINE'
@@ -352,21 +350,21 @@ Retrieve a list of listeners.
 
 **Response Example**::
 
-    [
-        {
-            'id': 'uuid',
-            'protocol': 'HTTP',
-            'protocol_port': 80,
-            'connection_limit': 10,
-            'default_tls_container_id': 'uuid',
-            'tenant_id': 'uuid',
-            'name': 'listener_name',
-            'description': 'listener_description',
-            'enabled': true,
-            'provisioning_status': 'ACTIVE',
-            'operating_status': 'ONLINE'
-        }
-    ]
+   [
+       {
+           'tls_certificate_id': null,
+           'protocol': 'HTTP',
+           'description': 'listener_description',
+           'provisioning_status': 'ACTIVE',
+           'connection_limit': 10,
+           'enabled': true,
+           'sni_containers': [],
+           'protocol_port': 80,
+           'id': 'uuid',
+           'operating_status': 'ONLINE',
+           'name': 'listener_name'
+       }
+   ］
 
 List Listener Details
 *********************
@@ -386,17 +384,17 @@ Retrieve details of a listener.
 **Response Example**::
 
     {
-        'id': 'uuid',
-        'protocol': 'HTTP',
-        'protocol_port': 80,
-        'connection_limit': 10,
-        'default_tls_container_id': 'uuid',
-        'tenant_id': 'uuid',
-        'name': 'listener_name',
-        'description': 'listener_description',
-        'enabled': true,
-        'provisioning_status': 'ACTIVE',
-        'operating_status': 'ONLINE'
+         'tls_certificate_id': null,
+         'protocol': 'HTTP',
+         'description': 'listener_description',
+         'provisioning_status': 'ACTIVE',
+         'connection_limit': 10,
+         'enabled': true,
+         'sni_containers': [],
+         'protocol_port': 80,
+         'id': 'uuid',
+         'operating_status': 'ONLINE',
+         'name': 'listener_name'
     }
 
 List Listener Statistics
@@ -421,7 +419,7 @@ Retrieve the stats of a listener.
         'bytes_in': 1000,
         'bytes_out': 1000,
         'active_connections': 1,
-        total_connections': 1
+        'total_connections': 1
     }
 
 Create Listener
@@ -436,7 +434,7 @@ Create a listener.
 +----------------+---------+----------------------------------+
 |                | Success | 202                              |
 | Response Codes +---------+----------------------------------+
-|                | Error   | 400, 401, 404, 500               |
+|                | Error   | 400, 401, 404,409,500            |
 +----------------+---------+----------------------------------+
 
 |
@@ -469,7 +467,6 @@ Create a listener.
         'protocol_port': 88,
         'connection_limit': 10,
         'default_tls_container_id': 'uuid',
-        'tenant_id': 'uuid',
         'name': 'listener_name',
         'description': 'listener_description',
         'enabled': true
@@ -477,19 +474,19 @@ Create a listener.
 
 **Response Example**::
 
-    {
-        'id': 'uuid',
+   {
+        'tls_certificate_id': null,
         'protocol': 'HTTPS',
-        'protocol_port': 88,
-        'connection_limit': 10,
-        'default_tls_container_id': 'uuid',
-        'tenant_id': 'uuid',
-        'name': 'listener_name',
         'description': 'listener_description',
+        'provisioning_status': 'PENDING_CREATE',
+        'connection_limit': 10,
         'enabled': true,
-        'provisioning_status': 'ACTIVE',
-        'operating_status': 'ONLINE'
-    }
+        'sni_containers': [],
+        'protocol_port': 88,
+        'id': 'uuid',
+        'operating_status': 'OFFLINE',
+        'name': 'listener_name'
+   }
 
 Update Listener
 ***************
@@ -534,7 +531,6 @@ Modify mutable fields of a listener.
         'protocol_port': 88,
         'connection_limit': 10,
         'default_tls_container_id': 'uuid',
-        'tenant_id': 'uuid',
         'name': 'listener_name',
         'description': 'listener_description',
         'enabled': true
@@ -543,17 +539,17 @@ Modify mutable fields of a listener.
 **Response Example**::
 
     {
-        'id': 'uuid',
+        'tls_certificate_id': null,
         'protocol': 'HTTPS',
-        'protocol_port': 88,
-        'connection_limit': 10,
-        'default_tls_container_id': 'uuid',
-        'tenant_id': 'uuid',
-        'name': 'listener_name',
         'description': 'listener_description',
-        'enabled': true,
         'provisioning_status': 'ACTIVE',
-        'operating_status': 'ONLINE'
+        'connection_limit': 10,
+        'enabled': true,
+        'sni_containers': [],
+        'protocol_port': 88,
+        'id': 'uuid',
+        'operating_status': 'ONLINE',
+        'name': 'listener_name'
     }
 
 Delete Listener
@@ -638,19 +634,19 @@ Retrieve a list of pools.
 **Response Example**::
 
     [
-        {
-            'id': 'uuid',
-            'protocol': 'HTTP',
-            'lb_algorithm': 'ROUND_ROBIN',
-            'session_persistence': {
+       {
+           'id': 'uuid',
+           'protocol': 'HTTP',
+           'lb_algorithm': 'ROUND_ROBIN',
+           'session_persistence': {
                 'type': 'HTTP_COOKIE',
                 'cookie_name': 'cookie_name'
-            },
-            'name': 'listener_name',
-            'description': 'listener_description',
-            'enabled': true,
-            'operating_status': 'ONLINE'
-        }
+           },
+           'name': 'pool_name',
+           'description': 'pool_description',
+           'enabled': true,
+           'operating_status': 'ONLINE'
+       }
     ]
 
 List Pool Details
@@ -679,8 +675,8 @@ Retrieve details of a pool.
             'type': 'HTTP_COOKIE',
             'cookie_name': 'cookie_name'
         },
-        'name': 'listener_name',
-        'description': 'listener_description',
+        'name': 'pool_name',
+        'description': 'pool_description',
         'enabled': true,
         'operating_status': 'ONLINE'
     }
@@ -726,28 +722,28 @@ Create a pool.
         'protocol': 'HTTP',
         'lb_algorithm': 'ROUND_ROBIN',
         'session_persistence': {
-            'type': 'HTTP_COOKIE',
-            'cookie_name': 'cookie_name'
+           'type': 'HTTP_COOKIE',
+           'cookie_name': 'cookie_name'
         },
-        'name': 'listener_name',
-        'description': 'listener_description',
+        'name': 'pool_name',
+        'description': 'pool_description',
         'enabled': true
     }
 
 **Response Example**::
 
     {
-        'id': 'uuid',
-        'protocol': 'HTTP',
         'lb_algorithm': 'ROUND_ROBIN',
-        'session_persistence': {
-            'type': 'HTTP_COOKIE',
-            'cookie_name': 'cookie_name'
-        },
-        'name': 'listener_name',
-        'description': 'listener_description',
+        'protocol': 'HTTP',
+        'description': 'pool_description',
         'enabled': true,
-        'operating_status': 'ONLINE'
+        'session_persistence': {
+            'cookie_name': 'cookie_name',
+            'type': 'HTTP_COOKIE'
+        },
+        'id': 'uuid',
+        'operating_status': 'OFFLINE',
+        'name': 'pool_name'
     }
 
 Update Pool
@@ -793,8 +789,8 @@ Modify mutable attributes of a pool.
             'type': 'HTTP_COOKIE',
             'cookie_name': 'cookie_name'
         },
-        'name': 'listener_name',
-        'description': 'listener_description',
+        'name': 'diff_pool_name',
+        'description': 'pool_description',
         'enabled': true
     }
 
@@ -808,8 +804,8 @@ Modify mutable attributes of a pool.
             'type': 'HTTP_COOKIE',
             'cookie_name': 'cookie_name'
         },
-        'name': 'listener_name',
-        'description': 'listener_description',
+        'name': 'diff_pool_name',
+        'description': 'pool_description',
         'enabled': true,
         'operating_status': 'ONLINE'
     }
@@ -1095,17 +1091,18 @@ Retrieve a list of pool members.
 
 **Response Example**::
 
-    [
+
+     [
         {
-            'id': 'uuid',
-            'ip_address': '10.0.0.1',
-            'protocol_port': 80,
-            'weight': 10,
-            'subnet_id': 'uuid',
-            'enabled': true,
-            'operating_status': 'ONLINE'
+           'id': 'uuid',
+           'ip_address': '10.0.0.1',
+           'protocol_port': 80,
+           'weight': 10,
+           'subnet_id': 'uuid',
+           'enabled': true,
+           'operating_status': 'ONLINE'
         }
-    ]
+     ]
 
 List Member Details
 *******************
