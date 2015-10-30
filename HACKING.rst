@@ -16,6 +16,7 @@ Octavia Specific Commandments
 - [O322] Don't use author tags
 - [O323] Change assertEqual(True, A) or assertEqual(False, A) to the more
   specific assertTrue(A) or assertFalse(A)
+- [O324] Method's default argument shouldn't be mutable
 - [O338] Change assertEqual(A in B, True), assertEqual(True, A in B),
   assertEqual(A in B, False) or assertEqual(False, A in B) to the more
   specific assertIn/NotIn(A, B)

@@ -211,13 +211,13 @@ class SNI(BaseDataModel):
 class TLSContainer(BaseDataModel):
 
     def __init__(self, id=None, primary_cn=None, certificate=None,
-                 private_key=None, passphrase=None, intermediates=[]):
+                 private_key=None, passphrase=None, intermediates=None):
         self.id = id
         self.primary_cn = primary_cn
         self.certificate = certificate
         self.private_key = private_key
         self.passphrase = passphrase
-        self.intermediates = intermediates
+        self.intermediates = intermediates or []
 
 
 class Amphora(BaseDataModel):

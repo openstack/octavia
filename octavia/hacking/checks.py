@@ -66,6 +66,7 @@ assert_equal_with_true_re = re.compile(
     r"assertEqual\(True,")
 assert_equal_with_false_re = re.compile(
     r"assertEqual\(False,")
+mutable_default_args = re.compile(r"^\s*def .+\((.+=\{\}|.+=\[\])")
 
 
 def _directory_to_check_translation(filename):
@@ -155,6 +156,12 @@ def assert_equal_true_or_false(logical_line):
                "sentences not allowed")
 
 
+def no_mutable_default_args(logical_line):
+    msg = "O324: Method's default argument shouldn't be mutable!"
+    if mutable_default_args.match(logical_line):
+        yield (0, msg)
+
+
 def assert_equal_in(logical_line):
     """Check for assertEqual(A in B, True), assertEqual(True, A in B),
 
@@ -177,4 +184,5 @@ def factory(register):
     register(use_jsonutils)
     register(no_author_tags)
     register(assert_equal_true_or_false)
+    register(no_mutable_default_args)
     register(assert_equal_in)
