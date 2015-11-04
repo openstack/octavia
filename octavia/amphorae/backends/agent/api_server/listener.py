@@ -258,7 +258,6 @@ def get_listener_status(listener_id):
 
 
 def upload_certificate(listener_id, filename):
-    _check_listener_exists(listener_id)
     _check_ssl_filename_format(filename)
 
     # create directory if not already there
@@ -279,7 +278,6 @@ def upload_certificate(listener_id, filename):
 
 
 def get_certificate_md5(listener_id, filename):
-    _check_listener_exists(listener_id)
     _check_ssl_filename_format(filename)
 
     cert_path = _cert_file_path(listener_id, filename)
