@@ -17,6 +17,7 @@ import sys
 
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_reports import guru_meditation_report as gmr
 
 from octavia.amphorae.drivers.health import heartbeat_udp
 from octavia.common import service
@@ -24,6 +25,8 @@ from octavia.controller.healthmanager import health_manager
 from octavia.controller.healthmanager import update_health_mixin
 from octavia.controller.healthmanager import update_stats_mixin
 from octavia.i18n import _LI
+from octavia import version
+
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -47,6 +50,9 @@ def hm_health_check():
 
 def main():
     service.prepare_service(sys.argv)
+
+    gmr.TextGuruMeditation.setup_autorun(version)
+
     processes = []
 
     hm_listener_proc = multiprocessing.Process(name='HM_listener',

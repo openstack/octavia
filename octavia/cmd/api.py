@@ -19,10 +19,12 @@ from wsgiref import simple_server
 
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_reports import guru_meditation_report as gmr
 
 from octavia.api import app as api_app
 from octavia.common import service as octavia_service
 from octavia.i18n import _LI
+from octavia import version
 
 
 LOG = logging.getLogger(__name__)
@@ -30,6 +32,9 @@ LOG = logging.getLogger(__name__)
 
 def main():
     octavia_service.prepare_service(sys.argv)
+
+    gmr.TextGuruMeditation.setup_autorun(version)
+
     app = api_app.setup_app()
 
     host, port = cfg.CONF.bind_host, cfg.CONF.bind_port

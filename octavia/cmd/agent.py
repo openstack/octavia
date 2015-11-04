@@ -23,11 +23,13 @@ import ssl
 import sys
 
 from oslo_config import cfg
+from oslo_reports import guru_meditation_report as gmr
 from werkzeug import serving
 
 from octavia.amphorae.backends.agent.api_server import server
 from octavia.amphorae.backends.health_daemon import health_daemon
 from octavia.common import service
+from octavia import version
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
@@ -63,6 +65,8 @@ class OctaviaSSLContext(serving._SSLContext):
 def main():
     # comment out to improve logging
     service.prepare_service(sys.argv)
+
+    gmr.TextGuruMeditation.setup_autorun(version)
 
     # Workaround for an issue with the auto-reload used below in werkzeug
     # Without it multiple health senders get started when werkzeug reloads
