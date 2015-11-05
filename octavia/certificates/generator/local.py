@@ -12,10 +12,15 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import binascii
-import os
+import datetime
+import uuid
 
-from OpenSSL import crypto
+from cryptography import exceptions as crypto_exceptions
+from cryptography.hazmat import backends
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
+from cryptography import x509
 from oslo_config import cfg
 from oslo_log import log as logging
 import six
@@ -24,7 +29,6 @@ from octavia.certificates.common import local as local_common
 from octavia.certificates.generator import cert_gen
 from octavia.common import exceptions
 from octavia.i18n import _LE, _LI
-
 
 LOG = logging.getLogger(__name__)
 
@@ -36,7 +40,7 @@ class LocalCertGenerator(cert_gen.CertGenerator):
 
     @classmethod
     def _new_serial(cls):
-        return int(binascii.hexlify(os.urandom(20)), 16)
+        return int(uuid.uuid4())
 
     @classmethod
     def _validate_cert(cls, ca_cert, ca_key, ca_key_pass):
@@ -47,7 +51,7 @@ class LocalCertGenerator(cert_gen.CertGenerator):
             except IOError:
                 raise exceptions.CertificateGenerationException(
                     msg="Failed to load {0}."
-                    .format(CONF.certificates.ca_certificate)
+                        .format(CONF.certificates.ca_certificate)
                 )
         if not ca_key:
             LOG.info(_LI("Using CA Private Key from config."))
@@ -56,7 +60,7 @@ class LocalCertGenerator(cert_gen.CertGenerator):
             except IOError:
                 raise exceptions.CertificateGenerationException(
                     msg="Failed to load {0}."
-                    .format(CONF.certificates.ca_certificate)
+                        .format(CONF.certificates.ca_certificate)
                 )
         if not ca_key_pass:
             ca_key_pass = CONF.certificates.ca_private_key_passphrase
@@ -88,11 +92,18 @@ class LocalCertGenerator(cert_gen.CertGenerator):
         :raises Exception: if certificate signing fails
         """
         LOG.info(_LI(
-            "Signing a certificate request using pyOpenSSL locally."
+            "Signing a certificate request using OpenSSL locally."
         ))
         cls._validate_cert(ca_cert, ca_key, ca_key_pass)
         if not ca_digest:
             ca_digest = CONF.certificates.signing_digest
+        try:
+            algorithm = getattr(hashes, ca_digest.upper())()
+        except AttributeError:
+            raise crypto_exceptions.UnsupportedAlgorithm(
+                "Supplied digest method not found: %s" % ca_digest
+            )
+
         if not ca_cert:
             with open(CONF.certificates.ca_certificate, 'r') as f:
                 ca_cert = f.read()
@@ -103,78 +114,71 @@ class LocalCertGenerator(cert_gen.CertGenerator):
             ca_key_pass = CONF.certificates.ca_private_key_passphrase
 
         try:
-            lo_cert = crypto.load_certificate(crypto.FILETYPE_PEM, ca_cert)
-            lo_key = crypto.load_privatekey(crypto.FILETYPE_PEM, ca_key,
-                                            ca_key_pass)
-            lo_req = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr)
-
-            new_cert = crypto.X509()
-            new_cert.set_version(2)
-            new_cert.set_serial_number(cls._new_serial())
-            new_cert.gmtime_adj_notBefore(0)
-            new_cert.gmtime_adj_notAfter(validity)
-            new_cert.set_issuer(lo_cert.get_subject())
-            new_cert.set_subject(lo_req.get_subject())
-            new_cert.set_pubkey(lo_req.get_pubkey())
-            exts = [
-                crypto.X509Extension(
-                    six.b('basicConstraints'), True, six.b('CA:false')),
-                crypto.X509Extension(
-                    six.b('keyUsage'), True,
-                    six.b('digitalSignature, keyEncipherment')),
-                crypto.X509Extension(
-                    six.b('extendedKeyUsage'), False,
-                    six.b('clientAuth, serverAuth')),
-                crypto.X509Extension(
-                    six.b('nsCertType'), False,
-                    six.b('client, server'))
-            ]
-            new_cert.add_extensions(exts)
-            new_cert.sign(lo_key, ca_digest)
-
-            return crypto.dump_certificate(crypto.FILETYPE_PEM, new_cert)
+            lo_cert = x509.load_pem_x509_certificate(
+                data=ca_cert, backend=backends.default_backend())
+            lo_key = serialization.load_pem_private_key(
+                data=ca_key, password=ca_key_pass,
+                backend=backends.default_backend())
+            lo_req = x509.load_pem_x509_csr(data=csr,
+                                            backend=backends.default_backend())
+            new_cert = x509.CertificateBuilder()
+            new_cert = new_cert.serial_number(cls._new_serial())
+            valid_from_datetime = datetime.datetime.today()
+            valid_to_datetime = datetime.datetime.now() + datetime.timedelta(
+                seconds=validity)
+            new_cert = new_cert.not_valid_before(valid_from_datetime)
+            new_cert = new_cert.not_valid_after(valid_to_datetime)
+            new_cert = new_cert.issuer_name(lo_cert.subject)
+            new_cert = new_cert.subject_name(lo_req.subject)
+            new_cert = new_cert.public_key(lo_req.public_key())
+            new_cert = new_cert.add_extension(
+                x509.BasicConstraints(ca=False, path_length=None),
+                critical=True
+            )
+            new_cert = new_cert.add_extension(
+                x509.ExtendedKeyUsage([
+                    x509.oid.ExtendedKeyUsageOID.SERVER_AUTH,
+                    x509.oid.ExtendedKeyUsageOID.CLIENT_AUTH
+                ]),
+                critical=True
+            )
+            signed_cert = new_cert.sign(private_key=lo_key,
+                                        algorithm=algorithm,
+                                        backend=backends.default_backend())
+            return signed_cert.public_bytes(
+                encoding=serialization.Encoding.PEM)
         except Exception as e:
             LOG.error(_LE("Unable to sign certificate."))
             raise exceptions.CertificateGenerationException(msg=e)
 
     @classmethod
     def _generate_private_key(cls, bit_length=2048, passphrase=None):
-        pk = crypto.PKey()
-        pk.generate_key(crypto.TYPE_RSA, bit_length)
+        pk = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=bit_length,
+            backend=backends.default_backend()
+        )
         if passphrase:
-            return crypto.dump_privatekey(
-                crypto.FILETYPE_PEM,
-                pk,
-                'aes-256-cbc',
-                passphrase
-            )
+            encryption = serialization.BestAvailableEncryption(passphrase)
         else:
-            return crypto.dump_privatekey(
-                crypto.FILETYPE_PEM,
-                pk
-            )
+            encryption = serialization.NoEncryption()
+        return pk.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=encryption,
+        )
 
     @classmethod
     def _generate_csr(cls, cn, private_key, passphrase=None):
-        if passphrase:
-            pk = crypto.load_privatekey(
-                crypto.FILETYPE_PEM,
-                private_key,
-                passphrase
-            )
-        else:
-            pk = crypto.load_privatekey(
-                crypto.FILETYPE_PEM,
-                private_key
-            )
-        csr = crypto.X509Req()
-        csr.set_pubkey(pk)
-        subject = csr.get_subject()
-        subject.CN = cn
-        return crypto.dump_certificate_request(
-            crypto.FILETYPE_PEM,
-            csr
-        )
+        cn = six.text_type(cn)
+        pk = serialization.load_pem_private_key(
+            data=private_key, password=passphrase,
+            backend=backends.default_backend())
+        csr = x509.CertificateSigningRequestBuilder().subject_name(
+            x509.Name([
+                x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, cn),
+            ])).sign(pk, hashes.SHA256(), backends.default_backend())
+        return csr.public_bytes(serialization.Encoding.PEM)
 
     @classmethod
     def generate_cert_key_pair(cls, cn, validity, bit_length=2048,
