@@ -15,6 +15,7 @@
 from oslo_config import cfg
 from oslo_log import log as logging
 import oslo_messaging as messaging
+from oslo_service import service
 
 from octavia.controller.queue import endpoint
 from octavia.i18n import _LI
@@ -36,10 +37,12 @@ class Consumer(object):
 
     def listen(self):
         try:
-            self.server.start()
+            service.launch(cfg.CONF, self.server).wait()
             LOG.info(_LI('Consumer is now listening...'))
-            self.server.wait()
         finally:
             LOG.info(_LI('Stopping consumer...'))
             self.server.stop()
-            LOG.info(_LI('Consumer successfully stopped.'))
+            LOG.info(_LI('Consumer successfully stopped.  Waiting for final '
+                         'messages to be processed...'))
+            self.server.wait()
+            LOG.info(_LI('Finished waiting.'))
