@@ -286,7 +286,19 @@ house_keeping_opts = [
                default=10,
                help=_('Number of threads performing amphora certificate'
                       ' rotation'))
+]
 
+anchor_opts = [
+    cfg.StrOpt('url',
+               default='http://localhost:9999/v1/sign/default',
+               help=_('Anchor URL')),
+    cfg.StrOpt('username',
+               default='myusername',
+               help=_('Anchor username')),
+    cfg.StrOpt('password',
+               default='simplepassword',
+               help=_('Anchor password'),
+               secret=True)
 ]
 
 # Register the configuration options
@@ -299,12 +311,14 @@ cfg.CONF.register_opts(controller_worker_opts, group='controller_worker')
 cfg.CONF.register_opts(task_flow_opts, group='task_flow')
 cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
 cfg.CONF.register_opts(house_keeping_opts, group='house_keeping')
+cfg.CONF.register_opts(anchor_opts, group='anchor')
 cfg.CONF.register_cli_opts(core_cli_opts)
 cfg.CONF.register_opts(certificate_opts, group='certificates')
 cfg.CONF.register_cli_opts(healthmanager_opts, group='health_manager')
 cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
 cfg.CONF.register_opts(keystone_authtoken_v3_opts,
                        group='keystone_authtoken_v3')
+
 
 # Ensure that the control exchange is set correctly
 messaging.set_transport_defaults(control_exchange='octavia')

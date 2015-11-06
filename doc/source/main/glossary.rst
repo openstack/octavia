@@ -28,6 +28,12 @@ description of these terms.
         back-end amphora corresponding with the driver. This communication
         happens over the LB network.
 
+    Anchor
+       Is an OpenStack project for an ephemeral PKI system (see
+       https://wiki.openstack.org/wiki/Security/Projects/Anchor). In Octavia
+       we can use Anchor to sign the certificates we use to authenticate/secure
+       controller <-> amphora communication.
+
     Apolocation
         Term used to describe when two or more amphorae are not colocated on
         the same physical hardware (which is often essential in HA topologies).

@@ -177,7 +177,10 @@ class LocalCertGenerator(cert_gen.CertGenerator):
         csr = x509.CertificateSigningRequestBuilder().subject_name(
             x509.Name([
                 x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, cn),
-            ])).sign(pk, hashes.SHA256(), backends.default_backend())
+            ])).add_extension(
+            x509.BasicConstraints(
+                ca=False, path_length=None), critical=True,
+        ).sign(pk, hashes.SHA256(), backends.default_backend())
         return csr.public_bytes(serialization.Encoding.PEM)
 
     @classmethod
