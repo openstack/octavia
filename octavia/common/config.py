@@ -32,8 +32,8 @@ LOG = logging.getLogger(__name__)
 core_opts = [
     cfg.IPOpt('bind_host', default='0.0.0.0',
               help=_("The host IP to bind to")),
-    cfg.IntOpt('bind_port', default=9876,
-               help=_("The port to bind to")),
+    cfg.PortOpt('bind_port', default=9876,
+                help=_("The port to bind to")),
     cfg.StrOpt('api_handler', default='simulated_handler',
                help=_("The handler that the API communicates with")),
     cfg.StrOpt('api_paste_config', default="api-paste.ini",
@@ -109,9 +109,9 @@ healthmanager_opts = [
     cfg.IPOpt('bind_ip', default='0.0.0.0',
               help=_('IP address the controller will listen on for '
                      'heart beats')),
-    cfg.IntOpt('bind_port', default=5555,
-               help=_('Port number the controller will listen on'
-                      'for heart beats')),
+    cfg.PortOpt('bind_port', default=5555,
+                help=_('Port number the controller will listen on'
+                       'for heart beats')),
     cfg.IntOpt('failover_threads',
                default=10,
                help=_('Number of threads performing amphora failovers.')),
@@ -178,8 +178,8 @@ haproxy_amphora_opts = [
     # REST server
     cfg.IPOpt('bind_host', default='0.0.0.0',
               help=_("The host IP to bind to")),
-    cfg.IntOpt('bind_port', default=9443,
-               help=_("The port to bind to")),
+    cfg.PortOpt('bind_port', default=9443,
+                help=_("The port to bind to")),
     cfg.StrOpt('haproxy_cmd', default='/usr/sbin/haproxy',
                help=_("The full path to haproxy")),
     cfg.IntOpt('respawn_count', default=2,
