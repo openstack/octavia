@@ -71,7 +71,7 @@ class ComputeCreate(BaseComputeTask):
                 config_drive_files=config_drive_files)
 
             LOG.debug("Server created with id: %s for amphora id: %s",
-                      (compute_id, amphora_id))
+                      compute_id, amphora_id)
             return compute_id
 
         except Exception:

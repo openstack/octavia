@@ -336,7 +336,7 @@ class MarkAmphoraBootingInDB(BaseDatabaseTask):
         """Mark amphora booting in DB."""
 
         LOG.debug("Mark BOOTING in DB for amphora: %s with compute id %s",
-                  (amphora_id, compute_id))
+                  amphora_id, compute_id)
         self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  status=constants.AMPHORA_BOOTING,
                                  compute_id=compute_id)
@@ -560,7 +560,7 @@ class MarkLBAndListenerActiveInDB(BaseDatabaseTask):
         """Mark the load balancer and listener as active in DB."""
 
         LOG.debug("Mark ACTIVE in DB for load balancer id: %s "
-                  "and listener id: %s", (loadbalancer.id, listener.id))
+                  "and listener id: %s", loadbalancer.id, listener.id)
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
                                       provisioning_status=constants.ACTIVE)
