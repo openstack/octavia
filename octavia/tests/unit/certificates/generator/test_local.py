@@ -57,9 +57,10 @@ class TestLocalGenerator(base.TestCase):
         )
 
         ca_cert = x509.CertificateBuilder()
-        valid_from_datetime = datetime.datetime.today()
-        valid_until_datetime = datetime.datetime.now() + datetime.timedelta(
-            seconds=2 * 365 * 24 * 60 * 60)
+        valid_from_datetime = datetime.datetime.utcnow()
+        valid_until_datetime = (datetime.datetime.utcnow() +
+                                datetime.timedelta(
+            seconds=2 * 365 * 24 * 60 * 60))
         ca_cert = ca_cert.not_valid_before(valid_from_datetime)
         ca_cert = ca_cert.not_valid_after(valid_until_datetime)
         ca_cert = ca_cert.serial_number(1)

@@ -123,9 +123,9 @@ class LocalCertGenerator(cert_gen.CertGenerator):
                                             backend=backends.default_backend())
             new_cert = x509.CertificateBuilder()
             new_cert = new_cert.serial_number(cls._new_serial())
-            valid_from_datetime = datetime.datetime.today()
-            valid_to_datetime = datetime.datetime.now() + datetime.timedelta(
-                seconds=validity)
+            valid_from_datetime = datetime.datetime.utcnow()
+            valid_to_datetime = (datetime.datetime.utcnow() +
+                                 datetime.timedelta(seconds=validity))
             new_cert = new_cert.not_valid_before(valid_from_datetime)
             new_cert = new_cert.not_valid_after(valid_to_datetime)
             new_cert = new_cert.issuer_name(lo_cert.subject)
