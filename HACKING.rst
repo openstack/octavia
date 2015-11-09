@@ -10,9 +10,15 @@ Octavia Specific Commandments
 -----------------------------
 - [O316] Change assertTrue(isinstance(A, B)) by optimal assert like
   assertIsInstance(A, B).
+- [O319] Validate that debug level logs are not translated.
 - [O320] Validate that LOG messages, except debug ones, have translations
-- [O334] Change assertTrue/False(A in/not in B, message) to the more specific
-  assertIn/NotIn(A, B, message)
+- [O321] Validate that jsonutils module is used instead of json
+- [O322] Don't use author tags
+- [O323] Change assertEqual(True, A) or assertEqual(False, A) to the more
+  specific assertTrue(A) or assertFalse(A)
+- [O338] Change assertEqual(A in B, True), assertEqual(True, A in B),
+  assertEqual(A in B, False) or assertEqual(False, A in B) to the more
+  specific assertIn/NotIn(A, B)
 
 Creating Unit Tests
 -------------------

@@ -72,6 +72,30 @@ def _directory_to_check_translation(filename):
     return True
 
 
+def assert_true_instance(logical_line):
+    """Check for assertTrue(isinstance(a, b)) sentences
+
+    O316
+    """
+    if assert_trueinst_re.match(logical_line):
+        yield (0, "O316: assertTrue(isinstance(a, b)) sentences not allowed")
+
+
+def no_translate_debug_logs(logical_line, filename):
+    """Check for 'LOG.debug(_('
+
+    As per our translation policy,
+    https://wiki.openstack.org/wiki/LoggingStandards#Log_Translation
+    we shouldn't translate debug level logs.
+
+    * This check assumes that 'LOG' is a logger.
+    O319
+    """
+    if _directory_to_check_translation(filename) and logical_line.startswith(
+            "LOG.debug(_("):
+        yield(0, "O319 Don't translate debug level logs")
+
+
 def validate_log_translations(logical_line, physical_line, filename):
     # Translations are not required in the test directory
     if "octavia/tests" in filename:
@@ -119,30 +143,6 @@ def no_author_tags(physical_line):
             return pos, "O322: Don't use author tags"
 
 
-def no_translate_debug_logs(logical_line, filename):
-    """Check for 'LOG.debug(_('
-
-    As per our translation policy,
-    https://wiki.openstack.org/wiki/LoggingStandards#Log_Translation
-    we shouldn't translate debug level logs.
-
-    * This check assumes that 'LOG' is a logger.
-    O319
-    """
-    if _directory_to_check_translation(filename) and logical_line.startswith(
-            "LOG.debug(_("):
-        yield(0, "O319 Don't translate debug level logs")
-
-
-def assert_true_instance(logical_line):
-    """Check for assertTrue(isinstance(a, b)) sentences
-
-    O316
-    """
-    if assert_trueinst_re.match(logical_line):
-        yield (0, "O316: assertTrue(isinstance(a, b)) sentences not allowed")
-
-
 def assert_equal_true_or_false(logical_line):
     """Check for assertEqual(True, A) or assertEqual(False, A) sentences
 
@@ -171,10 +171,10 @@ def assert_equal_in(logical_line):
 
 
 def factory(register):
+    register(assert_true_instance)
+    register(no_translate_debug_logs)
     register(validate_log_translations)
     register(use_jsonutils)
     register(no_author_tags)
-    register(no_translate_debug_logs)
-    register(assert_true_instance)
     register(assert_equal_true_or_false)
     register(assert_equal_in)
