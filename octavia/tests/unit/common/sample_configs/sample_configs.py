@@ -205,13 +205,13 @@ def sample_tls_sni_containers_tuple(tls_container=None):
 
 
 def sample_tls_container_tuple(id='cont_id_1', certificate=None,
-                               private_key=None, intermediates=[],
+                               private_key=None, intermediates=None,
                                primary_cn=None):
     sc = collections.namedtuple(
         'tls_container',
         'id, certificate, private_key, intermediates, primary_cn')
     return sc(id=id, certificate=certificate, private_key=private_key,
-              intermediates=intermediates, primary_cn=primary_cn)
+              intermediates=intermediates or [], primary_cn=primary_cn)
 
 
 def sample_pool_tuple(proto=None, monitor=True, persistence=True,
