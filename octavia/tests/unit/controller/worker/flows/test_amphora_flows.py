@@ -45,7 +45,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
 
-        self.assertEqual(3, len(amp_flow.provides))
+        self.assertEqual(4, len(amp_flow.provides))
         self.assertEqual(0, len(amp_flow.requires))
 
     def test_get_create_amphora_flow_cert(self):
@@ -61,7 +61,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
 
-        self.assertEqual(4, len(amp_flow.provides))
+        self.assertEqual(5, len(amp_flow.provides))
         self.assertEqual(0, len(amp_flow.requires))
 
     def test_get_create_amphora_for_lb_flow(self):

@@ -66,7 +66,11 @@ class AmphoraFlows(object):
                                                        controller_worker.
                                                        amp_active_retries))
         wait_flow.add(compute_tasks.ComputeWait(
-            requires=constants.COMPUTE_ID))
+            requires=constants.COMPUTE_ID,
+            provides=constants.COMPUTE_OBJ))
+        wait_flow.add(database_tasks.UpdateAmphoraInfo(
+            requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
+            provides=constants.AMPHORA))
         create_amphora_flow.add(wait_flow)
         create_amphora_flow.add(database_tasks.ReloadAmphora(
             requires=constants.AMPHORA_ID,
