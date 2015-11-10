@@ -67,6 +67,14 @@ assert_equal_with_true_re = re.compile(
 assert_equal_with_false_re = re.compile(
     r"assertEqual\(False,")
 mutable_default_args = re.compile(r"^\s*def .+\((.+=\{\}|.+=\[\])")
+assert_equal_end_with_none_re = re.compile(
+    r"(.)*assertEqual\((\w|\.|\'|\"|\[|\])+, None\)")
+assert_equal_start_with_none_re = re.compile(
+    r"(.)*assertEqual\(None, (\w|\.|\'|\"|\[|\])+\)")
+assert_not_equal_end_with_none_re = re.compile(
+    r"(.)*assertNotEqual\((\w|\.|\'|\"|\[|\])+, None\)")
+assert_not_equal_start_with_none_re = re.compile(
+    r"(.)*assertNotEqual\(None, (\w|\.|\'|\"|\[|\])+\)")
 
 
 def _directory_to_check_translation(filename):
@@ -80,6 +88,23 @@ def assert_true_instance(logical_line):
     """
     if assert_trueinst_re.match(logical_line):
         yield (0, "O316: assertTrue(isinstance(a, b)) sentences not allowed")
+
+
+def assert_equal_or_not_none(logical_line):
+    """Check for assertEqual(A, None) or assertEqual(None, A) sentences,
+
+    assertNotEqual(A, None) or assertNotEqual(None, A) sentences
+
+    O318
+    """
+    msg = ("O318: assertEqual/assertNotEqual(A, None) or "
+           "assertEqual/assertNotEqual(None, A) sentences not allowed")
+    res = (assert_equal_start_with_none_re.match(logical_line) or
+           assert_equal_end_with_none_re.match(logical_line) or
+           assert_not_equal_start_with_none_re.match(logical_line) or
+           assert_not_equal_end_with_none_re.match(logical_line))
+    if res:
+        yield (0, msg)
 
 
 def no_translate_debug_logs(logical_line, filename):
@@ -179,6 +204,7 @@ def assert_equal_in(logical_line):
 
 def factory(register):
     register(assert_true_instance)
+    register(assert_equal_or_not_none)
     register(no_translate_debug_logs)
     register(validate_log_translations)
     register(use_jsonutils)

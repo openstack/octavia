@@ -343,7 +343,7 @@ class TestPool(base.BaseAPITest):
                                             self.listener.get('id'),
                                             constants.PENDING_UPDATE,
                                             constants.ONLINE)
-        self.assertNotEqual(None, api_pool.get('session_persistence'))
+        self.assertIsNotNone(api_pool.get('session_persistence'))
 
     def test_create_when_lb_pending_update(self):
         self.put(self.LB_PATH.format(lb_id=self.lb.get('id')),
