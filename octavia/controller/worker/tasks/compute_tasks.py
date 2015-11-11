@@ -56,6 +56,10 @@ class ComputeCreate(BaseComputeTask):
         config_drive_files = config_drive_files or {}
         LOG.debug("Compute create execute for amphora with id %s", amphora_id)
 
+        ssh_access = CONF.controller_worker.amp_ssh_access_allowed
+        ssh_key = CONF.controller_worker.amp_ssh_key_name
+        key_name = None if not ssh_access else ssh_key
+
         try:
             agent_cfg = agent_jinja_cfg.AgentJinjaTemplater()
             config_drive_files['/etc/octavia/amphora-agent.conf'] = (
@@ -64,7 +68,7 @@ class ComputeCreate(BaseComputeTask):
                 name="amphora-" + amphora_id,
                 amphora_flavor=CONF.controller_worker.amp_flavor_id,
                 image_id=CONF.controller_worker.amp_image_id,
-                key_name=CONF.controller_worker.amp_ssh_key_name,
+                key_name=key_name,
                 sec_groups=CONF.controller_worker.amp_secgroup_list,
                 network_ids=[CONF.controller_worker.amp_network],
                 port_ids=[port.id for port in ports],
