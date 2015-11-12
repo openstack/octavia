@@ -15,6 +15,7 @@
 
 from taskflow.patterns import linear_flow as flow
 
+from octavia.common import constants
 from octavia.controller.worker.flows import member_flows
 import octavia.tests.unit.base as base
 
@@ -32,9 +33,9 @@ class TestMemberFlows(base.TestCase):
 
         self.assertIsInstance(member_flow, flow.Flow)
 
-        self.assertIn('listener', member_flow.requires)
-        self.assertIn('loadbalancer', member_flow.requires)
-        self.assertIn('vip', member_flow.requires)
+        self.assertIn(constants.LISTENER, member_flow.requires)
+        self.assertIn(constants.LOADBALANCER, member_flow.requires)
+        self.assertIn(constants.VIP, member_flow.requires)
 
         self.assertEqual(3, len(member_flow.requires))
         self.assertEqual(2, len(member_flow.provides))
@@ -45,11 +46,11 @@ class TestMemberFlows(base.TestCase):
 
         self.assertIsInstance(member_flow, flow.Flow)
 
-        self.assertIn('listener', member_flow.requires)
-        self.assertIn('loadbalancer', member_flow.requires)
-        self.assertIn('member', member_flow.requires)
-        self.assertIn('member_id', member_flow.requires)
-        self.assertIn('vip', member_flow.requires)
+        self.assertIn(constants.LISTENER, member_flow.requires)
+        self.assertIn(constants.LOADBALANCER, member_flow.requires)
+        self.assertIn(constants.MEMBER, member_flow.requires)
+        self.assertIn(constants.MEMBER_ID, member_flow.requires)
+        self.assertIn(constants.VIP, member_flow.requires)
 
         self.assertEqual(5, len(member_flow.requires))
         self.assertEqual(0, len(member_flow.provides))
@@ -60,10 +61,10 @@ class TestMemberFlows(base.TestCase):
 
         self.assertIsInstance(member_flow, flow.Flow)
 
-        self.assertIn('listener', member_flow.requires)
-        self.assertIn('loadbalancer', member_flow.requires)
-        self.assertIn('vip', member_flow.requires)
-        self.assertIn('update_dict', member_flow.requires)
+        self.assertIn(constants.LISTENER, member_flow.requires)
+        self.assertIn(constants.LOADBALANCER, member_flow.requires)
+        self.assertIn(constants.VIP, member_flow.requires)
+        self.assertIn(constants.UPDATE_DICT, member_flow.requires)
 
         self.assertEqual(5, len(member_flow.requires))
         self.assertEqual(0, len(member_flow.provides))

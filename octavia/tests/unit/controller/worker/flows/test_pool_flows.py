@@ -15,6 +15,7 @@
 
 from taskflow.patterns import linear_flow as flow
 
+from octavia.common import constants
 from octavia.controller.worker.flows import pool_flows
 import octavia.tests.unit.base as base
 
@@ -32,9 +33,9 @@ class TestPoolFlows(base.TestCase):
 
         self.assertIsInstance(pool_flow, flow.Flow)
 
-        self.assertIn('listener', pool_flow.requires)
-        self.assertIn('loadbalancer', pool_flow.requires)
-        self.assertIn('vip', pool_flow.requires)
+        self.assertIn(constants.LISTENER, pool_flow.requires)
+        self.assertIn(constants.LOADBALANCER, pool_flow.requires)
+        self.assertIn(constants.VIP, pool_flow.requires)
 
         self.assertEqual(3, len(pool_flow.requires))
         self.assertEqual(0, len(pool_flow.provides))
@@ -45,10 +46,10 @@ class TestPoolFlows(base.TestCase):
 
         self.assertIsInstance(pool_flow, flow.Flow)
 
-        self.assertIn('listener', pool_flow.requires)
-        self.assertIn('loadbalancer', pool_flow.requires)
-        self.assertIn('vip', pool_flow.requires)
-        self.assertIn('pool', pool_flow.requires)
+        self.assertIn(constants.LISTENER, pool_flow.requires)
+        self.assertIn(constants.LOADBALANCER, pool_flow.requires)
+        self.assertIn(constants.VIP, pool_flow.requires)
+        self.assertIn(constants.POOL, pool_flow.requires)
 
         self.assertEqual(4, len(pool_flow.requires))
         self.assertEqual(0, len(pool_flow.provides))
@@ -59,11 +60,11 @@ class TestPoolFlows(base.TestCase):
 
         self.assertIsInstance(pool_flow, flow.Flow)
 
-        self.assertIn('pool', pool_flow.requires)
-        self.assertIn('listener', pool_flow.requires)
-        self.assertIn('loadbalancer', pool_flow.requires)
-        self.assertIn('vip', pool_flow.requires)
-        self.assertIn('update_dict', pool_flow.requires)
+        self.assertIn(constants.POOL, pool_flow.requires)
+        self.assertIn(constants.LISTENER, pool_flow.requires)
+        self.assertIn(constants.LOADBALANCER, pool_flow.requires)
+        self.assertIn(constants.VIP, pool_flow.requires)
+        self.assertIn(constants.UPDATE_DICT, pool_flow.requires)
 
         self.assertEqual(5, len(pool_flow.requires))
         self.assertEqual(0, len(pool_flow.provides))
