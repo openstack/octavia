@@ -135,6 +135,60 @@ class TestComputeTasks(base.TestCase):
                 'agent_jinja_cfg.AgentJinjaTemplater.'
                 'build_agent_config', return_value='test_conf')
     @mock.patch('stevedore.driver.DriverManager.driver')
+    def test_compute_create_without_ssh_access(self, mock_driver,
+                                               mock_conf, mock_jinja):
+
+        createcompute = compute_tasks.ComputeCreate()
+
+        mock_driver.build.return_value = COMPUTE_ID
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group="controller_worker", amp_ssh_access_allowed=False)
+
+        # Test execute()
+        compute_id = createcompute.execute(_amphora_mock.id, ports=[_port])
+
+        # Validate that the build method was called properly
+        mock_driver.build.assert_called_once_with(
+            name="amphora-" + _amphora_mock.id,
+            amphora_flavor=AMP_FLAVOR_ID,
+            image_id=AMP_IMAGE_ID,
+            key_name=None,
+            sec_groups=AMP_SEC_GROUPS,
+            network_ids=[AMP_NET],
+            port_ids=[PORT_ID],
+            config_drive_files={'/etc/octavia/'
+                                'amphora-agent.conf': 'test_conf'})
+
+        # Make sure it returns the expected compute_id
+        self.assertEqual(COMPUTE_ID, compute_id)
+
+        # Test that a build exception is raised
+        createcompute = compute_tasks.ComputeCreate()
+
+        self.assertRaises(TypeError,
+                          createcompute.execute,
+                          _amphora_mock, config_drive_files='test_cert')
+
+        # Test revert()
+
+        _amphora_mock.compute_id = COMPUTE_ID
+
+        createcompute = compute_tasks.ComputeCreate()
+        createcompute.revert(compute_id, _amphora_mock.id)
+
+        # Validate that the delete method was called properly
+        mock_driver.delete.assert_called_once_with(
+            COMPUTE_ID)
+
+        # Test that a delete exception is not raised
+
+        createcompute.revert(COMPUTE_ID, _amphora_mock.id)
+
+    @mock.patch('jinja2.Environment.get_template')
+    @mock.patch('octavia.amphorae.backends.agent.'
+                'agent_jinja_cfg.AgentJinjaTemplater.'
+                'build_agent_config', return_value='test_conf')
+    @mock.patch('stevedore.driver.DriverManager.driver')
     def test_compute_create_cert(self, mock_driver, mock_conf, mock_jinja):
 
         createcompute = compute_tasks.CertComputeCreate()

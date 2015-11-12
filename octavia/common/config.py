@@ -211,6 +211,10 @@ controller_worker_opts = [
     cfg.StrOpt('amp_ssh_key_name',
                default='',
                help=_('SSH key name used to boot the Amphora')),
+    cfg.BoolOpt('amp_ssh_access_allowed',
+                default=True,
+                help=_('Determines whether or not to allow access '
+                       'to the Amphorae')),
     cfg.StrOpt('amp_network',
                default='',
                help=_('Network to attach to the Amphora')),
