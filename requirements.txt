@@ -34,8 +34,6 @@ python-keystoneclient!=1.8.0,>=1.6.0
 python-novaclient!=2.33.0,>=2.29.0
 pyOpenSSL>=0.14
 WSME>=0.8
-pyasn1
-pyasn1-modules
 Jinja2>=2.6 # BSD License (3 clause)
 paramiko>=1.13.0
 taskflow>=1.16.0
