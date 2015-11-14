@@ -20,10 +20,13 @@ import time
 
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_reports import guru_meditation_report as gmr
 
 from octavia.common import service
 from octavia.controller.housekeeping import house_keeping
 from octavia.i18n import _LI
+from octavia import version
+
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
@@ -64,6 +67,8 @@ def db_cleanup():
 
 def main():
     service.prepare_service(sys.argv)
+
+    gmr.TextGuruMeditation.setup_autorun(version)
 
     timestamp = str(datetime.datetime.utcnow())
     LOG.info(_LI("Starting house keeping at %s"), timestamp)
