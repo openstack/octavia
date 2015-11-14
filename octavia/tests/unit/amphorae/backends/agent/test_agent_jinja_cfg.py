@@ -34,6 +34,8 @@ class AgentJinjaTestCase(base.TestCase):
                     agent_server_cert='/etc/octavia/certs/server.pem')
         conf.config(group="amphora_agent",
                     agent_server_network_dir='/etc/network/interfaces.d/')
+        conf.config(group="amphora_agent",
+                    agent_server_network_file='/etc/network/interfaces')
         conf.config(group="haproxy_amphora",
                     base_cert_dir='/var/lib/octavia/certs')
         conf.config(group="haproxy_amphora", base_path='/var/lib/octavia')
@@ -68,6 +70,8 @@ class AgentJinjaTestCase(base.TestCase):
                                 '/etc/octavia/certs/server.pem\n'
                                 'agent_server_network_dir = '
                                 '/etc/network/interfaces.d/\n'
+                                'agent_server_network_file = '
+                                '/etc/network/interfaces\n'
                                 'amphora_id = ' + AMP_ID)
 
     def test_build_agent_config(self):

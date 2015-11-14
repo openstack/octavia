@@ -64,5 +64,7 @@ def is_listener_running(listener_id):
 
 
 def get_network_interface_file(interface):
+    if CONF.amphora_agent.agent_server_network_file:
+        return CONF.amphora_agent.agent_server_network_file
     return os.path.join(CONF.amphora_agent.agent_server_network_dir,
                         interface + '.cfg')

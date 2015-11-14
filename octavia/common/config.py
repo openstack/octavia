@@ -91,6 +91,10 @@ amphora_agent_opts = [
                default='/etc/network/interfaces.d/',
                help=_("The directory where new network interfaces "
                       "are located")),
+    cfg.StrOpt('agent_server_network_file',
+               help=_("The file where the network interfaces are located. "
+                      "Specifying this will override any value set for "
+                      "agent_server_network_dir.")),
     # Do not specify in octavia.conf, loaded at runtime
     cfg.StrOpt('amphora_id', help=_("The amphora ID.")),
 ]
