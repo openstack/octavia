@@ -50,6 +50,9 @@ class AgentJinjaTestCase(base.TestCase):
 
     def test_build_agent_config(self):
         ajc = agent_jinja_cfg.AgentJinjaTemplater()
+        # Test execution order could influence this with the test below
+        self.conf.config(group='amphora_agent',
+                         agent_server_network_file=None)
         expected_config = ('\n[DEFAULT]\n'
                            'debug = False\n\n'
                            '[haproxy_amphora]\n'
