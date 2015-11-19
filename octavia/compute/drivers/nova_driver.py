@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from novaclient import exceptions as nova_exceptions
 from oslo_config import cfg
 from oslo_log import log as logging
 
@@ -20,7 +21,7 @@ from octavia.common import constants
 from octavia.common import data_models as models
 from octavia.common import exceptions
 from octavia.compute import compute_base
-from octavia.i18n import _LE
+from octavia.i18n import _LE, _LW
 
 LOG = logging.getLogger(__name__)
 
@@ -93,6 +94,9 @@ class VirtualMachineManager(compute_base.ComputeBase):
         '''
         try:
             self.manager.delete(server=compute_id)
+        except nova_exceptions.NotFound:
+            LOG.warn(_LW("Nova instance with id: %s not found. "
+                         "Assuming already deleted."), compute_id)
         except Exception:
             LOG.exception(_LE("Error deleting nova virtual machine."))
             raise exceptions.ComputeDeleteException()
