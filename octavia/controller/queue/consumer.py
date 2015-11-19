@@ -37,8 +37,8 @@ class Consumer(object):
 
     def listen(self):
         try:
+            LOG.info(_LI('Starting consumer...'))
             service.launch(cfg.CONF, self.server).wait()
-            LOG.info(_LI('Consumer is now listening...'))
         finally:
             LOG.info(_LI('Stopping consumer...'))
             self.server.stop()
