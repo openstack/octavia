@@ -15,6 +15,7 @@
 
 from taskflow.patterns import linear_flow as flow
 
+from octavia.common import constants
 from octavia.controller.worker.flows import listener_flows
 import octavia.tests.unit.base as base
 
@@ -32,9 +33,9 @@ class TestListenerFlows(base.TestCase):
 
         self.assertIsInstance(listener_flow, flow.Flow)
 
-        self.assertIn('listener', listener_flow.requires)
-        self.assertIn('loadbalancer', listener_flow.requires)
-        self.assertIn('vip', listener_flow.requires)
+        self.assertIn(constants.LISTENER, listener_flow.requires)
+        self.assertIn(constants.LOADBALANCER, listener_flow.requires)
+        self.assertIn(constants.VIP, listener_flow.requires)
 
         self.assertEqual(3, len(listener_flow.requires))
         self.assertEqual(0, len(listener_flow.provides))
@@ -45,9 +46,9 @@ class TestListenerFlows(base.TestCase):
 
         self.assertIsInstance(listener_flow, flow.Flow)
 
-        self.assertIn('listener', listener_flow.requires)
-        self.assertIn('loadbalancer', listener_flow.requires)
-        self.assertIn('vip', listener_flow.requires)
+        self.assertIn(constants.LISTENER, listener_flow.requires)
+        self.assertIn(constants.LOADBALANCER, listener_flow.requires)
+        self.assertIn(constants.VIP, listener_flow.requires)
 
         self.assertEqual(3, len(listener_flow.requires))
         self.assertEqual(0, len(listener_flow.provides))
@@ -58,10 +59,10 @@ class TestListenerFlows(base.TestCase):
 
         self.assertIsInstance(listener_flow, flow.Flow)
 
-        self.assertIn('listener', listener_flow.requires)
-        self.assertIn('loadbalancer', listener_flow.requires)
-        self.assertIn('vip', listener_flow.requires)
-        self.assertIn('update_dict', listener_flow.requires)
+        self.assertIn(constants.LISTENER, listener_flow.requires)
+        self.assertIn(constants.LOADBALANCER, listener_flow.requires)
+        self.assertIn(constants.VIP, listener_flow.requires)
+        self.assertIn(constants.UPDATE_DICT, listener_flow.requires)
 
         self.assertEqual(4, len(listener_flow.requires))
         self.assertEqual(0, len(listener_flow.provides))

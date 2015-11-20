@@ -15,6 +15,7 @@
 
 from taskflow.patterns import linear_flow as flow
 
+from octavia.common import constants
 from octavia.controller.worker.flows import health_monitor_flows
 import octavia.tests.unit.base as base
 
@@ -33,9 +34,9 @@ class TestHealthMonitorFlows(base.TestCase):
 
         self.assertIsInstance(health_mon_flow, flow.Flow)
 
-        self.assertIn('listener', health_mon_flow.requires)
-        self.assertIn('loadbalancer', health_mon_flow.requires)
-        self.assertIn('vip', health_mon_flow.requires)
+        self.assertIn(constants.LISTENER, health_mon_flow.requires)
+        self.assertIn(constants.LOADBALANCER, health_mon_flow.requires)
+        self.assertIn(constants.VIP, health_mon_flow.requires)
 
         self.assertEqual(3, len(health_mon_flow.requires))
         self.assertEqual(0, len(health_mon_flow.provides))
@@ -47,10 +48,10 @@ class TestHealthMonitorFlows(base.TestCase):
 
         self.assertIsInstance(health_mon_flow, flow.Flow)
 
-        self.assertIn('health_mon', health_mon_flow.requires)
-        self.assertIn('pool_id', health_mon_flow.requires)
-        self.assertIn('listener', health_mon_flow.requires)
-        self.assertIn('vip', health_mon_flow.requires)
+        self.assertIn(constants.HEALTH_MON, health_mon_flow.requires)
+        self.assertIn(constants.POOL_ID, health_mon_flow.requires)
+        self.assertIn(constants.LISTENER, health_mon_flow.requires)
+        self.assertIn(constants.VIP, health_mon_flow.requires)
 
         self.assertEqual(5, len(health_mon_flow.requires))
         self.assertEqual(0, len(health_mon_flow.provides))
@@ -62,11 +63,11 @@ class TestHealthMonitorFlows(base.TestCase):
 
         self.assertIsInstance(health_mon_flow, flow.Flow)
 
-        self.assertIn('listener', health_mon_flow.requires)
-        self.assertIn('loadbalancer', health_mon_flow.requires)
-        self.assertIn('vip', health_mon_flow.requires)
-        self.assertIn('health_mon', health_mon_flow.requires)
-        self.assertIn('update_dict', health_mon_flow.requires)
+        self.assertIn(constants.LISTENER, health_mon_flow.requires)
+        self.assertIn(constants.LOADBALANCER, health_mon_flow.requires)
+        self.assertIn(constants.VIP, health_mon_flow.requires)
+        self.assertIn(constants.HEALTH_MON, health_mon_flow.requires)
+        self.assertIn(constants.UPDATE_DICT, health_mon_flow.requires)
 
         self.assertEqual(5, len(health_mon_flow.requires))
         self.assertEqual(0, len(health_mon_flow.provides))

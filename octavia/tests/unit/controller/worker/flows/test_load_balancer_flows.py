@@ -50,7 +50,7 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertIsInstance(lb_flow, flow.Flow)
 
-        self.assertIn('loadbalancer', lb_flow.requires)
+        self.assertIn(constants.LOADBALANCER, lb_flow.requires)
 
         self.assertEqual(0, len(lb_flow.provides))
         self.assertEqual(1, len(lb_flow.requires))
@@ -77,7 +77,7 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertIsInstance(lb_flow, flow.Flow)
 
-        self.assertIn('loadbalancer', lb_flow.requires)
+        self.assertIn(constants.LOADBALANCER, lb_flow.requires)
 
         self.assertEqual(0, len(lb_flow.provides))
         self.assertEqual(2, len(lb_flow.requires))

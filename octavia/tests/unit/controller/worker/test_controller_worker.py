@@ -140,7 +140,7 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with('TEST',
-                                    store={'amphora': _amphora_mock}))
+                                    store={constants.AMPHORA: _amphora_mock}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -167,10 +167,13 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={'health_mon': _health_mon_mock,
-                                           'listener': _listener_mock,
-                                           'loadbalancer': _load_balancer_mock,
-                                           'vip': _vip_mock}))
+                                    store={constants.HEALTH_MON:
+                                           _health_mon_mock,
+                                           constants.LISTENER:
+                                           _listener_mock,
+                                           constants.LOADBALANCER:
+                                           _load_balancer_mock,
+                                           constants.VIP: _vip_mock}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -197,11 +200,14 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={'health_mon': _health_mon_mock,
-                                           'pool_id': HM_ID,
-                                           'listener': _listener_mock,
-                                           'loadbalancer': _load_balancer_mock,
-                                           'vip': _vip_mock}))
+                                    store={constants.HEALTH_MON:
+                                           _health_mon_mock,
+                                           constants.POOL_ID: HM_ID,
+                                           constants.LISTENER:
+                                           _listener_mock,
+                                           constants.LOADBALANCER:
+                                           _load_balancer_mock,
+                                           constants.VIP: _vip_mock}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -229,11 +235,15 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={'health_mon': _health_mon_mock,
-                                           'listener': _listener_mock,
-                                           'loadbalancer': _load_balancer_mock,
-                                           'vip': _vip_mock,
-                                           'update_dict': HEALTH_UPDATE_DICT}))
+                                    store={constants.HEALTH_MON:
+                                           _health_mon_mock,
+                                           constants.LISTENER:
+                                           _listener_mock,
+                                           constants.LOADBALANCER:
+                                           _load_balancer_mock,
+                                           constants.VIP: _vip_mock,
+                                           constants.UPDATE_DICT:
+                                           HEALTH_UPDATE_DICT}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -259,9 +269,11 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={'listener': _listener_mock,
-                                           'loadbalancer': _load_balancer_mock,
-                                           'vip': _vip_mock}))
+                                    store={constants.LISTENER:
+                                           _listener_mock,
+                                           constants.LOADBALANCER:
+                                           _load_balancer_mock,
+                                           constants.VIP: _vip_mock}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -315,11 +327,12 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={'listener': _listener_mock,
-                                           'vip': _vip_mock,
-                                           'loadbalancer': _load_balancer_mock,
-                                           'update_dict':
-                                               LISTENER_UPDATE_DICT}))
+                                    store={constants.LISTENER: _listener_mock,
+                                           constants.VIP: _vip_mock,
+                                           constants.LOADBALANCER:
+                                           _load_balancer_mock,
+                                           constants.UPDATE_DICT:
+                                           LISTENER_UPDATE_DICT}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -417,7 +430,7 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={'loadbalancer':
+                                    store={constants.LOADBALANCER:
                                            _load_balancer_mock}))
 
         _flow_mock.run.assert_called_once_with()
@@ -449,8 +462,8 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={'update_dict': change,
-                                           'loadbalancer':
+                                    store={constants.UPDATE_DICT: change,
+                                           constants.LOADBALANCER:
                                                _load_balancer_mock}))
 
         _flow_mock.run.assert_called_once_with()
@@ -477,10 +490,11 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={'member': _member_mock,
-                                           'listener': _listener_mock,
-                                           'loadbalancer': _load_balancer_mock,
-                                           'vip': _vip_mock}))
+                                    store={constants.MEMBER: _member_mock,
+                                           constants.LISTENER: _listener_mock,
+                                           constants.LOADBALANCER:
+                                           _load_balancer_mock,
+                                           constants.VIP: _vip_mock}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -506,11 +520,12 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(
-                _flow_mock, store={'member': _member_mock,
-                                   'member_id': MEMBER_ID,
-                                   'listener': _listener_mock,
-                                   'vip': _vip_mock,
-                                   'loadbalancer': _load_balancer_mock}))
+                _flow_mock, store={constants.MEMBER: _member_mock,
+                                   constants.MEMBER_ID: MEMBER_ID,
+                                   constants.LISTENER: _listener_mock,
+                                   constants.VIP: _vip_mock,
+                                   constants.LOADBALANCER:
+                                   _load_balancer_mock}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -536,11 +551,13 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={'member': _member_mock,
-                                           'listener': _listener_mock,
-                                           'loadbalancer': _load_balancer_mock,
-                                           'vip': _vip_mock,
-                                           'update_dict': MEMBER_UPDATE_DICT}))
+                                    store={constants.MEMBER: _member_mock,
+                                           constants.LISTENER: _listener_mock,
+                                           constants.LOADBALANCER:
+                                           _load_balancer_mock,
+                                           constants.VIP: _vip_mock,
+                                           constants.UPDATE_DICT:
+                                           MEMBER_UPDATE_DICT}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -566,10 +583,11 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={'pool': _pool_mock,
-                                           'listener': _listener_mock,
-                                           'loadbalancer': _load_balancer_mock,
-                                           'vip': _vip_mock}))
+                                    store={constants.POOL: _pool_mock,
+                                           constants.LISTENER: _listener_mock,
+                                           constants.LOADBALANCER:
+                                           _load_balancer_mock,
+                                           constants.VIP: _vip_mock}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -595,10 +613,11 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={'pool': _pool_mock,
-                                           'listener': _listener_mock,
-                                           'loadbalancer': _load_balancer_mock,
-                                           'vip': _vip_mock}))
+                                    store={constants.POOL: _pool_mock,
+                                           constants.LISTENER: _listener_mock,
+                                           constants.LOADBALANCER:
+                                           _load_balancer_mock,
+                                           constants.VIP: _vip_mock}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -624,11 +643,13 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={'pool': _pool_mock,
-                                           'listener': _listener_mock,
-                                           'loadbalancer': _load_balancer_mock,
-                                           'vip': _vip_mock,
-                                           'update_dict': POOL_UPDATE_DICT}))
+                                    store={constants.POOL: _pool_mock,
+                                           constants.LISTENER: _listener_mock,
+                                           constants.LOADBALANCER:
+                                           _load_balancer_mock,
+                                           constants.VIP: _vip_mock,
+                                           constants.UPDATE_DICT:
+                                           POOL_UPDATE_DICT}))
 
         _flow_mock.run.assert_called_once_with()
 
