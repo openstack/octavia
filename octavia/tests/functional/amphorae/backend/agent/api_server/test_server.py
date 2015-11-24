@@ -30,9 +30,10 @@ import octavia.tests.unit.base as base
 RANDOM_ERROR = 'random error'
 OK = dict(message='OK')
 
-BUILTINS = '__builtin__'
-if six.PY3:
-    BUILTINS = 'builtins'
+if six.PY2:
+    import __builtin__ as builtins
+else:
+    import builtins
 
 
 class ServerTestCase(base.TestCase):
@@ -53,7 +54,7 @@ class ServerTestCase(base.TestCase):
         m = mock.mock_open()
 
         # happy case upstart file exists
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/haproxy', data='test')
             self.assertEqual(202, rv.status_code)
@@ -69,9 +70,9 @@ class ServerTestCase(base.TestCase):
                 '/var/lib/octavia/123/haproxy.cfg')
 
         # exception writing
-        m = mock.Mock()
-        m.side_effect = Exception()  # open crashes
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        m = mock.mock_open()
+        m.side_effect = IOError()  # open crashes
+        with mock.patch.object(builtins, 'open', m):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/haproxy', data='test')
             self.assertEqual(500, rv.status_code)
@@ -81,7 +82,7 @@ class ServerTestCase(base.TestCase):
         m = mock.mock_open()
 
         # happy case upstart file exists
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/haproxy', data='test')
             self.assertEqual(202, rv.status_code)
@@ -96,7 +97,7 @@ class ServerTestCase(base.TestCase):
         mock_exists.return_value = True
         mock_subprocess.side_effect = [subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR)]
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/haproxy', data='test')
             self.assertEqual(400, rv.status_code)
@@ -246,7 +247,7 @@ class ServerTestCase(base.TestCase):
         mock_exists.side_effect = [True]
         m = mock.mock_open(read_data=CONTENT)
 
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m):
             rv = self.app.get('/' + api_server.VERSION +
                               '/listeners/123/haproxy')
             self.assertEqual(200, rv.status_code)
@@ -399,7 +400,7 @@ class ServerTestCase(base.TestCase):
         m = mock.mock_open(read_data=CONTENT)
         mock_exists.return_value = True
         mock_exists.side_effect = None
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m):
             rv = self.app.get('/' + api_server.VERSION +
                               '/listeners/123/certificates/test.pem')
         self.assertEqual(200, rv.status_code)
@@ -421,7 +422,7 @@ class ServerTestCase(base.TestCase):
         mock_exists.side_effect = [True, True, True]
         m = mock.mock_open()
 
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/certificates/test.pem',
                               data='TestTest')
@@ -434,7 +435,7 @@ class ServerTestCase(base.TestCase):
         mock_exists.side_effect = [True, False]
         m = mock.mock_open()
 
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/certificates/test.pem',
                               data='TestTest')
@@ -448,7 +449,7 @@ class ServerTestCase(base.TestCase):
         certificate_update.BUFFER = 5  # test the while loop
         m = mock.mock_open()
 
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m):
             rv = self.app.put('/' + api_server.VERSION +
                               '/certificate',
                               data='TestTest')
@@ -491,7 +492,7 @@ class ServerTestCase(base.TestCase):
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
                                       {netifaces.AF_LINK: [{'addr': '123'}]}]
         m = mock.mock_open()
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m):
             rv = self.app.post('/' + api_server.VERSION + "/plug/network",
                                content_type='application/json',
                                data=json.dumps(port_info))
@@ -514,7 +515,7 @@ class ServerTestCase(base.TestCase):
             7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR)]
         m = mock.mock_open()
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m):
             rv = self.app.post('/' + api_server.VERSION + "/plug/network",
                                content_type='application/json',
                                data=json.dumps(port_info))
@@ -569,7 +570,7 @@ class ServerTestCase(base.TestCase):
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
                                       {netifaces.AF_LINK: [{'addr': '123'}]}]
         m = mock.mock_open()
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m):
             rv = self.app.post('/' + api_server.VERSION +
                                "/plug/vip/203.0.113.2",
                                content_type='application/json',
@@ -598,7 +599,7 @@ class ServerTestCase(base.TestCase):
                 7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
                 7, 'test', RANDOM_ERROR)]
         m = mock.mock_open()
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m):
             rv = self.app.post('/' + api_server.VERSION +
                                "/plug/vip/203.0.113.2",
                                content_type='application/json',
