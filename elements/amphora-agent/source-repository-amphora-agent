@@ -1,2 +1,2 @@
 # This is temporary until we have a pip package
-amphora-agent git /opt/amphora-agent https://review.openstack.org/openstack/octavia refs/changes/52/206252/52
+amphora-agent git /opt/amphora-agent https://review.openstack.org/openstack/octavia
