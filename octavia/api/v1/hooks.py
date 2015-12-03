@@ -22,10 +22,10 @@ class ContextHook(hooks.PecanHook):
     def on_route(state):
         user_id = state.request.headers.get('X-User-Id')
         user_id = state.request.headers.get('X-User', user_id)
-        tenant = state.request.headers.get('X-Tenant-Id')
-        tenant = state.request.headers.get('X-Tenant', tenant)
+        project = state.request.headers.get('X-Tenant-Id')
+        project = state.request.headers.get('X-Tenant', project)
         auth_token = state.request.headers.get('X-Auth-Token')
 
         state.request.context = context.Context(user_id=user_id,
-                                                tenant_id=tenant,
+                                                project_id=project,
                                                 auth_token=auth_token)

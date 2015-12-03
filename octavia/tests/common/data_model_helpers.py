@@ -30,7 +30,7 @@ def generate_load_balancer(vip=None, amphorae=None):
     global LB_SEED
     LB_SEED += 1
     lb = data_models.LoadBalancer(id='lb{0}-id'.format(LB_SEED),
-                                  tenant_id='2',
+                                  project_id='2',
                                   name='lb{0}'.format(LB_SEED),
                                   description='lb{0}'.format(LB_SEED),
                                   vip=vip,

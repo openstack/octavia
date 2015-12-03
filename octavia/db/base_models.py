@@ -62,14 +62,14 @@ class LookupTableMixin(object):
 
 
 class IdMixin(object):
-    """Id mixin, add to subclasses that have a tenant."""
+    """Id mixin, add to subclasses that have an id."""
     id = sa.Column(sa.String(36), primary_key=True,
                    default=uuidutils.generate_uuid)
 
 
-class TenantMixin(object):
-    """Tenant mixin, add to subclasses that have a tenant."""
-    tenant_id = sa.Column(sa.String(36))
+class ProjectMixin(object):
+    """Tenant mixin, add to subclasses that have a project."""
+    project_id = sa.Column(sa.String(36))
 
 
 BASE = declarative.declarative_base(cls=OctaviaBase)

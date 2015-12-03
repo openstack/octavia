@@ -38,7 +38,7 @@ class ModelTestMixin(object):
         load_balancer.amphorae.append(amphora)
 
     def create_listener(self, session, **overrides):
-        kwargs = {'tenant_id': self.FAKE_UUID_1,
+        kwargs = {'project_id': self.FAKE_UUID_1,
                   'id': self.FAKE_UUID_1,
                   'protocol': constants.PROTOCOL_HTTP,
                   'protocol_port': 80,
@@ -58,7 +58,7 @@ class ModelTestMixin(object):
         return self._insert(session, models.ListenerStatistics, kwargs)
 
     def create_pool(self, session, **overrides):
-        kwargs = {'tenant_id': self.FAKE_UUID_1,
+        kwargs = {'project_id': self.FAKE_UUID_1,
                   'id': self.FAKE_UUID_1,
                   'protocol': constants.PROTOCOL_HTTP,
                   'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
@@ -80,12 +80,13 @@ class ModelTestMixin(object):
                   'timeout': 1,
                   'fall_threshold': 1,
                   'rise_threshold': 1,
-                  'enabled': True}
+                  'enabled': True,
+                  'project_id': self.FAKE_UUID_1}
         kwargs.update(overrides)
         return self._insert(session, models.HealthMonitor, kwargs)
 
     def create_member(self, session, pool_id, **overrides):
-        kwargs = {'tenant_id': self.FAKE_UUID_1,
+        kwargs = {'project_id': self.FAKE_UUID_1,
                   'id': self.FAKE_UUID_1,
                   'pool_id': pool_id,
                   'ip_address': '10.0.0.1',
@@ -96,7 +97,7 @@ class ModelTestMixin(object):
         return self._insert(session, models.Member, kwargs)
 
     def create_load_balancer(self, session, **overrides):
-        kwargs = {'tenant_id': self.FAKE_UUID_1,
+        kwargs = {'project_id': self.FAKE_UUID_1,
                   'id': self.FAKE_UUID_1,
                   'provisioning_status': constants.ACTIVE,
                   'operating_status': constants.ONLINE,
@@ -740,7 +741,7 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
             self.check_health_monitor(pool.health_monitor, check_pool=False)
 
     def check_load_balancer_data_model(self, lb):
-        self.assertEqual(self.FAKE_UUID_1, lb.tenant_id)
+        self.assertEqual(self.FAKE_UUID_1, lb.project_id)
         self.assertEqual(self.FAKE_UUID_1, lb.id)
         self.assertEqual(constants.ACTIVE, lb.provisioning_status)
         self.assertTrue(lb.enabled)
@@ -749,7 +750,7 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertEqual(self.FAKE_UUID_1, vip.load_balancer_id)
 
     def check_listener_data_model(self, listener):
-        self.assertEqual(self.FAKE_UUID_1, listener.tenant_id)
+        self.assertEqual(self.FAKE_UUID_1, listener.project_id)
         self.assertEqual(self.FAKE_UUID_1, listener.id)
         self.assertEqual(constants.PROTOCOL_HTTP, listener.protocol)
         self.assertEqual(80, listener.protocol_port)
@@ -769,7 +770,7 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertEqual(0, stats.total_connections)
 
     def check_pool_data_model(self, pool):
-        self.assertEqual(self.FAKE_UUID_1, pool.tenant_id)
+        self.assertEqual(self.FAKE_UUID_1, pool.project_id)
         self.assertEqual(self.FAKE_UUID_1, pool.id)
         self.assertEqual(constants.PROTOCOL_HTTP, pool.protocol)
         self.assertEqual(constants.LB_ALGORITHM_ROUND_ROBIN, pool.lb_algorithm)
@@ -789,7 +790,7 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertTrue(hm.enabled)
 
     def check_member_data_model(self, member):
-        self.assertEqual(self.FAKE_UUID_1, member.tenant_id)
+        self.assertEqual(self.FAKE_UUID_1, member.project_id)
         self.assertEqual(self.FAKE_UUID_1, member.id)
         self.assertEqual(self.pool.id, member.pool_id)
         self.assertEqual('10.0.0.1', member.ip_address)

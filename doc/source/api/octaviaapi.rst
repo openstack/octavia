@@ -61,7 +61,7 @@ Load Balancers
 +---------------------+------------+------------------------------------+
 | vip                 | VIP Object | JSON VIP object below              |
 +---------------------+------------+------------------------------------+
-| tenant_id           | UUID       | ``UUID`` for tenant                |
+| project_id          | UUID       | ``UUID`` for project               |
 +---------------------+------------+------------------------------------+
 | name                | String     | String for load balancer name      |
 +---------------------+------------+------------------------------------+
@@ -191,7 +191,7 @@ Create a load balancer.
 +=============+==========+
 | vip         | yes      |
 +-------------+----------+
-| tenant_id   | no       |
+| project_id  | no       |
 +-------------+----------+
 | name        | no       |
 +-------------+----------+
@@ -317,7 +317,7 @@ Listeners
 | default_tls\        | String     | Barbican ``UUID`` for TLS container |
 | _container_id       |            |                                     |
 +---------------------+------------+-------------------------------------+
-| tenant_id           | String     | ``UUID`` for tenant                 |
+| project_id           | String    | ``UUID`` for project                |
 +---------------------+------------+-------------------------------------+
 | name                | String     | String detailing the name of the \  |
 |                     |            | listener                            |
@@ -451,7 +451,7 @@ Create a listener.
 | default_tls\     | no       |
 | _container_id    |          |
 +------------------+----------+
-| tenant_id        | no       |
+| project_id       | no       |
 +------------------+----------+
 | name             | no       |
 +------------------+----------+

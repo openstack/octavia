@@ -126,7 +126,7 @@ class ListenerStatistics(base_models.BASE):
         return value
 
 
-class Member(base_models.BASE, base_models.IdMixin, base_models.TenantMixin):
+class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin):
 
     __data_model__ = data_models.Member
 
@@ -155,7 +155,7 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.TenantMixin):
                                                         cascade="delete"))
 
 
-class HealthMonitor(base_models.BASE):
+class HealthMonitor(base_models.BASE, base_models.ProjectMixin):
 
     __data_model__ = data_models.HealthMonitor
 
@@ -184,7 +184,7 @@ class HealthMonitor(base_models.BASE):
                                                 cascade="delete"))
 
 
-class Pool(base_models.BASE, base_models.IdMixin, base_models.TenantMixin):
+class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin):
 
     __data_model__ = data_models.Pool
 
@@ -209,7 +209,7 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.TenantMixin):
 
 
 class LoadBalancer(base_models.BASE, base_models.IdMixin,
-                   base_models.TenantMixin):
+                   base_models.ProjectMixin):
 
     __data_model__ = data_models.LoadBalancer
 
@@ -280,7 +280,8 @@ class Vip(base_models.BASE):
                                                          cascade="delete"))
 
 
-class Listener(base_models.BASE, base_models.IdMixin, base_models.TenantMixin):
+class Listener(base_models.BASE, base_models.IdMixin,
+               base_models.ProjectMixin):
 
     __data_model__ = data_models.Listener
 

@@ -54,16 +54,16 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
 
     def test_get_all_return_value(self):
         pool_list = self.pool_repo.get_all(self.session,
-                                           tenant_id=self.FAKE_UUID_2)
+                                           project_id=self.FAKE_UUID_2)
         self.assertIsInstance(pool_list, list)
         lb_list = self.lb_repo.get_all(self.session,
-                                       tenant_id=self.FAKE_UUID_2)
+                                       project_id=self.FAKE_UUID_2)
         self.assertIsInstance(lb_list, list)
         listener_list = self.listener_repo.get_all(self.session,
-                                                   tenant_id=self.FAKE_UUID_2)
+                                                   project_id=self.FAKE_UUID_2)
         self.assertIsInstance(listener_list, list)
         member_list = self.member_repo.get_all(self.session,
-                                               tenant_id=self.FAKE_UUID_2)
+                                               project_id=self.FAKE_UUID_2)
         self.assertIsInstance(member_list, list)
 
 
@@ -108,7 +108,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
               'provisioning_status': constants.PENDING_UPDATE,
               'operating_status': constants.OFFLINE,
               'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
-              'vrrp_group': None}
+              'vrrp_group': None,
+              'project_id': uuidutils.generate_uuid()}
         vip = {'ip_address': '10.0.0.1',
                'port_id': uuidutils.generate_uuid(),
                'subnet_id': uuidutils.generate_uuid()}
@@ -117,7 +118,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del lb_dm_dict['vip']
         del lb_dm_dict['listeners']
         del lb_dm_dict['amphorae']
-        del lb_dm_dict['tenant_id']
         self.assertEqual(lb, lb_dm_dict)
         vip_dm_dict = lb_dm.vip.to_dict()
         vip_dm_dict['load_balancer_id'] = lb_dm.id
@@ -128,7 +128,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
-                'enabled': True, 'operating_status': constants.ONLINE}
+                'enabled': True, 'operating_status': constants.ONLINE,
+                'project_id': uuidutils.generate_uuid()}
         pool_dm = self.repos.create_pool_on_listener(self.session,
                                                      self.listener.id,
                                                      pool)
@@ -137,7 +138,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['health_monitor']
         del pool_dm_dict['session_persistence']
         del pool_dm_dict['listener']
-        del pool_dm_dict['tenant_id']
         self.assertEqual(pool, pool_dm_dict)
         new_listener = self.repos.listener.get(self.session,
                                                id=self.listener.id)
@@ -147,7 +147,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
-                'enabled': True, 'operating_status': constants.ONLINE}
+                'enabled': True, 'operating_status': constants.ONLINE,
+                'project_id': uuidutils.generate_uuid()}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster'}
         pool_dm = self.repos.create_pool_on_listener(self.session,
@@ -158,7 +159,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['health_monitor']
         del pool_dm_dict['session_persistence']
         del pool_dm_dict['listener']
-        del pool_dm_dict['tenant_id']
         self.assertEqual(pool, pool_dm_dict)
         sp_dm_dict = pool_dm.session_persistence.to_dict()
         del sp_dm_dict['pool']
@@ -175,7 +175,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
-                'enabled': True, 'operating_status': constants.ONLINE}
+                'enabled': True, 'operating_status': constants.ONLINE,
+                'project_id': uuidutils.generate_uuid()}
         pool_dm = self.repos.create_pool_on_listener(self.session,
                                                      self.listener.id, pool)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
@@ -186,7 +187,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['health_monitor']
         del pool_dm_dict['session_persistence']
         del pool_dm_dict['listener']
-        del pool_dm_dict['tenant_id']
         pool.update(update_pool)
         self.assertEqual(pool, pool_dm_dict)
         self.assertIsNone(new_pool_dm.session_persistence)
@@ -195,7 +195,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
-                'enabled': True, 'operating_status': constants.ONLINE}
+                'enabled': True, 'operating_status': constants.ONLINE,
+                'project_id': uuidutils.generate_uuid()}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster'}
         pool_dm = self.repos.create_pool_on_listener(self.session,
@@ -210,7 +211,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['health_monitor']
         del pool_dm_dict['session_persistence']
         del pool_dm_dict['listener']
-        del pool_dm_dict['tenant_id']
         pool.update(update_pool)
         self.assertEqual(pool, pool_dm_dict)
         sp_dm_dict = new_pool_dm.session_persistence.to_dict()
@@ -223,7 +223,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
-                'enabled': True, 'operating_status': constants.ONLINE}
+                'enabled': True, 'operating_status': constants.ONLINE,
+                'project_id': uuidutils.generate_uuid()}
         pool_dm = self.repos.create_pool_on_listener(self.session,
                                                      self.listener.id,
                                                      pool)
@@ -242,7 +243,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
-                'enabled': True, 'operating_status': constants.ONLINE}
+                'enabled': True, 'operating_status': constants.ONLINE,
+                'project_id': uuidutils.generate_uuid()}
         pool_dm = self.repos.create_pool_on_listener(self.session,
                                                      self.listener.id,
                                                      pool)
@@ -255,7 +257,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
-                'enabled': True, 'operating_status': constants.ONLINE}
+                'enabled': True, 'operating_status': constants.ONLINE,
+                'project_id': uuidutils.generate_uuid()}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster'}
         pool_dm = self.repos.create_pool_on_listener(self.session,
@@ -269,9 +272,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
 
 class PoolRepositoryTest(BaseRepositoryTest):
 
-    def create_pool(self, pool_id, tenant_id):
+    def create_pool(self, pool_id, project_id):
         pool = self.pool_repo.create(
-            self.session, id=pool_id, tenant_id=tenant_id, name="pool_test",
+            self.session, id=pool_id, project_id=project_id, name="pool_test",
             description="pool_description", protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
             operating_status=constants.ONLINE, enabled=True)
@@ -279,18 +282,18 @@ class PoolRepositoryTest(BaseRepositoryTest):
 
     def test_get(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
-                                tenant_id=self.FAKE_UUID_2)
+                                project_id=self.FAKE_UUID_2)
         new_pool = self.pool_repo.get(self.session, id=pool.id)
         self.assertIsInstance(new_pool, models.Pool)
         self.assertEqual(pool, new_pool)
 
     def test_get_all(self):
         pool_one = self.create_pool(pool_id=self.FAKE_UUID_1,
-                                    tenant_id=self.FAKE_UUID_2)
+                                    project_id=self.FAKE_UUID_2)
         pool_two = self.create_pool(pool_id=self.FAKE_UUID_3,
-                                    tenant_id=self.FAKE_UUID_2)
+                                    project_id=self.FAKE_UUID_2)
         pool_list = self.pool_repo.get_all(self.session,
-                                           tenant_id=self.FAKE_UUID_2)
+                                           project_id=self.FAKE_UUID_2)
         self.assertIsInstance(pool_list, list)
         self.assertEqual(2, len(pool_list))
         self.assertEqual(pool_one, pool_list[0])
@@ -298,9 +301,9 @@ class PoolRepositoryTest(BaseRepositoryTest):
 
     def test_create(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
-                                tenant_id=self.FAKE_UUID_2)
+                                project_id=self.FAKE_UUID_2)
         self.assertIsInstance(pool, models.Pool)
-        self.assertEqual(self.FAKE_UUID_2, pool.tenant_id)
+        self.assertEqual(self.FAKE_UUID_2, pool.project_id)
         self.assertEqual("pool_test", pool.name)
         self.assertEqual("pool_description", pool.description)
         self.assertEqual(constants.PROTOCOL_HTTP, pool.protocol)
@@ -309,7 +312,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
 
     def test_update(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
-                                tenant_id=self.FAKE_UUID_2)
+                                project_id=self.FAKE_UUID_2)
         self.pool_repo.update(self.session, pool.id,
                               description="other_pool_description")
         new_pool = self.pool_repo.get(self.session, id=self.FAKE_UUID_1)
@@ -317,15 +320,15 @@ class PoolRepositoryTest(BaseRepositoryTest):
 
     def test_delete(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
-                                tenant_id=self.FAKE_UUID_2)
+                                project_id=self.FAKE_UUID_2)
         self.pool_repo.delete(self.session, id=pool.id)
         self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
 
     def test_delete_with_member(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
-                                tenant_id=self.FAKE_UUID_2)
+                                project_id=self.FAKE_UUID_2)
         member = self.member_repo.create(self.session, id=self.FAKE_UUID_3,
-                                         tenant_id=self.FAKE_UUID_2,
+                                         project_id=self.FAKE_UUID_2,
                                          pool_id=pool.id,
                                          ip_address="10.0.0.1",
                                          protocol_port=80, enabled=True,
@@ -339,7 +342,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
 
     def test_delete_with_health_monitor(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
-                                tenant_id=self.FAKE_UUID_2)
+                                project_id=self.FAKE_UUID_2)
         hm = self.hm_repo.create(self.session, pool_id=pool.id,
                                  type=constants.HEALTH_MONITOR_HTTP,
                                  delay=1, timeout=1, fall_threshold=1,
@@ -353,7 +356,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
 
     def test_delete_with_session_persistence(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
-                                tenant_id=self.FAKE_UUID_2)
+                                project_id=self.FAKE_UUID_2)
         sp = self.sp_repo.create(
             self.session, pool_id=pool.id,
             type=constants.SESSION_PERSISTENCE_HTTP_COOKIE,
@@ -367,13 +370,13 @@ class PoolRepositoryTest(BaseRepositoryTest):
 
     def test_delete_with_all_children(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
-                                tenant_id=self.FAKE_UUID_2)
+                                project_id=self.FAKE_UUID_2)
         hm = self.hm_repo.create(self.session, pool_id=pool.id,
                                  type=constants.HEALTH_MONITOR_HTTP,
                                  delay=1, timeout=1, fall_threshold=1,
                                  rise_threshold=1, enabled=True)
         member = self.member_repo.create(self.session, id=self.FAKE_UUID_3,
-                                         tenant_id=self.FAKE_UUID_2,
+                                         project_id=self.FAKE_UUID_2,
                                          pool_id=pool.id,
                                          ip_address="10.0.0.1",
                                          protocol_port=80,
@@ -402,15 +405,16 @@ class MemberRepositoryTest(BaseRepositoryTest):
     def setUp(self):
         super(MemberRepositoryTest, self).setUp()
         self.pool = self.pool_repo.create(
-            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
             operating_status=constants.ONLINE, enabled=True)
 
-    def create_member(self, member_id, tenant_id, pool_id, ip_address):
+    def create_member(self, member_id, project_id, pool_id, ip_address):
         member = self.member_repo.create(self.session, id=member_id,
-                                         tenant_id=tenant_id, pool_id=pool_id,
+                                         project_id=project_id,
+                                         pool_id=pool_id,
                                          ip_address=ip_address,
                                          protocol_port=80,
                                          operating_status=constants.ONLINE,
@@ -430,7 +434,7 @@ class MemberRepositoryTest(BaseRepositoryTest):
         member_two = self.create_member(self.FAKE_UUID_3, self.FAKE_UUID_2,
                                         self.pool.id, "10.0.0.2")
         member_list = self.member_repo.get_all(self.session,
-                                               tenant_id=self.FAKE_UUID_2)
+                                               project_id=self.FAKE_UUID_2)
         self.assertIsInstance(member_list, list)
         self.assertEqual(2, len(member_list))
         self.assertEqual(member_one, member_list[0])
@@ -441,7 +445,7 @@ class MemberRepositoryTest(BaseRepositoryTest):
                                     self.pool.id, ip_address="10.0.0.1")
         new_member = self.member_repo.get(self.session, id=member.id)
         self.assertEqual(self.FAKE_UUID_1, new_member.id)
-        self.assertEqual(self.FAKE_UUID_2, new_member.tenant_id)
+        self.assertEqual(self.FAKE_UUID_2, new_member.project_id)
         self.assertEqual(self.pool.id, new_member.pool_id)
         self.assertEqual("10.0.0.1", new_member.ip_address)
         self.assertEqual(80, new_member.protocol_port)
@@ -472,7 +476,7 @@ class SessionPersistenceRepositoryTest(BaseRepositoryTest):
     def setUp(self):
         super(SessionPersistenceRepositoryTest, self).setUp()
         self.pool = self.pool_repo.create(
-            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
@@ -522,14 +526,14 @@ class ListenerRepositoryTest(BaseRepositoryTest):
     def setUp(self):
         super(ListenerRepositoryTest, self).setUp()
         self.load_balancer = self.lb_repo.create(
-            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="lb_name", description="lb_description",
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
 
     def create_listener(self, listener_id, port, default_pool_id=None):
         listener = self.listener_repo.create(
-            self.session, id=listener_id, tenant_id=self.FAKE_UUID_2,
+            self.session, id=listener_id, project_id=self.FAKE_UUID_2,
             name="listener_name", description="listener_description",
             protocol=constants.PROTOCOL_HTTP, protocol_port=port,
             connection_limit=1, load_balancer_id=self.load_balancer.id,
@@ -547,7 +551,7 @@ class ListenerRepositoryTest(BaseRepositoryTest):
         listener_one = self.create_listener(self.FAKE_UUID_1, 80)
         listener_two = self.create_listener(self.FAKE_UUID_3, 88)
         listener_list = self.listener_repo.get_all(self.session,
-                                                   tenant_id=self.FAKE_UUID_2)
+                                                   project_id=self.FAKE_UUID_2)
         self.assertIsInstance(listener_list, list)
         self.assertEqual(2, len(listener_list))
         self.assertEqual(listener_one, listener_list[0])
@@ -557,7 +561,7 @@ class ListenerRepositoryTest(BaseRepositoryTest):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertEqual(self.FAKE_UUID_1, new_listener.id)
-        self.assertEqual(self.FAKE_UUID_2, new_listener.tenant_id)
+        self.assertEqual(self.FAKE_UUID_2, new_listener.project_id)
         self.assertEqual("listener_name", new_listener.name)
         self.assertEqual("listener_description", new_listener.description)
         self.assertEqual(constants.PROTOCOL_HTTP, new_listener.protocol)
@@ -608,7 +612,7 @@ class ListenerRepositoryTest(BaseRepositoryTest):
 
     def test_delete_with_pool(self):
         pool = self.pool_repo.create(
-            self.session, id=self.FAKE_UUID_3, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_3, project_id=self.FAKE_UUID_2,
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
@@ -624,7 +628,7 @@ class ListenerRepositoryTest(BaseRepositoryTest):
 
     def test_delete_with_all_children(self):
         pool = self.pool_repo.create(
-            self.session, id=self.FAKE_UUID_3, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_3, project_id=self.FAKE_UUID_2,
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
@@ -655,7 +659,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
     def setUp(self):
         super(ListenerStatisticsRepositoryTest, self).setUp()
         self.listener = self.listener_repo.create(
-            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="listener_name", description="listener_description",
             protocol=constants.PROTOCOL_HTTP, protocol_port=80,
             connection_limit=1, provisioning_status=constants.ACTIVE,
@@ -752,7 +756,7 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
     def setUp(self):
         super(HealthMonitorRepositoryTest, self).setUp()
         self.pool = self.pool_repo.create(
-            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
@@ -806,7 +810,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
 
     def create_loadbalancer(self, lb_id):
         lb = self.lb_repo.create(self.session, id=lb_id,
-                                 tenant_id=self.FAKE_UUID_2, name="lb_name",
+                                 project_id=self.FAKE_UUID_2, name="lb_name",
                                  description="lb_description",
                                  provisioning_status=constants.ACTIVE,
                                  operating_status=constants.ONLINE,
@@ -823,7 +827,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         lb_one = self.create_loadbalancer(self.FAKE_UUID_1)
         lb_two = self.create_loadbalancer(self.FAKE_UUID_3)
         lb_list = self.lb_repo.get_all(self.session,
-                                       tenant_id=self.FAKE_UUID_2)
+                                       project_id=self.FAKE_UUID_2)
         self.assertEqual(2, len(lb_list))
         self.assertEqual(lb_one, lb_list[0])
         self.assertEqual(lb_two, lb_list[1])
@@ -831,7 +835,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
     def test_create(self):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
         self.assertEqual(self.FAKE_UUID_1, lb.id)
-        self.assertEqual(self.FAKE_UUID_2, lb.tenant_id)
+        self.assertEqual(self.FAKE_UUID_2, lb.project_id)
         self.assertEqual("lb_name", lb.name)
         self.assertEqual("lb_description", lb.description)
         self.assertEqual(constants.ACTIVE, lb.provisioning_status)
@@ -910,7 +914,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
     def test_delete_with_listener(self):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
         listener = self.listener_repo.create(
-            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="listener_name", description="listener_description",
             load_balancer_id=lb.id, protocol=constants.PROTOCOL_HTTP,
             protocol_port=80, connection_limit=1,
@@ -927,14 +931,14 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
     def test_delete_with_many_listeners(self):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
         listener_1 = self.listener_repo.create(
-            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="listener_name", description="listener_description",
             load_balancer_id=lb.id, protocol=constants.PROTOCOL_HTTP,
             protocol_port=80, connection_limit=1,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
         listener_2 = self.listener_repo.create(
-            self.session, id=self.FAKE_UUID_3, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_3, project_id=self.FAKE_UUID_2,
             name="listener_name", description="listener_description",
             load_balancer_id=lb.id, protocol=constants.PROTOCOL_HTTPS,
             protocol_port=443, connection_limit=1,
@@ -962,7 +966,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         vip = self.vip_repo.create(self.session, load_balancer_id=lb.id,
                                    ip_address="10.0.0.1")
         listener = self.listener_repo.create(
-            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="listener_name", description="listener_description",
             load_balancer_id=lb.id, protocol=constants.PROTOCOL_HTTP,
             protocol_port=80, connection_limit=1,
@@ -1013,7 +1017,7 @@ class VipRepositoryTest(BaseRepositoryTest):
     def setUp(self):
         super(VipRepositoryTest, self).setUp()
         self.lb = self.lb_repo.create(
-            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="lb_name", description="lb_description",
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
@@ -1060,7 +1064,7 @@ class SNIRepositoryTest(BaseRepositoryTest):
     def setUp(self):
         super(SNIRepositoryTest, self).setUp()
         self.listener = self.listener_repo.create(
-            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="listener_name", description="listener_description",
             protocol=constants.PROTOCOL_HTTP, protocol_port=80,
             connection_limit=1, provisioning_status=constants.ACTIVE,
@@ -1110,7 +1114,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
     def setUp(self):
         super(AmphoraRepositoryTest, self).setUp()
         self.lb = self.lb_repo.create(
-            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="lb_name", description="lb_description",
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
@@ -1354,7 +1358,7 @@ class VRRPGroupRepositoryTest(BaseRepositoryTest):
     def setUp(self):
         super(VRRPGroupRepositoryTest, self).setUp()
         self.lb = self.lb_repo.create(
-            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="lb_name", description="lb_description",
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
