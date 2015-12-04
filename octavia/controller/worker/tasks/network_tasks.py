@@ -110,7 +110,10 @@ class CalculateDelta(BaseNetworkTask):
 
         calculate_amp = CalculateAmphoraDelta()
         deltas = {}
-        for amphora in loadbalancer.amphorae:
+        for amphora in six.moves.filter(
+            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
+                loadbalancer.amphorae):
+
             delta = calculate_amp.execute(loadbalancer, amphora)
             deltas[amphora.id] = delta
         return deltas

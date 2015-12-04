@@ -63,6 +63,7 @@ class TestNetworkTasks(base.TestCase):
         self.load_balancer_mock.amphorae = []
         self.amphora_mock.id = AMPHORA_ID
         self.amphora_mock.compute_id = COMPUTE_ID
+        self.amphora_mock.status = constants.AMPHORA_ALLOCATED
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="controller_worker", amp_network='netid')
 

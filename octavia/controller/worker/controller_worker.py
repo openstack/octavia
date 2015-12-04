@@ -25,9 +25,10 @@ from octavia.controller.worker.flows import member_flows
 from octavia.controller.worker.flows import pool_flows
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
-from octavia.i18n import _LI
+from octavia.i18n import _LE, _LI
 
 from oslo_config import cfg
+from oslo_utils import excutils
 from taskflow.listeners import logging as tf_logging
 
 CONF = cfg.CONF
@@ -470,16 +471,20 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :raises AmphoraNotFound: The referenced amphora was not found
         """
 
-        amp = self._amphora_repo.get(db_apis.get_session(),
-                                     id=amphora_id)
+        try:
+            amp = self._amphora_repo.get(db_apis.get_session(),
+                                         id=amphora_id)
 
-        failover_amphora_tf = self._taskflow_load(
-            self._amphora_flows.get_failover_flow(),
-            store={constants.AMPHORA: amp,
-                   constants.LOADBALANCER_ID: amp.load_balancer_id})
-        with tf_logging.DynamicLoggingListener(failover_amphora_tf,
-                                               log=LOG):
-            failover_amphora_tf.run()
+            failover_amphora_tf = self._taskflow_load(
+                self._amphora_flows.get_failover_flow(role=amp.role),
+                store={constants.FAILED_AMPHORA: amp,
+                       constants.LOADBALANCER_ID: amp.load_balancer_id})
+            with tf_logging.DynamicLoggingListener(failover_amphora_tf,
+                                                   log=LOG):
+                failover_amphora_tf.run()
+        except Exception as e:
+            with excutils.save_and_reraise_exception():
+                LOG.error(_LE("Failover exception: %s") % e)
 
     def amphora_cert_rotation(self, amphora_id):
         """Perform cert rotation for an amphora.

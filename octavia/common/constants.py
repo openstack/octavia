@@ -76,6 +76,7 @@ SUPPORTED_AMPHORA_TYPES = (AMPHORA_VM,)
 
 # Task/Flow constants
 AMPHORA = 'amphora'
+FAILED_AMPHORA = 'failed_amphora'
 FAILOVER_AMPHORA = 'failover_amphora'
 AMPHORAE = 'amphorae'
 AMPHORA_ID = 'amphora_id'
@@ -91,6 +92,7 @@ MEMBER = 'member'
 MEMBER_ID = 'member_id'
 COMPUTE_ID = 'compute_id'
 COMPUTE_OBJ = 'compute_obj'
+AMP_DATA = 'amp_data'
 AMPS_DATA = 'amps_data'
 NICS = 'nics'
 VIP = 'vip'

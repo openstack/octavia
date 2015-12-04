@@ -28,6 +28,7 @@ class TestVRRPRestDriver(base.TestCase):
         self.templater = jinja_cfg.KeepalivedJinjaTemplater()
 
         self.amphora1 = mock.MagicMock()
+        self.amphora1.status = constants.AMPHORA_ALLOCATED
         self.amphora1.vrrp_ip = '10.0.0.1'
         self.amphora1.role = constants.ROLE_MASTER
         self.amphora1.vrrp_interface = 'eth1'
@@ -35,6 +36,7 @@ class TestVRRPRestDriver(base.TestCase):
         self.amphora1.vrrp_priority = 100
 
         self.amphora2 = mock.MagicMock()
+        self.amphora2.status = constants.AMPHORA_ALLOCATED
         self.amphora2.vrrp_ip = '10.0.0.2'
         self.amphora2.role = constants.ROLE_BACKUP
         self.amphora2.vrrp_interface = 'eth1'

@@ -16,6 +16,7 @@
 import logging
 
 from oslo_config import cfg
+import six
 from stevedore import driver as stevedore_driver
 from taskflow import task
 from taskflow.types import failure
@@ -222,7 +223,10 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
         if isinstance(result, failure.Failure):
             return
         LOG.warn(_LW("Reverting post network plug."))
-        for amphora in loadbalancer.amphorae:
+        for amphora in six.moves.filter(
+            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
+                loadbalancer.amphorae):
+
             self.amphora_repo.update(db_apis.get_session(), id=amphora.id,
                                      status=constants.ERROR)
 
@@ -261,13 +265,15 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
     def execute(self, loadbalancer):
         """Execute post_vip_routine."""
         amps = []
-        for amp in loadbalancer.amphorae:
-            # Currently this is supported only with REST Driver
-            interface = self.amphora_driver.get_vrrp_interface(amp)
-            self.amphora_repo.update(db_apis.get_session(), amp.id,
-                                     vrrp_interface=interface)
-            amps.append(self.amphora_repo.get(db_apis.get_session(),
-                                              id=amp.id))
+        for amp in six.moves.filter(
+            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
+                loadbalancer.amphorae):
+                    # Currently this is supported only with REST Driver
+                    interface = self.amphora_driver.get_vrrp_interface(amp)
+                    self.amphora_repo.update(db_apis.get_session(), amp.id,
+                                             vrrp_interface=interface)
+                    amps.append(self.amphora_repo.get(db_apis.get_session(),
+                                                      id=amp.id))
         loadbalancer.amphorae = amps
         return loadbalancer
 
@@ -276,7 +282,10 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
         if isinstance(result, failure.Failure):
             return
         LOG.warn(_LW("Reverting Get Amphora VRRP Interface."))
-        for amp in loadbalancer.amphorae:
+        for amp in six.moves.filter(
+            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
+                loadbalancer.amphorae):
+
             self.amphora_repo.update(db_apis.get_session(), amp.id,
                                      vrrp_interface=None)
 

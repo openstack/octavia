@@ -18,6 +18,7 @@ from neutronclient.common import exceptions as neutron_client_exceptions
 from novaclient import exceptions as nova_client_exceptions
 from oslo_config import cfg
 from oslo_log import log as logging
+import six
 
 from octavia.common import clients
 from octavia.common import constants
@@ -198,6 +199,18 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         raise base.DeallocateVIPException(message)
 
     def deallocate_vip(self, vip):
+        # Delete the vrrp_port (instance port) in case nova didn't
+        # This can happen if a failover has occurred.
+        try:
+            for amphora in six.moves.filter(
+                lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
+                    vip.load_balancer.amphorae):
+
+                self.neutron_client.delete_port(amphora.vrrp_port_id)
+        except base.PortNotFound:
+            LOG.debug('VIP instance port {0} already deleted.  '
+                      'Skipping.'.format(amphora.vrrp_port_id))
+
         try:
             port = self.get_port(vip.port_id)
         except base.PortNotFound:
@@ -238,7 +251,10 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             self._update_vip_security_group(load_balancer, vip)
         plugged_amphorae = []
         subnet = self.get_subnet(vip.subnet_id)
-        for amphora in load_balancer.amphorae:
+        for amphora in six.moves.filter(
+            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
+                load_balancer.amphorae):
+
             interface = self._get_plugged_interface(amphora.compute_id,
                                                     subnet.network_id)
             if not interface:
@@ -300,7 +316,10 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             msg = ("Can't unplug vip because vip subnet {0} was not "
                    "found").format(vip.subnet_id)
             raise base.PluggedVIPNotFound(msg)
-        for amphora in load_balancer.amphorae:
+        for amphora in six.moves.filter(
+            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
+                load_balancer.amphorae):
+
             interface = self._get_plugged_interface(amphora.compute_id,
                                                     subnet.network_id)
             if not interface:
