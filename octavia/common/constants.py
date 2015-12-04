@@ -194,7 +194,7 @@ VRRP_AUTH_DEFAULT = 'PASS'
 VRRP_AUTH_AH = 'AH'
 SUPPORTED_VRRP_AUTH = (VRRP_AUTH_DEFAULT, VRRP_AUTH_AH)
 
-KEEPALIVED_CMD = '/usr/local/sbin/keepalived '
+KEEPALIVED_CMD = '/usr/sbin/keepalived '
 # The DEFAULT_VRRP_ID value needs to be variable for multi tenant support
 # per amphora in the future
 DEFAULT_VRRP_ID = 1
