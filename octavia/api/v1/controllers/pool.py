@@ -27,7 +27,6 @@ from octavia.api.v1.types import pool as pool_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
-from octavia.db import api as db_api
 from octavia.i18n import _LI
 
 
@@ -45,8 +44,8 @@ class PoolsController(base.BaseController):
     @wsme_pecan.wsexpose(pool_types.PoolResponse, wtypes.text)
     def get(self, id):
         """Gets a pool's details."""
-        session = db_api.get_session()
-        db_pool = self.repositories.pool.get(session, id=id)
+        context = pecan.request.context.get('octavia_context')
+        db_pool = self.repositories.pool.get(context.session, id=id)
         if not db_pool:
             LOG.info(_LI("Pool %s not found."), id)
             raise exceptions.NotFound(resource=data_models.Pool._name(), id=id)
@@ -55,9 +54,9 @@ class PoolsController(base.BaseController):
     @wsme_pecan.wsexpose([pool_types.PoolResponse])
     def get_all(self):
         """Lists all pools on a listener."""
-        session = db_api.get_session()
+        context = pecan.request.context.get('octavia_context')
         default_pool = self.repositories.listener.get(
-            session, id=self.listener_id).default_pool
+            context.session, id=self.listener_id).default_pool
         if default_pool:
             default_pool = [default_pool]
         else:
@@ -123,19 +122,20 @@ class PoolsController(base.BaseController):
         is created, another cannot be created until the first one has been
         deleted.
         """
-        session = db_api.get_session()
-        if self.repositories.listener.has_pool(session, self.listener_id):
+        context = pecan.request.context.get('octavia_context')
+        if self.repositories.listener.has_pool(
+                context.session, self.listener_id):
             raise exceptions.DuplicatePoolEntry()
         # Verify load balancer is in a mutable status.  If so it can be assumed
         # that the listener is also in a mutable status because a load balancer
         # will only be ACTIVE when all it's listeners as ACTIVE.
 
-        self._test_lb_status(session)
+        self._test_lb_status(context.session)
         pool_dict = pool.to_dict()
         sp_dict = pool_dict.pop('session_persistence', None)
         pool_dict['operating_status'] = constants.OFFLINE
 
-        return self._validate_create_pool(session, sp_dict, pool_dict)
+        return self._validate_create_pool(context.session, sp_dict, pool_dict)
 
     def _test_lb_status_put(self, session):
         """Verify load balancer is in a mutable status for put method."""
@@ -153,15 +153,15 @@ class PoolsController(base.BaseController):
                          body=pool_types.PoolPUT, status_code=202)
     def put(self, id, pool):
         """Updates a pool on a listener."""
-        session = db_api.get_session()
-        db_pool = self.repositories.pool.get(session, id=id)
+        context = pecan.request.context.get('octavia_context')
+        db_pool = self.repositories.pool.get(context.session, id=id)
         if not db_pool:
             LOG.info(_LI("Pool %s not found."), id)
             raise exceptions.NotFound(resource=data_models.Pool._name(), id=id)
         # Verify load balancer is in a mutable status.  If so it can be assumed
         # that the listener is also in a mutable status because a load balancer
         # will only be ACTIVE when all it's listeners as ACTIVE.
-        self._test_lb_status_put(session)
+        self._test_lb_status_put(context.session)
 
         try:
             LOG.info(_LI("Sending Update of Pool %s to handler"), id)
@@ -169,16 +169,16 @@ class PoolsController(base.BaseController):
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.listener.update(
-                    session, self.listener_id,
+                    context.session, self.listener_id,
                     operating_status=constants.ERROR)
-        db_pool = self.repositories.pool.get(session, id=id)
+        db_pool = self.repositories.pool.get(context.session, id=id)
         return self._convert_db_to_type(db_pool, pool_types.PoolResponse)
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
     def delete(self, id):
         """Deletes a pool from a listener."""
-        session = db_api.get_session()
-        db_pool = self.repositories.pool.get(session, id=id)
+        context = pecan.request.context.get('octavia_context')
+        db_pool = self.repositories.pool.get(context.session, id=id)
         if not db_pool:
             LOG.info(_LI("Pool %s not found."), id)
             raise exceptions.NotFound(resource=data_models.Pool._name(), id=id)
@@ -186,15 +186,15 @@ class PoolsController(base.BaseController):
         # that the listener is also in a mutable status because a load balancer
         # will only be ACTIVE when all it's listeners as ACTIVE.
         if not self.repositories.test_and_set_lb_and_listener_prov_status(
-                session, self.load_balancer_id, self.listener_id,
+                context.session, self.load_balancer_id, self.listener_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE):
             LOG.info(_LI("Pool %s cannot be deleted because the Load "
                          "Balancer is in an immutable state"), id)
             lb_repo = self.repositories.load_balancer
-            db_lb = lb_repo.get(session, id=self.load_balancer_id)
+            db_lb = lb_repo.get(context.session, id=self.load_balancer_id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
-        db_pool = self.repositories.pool.get(session, id=id)
+        db_pool = self.repositories.pool.get(context.session, id=id)
         try:
             LOG.info(_LI("Sending Deletion of Pool %s to handler"),
                      db_pool.id)
@@ -202,12 +202,12 @@ class PoolsController(base.BaseController):
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.listener.update(
-                    session, self.listener_id,
+                    context.session, self.listener_id,
                     operating_status=constants.ERROR)
                 self.repositories.pool.update(
-                    session, db_pool.id,
+                    context.session, db_pool.id,
                     operating_status=constants.ERROR)
-        db_pool = self.repositories.pool.get(session, id=db_pool.id)
+        db_pool = self.repositories.pool.get(context.session, id=db_pool.id)
         return self._convert_db_to_type(db_pool, pool_types.PoolResponse)
 
     @pecan.expose()
@@ -217,10 +217,10 @@ class PoolsController(base.BaseController):
         Verifies that the pool passed in the url exists, and if so decides
         which controller, if any, should control be passed.
         """
-        session = db_api.get_session()
+        context = pecan.request.context.get('octavia_context')
         if pool_id and len(remainder) and remainder[0] == 'members':
             remainder = remainder[1:]
-            db_pool = self.repositories.pool.get(session, id=pool_id)
+            db_pool = self.repositories.pool.get(context.session, id=pool_id)
             if not db_pool:
                 LOG.info(_LI("Pool %s not found."), pool_id)
                 raise exceptions.NotFound(resource=data_models.Pool._name(),
@@ -231,7 +231,7 @@ class PoolsController(base.BaseController):
                 pool_id=db_pool.id), remainder
         if pool_id and len(remainder) and remainder[0] == 'healthmonitor':
             remainder = remainder[1:]
-            db_pool = self.repositories.pool.get(session, id=pool_id)
+            db_pool = self.repositories.pool.get(context.session, id=pool_id)
             if not db_pool:
                 LOG.info(_LI("Pool %s not found."), pool_id)
                 raise exceptions.NotFound(resource=data_models.Pool._name(),

@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_utils import uuidutils
+
 from octavia.common import constants
 from octavia.tests.functional.api.v1 import base
 
@@ -73,6 +75,15 @@ class TestHealthMonitor(base.BaseAPITest):
         self.assert_correct_listener_status(self.lb.get('id'),
                                             self.listener.get('id'),
                                             constants.ACTIVE, constants.ONLINE)
+
+    def test_create_with_project_id(self):
+        pid = uuidutils.generate_uuid()
+        api_hm = self.create_health_monitor(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            self.pool.get('id'),
+                                            constants.HEALTH_MONITOR_HTTP,
+                                            1, 1, 1, 1, project_id=pid)
+        self.assertEqual(pid, api_hm.get('project_id'))
 
     def test_bad_create(self):
         hm_json = {'name': 'test1'}

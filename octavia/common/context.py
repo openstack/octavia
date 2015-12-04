@@ -22,6 +22,7 @@ class Context(common_context.RequestContext):
         super(Context, self).__init__(tenant=project_id, auth_token=auth_token,
                                       is_admin=is_admin, user=user_id)
         self._session = None
+        self.project_id = project_id
 
     @property
     def session(self):

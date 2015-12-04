@@ -109,6 +109,14 @@ class TestMember(base.BaseAPITest):
                                         '10.0.0.1', 80, id=mid)
         self.assertEqual(mid, api_member.get('id'))
 
+    def test_create_with_project_id(self):
+        pid = uuidutils.generate_uuid()
+        api_member = self.create_member(self.lb.get('id'),
+                                        self.listener.get('id'),
+                                        self.pool.get('id'),
+                                        '10.0.0.1', 80, project_id=pid)
+        self.assertEqual(pid, api_member.get('project_id'))
+
     def test_create_with_duplicate_id(self):
         member = self.create_member(self.lb.get('id'),
                                     self.listener.get('id'),

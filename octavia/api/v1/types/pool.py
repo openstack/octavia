@@ -45,6 +45,7 @@ class PoolResponse(base.BaseType):
     protocol = wtypes.wsattr(wtypes.text)
     lb_algorithm = wtypes.wsattr(wtypes.text)
     session_persistence = wtypes.wsattr(SessionPersistenceResponse)
+    project_id = wtypes.wsattr(wtypes.UuidType())
 
 
 class PoolPOST(base.BaseType):
@@ -56,6 +57,7 @@ class PoolPOST(base.BaseType):
     protocol = wtypes.wsattr(wtypes.text, mandatory=True)
     lb_algorithm = wtypes.wsattr(wtypes.text, mandatory=True)
     session_persistence = wtypes.wsattr(SessionPersistencePOST)
+    project_id = wtypes.wsattr(wtypes.UuidType())
 
 
 class PoolPUT(base.BaseType):

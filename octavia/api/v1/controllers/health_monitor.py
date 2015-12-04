@@ -16,6 +16,7 @@ import logging
 
 from oslo_db import exception as odb_exceptions
 from oslo_utils import excutils
+import pecan
 from wsmeext import pecan as wsme_pecan
 
 from octavia.api.v1.controllers import base
@@ -23,7 +24,6 @@ from octavia.api.v1.types import health_monitor as hm_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
-from octavia.db import api as db_api
 from octavia.i18n import _LI
 
 
@@ -44,9 +44,9 @@ class HealthMonitorController(base.BaseController):
         """Gets a single health monitor's details."""
         # NOTE(blogan): since a pool can only have one health monitor
         # we are using the get_all method to only get the single health monitor
-        session = db_api.get_session()
+        context = pecan.request.context.get('octavia_context')
         db_hm = self.repositories.health_monitor.get(
-            session, pool_id=self.pool_id)
+            context.session, pool_id=self.pool_id)
         if not db_hm:
             LOG.info(_LI("Health Monitor for Pool %s was not found"),
                      self.pool_id)
@@ -58,10 +58,10 @@ class HealthMonitorController(base.BaseController):
                          body=hm_types.HealthMonitorPOST, status_code=202)
     def post(self, health_monitor):
         """Creates a health monitor on a pool."""
-        session = db_api.get_session()
+        context = pecan.request.context.get('octavia_context')
         try:
             db_hm = self.repositories.health_monitor.get(
-                session, pool_id=self.pool_id)
+                context.session, pool_id=self.pool_id)
             if db_hm:
                 raise exceptions.DuplicateHealthMonitor()
         except exceptions.NotFound:
@@ -72,25 +72,26 @@ class HealthMonitorController(base.BaseController):
         # that the listener is also in a mutable status because a load balancer
         # will only be ACTIVE when all it's listeners as ACTIVE.
         if not self.repositories.test_and_set_lb_and_listener_prov_status(
-                session, self.load_balancer_id, self.listener_id,
+                context.session, self.load_balancer_id, self.listener_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE):
             LOG.info(_LI("Health Monitor for Pool %s cannot be updated "
                          "because the Load Balancer is immutable."),
                      self.pool_id)
             lb_repo = self.repositories.load_balancer
-            db_lb = lb_repo.get(session, id=self.load_balancer_id)
+            db_lb = lb_repo.get(context.session, id=self.load_balancer_id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
         try:
-            db_hm = self.repositories.health_monitor.create(session, **hm_dict)
+            db_hm = self.repositories.health_monitor.create(
+                context.session, **hm_dict)
         except odb_exceptions.DBError:
             # Setting LB and Listener back to active because this is just a
             # validation failure
             self.repositories.load_balancer.update(
-                session, self.load_balancer_id,
+                context.session, self.load_balancer_id,
                 provisioning_status=constants.ACTIVE)
             self.repositories.listener.update(
-                session, self.listener_id,
+                context.session, self.listener_id,
                 provisioning_status=constants.ACTIVE)
             raise exceptions.InvalidOption(value=hm_dict.get('type'),
                                            option='type')
@@ -101,10 +102,10 @@ class HealthMonitorController(base.BaseController):
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.listener.update(
-                    session, self.listener_id,
+                    context.session, self.listener_id,
                     operating_status=constants.ERROR)
         db_hm = self.repositories.health_monitor.get(
-            session, pool_id=self.pool_id)
+            context.session, pool_id=self.pool_id)
         return self._convert_db_to_type(db_hm, hm_types.HealthMonitorResponse)
 
     @wsme_pecan.wsexpose(hm_types.HealthMonitorResponse,
@@ -116,9 +117,9 @@ class HealthMonitorController(base.BaseController):
         monitor is allowed per pool so there is no need for a health monitor
         id.
         """
-        session = db_api.get_session()
+        context = pecan.request.context.get('octavia_context')
         db_hm = self.repositories.health_monitor.get(
-            session, pool_id=self.pool_id)
+            context.session, pool_id=self.pool_id)
         if not db_hm:
             LOG.info(_LI("Health Monitor for Pool %s was not found"),
                      self.pool_id)
@@ -128,13 +129,13 @@ class HealthMonitorController(base.BaseController):
         # that the listener is also in a mutable status because a load balancer
         # will only be ACTIVE when all it's listeners as ACTIVE.
         if not self.repositories.test_and_set_lb_and_listener_prov_status(
-                session, self.load_balancer_id, self.listener_id,
+                context.session, self.load_balancer_id, self.listener_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE):
             LOG.info(_LI("Health Monitor for Pool %s cannot be updated "
                          "because the Load Balancer is immutable."),
                      self.pool_id)
             lb_repo = self.repositories.load_balancer
-            db_lb = lb_repo.get(session, id=self.load_balancer_id)
+            db_lb = lb_repo.get(context.session, id=self.load_balancer_id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
         try:
@@ -144,18 +145,18 @@ class HealthMonitorController(base.BaseController):
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.listener.update(
-                    session, self.listener_id,
+                    context.session, self.listener_id,
                     operating_status=constants.ERROR)
         db_hm = self.repositories.health_monitor.get(
-            session, pool_id=self.pool_id)
+            context.session, pool_id=self.pool_id)
         return self._convert_db_to_type(db_hm, hm_types.HealthMonitorResponse)
 
     @wsme_pecan.wsexpose(None, status_code=202)
     def delete(self):
         """Deletes a health monitor."""
-        session = db_api.get_session()
+        context = pecan.request.context.get('octavia_context')
         db_hm = self.repositories.health_monitor.get(
-            session, pool_id=self.pool_id)
+            context.session, pool_id=self.pool_id)
         if not db_hm:
             LOG.info(_LI("Health Monitor for Pool %s cannot be updated "
                          "because the Load Balancer is immutable."),
@@ -166,13 +167,13 @@ class HealthMonitorController(base.BaseController):
         # that the listener is also in a mutable status because a load balancer
         # will only be ACTIVE when all it's listeners as ACTIVE.
         if not self.repositories.test_and_set_lb_and_listener_prov_status(
-                session, self.load_balancer_id, self.listener_id,
+                context.session, self.load_balancer_id, self.listener_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE):
             lb_repo = self.repositories.load_balancer
-            db_lb = lb_repo.get(session, id=self.load_balancer_id)
+            db_lb = lb_repo.get(context.session, id=self.load_balancer_id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
-        db_hm = self.repositories.health_monitor.get(session,
+        db_hm = self.repositories.health_monitor.get(context.session,
                                                      pool_id=self.pool_id)
         try:
             LOG.info(_LI("Sending Deletion of Health Monitor for Pool %s to "
@@ -181,8 +182,8 @@ class HealthMonitorController(base.BaseController):
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.listener.update(
-                    session, self.listener_id,
+                    context.session, self.listener_id,
                     operating_status=constants.ERROR)
         db_hm = self.repositories.health_monitor.get(
-            session, pool_id=self.pool_id)
+            context.session, pool_id=self.pool_id)
         return self._convert_db_to_type(db_hm, hm_types.HealthMonitorResponse)
