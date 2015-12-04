@@ -23,3 +23,6 @@ subunit.log
 *.sw?
 *~
 .eggs/
+
+# Files created by releasenotes build
+releasenotes/build
