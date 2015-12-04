@@ -1,4 +1,5 @@
 # Copyright 2011-2014 OpenStack Foundation,author: Min Wang,German Eichberger
+# Copyright 2015 Hewlett-Packard Development Company, L.P.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -240,5 +241,46 @@ class StatsMixin(object):
         "total_connections", 123}, ...}
         elements are named to keep it extsnsible for future versions
         awesome update code and code to send to ceilometer
+        """
+        pass
+
+
+@six.add_metaclass(abc.ABCMeta)
+class VRRPDriverMixin(object):
+    """Abstract mixin class for VRRP support in loadbalancer amphorae
+
+    Usage: To plug VRRP support in another service driver XYZ, use:
+    @plug_mixin(XYZ)
+    class XYZ: ...
+    """
+    @abc.abstractmethod
+    def update_vrrp_conf(self, loadbalancer):
+        """Update amphorae of the loadbalancer with a new VRRP configuration
+
+        :param loadbalancer: loadbalancer object
+        """
+        pass
+
+    @abc.abstractmethod
+    def stop_vrrp_service(self, loadbalancer):
+        """Stop the vrrp services running on the loadbalancer's amphorae
+
+        :param loadbalancer: loadbalancer object
+        """
+        pass
+
+    @abc.abstractmethod
+    def start_vrrp_service(self, loadbalancer):
+        """Start the VRRP services of all amphorae of the loadbalancer
+
+        :param loadbalancer: loadbalancer object
+        """
+        pass
+
+    @abc.abstractmethod
+    def reload_vrrp_service(self, loadbalancer):
+        """Reload the VRRP services of all amphorae of the loadbalancer
+
+        :param loadbalancer: loadbalancer object
         """
         pass

@@ -69,6 +69,8 @@ class OctaviaDBTestBase(test_base.DbTestCase):
                                 models.AmphoraRoles)
         self._seed_lookup_table(session, constants.SUPPORTED_LB_TOPOLOGIES,
                                 models.LBTopology)
+        self._seed_lookup_table(session, constants.SUPPORTED_VRRP_AUTH,
+                                models.VRRPAuthMethod)
 
     def _seed_lookup_table(self, session, name_list, model_cls):
         for name in name_list:

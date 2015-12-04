@@ -26,13 +26,14 @@ from octavia.amphorae.driver_exceptions import exceptions as driver_except
 from octavia.amphorae.drivers import driver_base as driver_base
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy.jinja import jinja_cfg
+from octavia.amphorae.drivers.keepalived import vrrp_rest_driver
 from octavia.common.config import cfg
 from octavia.common import constants
 from octavia.common.tls_utils import cert_parser
 from octavia.i18n import _LW
 
 LOG = logging.getLogger(__name__)
-API_VERSION = '0.5'
+API_VERSION = constants.API_VERSION
 OCTAVIA_API_CLIENT = (
     "Octavia HaProxy Rest Client/{version} "
     "(https://wiki.openstack.org/wiki/Octavia)").format(version=API_VERSION)
@@ -40,7 +41,10 @@ CONF = cfg.CONF
 CONF.import_group('haproxy_amphora', 'octavia.common.config')
 
 
-class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
+class HaproxyAmphoraLoadBalancerDriver(
+    driver_base.AmphoraLoadBalancerDriver,
+        vrrp_rest_driver.KeepalivedAmphoraDriverMixin):
+
     def __init__(self):
         super(HaproxyAmphoraLoadBalancerDriver, self).__init__()
         self.client = AmphoraAPIClient()
@@ -61,7 +65,6 @@ class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
 
         # Process listener certificate info
         certs = self._process_tls_certificates(listener)
-
         # Generate HaProxy configuration from listener object
         config = self.jinja.build_config(listener, certs['tls_cert'],
                                          certs['sni_certs'])
@@ -130,6 +133,9 @@ class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
         port_info = {'mac_address': port.mac_address}
         self.client.plug_network(amphora, port_info)
 
+    def get_vrrp_interface(self, amphora):
+        return self.client.get_interface(amphora, amphora.vrrp_ip)['interface']
+
     def _process_tls_certificates(self, listener):
         """Processes TLS data from the listener.
 
@@ -192,6 +198,10 @@ class AmphoraAPIClient(object):
         self.stop_listener = functools.partial(self._action, 'stop')
         self.reload_listener = functools.partial(self._action, 'reload')
 
+        self.start_vrrp = functools.partial(self._vrrp_action, 'start')
+        self.stop_vrrp = functools.partial(self._vrrp_action, 'stop')
+        self.reload_vrrp = functools.partial(self._vrrp_action, 'reload')
+
         self.session = requests.Session()
         self.session.cert = CONF.haproxy_amphora.client_cert
         self.ssl_adapter = CustomHostNameCheckingAdapter()
@@ -207,7 +217,7 @@ class AmphoraAPIClient(object):
         LOG.debug("request url %s", path)
         _request = getattr(self.session, method.lower())
         _url = self._base_url(amp.lb_network_ip) + path
-
+        LOG.debug("request url " + _url)
         reqargs = {
             'verify': CONF.haproxy_amphora.server_ca,
             'url': _url, }
@@ -232,7 +242,8 @@ class AmphoraAPIClient(object):
     def upload_config(self, amp, listener_id, config):
         r = self.put(
             amp,
-            'listeners/{listener_id}/haproxy'.format(listener_id=listener_id),
+            'listeners/{amphora_id}/{listener_id}/haproxy'.format(
+                amphora_id=amp.id, listener_id=listener_id),
             data=config)
         return exc.check_exception(r)
 
@@ -304,3 +315,16 @@ class AmphoraAPIClient(object):
                       'plug/vip/{vip}'.format(vip=vip),
                       json=net_info)
         return exc.check_exception(r)
+
+    def upload_vrrp_config(self, amp, config):
+        r = self.put(amp, 'vrrp/upload', data=config)
+        return exc.check_exception(r)
+
+    def _vrrp_action(self, action, amp):
+        r = self.put(amp, 'vrrp/{action}'.format(action=action))
+        return exc.check_exception(r)
+
+    def get_interface(self, amp, ip_addr):
+        r = self.get(amp, 'interface/{ip_addr}'.format(ip_addr=ip_addr))
+        if exc.check_exception(r):
+            return r.json()

@@ -18,11 +18,11 @@
 
 """Utilities and helper functions."""
 
+import base64
 import datetime
 import hashlib
 import random
 import socket
-
 
 from oslo_log import log as logging
 from oslo_utils import excutils
@@ -48,6 +48,12 @@ def get_random_string(length):
         ).hexdigest()
 
     return rndstr[0:length]
+
+
+def base64_sha1_string(string_to_hash):
+    hash_str = hashlib.sha1(string_to_hash.encode('utf-8')).digest()
+    b64_str = base64.b64encode(hash_str, str.encode('_-', 'ascii'))
+    return b64_str.decode('UTF-8')
 
 
 class exception_logger(object):

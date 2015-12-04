@@ -1,9 +1,11 @@
 #!/bin/bash
 set -eux
 
-#Checks out keepalived version 1.2.13, compiles and installs binaries.
+# install keepalived dependances.
+apt-get --assume-yes install `apt-cache depends keepalived | awk '/Depends:/{print$2}'`
+# Checks out keepalived version 1.2.19, compiles and installs binaries.
 cd /opt/vrrp-octavia/
-git checkout v1.2.13
+git checkout v1.2.19
 ./configure
 make
 make install

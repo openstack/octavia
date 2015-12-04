@@ -18,7 +18,6 @@ from oslo_utils import uuidutils
 from taskflow.types import failure
 
 from octavia.common import constants
-from octavia.common import exceptions
 from octavia.controller.worker.tasks import database_tasks
 from octavia.db import repositories as repo
 import octavia.tests.unit.base as base
@@ -297,6 +296,27 @@ class TestDatabaseTasks(base.TestCase):
 
         self.assertEqual(_loadbalancer_mock, lb)
 
+    @mock.patch('octavia.db.repositories.ListenerRepository.get',
+                return_value=_listener_mock)
+    def test_reload_listener(self,
+                             mock_listener_get,
+                             mock_generate_uuid,
+                             mock_LOG,
+                             mock_get_session,
+                             mock_loadbalancer_repo_update,
+                             mock_listener_repo_update,
+                             mock_amphora_repo_update,
+                             mock_amphora_repo_delete):
+
+        reload_listener = database_tasks.ReloadListener()
+        listener = reload_listener.execute(_listener_mock)
+
+        repo.ListenerRepository.get.assert_called_once_with(
+            'TEST',
+            id=LISTENER_ID)
+
+        self.assertEqual(_listener_mock, listener)
+
     @mock.patch('octavia.db.repositories.AmphoraRepository.'
                 'allocate_and_associate',
                 side_effect=[_amphora_mock, None])
@@ -317,10 +337,11 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             LB_ID)
 
-        assert amp_id == _amphora_mock.id
+        self.assertEqual(_amphora_mock.id, amp_id)
 
-        self.assertRaises(exceptions.NoReadyAmphoraeException,
-                          map_lb_to_amp.execute, self.loadbalancer_mock.id)
+        amp_id = map_lb_to_amp.execute(self.loadbalancer_mock.id)
+
+        self.assertIsNone(amp_id)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.get',
                 return_value=_amphora_mock)
@@ -919,3 +940,102 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             POOL_ID,
             enabled=0)
+
+    def test_mark_amphora_role_indb(self,
+                                    mock_generate_uuid,
+                                    mock_LOG,
+                                    mock_get_session,
+                                    mock_loadbalancer_repo_update,
+                                    mock_listener_repo_update,
+                                    mock_amphora_repo_update,
+                                    mock_amphora_repo_delete):
+
+        mark_amp_master_indb = database_tasks.MarkAmphoraMasterInDB()
+        mark_amp_master_indb.execute(_amphora_mock)
+        repo.AmphoraRepository.update.assert_called_once_with(
+            'TEST', AMP_ID, role='MASTER',
+            vrrp_priority=constants.ROLE_MASTER_PRIORITY)
+
+        mock_amphora_repo_update.reset_mock()
+
+        mark_amp_master_indb.revert("BADRESULT", _amphora_mock)
+        repo.AmphoraRepository.update.assert_called_once_with(
+            'TEST', AMP_ID, role=None, vrrp_priority=None)
+
+        mock_amphora_repo_update.reset_mock()
+
+        failure_obj = failure.Failure.from_exception(Exception("TESTEXCEPT"))
+        mark_amp_master_indb.revert(failure_obj, _amphora_mock)
+        self.assertFalse(repo.AmphoraRepository.update.called)
+
+        mock_amphora_repo_update.reset_mock()
+
+        mark_amp_backup_indb = database_tasks.MarkAmphoraBackupInDB()
+        mark_amp_backup_indb.execute(_amphora_mock)
+        repo.AmphoraRepository.update.assert_called_once_with(
+            'TEST', AMP_ID, role='BACKUP',
+            vrrp_priority=constants.ROLE_BACKUP_PRIORITY)
+
+        mock_amphora_repo_update.reset_mock()
+
+        mark_amp_backup_indb.revert("BADRESULT", _amphora_mock)
+        repo.AmphoraRepository.update.assert_called_once_with(
+            'TEST', AMP_ID, role=None, vrrp_priority=None)
+
+        mock_amphora_repo_update.reset_mock()
+
+        mark_amp_standalone_indb = database_tasks.MarkAmphoraStandAloneInDB()
+        mark_amp_standalone_indb.execute(_amphora_mock)
+        repo.AmphoraRepository.update.assert_called_once_with(
+            'TEST', AMP_ID, role='STANDALONE',
+            vrrp_priority=None)
+
+        mock_amphora_repo_update.reset_mock()
+
+        mark_amp_standalone_indb.revert("BADRESULT", _amphora_mock)
+        repo.AmphoraRepository.update.assert_called_once_with(
+            'TEST', AMP_ID, role=None, vrrp_priority=None)
+
+    @mock.patch('octavia.db.repositories.VRRPGroupRepository.create')
+    def test_create_vrrp_group_for_lb(self,
+                                      mock_vrrp_group_create,
+                                      mock_generate_uuid,
+                                      mock_LOG,
+                                      mock_get_session,
+                                      mock_loadbalancer_repo_update,
+                                      mock_listener_repo_update,
+                                      mock_amphora_repo_update,
+                                      mock_amphora_repo_delete):
+
+        create_vrrp_group = database_tasks.CreateVRRPGroupForLB()
+        create_vrrp_group.execute(_loadbalancer_mock)
+        mock_vrrp_group_create.assert_called_once_with(
+            'TEST', load_balancer_id=LB_ID,
+            vrrp_group_name=LB_ID.replace('-', ''),
+            vrrp_auth_type=constants.VRRP_AUTH_DEFAULT,
+            vrrp_auth_pass=mock_generate_uuid.return_value.replace('-',
+                                                                   '')[0:7],
+            advert_int=1)
+
+    @mock.patch('octavia.db.repositories.ListenerRepository.get')
+    def test_allocate_listener_peer_port(self,
+                                         mock_listener_repo_get,
+                                         mock_generate_uuid,
+                                         mock_LOG,
+                                         mock_get_session,
+                                         mock_loadbalancer_repo_update,
+                                         mock_listener_repo_update,
+                                         mock_amphora_repo_update,
+                                         mock_amphora_repo_delete):
+        allocate_listener_peer_port = database_tasks.AllocateListenerPeerPort()
+        allocate_listener_peer_port.execute(_listener_mock)
+        mock_listener_repo_update.assert_called_once_with(
+            'TEST', _listener_mock.id,
+            peer_port=constants.HAPROXY_BASE_PEER_PORT)
+
+        mock_listener_repo_update.reset_mock()
+
+        allocate_listener_peer_port.revert(_listener_mock)
+        mock_listener_repo_update.assert_called_once_with(
+            'TEST', _listener_mock.id,
+            peer_port=None)

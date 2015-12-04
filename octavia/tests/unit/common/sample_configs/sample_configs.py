@@ -15,6 +15,16 @@
 
 import collections
 
+
+def sample_amphora_tuple():
+    amphora = collections.namedtuple('amphora', 'id, load_balancer_id, '
+                                                'compute_id, status,'
+                                                'lb_network_ip, vrrp_ip')
+    return amphora(id='sample_amp_id_1', load_balancer_id='sample_lb_id_1',
+                   compute_id='sample_compute_id_1', status='ACTIVE',
+                   lb_network_ip='10.0.0.1',
+                   vrrp_ip='10.0.0.2')
+
 RET_PERSISTENCE = {
     'type': 'HTTP_COOKIE',
     'cookie_name': 'HTTP_COOKIE'}
@@ -57,7 +67,8 @@ RET_POOL = {
     'health_monitor': RET_MONITOR,
     'session_persistence': RET_PERSISTENCE,
     'enabled': True,
-    'operating_status': 'ACTIVE'}
+    'operating_status': 'ACTIVE',
+    'stick_size': '10k'}
 
 RET_DEF_TLS_CONT = {'id': 'cont_id_1', 'allencompassingpem': 'imapem',
                     'primary_cn': 'FakeCn'}
@@ -72,7 +83,10 @@ RET_LISTENER = {
     'protocol': 'HTTP',
     'protocol_mode': 'http',
     'default_pool': RET_POOL,
-    'connection_limit': 98}
+    'connection_limit': 98,
+    'amphorae': [sample_amphora_tuple()],
+    'peer_port': 1024,
+    'topology': 'SINGLE'}
 
 RET_LISTENER_TLS = {
     'id': 'sample_listener_id_1',
@@ -102,7 +116,8 @@ RET_LISTENER_TLS_SNI = {
 RET_LB = {
     'name': 'test-lb',
     'vip_address': '10.0.0.2',
-    'listener': RET_LISTENER}
+    'listener': RET_LISTENER,
+    'topology': 'SINGLE'}
 
 RET_LB_TLS = {
     'name': 'test-lb',
@@ -116,8 +131,10 @@ RET_LB_TLS_SNI = {
 
 
 def sample_loadbalancer_tuple(proto=None, monitor=True, persistence=True,
-                              persistence_type=None, tls=False, sni=False):
+                              persistence_type=None, tls=False, sni=False,
+                              topology=None):
     proto = 'HTTP' if proto is None else proto
+    topology = 'SINGLE' if topology is None else topology
     in_lb = collections.namedtuple(
         'load_balancer', 'id, name, protocol, vip, listeners, amphorae')
     return in_lb(
@@ -125,6 +142,7 @@ def sample_loadbalancer_tuple(proto=None, monitor=True, persistence=True,
         name='test-lb',
         protocol=proto,
         vip=sample_vip_tuple(),
+        topology=topology,
         listeners=[sample_listener_tuple(proto=proto, monitor=monitor,
                                          persistence=persistence,
                                          persistence_type=persistence_type,
@@ -133,17 +151,34 @@ def sample_loadbalancer_tuple(proto=None, monitor=True, persistence=True,
     )
 
 
-def sample_listener_loadbalancer_tuple(proto=None):
+def sample_listener_loadbalancer_tuple(proto=None, topology=None):
     proto = 'HTTP' if proto is None else proto
+    topology = 'SINGLE' if topology is None else topology
     in_lb = collections.namedtuple(
-        'load_balancer', 'id, name, protocol, vip, amphorae')
+        'load_balancer', 'id, name, protocol, vip, amphorae, topology')
     return in_lb(
         id='sample_loadbalancer_id_1',
         name='test-lb',
         protocol=proto,
         vip=sample_vip_tuple(),
-        amphorae=[sample_amphora_tuple()]
+        amphorae=[sample_amphora_tuple()],
+        topology=topology
     )
+
+
+def sample_vrrp_group_tuple():
+    in_vrrp_group = collections.namedtuple(
+        'vrrp_group', 'load_balancer_id, vrrp_auth_type, vrrp_auth_pass, '
+                      'advert_int, smtp_server, smtp_connect_timeout, '
+                      'vrrp_group_name')
+    return in_vrrp_group(
+        vrrp_group_name='sample_loadbalancer_id_1',
+        load_balancer_id='sample_loadbalancer_id_1',
+        vrrp_auth_type='PASS',
+        vrrp_auth_pass='123',
+        advert_int='1',
+        smtp_server='',
+        smtp_connect_timeout='')
 
 
 def sample_vip_tuple():
@@ -152,19 +187,24 @@ def sample_vip_tuple():
 
 
 def sample_listener_tuple(proto=None, monitor=True, persistence=True,
-                          persistence_type=None, tls=False, sni=False):
+                          persistence_type=None, tls=False, sni=False,
+                          peer_port=None, topology=None):
     proto = 'HTTP' if proto is None else proto
+    topology = 'SINGLE' if topology is None else topology
     port = '443' if proto is 'HTTPS' or proto is 'TERMINATED_HTTPS' else '80'
+    peer_port = 1024 if peer_port is None else peer_port
     in_listener = collections.namedtuple(
         'listener', 'id, protocol_port, protocol, default_pool, '
                     'connection_limit, tls_certificate_id, '
                     'sni_container_ids, default_tls_container, '
-                    'sni_containers, load_balancer')
+                    'sni_containers, load_balancer, peer_port')
     return in_listener(
         id='sample_listener_id_1',
         protocol_port=port,
         protocol=proto,
-        load_balancer=sample_listener_loadbalancer_tuple(proto=proto),
+        load_balancer=sample_listener_loadbalancer_tuple(proto=proto,
+                                                         topology=topology),
+        peer_port=peer_port,
         default_pool=sample_pool_tuple(
             proto=proto, monitor=monitor, persistence=persistence,
             persistence_type=persistence_type),
@@ -270,16 +310,7 @@ def sample_health_monitor_tuple(proto='HTTP'):
                    expected_codes='418', enabled=True)
 
 
-def sample_amphora_tuple():
-    amphora = collections.namedtuple('amphora', 'id, load_balancer_id, '
-                                                'compute_id, status,'
-                                                'lb_network_ip')
-    return amphora(id='sample_amp_id_1', load_balancer_id='sample_lb_id_1',
-                   compute_id='sample_compute_id_1', status='ACTIVE',
-                   lb_network_ip='10.0.0.1')
-
-
-def sample_base_expected_config(frontend=None, backend=None):
+def sample_base_expected_config(frontend=None, backend=None, peers=None):
     if frontend is None:
         frontend = ("frontend sample_listener_id_1\n"
                     "    option tcplog\n"
@@ -300,6 +331,8 @@ def sample_base_expected_config(frontend=None, backend=None):
                    "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
                    "    server sample_member_id_2 10.0.0.98:82 weight 13 "
                    "check inter 30s fall 3 rise 2 cookie sample_member_id_2\n")
+    if peers is None:
+        peers = ("\n\n")
     return ("# Configuration for test-lb\n"
             "global\n"
             "    daemon\n"
@@ -315,4 +348,4 @@ def sample_base_expected_config(frontend=None, backend=None):
             "    option redispatch\n"
             "    timeout connect 5000\n"
             "    timeout client 50000\n"
-            "    timeout server 50000\n\n" + frontend + backend)
+            "    timeout server 50000\n\n" + peers + frontend + backend)

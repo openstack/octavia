@@ -38,7 +38,7 @@ class TestListenerFlows(base.TestCase):
         self.assertIn(constants.VIP, listener_flow.requires)
 
         self.assertEqual(3, len(listener_flow.requires))
-        self.assertEqual(0, len(listener_flow.provides))
+        self.assertEqual(1, len(listener_flow.provides))
 
     def test_get_delete_listener_flow(self):
 

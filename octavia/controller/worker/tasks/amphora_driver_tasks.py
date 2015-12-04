@@ -50,6 +50,11 @@ class ListenerUpdate(BaseAmphoraTask):
 
     def execute(self, listener, vip):
         """Execute listener update routines for an amphora."""
+        # Ideally this shouldn't be needed. This is a workaround, for a not
+        # very well understood bug not related to Octavia.
+        # https://bugs.launchpad.net/octavia/+bug/1492493
+        listener = self.listener_repo.get(db_apis.get_session(),
+                                          id=listener.id)
         self.amphora_driver.update(listener, vip)
         LOG.debug("Updated amphora with new configuration for listener")
 
@@ -238,7 +243,7 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
         LOG.warn(_LW("Reverting post vip plug."))
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       id=loadbalancer.id,
-                                      status=constants.ERROR)
+                                      provisioning_status=constants.ERROR)
 
 
 class AmphoraCertUpload(BaseAmphoraTask):
@@ -248,3 +253,57 @@ class AmphoraCertUpload(BaseAmphoraTask):
         """Execute cert_update_amphora routine."""
         LOG.debug("Upload cert in amphora REST driver")
         self.amphora_driver.upload_cert_amp(amphora, server_pem)
+
+
+class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
+    """Task to get and update the VRRP interface device name from amphora."""
+
+    def execute(self, loadbalancer):
+        """Execute post_vip_routine."""
+        amps = []
+        for amp in loadbalancer.amphorae:
+            # Currently this is supported only with REST Driver
+            interface = self.amphora_driver.get_vrrp_interface(amp)
+            self.amphora_repo.update(db_apis.get_session(), amp.id,
+                                     vrrp_interface=interface)
+            amps.append(self.amphora_repo.get(db_apis.get_session(),
+                                              id=amp.id))
+        loadbalancer.amphorae = amps
+        return loadbalancer
+
+    def revert(self, result, loadbalancer, *args, **kwargs):
+        """Handle a failed amphora vip plug notification."""
+        if isinstance(result, failure.Failure):
+            return
+        LOG.warn(_LW("Reverting Get Amphora VRRP Interface."))
+        for amp in loadbalancer.amphorae:
+            self.amphora_repo.update(db_apis.get_session(), amp.id,
+                                     vrrp_interface=None)
+
+
+class AmphoraVRRPUpdate(BaseAmphoraTask):
+    """Task to update the VRRP configuration of the loadbalancer amphorae."""
+
+    def execute(self, loadbalancer):
+        """Execute update_vrrp_conf."""
+        self.amphora_driver.update_vrrp_conf(loadbalancer)
+        LOG.debug("Uploaded VRRP configuration of loadbalancer %s amphorae",
+                  loadbalancer.id)
+
+
+class AmphoraVRRPStop(BaseAmphoraTask):
+    """Task to stop keepalived of all amphorae of a LB."""
+
+    def execute(self, loadbalancer):
+        self.amphora_driver.stop_vrrp_service(loadbalancer)
+        LOG.debug("Stopped VRRP of loadbalancer % amphorae",
+                  loadbalancer.id)
+
+
+class AmphoraVRRPStart(BaseAmphoraTask):
+    """Task to start keepalived of all amphorae of a LB."""
+
+    def execute(self, loadbalancer):
+        self.amphora_driver.start_vrrp_service(loadbalancer)
+        LOG.debug("Started VRRP of loadbalancer %s amphorae",
+                  loadbalancer.id)

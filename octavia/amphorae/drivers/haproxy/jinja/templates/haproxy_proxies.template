@@ -15,6 +15,16 @@
 #}
 {% extends 'haproxy_base.template' %}
 
+{% macro peers_macro(constants,listener) %}
+{% if listener.topology == constants.TOPOLOGY_ACTIVE_STANDBY %}
+peers {{ "%s_peers"|format(listener.id.replace("-", ""))|trim() }}
+{% for amp in listener.amphorae %}
+    {# HAProxy has peer name limitations, thus the hash filter #}
+    peer {{ amp.id|hash_amp_id|replace('=', '') }} {{ amp.vrrp_ip }}:{{ listener.peer_port }}
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
 {% macro bind_macro(constants, listener, lb_vip_address) %}
 {% if listener.default_tls_path %}
 {% set def_crt_opt = "ssl crt %s"|format(listener.default_tls_path)|trim() %}
@@ -60,7 +70,11 @@ backend {{ pool.id }}
 {% endif %}
 {% if pool.session_persistence %}
 {% if pool.session_persistence.type == constants.SESSION_PERSISTENCE_SOURCE_IP %}
-    stick-table type ip size 10k
+{% if listener.topology == constants.TOPOLOGY_ACTIVE_STANDBY %}
+    stick-table type ip size {{ pool.stick_size }} peers {{ "%s_peers"|format(listener.id.replace("-", ""))|trim() }}
+{% else %}
+    stick-table type ip size {{ pool.stick_size }}
+{% endif %}
     stick on src
 {% elif pool.session_persistence.type == constants.SESSION_PERSISTENCE_HTTP_COOKIE %}
     cookie SRV insert indirect nocache

@@ -130,3 +130,34 @@ class ListenerTestCase(base.TestCase):
         self.assertEqual(
             consts.OFFLINE,
             listener._check_listener_status('123'))
+
+    @mock.patch('os.makedirs')
+    @mock.patch('os.path.exists')
+    @mock.patch('os.listdir')
+    @mock.patch('os.path.join')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_listeners')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util'
+                '.haproxy_sock_path')
+    def test_vrrp_check_script_update(self, mock_sock_path, mock_get_listeners,
+                                      mock_join, mock_listdir, mock_exists,
+                                      mock_makedirs):
+        mock_get_listeners.return_value = ['abc', '123']
+        mock_sock_path.return_value = 'listener.sock'
+        mock_exists.return_value = False
+        cmd = 'haproxy-vrrp-check ' + ' '.join(['listener.sock']) + '; exit $?'
+        m = mock.mock_open()
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
+            listener.vrrp_check_script_update('123', 'stop')
+        handle = m()
+        handle.write.assert_called_once_with(cmd)
+
+        mock_get_listeners.return_value = ['abc', '123']
+        cmd = ('haproxy-vrrp-check ' + ' '.join(['listener.sock',
+                                                 'listener.sock']) + '; exit '
+                                                                     '$?')
+        m = mock.mock_open()
+        with mock.patch('%s.open' % BUILTINS, m, create=True):
+            listener.vrrp_check_script_update('123', 'start')
+        handle = m()
+        handle.write.assert_called_once_with(cmd)

@@ -23,6 +23,7 @@ start on startup
 env PID_PATH={{ haproxy_pid }}
 env BIN_PATH={{ haproxy_cmd }}
 env CONF_PATH={{ haproxy_cfg }}
+env PEER_NAME={{ peer_name }}
 
 respawn
 respawn limit {{ respawn_count }} {{respawn_interval}}
@@ -34,9 +35,10 @@ end script
 script
 exec /bin/bash <<EOF
 echo \$(date) Starting HAProxy
-$BIN_PATH -f $CONF_PATH -D -p $PID_PATH
+# The -L trick fixes the HAProxy limitation to have long peer names
+$BIN_PATH -f $CONF_PATH -L $PEER_NAME -D -p $PID_PATH
 
-trap "$BIN_PATH -f $CONF_PATH -p $PID_PATH -sf \\\$(cat $PID_PATH)" SIGHUP
+trap "$BIN_PATH -f $CONF_PATH -L $PEER_NAME -p $PID_PATH -sf \\\$(cat $PID_PATH)" SIGHUP
 trap "kill -TERM \\\$(cat $PID_PATH) && rm $PID_PATH;echo \\\$(date) Exiting HAProxy; exit 0" SIGTERM SIGINT
 
 while true; do # Iterate to keep job running.

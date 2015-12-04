@@ -21,6 +21,7 @@ CONF = cfg.CONF
 CONF.import_group('amphora_agent', 'octavia.common.config')
 CONF.import_group('haproxy_amphora', 'octavia.common.config')
 UPSTART_DIR = '/etc/init'
+KEEPALIVED_INIT_DIR = '/etc/init.d'
 
 
 def upstart_path(listener_id):
@@ -42,6 +43,48 @@ def config_path(listener_id):
 def get_haproxy_pid(listener_id):
     with open(pid_path(listener_id), 'r') as f:
         return f.readline().rstrip()
+
+
+def haproxy_sock_path(listener_id):
+    return os.path.join(CONF.haproxy_amphora.base_path, listener_id + '.sock')
+
+
+def haproxy_check_script_path():
+    return os.path.join(keepalived_check_scripts_dir(),
+                        'haproxy_check_script.sh')
+
+
+def keepalived_dir():
+    return os.path.join(CONF.haproxy_amphora.base_path, 'vrrp')
+
+
+def keepalived_init_path():
+    return os.path.join(KEEPALIVED_INIT_DIR, 'octavia-keepalived')
+
+
+def keepalived_pid_path():
+    return os.path.join(CONF.haproxy_amphora.base_path,
+                        'vrrp/octavia-keepalived.pid')
+
+
+def keepalived_cfg_path():
+    return os.path.join(CONF.haproxy_amphora.base_path,
+                        'vrrp/octavia-keepalived.conf')
+
+
+def keepalived_log_path():
+    return os.path.join(CONF.haproxy_amphora.base_path,
+                        'vrrp/octavia-keepalived.log')
+
+
+def keepalived_check_scripts_dir():
+    return os.path.join(CONF.haproxy_amphora.base_path,
+                        'vrrp/check_scripts')
+
+
+def keepalived_check_script_path():
+    return os.path.join(CONF.haproxy_amphora.base_path,
+                        'vrrp/check_script.sh')
 
 
 """Get Listeners

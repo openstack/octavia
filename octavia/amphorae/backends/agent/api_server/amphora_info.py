@@ -19,7 +19,9 @@ import socket
 import subprocess
 
 import flask
+import ipaddress
 import netifaces
+import six
 
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import util
@@ -138,3 +140,27 @@ def _get_networks():
             network_tx=_get_network_bytes(interface, 'tx'),
             network_rx=_get_network_bytes(interface, 'rx'))
     return networks
+
+
+def get_interface(ip_addr):
+    if six.PY2:
+        ip_version = ipaddress.ip_address(unicode(ip_addr)).version
+    else:
+        ip_version = ipaddress.ip_address(ip_addr).version
+    if ip_version == 4:
+        address_format = netifaces.AF_INET
+    elif ip_version == 6:
+        address_format = netifaces.AF_INET6
+    else:
+        return flask.make_response(
+            flask.jsonify(dict(message="Bad IP address version")), 400)
+    for interface in netifaces.interfaces():
+        for i in netifaces.ifaddresses(interface)[address_format]:
+            if i['addr'] == ip_addr:
+                return flask.make_response(
+                    flask.jsonify(dict(message='OK', interface=interface)),
+                    200)
+
+    return flask.make_response(
+        flask.jsonify(dict(message="Error interface not found "
+                                   "for IP address")), 404)

@@ -30,6 +30,12 @@ class ListenerFlows(object):
         :returns: The flow for creating a listener
         """
         create_listener_flow = linear_flow.Flow(constants.CREATE_LISTENER_FLOW)
+        create_listener_flow.add(database_tasks.AllocateListenerPeerPort(
+            requires='listener',
+            provides='listener'))
+        create_listener_flow.add(database_tasks.ReloadListener(
+            requires='listener',
+            provides='listener'))
         create_listener_flow.add(amphora_driver_tasks.ListenerUpdate(
             requires=[constants.LISTENER, constants.VIP]))
         create_listener_flow.add(network_tasks.UpdateVIP(
@@ -38,7 +44,6 @@ class ListenerFlows(object):
                                  MarkLBAndListenerActiveInDB(
                                      requires=[constants.LOADBALANCER,
                                                constants.LISTENER]))
-
         return create_listener_flow
 
     def get_delete_listener_flow(self):

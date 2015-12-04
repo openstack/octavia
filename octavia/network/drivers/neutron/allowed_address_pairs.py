@@ -103,7 +103,13 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             security_group_id=sec_grp_id)
         updated_ports = [
             listener.protocol_port for listener in load_balancer.listeners
-            if listener.provisioning_status != constants.PENDING_DELETE]
+            if listener.provisioning_status != constants.PENDING_DELETE and
+            listener.provisioning_status != constants.DELETED]
+        peer_ports = [
+            listener.peer_port for listener in load_balancer.listeners
+            if listener.provisioning_status != constants.PENDING_DELETE and
+            listener.provisioning_status != constants.DELETED]
+        updated_ports.extend(peer_ports)
         # Just going to use port_range_max for now because we can assume that
         # port_range_max and min will be the same since this driver is
         # responsible for creating these rules
@@ -119,6 +125,31 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         for port in add_ports:
             self._create_security_group_rule(sec_grp_id, 'TCP', port_min=port,
                                              port_max=port)
+
+        # Currently we are using the VIP network for VRRP
+        # so we need to open up the protocols for it
+        if (cfg.CONF.controller_worker.loadbalancer_topology ==
+                constants.TOPOLOGY_ACTIVE_STANDBY):
+            try:
+                self._create_security_group_rule(
+                    sec_grp_id,
+                    constants.VRRP_PROTOCOL_NUM,
+                    direction='ingress')
+            except neutron_client_exceptions.Conflict:
+                # It's ok if this rule already exists
+                pass
+            except Exception as e:
+                raise base.PlugVIPException(str(e))
+
+            try:
+                self._create_security_group_rule(
+                    sec_grp_id, constants.AUTH_HEADER_PROTOCOL_NUMBER,
+                    direction='ingress')
+            except neutron_client_exceptions.Conflict:
+                # It's ok if this rule already exists
+                pass
+            except Exception as e:
+                raise base.PlugVIPException(str(e))
 
     def _update_vip_security_group(self, load_balancer, vip):
         sec_grp = self._get_lb_security_group(load_balancer.id)

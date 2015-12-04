@@ -62,6 +62,11 @@ class HealthMonitorType(base_models.BASE, base_models.LookupTableMixin):
     __tablename__ = "health_monitor_type"
 
 
+class VRRPAuthMethod(base_models.BASE, base_models.LookupTableMixin):
+
+    __tablename__ = "vrrp_auth_method"
+
+
 class SessionPersistence(base_models.BASE):
 
     __data_model__ = data_models.SessionPersistence
@@ -232,6 +237,30 @@ class LoadBalancer(base_models.BASE, base_models.IdMixin,
                                                     uselist=False))
 
 
+class VRRPGroup(base_models.BASE):
+
+    __data_model__ = data_models.VRRPGroup
+
+    __tablename__ = "vrrp_group"
+
+    load_balancer_id = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("load_balancer.id",
+                      name="fk_vrrp_group_load_balancer_id"),
+        nullable=False, primary_key=True)
+
+    vrrp_group_name = sa.Column(sa.String(36), nullable=True)
+    vrrp_auth_type = sa.Column(sa.String(16), sa.ForeignKey(
+        "vrrp_auth_method.name",
+        name="fk_load_balancer_vrrp_auth_method_name"))
+    vrrp_auth_pass = sa.Column(sa.String(36), nullable=True)
+    advert_int = sa.Column(sa.Integer(), nullable=True)
+    load_balancer = orm.relationship("LoadBalancer", uselist=False,
+                                     backref=orm.backref("vrrp_group",
+                                                         uselist=False,
+                                                         cascade="delete"))
+
+
 class Vip(base_models.BASE):
 
     __data_model__ = data_models.Vip
@@ -299,6 +328,7 @@ class Listener(base_models.BASE, base_models.IdMixin, base_models.TenantMixin):
                                     backref=orm.backref("listener",
                                                         uselist=False),
                                     cascade="delete")
+    peer_port = sa.Column(sa.Integer(), nullable=True)
 
 
 class SNI(base_models.BASE):
@@ -352,6 +382,9 @@ class Amphora(base_models.BASE):
         sa.String(36),
         sa.ForeignKey("provisioning_status.name",
                       name="fk_container_provisioning_status_name"))
+    vrrp_interface = sa.Column(sa.String(16), nullable=True)
+    vrrp_id = sa.Column(sa.Integer(), nullable=True)
+    vrrp_priority = sa.Column(sa.Integer(), nullable=True)
 
 
 class AmphoraHealth(base_models.BASE):

@@ -50,6 +50,7 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
         self.sni_repo = repo.SNIRepository()
         self.amphora_repo = repo.AmphoraRepository()
         self.amphora_health_repo = repo.AmphoraHealthRepository()
+        self.vrrp_group_repo = repo.VRRPGroupRepository()
 
     def test_get_all_return_value(self):
         pool_list = self.pool_repo.get_all(self.session,
@@ -80,7 +81,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         repo_attr_names = ('load_balancer', 'vip', 'health_monitor',
                            'session_persistence', 'pool', 'member', 'listener',
                            'listener_stats', 'amphora', 'sni',
-                           'amphorahealth')
+                           'amphorahealth', 'vrrpgroup')
         for repo_attr in repo_attr_names:
             single_repo = getattr(self.repos, repo_attr, None)
             message = ("Class Repositories should have %s instance"
@@ -106,7 +107,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         lb = {'name': 'test1', 'description': 'desc1', 'enabled': True,
               'provisioning_status': constants.PENDING_UPDATE,
               'operating_status': constants.OFFLINE,
-              'topology': constants.TOPOLOGY_ACTIVE_STANDBY}
+              'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
+              'vrrp_group': None}
         vip = {'ip_address': '10.0.0.1',
                'port_id': uuidutils.generate_uuid(),
                'subnet_id': uuidutils.generate_uuid()}
@@ -1346,3 +1348,48 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
             self.session, amphora_id=amphora_health.amphora_id)
         self.assertIsNone(self.amphora_health_repo.get(
             self.session, amphora_id=amphora_health.amphora_id))
+
+
+class VRRPGroupRepositoryTest(BaseRepositoryTest):
+    def setUp(self):
+        super(VRRPGroupRepositoryTest, self).setUp()
+        self.lb = self.lb_repo.create(
+            self.session, id=self.FAKE_UUID_1, tenant_id=self.FAKE_UUID_2,
+            name="lb_name", description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, enabled=True)
+
+    def test_update(self):
+        self.vrrpgroup = self.vrrp_group_repo.create(
+            self.session,
+            load_balancer_id=self.lb.id,
+            vrrp_group_name='TESTVRRPGROUP',
+            vrrp_auth_type=constants.VRRP_AUTH_DEFAULT,
+            vrrp_auth_pass='TESTPASS',
+            advert_int=1)
+
+        # Validate baseline
+        old_vrrp_group = self.vrrp_group_repo.get(self.session,
+                                                  load_balancer_id=self.lb.id)
+
+        self.assertEqual('TESTVRRPGROUP', old_vrrp_group.vrrp_group_name)
+        self.assertEqual(constants.VRRP_AUTH_DEFAULT,
+                         old_vrrp_group.vrrp_auth_type)
+        self.assertEqual('TESTPASS', old_vrrp_group.vrrp_auth_pass)
+        self.assertEqual(1, old_vrrp_group.advert_int)
+
+        # Test update
+        self.vrrp_group_repo.update(self.session,
+                                    load_balancer_id=self.lb.id,
+                                    vrrp_group_name='TESTVRRPGROUP2',
+                                    vrrp_auth_type='AH',
+                                    vrrp_auth_pass='TESTPASS2',
+                                    advert_int=2)
+
+        new_vrrp_group = self.vrrp_group_repo.get(self.session,
+                                                  load_balancer_id=self.lb.id)
+
+        self.assertEqual('TESTVRRPGROUP2', new_vrrp_group.vrrp_group_name)
+        self.assertEqual('AH', new_vrrp_group.vrrp_auth_type)
+        self.assertEqual('TESTPASS2', new_vrrp_group.vrrp_auth_pass)
+        self.assertEqual(2, new_vrrp_group.advert_int)

@@ -149,7 +149,7 @@ class Listener(BaseDataModel):
                  protocol_port=None, connection_limit=None,
                  enabled=None, provisioning_status=None, operating_status=None,
                  tls_certificate_id=None, stats=None, default_pool=None,
-                 load_balancer=None, sni_containers=None):
+                 load_balancer=None, sni_containers=None, peer_port=None):
         self.id = id
         self.tenant_id = tenant_id
         self.name = name
@@ -167,13 +167,15 @@ class Listener(BaseDataModel):
         self.default_pool = default_pool
         self.load_balancer = load_balancer
         self.sni_containers = sni_containers
+        self.peer_port = peer_port
 
 
 class LoadBalancer(BaseDataModel):
 
     def __init__(self, id=None, tenant_id=None, name=None, description=None,
                  provisioning_status=None, operating_status=None, enabled=None,
-                 topology=None, vip=None, listeners=None, amphorae=None):
+                 topology=None, vip=None, listeners=None, amphorae=None,
+                 vrrp_group=None):
         self.id = id
         self.tenant_id = tenant_id
         self.name = name
@@ -182,9 +184,24 @@ class LoadBalancer(BaseDataModel):
         self.operating_status = operating_status
         self.enabled = enabled
         self.vip = vip
+        self.vrrp_group = vrrp_group
         self.topology = topology
         self.listeners = listeners or []
         self.amphorae = amphorae or []
+
+
+class VRRPGroup(BaseDataModel):
+
+    def __init__(self, load_balancer_id=None, vrrp_group_name=None,
+                 vrrp_auth_type=None, vrrp_auth_pass=None, advert_int=None,
+                 smtp_server=None, smtp_connect_timeout=None,
+                 load_balancer=None):
+        self.load_balancer_id = load_balancer_id
+        self.vrrp_group_name = vrrp_group_name
+        self.vrrp_auth_type = vrrp_auth_type
+        self.vrrp_auth_pass = vrrp_auth_pass
+        self.advert_int = advert_int
+        self.load_balancer = load_balancer
 
 
 class Vip(BaseDataModel):
@@ -226,7 +243,8 @@ class Amphora(BaseDataModel):
                  status=None, lb_network_ip=None, vrrp_ip=None,
                  ha_ip=None, vrrp_port_id=None, ha_port_id=None,
                  load_balancer=None, role=None, cert_expiration=None,
-                 cert_busy=False):
+                 cert_busy=False, vrrp_interface=None, vrrp_id=None,
+                 vrrp_priority=None):
         self.id = id
         self.load_balancer_id = load_balancer_id
         self.compute_id = compute_id
@@ -237,6 +255,9 @@ class Amphora(BaseDataModel):
         self.vrrp_port_id = vrrp_port_id
         self.ha_port_id = ha_port_id
         self.role = role
+        self.vrrp_interface = vrrp_interface
+        self.vrrp_id = vrrp_id
+        self.vrrp_priority = vrrp_priority
         self.load_balancer = load_balancer
         self.cert_expiration = cert_expiration
         self.cert_busy = cert_busy

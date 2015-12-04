@@ -369,6 +369,80 @@ health of the amphora, currently-configured topology and role, etc.
     ],
    }
 
+Get interface
+-------------
+
+* **URL:** /*:version*/interface/*:ip*
+* **Method:** GET
+* **URL params:**
+
+     * *:ip* = the ip address to find the interface name
+
+* **Data params:** none
+* **Success Response:**
+
+  * Code: 200
+
+    * Content: OK
+    * Content: JSON formatted interface
+
+* **Error Response:**
+
+  * Code: 400
+
+    * Content: Bad IP address version
+
+  * Code: 404
+
+    * Content: Error interface not found for IP address
+
+* **Response:**
+
+| OK
+| eth1
+
+**Examples:**
+
+* Success code 200:
+
+::
+
+  GET URL:
+  https://octavia-haproxy-img-00328.local/v0.1/interface/10.0.0.1
+
+  JSON Response:
+      {
+        'message': 'OK',
+        'interface': 'eth1'
+      }
+
+
+* Error code 404:
+
+::
+
+  GET URL:
+  https://octavia-haproxy-img-00328.local/v0.1/interface/10.5.0.1
+
+  JSON Response:
+      {
+        'message': 'Error interface not found for IP address',
+      }
+
+
+* Error code 404:
+
+::
+
+  GET URL:
+  https://octavia-haproxy-img-00328.local/v0.1/interface/10.6.0.1.1
+
+  JSON Response:
+      {
+        'message': 'Bad IP address version',
+      }
+
+
 Get all listeners' statuses
 ---------------------------
 
@@ -1333,6 +1407,119 @@ not be available for soem time.
   JSON Response:
   {
     'message': 'Certificate and key do not match'
+  }
+
+
+Upload keepalived configuration
+-------------------------------
+
+* **URL:** /*:version*/vrrp/upload
+* **Method:** PUT
+* **URL params:** none
+* **Data params:** none
+* **Success Response:**
+
+  * Code: 200
+
+    * Content: OK
+
+* **Error Response:**
+
+  * Code: 500
+
+    * Content: Failed to upload keepalived configuration.
+
+* **Response:**
+
+OK
+
+**Examples:**
+
+* Success code 200:
+
+::
+
+  PUT URI:
+  https://octavia-haproxy-img-00328.local/v0.1/vrrp/upload
+
+  JSON Response:
+  {
+    'message': 'OK'
+  }
+
+
+Start, Stop, or Reload keepalived
+---------------------------------
+
+* **URL:** /*:version*/vrrp/*:action*
+* **Method:** PUT
+* **URL params:**
+
+  * *:action* = One of: start, stop, reload
+
+* **Data params:** none
+* **Success Response:**
+
+  * Code: 202
+
+    * Content: OK
+
+* **Error Response:**
+
+  * Code: 400
+
+    * Content: Invalid Request
+
+  * Code: 500
+
+    * Content: Failed to start / stop / reload keepalived service:
+    * *(Also contains error output from attempt to start / stop / \
+      reload keepalived)*
+
+* **Response:**
+
+| OK
+| keepalived started
+
+**Examples:**
+
+* Success code 202:
+
+::
+
+  PUT URL:
+  https://octavia-haproxy-img-00328.local/v0.1/vrrp/start
+
+  JSON Response:
+  {
+    'message': 'OK',
+    'details': 'keepalived started',
+  }
+
+* Error code: 400
+
+::
+
+  PUT URL:
+  https://octavia-haproxy-img-00328.local/v0.1/vrrp/BAD_TEST_DATA
+
+  JSON Response:
+  {
+    'message': 'Invalid Request',
+    'details': 'Unknown action: BAD_TEST_DATA',
+  }
+
+* Error code: 500
+
+::
+
+  PUT URL:
+  https://octavia-haproxy-img-00328.local/v0.1/vrrp/stop
+
+  JSON Response:
+  {
+    'message': 'Failed to stop keepalived service: keeepalived process with PID 3352 not found',
+    'details': 'keeepalived process with PID 3352 not found',
   }
 
 

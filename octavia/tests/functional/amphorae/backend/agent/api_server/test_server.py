@@ -25,6 +25,7 @@ from octavia.amphorae.backends.agent.api_server import certificate_update
 from octavia.amphorae.backends.agent.api_server import server
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants as consts
+from octavia.common import utils as octavia_utils
 import octavia.tests.unit.base as base
 
 RANDOM_ERROR = 'random error'
@@ -56,14 +57,18 @@ class ServerTestCase(base.TestCase):
         # happy case upstart file exists
         with mock.patch.object(builtins, 'open', m):
             rv = self.app.put('/' + api_server.VERSION +
-                              '/listeners/123/haproxy', data='test')
+                              '/listeners/amp_123/123/haproxy',
+                              data='test')
             self.assertEqual(202, rv.status_code)
             m.assert_called_once_with(
                 '/var/lib/octavia/123/haproxy.cfg.new', 'w')
             handle = m()
             handle.write.assert_called_once_with(six.b('test'))
             mock_subprocess.assert_called_once_with(
-                "haproxy -c -f /var/lib/octavia/123/haproxy.cfg.new".split(),
+                "haproxy -c -L {peer} -f {config_file}".format(
+                    config_file='/var/lib/octavia/123/haproxy.cfg.new',
+                    peer=(octavia_utils.
+                          base64_sha1_string('amp_123').rstrip('='))).split(),
                 stderr=-2)
             mock_rename.assert_called_once_with(
                 '/var/lib/octavia/123/haproxy.cfg.new',
@@ -74,7 +79,8 @@ class ServerTestCase(base.TestCase):
         m.side_effect = IOError()  # open crashes
         with mock.patch.object(builtins, 'open', m):
             rv = self.app.put('/' + api_server.VERSION +
-                              '/listeners/123/haproxy', data='test')
+                              '/listeners/amp_123/123/haproxy',
+                              data='test')
             self.assertEqual(500, rv.status_code)
 
         # check if files get created
@@ -84,7 +90,8 @@ class ServerTestCase(base.TestCase):
         # happy case upstart file exists
         with mock.patch.object(builtins, 'open', m):
             rv = self.app.put('/' + api_server.VERSION +
-                              '/listeners/123/haproxy', data='test')
+                              '/listeners/amp_123/123/haproxy',
+                              data='test')
             self.assertEqual(202, rv.status_code)
             m.assert_any_call('/var/lib/octavia/123/haproxy.cfg.new', 'w')
             m.assert_any_call(util.UPSTART_DIR + '/haproxy-123.conf', 'w')
@@ -99,7 +106,8 @@ class ServerTestCase(base.TestCase):
             7, 'test', RANDOM_ERROR)]
         with mock.patch.object(builtins, 'open', m):
             rv = self.app.put('/' + api_server.VERSION +
-                              '/listeners/123/haproxy', data='test')
+                              '/listeners/amp_123/123/haproxy',
+                              data='test')
             self.assertEqual(400, rv.status_code)
             self.assertEqual(
                 {'message': 'Invalid request', u'details': u'random error'},
@@ -108,14 +116,19 @@ class ServerTestCase(base.TestCase):
             handle = m()
             handle.write.assert_called_with(six.b('test'))
             mock_subprocess.assert_called_with(
-                "haproxy -c -f /var/lib/octavia/123/haproxy.cfg.new".split(),
+                "haproxy -c -L {peer} -f {config_file}".format(
+                    config_file='/var/lib/octavia/123/haproxy.cfg.new',
+                    peer=(octavia_utils.
+                          base64_sha1_string('amp_123').rstrip('='))).split(),
                 stderr=-2)
             mock_remove.assert_called_once_with(
                 '/var/lib/octavia/123/haproxy.cfg.new')
 
     @mock.patch('os.path.exists')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
+                'vrrp_check_script_update')
     @mock.patch('subprocess.check_output')
-    def test_start(self, mock_subprocess, mock_exists):
+    def test_start(self, mock_subprocess, mock_vrrp, mock_exists):
         rv = self.app.put('/' + api_server.VERSION + '/listeners/123/error')
         self.assertEqual(400, rv.status_code)
         self.assertEqual(
@@ -609,3 +622,86 @@ class ServerTestCase(base.TestCase):
                 {'details': RANDOM_ERROR,
                  'message': 'Error plugging VIP'},
                 json.loads(rv.data.decode('utf-8')))
+
+    @mock.patch('netifaces.ifaddresses')
+    @mock.patch('netifaces.interfaces')
+    def test_get_interface(self, mock_interfaces, mock_ifaddresses):
+        interface_res = {'interface': 'eth0'}
+        mock_interfaces.return_value = ['lo', 'eth0']
+        mock_ifaddresses.return_value = {
+            17: [{'addr': '00:00:00:00:00:00'}],
+            2: [{'addr': '203.0.113.2'}],
+            10: [{'addr': '::1'}]}
+        rv = self.app.get('/' + api_server.VERSION + '/interface/203.0.113.2',
+                          data=json.dumps(interface_res),
+                          content_type='application/json')
+        self.assertEqual(200, rv.status_code)
+
+        rv = self.app.get('/' + api_server.VERSION + '/interface/::1',
+                          data=json.dumps(interface_res),
+                          content_type='application/json')
+        self.assertEqual(200, rv.status_code)
+
+        rv = self.app.get('/' + api_server.VERSION + '/interface/10.0.0.1',
+                          data=json.dumps(interface_res),
+                          content_type='application/json')
+        self.assertEqual(404, rv.status_code)
+
+        rv = self.app.get('/' + api_server.VERSION +
+                          '/interface/00:00:00:00:00:00',
+                          data=json.dumps(interface_res),
+                          content_type='application/json')
+        self.assertEqual(500, rv.status_code)
+
+    @mock.patch('os.path.exists')
+    @mock.patch('os.makedirs')
+    @mock.patch('os.rename')
+    @mock.patch('subprocess.check_output')
+    @mock.patch('os.remove')
+    def test_upload_keepalived_config(self, mock_remove, mock_subprocess,
+                                      mock_rename, mock_makedirs, mock_exists):
+
+        mock_exists.return_value = True
+        m = mock.mock_open()
+        with mock.patch.object(builtins, 'open', m):
+            rv = self.app.put('/' + api_server.VERSION + '/vrrp/upload',
+                              data='test')
+            self.assertEqual(200, rv.status_code)
+
+        mock_exists.return_value = False
+        m = mock.mock_open()
+        with mock.patch.object(builtins, 'open', m):
+            rv = self.app.put('/' + api_server.VERSION + '/vrrp/upload',
+                              data='test')
+            self.assertEqual(200, rv.status_code)
+
+        mock_subprocess.side_effect = subprocess.CalledProcessError(1,
+                                                                    'blah!')
+
+        with mock.patch.object(builtins, 'open', m):
+            rv = self.app.put('/' + api_server.VERSION + '/vrrp/upload',
+                              data='test')
+            self.assertEqual(500, rv.status_code)
+
+        mock_subprocess.side_effect = [True,
+                                       subprocess.CalledProcessError(1,
+                                                                     'blah!')]
+
+        with mock.patch.object(builtins, 'open', m):
+            rv = self.app.put('/' + api_server.VERSION + '/vrrp/upload',
+                              data='test')
+            self.assertEqual(500, rv.status_code)
+
+    @mock.patch('subprocess.check_output')
+    def test_manage_service_vrrp(self, mock_check_output):
+        rv = self.app.put('/' + api_server.VERSION + '/vrrp/start')
+        self.assertEqual(202, rv.status_code)
+
+        rv = self.app.put('/' + api_server.VERSION + '/vrrp/restart')
+        self.assertEqual(400, rv.status_code)
+
+        mock_check_output.side_effect = subprocess.CalledProcessError(1,
+                                                                      'blah!')
+
+        rv = self.app.put('/' + api_server.VERSION + '/vrrp/start')
+        self.assertEqual(500, rv.status_code)
