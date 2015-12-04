@@ -16,4 +16,4 @@ testtools>=1.4.0
 testresources>=0.2.4
 WebTest>=2.0
 doc8 # Apache-2.0
-
+reno>=0.1.1 # Apache2
