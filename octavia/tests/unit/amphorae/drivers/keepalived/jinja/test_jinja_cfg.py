@@ -63,6 +63,7 @@ class TestVRRPRestDriver(base.TestCase):
                          " interface eth1\n"
                          " virtual_router_id 1\n"
                          " priority 100\n"
+                         " nopreempt\n"
                          " garp_master_refresh 5\n"
                          " garp_master_refresh_repeat 2\n"
                          " advert_int 10\n"
