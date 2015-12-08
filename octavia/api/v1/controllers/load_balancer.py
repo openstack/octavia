@@ -51,13 +51,17 @@ class LoadBalancersController(base.BaseController):
         return self._convert_db_to_type(load_balancer,
                                         lb_types.LoadBalancerResponse)
 
-    @wsme_pecan.wsexpose([lb_types.LoadBalancerResponse], wtypes.text)
-    def get_all(self, tenant_id=None):
+    @wsme_pecan.wsexpose([lb_types.LoadBalancerResponse], wtypes.text,
+                         wtypes.text)
+    def get_all(self, tenant_id=None, project_id=None):
         """Lists all listeners on a load balancer."""
-        # tenant_id is an optional query parameter
+        # NOTE(blogan): tenant_id and project_id are optional query parameters
+        # tenant_id and project_id are the same thing.  tenant_id will be kept
+        # around for a short amount of time.
+        project_id = project_id or tenant_id
         session = db_api.get_session()
         load_balancers = self.repositories.load_balancer.get_all(
-            session, tenant_id=tenant_id)
+            session, project_id=project_id)
         return self._convert_db_to_type(load_balancers,
                                         [lb_types.LoadBalancerResponse])
 

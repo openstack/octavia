@@ -124,19 +124,19 @@ class TestIdMixin(BaseTestUuid):
                           self._type, body)
 
 
-class TestTenantIdMixin(BaseTestUuid):
-    tenant_id_attr = 'tenant_id'
+class TestProjectIdMixin(BaseTestUuid):
+    project_id_attr = 'project_id'
 
-    def test_tenant_id(self):
-        self.assert_uuid_attr(self.tenant_id_attr)
-        self.assert_uuid_attr_fail_with_integer(self.tenant_id_attr)
-        self.assert_uuid_attr_fail_with_short_str(self.tenant_id_attr)
-        self.assert_uuid_attr_fail_with_shorter_than_uuid(self.tenant_id_attr)
-        self.assert_uuid_attr_fail_with_longer_than_uuid(self.tenant_id_attr)
+    def test_project_id(self):
+        self.assert_uuid_attr(self.project_id_attr)
+        self.assert_uuid_attr_fail_with_integer(self.project_id_attr)
+        self.assert_uuid_attr_fail_with_short_str(self.project_id_attr)
+        self.assert_uuid_attr_fail_with_shorter_than_uuid(self.project_id_attr)
+        self.assert_uuid_attr_fail_with_longer_than_uuid(self.project_id_attr)
 
-    def test_tenant_id_readonly(self):
+    def test_project_id_readonly(self):
         body = build_body(self._mandatory_fields,
-                          {self.tenant_id_attr: uuidutils.generate_uuid()})
+                          {self.project_id_attr: uuidutils.generate_uuid()})
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
                           self._type, body)
 

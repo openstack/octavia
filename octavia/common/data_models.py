@@ -73,12 +73,12 @@ class ListenerStatistics(BaseDataModel):
 
 class HealthMonitor(BaseDataModel):
 
-    def __init__(self, id=None, tenant_id=None, pool_id=None, type=None,
+    def __init__(self, id=None, project_id=None, pool_id=None, type=None,
                  delay=None, timeout=None, fall_threshold=None,
                  rise_threshold=None, http_method=None, url_path=None,
                  expected_codes=None, enabled=None, pool=None):
         self.id = id
-        self.tenant_id = tenant_id
+        self.project_id = project_id
         self.pool_id = pool_id
         self.type = type
         self.delay = delay
@@ -97,12 +97,12 @@ class HealthMonitor(BaseDataModel):
 
 class Pool(BaseDataModel):
 
-    def __init__(self, id=None, tenant_id=None, name=None, description=None,
+    def __init__(self, id=None, project_id=None, name=None, description=None,
                  protocol=None, lb_algorithm=None, enabled=None,
                  operating_status=None, members=None, health_monitor=None,
                  session_persistence=None, listener=None):
         self.id = id
-        self.tenant_id = tenant_id
+        self.project_id = project_id
         self.name = name
         self.description = description
         self.protocol = protocol
@@ -121,11 +121,11 @@ class Pool(BaseDataModel):
 
 class Member(BaseDataModel):
 
-    def __init__(self, id=None, tenant_id=None, pool_id=None, ip_address=None,
+    def __init__(self, id=None, project_id=None, pool_id=None, ip_address=None,
                  protocol_port=None, weight=None, enabled=None,
                  subnet_id=None, operating_status=None, pool=None):
         self.id = id
-        self.tenant_id = tenant_id
+        self.project_id = project_id
         self.pool_id = pool_id
         self.ip_address = ip_address
         self.protocol_port = protocol_port
@@ -144,14 +144,14 @@ class Member(BaseDataModel):
 
 class Listener(BaseDataModel):
 
-    def __init__(self, id=None, tenant_id=None, name=None, description=None,
+    def __init__(self, id=None, project_id=None, name=None, description=None,
                  default_pool_id=None, load_balancer_id=None, protocol=None,
                  protocol_port=None, connection_limit=None,
                  enabled=None, provisioning_status=None, operating_status=None,
                  tls_certificate_id=None, stats=None, default_pool=None,
                  load_balancer=None, sni_containers=None, peer_port=None):
         self.id = id
-        self.tenant_id = tenant_id
+        self.project_id = project_id
         self.name = name
         self.description = description
         self.default_pool_id = default_pool_id
@@ -172,12 +172,12 @@ class Listener(BaseDataModel):
 
 class LoadBalancer(BaseDataModel):
 
-    def __init__(self, id=None, tenant_id=None, name=None, description=None,
+    def __init__(self, id=None, project_id=None, name=None, description=None,
                  provisioning_status=None, operating_status=None, enabled=None,
                  topology=None, vip=None, listeners=None, amphorae=None,
                  vrrp_group=None):
         self.id = id
-        self.tenant_id = tenant_id
+        self.project_id = project_id
         self.name = name
         self.description = description
         self.provisioning_status = provisioning_status
