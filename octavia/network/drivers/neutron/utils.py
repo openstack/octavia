@@ -24,7 +24,7 @@ def convert_subnet_dict_to_model(subnet_dict):
     subnet = subnet_dict.get('subnet', subnet_dict)
     return network_models.Subnet(id=subnet.get('id'), name=subnet.get('name'),
                                  network_id=subnet.get('network_id'),
-                                 tenant_id=subnet.get('tenant_id'),
+                                 project_id=subnet.get('tenant_id'),
                                  gateway_ip=subnet.get('gateway_ip'),
                                  cidr=subnet.get('cidr'),
                                  ip_version=subnet.get('ip_version')
@@ -44,7 +44,7 @@ def convert_port_dict_to_model(port_dict):
         mac_address=port.get('mac_address'),
         network_id=port.get('network_id'),
         status=port.get('status'),
-        tenant_id=port.get('tenant_id'),
+        project_id=port.get('tenant_id'),
         admin_state_up=port.get('admin_state_up'),
         fixed_ips=fixed_ips
     )
@@ -56,7 +56,7 @@ def convert_network_dict_to_model(network_dict):
         id=nw.get('id'),
         name=nw.get('name'),
         subnets=nw.get('subnets'),
-        tenant_id=nw.get('tenant_id'),
+        project_id=nw.get('tenant_id'),
         admin_state_up=nw.get('admin_state_up'),
         mtu=nw.get('mtu'),
         provider_network_type=nw.get('provider:network_type'),

@@ -162,9 +162,9 @@ class TestAllowedAddressPairsDriver(base.TestCase):
 
     def test_deallocate_vip_when_vip_port_not_found(self):
         vip = data_models.Vip(port_id='1')
-        admin_tenant_id = 'octavia'
+        admin_project_id = 'octavia'
         session_mock = mock.MagicMock()
-        session_mock.get_project_id.return_value = admin_tenant_id
+        session_mock.get_project_id.return_value = admin_project_id
         self.k_session.return_value = session_mock
         show_port = self.driver.neutron_client.show_port
         show_port.side_effect = neutron_exceptions.PortNotFoundClient
