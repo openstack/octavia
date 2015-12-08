@@ -18,6 +18,7 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
+from octavia.common import constants
 from octavia.common import data_models as o_data_models
 from octavia.controller.worker.tasks import network_tasks
 from octavia.network import base as net_base
@@ -29,6 +30,7 @@ AMPHORA_ID = 7
 COMPUTE_ID = uuidutils.generate_uuid()
 PORT_ID = uuidutils.generate_uuid()
 SUBNET_ID = uuidutils.generate_uuid()
+NETWORK_ID = uuidutils.generate_uuid()
 IP_ADDRESS = "172.24.41.1"
 VIP = o_data_models.Vip(port_id=PORT_ID, subnet_id=SUBNET_ID,
                         ip_address=IP_ADDRESS)
@@ -239,6 +241,38 @@ class TestNetworkTasks(base.TestCase):
         net.execute(self.amphora_mock, delta)  # No exception
         mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
 
+    def test_get_member_ports(self, mock_driver):
+        def _interface(port_id):
+            return [data_models.Interface(port_id=port_id)]
+
+        net_task = network_tasks.GetMemberPorts()
+        net_task.execute(LB, self.amphora_mock)
+        mock_driver.get_port.assert_called_once_with(PORT_ID)
+        mock_driver.get_plugged_networks.assert_called_once_with(COMPUTE_ID)
+
+        mock_driver.reset_mock()
+        net_task = network_tasks.GetMemberPorts()
+        mock_driver.get_plugged_networks.return_value = _interface(1)
+        mock_driver.get_port.side_effect = [
+            data_models.Port(network_id=NETWORK_ID),
+            data_models.Port(network_id=NETWORK_ID)]
+        net_task.execute(self.load_balancer_mock, self.amphora_mock)
+        self.assertEqual(2, mock_driver.get_port.call_count)
+        self.assertFalse(mock_driver.get_network.called)
+
+        mock_driver.reset_mock()
+        port_mock = mock.MagicMock()
+        fixed_ip_mock = mock.MagicMock()
+        fixed_ip_mock.subnet_id = 1
+        port_mock.fixed_ips = [fixed_ip_mock]
+        net_task = network_tasks.GetMemberPorts()
+        mock_driver.get_plugged_networks.return_value = _interface(1)
+        mock_driver.get_port.side_effect = [
+            data_models.Port(network_id=NETWORK_ID), port_mock]
+        ports = net_task.execute(self.load_balancer_mock, self.amphora_mock)
+        mock_driver.get_subnet.assert_called_once_with(1)
+        self.assertEqual([port_mock], ports)
+
     def test_handle_network_delta(self, mock_driver):
         def _interface(network_id):
             return [data_models.Interface(network_id=network_id)]
@@ -356,9 +390,94 @@ class TestNetworkTasks(base.TestCase):
         net.execute(lb)
         mock_driver.deallocate_vip.assert_called_once_with(lb.vip)
 
+    def test_update_vip(self, mock_driver):
+        vip = o_data_models.Vip()
+        lb = o_data_models.LoadBalancer(vip=vip)
+        net_task = network_tasks.UpdateVIP()
+        net_task.execute(lb)
+        mock_driver.update_vip.assert_called_once_with(lb)
+
+    def test_get_amphorae_network_configs(self, mock_driver):
+
+        net_task = network_tasks.GetAmphoraeNetworkConfigs()
+        net_task.execute(LB)
+        mock_driver.get_subnet.assert_called_once_with(SUBNET_ID)
+        mock_driver.get_port.assert_called_once_with(PORT_ID)
+
+        mock_driver.reset_mock()
+        self.amphora_mock.status = constants.DELETED
+        self.load_balancer_mock.amphorae = [self.amphora_mock]
+        net_task = network_tasks.GetAmphoraeNetworkConfigs()
+        configs = net_task.execute(self.load_balancer_mock)
+        self.assertEqual({}, configs)
+
+        mock_driver.reset_mock()
+        self.vip_mock.port_id = 1
+        self.amphora_mock.status = constants.ACTIVE
+        self.amphora_mock.vrrp_port_id = 2
+        self.amphora_mock.vrrp_ip = "10.0.0.1"
+        self.amphora_mock.ha_port_id = 3
+        self.amphora_mock.ha_ip = "10.0.0.2"
+        self.load_balancer_mock.amphorae = [self.amphora_mock]
+        net_task = network_tasks.GetAmphoraeNetworkConfigs()
+        configs = net_task.execute(self.load_balancer_mock)
+        vip_port_id = mock.call(1)
+        vrrp_port_id_call = mock.call(2)
+        ha_port_id_call = mock.call(3)
+        vrrp_port_subnet_call = mock.call().get_subnet_id('10.0.0.1')
+        ha_port_subnet_call = mock.call().get_subnet_id('10.0.0.2')
+        mock_driver.get_port.assert_has_calls([vip_port_id,
+                                               vrrp_port_id_call,
+                                               vrrp_port_subnet_call,
+                                               ha_port_id_call,
+                                               ha_port_subnet_call])
+        self.assertEqual(1, len(configs))
+
     def test_failover_preparation_for_amphora(self, mock_driver):
         failover = network_tasks.FailoverPreparationForAmphora()
         amphora = o_data_models.Amphora(id=AMPHORA_ID,
                                         lb_network_ip=IP_ADDRESS)
         failover.execute(amphora)
         mock_driver.failover_preparation.assert_called_once_with(amphora)
+
+    def test_retrieve_portids_on_amphora_except_lb_network(self, mock_driver):
+        def _interface(port_id):
+            return [data_models.Interface(port_id=port_id)]
+
+        net_task = network_tasks.RetrievePortIDsOnAmphoraExceptLBNetwork()
+        amphora = o_data_models.Amphora(id=AMPHORA_ID, compute_id=COMPUTE_ID,
+                                        lb_network_ip=IP_ADDRESS)
+
+        mock_driver.get_plugged_networks.return_value = []
+        net_task.execute(amphora)
+        mock_driver.get_plugged_networks.assert_called_once_with(
+            compute_id=COMPUTE_ID)
+        self.assertFalse(mock_driver.get_port.called)
+
+        mock_driver.reset_mock()
+        net_task = network_tasks.RetrievePortIDsOnAmphoraExceptLBNetwork()
+        mock_driver.get_plugged_networks.return_value = _interface(1)
+        net_task.execute(amphora)
+        mock_driver.get_port.assert_called_once_with(port_id=1)
+
+        mock_driver.reset_mock()
+        net_task = network_tasks.RetrievePortIDsOnAmphoraExceptLBNetwork()
+        port_mock = mock.MagicMock()
+        fixed_ip_mock = mock.MagicMock()
+        fixed_ip_mock.ip_address = IP_ADDRESS
+        port_mock.fixed_ips = [fixed_ip_mock]
+        mock_driver.get_plugged_networks.return_value = _interface(1)
+        mock_driver.get_port.return_value = port_mock
+        ports = net_task.execute(amphora)
+        self.assertEqual([], ports)
+
+        mock_driver.reset_mock()
+        net_task = network_tasks.RetrievePortIDsOnAmphoraExceptLBNetwork()
+        port_mock = mock.MagicMock()
+        fixed_ip_mock = mock.MagicMock()
+        fixed_ip_mock.ip_address = "172.17.17.17"
+        port_mock.fixed_ips = [fixed_ip_mock]
+        mock_driver.get_plugged_networks.return_value = _interface(1)
+        mock_driver.get_port.return_value = port_mock
+        ports = net_task.execute(amphora)
+        self.assertEqual(1, len(ports))
