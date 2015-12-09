@@ -32,11 +32,16 @@ from octavia.common import utils as octavia_utils
 
 LOG = logging.getLogger(__name__)
 BUFFER = 100
-HAPROXY_CONF = 'haproxy.conf.j2'
 
-j2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(
-    os.path.dirname(os.path.realpath(__file__)) + consts.AGENT_API_TEMPLATES))
-template = j2_env.get_template(HAPROXY_CONF)
+UPSTART_CONF = 'upstart.conf.j2'
+SYSVINIT_CONF = 'sysvinit.conf.j2'
+
+JINJA_ENV = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(os.path.dirname(
+        os.path.realpath(__file__)
+    ) + consts.AGENT_API_TEMPLATES))
+UPSTART_TEMPLATE = JINJA_ENV.get_template(UPSTART_CONF)
+SYSVINIT_TEMPLATE = JINJA_ENV.get_template(SYSVINIT_CONF)
 
 
 class ParsingError(Exception):
@@ -115,8 +120,10 @@ def upload_haproxy_config(amphora_id, listener_id):
     # file ok - move it
     os.rename(name, util.config_path(listener_id))
 
-    if not os.path.exists(util.upstart_path(listener_id)):
-        with open(util.upstart_path(listener_id), 'w') as text_file:
+    use_upstart = util.CONF.haproxy_amphora.use_upstart
+    if not os.path.exists(util.init_path(listener_id)):
+        with open(util.init_path(listener_id), 'w') as text_file:
+            template = UPSTART_TEMPLATE if use_upstart else SYSVINIT_TEMPLATE
             text = template.render(
                 peer_name=peer_name,
                 haproxy_pid=util.pid_path(listener_id),
@@ -126,6 +133,22 @@ def upload_haproxy_config(amphora_id, listener_id):
                 respawn_interval=util.CONF.haproxy_amphora.respawn_interval
             )
             text_file.write(text)
+
+    if not use_upstart:
+        # make init.d script executable
+        file = util.init_path(listener_id)
+        permcmd = ("chmod 755 {file}".format(file=file))
+        insrvcmd = ("insserv {file}".format(file=file))
+
+        try:
+            subprocess.check_output(permcmd.split(), stderr=subprocess.STDOUT)
+            subprocess.check_output(insrvcmd.split(), stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            LOG.debug("Failed to make %(file)s executable: %(err)s",
+                      {'file': file, 'err': e})
+            return flask.make_response(flask.jsonify(dict(
+                message="Error making file {0} executable".format(file),
+                details=e.output)), 500)
 
     res = flask.make_response(flask.jsonify({
         'message': 'OK'}), 202)
@@ -203,10 +226,10 @@ def delete_listener(listener_id):
     except Exception:
         pass
 
-    # delete the directory + upstart script for that listener
+    # delete the directory + init script for that listener
     shutil.rmtree(util.haproxy_dir(listener_id))
-    if os.path.exists(util.upstart_path(listener_id)):
-        os.remove(util.upstart_path(listener_id))
+    if os.path.exists(util.init_path(listener_id)):
+        os.remove(util.init_path(listener_id))
 
     return flask.jsonify({'message': 'OK'})
 

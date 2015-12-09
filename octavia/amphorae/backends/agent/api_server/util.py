@@ -20,12 +20,17 @@ from oslo_config import cfg
 CONF = cfg.CONF
 CONF.import_group('amphora_agent', 'octavia.common.config')
 CONF.import_group('haproxy_amphora', 'octavia.common.config')
+
 UPSTART_DIR = '/etc/init'
 KEEPALIVED_INIT_DIR = '/etc/init.d'
+SYSVINIT_DIR = '/etc/init.d'
 
 
-def upstart_path(listener_id):
-    return os.path.join(UPSTART_DIR, ('haproxy-{0}.conf'.format(listener_id)))
+def init_path(listener_id):
+    use_upstart = CONF.haproxy_amphora.use_upstart
+    hconf = 'haproxy-{0}.conf' if use_upstart else 'haproxy-{0}'
+    idir = UPSTART_DIR if use_upstart else SYSVINIT_DIR
+    return os.path.join(idir, hconf.format(listener_id))
 
 
 def haproxy_dir(listener_id):
