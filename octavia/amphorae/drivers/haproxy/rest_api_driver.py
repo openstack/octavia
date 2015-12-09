@@ -28,7 +28,6 @@ from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy.jinja import jinja_cfg
 from octavia.common.config import cfg
 from octavia.common import constants
-from octavia.common import data_models as data_models
 from octavia.common.tls_utils import cert_parser
 from octavia.i18n import _LW
 
@@ -134,23 +133,20 @@ class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
         """
         tls_cert = None
         sni_certs = []
-
         certs = []
 
-        if listener.tls_certificate_id:
-            tls_cert = self._map_cert_tls_container(
-                self.cert_manager.get_cert(listener.tls_certificate_id))
+        data = cert_parser.load_certificates_data(
+            self.cert_manager, listener)
+        if data['tls_cert'] is not None:
+            tls_cert = data['tls_cert']
             certs.append(tls_cert)
-        if listener.sni_containers:
-            for sni_cont in listener.sni_containers:
-                bbq_container = self._map_cert_tls_container(
-                    self.cert_manager.get_cert(sni_cont.tls_container.id))
-                sni_certs.append(bbq_container)
-                certs.append(bbq_container)
+        if data['sni_certs']:
+            sni_certs = data['sni_certs']
+            certs.extend(sni_certs)
 
         for cert in certs:
-            pem = self._build_pem(cert)
-            md5 = hashlib.md5(pem).hexdigest()
+            pem = cert_parser.build_pem(cert)
+            md5 = hashlib.md5(six.b(pem)).hexdigest()
             name = '{cn}.pem'.format(cn=cert.primary_cn)
             self._apply(self._upload_cert, listener, pem, md5, name)
 
@@ -165,29 +161,6 @@ class HaproxyAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
 
         self.client.upload_cert_pem(
             amp, listener_id, name, pem)
-
-    def _get_primary_cn(self, tls_cert):
-        """Returns primary CN for Certificate."""
-        return cert_parser.get_host_names(tls_cert.get_certificate())['cn']
-
-    def _map_cert_tls_container(self, cert):
-        return data_models.TLSContainer(
-            primary_cn=self._get_primary_cn(cert),
-            private_key=cert.get_private_key(),
-            certificate=cert.get_certificate(),
-            intermediates=cert.get_intermediates())
-
-    def _build_pem(self, tls_cert):
-        """Concatenate TLS Certificate fields to create a PEM
-
-        encoded certificate file
-        """
-        # TODO(ptoohill): Maybe this should be part of utils or manager?
-        pem = tls_cert.intermediates[:]
-        pem.extend([tls_cert.certificate, tls_cert.private_key])
-        map(six.b, pem)
-
-        return six.b('\n').join(pem)
 
 
 # Check a custom hostname
