@@ -19,6 +19,7 @@ Cert manager implementation for Barbican
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
+from stevedore import driver as stevedore_driver
 
 from octavia.certificates.common import barbican as barbican_common
 from octavia.certificates.manager import cert_mgr
@@ -27,15 +28,21 @@ from octavia.i18n import _LE, _LI, _LW
 
 LOG = logging.getLogger(__name__)
 
-CONF = cfg.CONF
-
 
 class BarbicanCertManager(cert_mgr.CertManager):
     """Certificate Manager that wraps the Barbican client API."""
-    @staticmethod
-    def store_cert(certificate, private_key, intermediates=None,
-                   private_key_passphrase=None, expiration=None,
-                   name='Octavia TLS Cert'):
+
+    def __init__(self):
+        super(BarbicanCertManager, self).__init__()
+        self.auth = stevedore_driver.DriverManager(
+            namespace='octavia.barbican_auth',
+            name=cfg.CONF.certificates.barbican_auth,
+            invoke_on_load=True,
+        ).driver
+
+    def store_cert(self, project_id, certificate, private_key,
+                   intermediates=None, private_key_passphrase=None,
+                   expiration=None, name='Octavia TLS Cert'):
         """Stores a certificate in the certificate manager.
 
         :param certificate: PEM encoded TLS certificate
@@ -48,7 +55,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
         :returns: the container_ref of the stored cert
         :raises Exception: if certificate storage fails
         """
-        connection = barbican_common.BarbicanAuth.get_barbican_client()
+        connection = self.auth.get_barbican_client(project_id)
 
         LOG.info(_LI(
             "Storing certificate container '{0}' in Barbican."
@@ -112,9 +119,8 @@ class BarbicanCertManager(cert_mgr.CertManager):
                     "Error storing certificate data: {0}"
                 ).format(str(e)))
 
-    @staticmethod
-    def get_cert(cert_ref, resource_ref=None, check_only=False,
-                 service_name='Octavia'):
+    def get_cert(self, project_id, cert_ref, resource_ref=None,
+                 check_only=False, service_name='Octavia'):
         """Retrieves the specified cert and registers as a consumer.
 
         :param cert_ref: the UUID of the cert to retrieve
@@ -126,7 +132,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
                  certificate data
         :raises Exception: if certificate retrieval fails
         """
-        connection = barbican_common.BarbicanAuth.get_barbican_client()
+        connection = self.auth.get_barbican_client(project_id)
 
         LOG.info(_LI(
             "Loading certificate container {0} from Barbican."
@@ -149,8 +155,8 @@ class BarbicanCertManager(cert_mgr.CertManager):
                     "Error getting {0}: {1}"
                 ).format(cert_ref, str(e)))
 
-    @staticmethod
-    def delete_cert(cert_ref, resource_ref=None, service_name='Octavia'):
+    def delete_cert(self, project_id, cert_ref, resource_ref=None,
+                    service_name='Octavia'):
         """Deregister as a consumer for the specified cert.
 
         :param cert_ref: the UUID of the cert to retrieve
@@ -159,7 +165,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
 
         :raises Exception: if deregistration fails
         """
-        connection = barbican_common.BarbicanAuth.get_barbican_client()
+        connection = self.auth.get_barbican_client(project_id)
 
         LOG.info(_LI(
             "Deregistering as a consumer of {0} in Barbican."
@@ -174,31 +180,4 @@ class BarbicanCertManager(cert_mgr.CertManager):
             with excutils.save_and_reraise_exception():
                 LOG.error(_LE(
                     "Error deregistering as a consumer of {0}: {1}"
-                ).format(cert_ref, str(e)))
-
-    @staticmethod
-    def _actually_delete_cert(cert_ref):
-        """Deletes the specified cert. Very dangerous. Do not recommend.
-
-        :param cert_ref: the UUID of the cert to delete
-        :raises Exception: if certificate deletion fails
-        """
-        connection = barbican_common.BarbicanAuth.get_barbican_client()
-
-        LOG.info(_LI(
-            "Recursively deleting certificate container {0} from Barbican."
-        ).format(cert_ref))
-        try:
-            certificate_container = connection.containers.get(cert_ref)
-            certificate_container.certificate.delete()
-            if certificate_container.intermediates:
-                certificate_container.intermediates.delete()
-            if certificate_container.private_key_passphrase:
-                certificate_container.private_key_passphrase.delete()
-            certificate_container.private_key.delete()
-            certificate_container.delete()
-        except Exception as e:
-            with excutils.save_and_reraise_exception():
-                LOG.error(_LE(
-                    "Error recursively deleting container {0}: {1}"
                 ).format(cert_ref, str(e)))

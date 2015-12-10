@@ -271,6 +271,9 @@ certificate_opts = [
     cfg.StrOpt('cert_generator',
                default='local_cert_generator',
                help='Name of the cert generator to use'),
+    cfg.StrOpt('barbican_auth',
+               default='barbican_acl_auth',
+               help='Name of the Barbican authentication method to use')
 ]
 
 house_keeping_opts = [

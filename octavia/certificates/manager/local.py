@@ -32,13 +32,14 @@ class LocalCertManager(cert_mgr.CertManager):
     """Cert Manager Interface that stores data locally."""
 
     @staticmethod
-    def store_cert(certificate, private_key, intermediates=None,
+    def store_cert(project_id, certificate, private_key, intermediates=None,
                    private_key_passphrase=None, **kwargs):
         """Stores (i.e., registers) a cert with the cert manager.
 
         This method stores the specified cert to the filesystem and returns
         a UUID that can be used to retrieve it.
 
+        :param project_id: Ignored in this implementation
         :param certificate: PEM encoded TLS certificate
         :param private_key: private key for the supplied certificate
         :param intermediates: ordered and concatenated intermediate certs
@@ -54,22 +55,21 @@ class LocalCertManager(cert_mgr.CertManager):
             "Storing certificate data on the local filesystem."
         ))
         try:
-            filename_certificate = "{0}.crt".format(filename_base, cert_ref)
+            filename_certificate = "{0}.crt".format(filename_base)
             with open(filename_certificate, 'w') as cert_file:
                 cert_file.write(certificate)
 
-            filename_private_key = "{0}.key".format(filename_base, cert_ref)
+            filename_private_key = "{0}.key".format(filename_base)
             with open(filename_private_key, 'w') as key_file:
                 key_file.write(private_key)
 
             if intermediates:
-                filename_intermediates = "{0}.int".format(filename_base,
-                                                          cert_ref)
+                filename_intermediates = "{0}.int".format(filename_base)
                 with open(filename_intermediates, 'w') as int_file:
                     int_file.write(intermediates)
 
             if private_key_passphrase:
-                filename_pkp = "{0}.pass".format(filename_base, cert_ref)
+                filename_pkp = "{0}.pass".format(filename_base)
                 with open(filename_pkp, 'w') as pass_file:
                     pass_file.write(private_key_passphrase)
         except IOError as ioe:
@@ -79,9 +79,10 @@ class LocalCertManager(cert_mgr.CertManager):
         return cert_ref
 
     @staticmethod
-    def get_cert(cert_ref, **kwargs):
+    def get_cert(project_id, cert_ref, **kwargs):
         """Retrieves the specified cert.
 
+        :param project_id: Ignored in this implementation
         :param cert_ref: the UUID of the cert to retrieve
 
         :return: octavia.certificates.common.Cert representation of the
@@ -93,10 +94,10 @@ class LocalCertManager(cert_mgr.CertManager):
 
         filename_base = os.path.join(CONF.certificates.storage_path, cert_ref)
 
-        filename_certificate = "{0}.crt".format(filename_base, cert_ref)
-        filename_private_key = "{0}.key".format(filename_base, cert_ref)
-        filename_intermediates = "{0}.int".format(filename_base, cert_ref)
-        filename_pkp = "{0}.pass".format(filename_base, cert_ref)
+        filename_certificate = "{0}.crt".format(filename_base)
+        filename_private_key = "{0}.key".format(filename_base)
+        filename_intermediates = "{0}.int".format(filename_base)
+        filename_pkp = "{0}.pass".format(filename_base)
 
         cert_data = dict()
 
@@ -132,9 +133,10 @@ class LocalCertManager(cert_mgr.CertManager):
         return local_common.LocalCert(**cert_data)
 
     @staticmethod
-    def delete_cert(cert_ref, **kwargs):
+    def delete_cert(project_id, cert_ref, **kwargs):
         """Deletes the specified cert.
 
+        :param project_id: Ignored in this implementation
         :param cert_ref: the UUID of the cert to delete
 
         :raises CertificateStorageException: if certificate deletion fails
@@ -144,10 +146,10 @@ class LocalCertManager(cert_mgr.CertManager):
 
         filename_base = os.path.join(CONF.certificates.storage_path, cert_ref)
 
-        filename_certificate = "{0}.crt".format(filename_base, cert_ref)
-        filename_private_key = "{0}.key".format(filename_base, cert_ref)
-        filename_intermediates = "{0}.int".format(filename_base, cert_ref)
-        filename_pkp = "{0}.pass".format(filename_base, cert_ref)
+        filename_certificate = "{0}.crt".format(filename_base)
+        filename_private_key = "{0}.key".format(filename_base)
+        filename_intermediates = "{0}.int".format(filename_base)
+        filename_pkp = "{0}.pass".format(filename_base)
 
         try:
             os.remove(filename_certificate)

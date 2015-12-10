@@ -272,9 +272,9 @@ class TestTLSParseUtils(base.TestCase):
 
                 # Ensure upload_cert is called three times
                 calls_cert_mngr = [
-                    mock.call.get_cert('cont_id_1', check_only=True),
-                    mock.call.get_cert('cont_id_2', check_only=True),
-                    mock.call.get_cert('cont_id_3', check_only=True)
+                    mock.call.get_cert('12345', 'cont_id_1', check_only=True),
+                    mock.call.get_cert('12345', 'cont_id_2', check_only=True),
+                    mock.call.get_cert('12345', 'cont_id_3', check_only=True)
                 ]
                 client.assert_has_calls(calls_cert_mngr)
 

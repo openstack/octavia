@@ -47,6 +47,7 @@ class TestLocalManager(base.TestCase):
         # Attempt to store the cert
         with mock.patch.object(builtins, 'open', file_mock):
             cert_id = local_cert_mgr.LocalCertManager.store_cert(
+                None,
                 certificate=self.certificate,
                 intermediates=self.intermediates,
                 private_key=self.private_key,
@@ -78,7 +79,7 @@ class TestLocalManager(base.TestCase):
         file_mock = mock.mock_open()
         # Attempt to retrieve the cert
         with mock.patch.object(builtins, 'open', file_mock):
-            data = local_cert_mgr.LocalCertManager.get_cert(cert_id)
+            data = local_cert_mgr.LocalCertManager.get_cert(None, cert_id)
 
         # Verify the correct files were opened
         file_mock.assert_has_calls([
@@ -97,7 +98,7 @@ class TestLocalManager(base.TestCase):
         remove_mock = mock.Mock()
         # Delete the cert
         with mock.patch('os.remove', remove_mock):
-            local_cert_mgr.LocalCertManager.delete_cert(cert_id)
+            local_cert_mgr.LocalCertManager.delete_cert(None, cert_id)
 
         # Verify the correct files were removed
         remove_mock.assert_has_calls([

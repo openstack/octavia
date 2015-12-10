@@ -19,9 +19,10 @@ Cert generator implementation for Barbican
 import random
 import time
 
+from oslo_config import cfg
 from oslo_log import log as logging
+from stevedore import driver as stevedore_driver
 
-from octavia.certificates.common import barbican as barbican_common
 from octavia.certificates.generator import cert_gen
 
 
@@ -33,8 +34,15 @@ MAX_ATTEMPTS = 10
 class BarbicanCertGenerator(cert_gen.CertGenerator):
     """Certificate Generator that wraps the Barbican client API."""
 
-    @classmethod
-    def sign_cert(cls, csr, validity):
+    def __init__(self):
+        super(BarbicanCertGenerator, self).__init__()
+        self.auth = stevedore_driver.DriverManager(
+            namespace='octavia.barbican_auth',
+            name=cfg.CONF.certificates.barbican_auth,
+            invoke_on_load=True,
+        ).driver
+
+    def sign_cert(self, csr, validity):
         """Signs a certificate using our private CA based on the specified CSR.
 
         :param csr: A Certificate Signing Request
@@ -45,8 +53,7 @@ class BarbicanCertGenerator(cert_gen.CertGenerator):
         """
         raise NotImplementedError("Barbican does not yet support signing.")
 
-    @classmethod
-    def _generate_private_key(cls, bit_length=2048, passphrase=None,
+    def _generate_private_key(self, bit_length=2048, passphrase=None,
                               create_only=False):
         """Generates a private key
 
@@ -56,7 +63,8 @@ class BarbicanCertGenerator(cert_gen.CertGenerator):
         :return: PEM encoded private key
         :raises Exception: If private key generation fails
         """
-        connection = barbican_common.BarbicanAuth.get_barbican_client()
+        connection = self.auth.get_barbican_client(
+            cfg.CONF.keystone_authtoken.admin_user)
         order = connection.orders.create_asymmetric(
             bit_length=bit_length,
             algorithm='rsa',
@@ -92,20 +100,18 @@ class BarbicanCertGenerator(cert_gen.CertGenerator):
 
         return secret.secret_ref
 
-    @classmethod
-    def _sign_cert_from_stored_key(cls, cn, pk_ref, validity):
+    def _sign_cert_from_stored_key(self, cn, pk_ref, validity):
         raise NotImplementedError("Barbican does not yet support signing.")
 
-    @classmethod
-    def generate_cert_key_pair(cls, cn, validity, bit_length=2048,
+    def generate_cert_key_pair(self, cn, validity, bit_length=2048,
                                passphrase=None):
         # This code will essentially work once Barbican enables CertOrders
-        # pk = cls._generate_private_key(
+        # pk = self._generate_private_key(
         #     bit_length=bit_length,
         #     passphrase=passphrase,
         #     create_only=True
         # )
-        # cert_container = cls._sign_cert_from_stored_key(cn=cn, pk_ref=pk,
+        # cert_container = self._sign_cert_from_stored_key(cn=cn, pk_ref=pk,
         #                                                 validity=validity)
         # return barbican_common.BarbicanCert(cert_container)
         raise NotImplementedError("Barbican does not yet support signing.")
