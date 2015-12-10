@@ -49,9 +49,9 @@ class ListenersController(base.BaseController):
     @wsme_pecan.wsexpose(listener_types.ListenerResponse, wtypes.text)
     def get_one(self, id):
         """Gets a single listener's details."""
-        session = db_api.get_session()
+        context = pecan.request.context.get('octavia_context')
         db_listener = self.repositories.listener.get(
-            session, load_balancer_id=self.load_balancer_id, id=id)
+            context.session, load_balancer_id=self.load_balancer_id, id=id)
         if not db_listener:
             LOG.info(_LI("Listener %s not found."), id)
             raise exceptions.NotFound(
@@ -62,22 +62,23 @@ class ListenersController(base.BaseController):
     @wsme_pecan.wsexpose([listener_types.ListenerResponse])
     def get_all(self):
         """Lists all listeners on a load balancer."""
-        session = db_api.get_session()
+        context = pecan.request.context.get('octavia_context')
         db_listeners = self.repositories.listener.get_all(
-            session, load_balancer_id=self.load_balancer_id)
+            context.session, load_balancer_id=self.load_balancer_id)
         return self._convert_db_to_type(db_listeners,
                                         [listener_types.ListenerResponse])
 
-    def _test_lb_status_post(self, session, lb_repo):
+    def _test_lb_status_post(self, context, lb_repo):
         """Verify load balancer is in a mutable status for post method."""
         if not lb_repo.test_and_set_provisioning_status(
-                session, self.load_balancer_id, constants.PENDING_UPDATE):
-            db_lb = lb_repo.get(session, id=self.load_balancer_id)
+                context.session, self.load_balancer_id,
+                constants.PENDING_UPDATE):
+            db_lb = lb_repo.get(context.session, id=self.load_balancer_id)
             LOG.info(_LI("Load Balancer %s is immutable."), db_lb.id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
 
-    def _validate_listeners(self, session, lb_repo, listener_dict):
+    def _validate_listeners(self, context, lb_repo, listener_dict):
         """Validate listeners for wrong protocol or duplicate listeners
 
         Update the load balancer db when provisioning status changes.
@@ -85,18 +86,18 @@ class ListenersController(base.BaseController):
         try:
             sni_container_ids = listener_dict.pop('sni_containers')
             db_listener = self.repositories.listener.create(
-                session, **listener_dict)
+                context.session, **listener_dict)
             if sni_container_ids is not None:
                 for container_id in sni_container_ids:
                     sni_dict = {'listener_id': db_listener.id,
                                 'tls_container_id': container_id}
-                    self.repositories.sni.create(session, **sni_dict)
-                db_listener = self.repositories.listener.get(session,
+                    self.repositories.sni.create(context.session, **sni_dict)
+                db_listener = self.repositories.listener.get(context.session,
                                                              id=db_listener.id)
         except odb_exceptions.DBDuplicateEntry as de:
             # Setting LB back to active because this is just a validation
             # failure
-            lb_repo.update(session, self.load_balancer_id,
+            lb_repo.update(context.session, self.load_balancer_id,
                            provisioning_status=constants.ACTIVE)
             if ['id'] == de.columns:
                 raise exceptions.IDAlreadyExists()
@@ -106,7 +107,7 @@ class ListenersController(base.BaseController):
         except odb_exceptions.DBError:
             # Setting LB back to active because this is just a validation
             # failure
-            lb_repo.update(session, self.load_balancer_id,
+            lb_repo.update(context.session, self.load_balancer_id,
                            provisioning_status=constants.ACTIVE)
             raise exceptions.InvalidOption(value=listener_dict.get('protocol'),
                                            option='protocol')
@@ -117,10 +118,10 @@ class ListenersController(base.BaseController):
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.listener.update(
-                    session, db_listener.id,
+                    context.session, db_listener.id,
                     provisioning_status=constants.ERROR)
         db_listener = self.repositories.listener.get(
-            session, id=db_listener.id)
+            context.session, id=db_listener.id)
         return self._convert_db_to_type(db_listener,
                                         listener_types.ListenerResponse)
 
@@ -128,10 +129,10 @@ class ListenersController(base.BaseController):
                          body=listener_types.ListenerPOST, status_code=202)
     def post(self, listener):
         """Creates a listener on a load balancer."""
+        context = pecan.request.context.get('octavia_context')
         self._secure_data(listener)
-        session = db_api.get_session()
         lb_repo = self.repositories.load_balancer
-        self._test_lb_status_post(session, lb_repo)
+        self._test_lb_status_post(context, lb_repo)
         listener_dict = listener.to_dict()
         listener_dict['load_balancer_id'] = self.load_balancer_id
         listener_dict['provisioning_status'] = constants.PENDING_CREATE
@@ -142,17 +143,17 @@ class ListenersController(base.BaseController):
             del listener_dict['tls_termination']
         # This is the extra validation layer for wrong protocol or duplicate
         # listeners on the same load balancer.
-        return self._validate_listeners(session, lb_repo, listener_dict)
+        return self._validate_listeners(context, lb_repo, listener_dict)
 
-    def _test_lb_status_put(self, session, id):
+    def _test_lb_status_put(self, context, id):
         """Test load balancer status for put method."""
         if not self.repositories.test_and_set_lb_and_listener_prov_status(
-                session, self.load_balancer_id, id, constants.PENDING_UPDATE,
-                constants.PENDING_UPDATE):
+                context.session, self.load_balancer_id, id,
+                constants.PENDING_UPDATE, constants.PENDING_UPDATE):
             LOG.info(_LI("Load Balancer %s is immutable."),
                      self.load_balancer_id)
             lb_repo = self.repositories.load_balancer
-            db_lb = lb_repo.get(session, id=self.load_balancer_id)
+            db_lb = lb_repo.get(context.session, id=self.load_balancer_id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
 
@@ -161,8 +162,8 @@ class ListenersController(base.BaseController):
     def put(self, id, listener):
         """Updates a listener on a load balancer."""
         self._secure_data(listener)
-        session = db_api.get_session()
-        db_listener = self.repositories.listener.get(session, id=id)
+        context = pecan.request.context.get('octavia_context')
+        db_listener = self.repositories.listener.get(context.session, id=id)
         if not db_listener:
             LOG.info(_LI("Listener %s not found."), id)
             raise exceptions.NotFound(
@@ -170,23 +171,23 @@ class ListenersController(base.BaseController):
         # Verify load balancer is in a mutable status.  If so it can be assumed
         # that the listener is also in a mutable status because a load balancer
         # will only be ACTIVE when all it's listeners as ACTIVE.
-        self._test_lb_status_put(session, id)
+        self._test_lb_status_put(context, id)
         try:
             LOG.info(_LI("Sending Update of Listener %s to handler"), id)
             self.handler.update(db_listener, listener)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.listener.update(
-                    session, id, provisioning_status=constants.ERROR)
-        db_listener = self.repositories.listener.get(session, id=id)
+                    context.session, id, provisioning_status=constants.ERROR)
+        db_listener = self.repositories.listener.get(context.session, id=id)
         return self._convert_db_to_type(db_listener,
                                         listener_types.ListenerResponse)
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
     def delete(self, id):
         """Deletes a listener from a load balancer."""
-        session = db_api.get_session()
-        db_listener = self.repositories.listener.get(session, id=id)
+        context = pecan.request.context.get('octavia_context')
+        db_listener = self.repositories.listener.get(context.session, id=id)
         if not db_listener:
             LOG.info(_LI("Listener %s not found."), id)
             raise exceptions.NotFound(
@@ -195,13 +196,13 @@ class ListenersController(base.BaseController):
         # that the listener is also in a mutable status because a load balancer
         # will only be ACTIVE when all it's listeners as ACTIVE.
         if not self.repositories.test_and_set_lb_and_listener_prov_status(
-                session, self.load_balancer_id, id, constants.PENDING_UPDATE,
-                constants.PENDING_DELETE):
+                context.session, self.load_balancer_id, id,
+                constants.PENDING_UPDATE, constants.PENDING_DELETE):
             lb_repo = self.repositories.load_balancer
-            db_lb = lb_repo.get(session, id=self.load_balancer_id)
+            db_lb = lb_repo.get(context.session, id=self.load_balancer_id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
-        db_listener = self.repositories.listener.get(session, id=id)
+        db_listener = self.repositories.listener.get(context.session, id=id)
         try:
             LOG.info(_LI("Sending Deletion of Listener %s to handler"),
                      db_listener.id)
@@ -209,10 +210,10 @@ class ListenersController(base.BaseController):
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.listener.update(
-                    session, db_listener.id,
+                    context.session, db_listener.id,
                     provisioning_status=constants.ERROR)
         db_listener = self.repositories.listener.get(
-            session, id=db_listener.id)
+            context.session, id=db_listener.id)
         return self._convert_db_to_type(db_listener,
                                         listener_types.ListenerResponse)
 

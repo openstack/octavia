@@ -96,6 +96,15 @@ class TestPool(base.BaseAPITest):
                                     id=pid)
         self.assertEqual(pid, api_pool.get('id'))
 
+    def test_create_with_project_id(self):
+        pid = uuidutils.generate_uuid()
+        api_pool = self.create_pool(self.lb.get('id'),
+                                    self.listener.get('id'),
+                                    constants.PROTOCOL_HTTP,
+                                    constants.LB_ALGORITHM_ROUND_ROBIN,
+                                    project_id=pid)
+        self.assertEqual(pid, api_pool.get('project_id'))
+
     def test_create_with_duplicate_id(self):
         pool = self.create_pool(self.lb.get('id'),
                                 self.listener.get('id'),

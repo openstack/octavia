@@ -41,9 +41,9 @@ class LoadBalancersController(base.BaseController):
     @wsme_pecan.wsexpose(lb_types.LoadBalancerResponse, wtypes.text)
     def get_one(self, id):
         """Gets a single load balancer's details."""
-        session = db_api.get_session()
+        context = pecan.request.context.get('octavia_context')
         load_balancer = self.repositories.load_balancer.get(
-            session, id=id)
+            context.session, id=id)
         if not load_balancer:
             LOG.info(_LI("Load Balancer %s was not found."), id)
             raise exceptions.NotFound(
@@ -58,10 +58,10 @@ class LoadBalancersController(base.BaseController):
         # NOTE(blogan): tenant_id and project_id are optional query parameters
         # tenant_id and project_id are the same thing.  tenant_id will be kept
         # around for a short amount of time.
-        project_id = project_id or tenant_id
-        session = db_api.get_session()
+        context = pecan.request.context.get('octavia_context')
+        project_id = context.project_id or project_id or tenant_id
         load_balancers = self.repositories.load_balancer.get_all(
-            session, project_id=project_id)
+            context.session, project_id=project_id)
         return self._convert_db_to_type(load_balancers,
                                         [lb_types.LoadBalancerResponse])
 
@@ -69,14 +69,15 @@ class LoadBalancersController(base.BaseController):
                          body=lb_types.LoadBalancerPOST, status_code=202)
     def post(self, load_balancer):
         """Creates a load balancer."""
-        session = db_api.get_session()
+        context = pecan.request.context.get('octavia_context')
         lb_dict = load_balancer.to_dict()
         vip_dict = lb_dict.pop('vip')
         lb_dict['provisioning_status'] = constants.PENDING_CREATE
         lb_dict['operating_status'] = constants.OFFLINE
+        lb_dict['project_id'] = lb_dict.get('project_id') or context.project_id
         try:
             db_lb = self.repositories.create_load_balancer_and_vip(
-                session, lb_dict, vip_dict)
+                context.session, lb_dict, vip_dict)
         except odb_exceptions.DBDuplicateEntry:
             raise exceptions.IDAlreadyExists()
         # Handler will be responsible for sending to controller
@@ -87,7 +88,8 @@ class LoadBalancersController(base.BaseController):
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.load_balancer.update(
-                    session, db_lb.id, provisioning_status=constants.ERROR)
+                    context.session, db_lb.id,
+                    provisioning_status=constants.ERROR)
         return self._convert_db_to_type(db_lb, lb_types.LoadBalancerResponse)
 
     @wsme_pecan.wsexpose(lb_types.LoadBalancerResponse,
@@ -95,17 +97,17 @@ class LoadBalancersController(base.BaseController):
                          body=lb_types.LoadBalancerPUT)
     def put(self, id, load_balancer):
         """Updates a load balancer."""
-        session = db_api.get_session()
+        context = pecan.request.context.get('octavia_context')
         # Purely to make lines smaller length
         lb_repo = self.repositories.load_balancer
-        db_lb = self.repositories.load_balancer.get(session, id=id)
+        db_lb = self.repositories.load_balancer.get(context.session, id=id)
         if not db_lb:
             LOG.info(_LI("Load Balancer %s was not found."), id)
             raise exceptions.NotFound(
                 resource=data_models.LoadBalancer._name(), id=id)
         # Check load balancer is in a mutable status
         if not lb_repo.test_and_set_provisioning_status(
-                session, id, constants.PENDING_UPDATE):
+                context.session, id, constants.PENDING_UPDATE):
             LOG.info(_LI("Load Balancer %s is immutable."), id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=id)
@@ -116,28 +118,28 @@ class LoadBalancersController(base.BaseController):
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.load_balancer.update(
-                    session, id, provisioning_status=constants.ERROR)
-        lb = self.repositories.load_balancer.get(session, id=id)
+                    context.session, id, provisioning_status=constants.ERROR)
+        lb = self.repositories.load_balancer.get(context.session, id=id)
         return self._convert_db_to_type(lb, lb_types.LoadBalancerResponse)
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
     def delete(self, id):
         """Deletes a load balancer."""
-        session = db_api.get_session()
+        context = pecan.request.context.get('octavia_context')
         # Purely to make lines smaller length
         lb_repo = self.repositories.load_balancer
-        db_lb = self.repositories.load_balancer.get(session, id=id)
+        db_lb = self.repositories.load_balancer.get(context.session, id=id)
         if not db_lb:
             LOG.info(_LI("Load Balancer %s was not found."), id)
             raise exceptions.NotFound(
                 resource=data_models.LoadBalancer._name(), id=id)
         # Check load balancer is in a mutable status
         if not lb_repo.test_and_set_provisioning_status(
-                session, id, constants.PENDING_DELETE):
+                context.session, id, constants.PENDING_DELETE):
             LOG.info(_LI("Load Balancer %s is immutable."), id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=id)
-        db_lb = self.repositories.load_balancer.get(session, id=id)
+        db_lb = self.repositories.load_balancer.get(context.session, id=id)
         try:
             LOG.info(_LI("Sending deleted Load Balancer %s to the handler"),
                      db_lb.id)
@@ -145,7 +147,8 @@ class LoadBalancersController(base.BaseController):
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.load_balancer.update(
-                    session, db_lb.id, provisioning_status=constants.ERROR)
+                    context.session, db_lb.id,
+                    provisioning_status=constants.ERROR)
         return self._convert_db_to_type(db_lb, lb_types.LoadBalancerResponse)
 
     @pecan.expose()
@@ -158,7 +161,8 @@ class LoadBalancersController(base.BaseController):
         session = db_api.get_session()
         if lb_id and len(remainder) and remainder[0] == 'listeners':
             remainder = remainder[1:]
-            db_lb = self.repositories.load_balancer.get(session, id=lb_id)
+            db_lb = self.repositories.load_balancer.get(
+                session, id=lb_id)
             if not db_lb:
                 LOG.info(_LI("Load Balancer %s was not found."), lb_id)
                 raise exceptions.NotFound(

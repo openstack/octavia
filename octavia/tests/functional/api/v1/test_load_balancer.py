@@ -52,6 +52,9 @@ class TestLoadBalancer(base.BaseAPITest):
         lb_json = {'name': 'test1'}
         self.post(self.LB_PATH, lb_json, status=400)
 
+    def test_create_with_project_id(self):
+        self.test_create(project_id=uuidutils.generate_uuid())
+
     def test_get_all(self):
         lb1 = self.create_load_balancer({}, name='lb1')
         lb2 = self.create_load_balancer({}, name='lb2')
@@ -62,6 +65,26 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(3, len(lbs))
         self.assertIn((lb1.get('id'), lb1.get('name')), lb_id_names)
         self.assertIn((lb2.get('id'), lb2.get('name')), lb_id_names)
+        self.assertIn((lb3.get('id'), lb3.get('name')), lb_id_names)
+
+    def test_get_all_by_project_id(self):
+        project1_id = uuidutils.generate_uuid()
+        project2_id = uuidutils.generate_uuid()
+        lb1 = self.create_load_balancer({}, name='lb1', project_id=project1_id)
+        lb2 = self.create_load_balancer({}, name='lb2', project_id=project1_id)
+        lb3 = self.create_load_balancer({}, name='lb3', project_id=project2_id)
+        project1_path = "{0}?project_id={1}".format(self.LBS_PATH, project1_id)
+        response = self.get(project1_path)
+        lbs = response.json
+        lb_id_names = [(lb.get('id'), lb.get('name')) for lb in lbs]
+        self.assertEqual(2, len(lbs))
+        self.assertIn((lb1.get('id'), lb1.get('name')), lb_id_names)
+        self.assertIn((lb2.get('id'), lb2.get('name')), lb_id_names)
+        project2_path = "{0}?project_id={1}".format(self.LBS_PATH, project2_id)
+        response = self.get(project2_path)
+        lbs = response.json
+        lb_id_names = [(lb.get('id'), lb.get('name')) for lb in lbs]
+        self.assertEqual(1, len(lbs))
         self.assertIn((lb3.get('id'), lb3.get('name')), lb_id_names)
 
     def test_get(self):
