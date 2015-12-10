@@ -39,7 +39,7 @@ class Delta(data_models.BaseDataModel):
 class Network(data_models.BaseDataModel):
 
     def __init__(self, id=None, name=None, subnets=None,
-                 tenant_id=None, admin_state_up=None, mtu=None,
+                 project_id=None, admin_state_up=None, mtu=None,
                  provider_network_type=None,
                  provider_physical_network=None,
                  provider_segmentation_id=None,
@@ -47,7 +47,7 @@ class Network(data_models.BaseDataModel):
         self.id = id
         self.name = name
         self.subnets = subnets
-        self.tenant_id = tenant_id
+        self.project_id = project_id
         self.admin_state_up = admin_state_up
         self.provider_network_type = provider_network_type
         self.provider_physical_network = provider_physical_network
@@ -58,12 +58,12 @@ class Network(data_models.BaseDataModel):
 
 class Subnet(data_models.BaseDataModel):
 
-    def __init__(self, id=None, name=None, network_id=None, tenant_id=None,
+    def __init__(self, id=None, name=None, network_id=None, project_id=None,
                  gateway_ip=None, cidr=None, ip_version=None):
         self.id = id
         self.name = name
         self.network_id = network_id
-        self.tenant_id = tenant_id
+        self.project_id = project_id
         self.gateway_ip = gateway_ip
         self.cidr = cidr
         self.ip_version = ip_version
@@ -73,7 +73,7 @@ class Port(data_models.BaseDataModel):
 
     def __init__(self, id=None, name=None, device_id=None, device_owner=None,
                  mac_address=None, network_id=None, status=None,
-                 tenant_id=None, admin_state_up=None, fixed_ips=None,
+                 project_id=None, admin_state_up=None, fixed_ips=None,
                  network=None):
         self.id = id
         self.name = name
@@ -82,7 +82,7 @@ class Port(data_models.BaseDataModel):
         self.mac_address = mac_address
         self.network_id = network_id
         self.status = status
-        self.tenant_id = tenant_id
+        self.project_id = project_id
         self.admin_state_up = admin_state_up
         self.fixed_ips = fixed_ips or []
         self.network = network
