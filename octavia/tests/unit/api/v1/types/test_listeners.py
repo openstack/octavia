@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_utils import uuidutils
 from wsme import exc
 from wsme.rest import json as wsme_json
 from wsme import types as wsme_types
@@ -64,7 +65,8 @@ class TestListenerPOST(base.BaseTypesTest, TestListener):
 
     def test_listener(self):
         body = {"name": "test", "description": "test", "connection_limit": 10,
-                "protocol": constants.PROTOCOL_HTTP, "protocol_port": 80}
+                "protocol": constants.PROTOCOL_HTTP, "protocol_port": 80,
+                "default_pool_id": uuidutils.generate_uuid()}
         listener = wsme_json.fromjson(self._type, body)
         self.assertTrue(listener.enabled)
 
@@ -85,6 +87,7 @@ class TestListenerPUT(base.BaseTypesTest, TestListener):
 
     def test_listener(self):
         body = {"name": "test", "description": "test", "connection_limit": 10,
-                "protocol": constants.PROTOCOL_HTTP, "protocol_port": 80}
+                "protocol": constants.PROTOCOL_HTTP, "protocol_port": 80,
+                "default_pool_id": uuidutils.generate_uuid()}
         listener = wsme_json.fromjson(self._type, body)
         self.assertEqual(wsme_types.Unset, listener.enabled)

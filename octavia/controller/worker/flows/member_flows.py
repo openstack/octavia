@@ -38,12 +38,12 @@ class MemberFlows(object):
         create_member_flow.add(amphora_driver_tasks.AmphoraePostNetworkPlug(
             requires=(constants.LOADBALANCER, constants.ADDED_PORTS)
         ))
-        create_member_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=(constants.LOADBALANCER, constants.LISTENER)))
+        create_member_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=(constants.LOADBALANCER, constants.LISTENERS)))
         create_member_flow.add(database_tasks.
-                               MarkLBAndListenerActiveInDB(
+                               MarkLBAndListenersActiveInDB(
                                    requires=(constants.LOADBALANCER,
-                                             constants.LISTENER)))
+                                             constants.LISTENERS)))
 
         return create_member_flow
 
@@ -58,12 +58,12 @@ class MemberFlows(object):
                                                          constants.MEMBER}))
         delete_member_flow.add(database_tasks.DeleteMemberInDB(
             requires=constants.MEMBER))
-        delete_member_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        delete_member_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
         delete_member_flow.add(database_tasks.
-                               MarkLBAndListenerActiveInDB(
+                               MarkLBAndListenersActiveInDB(
                                    requires=[constants.LOADBALANCER,
-                                             constants.LISTENER]))
+                                             constants.LISTENERS]))
 
         return delete_member_flow
 
@@ -77,13 +77,13 @@ class MemberFlows(object):
                                UpdateAttributes(
                                    rebind={constants.OBJECT: constants.MEMBER},
                                    requires=[constants.UPDATE_DICT]))
-        update_member_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        update_member_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_member_flow.add(database_tasks.UpdateMemberInDB(
             requires=[constants.MEMBER, constants.UPDATE_DICT]))
         update_member_flow.add(database_tasks.
-                               MarkLBAndListenerActiveInDB(
+                               MarkLBAndListenersActiveInDB(
                                    requires=[constants.LOADBALANCER,
-                                             constants.LISTENER]))
+                                             constants.LISTENERS]))
 
         return update_member_flow

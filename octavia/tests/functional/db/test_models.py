@@ -196,8 +196,9 @@ class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.create_listener(self.session, default_pool_id=pool.id)
         new_pool = self.session.query(models.Pool).filter_by(
             id=pool.id).first()
-        self.assertIsNotNone(new_pool.listener)
-        self.assertIsInstance(new_pool.listener, models.Listener)
+        self.assertIsNotNone(new_pool.listeners)
+        self.assertIsInstance(new_pool.listeners, list)
+        self.assertIsInstance(new_pool.listeners[0], models.Listener)
 
 
 class MemberModelTest(base.OctaviaDBTestBase, ModelTestMixin):
@@ -727,7 +728,7 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertIsInstance(pool, data_models.Pool)
         self.check_pool_data_model(pool)
         if check_listener:
-            self.check_listener(pool.listener, check_pool=False)
+            self.check_listener(pool.listeners[0], check_pool=False)
         if check_sp:
             self.check_session_persistence(pool.session_persistence,
                                            check_pool=False)

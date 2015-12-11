@@ -30,11 +30,13 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     LB_PATH = LBS_PATH + '/{lb_id}'
     LISTENERS_PATH = LB_PATH + '/listeners'
     LISTENER_PATH = LISTENERS_PATH + '/{listener_id}'
-    POOLS_PATH = LISTENER_PATH + '/pools'
+    POOLS_PATH = LB_PATH + '/pools'
     POOL_PATH = POOLS_PATH + '/{pool_id}'
-    MEMBERS_PATH = POOL_PATH + '/members'
+    DEPRECATED_POOLS_PATH = LISTENER_PATH + '/pools'
+    DEPRECATED_POOL_PATH = DEPRECATED_POOLS_PATH + '/{pool_id}'
+    MEMBERS_PATH = DEPRECATED_POOL_PATH + '/members'
     MEMBER_PATH = MEMBERS_PATH + '/{member_id}'
-    HM_PATH = POOL_PATH + '/healthmonitor'
+    HM_PATH = DEPRECATED_POOL_PATH + '/healthmonitor'
 
     def setUp(self):
         super(BaseAPITest, self).setUp()
@@ -44,7 +46,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.member_repo = repositories.MemberRepository()
         patcher = mock.patch('octavia.api.v1.handlers.controller_simulator.'
                              'handler.SimulatedControllerHandler')
-        patcher.start()
+        self.handler_mock = patcher.start()
         self.app = self._make_app()
 
         def reset_pecan():
@@ -112,11 +114,20 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         response = self.post(path, req_dict)
         return response.json
 
+    def create_pool_sans_listener(self, lb_id, protocol, lb_algorithm,
+                                  **optionals):
+        req_dict = {'protocol': protocol, 'lb_algorithm': lb_algorithm}
+        req_dict.update(optionals)
+        path = self.POOLS_PATH.format(lb_id=lb_id)
+        response = self.post(path, req_dict)
+        return response.json
+
     def create_pool(self, lb_id, listener_id, protocol, lb_algorithm,
                     **optionals):
         req_dict = {'protocol': protocol, 'lb_algorithm': lb_algorithm}
         req_dict.update(optionals)
-        path = self.POOLS_PATH.format(lb_id=lb_id, listener_id=listener_id)
+        path = self.DEPRECATED_POOLS_PATH.format(lb_id=lb_id,
+                                                 listener_id=listener_id)
         response = self.post(path, req_dict)
         return response.json
 

@@ -1,4 +1,5 @@
 # Copyright 2014 Rackspace
+# Copyright 2016 Blue Box, an IBM Company
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -23,6 +24,7 @@ from oslo_config import cfg
 from oslo_utils import uuidutils
 
 from octavia.common import constants
+from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import models
 
@@ -154,13 +156,14 @@ class Repositories(object):
             session.add(vip)
         return self.load_balancer.get(session, id=lb.id)
 
-    def create_pool_on_listener(self, session, listener_id,
-                                pool_dict, sp_dict=None):
+    def create_pool_on_load_balancer(self, session, pool_dict,
+                                     listener_id=None, sp_dict=None):
         """Inserts a pool and session persistence entity into the database.
 
         :param session: A Sql Alchemy database session.
-        :param listener_id: id of the listener the pool will be referenced by
         :param pool_dict: Dictionary representation of a pool
+        :param listener_id: Optional listener id that will
+                             reference this pool as its default_pool_id
         :param sp_dict: Dictionary representation of a session persistence
         :returns: octavia.common.data_models.Pool
         """
@@ -171,11 +174,12 @@ class Repositories(object):
             if sp_dict:
                 sp_dict['pool_id'] = pool_dict['id']
                 self.session_persistence.create(session, **sp_dict)
-            self.listener.update(session, listener_id,
-                                 default_pool_id=pool_dict['id'])
+            if listener_id:
+                self.listener.update(session, listener_id,
+                                     default_pool_id=pool_dict['id'])
         return self.pool.get(session, id=db_pool.id)
 
-    def update_pool_on_listener(self, session, pool_id, pool_dict, sp_dict):
+    def update_pool_and_sp(self, session, pool_id, pool_dict, sp_dict):
         """Updates a pool and session persistence entity in the database.
 
         :param session: A Sql Alchemy database session.
@@ -198,9 +202,10 @@ class Repositories(object):
             db_pool = self.pool.get(session, id=pool_id)
         return db_pool
 
-    def test_and_set_lb_and_listener_prov_status(self, session, lb_id,
-                                                 listener_id, lb_prov_status,
-                                                 listener_prov_status):
+    def test_and_set_lb_and_listeners_prov_status(self, session, lb_id,
+                                                  lb_prov_status,
+                                                  listener_prov_status,
+                                                  listener_ids=None):
         """Tests and sets a load balancer and listener provisioning status.
 
         Puts a lock on the load balancer table to check the status of a
@@ -210,16 +215,31 @@ class Repositories(object):
 
         :param session: A Sql Alchemy database session.
         :param lb_id: id of Load Balancer
-        :param listener_id: id of a Listener
         :param lb_prov_status: Status to set Load Balancer and Listener if
                                check passes.
+        :param listener_prov_status: Status to set Listeners if check passes
+        :param listener_ids: List of ids of a listeners (can be empty)
         :returns: bool
         """
-        success = self.load_balancer.test_and_set_provisioning_status(
-            session, lb_id, lb_prov_status)
-        self.listener.update(session, listener_id,
-                             provisioning_status=listener_prov_status)
-        return success
+        listener_ids = listener_ids or []
+        # Only update LB if we have listeners.
+        if listener_ids:
+            success = self.load_balancer.test_and_set_provisioning_status(
+                session, lb_id, lb_prov_status)
+            for id in listener_ids:
+                self.listener.update(session, id,
+                                     provisioning_status=listener_prov_status)
+            return success
+        else:
+            # Just make sure LB is mutable, even though we're not really
+            # changing anything on it
+            lb = session.query(
+                models.LoadBalancer).with_for_update().filter_by(
+                    id=lb_id).one()
+            if lb.provisioning_status not in constants.MUTABLE_STATUSES:
+                return False
+            else:
+                return True
 
 
 class LoadBalancerRepository(BaseRepository):
@@ -298,8 +318,27 @@ class MemberRepository(BaseRepository):
 class ListenerRepository(BaseRepository):
     model_class = models.Listener
 
-    def has_pool(self, session, id):
-        """Checks if a listener has a pool."""
+    def _pool_check(self, session, pool_id, listener_id=None,
+                    lb_id=None):
+        """Sanity checks for default_pool_id if specified."""
+        # Pool must exist on same loadbalancer as listener
+        pool_db = None
+        if listener_id:
+            lb_subquery = (session.query(self.model_class.load_balancer_id).
+                           filter_by(id=listener_id).subquery())
+            pool_db = (session.query(models.Pool).
+                       filter_by(id=pool_id).
+                       filter(models.LoadBalancer.id.in_(lb_subquery)).first())
+        elif lb_id:
+            pool_db = (session.query(models.Pool).
+                       filter_by(id=pool_id).
+                       filter_by(load_balancer_id=lb_id).first())
+        if not pool_db:
+            raise exceptions.NotFound(
+                resource=data_models.Pool._name(), id=pool_id)
+
+    def has_default_pool(self, session, id):
+        """Checks if a listener has a default pool."""
         listener = self.get(session, id=id)
         return bool(listener.default_pool)
 
@@ -307,12 +346,28 @@ class ListenerRepository(BaseRepository):
         with session.begin(subtransactions=True):
             listener_db = session.query(self.model_class).filter_by(
                 id=id).first()
+            # Verify any newly specified default_pool_id exists
+            default_pool_id = model_kwargs.get('default_pool_id')
+            if default_pool_id:
+                self._pool_check(session, default_pool_id, listener_id=id)
             sni_containers = model_kwargs.pop('sni_containers', [])
             for container_ref in sni_containers:
                 sni = models.SNI(listener_id=id,
                                  tls_certificate_id=container_ref)
                 listener_db.sni_containers.append(sni)
             listener_db.update(model_kwargs)
+
+    def create(self, session, **model_kwargs):
+        """Creates a new Listener with a some validation."""
+        with session.begin(subtransactions=True):
+            # Verify any specified default_pool_id exists
+            default_pool_id = model_kwargs.get('default_pool_id')
+            if default_pool_id:
+                self._pool_check(session, default_pool_id,
+                                 lb_id=model_kwargs.get('load_balancer_id'))
+            model = self.model_class(**model_kwargs)
+            session.add(model)
+        return model.to_data_model()
 
 
 class ListenerStatisticsRepository(BaseRepository):

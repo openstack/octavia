@@ -190,6 +190,7 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                           persistence_type=None, persistence_cookie=None,
                           tls=False, sni=False, peer_port=None, topology=None):
     proto = 'HTTP' if proto is None else proto
+    be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
     topology = 'SINGLE' if topology is None else topology
     port = '443' if proto is 'HTTPS' or proto is 'TERMINATED_HTTPS' else '80'
     peer_port = 1024 if peer_port is None else peer_port
@@ -207,7 +208,7 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                                                          topology=topology),
         peer_port=peer_port,
         default_pool=sample_pool_tuple(
-            proto=proto, monitor=monitor, persistence=persistence,
+            proto=be_proto, monitor=monitor, persistence=persistence,
             persistence_type=persistence_type,
             persistence_cookie=persistence_cookie),
         connection_limit=98,
@@ -319,7 +320,6 @@ def sample_base_expected_config(frontend=None, backend=None, peers=None):
         frontend = ("frontend sample_listener_id_1\n"
                     "    option tcplog\n"
                     "    maxconn 98\n"
-                    "    option forwardfor\n"
                     "    bind 10.0.0.2:80\n"
                     "    mode http\n"
                     "    default_backend sample_pool_id_1\n\n")
@@ -331,6 +331,7 @@ def sample_base_expected_config(frontend=None, backend=None, peers=None):
                    "    timeout check 31\n"
                    "    option httpchk GET /index.html\n"
                    "    http-check expect rstatus 418\n"
+                   "    option forwardfor\n"
                    "    server sample_member_id_1 10.0.0.99:82 weight 13 "
                    "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
                    "    server sample_member_id_2 10.0.0.98:82 weight 13 "

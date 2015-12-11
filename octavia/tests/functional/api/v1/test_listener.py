@@ -1,4 +1,5 @@
 #    Copyright 2014 Rackspace
+#    Copyright 2016 Blue Box, an IBM Company
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -26,6 +27,9 @@ class TestListener(base.BaseAPITest):
         self.set_lb_status(self.lb.get('id'))
         self.listeners_path = self.LISTENERS_PATH.format(
             lb_id=self.lb.get('id'))
+        self.pool = self.create_pool_sans_listener(
+            self.lb.get('id'), constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN)
 
     def test_get_all(self):
         listener1 = self.create_listener(self.lb.get('id'),
@@ -76,7 +80,8 @@ class TestListener(base.BaseAPITest):
     def test_create(self, **optionals):
         sni1 = uuidutils.generate_uuid()
         sni2 = uuidutils.generate_uuid()
-        lb_listener = {'name': 'listener1', 'description': 'desc1',
+        lb_listener = {'name': 'listener1', 'default_pool_id': None,
+                       'description': 'desc1',
                        'enabled': False, 'protocol': constants.PROTOCOL_HTTP,
                        'protocol_port': 80, 'connection_limit': 10,
                        'tls_certificate_id': uuidutils.generate_uuid(),
@@ -106,8 +111,45 @@ class TestListener(base.BaseAPITest):
         self.assert_final_listener_statuses(self.lb.get('id'),
                                             listener_api.get('id'))
 
+    def test_create_with_default_pool_id(self):
+        lb_listener = {'name': 'listener1',
+                       'default_pool_id': self.pool.get('id'),
+                       'description': 'desc1',
+                       'enabled': False, 'protocol': constants.PROTOCOL_HTTP,
+                       'protocol_port': 80}
+        response = self.post(self.listeners_path, lb_listener)
+        api_listener = response.json
+        self.assertEqual(api_listener.get('default_pool_id'),
+                         self.pool.get('id'))
+
+    def test_create_with_bad_default_pool_id(self):
+        lb_listener = {'name': 'listener1',
+                       'default_pool_id': uuidutils.generate_uuid(),
+                       'description': 'desc1',
+                       'enabled': False, 'protocol': constants.PROTOCOL_HTTP,
+                       'protocol_port': 80}
+        self.post(self.listeners_path, lb_listener, status=404)
+
     def test_create_with_id(self):
         self.test_create(id=uuidutils.generate_uuid())
+
+    def test_create_with_shared_default_pool_id(self):
+        lb_listener1 = {'name': 'listener1',
+                        'default_pool_id': self.pool.get('id'),
+                        'description': 'desc1',
+                        'enabled': False, 'protocol': constants.PROTOCOL_HTTP,
+                        'protocol_port': 80}
+        lb_listener2 = {'name': 'listener2',
+                        'default_pool_id': self.pool.get('id'),
+                        'description': 'desc2',
+                        'enabled': False, 'protocol': constants.PROTOCOL_HTTP,
+                        'protocol_port': 81}
+        listener1 = self.post(self.listeners_path, lb_listener1).json
+        self.set_lb_status(self.lb.get('id'), constants.ACTIVE)
+        listener2 = self.post(self.listeners_path, lb_listener2).json
+        self.assertEqual(listener1['default_pool_id'], self.pool.get('id'))
+        self.assertEqual(listener1['default_pool_id'],
+                         listener2['default_pool_id'])
 
     def test_create_with_project_id(self):
         self.test_create(project_id=uuidutils.generate_uuid())
@@ -123,7 +165,8 @@ class TestListener(base.BaseAPITest):
         self.post(path, body, status=409, expect_errors=True)
 
     def test_create_defaults(self):
-        defaults = {'name': None, 'description': None, 'enabled': True,
+        defaults = {'name': None, 'default_pool_id': None,
+                    'description': None, 'enabled': True,
                     'connection_limit': None, 'tls_certificate_id': None,
                     'sni_containers': [], 'project_id': None}
         lb_listener = {'protocol': constants.PROTOCOL_HTTP,
@@ -150,14 +193,16 @@ class TestListener(base.BaseAPITest):
                                         constants.PROTOCOL_TCP, 80,
                                         name='listener1', description='desc1',
                                         enabled=False, connection_limit=10,
-                                        tls_certificate_id=tls_uuid)
+                                        tls_certificate_id=tls_uuid,
+                                        default_pool_id=None)
         self.set_lb_status(self.lb.get('id'))
-        new_listener = {'name': 'listener2', 'enabled': True}
+        new_listener = {'name': 'listener2', 'enabled': True,
+                        'default_pool_id': self.pool.get('id')}
         listener_path = self.LISTENER_PATH.format(
             lb_id=self.lb.get('id'), listener_id=listener.get('id'))
-        response = self.put(listener_path, new_listener)
-        api_listener = response.json
+        api_listener = self.put(listener_path, new_listener).json
         update_expect = {'name': 'listener2', 'enabled': True,
+                         'default_pool_id': self.pool.get('id'),
                          'provisioning_status': constants.PENDING_UPDATE,
                          'operating_status': constants.ONLINE}
         listener.update(update_expect)
@@ -172,6 +217,25 @@ class TestListener(base.BaseAPITest):
         listener_path = self.LISTENER_PATH.format(lb_id=self.lb.get('id'),
                                                   listener_id='SEAN-CONNERY')
         self.put(listener_path, body={}, status=404)
+
+    def test_update_with_bad_default_pool_id(self):
+        bad_pool_uuid = uuidutils.generate_uuid()
+        listener = self.create_listener(self.lb.get('id'),
+                                        constants.PROTOCOL_TCP, 80,
+                                        name='listener1', description='desc1',
+                                        enabled=False, connection_limit=10,
+                                        default_pool_id=self.pool.get('id'))
+        self.set_lb_status(self.lb.get('id'))
+        new_listener = {'name': 'listener2', 'enabled': True,
+                        'default_pool_id': bad_pool_uuid}
+        listener_path = self.LISTENER_PATH.format(
+            lb_id=self.lb.get('id'), listener_id=listener.get('id'))
+        self.put(listener_path, new_listener, status=404)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.ACTIVE,
+                                      constants.ONLINE)
+        self.assert_final_listener_statuses(self.lb.get('id'),
+                                            listener.get('id'))
 
     def test_create_listeners_same_port(self):
         listener1 = self.create_listener(self.lb.get('id'),
@@ -204,7 +268,8 @@ class TestListener(base.BaseAPITest):
         self.delete(listener_path)
         response = self.get(listener_path)
         api_listener = response.json
-        expected = {'name': None, 'description': None, 'enabled': True,
+        expected = {'name': None, 'default_pool_id': None,
+                    'description': None, 'enabled': True,
                     'operating_status': constants.ONLINE,
                     'provisioning_status': constants.PENDING_DELETE,
                     'connection_limit': None}

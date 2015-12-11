@@ -23,12 +23,13 @@ class OctaviaBase(models.ModelBase):
 
     __data_model__ = None
 
-    def to_data_model(self, _calling_cls=None):
+    def to_data_model(self, _calling_classes=None):
         """Converts to a data model.
 
-        :param _calling_cls: Used only for internal recursion of this method.
-                             Should not be called from the outside.
+        :param _calling_classes: Used only for internal recursion of this
+                                 method. Should not be called from the outside.
         """
+        calling_classes = _calling_classes or []
         if not self.__data_model__:
             raise NotImplementedError
         dm_kwargs = {}
@@ -38,18 +39,24 @@ class OctaviaBase(models.ModelBase):
                       if not attr_name.startswith('_')]
         for attr_name in attr_names:
             attr = getattr(self, attr_name)
-            if isinstance(attr, OctaviaBase
-                          ) and attr.__class__ != _calling_cls:
+            # Handle 1:N or M:N relationships
+            # Don't recurse down object classes too far. If we have seen the
+            # same object class more than twice, we are probably in a loop.
+            if (isinstance(attr, OctaviaBase)
+                    and attr.__class__
+                    and calling_classes.count(attr.__class__) < 2):
                 dm_kwargs[attr_name] = attr.to_data_model(
-                    _calling_cls=self.__class__)
-            elif isinstance(attr, collections.InstrumentedList):
+                    _calling_classes=calling_classes + [self.__class__])
+            elif isinstance(attr, (collections.InstrumentedList, list)):
                 dm_kwargs[attr_name] = []
                 for item in attr:
-                    if isinstance(item, OctaviaBase
-                                  ) and attr.__class__ != _calling_cls:
+                    if (isinstance(item, OctaviaBase)
+                            and item.__class__
+                            and calling_classes.count(item.__class__) < 2):
                         dm_kwargs[attr_name].append(
                             item.to_data_model(
-                                _calling_cls=self.__class__))
+                                _calling_classes=(calling_classes +
+                                                  [self.__class__])))
                     elif not isinstance(item, OctaviaBase):
                         dm_kwargs[attr_name].append(item)
         return self.__data_model__(**dm_kwargs)

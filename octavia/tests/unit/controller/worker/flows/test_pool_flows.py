@@ -33,7 +33,7 @@ class TestPoolFlows(base.TestCase):
 
         self.assertIsInstance(pool_flow, flow.Flow)
 
-        self.assertIn(constants.LISTENER, pool_flow.requires)
+        self.assertIn(constants.LISTENERS, pool_flow.requires)
         self.assertIn(constants.LOADBALANCER, pool_flow.requires)
 
         self.assertEqual(2, len(pool_flow.requires))
@@ -45,7 +45,7 @@ class TestPoolFlows(base.TestCase):
 
         self.assertIsInstance(pool_flow, flow.Flow)
 
-        self.assertIn(constants.LISTENER, pool_flow.requires)
+        self.assertIn(constants.LISTENERS, pool_flow.requires)
         self.assertIn(constants.LOADBALANCER, pool_flow.requires)
         self.assertIn(constants.POOL, pool_flow.requires)
 
@@ -59,7 +59,7 @@ class TestPoolFlows(base.TestCase):
         self.assertIsInstance(pool_flow, flow.Flow)
 
         self.assertIn(constants.POOL, pool_flow.requires)
-        self.assertIn(constants.LISTENER, pool_flow.requires)
+        self.assertIn(constants.LISTENERS, pool_flow.requires)
         self.assertIn(constants.LOADBALANCER, pool_flow.requires)
         self.assertIn(constants.UPDATE_DICT, pool_flow.requires)
 

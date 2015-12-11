@@ -29,4 +29,7 @@
 {% if loadbalancer.listener.default_pool %}
 {{ backend_macro(constants, loadbalancer.listener, loadbalancer.listener.default_pool) }}
 {% endif %}
+{#  TODO(sbalukoff): Will need to add pools referenced by L7Policies attached
+#   to the listener, but ensure each only gets listed once, eh.
+#}
 {% endblock proxies %}

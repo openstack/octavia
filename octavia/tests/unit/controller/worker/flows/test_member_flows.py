@@ -33,7 +33,7 @@ class TestMemberFlows(base.TestCase):
 
         self.assertIsInstance(member_flow, flow.Flow)
 
-        self.assertIn(constants.LISTENER, member_flow.requires)
+        self.assertIn(constants.LISTENERS, member_flow.requires)
         self.assertIn(constants.LOADBALANCER, member_flow.requires)
 
         self.assertEqual(2, len(member_flow.requires))
@@ -45,7 +45,7 @@ class TestMemberFlows(base.TestCase):
 
         self.assertIsInstance(member_flow, flow.Flow)
 
-        self.assertIn(constants.LISTENER, member_flow.requires)
+        self.assertIn(constants.LISTENERS, member_flow.requires)
         self.assertIn(constants.LOADBALANCER, member_flow.requires)
         self.assertIn(constants.MEMBER, member_flow.requires)
 
@@ -58,7 +58,7 @@ class TestMemberFlows(base.TestCase):
 
         self.assertIsInstance(member_flow, flow.Flow)
 
-        self.assertIn(constants.LISTENER, member_flow.requires)
+        self.assertIn(constants.LISTENERS, member_flow.requires)
         self.assertIn(constants.LOADBALANCER, member_flow.requires)
         self.assertIn(constants.UPDATE_DICT, member_flow.requires)
 

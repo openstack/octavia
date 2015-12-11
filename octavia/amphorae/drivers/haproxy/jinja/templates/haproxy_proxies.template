@@ -51,8 +51,8 @@ frontend {{ listener.id }}
 {% if listener.connection_limit is defined %}
     maxconn {{ listener.connection_limit }}
 {% endif %}
-{% if listener.protocol_mode == constants.PROTOCOL_HTTP.lower() %}
-    option forwardfor
+{% if listener.protocol.lower() == constants.PROTOCOL_TERMINATED_HTTPS.lower() %}
+    redirect scheme https if !{ ssl_fc }
 {% endif %}
     {{ bind_macro(constants, listener, lb_vip_address)|trim() }}
     mode {{ listener.protocol_mode }}
@@ -65,9 +65,6 @@ frontend {{ listener.id }}
 backend {{ pool.id }}
     mode {{ pool.protocol }}
     balance {{ pool.lb_algorithm }}
-{% if listener.protocol == constants.PROTOCOL_TERMINATED_HTTPS %}
-    redirect scheme https if !{ ssl_fc }
-{% endif %}
 {% if pool.session_persistence %}
 {% if pool.session_persistence.type == constants.SESSION_PERSISTENCE_SOURCE_IP %}
 {% if listener.topology == constants.TOPOLOGY_ACTIVE_STANDBY %}
@@ -98,7 +95,7 @@ backend {{ pool.id }}
     option ssl-hello-chk
 {% endif %}
 {% endif %}
-{% if listener.protocol_mode == constants.PROTOCOL_HTTP.lower() %}
+{% if pool.protocol.lower() == constants.PROTOCOL_HTTP.lower() %}
     option forwardfor
 {% endif %}
 {% for member in pool.members %}

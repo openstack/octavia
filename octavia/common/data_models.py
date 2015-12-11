@@ -100,11 +100,14 @@ class Pool(BaseDataModel):
     def __init__(self, id=None, project_id=None, name=None, description=None,
                  protocol=None, lb_algorithm=None, enabled=None,
                  operating_status=None, members=None, health_monitor=None,
-                 session_persistence=None, listener=None):
+                 session_persistence=None, load_balancer_id=None,
+                 load_balancer=None, listeners=None):
         self.id = id
         self.project_id = project_id
         self.name = name
         self.description = description
+        self.load_balancer_id = load_balancer_id
+        self.load_balancer = load_balancer
         self.protocol = protocol
         self.lb_algorithm = lb_algorithm
         self.enabled = enabled
@@ -112,11 +115,14 @@ class Pool(BaseDataModel):
         self.members = members or []
         self.health_monitor = health_monitor
         self.session_persistence = session_persistence
-        self.listener = listener
+        self.listeners = listeners or []
 
     def delete(self):
-        self.listener.default_pool = None
-        self.listener.default_pool_id = None
+        # TODO(sbalukoff): Clean up L7Policies that reference this pool
+        for listener in self.listeners:
+            if listener.default_pool_id == self.id:
+                listener.default_pool = None
+                listener.default_pool_id = None
 
 
 class Member(BaseDataModel):
@@ -149,7 +155,8 @@ class Listener(BaseDataModel):
                  protocol_port=None, connection_limit=None,
                  enabled=None, provisioning_status=None, operating_status=None,
                  tls_certificate_id=None, stats=None, default_pool=None,
-                 load_balancer=None, sni_containers=None, peer_port=None):
+                 load_balancer=None, sni_containers=None, peer_port=None,
+                 pools=None):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -168,6 +175,7 @@ class Listener(BaseDataModel):
         self.load_balancer = load_balancer
         self.sni_containers = sni_containers
         self.peer_port = peer_port
+        self.pools = pools or []
 
 
 class LoadBalancer(BaseDataModel):
@@ -175,7 +183,7 @@ class LoadBalancer(BaseDataModel):
     def __init__(self, id=None, project_id=None, name=None, description=None,
                  provisioning_status=None, operating_status=None, enabled=None,
                  topology=None, vip=None, listeners=None, amphorae=None,
-                 vrrp_group=None):
+                 pools=None, vrrp_group=None):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -188,6 +196,7 @@ class LoadBalancer(BaseDataModel):
         self.topology = topology
         self.listeners = listeners or []
         self.amphorae = amphorae or []
+        self.pools = pools or []
 
 
 class VRRPGroup(BaseDataModel):

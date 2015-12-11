@@ -29,10 +29,10 @@ class PoolFlows(object):
         :returns: The flow for creating a pool
         """
         create_pool_flow = linear_flow.Flow(constants.CREATE_POOL_FLOW)
-        create_pool_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
-        create_pool_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        create_pool_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+        create_pool_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
 
         return create_pool_flow
 
@@ -44,12 +44,12 @@ class PoolFlows(object):
         delete_pool_flow = linear_flow.Flow(constants.DELETE_POOL_FLOW)
         delete_pool_flow.add(model_tasks.DeleteModelObject(
             rebind={constants.OBJECT: constants.POOL}))
-        delete_pool_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        delete_pool_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
         delete_pool_flow.add(database_tasks.DeletePoolInDB(
             requires=constants.POOL))
-        delete_pool_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        delete_pool_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
 
         return delete_pool_flow
 
@@ -63,11 +63,11 @@ class PoolFlows(object):
                              UpdateAttributes(
                                  rebind={constants.OBJECT: constants.POOL},
                                  requires=[constants.UPDATE_DICT]))
-        update_pool_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        update_pool_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_pool_flow.add(database_tasks.UpdatePoolInDB(
             requires=[constants.POOL, constants.UPDATE_DICT]))
-        update_pool_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        update_pool_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
 
         return update_pool_flow

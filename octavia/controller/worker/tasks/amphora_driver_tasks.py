@@ -46,35 +46,18 @@ class BaseAmphoraTask(task.Task):
         self.loadbalancer_repo = repo.LoadBalancerRepository()
 
 
-class ListenerUpdate(BaseAmphoraTask):
-    """Task to update an amphora with new configuration for the listener."""
-
-    def execute(self, loadbalancer, listener):
-        """Execute listener update routines for an amphora."""
-        # Ideally this shouldn't be needed. This is a workaround, for a not
-        # very well understood bug not related to Octavia.
-        # https://bugs.launchpad.net/octavia/+bug/1492493
-        listener = self.listener_repo.get(db_apis.get_session(),
-                                          id=listener.id)
-        self.amphora_driver.update(listener, loadbalancer.vip)
-        LOG.debug("Updated amphora with new configuration for listener")
-
-    def revert(self, listener, *args, **kwargs):
-        """Handle a failed listener update."""
-
-        LOG.warn(_LW("Reverting listener update."))
-        self.listener_repo.update(db_apis.get_session(), id=listener.id,
-                                  provisioning_status=constants.ERROR)
-        return None
-
-
 class ListenersUpdate(BaseAmphoraTask):
-    """Task to update amphora with all listeners' configurations."""
+    """Task to update amphora with all specified listeners' configurations."""
 
-    def execute(self, listeners, vip):
+    def execute(self, loadbalancer, listeners):
         """Execute updates per listener for an amphora."""
         for listener in listeners:
-            self.amphora_driver.update(listener, vip)
+            # Ideally this shouldn't be needed. This is a workaround, for a
+            # not very well understood bug not related to Octavia.
+            # https://bugs.launchpad.net/octavia/+bug/1492493
+            listener = self.listener_repo.get(db_apis.get_session(),
+                                              id=listener.id)
+            self.amphora_driver.update(listener, loadbalancer.vip)
 
     def revert(self, listeners, *args, **kwargs):
         """Handle failed listeners updates."""
@@ -123,10 +106,10 @@ class ListenerStart(BaseAmphoraTask):
 class ListenersStart(BaseAmphoraTask):
     """Task to start all listeners on the vip."""
 
-    def execute(self, listeners, vip):
+    def execute(self, loadbalancer, listeners):
         """Execute listener start routines for listeners on an amphora."""
         for listener in listeners:
-            self.amphora_driver.start(listener, vip)
+            self.amphora_driver.start(listener, loadbalancer.vip)
         LOG.debug("Started the listeners on the vip")
 
     def revert(self, listeners, *args, **kwargs):

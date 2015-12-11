@@ -56,6 +56,7 @@ class PoolPOST(base.BaseType):
     name = wtypes.wsattr(wtypes.StringType(max_length=255))
     description = wtypes.wsattr(wtypes.StringType(max_length=255))
     enabled = wtypes.wsattr(bool, default=True)
+    listener_id = wtypes.wsattr(wtypes.UuidType())
     protocol = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROTOCOLS),
                              mandatory=True)
     lb_algorithm = wtypes.wsattr(wtypes.text, mandatory=True)
