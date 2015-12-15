@@ -320,7 +320,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'connection_limit': None,
             'enabled': True,
             'provisioning_status': constants.PENDING_CREATE,
-            'operating_status': constants.OFFLINE
+            'operating_status': constants.OFFLINE,
+            'insert_headers': {}
         }
         if create_sni_containers:
             create_listener['sni_containers'] = create_sni_containers

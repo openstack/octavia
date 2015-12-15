@@ -204,7 +204,8 @@ RET_LISTENER = {
     'topology': 'SINGLE',
     'pools': [RET_POOL_1],
     'l7policies': [],
-    'enabled': True}
+    'enabled': True,
+    'insert_headers': {}}
 
 RET_LISTENER_L7 = {
     'id': 'sample_listener_id_1',
@@ -219,7 +220,8 @@ RET_LISTENER_L7 = {
     'pools': [RET_POOL_1, RET_POOL_2],
     'l7policies': [RET_L7POLICY_1, RET_L7POLICY_2, RET_L7POLICY_3,
                    RET_L7POLICY_4, RET_L7POLICY_5],
-    'enabled': True}
+    'enabled': True,
+    'insert_headers': {}}
 
 RET_LISTENER_TLS = {
     'id': 'sample_listener_id_1',
@@ -233,7 +235,8 @@ RET_LISTENER_TLS = {
     'default_tls_container': RET_DEF_TLS_CONT,
     'pools': [RET_POOL_1],
     'l7policies': [],
-    'enabled': True}
+    'enabled': True,
+    'insert_headers': {}}
 
 RET_LISTENER_TLS_SNI = {
     'id': 'sample_listener_id_1',
@@ -250,7 +253,8 @@ RET_LISTENER_TLS_SNI = {
     'sni_containers': [RET_SNI_CONT_1, RET_SNI_CONT_2],
     'pools': [RET_POOL_1],
     'l7policies': [],
-    'enabled': True}
+    'enabled': True,
+    'insert_headers': {}}
 
 RET_LB = {
     'name': 'test-lb',
@@ -345,18 +349,19 @@ def sample_vip_tuple():
 def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                           persistence_type=None, persistence_cookie=None,
                           tls=False, sni=False, peer_port=None, topology=None,
-                          l7=False, enabled=True):
+                          l7=False, enabled=True, insert_headers=None):
     proto = 'HTTP' if proto is None else proto
     be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
     topology = 'SINGLE' if topology is None else topology
     port = '443' if proto is 'HTTPS' or proto is 'TERMINATED_HTTPS' else '80'
     peer_port = 1024 if peer_port is None else peer_port
+    insert_headers = insert_headers or {}
     in_listener = collections.namedtuple(
         'listener', 'id, project_id, protocol_port, protocol, default_pool, '
                     'connection_limit, tls_certificate_id, '
                     'sni_container_ids, default_tls_container, '
                     'sni_containers, load_balancer, peer_port, pools, '
-                    'l7policies, enabled',)
+                    'l7policies, enabled, insert_headers',)
     if l7:
         pools = [
             sample_pool_tuple(
@@ -419,7 +424,8 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
         if sni else [],
         pools=pools,
         l7policies=l7policies,
-        enabled=enabled
+        enabled=enabled,
+        insert_headers=insert_headers
     )
 
 
@@ -615,7 +621,6 @@ def sample_base_expected_config(frontend=None, backend=None, peers=None):
                    "    timeout check 31\n"
                    "    option httpchk GET /index.html\n"
                    "    http-check expect rstatus 418\n"
-                   "    option forwardfor\n"
                    "    server sample_member_id_1 10.0.0.99:82 weight 13 "
                    "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
                    "    server sample_member_id_2 10.0.0.98:82 weight 13 "

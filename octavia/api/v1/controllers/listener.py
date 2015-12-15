@@ -111,6 +111,14 @@ class ListenersController(base.BaseController):
         Update the load balancer db when provisioning status changes.
         """
         lb_repo = self.repositories.load_balancer
+        if (listener_dict
+            and listener_dict.get('insert_headers')
+            and list(set(listener_dict['insert_headers'].keys()) -
+                     set(constants.SUPPORTED_HTTP_HEADERS))):
+            raise exceptions.InvalidOption(
+                value=listener_dict.get('insert_headers'),
+                option='insert_headers')
+
         try:
             sni_containers = listener_dict.pop('sni_containers', [])
             db_listener = self.repositories.listener.create(

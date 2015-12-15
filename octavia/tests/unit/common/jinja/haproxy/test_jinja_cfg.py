@@ -47,7 +47,6 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    option forwardfor\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
@@ -83,7 +82,6 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    option forwardfor\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
@@ -110,7 +108,6 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    option forwardfor\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
@@ -154,7 +151,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    option forwardfor\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
@@ -206,7 +202,6 @@ class TestHaproxyCfg(base.TestCase):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
-              "    option forwardfor\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
@@ -224,7 +219,6 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    option forwardfor\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2\n"
               "    server sample_member_id_2 10.0.0.98:82 "
@@ -246,7 +240,6 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    option forwardfor\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2\n"
               "    server sample_member_id_2 10.0.0.98:82 "
@@ -286,7 +279,6 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    option forwardfor\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 check "
               "inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 check "
@@ -299,13 +291,58 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31\n"
               "    option httpchk GET /healthmon.html\n"
               "    http-check expect rstatus 418\n"
-              "    option forwardfor\n"
               "    server sample_member_id_3 10.0.0.97:82 weight 13 check "
               "inter 30s fall 3 rise 2 cookie sample_member_id_3\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_listener_tuple(l7=True))
         self.assertEqual(sample_configs.sample_base_expected_config(
             frontend=fe, backend=be), rendered_obj)
+
+    def test_render_template_http_xff(self):
+        be = ("backend sample_pool_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31\n"
+              "    option httpchk GET /index.html\n"
+              "    http-check expect rstatus 418\n"
+              "    option forwardfor\n"
+              "    server sample_member_id_1 10.0.0.99:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_2\n\n")
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_listener_tuple(
+                insert_headers={'X-Forwarded-For': 'true'}))
+        self.assertEqual(
+            sample_configs.sample_base_expected_config(backend=be),
+            rendered_obj)
+
+    def test_render_template_http_xff_xfport(self):
+        be = ("backend sample_pool_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31\n"
+              "    option httpchk GET /index.html\n"
+              "    http-check expect rstatus 418\n"
+              "    option forwardfor\n"
+              "    http-request set-header X-Forwarded-Port %[dst_port]\n"
+              "    server sample_member_id_1 10.0.0.99:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_2\n\n")
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_listener_tuple(
+                insert_headers={'X-Forwarded-For': 'true',
+                                'X-Forwarded-Port': 'true'}))
+        self.assertEqual(
+            sample_configs.sample_base_expected_config(backend=be),
+            rendered_obj)
 
     def test_transform_session_persistence(self):
         in_persistence = sample_configs.sample_session_persistence_tuple()

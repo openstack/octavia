@@ -518,6 +518,9 @@ Listeners
 +---------------------+------------+-------------------------------------+
 | provisioning_status | String     | Physical status of a listener       |
 +---------------------+------------+-------------------------------------+
+| insert_headers      | Dictionary | Dictionary of additional headers \  |
+|                     |            | insertion into HTTP header          |
++---------------------+------------+-------------------------------------+
 
 List Listeners
 **************
@@ -649,6 +652,8 @@ Create a listener.
 +------------------+----------+
 | enabled          | no       |
 +------------------+----------+
+| insert_headers   | no       |
++------------------+----------+
 
 **Request Example**::
 
@@ -660,7 +665,8 @@ Create a listener.
         'name': 'listener_name',
         'description': 'listener_description',
         'default_pool_id': 'uuid',
-        'enabled': true
+        'enabled': true,
+        'insert_headers': {'X-Forwarded-For': 'true', 'X-Forwarded-Port': 'true'}
     }
 
 **Response Example**::

@@ -263,7 +263,7 @@ class Listener(BaseDataModel):
                  enabled=None, provisioning_status=None, operating_status=None,
                  tls_certificate_id=None, stats=None, default_pool=None,
                  load_balancer=None, sni_containers=None, peer_port=None,
-                 l7policies=None, pools=None):
+                 l7policies=None, pools=None, insert_headers=None):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -283,6 +283,7 @@ class Listener(BaseDataModel):
         self.sni_containers = sni_containers or []
         self.peer_port = peer_port
         self.l7policies = l7policies or []
+        self.insert_headers = insert_headers or {}
         self.pools = pools or []
 
     def update(self, update_dict):
