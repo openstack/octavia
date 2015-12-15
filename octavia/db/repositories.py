@@ -64,8 +64,9 @@ class BaseRepository(object):
         :param session: A Sql Alchemy database session.
         :param filters: Filters to decide which entity should be deleted.
         :returns: None
+        :raises: sqlalchemy.orm.exc.NoResultFound
         """
-        model = session.query(self.model_class).filter_by(**filters).first()
+        model = session.query(self.model_class).filter_by(**filters).one()
         with session.begin(subtransactions=True):
             session.delete(model)
             session.flush()
