@@ -128,6 +128,8 @@ class LoadBalancerFlows(object):
         :returns: The flow for deleting a load balancer
         """
         delete_LB_flow = linear_flow.Flow(constants.DELETE_LOADBALANCER_FLOW)
+        delete_LB_flow.add(database_tasks.MarkLBAmphoraeHealthBusy(
+            requires=constants.LOADBALANCER))
         delete_LB_flow.add(controller_tasks.DeleteListenersOnLB(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(network_tasks.UnplugVIP(
@@ -137,6 +139,8 @@ class LoadBalancerFlows(object):
         delete_LB_flow.add(database_tasks.MarkLBAmphoraeDeletedInDB(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(network_tasks.DeallocateVIP(
+            requires=constants.LOADBALANCER))
+        delete_LB_flow.add(database_tasks.DisableLBAmphoraeHealthMonitoring(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(database_tasks.MarkLBDeletedInDB(
             requires=constants.LOADBALANCER))

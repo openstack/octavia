@@ -254,8 +254,14 @@ class AmphoraFlows(object):
         delete_amphora_flow.add(database_tasks.
                                 MarkAmphoraPendingDeleteInDB(
                                     requires=constants.AMPHORA))
+        delete_amphora_flow.add(database_tasks.
+                                MarkAmphoraHealthBusy(
+                                    requires=constants.AMPHORA))
         delete_amphora_flow.add(compute_tasks.ComputeDelete(
             requires=constants.AMPHORA))
+        delete_amphora_flow.add(database_tasks.
+                                DisableAmphoraHealthMonitoring(
+                                    requires=constants.AMPHORA))
         delete_amphora_flow.add(database_tasks.
                                 MarkAmphoraDeletedInDB(
                                     requires=constants.AMPHORA))
@@ -274,8 +280,17 @@ class AmphoraFlows(object):
                 requires=constants.AMPHORA, provides=constants.PORTS))
         failover_amphora_flow.add(network_tasks.FailoverPreparationForAmphora(
             requires=constants.AMPHORA))
+        failover_amphora_flow.add(database_tasks.
+                                  MarkAmphoraPendingDeleteInDB(
+                                      requires=constants.AMPHORA))
+        failover_amphora_flow.add(database_tasks.
+                                  MarkAmphoraHealthBusy(
+                                      requires=constants.AMPHORA))
         failover_amphora_flow.add(compute_tasks.ComputeDelete(
             requires=constants.AMPHORA))
+        failover_amphora_flow.add(database_tasks.
+                                  DisableAmphoraHealthMonitoring(
+                                      requires=constants.AMPHORA))
         failover_amphora_flow.add(database_tasks.MarkAmphoraDeletedInDB(
             requires=constants.AMPHORA))
         failover_amphora_flow.add(database_tasks.CreateAmphoraInDB(
