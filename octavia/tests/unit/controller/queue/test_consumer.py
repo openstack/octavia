@@ -21,6 +21,10 @@ from octavia.controller.queue import endpoint
 from octavia.tests.unit import base
 
 
+@mock.patch.object(messaging, 'get_transport')
+@mock.patch.object(messaging, 'Target')
+@mock.patch.object(endpoint, 'Endpoint')
+@mock.patch.object(messaging, 'get_rpc_server')
 class TestConsumer(base.TestCase):
 
     def setUp(self):
@@ -29,12 +33,8 @@ class TestConsumer(base.TestCase):
         cfg.CONF.set_override('topic', 'foo_topic', group='oslo_messaging')
         cfg.CONF.set_override('host', 'foo_host')
 
-    @mock.patch.object(messaging, 'get_transport')
-    @mock.patch.object(messaging, 'Target')
-    @mock.patch.object(endpoint, 'Endpoint')
-    @mock.patch.object(messaging, 'get_rpc_server')
-    def test_config_setup(self, mock_rpc_server, mock_endpoint, mock_target,
-                          mock_get_transport):
+    def test_consumer_start(self, mock_rpc_server, mock_endpoint, mock_target,
+                            mock_get_transport):
         mock_get_transport_rv = mock.Mock()
         mock_get_transport.return_value = mock_get_transport_rv
         mock_rpc_server_rv = mock.Mock()
@@ -44,7 +44,7 @@ class TestConsumer(base.TestCase):
         mock_target_rv = mock.Mock()
         mock_target.return_value = mock_target_rv
 
-        consumer.Consumer()
+        consumer.Consumer().start()
 
         mock_get_transport.assert_called_once_with(cfg.CONF)
         mock_target.assert_called_once_with(topic='foo_topic',
@@ -54,3 +54,25 @@ class TestConsumer(base.TestCase):
                                                 mock_target_rv,
                                                 [mock_endpoint_rv],
                                                 executor='eventlet')
+
+    def test_consumer_stop(self, mock_rpc_server, mock_endpoint, mock_target,
+                           mock_get_transport):
+        mock_rpc_server_rv = mock.Mock()
+        mock_rpc_server.return_value = mock_rpc_server_rv
+
+        cons = consumer.Consumer()
+        cons.start()
+        cons.stop()
+        mock_rpc_server_rv.stop.assert_called_once_with()
+        self.assertFalse(mock_rpc_server_rv.wait.called)
+
+    def test_consumer_graceful_stop(self, mock_rpc_server, mock_endpoint,
+                                    mock_target, mock_get_transport):
+        mock_rpc_server_rv = mock.Mock()
+        mock_rpc_server.return_value = mock_rpc_server_rv
+
+        cons = consumer.Consumer()
+        cons.start()
+        cons.stop(graceful=True)
+        mock_rpc_server_rv.stop.assert_called_once_with()
+        mock_rpc_server_rv.wait.assert_called_once_with()
