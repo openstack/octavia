@@ -291,19 +291,19 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
                   unable to allocate an Amphora
         """
 
-        LOG.debug("Allocating an Amphora for load balancer with id %s" %
+        LOG.debug("Allocating an Amphora for load balancer with id %s",
                   loadbalancer_id)
 
         amp = self.amphora_repo.allocate_and_associate(
             db_apis.get_session(),
             loadbalancer_id)
         if amp is None:
-            LOG.debug("No Amphora available for load balancer with id %s" %
+            LOG.debug("No Amphora available for load balancer with id %s",
                       loadbalancer_id)
             return None
 
-        LOG.debug("Allocated Amphora with id %s for load balancer "
-                  "with id %s" % (amp.id, loadbalancer_id))
+        LOG.debug("Allocated Amphora with id %(amp)s for load balancer "
+                  "with id %(lb)s", {'amp': amp.id, 'lb': loadbalancer_id})
 
         return amp.id
 
@@ -312,8 +312,8 @@ class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
     """Alter the amphora role in DB."""
 
     def _execute(self, amphora, amp_role, vrrp_priority):
-        LOG.debug("Mark %s in DB for amphora: %s" %
-                  (amp_role, amphora.id))
+        LOG.debug("Mark %(role)s in DB for amphora: %(amp)s",
+                  {'role': amp_role, 'amp': amphora.id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  role=amp_role,
                                  vrrp_priority=vrrp_priority)
@@ -405,8 +405,8 @@ class MarkAmphoraBootingInDB(BaseDatabaseTask):
     def execute(self, amphora_id, compute_id):
         """Mark amphora booting in DB."""
 
-        LOG.debug("Mark BOOTING in DB for amphora: %s with compute id %s",
-                  amphora_id, compute_id)
+        LOG.debug("Mark BOOTING in DB for amphora: %(amp)s with "
+                  "compute id %(id)s", {'amp': amphora_id, 'id': compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  status=constants.AMPHORA_BOOTING,
                                  compute_id=compute_id)
@@ -434,8 +434,9 @@ class MarkAmphoraDeletedInDB(BaseDatabaseTask):
     def execute(self, amphora):
         """Mark the amphora as pending delete in DB."""
 
-        LOG.debug("Mark DELETED in DB for amphora: %s with compute id %s",
-                  (amphora.id, amphora.compute_id))
+        LOG.debug("Mark DELETED in DB for amphora: %(amp)s with "
+                  "compute id %(id)s",
+                  {'amp': amphora.id, 'id': amphora.compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.DELETED)
 
@@ -458,9 +459,9 @@ class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
     def execute(self, amphora):
         """Mark the amphora as pending delete in DB."""
 
-        LOG.debug("Mark PENDING DELETE in DB for amphora: %s "
-                  "with compute id %s",
-                  (amphora.id, amphora.compute_id))
+        LOG.debug("Mark PENDING DELETE in DB for amphora: %(amp)s "
+                  "with compute id %(id)s",
+                  {'amp': amphora.id, 'id': amphora.compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.PENDING_DELETE)
 
@@ -483,9 +484,9 @@ class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
     def execute(self, amphora):
         """Mark the amphora as pending upate in DB."""
 
-        LOG.debug("Mark PENDING UPDATE in DB for amphora: %s "
-                  "with compute id %s",
-                  (amphora.id, amphora.compute_id))
+        LOG.debug("Mark PENDING UPDATE in DB for amphora: %(amp)s "
+                  "with compute id %(id)s",
+                  {'amp': amphora.id, 'id': amphora.compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.PENDING_UPDATE)
 
@@ -647,8 +648,9 @@ class MarkLBAndListenerActiveInDB(BaseDatabaseTask):
     def execute(self, loadbalancer, listener):
         """Mark the load balancer and listener as active in DB."""
 
-        LOG.debug("Mark ACTIVE in DB for load balancer id: %s "
-                  "and listener id: %s", loadbalancer.id, listener.id)
+        LOG.debug("Mark ACTIVE in DB for load balancer id: %(lb)s "
+                  "and listener id: %(list)s",
+                  {'lb': loadbalancer.id, 'list': listener.id})
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
                                       provisioning_status=constants.ACTIVE)
@@ -765,8 +767,7 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for loadbalancer id: %s " %
-                  loadbalancer.id)
+        LOG.debug("Update DB for loadbalancer id: %s ", loadbalancer.id)
         self.loadbalancer_repo.update(db_apis.get_session(), loadbalancer.id,
                                       **update_dict)
 
