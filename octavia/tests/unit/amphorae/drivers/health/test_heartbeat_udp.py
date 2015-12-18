@@ -35,13 +35,8 @@ RLIMIT = random.randrange(1, 100)
 
 class TestHeartbeatUDP(base.TestCase):
 
-    @mock.patch('socket.getaddrinfo')
-    @mock.patch('socket.socket')
-    def setUp(self, mock_socket, mock_getaddrinfo):
+    def setUp(self):
         super(TestHeartbeatUDP, self).setUp()
-        self.mock_socket = mock_socket
-        self.mock_getaddrinfo = mock_getaddrinfo
-        self.mock_getaddrinfo.return_value = [range(1, 6)]
         self.health_update = mock.Mock()
         self.stats_update = mock.Mock()
 
@@ -50,9 +45,6 @@ class TestHeartbeatUDP(base.TestCase):
         self.conf.config(group="health_manager", bind_ip=IP)
         self.conf.config(group="health_manager", bind_port=PORT)
         self.conf.config(group="health_manager", sock_rlimit=0)
-
-        self.udp_status_getter = heartbeat_udp.UDPStatusGetter(
-            self.health_update, self.stats_update)
 
     @mock.patch('socket.getaddrinfo')
     @mock.patch('socket.socket')
@@ -66,9 +58,9 @@ class TestHeartbeatUDP(base.TestCase):
         getter = heartbeat_udp.UDPStatusGetter(
             None, None)
 
-        self.mock_getaddrinfo.assert_called_with(IP, PORT, 0, 2)
-        self.assertEqual(5, self.udp_status_getter.sockaddr)
-        self.mock_socket.assert_called_with(1, socket.SOCK_DGRAM)
+        mock_getaddrinfo.assert_called_with(IP, PORT, 0, 2)
+        self.assertEqual(5, getter.sockaddr)
+        mock_socket.assert_called_with(1, socket.SOCK_DGRAM)
         bind_mock.assert_called_once_with((IP, PORT))
 
         self.conf.config(group="health_manager", sock_rlimit=RLIMIT)
@@ -97,12 +89,20 @@ class TestHeartbeatUDP(base.TestCase):
         self.assertEqual(2, srcaddr)
         self.assertEqual({"testkey": "TEST"}, obj)
 
-    def test_check(self):
+    @mock.patch('socket.getaddrinfo')
+    @mock.patch('socket.socket')
+    def test_check(self, mock_socket, mock_getaddrinfo):
+        socket_mock = mock.MagicMock()
+        mock_socket.return_value = socket_mock
+        mock_getaddrinfo.return_value = [range(1, 6)]
         mock_dorecv = mock.Mock()
-        self.udp_status_getter.dorecv = mock_dorecv
+
+        getter = heartbeat_udp.UDPStatusGetter(
+            self.health_update, self.stats_update)
+        getter.dorecv = mock_dorecv
         mock_dorecv.side_effect = [(dict(id=FAKE_ID), 2)]
 
-        self.udp_status_getter.check()
+        getter.check()
         self.health_update.update_health.assert_called_once_with({'id': 1})
         self.stats_update.update_stats.assert_called_once_with({'id': 1})
 
@@ -114,13 +114,12 @@ class TestHeartbeatUDP(base.TestCase):
         self.mock_getaddrinfo.return_value = [range(1, 6)]
 
         mock_dorecv = mock.Mock()
-        self.udp_status_getter = heartbeat_udp.UDPStatusGetter(
-            None, None)
+        getter = heartbeat_udp.UDPStatusGetter(None, None)
 
-        self.udp_status_getter.dorecv = mock_dorecv
+        getter.dorecv = mock_dorecv
         mock_dorecv.side_effect = [(dict(id=FAKE_ID), 2)]
 
-        self.udp_status_getter.check()
+        getter.check()
 
     @mock.patch('socket.getaddrinfo')
     @mock.patch('socket.socket')
@@ -137,11 +136,10 @@ class TestHeartbeatUDP(base.TestCase):
         self.mock_getaddrinfo.return_value = [range(1, 6)]
 
         mock_dorecv = mock.Mock()
-        self.udp_status_getter = heartbeat_udp.UDPStatusGetter(
-            None, None)
+        getter = heartbeat_udp.UDPStatusGetter(None, None)
 
-        self.udp_status_getter.dorecv = mock_dorecv
+        getter.dorecv = mock_dorecv
         mock_dorecv.side_effect = exceptions.InvalidHMACException
 
-        self.udp_status_getter.check()
+        getter.check()
         self.assertFalse(mock_submit.called)
