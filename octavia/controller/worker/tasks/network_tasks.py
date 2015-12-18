@@ -156,7 +156,7 @@ class PlugNetworks(BaseNetworkTask):
             self.network_driver.plug_network(amphora.compute_id,
                                              nic.network_id)
 
-    def revert(self, amphora, delta):
+    def revert(self, amphora, delta, *args, **kwargs):
         """Handle a failed network plug by removing all nics added."""
 
         LOG.warn(_LW("Unable to plug networks for amp id %s"), amphora.id)
@@ -248,7 +248,7 @@ class HandleNetworkDeltas(BaseNetworkTask):
                     LOG.exception(_LE("Unable to unplug network"))
         return added_ports
 
-    def revert(self, result, deltas):
+    def revert(self, result, deltas, *args, **kwargs):
         """Handle a network plug or unplug failures."""
 
         if isinstance(result, failure.Failure):
