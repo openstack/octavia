@@ -20,6 +20,7 @@ import mock
 import netifaces
 from oslo_config import cfg
 import six
+import six.moves.builtins as builtins
 
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import certificate_update
@@ -31,11 +32,6 @@ import octavia.tests.unit.base as base
 
 RANDOM_ERROR = 'random error'
 OK = dict(message='OK')
-
-if six.PY2:
-    import __builtin__ as builtins
-else:
-    import builtins
 
 
 class ServerTestCase(base.TestCase):
