@@ -16,20 +16,21 @@ import sys
 
 import eventlet
 eventlet.monkey_patch()
-from oslo_log import log as logging
+from oslo_config import cfg
 from oslo_reports import guru_meditation_report as gmr
+from oslo_service import service
 
-from octavia.common import service
+from octavia.common import service as octavia_service
 from octavia.controller.queue import consumer
 from octavia import version
 
-LOG = logging.getLogger(__name__)
+CONF = cfg.CONF
 
 
 def main():
-    service.prepare_service(sys.argv)
+    octavia_service.prepare_service(sys.argv)
 
     gmr.TextGuruMeditation.setup_autorun(version)
 
-    c = consumer.Consumer()
-    c.listen()
+    launcher = service.launch(CONF, consumer.Consumer())
+    launcher.wait()

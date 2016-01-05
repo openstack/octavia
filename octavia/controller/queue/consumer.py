@@ -23,26 +23,36 @@ from octavia.i18n import _LI
 LOG = logging.getLogger(__name__)
 
 
-class Consumer(object):
+class Consumer(service.Service):
 
     def __init__(self):
+        super(Consumer, self).__init__()
+        self.server = None
+
+    def start(self):
         topic = cfg.CONF.oslo_messaging.topic
         server = cfg.CONF.host
         transport = messaging.get_transport(cfg.CONF)
         target = messaging.Target(topic=topic, server=server, fanout=False)
         endpoints = [endpoint.Endpoint()]
-
         self.server = messaging.get_rpc_server(transport, target, endpoints,
                                                executor='eventlet')
+        LOG.info(_LI('Starting consumer...'))
+        self.server.start()
+        super(Consumer, self).start()
 
-    def listen(self):
-        try:
-            LOG.info(_LI('Starting consumer...'))
-            service.launch(cfg.CONF, self.server).wait()
-        finally:
+    def stop(self, graceful=False):
+        if self.server:
             LOG.info(_LI('Stopping consumer...'))
             self.server.stop()
-            LOG.info(_LI('Consumer successfully stopped.  Waiting for final '
-                         'messages to be processed...'))
-            self.server.wait()
-            LOG.info(_LI('Finished waiting.'))
+            if graceful:
+                LOG.info(
+                    _LI('Consumer successfully stopped.  Waiting for final '
+                        'messages to be processed...'))
+                self.server.wait()
+        super(Consumer, self).stop(graceful=graceful)
+
+    def reset(self):
+        if self.server:
+            self.server.reset()
+        super(Consumer, self).reset()
