@@ -360,7 +360,8 @@ class TestControllerWorker(base.TestCase):
         # Test the code path with an SINGLE topology
         CONF.set_override(group='controller_worker',
                           name='loadbalancer_topology',
-                          override=constants.TOPOLOGY_SINGLE)
+                          override=constants.TOPOLOGY_SINGLE,
+                          enforce_type=True)
         _flow_mock.reset_mock()
         mock_taskflow_load.reset_mock()
         mock_eng = mock.Mock()
@@ -384,7 +385,8 @@ class TestControllerWorker(base.TestCase):
         # Test the code path with an ACTIVE_STANDBY topology
         CONF.set_override(group='controller_worker',
                           name='loadbalancer_topology',
-                          override=constants.TOPOLOGY_ACTIVE_STANDBY)
+                          override=constants.TOPOLOGY_ACTIVE_STANDBY,
+                          enforce_type=True)
 
         _flow_mock.reset_mock()
         mock_taskflow_load.reset_mock()

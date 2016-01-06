@@ -26,7 +26,7 @@ class TestNovaAuth(base.TestCase):
 
     def setUp(self):
         CONF.set_override(group='keystone_authtoken', name='auth_version',
-                          override='2')
+                          override='2', enforce_type=True)
         # Reset the session and client
         clients.NovaAuth.nova_client = None
         keystone._SESSION = None
@@ -63,7 +63,7 @@ class TestNeutronAuth(base.TestCase):
 
     def setUp(self):
         CONF.set_override(group='keystone_authtoken', name='auth_version',
-                          override='2')
+                          override='2', enforce_type=True)
         # Reset the session and client
         clients.NeutronAuth.neutron_client = None
         keystone._SESSION = None

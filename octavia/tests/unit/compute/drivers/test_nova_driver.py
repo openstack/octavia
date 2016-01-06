@@ -31,9 +31,9 @@ class TestNovaClient(base.TestCase):
     def setUp(self):
         net_name = "lb-mgmt-net"
         CONF.set_override(group='networking', name='lb_network_name',
-                          override=net_name)
+                          override=net_name, enforce_type=True)
         CONF.set_override(group='keystone_authtoken', name='auth_version',
-                          override='2')
+                          override='2', enforce_type=True)
         self.amphora = models.Amphora(
             compute_id=uuidutils.generate_uuid(),
             status='ACTIVE',
