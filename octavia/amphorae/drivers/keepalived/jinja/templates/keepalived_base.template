@@ -32,6 +32,7 @@ vrrp_instance {{ vrrp_group_name }} {
  interface {{ amp_intf }}
  virtual_router_id {{ amp_vrrp_id }}
  priority {{ amp_priority }}
+ nopreempt
  garp_master_refresh {{ vrrp_garp_refresh }}
  garp_master_refresh_repeat {{ vrrp_garp_refresh_repeat }}
  advert_int {{ advert_int }}
