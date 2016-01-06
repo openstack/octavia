@@ -37,7 +37,7 @@ class ListenerFlows(object):
             requires='listener',
             provides='listener'))
         create_listener_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LISTENER, constants.VIP]))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
         create_listener_flow.add(network_tasks.UpdateVIP(
             requires=constants.LOADBALANCER))
         create_listener_flow.add(database_tasks.
@@ -53,7 +53,7 @@ class ListenerFlows(object):
         """
         delete_listener_flow = linear_flow.Flow(constants.DELETE_LISTENER_FLOW)
         delete_listener_flow.add(amphora_driver_tasks.ListenerDelete(
-            requires=[constants.LISTENER, constants.VIP]))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
         delete_listener_flow.add(network_tasks.UpdateVIP(
             requires=constants.LOADBALANCER))
         delete_listener_flow.add(database_tasks.DeleteListenerInDB(
@@ -75,7 +75,7 @@ class ListenerFlows(object):
                                              constants.LISTENER},
                                      requires=[constants.UPDATE_DICT]))
         update_listener_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LISTENER, constants.VIP]))
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
         update_listener_flow.add(database_tasks.UpdateListenerInDB(
             requires=[constants.LISTENER, constants.UPDATE_DICT]))
         update_listener_flow.add(database_tasks.

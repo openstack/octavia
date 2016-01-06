@@ -35,9 +35,8 @@ class TestPoolFlows(base.TestCase):
 
         self.assertIn(constants.LISTENER, pool_flow.requires)
         self.assertIn(constants.LOADBALANCER, pool_flow.requires)
-        self.assertIn(constants.VIP, pool_flow.requires)
 
-        self.assertEqual(3, len(pool_flow.requires))
+        self.assertEqual(2, len(pool_flow.requires))
         self.assertEqual(0, len(pool_flow.provides))
 
     def test_get_delete_pool_flow(self):
@@ -48,10 +47,9 @@ class TestPoolFlows(base.TestCase):
 
         self.assertIn(constants.LISTENER, pool_flow.requires)
         self.assertIn(constants.LOADBALANCER, pool_flow.requires)
-        self.assertIn(constants.VIP, pool_flow.requires)
         self.assertIn(constants.POOL, pool_flow.requires)
 
-        self.assertEqual(4, len(pool_flow.requires))
+        self.assertEqual(3, len(pool_flow.requires))
         self.assertEqual(0, len(pool_flow.provides))
 
     def test_get_update_pool_flow(self):
@@ -63,8 +61,7 @@ class TestPoolFlows(base.TestCase):
         self.assertIn(constants.POOL, pool_flow.requires)
         self.assertIn(constants.LISTENER, pool_flow.requires)
         self.assertIn(constants.LOADBALANCER, pool_flow.requires)
-        self.assertIn(constants.VIP, pool_flow.requires)
         self.assertIn(constants.UPDATE_DICT, pool_flow.requires)
 
-        self.assertEqual(5, len(pool_flow.requires))
+        self.assertEqual(4, len(pool_flow.requires))
         self.assertEqual(0, len(pool_flow.provides))
