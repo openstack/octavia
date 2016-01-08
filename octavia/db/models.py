@@ -353,14 +353,12 @@ class SNI(base_models.BASE):
                                                     cascade="delete"))
 
 
-class Amphora(base_models.BASE):
+class Amphora(base_models.BASE, base_models.IdMixin):
 
     __data_model__ = data_models.Amphora
 
     __tablename__ = "amphora"
 
-    id = sa.Column(sa.String(36), nullable=False, primary_key=True,
-                   autoincrement=False)
     load_balancer_id = sa.Column(
         sa.String(36), sa.ForeignKey("load_balancer.id",
                                      name="fk_amphora_load_balancer_id"),
