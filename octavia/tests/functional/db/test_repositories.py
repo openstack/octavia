@@ -151,6 +151,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['listeners']
         del pool_dm_dict['load_balancer']
         del pool_dm_dict['load_balancer_id']
+        del pool_dm_dict['l7policies']
         self.assertEqual(pool, pool_dm_dict)
         new_listener = self.repos.listener.get(self.session,
                                                id=self.listener.id)
@@ -173,6 +174,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['listeners']
         del pool_dm_dict['load_balancer']
         del pool_dm_dict['load_balancer_id']
+        del pool_dm_dict['l7policies']
         self.assertEqual(pool, pool_dm_dict)
         sp_dm_dict = pool_dm.session_persistence.to_dict()
         del sp_dm_dict['pool']
@@ -203,6 +205,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['listeners']
         del pool_dm_dict['load_balancer']
         del pool_dm_dict['load_balancer_id']
+        del pool_dm_dict['l7policies']
         pool.update(update_pool)
         self.assertEqual(pool, pool_dm_dict)
         self.assertIsNone(new_pool_dm.session_persistence)
@@ -228,6 +231,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['listeners']
         del pool_dm_dict['load_balancer']
         del pool_dm_dict['load_balancer_id']
+        del pool_dm_dict['l7policies']
         pool.update(update_pool)
         self.assertEqual(pool, pool_dm_dict)
         sp_dm_dict = new_pool_dm.session_persistence.to_dict()

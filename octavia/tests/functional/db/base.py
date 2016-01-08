@@ -71,6 +71,13 @@ class OctaviaDBTestBase(test_base.DbTestCase):
                                 models.LBTopology)
         self._seed_lookup_table(session, constants.SUPPORTED_VRRP_AUTH,
                                 models.VRRPAuthMethod)
+        self._seed_lookup_table(session, constants.SUPPORTED_L7RULE_TYPES,
+                                models.L7RuleType)
+        self._seed_lookup_table(session,
+                                constants.SUPPORTED_L7RULE_COMPARE_TYPES,
+                                models.L7RuleCompareType)
+        self._seed_lookup_table(session, constants.SUPPORTED_L7POLICY_ACTIONS,
+                                models.L7PolicyAction)
 
     def _seed_lookup_table(self, session, name_list, model_cls):
         for name in name_list:

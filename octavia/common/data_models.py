@@ -1,4 +1,5 @@
 #    Copyright (c) 2014 Rackspace
+#    Copyright (c) 2016 Blue Box, an IBM Company
 #    All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -16,6 +17,8 @@
 import re
 
 from sqlalchemy.orm import collections
+
+from octavia.common import constants
 
 
 class BaseDataModel(object):
@@ -55,7 +58,8 @@ class BaseDataModel(object):
         # First handle all objects with their own ID, then handle subordinate
         # objects.
         if obj.__class__.__name__ in ['Member', 'Pool', 'LoadBalancer',
-                                      'Listener', 'Amphora']:
+                                      'Listener', 'Amphora', 'L7Policy',
+                                      'L7Rule']:
             return obj.__class__.__name__ + obj.id
         elif obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
             return obj.__class__.__name__ + obj.pool_id
@@ -169,7 +173,7 @@ class Pool(BaseDataModel):
                  protocol=None, lb_algorithm=None, enabled=None,
                  operating_status=None, members=None, health_monitor=None,
                  session_persistence=None, load_balancer_id=None,
-                 load_balancer=None, listeners=None):
+                 load_balancer=None, listeners=None, l7policies=None):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -184,6 +188,7 @@ class Pool(BaseDataModel):
         self.health_monitor = health_monitor
         self.session_persistence = session_persistence
         self.listeners = listeners or []
+        self.l7policies = l7policies or []
 
     def update(self, update_dict):
         for key, value in update_dict.items():
@@ -197,7 +202,6 @@ class Pool(BaseDataModel):
                 setattr(self, key, value)
 
     def delete(self):
-        # TODO(sbalukoff): Clean up L7Policies that reference this pool
         for listener in self.listeners:
             if listener.default_pool_id == self.id:
                 listener.default_pool = None
@@ -210,6 +214,11 @@ class Pool(BaseDataModel):
             if pool.id == self.id:
                 self.load_balancer.pools.remove(pool)
                 break
+        for l7policy in self.l7policies:
+            if l7policy.redirect_pool_id == self.id:
+                l7policy.action = constants.L7POLICY_ACTION_REJECT
+                l7policy.redirect_pool = None
+                l7policy.redirect_pool_id = None
 
 
 class Member(BaseDataModel):
@@ -243,7 +252,7 @@ class Listener(BaseDataModel):
                  enabled=None, provisioning_status=None, operating_status=None,
                  tls_certificate_id=None, stats=None, default_pool=None,
                  load_balancer=None, sni_containers=None, peer_port=None,
-                 pools=None):
+                 l7policies=None, pools=None):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -262,12 +271,21 @@ class Listener(BaseDataModel):
         self.load_balancer = load_balancer
         self.sni_containers = sni_containers or []
         self.peer_port = peer_port
+        self.l7policies = l7policies or []
         self.pools = pools or []
 
     def update(self, update_dict):
         for key, value in update_dict.items():
             setattr(self, key, value)
             if key == 'default_pool_id':
+                if self.default_pool is not None:
+                    l7_pool_ids = [p.redirect_pool_id for p in self.l7policies
+                                   if p.redirect_pool_id is not None and
+                                   len(p.l7rules) > 0 and p.enabled is True]
+                    old_pool = self.default_pool
+                    if old_pool.id not in l7_pool_ids:
+                        self.pools.remove(old_pool)
+                        old_pool.listeners.remove(self)
                 if value is not None:
                     pool = self._find_in_graph('Pool' + value)
                     if pool not in self.pools:
@@ -393,3 +411,126 @@ class AmphoraHealth(BaseDataModel):
         self.amphora_id = amphora_id
         self.last_update = last_update
         self.busy = busy
+
+
+class L7Rule(BaseDataModel):
+
+    def __init__(self, id=None, l7policy_id=None, type=None,
+                 compare_type=None, key=None, value=None, l7policy=None,
+                 invert=False):
+        self.id = id
+        self.l7policy_id = l7policy_id
+        self.type = type
+        self.compare_type = compare_type
+        self.key = key
+        self.value = value
+        self.l7policy = l7policy
+        self.invert = invert
+
+    def delete(self):
+        if len(self.l7policy.l7rules) == 1:
+            # l7policy should disappear from pool and listener lists. Since
+            # we are operating only on the data model, we can fake this by
+            # calling the policy's delete method.
+            self.l7policy.delete()
+        for r in self.l7policy.l7rules:
+            if r.id == self.id:
+                self.l7policy.l7rules.remove(r)
+                break
+
+
+class L7Policy(BaseDataModel):
+
+    def __init__(self, id=None, name=None, description=None, listener_id=None,
+                 action=None, redirect_pool_id=None, redirect_url=None,
+                 position=None, listener=None, redirect_pool=None,
+                 enabled=None, l7rules=None):
+        self.id = id
+        self.name = name
+        self.description = description
+        self.listener_id = listener_id
+        self.action = action
+        self.redirect_pool_id = redirect_pool_id
+        self.redirect_url = redirect_url
+        self.position = position
+        self.listener = listener
+        self.redirect_pool = redirect_pool
+        self.enabled = enabled
+        self.l7rules = l7rules or []
+
+    def _conditionally_remove_pool_links(self, pool):
+        """Removes links to the given pool from parent objects.
+
+        Note this only happens if our listener isn't referencing the pool
+        via its default_pool or another active l7policy's redirect_pool_id.
+        """
+        if (self.listener.default_pool is not None and
+                pool is not None and
+                pool.id != self.listener.default_pool.id and
+                pool in self.listener.pools):
+            listener_l7pools = [
+                p.redirect_pool for p in self.listener.l7policies
+                if p.redirect_pool is not None and
+                len(p.l7rules) > 0 and p.enabled is True and
+                p.id != self.id]
+            if pool not in listener_l7pools:
+                self.listener.pools.remove(pool)
+                pool.listeners.remove(self.listener)
+
+    def update(self, update_dict):
+        for key, value in update_dict.items():
+            if key == 'redirect_pool_id':
+                self._conditionally_remove_pool_links(self.redirect_pool)
+                self.action = constants.L7POLICY_ACTION_REDIRECT_TO_POOL
+                self.redirect_url = None
+                pool = self._find_in_graph('Pool' + value)
+                self.redirect_pool = pool
+                if len(self.l7rules) > 0 and (self.enabled is True or
+                                              ('enabled' in update_dict.keys()
+                                               and update_dict['enabled']
+                                               is True)):
+                    if pool not in self.listener.pools:
+                        self.listener.pools.append(pool)
+                    if self.listener not in pool.listeners:
+                        pool.listeners.append(self.listener)
+            elif key == 'redirect_url':
+                self.action = constants.L7POLICY_ACTION_REDIRECT_TO_URL
+                self._conditionally_remove_pool_links(self.redirect_pool)
+                self.redirect_pool = None
+                self.redirect_pool_id = None
+            elif key == 'action' and value == constants.L7POLICY_ACTION_REJECT:
+                self.redirect_url = None
+                self._conditionally_remove_pool_links(self.redirect_pool)
+                self.redirect_pool = None
+                self.redirect_pool_id = None
+            elif key == 'position':
+                self.listener.l7policies.remove(self)
+                self.listener.l7policies.insert(value - 1, self)
+            elif (key == 'enabled'
+                  and (self.action ==
+                       constants.L7POLICY_ACTION_REDIRECT_TO_POOL
+                       or ('action' in update_dict.keys()
+                           and update_dict['action'] ==
+                           constants.L7POLICY_ACTION_REDIRECT_TO_POOL))
+                  and (self.redirect_pool is not None
+                       or ('redirect_pool_id' in update_dict.keys() and
+                           self._find_in_graph(
+                               'Pool' + update_dict['redirect_pool_id'])
+                           is not None))):
+                if self.redirect_pool is None:
+                    self.redirect_pool = self._find_in_graph(
+                        'Pool' + update_dict['redirect_pool_id'])
+                self.listener.pools.append(self.redirect_pool)
+                self.redirect_pool.listeners.append(self.listener)
+            setattr(self, key, value)
+
+    def delete(self):
+        self._conditionally_remove_pool_links(self.redirect_pool)
+        if self.redirect_pool:
+            for p in self.redirect_pool.l7policies:
+                if p.id == self.id:
+                    self.redirect_pool.l7policies.remove(p)
+        for p in self.listener.l7policies:
+            if p.id == self.id:
+                self.listener.l7policies.remove(p)
+                break
