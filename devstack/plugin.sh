@@ -114,6 +114,20 @@ function octavia_configure {
 
 }
 
+function create_mgmt_network_interface {
+    id_and_mac=$(neutron port-create --name octavia-health-manager-listen-port --binding:host_id=$(hostname) lb-mgmt-net | awk '/ id | mac_address / {print $4}')
+    id_and_mac=($id_and_mac)
+    MGMT_PORT_ID=${id_and_mac[0]}
+    MGMT_PORT_MAC=${id_and_mac[1]}
+    MGMT_PORT_IP=$(neutron port-show $MGMT_PORT_ID | awk '/ "ip_address": / {print $7; exit}' | sed -e 's/"//g' -e 's/,//g' -e 's/}//g')
+    sudo ovs-vsctl -- --may-exist add-port br-int o-hm0 -- set Interface o-hm0 type=internal -- set Interface o-hm0 external-ids:iface-status=active -- set Interface o-hm0 external-ids:attached-mac=$MGMT_PORT_MAC -- set Interface o-hm0 external-ids:iface-id=$MGMT_PORT_ID
+    sudo ip link set dev o-hm0 address $MGMT_PORT_MAC
+    sudo dhclient -v o-hm0
+    iniset $OCTAVIA_CONF health_manager controller_ip_port_list $MGMT_PORT_IP:$OCTAVIA_HM_LISTEN_PORT
+    iniset $OCTAVIA_CONF health_manager bind_ip $MGMT_PORT_IP
+    iniset $OCTAVIA_CONF health_manager bind_port $OCTAVIA_HM_LISTEN_PORT
+}
+
 function build_mgmt_network {
     # Create network and attach a subnet
     OCTAVIA_AMP_NETWORK_ID=$(neutron net-create lb-mgmt-net | awk '/ id / {print $4}')
@@ -128,8 +142,7 @@ function build_mgmt_network {
     OCTAVIA_MGMT_SEC_GRP_ID=$(nova secgroup-list | awk ' / lb-mgmt-sec-grp / {print $2}')
     iniset ${OCTAVIA_CONF} controller_worker amp_secgroup_list ${OCTAVIA_MGMT_SEC_GRP_ID}
 
-    neutron router-interface-add router1 lb-mgmt-subnet
-    sudo ip route add ${OCTAVIA_MGMT_SUBNET} via $(neutron subnet-show public-subnet | awk ' / allocation_pools / {print $5}' | tr -d '",') dev br-ex
+    create_mgmt_network_interface
 }
 
 function configure_octavia_tempest {
