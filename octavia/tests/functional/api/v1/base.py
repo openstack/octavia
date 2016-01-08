@@ -56,6 +56,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         conf.config(api_handler='simulated_handler')
         conf.config(group="controller_worker",
                     network_driver='network_noop_driver')
+        conf.config(auth_strategy='noauth')
         self.lb_repo = repositories.LoadBalancerRepository()
         self.listener_repo = repositories.ListenerRepository()
         self.listener_stats_repo = repositories.ListenerStatisticsRepository()
@@ -74,8 +75,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.addCleanup(reset_pecan)
 
     def _make_app(self):
-        return pecan.testing.load_test_app({'app': pconfig.app,
-                                            'wsme': pconfig.wsme})
+        return pecan.testing.load_test_app(
+            {'app': pconfig.app, 'wsme': pconfig.wsme})
 
     def _get_full_path(self, path):
         return ''.join([self.BASE_PATH, path])

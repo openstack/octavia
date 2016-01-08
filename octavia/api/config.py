@@ -12,11 +12,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from octavia.api.v1 import hooks
+
 # Pecan Application Configurations
 # See https://pecan.readthedocs.org/en/latest/configuration.html#application-configuration # noqa
 app = {
     'root': 'octavia.api.root_controller.RootController',
     'modules': ['octavia.api'],
+    'hooks': [hooks.ContextHook()],
     'debug': False
 }
 

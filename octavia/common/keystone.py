@@ -25,6 +25,7 @@ class KeystoneSession:
 
     def __init__(self, section=constants.SERVICE_AUTH):
         self._session = None
+
         self.section = section
         ks_loading.register_auth_conf_options(cfg.CONF, self.section)
         ks_loading.register_session_conf_options(cfg.CONF, self.section)

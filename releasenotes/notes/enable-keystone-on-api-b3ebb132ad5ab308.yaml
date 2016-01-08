@@ -1,0 +1,11 @@
+---
+prelude: >
+    Support for Keystone token authentication on frontend Octavia API.
+features:
+  - After setting "auth_strategy = keystone" all incoming requests to Octavia
+    API will be verified using Keystone are they send by authenticated person.
+    By default that option is disabled because Neutron LBaaS v2 is not
+    supporting that functionality properly.
+upgrade:
+  - This feature add new configuration value "auth_strategy" which by default
+    is set for "noauth".
