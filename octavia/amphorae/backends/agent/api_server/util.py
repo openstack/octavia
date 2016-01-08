@@ -92,14 +92,13 @@ def keepalived_check_script_path():
                         'vrrp/check_script.sh')
 
 
-"""Get Listeners
-
-:returns An array with the ids of all listeners, e.g. ['123', '456', ...]
-or [] if no listeners exist
-"""
-
-
 def get_listeners():
+    """Get Listeners
+
+    :returns: An array with the ids of all listeners, e.g. ['123', '456', ...]
+    or [] if no listeners exist
+    """
+
     if os.path.exists(CONF.haproxy_amphora.base_path):
         return [f for f in os.listdir(CONF.haproxy_amphora.base_path)
                 if os.path.exists(config_path(f))]
