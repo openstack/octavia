@@ -4,7 +4,7 @@
 alembic>=0.8.0
 pecan>=1.0.0
 pbr>=1.6
-SQLAlchemy<1.1.0,>=0.9.9
+SQLAlchemy<1.1.0,>=1.0.10
 Babel>=1.3
 eventlet>=0.17.4
 requests!=2.9.0,>=2.8.1
@@ -14,7 +14,7 @@ python-neutronclient>=2.6.0
 WebOb>=1.2.3
 six>=1.9.0
 stevedore>=1.5.0 # Apache-2.0
-oslo.config>=2.7.0 # Apache-2.0
+oslo.config>=3.2.0 # Apache-2.0
 oslo.context>=0.2.0 # Apache-2.0
 oslo.db>=4.1.0 # Apache-2.0
 oslo.i18n>=1.5.0 # Apache-2.0
@@ -33,7 +33,7 @@ pyOpenSSL>=0.14
 WSME>=0.8
 Jinja2>=2.8 # BSD License (3 clause)
 paramiko>=1.13.0
-taskflow>=1.16.0
+taskflow>=1.25.0
 
 #for the amphora api
 Flask<1.0,>=0.10
