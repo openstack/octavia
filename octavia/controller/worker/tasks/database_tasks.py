@@ -770,17 +770,18 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
         self.loadbalancer_repo.update(db_apis.get_session(), loadbalancer.id,
                                       **update_dict)
 
-    def revert(self, listener, *args, **kwargs):
-        """Mark the listener ERROR since the update couldn't happen
+    def revert(self, loadbalancer, *args, **kwargs):
+        """Mark the loadbalancer ERROR since the update couldn't happen
 
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting update listener in DB "
-                     "for listener id %s"), listener.id)
-# TODO(johnsom) fix this to set the upper objects to ERROR
-        self.listener_repo.update(db_apis.get_session(), listener.id,
-                                  enabled=0)
+        LOG.warn(_LW("Reverting update loadbalancer in DB "
+                     "for loadbalancer id %s"), loadbalancer.id)
+
+        self.loadbalancer_repo.update(db_apis.get_session(),
+                                      loadbalancer.id,
+                                      provisioning_status=constants.ERROR)
 
 
 class UpdateHealthMonInDB(BaseDatabaseTask):
