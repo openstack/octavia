@@ -14,8 +14,8 @@
 #    under the License.
 import datetime
 
+from cryptography import x509
 import mock
-import six
 
 from octavia.common import data_models
 import octavia.common.exceptions as exceptions
@@ -235,10 +235,9 @@ class TestTLSParseUtils(base.TestCase):
         self.assertRaises(exceptions.NeedsPassphrase,
                           cert_parser._read_privatekey,
                           ENCRYPTED_PKCS8_CRT_KEY)
-        epkey = cert_parser._read_privatekey(
+        cert_parser._read_privatekey(
             ENCRYPTED_PKCS8_CRT_KEY,
             passphrase=ENCRYPTED_PKCS8_CRT_KEY_PASSPHRASE)
-        self.assertTrue(epkey.check())
 
     def test_validate_cert_and_key_match(self):
         self.assertTrue(
@@ -257,8 +256,10 @@ class TestTLSParseUtils(base.TestCase):
         for x509Pem in cert_parser._split_x509s(X509_IMDS):
             imds.append(cert_parser._get_x509_from_pem_bytes(x509Pem))
 
-        for i in six.moves.xrange(0, len(imds)):
-            self.assertEqual(EXPECTED_IMD_SUBJS[i], imds[i].get_subject().CN)
+        for i in range(0, len(imds)):
+            self.assertEqual(EXPECTED_IMD_SUBJS[i],
+                             imds[i].subject.get_attributes_for_oid(
+                                 x509.OID_COMMON_NAME)[0].value)
 
     def test_load_certificates(self):
         listener = sample_configs.sample_listener_tuple(tls=True, sni=True)
@@ -324,4 +325,4 @@ class TestTLSParseUtils(base.TestCase):
 
         # test the exception
         self.assertRaises(exceptions.UnreadableCert,
-                              cert_parser.get_cert_expiration, 'bad-cert-file')
+                          cert_parser.get_cert_expiration, 'bad-cert-file')

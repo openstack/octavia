@@ -14,9 +14,8 @@
 #    under the License.
 
 from cryptography.hazmat import backends
+from cryptography.hazmat.primitives import serialization
 from cryptography import x509
-from OpenSSL import crypto
-from OpenSSL import SSL
 from oslo_log import log as logging
 import six
 
@@ -44,31 +43,32 @@ def validate_cert(certificate, private_key=None,
     :param intermediates: PEM encoded intermediate certificates
     :returns: boolean
     """
-    x509 = _get_x509_from_pem_bytes(certificate)
+    cert = _get_x509_from_pem_bytes(certificate)
     if intermediates:
-        for x509pem in _split_x509s(intermediates):
-            _get_x509_from_pem_bytes(x509pem)
+        for x509Pem in _split_x509s(intermediates):
+            _get_x509_from_pem_bytes(x509Pem)
     if private_key:
-        pkey = _read_privatekey(
-            private_key, passphrase=private_key_passphrase)
-        ctx = SSL.Context(SSL.TLSv1_METHOD)
-        ctx.use_certificate(x509)
-        try:
-            ctx.use_privatekey(pkey)
-            ctx.check_privatekey()
-        except Exception:
+        pkey = _read_privatekey(private_key, passphrase=private_key_passphrase)
+        pknum = pkey.public_key().public_numbers()
+        certnum = cert.public_key().public_numbers()
+        if pknum != certnum:
             raise exceptions.MisMatchedKey
     return True
 
 
 def _read_privatekey(privatekey_pem, passphrase=None):
-    def _get_passphrase(*args):
-        if passphrase:
-            return six.b(passphrase)
-        else:
-            raise exceptions.NeedsPassphrase
-    return crypto.load_privatekey(crypto.FILETYPE_PEM, privatekey_pem,
-                                  _get_passphrase)
+    if passphrase:
+        if six.PY2:
+            passphrase = passphrase.encode("utf-8")
+        elif six.PY3:
+            passphrase = six.b(passphrase)
+
+    try:
+        pkey = privatekey_pem.encode('ascii')
+        return serialization.load_pem_private_key(pkey, passphrase,
+                                                  backends.default_backend())
+    except Exception:
+        raise exceptions.NeedsPassphrase
 
 
 def _split_x509s(xstr):
@@ -152,14 +152,16 @@ def _get_x509_from_pem_bytes(certificate_pem):
     """Parse X509 data from a PEM encoded certificate
 
     :param certificate_pem: Certificate in PEM format
-    :returns: pyOpenSSL high-level x509 data from the PEM string
+    :returns: crypto high-level x509 data from the PEM string
     """
     try:
-        x509 = crypto.load_certificate(crypto.FILETYPE_PEM,
-                                       certificate_pem)
+        certificate = certificate_pem.encode('ascii')
+
+        x509cert = x509.load_pem_x509_certificate(certificate,
+                                                  backends.default_backend())
     except Exception:
         raise exceptions.UnreadableCert
-    return x509
+    return x509cert
 
 
 def build_pem(tls_container):
