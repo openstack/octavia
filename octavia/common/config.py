@@ -266,7 +266,7 @@ core_cli_opts = []
 
 certificate_opts = [
     cfg.StrOpt('cert_manager',
-               default='local_cert_manager',
+               default='barbican_cert_manager',
                help='Name of the cert manager to use'),
     cfg.StrOpt('cert_generator',
                default='local_cert_generator',
