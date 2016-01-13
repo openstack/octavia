@@ -56,10 +56,10 @@ class MemberFlows(object):
         delete_member_flow.add(model_tasks.
                                DeleteModelObject(rebind={constants.OBJECT:
                                                          constants.MEMBER}))
-        delete_member_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
         delete_member_flow.add(database_tasks.DeleteMemberInDB(
             requires=constants.MEMBER))
+        delete_member_flow.add(amphora_driver_tasks.ListenerUpdate(
+            requires=[constants.LOADBALANCER, constants.LISTENER]))
         delete_member_flow.add(database_tasks.
                                MarkLBAndListenerActiveInDB(
                                    requires=[constants.LOADBALANCER,
