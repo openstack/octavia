@@ -13,8 +13,6 @@
 # under the License.
 #
 
-import time
-
 import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
@@ -255,13 +253,32 @@ class TestComputeTasks(base.TestCase):
         computewait = compute_tasks.ComputeWait()
         computewait.execute(COMPUTE_ID)
 
-        time.sleep.assert_called_once_with(AMP_WAIT)
-
         mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID)
 
         _amphora_mock.status = constants.DELETED
 
         self.assertRaises(exceptions.ComputeWaitTimeoutException,
+                          computewait.execute,
+                          _amphora_mock)
+
+    @mock.patch('stevedore.driver.DriverManager.driver')
+    @mock.patch('time.sleep')
+    def test_compute_wait_error_status(self, mock_time_sleep, mock_driver):
+
+        _amphora_mock.compute_id = COMPUTE_ID
+        _amphora_mock.status = constants.ACTIVE
+        _amphora_mock.lb_network_ip = LB_NET_IP
+
+        mock_driver.get_amphora.return_value = _amphora_mock
+
+        computewait = compute_tasks.ComputeWait()
+        computewait.execute(COMPUTE_ID)
+
+        mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID)
+
+        _amphora_mock.status = constants.ERROR
+
+        self.assertRaises(exceptions.ComputeBuildException,
                           computewait.execute,
                           _amphora_mock)
 
