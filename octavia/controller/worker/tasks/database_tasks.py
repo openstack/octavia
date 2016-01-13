@@ -892,8 +892,9 @@ class UpdatePoolInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Update DB for pool id: %s ", pool.id)
-        self.pool_repo.update(db_apis.get_session(), pool.id,
-                              **update_dict)
+        sp_dict = update_dict.pop('session_persistence', None)
+        self.repos.update_pool_on_listener(db_apis.get_session(), pool.id,
+                                           update_dict, sp_dict)
 
     def revert(self, pool, *args, **kwargs):
         """Mark the pool ERROR since the update couldn't happen
@@ -904,8 +905,8 @@ class UpdatePoolInDB(BaseDatabaseTask):
         LOG.warn(_LW("Reverting update pool in DB "
                      "for pool id %s"), pool.id)
 # TODO(johnsom) fix this to set the upper ojects to ERROR
-        self.pool_repo.update(db_apis.get_session(), pool.id,
-                              enabled=0)
+        self.repos.update_pool_on_listener(db_apis.get_session(),
+                                           pool.id, {'enabled': 0}, None)
 
 
 class GetUpdatedFailoverAmpNetworkDetailsAsList(BaseDatabaseTask):
