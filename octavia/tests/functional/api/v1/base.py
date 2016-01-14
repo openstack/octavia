@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
-
 import mock
 import pecan
 import pecan.testing
@@ -23,9 +21,6 @@ from octavia.common import constants
 from octavia.db import api as db_api
 from octavia.db import repositories
 from octavia.tests.functional.db import base as base_db_test
-
-
-LOG = logging.getLogger(__name__)
 
 
 class BaseAPITest(base_db_test.OctaviaDBTestBase):

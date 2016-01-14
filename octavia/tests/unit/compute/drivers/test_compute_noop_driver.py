@@ -12,14 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
 from oslo_utils import uuidutils
 
 from octavia.compute.drivers.noop_driver import driver as driver
 import octavia.tests.unit.base as base
-
-
-LOG = logging.getLogger(__name__)
 
 
 class TestNoopComputeDriver(base.TestCase):

@@ -13,14 +13,10 @@
 # under the License.
 #
 
-import logging
-
 from taskflow import task
 
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
-
-LOG = logging.getLogger(__name__)
 
 
 class BaseControllerTask(task.Task):

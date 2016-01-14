@@ -20,13 +20,10 @@ import random
 import time
 
 from oslo_config import cfg
-from oslo_log import log as logging
 from stevedore import driver as stevedore_driver
 
 from octavia.certificates.generator import cert_gen
 
-
-LOG = logging.getLogger(__name__)
 
 MAX_ATTEMPTS = 10
 

@@ -20,7 +20,6 @@ reference
 import datetime
 
 from oslo_config import cfg
-from oslo_log import log as logging
 from oslo_utils import uuidutils
 
 from octavia.common import constants
@@ -29,7 +28,6 @@ from octavia.db import models
 
 
 CONF = cfg.CONF
-LOG = logging.getLogger(__name__)
 CONF.import_group('health_manager', 'octavia.common.config')
 CONF.import_group('house_keeping', 'octavia.common.config')
 
