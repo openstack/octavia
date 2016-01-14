@@ -61,7 +61,7 @@ class ModelTestMixin(object):
         kwargs = {'project_id': self.FAKE_UUID_1,
                   'id': self.FAKE_UUID_1,
                   'protocol': constants.PROTOCOL_HTTP,
-                  'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                  'lb_algorithm': constants.LB_ALGORITHM_LEAST_CONNECTIONS,
                   'operating_status': constants.ONLINE,
                   'enabled': True}
         kwargs.update(overrides)
@@ -773,7 +773,8 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertEqual(self.FAKE_UUID_1, pool.project_id)
         self.assertEqual(self.FAKE_UUID_1, pool.id)
         self.assertEqual(constants.PROTOCOL_HTTP, pool.protocol)
-        self.assertEqual(constants.LB_ALGORITHM_ROUND_ROBIN, pool.lb_algorithm)
+        self.assertEqual(constants.LB_ALGORITHM_LEAST_CONNECTIONS,
+                         pool.lb_algorithm)
         self.assertEqual(constants.ONLINE, pool.operating_status)
         self.assertTrue(pool.enabled)
 

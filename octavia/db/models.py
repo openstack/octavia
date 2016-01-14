@@ -197,7 +197,7 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin):
         sa.ForeignKey("protocol.name", name="fk_pool_protocol_name"),
         nullable=False)
     lb_algorithm = sa.Column(
-        sa.String(16),
+        sa.String(255),
         sa.ForeignKey("algorithm.name", name="fk_pool_algorithm_name"),
         nullable=False)
     operating_status = sa.Column(
