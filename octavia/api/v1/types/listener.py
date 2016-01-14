@@ -15,6 +15,7 @@
 from wsme import types as wtypes
 
 from octavia.api.v1.types import base
+from octavia.common import constants
 
 
 class TLSTermination(base.BaseType):
@@ -46,7 +47,8 @@ class ListenerPOST(base.BaseType):
     name = wtypes.wsattr(wtypes.StringType(max_length=255))
     description = wtypes.wsattr(wtypes.StringType(max_length=255))
     enabled = wtypes.wsattr(bool, default=True)
-    protocol = wtypes.wsattr(wtypes.StringType(), mandatory=True)
+    protocol = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROTOCOLS),
+                             mandatory=True)
     protocol_port = wtypes.wsattr(wtypes.IntegerType(), mandatory=True)
     connection_limit = wtypes.wsattr(wtypes.IntegerType())
     tls_certificate_id = wtypes.wsattr(wtypes.StringType(max_length=255))
@@ -60,7 +62,7 @@ class ListenerPUT(base.BaseType):
     name = wtypes.wsattr(wtypes.StringType(max_length=255))
     description = wtypes.wsattr(wtypes.StringType(max_length=255))
     enabled = wtypes.wsattr(bool)
-    protocol = wtypes.wsattr(wtypes.StringType())
+    protocol = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROTOCOLS))
     protocol_port = wtypes.wsattr(wtypes.IntegerType())
     connection_limit = wtypes.wsattr(wtypes.IntegerType())
     tls_certificate_id = wtypes.wsattr(wtypes.StringType(max_length=255))

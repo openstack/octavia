@@ -31,7 +31,7 @@ class TestSessionPersistence(object):
         self.assertIsNotNone(sp.type)
 
     def test_invalid_type(self):
-        body = {"type": 10}
+        body = {"type": "source_ip"}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
@@ -75,13 +75,14 @@ class TestPoolPOST(base.BaseTypesTest):
                           body)
 
     def test_invalid_protocol(self):
-        body = {"protocol": 10,
+        body = {"protocol": "http",
                 "lb_algorithm": constants.LB_ALGORITHM_ROUND_ROBIN}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
     def test_invalid_lb_algorithm(self):
-        body = {"protocol": constants.PROTOCOL_HTTP, "lb_algorithm": 10}
+        body = {"protocol": constants.PROTOCOL_HTTP,
+                "lb_algorithm": "source_ip"}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
@@ -106,7 +107,7 @@ class TestPoolPUT(base.BaseTypesTest):
                           body)
 
     def test_invalid_lb_algorithm(self):
-        body = {"lb_algorithm": 10}
+        body = {"lb_algorithm": "source_ip"}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 

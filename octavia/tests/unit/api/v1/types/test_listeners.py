@@ -44,7 +44,7 @@ class TestListener(object):
                           body)
 
     def test_invalid_protocol(self):
-        body = {"protocol": 10, "protocol_port": 80}
+        body = {"protocol": "http", "protocol_port": 80}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
