@@ -21,14 +21,11 @@ import abc
 
 from barbicanclient import client as barbican_client
 from oslo_config import cfg
-from oslo_log import log as logging
 import six
 
 from octavia.certificates.common import cert
 from octavia.i18n import _LE
 
-
-LOG = logging.getLogger(__name__)
 
 CONF = cfg.CONF
 

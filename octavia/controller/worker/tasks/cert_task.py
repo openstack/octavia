@@ -13,16 +13,13 @@
 # under the License.
 #
 
-
-import logging
-
 from oslo_config import cfg
 from stevedore import driver as stevedore_driver
 from taskflow import task
 
+
 CONF = cfg.CONF
 CONF.import_group('controller_worker', 'octavia.common.config')
-LOG = logging.getLogger(__name__)
 CERT_VALIDITY = 2 * 365 * 24 * 60 * 60
 
 

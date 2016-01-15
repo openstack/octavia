@@ -12,12 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
 
 from octavia.network import data_models as network_models
-
-
-LOG = logging.getLogger(__name__)
 
 
 def convert_subnet_dict_to_model(subnet_dict):

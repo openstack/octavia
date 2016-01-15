@@ -14,7 +14,6 @@
 
 import mock
 from oslo_config import cfg
-from oslo_log import log as logging
 from oslo_utils import uuidutils
 
 from octavia.controller.healthmanager import health_manager as healthmanager
@@ -22,7 +21,6 @@ import octavia.tests.unit.base as base
 
 
 CONF = cfg.CONF
-LOG = logging.getLogger(__name__)
 CONF.import_group('health_manager', 'octavia.common.config')
 
 AMPHORA_ID = uuidutils.generate_uuid()

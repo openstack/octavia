@@ -12,7 +12,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import logging
 
 import flask
 import six
@@ -25,8 +24,6 @@ from octavia.amphorae.backends.agent.api_server import keepalived
 from octavia.amphorae.backends.agent.api_server import listener
 from octavia.amphorae.backends.agent.api_server import plug
 
-
-LOG = logging.getLogger(__name__)
 
 app = flask.Flask(__name__)
 

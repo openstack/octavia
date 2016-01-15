@@ -12,15 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from oslo_log import log as logging
-
 from octavia.amphorae.drivers import driver_base as driver_base
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
 
 import six
-
-LOG = logging.getLogger(__name__)
 
 
 class UpdateStatsMixin(driver_base.StatsMixin):

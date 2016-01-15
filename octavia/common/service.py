@@ -17,8 +17,6 @@ from oslo_log import log
 
 from octavia.common import config
 
-LOG = log.getLogger(__name__)
-
 
 def prepare_service(argv=None):
     """Sets global config from config file and sets up logging."""

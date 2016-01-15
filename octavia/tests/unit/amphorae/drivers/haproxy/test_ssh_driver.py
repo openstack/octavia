@@ -16,7 +16,6 @@ import os
 
 import mock
 from oslo_config import cfg
-from oslo_log import log
 from oslo_utils import uuidutils
 import paramiko
 
@@ -31,8 +30,6 @@ from octavia.network import data_models as network_models
 from octavia.tests.unit import base
 from octavia.tests.unit.common.sample_configs import sample_configs
 
-
-LOG = log.getLogger(__name__)
 
 MOCK_NETWORK_ID = '1'
 MOCK_SUBNET_ID = '2'

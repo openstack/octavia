@@ -16,7 +16,6 @@
 
 # make sure PYTHONPATH includes the home directory if you didn't install
 
-import logging
 import multiprocessing as multiproc
 import os
 import ssl
@@ -31,7 +30,7 @@ from octavia.amphorae.backends.health_daemon import health_daemon
 from octavia.common import service
 from octavia import version
 
-LOG = logging.getLogger(__name__)
+
 CONF = cfg.CONF
 CONF.import_group('amphora_agent', 'octavia.common.config')
 CONF.import_group('haproxy_amphora', 'octavia.common.config')
