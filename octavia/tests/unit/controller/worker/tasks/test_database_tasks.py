@@ -1043,3 +1043,67 @@ class TestDatabaseTasks(base.TestCase):
         mock_listener_repo_update.assert_called_once_with(
             'TEST', _listener_mock.id,
             peer_port=None)
+
+    @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
+    def test_disable_amphora_health_monitoring(self,
+                                               mock_amp_health_repo_delete,
+                                               mock_generate_uuid,
+                                               mock_LOG,
+                                               mock_get_session,
+                                               mock_loadbalancer_repo_update,
+                                               mock_listener_repo_update,
+                                               mock_amphora_repo_update,
+                                               mock_amphora_repo_delete):
+        disable_amp_health = database_tasks.DisableAmphoraHealthMonitoring()
+        disable_amp_health.execute(_amphora_mock)
+        mock_amp_health_repo_delete.assert_called_once_with(
+            'TEST', amphora_id=AMP_ID)
+
+    @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
+    def test_disable_lb_amphorae_health_monitoring(
+            self,
+            mock_amp_health_repo_delete,
+            mock_generate_uuid,
+            mock_LOG,
+            mock_get_session,
+            mock_loadbalancer_repo_update,
+            mock_listener_repo_update,
+            mock_amphora_repo_update,
+            mock_amphora_repo_delete):
+        disable_amp_health = (
+            database_tasks.DisableLBAmphoraeHealthMonitoring())
+        disable_amp_health.execute(_loadbalancer_mock)
+        mock_amp_health_repo_delete.assert_called_once_with(
+            'TEST', amphora_id=AMP_ID)
+
+    @mock.patch('octavia.db.repositories.AmphoraHealthRepository.update')
+    def test_mark_amphora_health_monitoring_busy(self,
+                                                 mock_amp_health_repo_update,
+                                                 mock_generate_uuid,
+                                                 mock_LOG,
+                                                 mock_get_session,
+                                                 mock_loadbalancer_repo_update,
+                                                 mock_listener_repo_update,
+                                                 mock_amphora_repo_update,
+                                                 mock_amphora_repo_delete):
+        mark_busy = database_tasks.MarkAmphoraHealthBusy()
+        mark_busy.execute(_amphora_mock)
+        mock_amp_health_repo_update.assert_called_once_with(
+            'TEST', amphora_id=AMP_ID, busy=True)
+
+    @mock.patch('octavia.db.repositories.AmphoraHealthRepository.update')
+    def test_mark_lb_amphorae_health_monitoring_busy(
+            self,
+            mock_amp_health_repo_update,
+            mock_generate_uuid,
+            mock_LOG,
+            mock_get_session,
+            mock_loadbalancer_repo_update,
+            mock_listener_repo_update,
+            mock_amphora_repo_update,
+            mock_amphora_repo_delete):
+        mark_busy = (
+            database_tasks.MarkLBAmphoraeHealthBusy())
+        mark_busy.execute(_loadbalancer_mock)
+        mock_amp_health_repo_update.assert_called_once_with(
+            'TEST', amphora_id=AMP_ID, busy=True)

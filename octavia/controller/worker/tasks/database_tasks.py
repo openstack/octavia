@@ -17,6 +17,7 @@ import logging
 
 from oslo_config import cfg
 from oslo_utils import uuidutils
+import sqlalchemy
 from taskflow import task
 from taskflow.types import failure
 
@@ -43,7 +44,35 @@ class BaseDatabaseTask(task.Task):
         self.loadbalancer_repo = repo.LoadBalancerRepository()
         self.member_repo = repo.MemberRepository()
         self.pool_repo = repo.PoolRepository()
+        self.amp_health_repo = repo.AmphoraHealthRepository()
         super(BaseDatabaseTask, self).__init__(**kwargs)
+
+    def _delete_from_amp_health(self, amphora_id):
+        """Delete the amphora_health record for an amphora.
+
+        :param amphora_id: The amphora id to delete
+        """
+        LOG.debug('Disabling health monitoring on amphora: %s', amphora_id)
+        try:
+            self.amp_health_repo.delete(db_apis.get_session(),
+                                        amphora_id=amphora_id)
+        except sqlalchemy.orm.exc.NoResultFound:
+            LOG.debug('No existing amphora health record to delete '
+                      'for amphora: %s, skipping.', amphora_id)
+
+    def _mark_amp_health_busy(self, amphora_id):
+        """Mark the amphora_health record busy for an amphora.
+
+        :param amphora_id: The amphora id to mark busy
+        """
+        LOG.debug('Marking health monitoring busy on amphora: %s', amphora_id)
+        try:
+            self.amp_health_repo.update(db_apis.get_session(),
+                                        amphora_id=amphora_id,
+                                        busy=True)
+        except sqlalchemy.orm.exc.NoResultFound:
+            LOG.debug('No existing amphora health record to mark busy '
+                      'for amphora: %s, skipping.', amphora_id)
 
 
 class CreateAmphoraInDB(BaseDatabaseTask):
@@ -985,3 +1014,65 @@ class AllocateListenerPeerPort(BaseDatabaseTask):
         """
         self.listener_repo.update(db_apis.get_session(), listener.id,
                                   peer_port=None)
+
+
+class DisableAmphoraHealthMonitoring(BaseDatabaseTask):
+    """Disable amphora health monitoring.
+
+    This disables amphora health monitoring by removing it from
+    the amphora_health table.
+    """
+
+    def execute(self, amphora):
+        """Disable health monitoring for an amphora
+
+        :param amphora: The amphora to disable health monitoring for
+        """
+        self._delete_from_amp_health(amphora.id)
+
+
+class DisableLBAmphoraeHealthMonitoring(BaseDatabaseTask):
+    """Disable health monitoring on the LB amphorae.
+
+    This disables amphora health monitoring by removing it from
+    the amphora_health table for each amphora on a load balancer.
+    """
+
+    def execute(self, loadbalancer):
+        """Disable health monitoring for amphora on a load balancer
+
+        :param loadbalancer: The load balancer to disable health monitoring on
+        """
+        for amphora in loadbalancer.amphorae:
+            self._delete_from_amp_health(amphora.id)
+
+
+class MarkAmphoraHealthBusy(BaseDatabaseTask):
+    """Mark amphora health monitoring busy.
+
+    This prevents amphora failover by marking the amphora busy in
+    the amphora_health table.
+    """
+
+    def execute(self, amphora):
+        """Mark amphora health monitoring busy
+
+        :param amphora: The amphora to mark amphora health busy
+        """
+        self._mark_amp_health_busy(amphora.id)
+
+
+class MarkLBAmphoraeHealthBusy(BaseDatabaseTask):
+    """Mark amphora health monitoring busy for the LB.
+
+    This prevents amphora failover by marking the amphora busy in
+    the amphora_health table for each load balancer.
+    """
+
+    def execute(self, loadbalancer):
+        """Marks amphora health busy for amphora on a load balancer
+
+        :param loadbalancer: The load balancer to mark amphora health busy
+        """
+        for amphora in loadbalancer.amphorae:
+            self._mark_amp_health_busy(amphora.id)
