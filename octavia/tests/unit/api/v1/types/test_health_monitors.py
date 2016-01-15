@@ -26,7 +26,7 @@ class TestHealthMonitor(object):
     _type = None
 
     def test_invalid_type(self):
-        body = {"type": 10, "delay": 1, "timeout": 1, "fall_threshold": 1}
+        body = {"type": "http", "delay": 1, "timeout": 1, "fall_threshold": 1}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 

@@ -15,6 +15,7 @@
 from wsme import types as wtypes
 
 from octavia.api.v1.types import base
+from octavia.common import constants
 
 
 class HealthMonitorResponse(base.BaseType):
@@ -33,7 +34,9 @@ class HealthMonitorResponse(base.BaseType):
 
 class HealthMonitorPOST(base.BaseType):
     """Defines mandatory and optional attributes of a POST request."""
-    type = wtypes.wsattr(wtypes.text, mandatory=True)
+    type = wtypes.wsattr(
+        wtypes.Enum(str, *constants.SUPPORTED_HEALTH_MONITOR_TYPES),
+        mandatory=True)
     delay = wtypes.wsattr(wtypes.IntegerType(), mandatory=True)
     timeout = wtypes.wsattr(wtypes.IntegerType(), mandatory=True)
     fall_threshold = wtypes.wsattr(wtypes.IntegerType(), mandatory=True)
@@ -47,7 +50,8 @@ class HealthMonitorPOST(base.BaseType):
 
 class HealthMonitorPUT(base.BaseType):
     """Defines attributes that are acceptable of a PUT request."""
-    type = wtypes.wsattr(wtypes.text)
+    type = wtypes.wsattr(
+        wtypes.Enum(str, *constants.SUPPORTED_HEALTH_MONITOR_TYPES))
     delay = wtypes.wsattr(wtypes.IntegerType())
     timeout = wtypes.wsattr(wtypes.IntegerType())
     fall_threshold = wtypes.wsattr(wtypes.IntegerType())

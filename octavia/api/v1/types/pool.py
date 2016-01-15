@@ -15,6 +15,7 @@
 from wsme import types as wtypes
 
 from octavia.api.v1.types import base
+from octavia.common import constants
 
 
 class SessionPersistenceResponse(base.BaseType):
@@ -25,13 +26,14 @@ class SessionPersistenceResponse(base.BaseType):
 
 class SessionPersistencePOST(base.BaseType):
     """Defines mandatory and optional attributes of a POST request."""
-    type = wtypes.wsattr(wtypes.text, mandatory=True)
+    type = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_SP_TYPES),
+                         mandatory=True)
     cookie_name = wtypes.wsattr(wtypes.text)
 
 
 class SessionPersistencePUT(base.BaseType):
     """Defines attributes that are acceptable of a PUT request."""
-    type = wtypes.wsattr(wtypes.text)
+    type = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_SP_TYPES))
     cookie_name = wtypes.wsattr(wtypes.text)
 
 
@@ -54,8 +56,12 @@ class PoolPOST(base.BaseType):
     name = wtypes.wsattr(wtypes.StringType(max_length=255))
     description = wtypes.wsattr(wtypes.StringType(max_length=255))
     enabled = wtypes.wsattr(bool, default=True)
-    protocol = wtypes.wsattr(wtypes.text, mandatory=True)
+    protocol = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROTOCOLS),
+                             mandatory=True)
     lb_algorithm = wtypes.wsattr(wtypes.text, mandatory=True)
+    lb_algorithm = wtypes.wsattr(
+        wtypes.Enum(str, *constants.SUPPORTED_LB_ALGORITHMS),
+        mandatory=True)
     session_persistence = wtypes.wsattr(SessionPersistencePOST)
     project_id = wtypes.wsattr(wtypes.UuidType())
 
@@ -65,6 +71,7 @@ class PoolPUT(base.BaseType):
     name = wtypes.wsattr(wtypes.StringType())
     description = wtypes.wsattr(wtypes.StringType())
     enabled = wtypes.wsattr(bool)
-    protocol = wtypes.wsattr(wtypes.text)
-    lb_algorithm = wtypes.wsattr(wtypes.text)
+    protocol = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROTOCOLS))
+    lb_algorithm = wtypes.wsattr(
+        wtypes.Enum(str, *constants.SUPPORTED_LB_ALGORITHMS))
     session_persistence = wtypes.wsattr(SessionPersistencePUT)
