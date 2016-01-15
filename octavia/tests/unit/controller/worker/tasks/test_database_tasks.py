@@ -910,9 +910,10 @@ class TestDatabaseTasks(base.TestCase):
             MEMBER_ID,
             enabled=0)
 
-    @mock.patch('octavia.db.repositories.PoolRepository.update')
+    @mock.patch(
+        'octavia.db.repositories.Repositories.update_pool_on_listener')
     def test_update_pool_in_db(self,
-                               mock_pool_repo_update,
+                               mock_repos_pool_update,
                                mock_generate_uuid,
                                mock_LOG,
                                mock_get_session,
@@ -921,25 +922,28 @@ class TestDatabaseTasks(base.TestCase):
                                mock_amphora_repo_update,
                                mock_amphora_repo_delete):
 
+        sp_dict = {'type': 'SOURCE_IP', 'cookie_name': None}
+        update_dict = {'name': 'test', 'description': 'test2',
+                       'session_persistence': sp_dict}
         update_pool = database_tasks.UpdatePoolInDB()
         update_pool.execute(self.pool_mock,
-                            {'name': 'test', 'description': 'test2'})
+                            update_dict)
 
-        repo.PoolRepository.update.assert_called_once_with(
+        repo.Repositories.update_pool_on_listener.assert_called_once_with(
             'TEST',
             POOL_ID,
-            name='test', description='test2')
+            update_dict, sp_dict)
 
         # Test the revert
 
-        mock_pool_repo_update.reset_mock()
+        mock_repos_pool_update.reset_mock()
         update_pool.revert(self.pool_mock)
 
 # TODO(johnsom) fix this to set the upper ojects to ERROR
-        repo.PoolRepository.update.assert_called_once_with(
+        repo.Repositories.update_pool_on_listener.assert_called_once_with(
             'TEST',
             POOL_ID,
-            enabled=0)
+            {'enabled': 0}, None)
 
     def test_mark_amphora_role_indb(self,
                                     mock_generate_uuid,
