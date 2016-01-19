@@ -3,6 +3,7 @@ set -eux
 
 install-packages libffi-dev libssl-dev
 cd /opt/amphora-agent/
+git checkout stable/liberty
 pip install -r requirements.txt
 python setup.py install
 cp etc/init/amphora-agent.conf /etc/init/
