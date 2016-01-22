@@ -34,6 +34,11 @@ AAP_EXT_ALIAS = 'allowed-address-pairs'
 VIP_SECURITY_GRP_PREFIX = 'lb-'
 OCTAVIA_OWNER = 'Octavia'
 
+CONF = cfg.CONF
+CONF.import_group('nova', 'octavia.common.config')
+CONF.import_group('controller_worker', 'octavia.common.config')
+CONF.import_group('networking', 'octavia.common.config')
+
 
 class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
@@ -41,8 +46,11 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         super(AllowedAddressPairsDriver, self).__init__()
         self._check_aap_loaded()
         self.nova_client = clients.NovaAuth.get_nova_client(
-            cfg.CONF.os_region_name, service_name=cfg.CONF.nova.service_name,
-            endpoint=cfg.CONF.nova.endpoint)
+            endpoint=CONF.nova.endpoint,
+            region=CONF.nova.region_name,
+            endpoint_type=CONF.nova.endpoint_type,
+            service_name=CONF.nova.service_name,
+        )
 
     def _check_aap_loaded(self):
         aliases = [ext.get('alias') for ext in self._extensions]
@@ -131,7 +139,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
         # Currently we are using the VIP network for VRRP
         # so we need to open up the protocols for it
-        if (cfg.CONF.controller_worker.loadbalancer_topology ==
+        if (CONF.controller_worker.loadbalancer_topology ==
                 constants.TOPOLOGY_ACTIVE_STANDBY):
             try:
                 self._create_security_group_rule(
@@ -178,7 +186,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         a neutron port does not happen immediately.
         """
         attempts = 0
-        while attempts <= cfg.CONF.networking.max_retries:
+        while attempts <= CONF.networking.max_retries:
             try:
                 self.neutron_client.delete_security_group(sec_grp)
                 LOG.info(_LI("Deleted security group %s"), sec_grp)
@@ -192,7 +200,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                                 "%(sg)s failed."),
                             {'attempt': attempts + 1, 'sg': sec_grp})
             attempts += 1
-            time.sleep(cfg.CONF.networking.retry_interval)
+            time.sleep(CONF.networking.retry_interval)
         message = _LE("All attempts to remove security group {0} have "
                       "failed.").format(sec_grp)
         LOG.exception(message)

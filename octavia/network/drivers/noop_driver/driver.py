@@ -127,7 +127,7 @@ class NoopManager(object):
 
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
-    def __init__(self, region=None):
+    def __init__(self):
         super(NoopNetworkDriver, self).__init__()
         self.driver = NoopManager()
 

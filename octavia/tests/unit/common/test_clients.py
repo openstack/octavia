@@ -41,7 +41,8 @@ class TestNovaAuth(base.TestCase):
 
         # Mock out the keystone session and get the client
         keystone._SESSION = mock.MagicMock()
-        bc1 = clients.NovaAuth.get_nova_client(region=None)
+        bc1 = clients.NovaAuth.get_nova_client(region=None,
+                                               endpoint_type='publicURL')
 
         # Our returned client should also be the saved client
         self.assertIsInstance(
@@ -56,7 +57,7 @@ class TestNovaAuth(base.TestCase):
         # Getting the session again should return the same object
         bc2 = clients.NovaAuth.get_nova_client(
             region="test-region", service_name='novaEndpoint1',
-            endpoint="test-endpoint")
+            endpoint="test-endpoint", endpoint_type='adminURL')
         self.assertIs(bc1, bc2)
 
 
@@ -79,7 +80,8 @@ class TestNeutronAuth(base.TestCase):
 
         # Mock out the keystone session and get the client
         keystone._SESSION = mock.MagicMock()
-        bc1 = clients.NeutronAuth.get_neutron_client(region=None)
+        bc1 = clients.NeutronAuth.get_neutron_client(
+            region=None, endpoint_type='publicURL')
 
         # Our returned client should also be the saved client
         self.assertIsInstance(
@@ -94,5 +96,5 @@ class TestNeutronAuth(base.TestCase):
         # Getting the session again should return the same object
         bc2 = clients.NeutronAuth.get_neutron_client(
             region="test-region", service_name="neutronEndpoint1",
-            endpoint="test-endpoint")
+            endpoint="test-endpoint", endpoint_type='publicURL')
         self.assertIs(bc1, bc2)
