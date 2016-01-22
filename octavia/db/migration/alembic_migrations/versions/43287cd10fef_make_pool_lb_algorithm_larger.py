@@ -29,5 +29,15 @@ import sqlalchemy as sa
 
 
 def upgrade():
+    op.drop_constraint(
+        u'fk_pool_algorithm_name', u'pool',
+        type_=u'foreignkey'
+    )
+    op.alter_column(u'algorithm', u'name', nullable=False,
+                    existing_type=sa.String(255))
     op.alter_column(u'pool', u'lb_algorithm', nullable=False,
                     existing_type=sa.String(255))
+    op.create_foreign_key(
+        u'fk_pool_algorithm_name', u'pool',
+        u'algorithm', [u'lb_algorithm'], [u'name']
+    )
