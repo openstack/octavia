@@ -284,7 +284,13 @@ certificate_opts = [
                help='Name of the cert generator to use'),
     cfg.StrOpt('barbican_auth',
                default='barbican_acl_auth',
-               help='Name of the Barbican authentication method to use')
+               help='Name of the Barbican authentication method to use'),
+    cfg.StrOpt('region_name',
+               help='Region in Identity service catalog to use for '
+                    'communication with the barbican service.'),
+    cfg.StrOpt('endpoint_type',
+               default='publicURL',
+               help='The endpoint_type to be used for barbican service.')
 ]
 
 house_keeping_opts = [
