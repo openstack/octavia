@@ -27,7 +27,7 @@ def sample_amphora_tuple():
 
 RET_PERSISTENCE = {
     'type': 'HTTP_COOKIE',
-    'cookie_name': 'HTTP_COOKIE'}
+    'cookie_name': None}
 
 RET_MONITOR = {
     'id': 'sample_monitor_id_1',
@@ -187,8 +187,8 @@ def sample_vip_tuple():
 
 
 def sample_listener_tuple(proto=None, monitor=True, persistence=True,
-                          persistence_type=None, tls=False, sni=False,
-                          peer_port=None, topology=None):
+                          persistence_type=None, persistence_cookie=None,
+                          tls=False, sni=False, peer_port=None, topology=None):
     proto = 'HTTP' if proto is None else proto
     topology = 'SINGLE' if topology is None else topology
     port = '443' if proto is 'HTTPS' or proto is 'TERMINATED_HTTPS' else '80'
@@ -208,7 +208,8 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
         peer_port=peer_port,
         default_pool=sample_pool_tuple(
             proto=proto, monitor=monitor, persistence=persistence,
-            persistence_type=persistence_type),
+            persistence_type=persistence_type,
+            persistence_cookie=persistence_cookie),
         connection_limit=98,
         tls_certificate_id='cont_id_1' if tls else '',
         sni_container_ids=['cont_id_2', 'cont_id_3'] if sni else [],
@@ -256,14 +257,15 @@ def sample_tls_container_tuple(id='cont_id_1', certificate=None,
 
 
 def sample_pool_tuple(proto=None, monitor=True, persistence=True,
-                      persistence_type=None):
+                      persistence_type=None, persistence_cookie=None):
     proto = 'HTTP' if proto is None else proto
     in_pool = collections.namedtuple(
         'pool', 'id, protocol, lb_algorithm, members, health_monitor,'
                 'session_persistence, enabled, operating_status')
     mon = sample_health_monitor_tuple(proto=proto) if monitor is True else None
     persis = sample_session_persistence_tuple(
-        persistence_type=persistence_type) if persistence is True else None
+        persistence_type=persistence_type,
+        persistence_cookie=persistence_cookie) if persistence is True else None
     return in_pool(
         id='sample_pool_id_1',
         protocol=proto,
@@ -291,12 +293,13 @@ def sample_member_tuple(id, ip, enabled=True, operating_status='ACTIVE'):
         operating_status=operating_status)
 
 
-def sample_session_persistence_tuple(persistence_type=None):
+def sample_session_persistence_tuple(persistence_type=None,
+                                     persistence_cookie=None):
     spersistence = collections.namedtuple('SessionPersistence',
                                           'type, cookie_name')
     pt = 'HTTP_COOKIE' if persistence_type is None else persistence_type
     return spersistence(type=pt,
-                        cookie_name=pt)
+                        cookie_name=persistence_cookie)
 
 
 def sample_health_monitor_tuple(proto='HTTP'):

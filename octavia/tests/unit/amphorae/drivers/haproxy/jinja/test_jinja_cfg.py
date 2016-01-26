@@ -238,6 +238,29 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs.sample_base_expected_config(backend=be),
             rendered_obj)
 
+    def test_render_template_appcookie_persistence(self):
+        be = ("backend sample_pool_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    stick-table type string len 64 size 10k\n"
+              "    stick store-response res.cook(JSESSIONID)\n"
+              "    stick match req.cook(JSESSIONID)\n"
+              "    timeout check 31\n"
+              "    option httpchk GET /index.html\n"
+              "    http-check expect rstatus 418\n"
+              "    option forwardfor\n"
+              "    server sample_member_id_1 10.0.0.99:82 "
+              "weight 13 check inter 30s fall 3 rise 2\n"
+              "    server sample_member_id_2 10.0.0.98:82 "
+              "weight 13 check inter 30s fall 3 rise 2\n\n")
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_listener_tuple(
+                persistence_type='APP_COOKIE',
+                persistence_cookie='JSESSIONID'))
+        self.assertEqual(
+            sample_configs.sample_base_expected_config(backend=be),
+            rendered_obj)
+
     def test_transform_session_persistence(self):
         in_persistence = sample_configs.sample_session_persistence_tuple()
         ret = self.jinja_cfg._transform_session_persistence(in_persistence)
