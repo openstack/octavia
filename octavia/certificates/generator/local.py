@@ -171,6 +171,7 @@ class LocalCertGenerator(cert_gen.CertGenerator):
         csr.set_pubkey(pk)
         subject = csr.get_subject()
         subject.CN = cn
+        csr.sign(pk, CONF.certificates.signing_digest)
         return crypto.dump_certificate_request(
             crypto.FILETYPE_PEM,
             csr
