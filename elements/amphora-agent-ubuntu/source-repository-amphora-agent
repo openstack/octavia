@@ -1,0 +1,2 @@
+# This is temporary until we have a pip package
+amphora-agent git /opt/amphora-agent https://review.openstack.org/openstack/octavia

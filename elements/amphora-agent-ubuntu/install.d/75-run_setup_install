@@ -5,7 +5,7 @@ install-packages libffi-dev libssl-dev
 cd /opt/amphora-agent/
 pip install -r requirements.txt
 python setup.py install
-cp etc/initd/amphora-agent /etc/init.d/
+cp etc/init/amphora-agent.conf /etc/init/
 mkdir /etc/octavia
 # we assume certs, etc will come in through the config drive
 mkdir /etc/octavia/certs
