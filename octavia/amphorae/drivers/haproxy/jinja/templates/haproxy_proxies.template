@@ -76,6 +76,14 @@ backend {{ pool.id }}
     stick-table type ip size {{ pool.stick_size }}
 {% endif %}
     stick on src
+{% elif pool.session_persistence.type == constants.SESSION_PERSISTENCE_APP_COOKIE %}
+{% if listener.topology == constants.TOPOLOGY_ACTIVE_STANDBY %}
+    stick-table type string len 64 size {{ pool.stick_size }} peers {{ "%s_peers"|format(listener.id.replace("-", ""))|trim() }}
+{% else %}
+    stick-table type string len 64 size {{ pool.stick_size }}
+{% endif %}
+    stick store-response res.cook({{ pool.session_persistence.cookie_name }})
+    stick match req.cook({{ pool.session_persistence.cookie_name }})
 {% elif pool.session_persistence.type == constants.SESSION_PERSISTENCE_HTTP_COOKIE %}
     cookie SRV insert indirect nocache
 {% endif %}
