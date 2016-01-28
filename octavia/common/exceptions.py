@@ -156,6 +156,10 @@ class ComputeStatusException(OctaviaException):
     message = _LE('Failed to retrieve compute instance status.')
 
 
+class ComputeGetInterfaceException(OctaviaException):
+    message = _LE('Failed to retrieve compute virtual interfaces.')
+
+
 class IDAlreadyExists(OctaviaException):
     message = _LE('Already an entity with that specified id.')
     code = 409
