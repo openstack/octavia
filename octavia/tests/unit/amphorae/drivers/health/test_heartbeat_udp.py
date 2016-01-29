@@ -103,6 +103,7 @@ class TestHeartbeatUDP(base.TestCase):
         mock_dorecv.side_effect = [(dict(id=FAKE_ID), 2)]
 
         getter.check()
+        getter.executor.shutdown()
         self.health_update.update_health.assert_called_once_with({'id': 1})
         self.stats_update.update_stats.assert_called_once_with({'id': 1})
 
