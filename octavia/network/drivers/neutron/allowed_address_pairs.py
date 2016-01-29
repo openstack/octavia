@@ -36,10 +36,12 @@ OCTAVIA_OWNER = 'Octavia'
 
 class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
-    def __init__(self, region=None):
-        super(AllowedAddressPairsDriver, self).__init__(region=region)
+    def __init__(self):
+        super(AllowedAddressPairsDriver, self).__init__()
         self._check_aap_loaded()
-        self.nova_client = clients.NovaAuth.get_nova_client(region)
+        self.nova_client = clients.NovaAuth.get_nova_client(
+            cfg.CONF.os_region_name
+        )
 
     def _check_aap_loaded(self):
         aliases = [ext.get('alias') for ext in self._extensions]

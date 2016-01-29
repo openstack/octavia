@@ -40,8 +40,7 @@ class BaseNetworkTask(task.Task):
         self.network_driver = stevedore_driver.DriverManager(
             namespace='octavia.network.drivers',
             name=CONF.controller_worker.network_driver,
-            invoke_on_load=True,
-            invoke_kwds={'region': CONF.os_region_name}
+            invoke_on_load=True
         ).driver
 
 

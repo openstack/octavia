@@ -68,7 +68,7 @@ class NoopManager(object):
 
 
 class NoopComputeDriver(driver_base.ComputeBase):
-    def __init__(self, region=None):
+    def __init__(self):
         super(NoopComputeDriver, self).__init__()
         self.driver = NoopManager()
 

@@ -33,9 +33,10 @@ CONF.import_group('networking', 'octavia.common.config')
 class VirtualMachineManager(compute_base.ComputeBase):
     '''Compute implementation of virtual machines via nova.'''
 
-    def __init__(self, region=None):
+    def __init__(self):
         super(VirtualMachineManager, self).__init__()
         # Must initialize nova api
+        region = CONF.os_region_name
         self._nova_client = clients.NovaAuth.get_nova_client(region)
         self.manager = self._nova_client.servers
 
