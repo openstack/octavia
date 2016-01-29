@@ -40,7 +40,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         super(AllowedAddressPairsDriver, self).__init__()
         self._check_aap_loaded()
         self.nova_client = clients.NovaAuth.get_nova_client(
-            cfg.CONF.os_region_name
+            cfg.CONF.os_region_name, service_name=cfg.CONF.nova.service_name
         )
 
     def _check_aap_loaded(self):

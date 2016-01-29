@@ -33,7 +33,7 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
     def __init__(self):
         self.sec_grp_enabled = True
         self.neutron_client = clients.NeutronAuth.get_neutron_client(
-            cfg.CONF.os_region_name
+            cfg.CONF.os_region_name, service_name=cfg.CONF.neutron.service_name
         )
         extensions = self.neutron_client.list_extensions()
         self._extensions = extensions.get('extensions')

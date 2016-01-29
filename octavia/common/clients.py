@@ -27,18 +27,22 @@ class NovaAuth(object):
     nova_client = None
 
     @classmethod
-    def get_nova_client(cls, region):
+    def get_nova_client(cls, region, service_name=None):
         """Create nova client object.
 
         :param region: The region of the service
+        :param service_name: The name of the nova service in the catalog
         :return: a Nova Client object.
         :raises Exception: if the client cannot be created
         """
         if not cls.nova_client:
+            kwargs = {'region_name': region,
+                      'session': keystone.get_session()}
+            if service_name:
+                kwargs['service_name'] = service_name
             try:
                 cls.nova_client = nova_client.Client(
-                    NOVA_VERSION, session=keystone.get_session(),
-                    region_name=region
+                    NOVA_VERSION, **kwargs
                 )
             except Exception:
                 with excutils.save_and_reraise_exception():
@@ -50,18 +54,22 @@ class NeutronAuth(object):
     neutron_client = None
 
     @classmethod
-    def get_neutron_client(cls, region):
+    def get_neutron_client(cls, region, service_name=None):
         """Create neutron client object.
 
         :param region: The region of the service
+        :param service_name: The name of the neutron service in the catalog
         :return: a Neutron Client object.
         :raises Exception: if the client cannot be created
         """
         if not cls.neutron_client:
+            kwargs = {'region_name': region,
+                      'session': keystone.get_session()}
+            if service_name:
+                kwargs['service_name'] = service_name
             try:
                 cls.neutron_client = neutron_client.Client(
-                    NEUTRON_VERSION, session=keystone.get_session(),
-                    region_name=region
+                    NEUTRON_VERSION, **kwargs
                 )
             except Exception:
                 with excutils.save_and_reraise_exception():
