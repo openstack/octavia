@@ -180,7 +180,8 @@ class LocalCertGenerator(cert_gen.CertGenerator):
             ])).add_extension(
             x509.BasicConstraints(
                 ca=False, path_length=None), critical=True,
-        ).sign(pk, hashes.SHA256(), backends.default_backend())
+        ).sign(pk, getattr(hashes, CONF.certificates.signing_digest.upper())(),
+               backends.default_backend())
         return csr.public_bytes(serialization.Encoding.PEM)
 
     @classmethod
