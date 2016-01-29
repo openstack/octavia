@@ -177,7 +177,8 @@ haproxy_amphora_opts = [
                help=_('Retry threshold for connecting to amphorae.')),
     cfg.IntOpt('connection_retry_interval',
                default=5,
-               help=_('Retry timeout between attempts in seconds.')),
+               help=_('Retry timeout between connection attempts in '
+                      'seconds.')),
     cfg.StrOpt('haproxy_stick_size', default='10k',
                help=_('Size of the HAProxy stick table. Accepts k, m, g '
                       'suffixes.  Example: 10k')),
@@ -210,7 +211,8 @@ controller_worker_opts = [
                help=_('Retry attempts to wait for Amphora to become active')),
     cfg.IntOpt('amp_active_wait_sec',
                default=10,
-               help=_('Seconds to wait for an Amphora to become active')),
+               help=_('Seconds to wait between checks on whether an Amphora '
+                      'has become active')),
     cfg.StrOpt('amp_flavor_id',
                default='',
                help=_('Nova instance flavor id for the Amphora')),
