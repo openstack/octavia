@@ -55,7 +55,8 @@ class TestNovaAuth(base.TestCase):
 
         # Getting the session again should return the same object
         bc2 = clients.NovaAuth.get_nova_client(
-            region="test-region", service_name='novaEndpoint1')
+            region="test-region", service_name='novaEndpoint1',
+            endpoint="test-endpoint")
         self.assertIs(bc1, bc2)
 
 
@@ -92,5 +93,6 @@ class TestNeutronAuth(base.TestCase):
 
         # Getting the session again should return the same object
         bc2 = clients.NeutronAuth.get_neutron_client(
-            region="test-region", service_name="neutronEndpoint1")
+            region="test-region", service_name="neutronEndpoint1",
+            endpoint="test-endpoint")
         self.assertIs(bc1, bc2)

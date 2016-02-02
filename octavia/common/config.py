@@ -346,13 +346,17 @@ keepalived_vrrp_opts = [
 
 nova_opts = [
     cfg.StrOpt('service_name',
-               help=_('The name of the nova service in the keystone catalog'))
+               help=_('The name of the nova service in the keystone catalog')),
+    cfg.StrOpt('endpoint', help=_('A new endpoint to override the endpoint '
+                                  'in the keystone catalog.'))
 ]
 
 neutron_opts = [
     cfg.StrOpt('service_name',
                help=_('The name of the neutron service in the '
-                      'keystone catalog'))
+                      'keystone catalog')),
+    cfg.StrOpt('endpoint', help=_('A new endpoint to override the endpoint '
+                                  'in the keystone catalog.'))
 ]
 
 # Register the configuration options
