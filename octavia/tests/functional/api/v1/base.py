@@ -13,6 +13,7 @@
 #    under the License.
 
 import mock
+from oslo_config import cfg
 import pecan
 import pecan.testing
 
@@ -38,6 +39,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     def setUp(self):
         super(BaseAPITest, self).setUp()
+        cfg.CONF.set_override('api_handler', 'simulated_handler')
         self.lb_repo = repositories.LoadBalancerRepository()
         self.listener_repo = repositories.ListenerRepository()
         self.pool_repo = repositories.PoolRepository()
