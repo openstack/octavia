@@ -142,7 +142,7 @@ class JinjaTemplater(object):
             constants=constants)
 
     def _transform_loadbalancer(self, loadbalancer, listener, tls_cert):
-        """Transforms a load balanacer into an object that will
+        """Transforms a load balancer into an object that will
 
            be processed by the templating system
         """
