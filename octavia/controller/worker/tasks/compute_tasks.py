@@ -153,9 +153,12 @@ class ComputeWait(BaseComputeTask):
         :raises: Generic exception if the amphora is not active
         :returns: An amphora object
         """
-        time.sleep(CONF.controller_worker.amp_active_wait_sec)
-        amp = self.compute.get_amphora(compute_id)
-        if amp.status == constants.ACTIVE:
-            return amp
+        for i in range(CONF.controller_worker.amp_active_retries):
+            amp = self.compute.get_amphora(compute_id)
+            if amp.status == constants.ACTIVE:
+                return amp
+            elif amp.status == constants.ERROR:
+                raise exceptions.ComputeBuildException()
+            time.sleep(CONF.controller_worker.amp_active_wait_sec)
 
         raise exceptions.ComputeWaitTimeoutException()

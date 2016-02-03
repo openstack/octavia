@@ -16,7 +16,6 @@
 from oslo_config import cfg
 from taskflow.patterns import graph_flow
 from taskflow.patterns import linear_flow
-from taskflow import retry
 
 from octavia.common import constants
 from octavia.controller.worker.tasks import amphora_driver_tasks
@@ -64,17 +63,12 @@ class AmphoraFlows(object):
                 provides=constants.COMPUTE_ID))
         create_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
-        wait_flow = linear_flow.Flow(constants.WAIT_FOR_AMPHORA,
-                                     retry=retry.Times(CONF.
-                                                       controller_worker.
-                                                       amp_active_retries))
-        wait_flow.add(compute_tasks.ComputeWait(
+        create_amphora_flow.add(compute_tasks.ComputeWait(
             requires=constants.COMPUTE_ID,
             provides=constants.COMPUTE_OBJ))
-        wait_flow.add(database_tasks.UpdateAmphoraInfo(
+        create_amphora_flow.add(database_tasks.UpdateAmphoraInfo(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
             provides=constants.AMPHORA))
-        create_amphora_flow.add(wait_flow)
         create_amphora_flow.add(database_tasks.ReloadAmphora(
             requires=constants.AMPHORA_ID,
             provides=constants.AMPHORA))
@@ -148,20 +142,14 @@ class AmphoraFlows(object):
         create_amp_for_lb_subflow.add(database_tasks.MarkAmphoraBootingInDB(
             name=sf_name + '-' + constants.MARK_AMPHORA_BOOTING_INDB,
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
-        wait_flow = linear_flow.Flow(sf_name + '-' +
-                                     constants.WAIT_FOR_AMPHORA,
-                                     retry=retry.Times(CONF.
-                                                       controller_worker.
-                                                       amp_active_retries))
-        wait_flow.add(compute_tasks.ComputeWait(
+        create_amp_for_lb_subflow.add(compute_tasks.ComputeWait(
             name=sf_name + '-' + constants.COMPUTE_WAIT,
             requires=constants.COMPUTE_ID,
             provides=constants.COMPUTE_OBJ))
-        wait_flow.add(database_tasks.UpdateAmphoraInfo(
+        create_amp_for_lb_subflow.add(database_tasks.UpdateAmphoraInfo(
             name=sf_name + '-' + constants.UPDATE_AMPHORA_INFO,
             requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
             provides=constants.AMPHORA))
-        create_amp_for_lb_subflow.add(wait_flow)
         create_amp_for_lb_subflow.add(amphora_driver_tasks.AmphoraFinalize(
             name=sf_name + '-' + constants.AMPHORA_FINALIZE,
             requires=constants.AMPHORA))
@@ -315,17 +303,12 @@ class AmphoraFlows(object):
                 requires=(constants.AMPHORA_ID, constants.LOADBALANCER_ID)))
         failover_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
-        wait_flow = linear_flow.Flow(constants.WAIT_FOR_AMPHORA,
-                                     retry=retry.Times(CONF.
-                                                       controller_worker.
-                                                       amp_active_retries))
-        wait_flow.add(compute_tasks.ComputeWait(
+        failover_amphora_flow.add(compute_tasks.ComputeWait(
             requires=constants.COMPUTE_ID,
             provides=constants.COMPUTE_OBJ))
-        wait_flow.add(database_tasks.UpdateAmphoraInfo(
+        failover_amphora_flow.add(database_tasks.UpdateAmphoraInfo(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
             provides=constants.AMPHORA))
-        failover_amphora_flow.add(wait_flow)
         failover_amphora_flow.add(database_tasks.ReloadAmphora(
             requires=constants.AMPHORA_ID,
             provides=constants.FAILOVER_AMPHORA))
