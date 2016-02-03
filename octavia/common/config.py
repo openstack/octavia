@@ -240,7 +240,12 @@ controller_worker_opts = [
                choices=constants.SUPPORTED_LB_TOPOLOGIES,
                help=_('Load balancer topology configuration. '
                       'SINGLE - One amphora per load balancer. '
-                      'ACTIVE_STANDBY - Two amphora per load balancer.'))
+                      'ACTIVE_STANDBY - Two amphora per load balancer.')),
+    cfg.BoolOpt('user_data_config_drive', default=False,
+                help=_('If True, build cloud-init user-data that is passed '
+                       'to the config drive on Amphora boot instead of '
+                       'personality files. If False, utilize personality '
+                       'files.'))
 ]
 
 task_flow_opts = [

@@ -25,6 +25,7 @@ from taskflow.types import failure
 from octavia.amphorae.backends.agent import agent_jinja_cfg
 from octavia.common import constants
 from octavia.common import exceptions
+from octavia.common.jinja import user_data_jinja_cfg
 from octavia.i18n import _LE, _LW
 
 CONF = cfg.CONF
@@ -54,8 +55,10 @@ class ComputeCreate(BaseComputeTask):
         """
         ports = ports or []
         config_drive_files = config_drive_files or {}
+        user_data = None
         LOG.debug("Compute create execute for amphora with id %s", amphora_id)
 
+        user_data_config_drive = CONF.controller_worker.user_data_config_drive
         ssh_access = CONF.controller_worker.amp_ssh_access_allowed
         ssh_key = CONF.controller_worker.amp_ssh_key_name
         key_name = None if not ssh_access else ssh_key
@@ -64,6 +67,12 @@ class ComputeCreate(BaseComputeTask):
             agent_cfg = agent_jinja_cfg.AgentJinjaTemplater()
             config_drive_files['/etc/octavia/amphora-agent.conf'] = (
                 agent_cfg.build_agent_config(amphora_id))
+            if user_data_config_drive:
+                udtemplater = user_data_jinja_cfg.UserDataJinjaCfg()
+                user_data = udtemplater.build_user_data_config(
+                    config_drive_files)
+                config_drive_files = None
+
             compute_id = self.compute.build(
                 name="amphora-" + amphora_id,
                 amphora_flavor=CONF.controller_worker.amp_flavor_id,
@@ -72,7 +81,8 @@ class ComputeCreate(BaseComputeTask):
                 sec_groups=CONF.controller_worker.amp_secgroup_list,
                 network_ids=[CONF.controller_worker.amp_network],
                 port_ids=[port.id for port in ports],
-                config_drive_files=config_drive_files)
+                config_drive_files=config_drive_files,
+                user_data=user_data)
 
             LOG.debug("Server created with id: %s for amphora id: %s",
                       compute_id, amphora_id)
@@ -109,12 +119,13 @@ class CertComputeCreate(ComputeCreate):
 
         # load client certificate
         with open(CONF.controller_worker.client_ca, 'r') as client_ca:
-            config_drive_files = {
-                # '/etc/octavia/octavia.conf'
-                '/etc/octavia/certs/server.pem': server_pem,
-                '/etc/octavia/certs/client_ca.pem': client_ca}
-            return super(CertComputeCreate, self).execute(
-                amphora_id, ports=ports, config_drive_files=config_drive_files)
+            ca = client_ca.read()
+        config_drive_files = {
+            # '/etc/octavia/octavia.conf'
+            '/etc/octavia/certs/server.pem': server_pem,
+            '/etc/octavia/certs/client_ca.pem': ca}
+        return super(CertComputeCreate, self).execute(
+            amphora_id, ports=ports, config_drive_files=config_drive_files)
 
 
 class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
