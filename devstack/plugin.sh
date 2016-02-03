@@ -87,6 +87,12 @@ function octavia_configure {
     iniuncomment $OCTAVIA_CONF haproxy_amphora connection_max_retries
     iniuncomment $OCTAVIA_CONF haproxy_amphora connection_retry_interval
 
+    # devstack optimizations for tempest runs
+    iniset $OCTAVIA_CONF haproxy_amphora connection_max_retries 1500
+    iniset $OCTAVIA_CONF haproxy_amphora connection_retry_interval 1
+    iniset $OCTAVIA_CONF controller_worker amp_active_retries 100
+    iniset $OCTAVIA_CONF controller_worker amp_active_wait_sec 1
+
     if [[ -a $OCTAVIA_SSH_DIR ]] ; then
         rm -rf $OCTAVIA_SSH_DIR
     fi

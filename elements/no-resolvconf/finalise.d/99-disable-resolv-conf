@@ -1,0 +1,7 @@
+#!/bin/bash
+echo "" > /etc/resolv.conf
+echo "" > /etc/resolv.conf.ORIG
+echo "#!/bin/sh
+make_resolv_conf() { : ; }" > /etc/dhcp/dhclient-enter-hooks.d/noresolvconf
+chmod +x /etc/dhcp/dhclient-enter-hooks.d/noresolvconf
+rm -f /etc/dhcp/dhclient-enter-hooks.d/resolvconf

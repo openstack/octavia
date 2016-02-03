@@ -327,6 +327,9 @@ if [ "$AMP_ROOTPW" ]; then
     export DIB_PASSWORD=$AMP_ROOTPW
 fi
 
+# Add the devstack no-resolvconf hack
+AMP_element_sequence="$AMP_element_sequence no-resolvconf"
+
 # Add the Octavia Amphora agent.py element
 AMP_element_sequence="$AMP_element_sequence amphora-agent"
 
