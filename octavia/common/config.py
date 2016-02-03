@@ -344,6 +344,17 @@ keepalived_vrrp_opts = [
 
 ]
 
+nova_opts = [
+    cfg.StrOpt('service_name',
+               help=_('The name of the nova service in the keystone catalog'))
+]
+
+neutron_opts = [
+    cfg.StrOpt('service_name',
+               help=_('The name of the neutron service in the '
+                      'keystone catalog'))
+]
+
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_opts(amphora_agent_opts, group='amphora_agent')
@@ -362,6 +373,8 @@ cfg.CONF.register_cli_opts(healthmanager_opts, group='health_manager')
 cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
 cfg.CONF.register_opts(keystone_authtoken_v3_opts,
                        group='keystone_authtoken_v3')
+cfg.CONF.register_opts(nova_opts, group='nova')
+cfg.CONF.register_opts(neutron_opts, group='neutron')
 
 
 # Ensure that the control exchange is set correctly
