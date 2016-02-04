@@ -40,7 +40,7 @@ Some notes about using this template:
   be in the git revision control system, GraphViz .dot files are acceptable.
   If you require an image (screenshot) for your BP, attaching that to the BP
   and checking it in is also accepted. However, text representations are
-  prefered.
+  preferred.
 
 * Diagram examples
 
@@ -262,7 +262,7 @@ Neutron's attribute map facility should have the following:
       inconsistent parameters supplied to the method, or when an
       instance is not in an appropriate state for the request to
       succeed. Errors caused by syntactic problems covered by the JSON
-      schema defintion do not need to be included.
+      schema definition do not need to be included.
 
   * URL for the resource
 

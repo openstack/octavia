@@ -41,7 +41,7 @@ coordinating through the Octavia database.
 The Controller Worker will provide a base class that sets up and initilizes
 the TaskFlow engines required to complete the action.  Users of the library
 will then call the appropriate method for the action.  These methods setup
-and launch the appropriate flow.  Each flow will be contained in a seperate
+and launch the appropriate flow.  Each flow will be contained in a separate
 class for code reuse and supportability.
 
 The Controller Worker library will provide the following methods:

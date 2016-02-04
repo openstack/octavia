@@ -180,7 +180,7 @@ class TestHealthDaemon(base.TestCase):
         health_daemon.run_sender(test_queue)
         sender_mock.dosend.assert_called_once_with('TEST')
 
-        # Test an unkown command
+        # Test an unknown command
         mock_build_msg.reset_mock()
         mock_build_msg.side_effect = ['TEST', Exception('break')]
         test_queue.put('bogus')

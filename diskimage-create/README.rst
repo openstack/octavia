@@ -120,7 +120,7 @@ These are optional environment variables that can be set to override the script
 defaults.
 
 CLOUD_INIT_DATASOURCES
-    - Comma seperated list of cloud-int datasources
+    - Comma separated list of cloud-int datasources
     - Default: ConfigDrive
     - Options: NoCloud, ConfigDrive, OVF, MAAS, Ec2, <others>
     - Reference: https://launchpad.net/cloud-init

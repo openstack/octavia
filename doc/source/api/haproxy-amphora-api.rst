@@ -1352,7 +1352,7 @@ Upload SSL server certificate PEM file for Controller Communication
 Since certificates might be valid for a time smaller than the amphora is in
 existence this add a way to rotate them. Once the certificate is uploaded the
 agent is being recycled so depending on the implementation the service might
-not be available for soem time.
+not be available for some time.
 
 **Examples:**
 

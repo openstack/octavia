@@ -263,8 +263,8 @@ else
         fi
 fi
 
-# "pip freeze" does not show argparse, even if it is explictly installed,
-# because it is part of of the standard python library in 2.7.
+# "pip freeze" does not show argparse, even if it is explicitly installed,
+# because it is part of the standard python library in 2.7.
 # See https://github.com/pypa/pip/issues/1570
 
 PKG_LIST="Babel dib-utils PyYAML"
