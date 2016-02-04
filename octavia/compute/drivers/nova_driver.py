@@ -137,18 +137,38 @@ class VirtualMachineManager(compute_base.ComputeBase):
         :param nova_response: JSON response from nova
         :returns: an amphora object
         '''
-        # Extract information from nova response to populate desired amphora
+        # Extract interfaces of virtual machine to populate desired amphora
         # fields
 
-        net_name = self._nova_client.networks.get(
-            CONF.controller_worker.amp_network).label
         lb_network_ip = None
-        if net_name in nova_response.addresses:
-            lb_network_ip = nova_response.addresses[net_name][0]['addr']
+
+        try:
+            inf_list = nova_response.interface_list()
+            for interface in inf_list:
+                if (getattr(interface, 'net_id') ==
+                        CONF.controller_worker.amp_network):
+                    lb_network_ip = getattr(
+                        interface, 'fixed_ips')[0]['ip_address']
+                    break
+        except Exception:
+            LOG.debug('Extracting virtual interfaces through nova '
+                      'os-interfaces extension failed.')
+
+        if not lb_network_ip:
+            # Try os-networks extension
+            # TODO(bharath) Remove when RAX doesn't need that any longer
+            try:
+                net_name = self._nova_client.networks.get(
+                    CONF.controller_worker.amp_network).label
+                if net_name in nova_response.addresses:
+                    lb_network_ip = nova_response.addresses[
+                        net_name][0]['addr']
+            except Exception:
+                LOG.exception(_LE('Error retrieving nova virtual interfaces'))
 
         response = models.Amphora(
-            compute_id=nova_response.id,
-            status=nova_response.status,
+            compute_id=getattr(nova_response, 'id'),
+            status=getattr(nova_response, 'status'),
             lb_network_ip=lb_network_ip
         )
         return response
