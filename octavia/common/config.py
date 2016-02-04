@@ -143,11 +143,20 @@ healthmanager_opts = [
                 default=[]),
     cfg.IntOpt('heartbeat_interval',
                default=10,
-               help=_('Sleep time between sending hearthbeats.'))
-]
+               help=_('Sleep time between sending hearthbeats.')),
+    cfg.StrOpt('event_streamer_driver',
+               help=_('Specifies which driver to use for the event_streamer '
+                      'for syncing the octavia and neutron_lbaas dbs. If you '
+                      'don\'t need to sync the database or are running '
+                      'octavia in stand alone mode use the '
+                      'noop_event_streamer'),
+               default='noop_event_streamer')]
 
 oslo_messaging_opts = [
     cfg.StrOpt('topic'),
+    cfg.StrOpt('event_stream_topic',
+               default='neutron_lbaas_event',
+               help=_('topic name for communicating events through a queue')),
 ]
 
 keystone_authtoken_v3_opts = [

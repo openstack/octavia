@@ -14,19 +14,19 @@
 
 from oslo_utils import uuidutils
 
-from octavia.amphorae.drivers.noop_driver import driver as driver
+from octavia.amphorae.drivers.noop_driver import driver
 from octavia.common import data_models
 from octavia.network import data_models as network_models
-from octavia.tests.unit import base as base
+from octavia.tests.unit import base
 
 
 FAKE_UUID_1 = uuidutils.generate_uuid()
 
 
-class LoggingMixIn(base.TestCase):
+class TestLoggingUpdate(base.TestCase):
     def setUp(self):
-        super(LoggingMixIn, self).setUp()
-        self.mixin = driver.LoggingMixIn()
+        super(TestLoggingUpdate, self).setUp()
+        self.mixin = driver.LoggingUpdate()
 
     def test_update_stats(self):
         self.mixin.update_stats('test update stats')

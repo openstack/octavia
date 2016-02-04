@@ -22,8 +22,7 @@ from oslo_reports import guru_meditation_report as gmr
 from octavia.amphorae.drivers.health import heartbeat_udp
 from octavia.common import service
 from octavia.controller.healthmanager import health_manager
-from octavia.controller.healthmanager import update_health_mixin
-from octavia.controller.healthmanager import update_stats_mixin
+from octavia.controller.healthmanager import update_db
 from octavia.i18n import _LI
 from octavia import version
 
@@ -36,8 +35,8 @@ CONF.import_group('health_manager', 'octavia.common.config')
 def hm_listener():
     # TODO(german): steved'or load those drivers
     udp_getter = heartbeat_udp.UDPStatusGetter(
-        update_health_mixin.UpdateHealthMixin(),
-        update_stats_mixin.UpdateStatsMixin())
+        update_db.UpdateHealthDb(),
+        update_db.UpdateStatsDb())
     while True:
         udp_getter.check()
 

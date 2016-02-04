@@ -14,31 +14,54 @@
 
 import datetime
 
+from oslo_config import cfg
 from oslo_log import log as logging
+import six
 import sqlalchemy
+from stevedore import driver as stevedore_driver
 
-from octavia.amphorae.drivers import driver_base as driver_base
 from octavia.common import constants
+from octavia.controller.healthmanager import update_serializer
+from octavia.controller.queue import event_queue
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
 from octavia.i18n import _LE, _LW
 
-import six
 
 LOG = logging.getLogger(__name__)
 
 
-class UpdateHealthMixin(driver_base.HealthMixin):
-
+class UpdateHealthDb(object):
     def __init__(self):
-        super(UpdateHealthMixin, self).__init__()
+        super(UpdateHealthDb, self).__init__()
         # first setup repo for amphora, listener,member(nodes),pool repo
+        self.event_streamer = stevedore_driver.DriverManager(
+            namespace='octavia.controller.queues',
+            name=cfg.CONF.health_manager.event_streamer_driver,
+            invoke_on_load=True).driver
         self.amphora_repo = repo.AmphoraRepository()
         self.amphora_health_repo = repo.AmphoraHealthRepository()
         self.listener_repo = repo.ListenerRepository()
         self.loadbalancer_repo = repo.LoadBalancerRepository()
         self.member_repo = repo.MemberRepository()
         self.pool_repo = repo.PoolRepository()
+
+    def emit(self, info_type, info_id, info_obj):
+        cnt = update_serializer.InfoContainer(info_type, info_id, info_obj)
+        self.event_streamer.emit(cnt)
+
+    def _update_status_and_emit_event(self, session, repo, entity_type,
+                                      entity_id, new_op_status):
+        entity = repo.get(session, id=entity_id)
+        if entity.operating_status.lower() != new_op_status.lower():
+            LOG.debug("%s %s status has changed from %s to "
+                      "%s. Updating db and sending event.",
+                      entity_type, entity_id, entity.operating_status,
+                      new_op_status)
+            repo.update(session, entity_id, operating_status=new_op_status)
+            self.emit(
+                entity_type, entity_id,
+                {constants.OPERATING_STATUS: new_op_status})
 
     def update_health(self, health):
         """This function is to update db info based on amphora status
@@ -115,9 +138,10 @@ class UpdateHealthMixin(driver_base.HealthMixin):
 
             try:
                 if listener_status is not None:
-                    self.listener_repo.update(
-                        session, listener_id,
-                        operating_status=listener_status)
+                    self._update_status_and_emit_event(
+                        session, self.listener_repo, constants.LISTENER,
+                        listener_id, listener_status
+                    )
             except sqlalchemy.orm.exc.NoResultFound:
                 LOG.error(_LE("Listener %s is not in DB"), listener_id)
 
@@ -158,22 +182,78 @@ class UpdateHealthMixin(driver_base.HealthMixin):
 
                     try:
                         if member_status is not None:
-                            self.member_repo.update(session, id=member_id,
-                                                    operating_status=(
-                                                        member_status))
+                            self._update_status_and_emit_event(
+                                session, self.member_repo, constants.MEMBER,
+                                member_id, member_status
+                            )
                     except sqlalchemy.orm.exc.NoResultFound:
                         LOG.error(_LE("Member %s is not able to update "
                                       "in DB"), member_id)
 
                 try:
                     if pool_status is not None:
-                        self.pool_repo.update(session, pool_id,
-                                              operating_status=pool_status)
+                        self._update_status_and_emit_event(
+                            session, self.pool_repo, constants.POOL,
+                            pool_id, pool_status
+                        )
                 except sqlalchemy.orm.exc.NoResultFound:
                     LOG.error(_LE("Pool %s is not in DB"), pool_id)
 
             try:
-                self.loadbalancer_repo.update(session, lb_id,
-                                              operating_status=lb_status)
+                self._update_status_and_emit_event(
+                    session, self.loadbalancer_repo,
+                    constants.LOADBALANCER, lb_id, lb_status
+                )
             except sqlalchemy.orm.exc.NoResultFound:
                 LOG.error(_LE("Load balancer %s is not in DB"), lb_id)
+
+
+class UpdateStatsDb(object):
+
+    def __init__(self):
+        super(UpdateStatsDb, self).__init__()
+        self.listener_stats_repo = repo.ListenerStatisticsRepository()
+        self.event_streamer = event_queue.EventStreamerNeutron()
+
+    def emit(self, info_type, info_id, info_obj):
+        cnt = update_serializer.InfoContainer(info_type, info_id, info_obj)
+        self.event_streamer.emit(cnt)
+
+    def update_stats(self, health_message):
+        """This function is to update the db with listener stats
+
+        :param health_message: The health message containing the listener stats
+        :type map: string
+        :returns: null
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {"status": constants.OPEN,
+                                  'stats': {'conns': 0,
+                                            'totconns': 0,
+                                            'rx': 0,
+                                            'tx': 0},
+                                  "pools": {
+                    "pool-id-1": {"status": constants.UP,
+                                  "members": {"member-id-1": constants.ONLINE}
+                                  }
+                }
+                }
+            }
+        }
+
+        """
+        session = db_api.get_session()
+
+        listeners = health_message['listeners']
+        for listener_id, listener in six.iteritems(listeners):
+
+            stats = listener.get('stats')
+            stats = {'bytes_in': stats['rx'], 'bytes_out': stats['tx'],
+                     'active_connections': stats['conns'],
+                     'total_connections': stats['totconns']}
+            LOG.debug("Updating listener stats in db and sending event.")
+            LOG.debug("Listener %s stats: %s", listener_id, stats)
+            self.listener_stats_repo.replace(session, listener_id, **stats)
+            self.emit('listener_stats', listener_id, stats)

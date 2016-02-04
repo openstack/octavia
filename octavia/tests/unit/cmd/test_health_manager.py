@@ -24,9 +24,9 @@ class TestHealthManagerCMD(base.TestCase):
         super(TestHealthManagerCMD, self).setUp()
 
     @mock.patch('octavia.controller.healthmanager.'
-                'update_stats_mixin.UpdateStatsMixin')
+                'update_db.UpdateStatsDb')
     @mock.patch('octavia.controller.healthmanager.'
-                'update_health_mixin.UpdateHealthMixin')
+                'update_db.UpdateHealthDb')
     @mock.patch('octavia.amphorae.drivers.health.'
                 'heartbeat_udp.UDPStatusGetter')
     def test_hm_listener(self, mock_getter, mock_health, mock_stats):
