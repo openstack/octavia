@@ -118,7 +118,7 @@ class ListenerStatistics(base_models.BASE):
         if value < 0:
             data = {'key': key, 'value': value}
             raise ValueError(data)
-            # TODO(trevor-vardeman): Repair this functionality after Openstack
+            # TODO(trevor-vardeman): Repair this functionality after OpenStack
             # Common is in
             # raise ValueError(_('The %(key)s field can not have '
             #                   'negative value. '

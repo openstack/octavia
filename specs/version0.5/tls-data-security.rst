@@ -75,7 +75,7 @@ loaded in the config.
 Alternatives
 ------------
 We could skip the interface and just use Barbican directly, but that would be
-diverging from what seems to be the accepted Openstack model for Secret Store
+diverging from what seems to be the accepted OpenStack model for Secret Store
 integration.
 
 We could also store everything locally or in the DB, but that isn't a real
