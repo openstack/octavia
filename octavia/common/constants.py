@@ -109,6 +109,22 @@ SUPPORTED_L7POLICY_ACTIONS = (L7POLICY_ACTION_REJECT,
 URL_REGEX = (r'\Ahttp[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|'
              r'(?:%[0-9a-fA-F][0-9a-fA-F]))+')
 
+# See RFCs 2616, 2965, 6265, 7230: Should match characters valid in a
+# http header or cookie name.
+HTTP_HEADER_NAME_REGEX = r'\A[a-zA-Z0-9!#$%&\'*+-.^_`|~]+\Z'
+
+# See RFCs 2616, 2965, 6265: Should match characters valid in a cookie value.
+HTTP_COOKIE_VALUE_REGEX = r'\A[a-zA-Z0-9!#$%&\'()*+-./:<=>?@[\]^_`{|}~]+\Z'
+
+# See RFC 7230: Should match characters valid in a header value.
+HTTP_HEADER_VALUE_REGEX = (r'\A[a-zA-Z0-9'
+                           r'!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~\\]+\Z')
+
+# Also in RFC 7230: Should match characters valid in a header value
+# when quoted with double quotes.
+HTTP_QUOTED_HEADER_VALUE_REGEX = (r'\A"[a-zA-Z0-9 \t'
+                                  r'!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~\\]*"\Z')
+
 # Task/Flow constants
 AMPHORA = 'amphora'
 FAILED_AMPHORA = 'failed_amphora'

@@ -27,3 +27,42 @@ class TestValidations(base.TestCase):
 
     def test_validate_bad_url(self):
         self.assertRaises(exceptions.InvalidURL, validate.url, 'bad url')
+
+    def test_validate_header_name(self):
+        ret = validate.header_name('Some-header')
+        self.assertTrue(ret)
+
+    def test_validate_bad_header_name(self):
+        self.assertRaises(exceptions.InvalidString,
+                          validate.cookie_value_string,
+                          'bad header')
+
+    def test_validate_cookie_value_string(self):
+        ret = validate.cookie_value_string('some-cookie')
+        self.assertTrue(ret)
+
+    def test_validate_bad_cookie_value_string(self):
+        self.assertRaises(exceptions.InvalidString,
+                          validate.cookie_value_string,
+                          'bad cookie value;')
+
+    def test_validate_header_value_string(self):
+        ret = validate.header_value_string('some-value')
+        self.assertTrue(ret)
+
+    def test_validate_header_value_string_quoted(self):
+        ret = validate.header_value_string('"some value"')
+        self.assertTrue(ret)
+
+    def test_validate_bad_header_value_string(self):
+        self.assertRaises(exceptions.InvalidString,
+                          validate.header_value_string,
+                          '\x18')
+
+    def test_validate_regex(self):
+        ret = validate.regex('some regex.*')
+        self.assertTrue(ret)
+
+    def test_validate_bad_regex(self):
+        self.assertRaises(exceptions.InvalidRegex, validate.regex,
+                          'bad regex\\')

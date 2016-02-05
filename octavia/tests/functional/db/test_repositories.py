@@ -1775,3 +1775,351 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
                           uuidutils.generate_uuid(), self.listener.id, 1,
                           action=constants.L7POLICY_ACTION_REDIRECT_TO_URL,
                           redirect_url="This is not a URL.")
+
+
+class L7RuleRepositoryTest(BaseRepositoryTest):
+
+    def setUp(self):
+        super(L7RuleRepositoryTest, self).setUp()
+        self.listener = self.listener_repo.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=self.FAKE_UUID_2,
+            protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            connection_limit=1, operating_status=constants.ONLINE,
+            provisioning_status=constants.ACTIVE, enabled=True, peer_port=1025)
+        self.l7policy = self.l7policy_repo.create(
+            self.session, id=self.FAKE_UUID_1, name='l7policy_test',
+            description='l7policy_description', listener_id=self.listener.id,
+            position=1, action=constants.L7POLICY_ACTION_REJECT,
+            enabled=True)
+
+    def create_l7rule(self, l7rule_id, l7policy_id,
+                      type=constants.L7RULE_TYPE_PATH,
+                      compare_type=constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+                      key=None, value="/api", invert=False):
+        l7rule = self.l7rule_repo.create(
+            self.session, id=l7rule_id, l7policy_id=l7policy_id,
+            type=type, compare_type=compare_type, key=key, value=value,
+            invert=invert)
+        return l7rule
+
+    def test_get(self):
+        l7rule = self.create_l7rule(uuidutils.generate_uuid(),
+                                    self.l7policy.id)
+        new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
+        self.assertIsInstance(new_l7rule, models.L7Rule)
+        self.assertEqual(l7rule, new_l7rule)
+
+    def test_get_all(self):
+        l7policy = self.l7policy_repo.create(
+            self.session, id=uuidutils.generate_uuid(), name='l7policy_test',
+            description='l7policy_description', listener_id=self.listener.id,
+            position=1, action=constants.L7POLICY_ACTION_REJECT,
+            enabled=True)
+        l7rule_a = self.create_l7rule(uuidutils.generate_uuid(), l7policy.id)
+        l7rule_b = self.create_l7rule(uuidutils.generate_uuid(), l7policy.id)
+        new_l7rule_a = self.l7rule_repo.get(self.session,
+                                            id=l7rule_a.id)
+        new_l7rule_b = self.l7rule_repo.get(self.session,
+                                            id=l7rule_b.id)
+        l7rule_list = self.l7rule_repo.get_all(
+            self.session, l7policy_id=l7policy.id)
+        self.assertIsInstance(l7rule_list, list)
+        self.assertEqual(2, len(l7rule_list))
+        self.assertIn(new_l7rule_a.id, [r.id for r in l7rule_list])
+        self.assertIn(new_l7rule_b.id, [r.id for r in l7rule_list])
+
+    def test_create(self):
+        l7rule = self.create_l7rule(self.FAKE_UUID_1,
+                                    self.l7policy.id)
+        new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
+        self.assertEqual(self.FAKE_UUID_1, new_l7rule.id)
+        self.assertEqual(self.l7policy.id, new_l7rule.l7policy_id)
+        self.assertEqual(constants.L7RULE_TYPE_PATH, new_l7rule.type)
+        self.assertEqual(constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+                         new_l7rule.compare_type)
+        self.assertIsNone(new_l7rule.key)
+        self.assertEqual('/api', new_l7rule.value)
+        self.assertFalse(new_l7rule.invert)
+
+    def test_create_without_id(self):
+        l7rule = self.l7rule_repo.create(
+            self.session, id=None, l7policy_id=self.l7policy.id,
+            type=constants.L7RULE_TYPE_PATH,
+            compare_type=constants.L7RULE_COMPARE_TYPE_CONTAINS,
+            value='something')
+        new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
+        self.assertIsNotNone(l7rule.id)
+        self.assertEqual(self.l7policy.id, new_l7rule.l7policy_id)
+        self.assertEqual(constants.L7RULE_TYPE_PATH, new_l7rule.type)
+        self.assertEqual(constants.L7RULE_COMPARE_TYPE_CONTAINS,
+                         new_l7rule.compare_type)
+        self.assertIsNone(new_l7rule.key)
+        self.assertEqual('something', new_l7rule.value)
+        self.assertFalse(new_l7rule.invert)
+
+    def test_update(self):
+        l7rule = self.create_l7rule(uuidutils.generate_uuid(),
+                                    self.l7policy.id)
+        new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
+        self.assertEqual('/api', new_l7rule.value)
+        self.assertFalse(new_l7rule.invert)
+        self.l7rule_repo.update(self.session, id=l7rule.id,
+                                value='/images', invert=True)
+        new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
+        self.assertEqual('/images', new_l7rule.value)
+        self.assertTrue(new_l7rule.invert)
+
+    def test_update_bad_id(self):
+        self.assertRaises(exceptions.NotFound,
+                          self.l7rule_repo.update, self.session,
+                          id='bad id', value='/some/path')
+
+    def test_bad_update(self):
+        l7rule = self.create_l7rule(uuidutils.generate_uuid(),
+                                    self.l7policy.id)
+        new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
+        self.assertEqual('/api', new_l7rule.value)
+        self.assertRaises(exceptions.InvalidString,
+                          self.l7rule_repo.update, self.session,
+                          id=l7rule.id, value='bad path')
+
+    def test_delete(self):
+        l7rule = self.create_l7rule(uuidutils.generate_uuid(),
+                                    self.l7policy.id)
+        self.l7rule_repo.delete(self.session, id=l7rule.id)
+        self.assertIsNone(self.l7rule_repo.get(self.session, id=l7rule.id))
+
+    def test_create_bad_rule_type(self):
+        self.assertRaises(exceptions.InvalidL7Rule, self.create_l7rule,
+                          self.FAKE_UUID_1, self.l7policy.id,
+                          type="not valid")
+
+    def test_create_header_rule(self):
+        l7rule = self.create_l7rule(
+            uuidutils.generate_uuid(),
+            self.l7policy.id,
+            type=constants.L7RULE_TYPE_HEADER,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            key="Some-header",
+            value='"some value"')
+        new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
+        self.assertEqual(constants.L7RULE_TYPE_HEADER, new_l7rule.type)
+        self.assertEqual(constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+                         new_l7rule.compare_type)
+        self.assertEqual('Some-header', new_l7rule.key)
+        self.assertEqual('"some value"', new_l7rule.value)
+
+    def test_create_header_rule_no_key(self):
+        self.assertRaises(
+            exceptions.InvalidL7Rule, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_HEADER,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            value='"some value"')
+
+    def test_create_header_rule_invalid_key(self):
+        self.assertRaises(
+            exceptions.InvalidString, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_HEADER,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            key='bad key;',
+            value='"some value"')
+
+    def test_create_header_rule_invalid_value_string(self):
+        self.assertRaises(
+            exceptions.InvalidString, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_HEADER,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            key='Some-header',
+            value='\x18')
+
+    def test_create_header_rule_invalid_value_regex(self):
+        self.assertRaises(
+            exceptions.InvalidRegex, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_HEADER,
+            compare_type=constants.L7RULE_COMPARE_TYPE_REGEX,
+            key='Some-header',
+            value='bad regex\\')
+
+    def test_create_header_rule_bad_compare_type(self):
+        self.assertRaises(
+            exceptions.InvalidL7Rule, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_HEADER,
+            compare_type="bad compare",
+            key="Some-header",
+            value='"some value"')
+
+    def test_create_cookie_rule(self):
+        l7rule = self.create_l7rule(
+            uuidutils.generate_uuid(),
+            self.l7policy.id,
+            type=constants.L7RULE_TYPE_COOKIE,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            key="some_cookie",
+            value='some-value')
+        new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
+        self.assertEqual(constants.L7RULE_TYPE_COOKIE, new_l7rule.type)
+        self.assertEqual(constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+                         new_l7rule.compare_type)
+        self.assertEqual('some_cookie', new_l7rule.key)
+        self.assertEqual('some-value', new_l7rule.value)
+
+    def test_create_cookie_rule_no_key(self):
+        self.assertRaises(
+            exceptions.InvalidL7Rule, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_COOKIE,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            value='some-value')
+
+    def test_create_cookie_rule_invalid_key(self):
+        self.assertRaises(
+            exceptions.InvalidString, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_COOKIE,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            key='bad key;',
+            value='some-value')
+
+    def test_create_cookie_rule_invalid_value_string(self):
+        self.assertRaises(
+            exceptions.InvalidString, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_COOKIE,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            key='some_cookie',
+            value='bad value;')
+
+    def test_create_cookie_rule_invalid_value_regex(self):
+        self.assertRaises(
+            exceptions.InvalidRegex, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_COOKIE,
+            compare_type=constants.L7RULE_COMPARE_TYPE_REGEX,
+            key='some_cookie',
+            value='bad regex\\')
+
+    def test_create_cookie_rule_bad_compare_type(self):
+        self.assertRaises(
+            exceptions.InvalidL7Rule, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_COOKIE,
+            compare_type="bad compare",
+            key="some_cookie",
+            value='some-value')
+
+    def test_create_path_rule(self):
+        l7rule = self.create_l7rule(
+            uuidutils.generate_uuid(),
+            self.l7policy.id,
+            type=constants.L7RULE_TYPE_PATH,
+            compare_type=constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            value='/some/path')
+        new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
+        self.assertEqual(constants.L7RULE_TYPE_PATH, new_l7rule.type)
+        self.assertEqual(constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+                         new_l7rule.compare_type)
+        self.assertEqual('/some/path', new_l7rule.value)
+
+    def test_create_path_rule_invalid_value_string(self):
+        self.assertRaises(
+            exceptions.InvalidString, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_PATH,
+            compare_type=constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            value='bad path')
+
+    def test_create_path_rule_invalid_value_regex(self):
+        self.assertRaises(
+            exceptions.InvalidRegex, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_PATH,
+            compare_type=constants.L7RULE_COMPARE_TYPE_REGEX,
+            value='bad regex\\')
+
+    def test_create_path_rule_bad_compare_type(self):
+        self.assertRaises(
+            exceptions.InvalidL7Rule, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_PATH,
+            compare_type="bad compare",
+            value='/some/path')
+
+    def test_create_host_name_rule(self):
+        l7rule = self.create_l7rule(
+            uuidutils.generate_uuid(),
+            self.l7policy.id,
+            type=constants.L7RULE_TYPE_HOST_NAME,
+            compare_type=constants.L7RULE_COMPARE_TYPE_ENDS_WITH,
+            value='.example.com')
+        new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
+        self.assertEqual(constants.L7RULE_TYPE_HOST_NAME, new_l7rule.type)
+        self.assertEqual(constants.L7RULE_COMPARE_TYPE_ENDS_WITH,
+                         new_l7rule.compare_type)
+        self.assertEqual('.example.com', new_l7rule.value)
+
+    def test_create_host_name_rule_invalid_value_string(self):
+        self.assertRaises(
+            exceptions.InvalidString, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_HOST_NAME,
+            compare_type=constants.L7RULE_COMPARE_TYPE_ENDS_WITH,
+            value='bad hostname')
+
+    def test_create_host_name_rule_invalid_value_regex(self):
+        self.assertRaises(
+            exceptions.InvalidRegex, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_HOST_NAME,
+            compare_type=constants.L7RULE_COMPARE_TYPE_REGEX,
+            value='bad regex\\')
+
+    def test_create_host_name_rule_bad_compare_type(self):
+        self.assertRaises(
+            exceptions.InvalidL7Rule, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_HOST_NAME,
+            compare_type="bad compare",
+            value='.example.com')
+
+    def test_create_file_type_rule(self):
+        l7rule = self.create_l7rule(
+            uuidutils.generate_uuid(),
+            self.l7policy.id,
+            type=constants.L7RULE_TYPE_FILE_TYPE,
+            compare_type=constants.L7RULE_COMPARE_TYPE_REGEX,
+            value='png|jpg')
+        new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
+        self.assertEqual(constants.L7RULE_TYPE_FILE_TYPE, new_l7rule.type)
+        self.assertEqual(constants.L7RULE_COMPARE_TYPE_REGEX,
+                         new_l7rule.compare_type)
+        self.assertEqual('png|jpg', new_l7rule.value)
+
+    def test_create_file_type_rule_invalid_value_string(self):
+        self.assertRaises(
+            exceptions.InvalidString, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_FILE_TYPE,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            value='bad file type')
+
+    def test_create_file_type_rule_invalid_value_regex(self):
+        self.assertRaises(
+            exceptions.InvalidRegex, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_FILE_TYPE,
+            compare_type=constants.L7RULE_COMPARE_TYPE_REGEX,
+            value='bad regex\\')
+
+    def test_create_file_type_rule_bad_compare_type(self):
+        self.assertRaises(
+            exceptions.InvalidL7Rule, self.create_l7rule,
+            self.FAKE_UUID_1, self.l7policy.id,
+            type=constants.L7RULE_TYPE_FILE_TYPE,
+            compare_type=constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            value='png|jpg')
