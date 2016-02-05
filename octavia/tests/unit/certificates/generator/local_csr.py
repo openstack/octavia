@@ -57,7 +57,7 @@ class BaseLocalCSRTestCase(base.TestCase):
         super(BaseLocalCSRTestCase, self).setUp()
 
     def test_generate_csr(self):
-        cn = 'test_cn'
+        cn = 'testCN'
         # Attempt to generate a CSR
         csr = self.cert_generator._generate_csr(
             cn=cn,
@@ -104,7 +104,7 @@ class BaseLocalCSRTestCase(base.TestCase):
         self.assertEqual(pko.key_size, bit_length)
 
     def test_generate_cert_key_pair_mock(self):
-        cn = 'test_cn'
+        cn = 'testCN'
 
         with mock.patch.object(self.cert_generator, 'sign_cert') as m:
             # Attempt to generate a cert/key pair

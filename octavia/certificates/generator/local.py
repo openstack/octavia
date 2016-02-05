@@ -135,6 +135,26 @@ class LocalCertGenerator(cert_gen.CertGenerator):
                 x509.BasicConstraints(ca=False, path_length=None),
                 critical=True
             )
+            cn_str = lo_req.subject.get_attributes_for_oid(
+                x509.oid.NameOID.COMMON_NAME)[0].value
+            new_cert = new_cert.add_extension(
+                x509.SubjectAlternativeName([x509.DNSName(cn_str)]),
+                critical=False
+            )
+            new_cert = new_cert.add_extension(
+                x509.KeyUsage(
+                    digital_signature=True,
+                    key_encipherment=True,
+                    data_encipherment=True,
+                    key_agreement=True,
+                    content_commitment=False,
+                    key_cert_sign=False,
+                    crl_sign=False,
+                    encipher_only=False,
+                    decipher_only=False
+                ),
+                critical=True
+            )
             new_cert = new_cert.add_extension(
                 x509.ExtendedKeyUsage([
                     x509.oid.ExtendedKeyUsageOID.SERVER_AUTH,
@@ -177,12 +197,38 @@ class LocalCertGenerator(cert_gen.CertGenerator):
         csr = x509.CertificateSigningRequestBuilder().subject_name(
             x509.Name([
                 x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, cn),
-            ])).add_extension(
+            ])
+        )
+        csr = csr.add_extension(
             x509.BasicConstraints(
-                ca=False, path_length=None), critical=True,
-        ).sign(pk, getattr(hashes, CONF.certificates.signing_digest.upper())(),
-               backends.default_backend())
-        return csr.public_bytes(serialization.Encoding.PEM)
+                ca=False,
+                path_length=None
+            ),
+            critical=True
+        )
+        csr = csr.add_extension(
+            x509.KeyUsage(
+                digital_signature=True,
+                key_encipherment=True,
+                data_encipherment=True,
+                key_agreement=True,
+                content_commitment=False,
+                key_cert_sign=False,
+                crl_sign=False,
+                encipher_only=False,
+                decipher_only=False
+            ),
+            critical=True
+        )
+        csr = csr.add_extension(
+            x509.SubjectAlternativeName([x509.DNSName(cn)]),
+            critical=False
+        )
+        signed_csr = csr.sign(
+            pk,
+            getattr(hashes, CONF.certificates.signing_digest.upper())(),
+            backends.default_backend())
+        return signed_csr.public_bytes(serialization.Encoding.PEM)
 
     @classmethod
     def generate_cert_key_pair(cls, cn, validity, bit_length=2048,
