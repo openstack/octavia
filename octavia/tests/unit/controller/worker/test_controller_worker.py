@@ -667,7 +667,7 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(
                 _flow_mock,
-                store={constants.AMPHORA: _amphora_mock,
+                store={constants.FAILED_AMPHORA: _amphora_mock,
                        constants.LOADBALANCER_ID:
                            _amphora_mock.load_balancer_id}))
 

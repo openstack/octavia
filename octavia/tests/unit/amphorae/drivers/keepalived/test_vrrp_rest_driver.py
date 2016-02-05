@@ -16,6 +16,7 @@
 import mock
 
 from octavia.amphorae.drivers.keepalived import vrrp_rest_driver
+from octavia.common import constants
 import octavia.tests.unit.base as base
 
 
@@ -28,6 +29,7 @@ class TestVRRPRestDriver(base.TestCase):
         self.FAKE_CONFIG = 'FAKE CONFIG'
         self.lb_mock = mock.MagicMock()
         self.amphora_mock = mock.MagicMock()
+        self.amphora_mock.status = constants.AMPHORA_ALLOCATED
         self.lb_mock.amphorae = [self.amphora_mock]
         super(TestVRRPRestDriver, self).setUp()
 

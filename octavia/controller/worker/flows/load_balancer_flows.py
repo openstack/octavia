@@ -93,7 +93,7 @@ class LoadBalancerFlows(object):
         post_create_LB_flow.add(new_LB_net_subflow)
 
         if topology == constants.TOPOLOGY_ACTIVE_STANDBY:
-            vrrp_subflow = self._get_vrrp_subflow(prefix)
+            vrrp_subflow = self.amp_flows.get_vrrp_subflow(prefix)
             post_create_LB_flow.add(vrrp_subflow)
 
         post_create_LB_flow.add(database_tasks.UpdateLoadbalancerInDB(
@@ -102,25 +102,6 @@ class LoadBalancerFlows(object):
             name=sf_name + '-' + constants.MARK_LB_ACTIVE_INDB,
             requires=constants.LOADBALANCER))
         return post_create_LB_flow
-
-    def _get_vrrp_subflow(self, prefix):
-        sf_name = prefix + '-' + constants.GET_VRRP_SUBFLOW
-        vrrp_subflow = linear_flow.Flow(sf_name)
-        vrrp_subflow.add(amphora_driver_tasks.AmphoraUpdateVRRPInterface(
-            name=sf_name + '-' + constants.AMP_UPDATE_VRRP_INTF,
-            requires=constants.LOADBALANCER,
-            provides=constants.LOADBALANCER))
-        vrrp_subflow.add(database_tasks.CreateVRRPGroupForLB(
-            name=sf_name + '-' + constants.CREATE_VRRP_GROUP_FOR_LB,
-            requires=constants.LOADBALANCER,
-            provides=constants.LOADBALANCER))
-        vrrp_subflow.add(amphora_driver_tasks.AmphoraVRRPUpdate(
-            name=sf_name + '-' + constants.AMP_VRRP_UPDATE,
-            requires=constants.LOADBALANCER))
-        vrrp_subflow.add(amphora_driver_tasks.AmphoraVRRPStart(
-            name=sf_name + '-' + constants.AMP_VRRP_START,
-            requires=constants.LOADBALANCER))
-        return vrrp_subflow
 
     def get_delete_load_balancer_flow(self):
         """Creates a flow to delete a load balancer.

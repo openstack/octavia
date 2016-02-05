@@ -30,6 +30,7 @@ LB_ID = uuidutils.generate_uuid()
 
 _amphora_mock = mock.MagicMock()
 _amphora_mock.id = AMP_ID
+_amphora_mock.status = constants.AMPHORA_ALLOCATED
 _listener_mock = mock.MagicMock()
 _listener_mock.id = LISTENER_ID
 _load_balancer_mock = mock.MagicMock()

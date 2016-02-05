@@ -114,21 +114,25 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         }
         list_security_groups.return_value = security_groups
         self.driver.deallocate_vip(vip)
-        delete_port.assert_called_once_with(vip.port_id)
+        delete_port.assert_called_with(vip.port_id)
         delete_sec_grp.assert_called_once_with(sec_grp_id)
 
     def test_deallocate_vip_when_delete_port_fails(self):
+        lb = dmh.generate_load_balancer_tree()
         vip = data_models.Vip(port_id='1')
+        vip.load_balancer = lb
         show_port = self.driver.neutron_client.show_port
         show_port.return_value = {'port': {
             'device_owner': allowed_address_pairs.OCTAVIA_OWNER}}
         delete_port = self.driver.neutron_client.delete_port
-        delete_port.side_effect = TypeError
+        delete_port.side_effect = [None, None, TypeError]
         self.assertRaises(network_base.DeallocateVIPException,
                           self.driver.deallocate_vip, vip)
 
     def test_deallocate_vip_when_port_not_found(self):
+        lb = dmh.generate_load_balancer_tree()
         vip = data_models.Vip(port_id='1')
+        vip.load_balancer = lb
         show_port = self.driver.neutron_client.show_port
         show_port.side_effect = neutron_exceptions.PortNotFoundClient
         self.assertRaises(network_base.VIPConfigurationNotFound,
@@ -144,7 +148,6 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'id': vip.port_id,
             'device_owner': 'neutron:LOADBALANCERV2',
             'security_groups': [sec_grp_id]}}
-        delete_port = self.driver.neutron_client.delete_port
         update_port = self.driver.neutron_client.update_port
         delete_sec_grp = self.driver.neutron_client.delete_security_group
         list_security_groups = self.driver.neutron_client.list_security_groups
@@ -158,10 +161,11 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         expected_port_update = {'port': {'security_groups': []}}
         update_port.assert_called_once_with(vip.port_id, expected_port_update)
         delete_sec_grp.assert_called_once_with(sec_grp_id)
-        self.assertFalse(delete_port.called)
 
     def test_deallocate_vip_when_vip_port_not_found(self):
+        lb = dmh.generate_load_balancer_tree()
         vip = data_models.Vip(port_id='1')
+        vip.load_balancer = lb
         admin_project_id = 'octavia'
         session_mock = mock.MagicMock()
         session_mock.get_project_id.return_value = admin_project_id

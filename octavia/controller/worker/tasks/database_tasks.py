@@ -16,6 +16,7 @@
 import logging
 
 from oslo_config import cfg
+from oslo_db import exception as odb_exceptions
 from oslo_utils import uuidutils
 import sqlalchemy
 from taskflow import task
@@ -297,6 +298,25 @@ class UpdateAmphoraVIPData(BaseDatabaseTask):
                                       vrrp_id=1)
 
 
+class UpdateAmpFailoverDetails(BaseDatabaseTask):
+    """Update amphora failover details in the database."""
+
+    def execute(self, amphora, amp_data):
+        """Update amphora failover details in the database.
+
+        :param loadbalancer_id: The load balancer ID to lookup
+        :param mps_data: The load balancer ID to lookup
+        """
+        self.repos.amphora.update(db_apis.get_session(), amphora.id,
+                                  vrrp_ip=amp_data.vrrp_ip,
+                                  ha_ip=amp_data.ha_ip,
+                                  vrrp_port_id=amp_data.vrrp_port_id,
+                                  ha_port_id=amp_data.ha_port_id,
+                                  role=amp_data.role,
+                                  vrrp_id=amp_data.vrrp_id,
+                                  vrrp_priority=amp_data.vrrp_priority)
+
+
 class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
 
     def execute(self, amphora_id, loadbalancer_id):
@@ -464,8 +484,8 @@ class MarkAmphoraDeletedInDB(BaseDatabaseTask):
         """Mark the amphora as pending delete in DB."""
 
         LOG.debug("Mark DELETED in DB for amphora: %(amp)s with "
-                  "compute id %(id)s",
-                  {'amp': amphora.id, 'id': amphora.compute_id})
+                  "compute id %(comp)s",
+                  {'amp': amphora.id, 'comp': amphora.compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.DELETED)
 
@@ -939,17 +959,18 @@ class UpdatePoolInDB(BaseDatabaseTask):
                                            pool.id, {'enabled': 0}, None)
 
 
-class GetUpdatedFailoverAmpNetworkDetailsAsList(BaseDatabaseTask):
+class GetAmphoraDetails(BaseDatabaseTask):
     """Task to retrieve amphora network details."""
 
-    def execute(self, amphora_id, amphora):
-        amp_net_configs = [data_models.Amphora(
-            id=amphora_id,
-            vrrp_ip=amphora.vrrp_ip,
-            ha_ip=amphora.ha_ip,
-            vrrp_port_id=amphora.vrrp_port_id,
-            ha_port_id=amphora.ha_port_id)]
-        return amp_net_configs
+    def execute(self, amphora):
+        return data_models.Amphora(id=amphora.id,
+                                   vrrp_ip=amphora.vrrp_ip,
+                                   ha_ip=amphora.ha_ip,
+                                   vrrp_port_id=amphora.vrrp_port_id,
+                                   ha_port_id=amphora.ha_port_id,
+                                   role=amphora.role,
+                                   vrrp_id=amphora.vrrp_id,
+                                   vrrp_priority=amphora.vrrp_priority)
 
 
 class GetListenersFromLoadbalancer(BaseDatabaseTask):
@@ -973,13 +994,17 @@ class GetVipFromLoadbalancer(BaseDatabaseTask):
 class CreateVRRPGroupForLB(BaseDatabaseTask):
 
     def execute(self, loadbalancer):
-        loadbalancer.vrrp_group = self.repos.vrrpgroup.create(
-            db_apis.get_session(),
-            load_balancer_id=loadbalancer.id,
-            vrrp_group_name=str(loadbalancer.id).replace('-', ''),
-            vrrp_auth_type=constants.VRRP_AUTH_DEFAULT,
-            vrrp_auth_pass=uuidutils.generate_uuid().replace('-', '')[0:7],
-            advert_int=CONF.keepalived_vrrp.vrrp_advert_int)
+        try:
+            loadbalancer.vrrp_group = self.repos.vrrpgroup.create(
+                db_apis.get_session(),
+                load_balancer_id=loadbalancer.id,
+                vrrp_group_name=str(loadbalancer.id).replace('-', ''),
+                vrrp_auth_type=constants.VRRP_AUTH_DEFAULT,
+                vrrp_auth_pass=uuidutils.generate_uuid().replace('-', '')[0:7],
+                advert_int=CONF.keepalived_vrrp.vrrp_advert_int)
+        except odb_exceptions.DBDuplicateEntry:
+            LOG.debug('VRRP_GROUP entry already exists for load balancer, '
+                      'skipping create.')
         return loadbalancer
 
 

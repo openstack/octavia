@@ -72,6 +72,7 @@ class TestComputeTasks(base.TestCase):
         conf.config(group="keystone_authtoken", auth_version=AUTH_VERSION)
 
         _amphora_mock.id = AMPHORA_ID
+        _amphora_mock.status = constants.AMPHORA_ALLOCATED
 
         logging_mock = mock.MagicMock()
         compute_tasks.LOG = logging_mock

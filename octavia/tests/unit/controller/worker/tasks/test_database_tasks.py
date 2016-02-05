@@ -13,7 +13,10 @@
 # under the License.
 #
 
+import random
+
 import mock
+from oslo_db import exception as odb_exceptions
 from oslo_utils import uuidutils
 from taskflow.types import failure
 
@@ -30,11 +33,29 @@ LB_NET_IP = '192.0.2.2'
 LISTENER_ID = uuidutils.generate_uuid()
 POOL_ID = uuidutils.generate_uuid()
 MEMBER_ID = uuidutils.generate_uuid()
+PORT_ID = uuidutils.generate_uuid()
+SUBNET_ID = uuidutils.generate_uuid()
+VRRP_PORT_ID = uuidutils.generate_uuid()
+HA_PORT_ID = uuidutils.generate_uuid()
+VIP_IP = '192.0.5.2'
+VRRP_IP = '192.0.5.3'
+HA_IP = '192.0.5.4'
+AMP_ROLE = 'FAKE_ROLE'
+VRRP_ID = random.randrange(255)
+VRRP_PRIORITY = random.randrange(100)
 
 _amphora_mock = mock.MagicMock()
 _amphora_mock.id = AMP_ID
 _amphora_mock.compute_id = COMPUTE_ID
 _amphora_mock.lb_network_ip = LB_NET_IP
+_amphora_mock.vrrp_ip = VRRP_IP
+_amphora_mock.ha_ip = HA_IP
+_amphora_mock.ha_port_id = HA_PORT_ID
+_amphora_mock.vrrp_port_id = VRRP_PORT_ID
+_amphora_mock.role = AMP_ROLE
+_amphora_mock.vrrp_id = VRRP_ID
+_amphora_mock.vrrp_priority = VRRP_PRIORITY
+_amphorae = [_amphora_mock]
 _loadbalancer_mock = mock.MagicMock()
 _loadbalancer_mock.id = LB_ID
 _loadbalancer_mock.amphorae = [_amphora_mock]
@@ -43,6 +64,11 @@ _pool_mock.id = POOL_ID
 _listener_mock = mock.MagicMock()
 _listener_mock.id = LISTENER_ID
 _tf_failure_mock = mock.Mock(spec=failure.Failure)
+_vip_mock = mock.MagicMock()
+_vip_mock.port_id = PORT_ID
+_vip_mock.subnet_id = SUBNET_ID
+_vip_mock.ip_address = VIP_IP
+_vrrp_group_mock = mock.MagicMock()
 _cert_mock = mock.MagicMock()
 _pem_mock = """Junk
 -----BEGIN CERTIFICATE-----
@@ -316,6 +342,102 @@ class TestDatabaseTasks(base.TestCase):
             id=LISTENER_ID)
 
         self.assertEqual(_listener_mock, listener)
+
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
+                return_value=_loadbalancer_mock)
+    @mock.patch('octavia.db.repositories.VipRepository.update')
+    def test_update_vip_after_allocation(self,
+                                         mock_vip_update,
+                                         mock_loadbalancer_get,
+                                         mock_generate_uuid,
+                                         mock_LOG,
+                                         mock_get_session,
+                                         mock_loadbalancer_repo_update,
+                                         mock_listener_repo_update,
+                                         mock_amphora_repo_update,
+                                         mock_amphora_repo_delete):
+
+        update_vip = database_tasks.UpdateVIPAfterAllocation()
+        loadbalancer = update_vip.execute(LB_ID, _vip_mock)
+
+        self.assertEqual(_loadbalancer_mock, loadbalancer)
+        mock_vip_update.assert_called_once_with('TEST',
+                                                LB_ID,
+                                                port_id=PORT_ID,
+                                                subnet_id=SUBNET_ID,
+                                                ip_address=VIP_IP)
+        mock_loadbalancer_get.assert_called_once_with('TEST',
+                                                      id=LB_ID)
+
+    def test_update_amphora_vip_data(self,
+                                     mock_generate_uuid,
+                                     mock_LOG,
+                                     mock_get_session,
+                                     mock_loadbalancer_repo_update,
+                                     mock_listener_repo_update,
+                                     mock_amphora_repo_update,
+                                     mock_amphora_repo_delete):
+
+        update_amp_vip_data = database_tasks.UpdateAmphoraVIPData()
+        update_amp_vip_data.execute(_amphorae)
+
+        mock_amphora_repo_update.assert_called_once_with(
+            'TEST',
+            AMP_ID,
+            vrrp_ip=VRRP_IP,
+            ha_ip=HA_IP,
+            vrrp_port_id=VRRP_PORT_ID,
+            ha_port_id=HA_PORT_ID,
+            vrrp_id=1)
+
+    def test_update_amp_failover_details(self,
+                                         mock_generate_uuid,
+                                         mock_LOG,
+                                         mock_get_session,
+                                         mock_loadbalancer_repo_update,
+                                         mock_listener_repo_update,
+                                         mock_amphora_repo_update,
+                                         mock_amphora_repo_delete):
+
+        update_amp_fo_details = database_tasks.UpdateAmpFailoverDetails()
+        update_amp_fo_details.execute(_amphora_mock, _amphora_mock)
+
+        mock_amphora_repo_update.assert_called_once_with(
+            'TEST',
+            AMP_ID,
+            vrrp_ip=VRRP_IP,
+            ha_ip=HA_IP,
+            vrrp_port_id=VRRP_PORT_ID,
+            ha_port_id=HA_PORT_ID,
+            role=AMP_ROLE,
+            vrrp_id=VRRP_ID,
+            vrrp_priority=VRRP_PRIORITY)
+
+    @mock.patch('octavia.db.repositories.AmphoraRepository.associate')
+    def test_associate_failover_amphora_with_lb_id(
+            self,
+            mock_associate,
+            mock_generate_uuid,
+            mock_LOG,
+            mock_get_session,
+            mock_loadbalancer_repo_update,
+            mock_listener_repo_update,
+            mock_amphora_repo_update,
+            mock_amphora_repo_delete):
+
+        assoc_fo_amp_lb_id = database_tasks.AssociateFailoverAmphoraWithLBID()
+        assoc_fo_amp_lb_id.execute(AMP_ID, LB_ID)
+
+        mock_associate.assert_called_once_with('TEST',
+                                               load_balancer_id=LB_ID,
+                                               amphora_id=AMP_ID)
+
+        # Test revert
+        assoc_fo_amp_lb_id.revert(AMP_ID)
+
+        mock_amphora_repo_update.assert_called_once_with('TEST',
+                                                         AMP_ID,
+                                                         loadbalancer_id=None)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.'
                 'allocate_and_associate',
@@ -945,6 +1067,26 @@ class TestDatabaseTasks(base.TestCase):
             POOL_ID,
             {'enabled': 0}, None)
 
+    def test_get_amphora_details(self,
+                                 mock_generate_uuid,
+                                 mock_LOG,
+                                 mock_get_session,
+                                 mock_loadbalancer_repo_update,
+                                 mock_listener_repo_update,
+                                 mock_amphora_repo_update,
+                                 mock_amphora_repo_delete):
+
+        get_amp_details = database_tasks.GetAmphoraDetails()
+        new_amp = get_amp_details.execute(_amphora_mock)
+
+        self.assertEqual(AMP_ID, new_amp.id)
+        self.assertEqual(VRRP_IP, new_amp.vrrp_ip)
+        self.assertEqual(HA_IP, new_amp.ha_ip)
+        self.assertEqual(VRRP_PORT_ID, new_amp.vrrp_port_id)
+        self.assertEqual(AMP_ROLE, new_amp.role)
+        self.assertEqual(VRRP_ID, new_amp.vrrp_id)
+        self.assertEqual(VRRP_PRIORITY, new_amp.vrrp_priority)
+
     def test_mark_amphora_role_indb(self,
                                     mock_generate_uuid,
                                     mock_LOG,
@@ -1011,6 +1153,8 @@ class TestDatabaseTasks(base.TestCase):
                                       mock_amphora_repo_update,
                                       mock_amphora_repo_delete):
 
+        mock_get_session.side_effect = ['TEST',
+                                        odb_exceptions.DBDuplicateEntry]
         create_vrrp_group = database_tasks.CreateVRRPGroupForLB()
         create_vrrp_group.execute(_loadbalancer_mock)
         mock_vrrp_group_create.assert_called_once_with(
@@ -1020,6 +1164,7 @@ class TestDatabaseTasks(base.TestCase):
             vrrp_auth_pass=mock_generate_uuid.return_value.replace('-',
                                                                    '')[0:7],
             advert_int=1)
+        create_vrrp_group.execute(_loadbalancer_mock)
 
     @mock.patch('octavia.db.repositories.ListenerRepository.get')
     def test_allocate_listener_peer_port(self,

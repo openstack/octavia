@@ -147,6 +147,27 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(5, len(amp_flow.provides))
         self.assertEqual(1, len(amp_flow.requires))
 
+    def test_get_cert_bogus_create_amphora_for_lb_flow(self):
+        cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
+                              group='controller_worker')
+        self.AmpFlow = amphora_flows.AmphoraFlows()
+
+        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+            'SOMEPREFIX', 'BOGUS_ROLE')
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.assertIn(constants.SERVER_PEM, amp_flow.provides)
+
+        self.assertEqual(5, len(amp_flow.provides))
+        self.assertEqual(1, len(amp_flow.requires))
+
     def test_get_delete_amphora_flow(self):
 
         amp_flow = self.AmpFlow.get_delete_amphora_flow()
@@ -182,20 +203,69 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
-        self.assertIn(constants.AMPHORA, amp_flow.requires)
+        self.assertIn(constants.FAILED_AMPHORA, amp_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
-        self.assertIn(constants.FAILOVER_AMPHORA, amp_flow.provides)
         self.assertIn(constants.AMPHORA, amp_flow.provides)
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
-        self.assertIn(constants.AMPS_DATA, amp_flow.provides)
         self.assertIn(constants.PORTS, amp_flow.provides)
         self.assertIn(constants.LISTENERS, amp_flow.provides)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
 
         self.assertEqual(2, len(amp_flow.requires))
-        self.assertEqual(12, len(amp_flow.provides))
+        self.assertEqual(11, len(amp_flow.provides))
+
+        amp_flow = self.AmpFlow.get_failover_flow(role=constants.ROLE_MASTER)
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.FAILED_AMPHORA, amp_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.assertIn(constants.PORTS, amp_flow.provides)
+        self.assertIn(constants.LISTENERS, amp_flow.provides)
+        self.assertIn(constants.LOADBALANCER, amp_flow.provides)
+
+        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(11, len(amp_flow.provides))
+
+        amp_flow = self.AmpFlow.get_failover_flow(role=constants.ROLE_BACKUP)
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.FAILED_AMPHORA, amp_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.assertIn(constants.PORTS, amp_flow.provides)
+        self.assertIn(constants.LISTENERS, amp_flow.provides)
+        self.assertIn(constants.LOADBALANCER, amp_flow.provides)
+
+        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(11, len(amp_flow.provides))
+
+        amp_flow = self.AmpFlow.get_failover_flow(role='BOGUSROLE')
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.FAILED_AMPHORA, amp_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.assertIn(constants.PORTS, amp_flow.provides)
+        self.assertIn(constants.LISTENERS, amp_flow.provides)
+        self.assertIn(constants.LOADBALANCER, amp_flow.provides)
+
+        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(11, len(amp_flow.provides))
 
     def test_cert_rotate_amphora_flow(self):
         cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
@@ -210,3 +280,63 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertEqual(1, len(amp_rotate_flow.provides))
         self.assertEqual(2, len(amp_rotate_flow.requires))
+
+    def test_get_vrrp_subflow(self):
+        vrrp_subflow = self.AmpFlow.get_vrrp_subflow('123')
+
+        self.assertIsInstance(vrrp_subflow, flow.Flow)
+
+        self.assertIn(constants.LOADBALANCER, vrrp_subflow.provides)
+
+        self.assertIn(constants.LOADBALANCER, vrrp_subflow.requires)
+
+        self.assertEqual(1, len(vrrp_subflow.provides))
+        self.assertEqual(1, len(vrrp_subflow.requires))
+
+    def test_get_post_map_lb_subflow(self):
+
+        self.AmpFlow = amphora_flows.AmphoraFlows()
+
+        amp_flow = self.AmpFlow._get_post_map_lb_subflow(
+            'SOMEPREFIX', constants.ROLE_MASTER)
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.AMPHORA_ID, amp_flow.requires)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+
+        self.assertEqual(1, len(amp_flow.provides))
+        self.assertEqual(1, len(amp_flow.requires))
+
+        amp_flow = self.AmpFlow._get_post_map_lb_subflow(
+            'SOMEPREFIX', constants.ROLE_BACKUP)
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.AMPHORA_ID, amp_flow.requires)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+
+        self.assertEqual(1, len(amp_flow.provides))
+        self.assertEqual(1, len(amp_flow.requires))
+
+        amp_flow = self.AmpFlow._get_post_map_lb_subflow(
+            'SOMEPREFIX', constants.ROLE_STANDALONE)
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.AMPHORA_ID, amp_flow.requires)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+
+        self.assertEqual(1, len(amp_flow.provides))
+        self.assertEqual(1, len(amp_flow.requires))
+
+        amp_flow = self.AmpFlow._get_post_map_lb_subflow(
+            'SOMEPREFIX', 'BOGUS_ROLE')
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.AMPHORA_ID, amp_flow.requires)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+
+        self.assertEqual(1, len(amp_flow.provides))
+        self.assertEqual(1, len(amp_flow.requires))

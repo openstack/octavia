@@ -17,6 +17,7 @@ import logging
 import time
 
 from oslo_config import cfg
+import six
 from stevedore import driver as stevedore_driver
 from taskflow import task
 from taskflow.types import failure
@@ -123,7 +124,10 @@ class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
     """
 
     def execute(self, loadbalancer):
-        for amp in loadbalancer.amphorae:
+        for amp in six.moves.filter(
+            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
+                loadbalancer.amphorae):
+
             try:
                 self.compute.delete(amp.compute_id)
             except Exception:

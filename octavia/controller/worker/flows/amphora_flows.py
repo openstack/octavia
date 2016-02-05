@@ -223,10 +223,12 @@ class AmphoraFlows(object):
 
         # Setup the decider for the path if we can map an amphora
         amp_for_lb_flow.link(allocate_and_associate_amp, map_lb_to_amp,
-                             decider=self._allocate_amp_to_lb_decider)
+                             decider=self._allocate_amp_to_lb_decider,
+                             decider_depth='flow')
         # Setup the decider for the path if we can't map an amphora
         amp_for_lb_flow.link(allocate_and_associate_amp, create_amp,
-                             decider=self._create_new_amp_for_lb_decider)
+                             decider=self._create_new_amp_for_lb_decider,
+                             decider_depth='flow')
 
         return amp_for_lb_flow
 
@@ -255,7 +257,7 @@ class AmphoraFlows(object):
                                     requires=constants.AMPHORA))
         return delete_amphora_flow
 
-    def get_failover_flow(self):
+    def get_failover_flow(self, role=constants.ROLE_STANDALONE):
         """Creates a flow to failover a stale amphora
 
         :returns: The flow for amphora failover
@@ -265,61 +267,53 @@ class AmphoraFlows(object):
             constants.FAILOVER_AMPHORA_FLOW)
         failover_amphora_flow.add(
             network_tasks.RetrievePortIDsOnAmphoraExceptLBNetwork(
+                rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
                 requires=constants.AMPHORA, provides=constants.PORTS))
         failover_amphora_flow.add(network_tasks.FailoverPreparationForAmphora(
+            rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
             requires=constants.AMPHORA))
-        failover_amphora_flow.add(database_tasks.
-                                  MarkAmphoraPendingDeleteInDB(
-                                      requires=constants.AMPHORA))
-        failover_amphora_flow.add(database_tasks.
-                                  MarkAmphoraHealthBusy(
-                                      requires=constants.AMPHORA))
+
+        # Delete the old amphora
+        failover_amphora_flow.add(
+            database_tasks.MarkAmphoraPendingDeleteInDB(
+                rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
+                requires=constants.AMPHORA))
+        failover_amphora_flow.add(
+            database_tasks.MarkAmphoraHealthBusy(
+                rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
+                requires=constants.AMPHORA))
         failover_amphora_flow.add(compute_tasks.ComputeDelete(
+            rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
             requires=constants.AMPHORA))
-        failover_amphora_flow.add(database_tasks.
-                                  DisableAmphoraHealthMonitoring(
-                                      requires=constants.AMPHORA))
+        failover_amphora_flow.add(
+            database_tasks.DisableAmphoraHealthMonitoring(
+                rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
+                requires=constants.AMPHORA))
         failover_amphora_flow.add(database_tasks.MarkAmphoraDeletedInDB(
+            rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
             requires=constants.AMPHORA))
-        failover_amphora_flow.add(database_tasks.CreateAmphoraInDB(
-                                  provides=constants.AMPHORA_ID))
+
+        # Save failed amphora details for later
         failover_amphora_flow.add(
-            database_tasks.GetUpdatedFailoverAmpNetworkDetailsAsList(
-                requires=(constants.AMPHORA_ID, constants.AMPHORA),
-                provides=constants.AMPS_DATA))
-        if self.REST_AMPHORA_DRIVER:
-            failover_amphora_flow.add(cert_task.GenerateServerPEMTask(
-                                      provides=constants.SERVER_PEM))
-            failover_amphora_flow.add(compute_tasks.CertComputeCreate(
-                requires=(constants.AMPHORA_ID, constants.SERVER_PEM),
-                provides=constants.COMPUTE_ID))
-        else:
-            failover_amphora_flow.add(compute_tasks.ComputeCreate(
-                requires=constants.AMPHORA_ID, provides=constants.COMPUTE_ID))
-        failover_amphora_flow.add(database_tasks.UpdateAmphoraComputeId(
-            requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
-        failover_amphora_flow.add(
-            database_tasks.AssociateFailoverAmphoraWithLBID(
-                requires=(constants.AMPHORA_ID, constants.LOADBALANCER_ID)))
-        failover_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
-            requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
-        failover_amphora_flow.add(compute_tasks.ComputeWait(
-            requires=constants.COMPUTE_ID,
-            provides=constants.COMPUTE_OBJ))
-        failover_amphora_flow.add(database_tasks.UpdateAmphoraInfo(
-            requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
-            provides=constants.AMPHORA))
-        failover_amphora_flow.add(database_tasks.ReloadAmphora(
-            requires=constants.AMPHORA_ID,
-            provides=constants.FAILOVER_AMPHORA))
-        failover_amphora_flow.add(amphora_driver_tasks.AmphoraFinalize(
-            rebind={constants.AMPHORA: constants.FAILOVER_AMPHORA},
-            requires=constants.AMPHORA))
-        failover_amphora_flow.add(database_tasks.UpdateAmphoraVIPData(
-            requires=constants.AMPS_DATA))
+            database_tasks.GetAmphoraDetails(
+                rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
+                requires=constants.AMPHORA,
+                provides=constants.AMP_DATA))
+
+        # Get a new amphora
+        # Note: Role doesn't matter here.  We will update it later.
+        get_amp_subflow = self.get_amphora_for_lb_subflow(
+            prefix=constants.FAILOVER_AMPHORA_FLOW)
+        failover_amphora_flow.add(get_amp_subflow)
+
+        # Update the new amphora with the failed amphora details
+        failover_amphora_flow.add(database_tasks.UpdateAmpFailoverDetails(
+            requires=(constants.AMPHORA, constants.AMP_DATA)))
+
         failover_amphora_flow.add(database_tasks.ReloadLoadBalancer(
             requires=constants.LOADBALANCER_ID,
             provides=constants.LOADBALANCER))
+
         failover_amphora_flow.add(network_tasks.GetAmphoraeNetworkConfigs(
             requires=constants.LOADBALANCER,
             provides=constants.AMPHORAE_NETWORK_CONFIG))
@@ -334,21 +328,55 @@ class AmphoraFlows(object):
                       constants.AMPHORAE_NETWORK_CONFIG)))
         failover_amphora_flow.add(
             network_tasks.GetMemberPorts(
-                rebind={constants.AMPHORA: constants.FAILOVER_AMPHORA},
                 requires=(constants.LOADBALANCER, constants.AMPHORA),
                 provides=constants.MEMBER_PORTS
             ))
         failover_amphora_flow.add(amphora_driver_tasks.AmphoraPostNetworkPlug(
-            rebind={constants.AMPHORA: constants.FAILOVER_AMPHORA,
-                    constants.PORTS: constants.MEMBER_PORTS},
+            rebind={constants.PORTS: constants.MEMBER_PORTS},
             requires=(constants.AMPHORA, constants.PORTS)))
+
+        # Handle the amphora role and VRRP if necessary
+        if role == constants.ROLE_MASTER:
+            failover_amphora_flow.add(database_tasks.MarkAmphoraMasterInDB(
+                name=constants.MARK_AMP_MASTER_INDB,
+                requires=constants.AMPHORA))
+            vrrp_subflow = self.get_vrrp_subflow(role)
+            failover_amphora_flow.add(vrrp_subflow)
+        elif role == constants.ROLE_BACKUP:
+            failover_amphora_flow.add(database_tasks.MarkAmphoraBackupInDB(
+                name=constants.MARK_AMP_BACKUP_INDB,
+                requires=constants.AMPHORA))
+            vrrp_subflow = self.get_vrrp_subflow(role)
+            failover_amphora_flow.add(vrrp_subflow)
+        elif role == constants.ROLE_STANDALONE:
+            failover_amphora_flow.add(
+                database_tasks.MarkAmphoraStandAloneInDB(
+                    name=constants.MARK_AMP_STANDALONE_INDB,
+                    requires=constants.AMPHORA))
+
         failover_amphora_flow.add(amphora_driver_tasks.ListenersStart(
             requires=(constants.LISTENERS, constants.VIP)))
-        failover_amphora_flow.add(database_tasks.MarkAmphoraAllocatedInDB(
-            rebind={constants.AMPHORA: constants.FAILOVER_AMPHORA},
-            requires=(constants.AMPHORA, constants.LOADBALANCER_ID)))
 
         return failover_amphora_flow
+
+    def get_vrrp_subflow(self, prefix):
+        sf_name = prefix + '-' + constants.GET_VRRP_SUBFLOW
+        vrrp_subflow = linear_flow.Flow(sf_name)
+        vrrp_subflow.add(amphora_driver_tasks.AmphoraUpdateVRRPInterface(
+            name=sf_name + '-' + constants.AMP_UPDATE_VRRP_INTF,
+            requires=constants.LOADBALANCER,
+            provides=constants.LOADBALANCER))
+        vrrp_subflow.add(database_tasks.CreateVRRPGroupForLB(
+            name=sf_name + '-' + constants.CREATE_VRRP_GROUP_FOR_LB,
+            requires=constants.LOADBALANCER,
+            provides=constants.LOADBALANCER))
+        vrrp_subflow.add(amphora_driver_tasks.AmphoraVRRPUpdate(
+            name=sf_name + '-' + constants.AMP_VRRP_UPDATE,
+            requires=constants.LOADBALANCER))
+        vrrp_subflow.add(amphora_driver_tasks.AmphoraVRRPStart(
+            name=sf_name + '-' + constants.AMP_VRRP_START,
+            requires=constants.LOADBALANCER))
+        return vrrp_subflow
 
     def cert_rotate_amphora_flow(self):
         """Implement rotation for amphora's cert.

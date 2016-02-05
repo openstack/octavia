@@ -117,15 +117,3 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertEqual(4, len(amp_flow.provides))
         self.assertEqual(2, len(amp_flow.requires))
-
-    def test_get_vrrp_subflow(self):
-        vrrp_subflow = self.LBFlow._get_vrrp_subflow('123')
-
-        self.assertIsInstance(vrrp_subflow, flow.Flow)
-
-        self.assertIn(constants.LOADBALANCER, vrrp_subflow.provides)
-
-        self.assertIn(constants.LOADBALANCER, vrrp_subflow.requires)
-
-        self.assertEqual(1, len(vrrp_subflow.provides))
-        self.assertEqual(1, len(vrrp_subflow.requires))

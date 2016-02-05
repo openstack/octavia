@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from octavia.common import constants
 from octavia.common import data_models
 
 
@@ -38,6 +39,8 @@ def generate_load_balancer(vip=None, amphorae=None):
     for amp in lb.amphorae:
         amp.load_balancer = lb
         amp.load_balancer_id = lb.id
+        amp.status = constants.AMPHORA_ALLOCATED
+        amp.vrrp_port_id = 'vrrp_port-{0}-id'.format(VIP_SEED)
     if vip:
         vip.load_balancer = lb
         vip.load_balancer_id = lb.id

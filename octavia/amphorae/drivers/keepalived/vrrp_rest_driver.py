@@ -13,6 +13,7 @@
 # under the License.
 
 from oslo_log import log as logging
+import six
 
 from octavia.amphorae.drivers import driver_base as driver_base
 from octavia.amphorae.drivers.keepalived.jinja import jinja_cfg
@@ -42,7 +43,9 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
         LOG.debug("Update loadbalancer %s amphora VRRP configuration.",
                   loadbalancer.id)
 
-        for amp in loadbalancer.amphorae:
+        for amp in six.moves.filter(
+            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
+                loadbalancer.amphorae):
             # Generate Keepalived configuration from loadbalancer object
             config = templater.build_keepalived_config(loadbalancer, amp)
             self.client.upload_vrrp_config(amp, config)
@@ -54,7 +57,11 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
         """
         LOG.info(_LI("Stop loadbalancer %s amphora VRRP Service."),
                  loadbalancer.id)
-        for amp in loadbalancer.amphorae:
+
+        for amp in six.moves.filter(
+            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
+                loadbalancer.amphorae):
+
             self.client.stop_vrrp(amp)
 
     def start_vrrp_service(self, loadbalancer):
@@ -64,7 +71,11 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
         """
         LOG.info(_LI("Start loadbalancer %s amphora VRRP Service."),
                  loadbalancer.id)
-        for amp in loadbalancer.amphorae:
+
+        for amp in six.moves.filter(
+            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
+                loadbalancer.amphorae):
+
             LOG.debug("Start VRRP Service on amphora %s .", amp.lb_network_ip)
             self.client.start_vrrp(amp)
 
@@ -75,5 +86,9 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
         """
         LOG.info(_LI("Reload loadbalancer %s amphora VRRP Service."),
                  loadbalancer.id)
-        for amp in loadbalancer.amphorae:
+
+        for amp in six.moves.filter(
+            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
+                loadbalancer.amphorae):
+
             self.client.reload_vrrp(amp)
