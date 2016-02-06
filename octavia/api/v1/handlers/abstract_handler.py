@@ -63,3 +63,5 @@ class BaseHandler(object):
     pool = NotImplementedObjectHandler()
     health_monitor = NotImplementedObjectHandler()
     member = NotImplementedObjectHandler()
+    l7policy = NotImplementedObjectHandler()
+    l7rule = NotImplementedObjectHandler()

@@ -38,6 +38,10 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     MEMBERS_PATH = DEPRECATED_POOL_PATH + '/members'
     MEMBER_PATH = MEMBERS_PATH + '/{member_id}'
     HM_PATH = DEPRECATED_POOL_PATH + '/healthmonitor'
+    L7POLICIES_PATH = LISTENER_PATH + '/l7policies'
+    L7POLICY_PATH = L7POLICIES_PATH + '/{l7policy_id}'
+    L7RULES_PATH = L7POLICY_PATH + '/l7rules'
+    L7RULE_PATH = L7RULES_PATH + '/{l7rule_id}'
 
     def setUp(self):
         super(BaseAPITest, self).setUp()
@@ -156,6 +160,23 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         response = self.post(path, req_dict)
         return response.json
 
+    def create_l7policy(self, lb_id, listener_id, action, **optionals):
+        req_dict = {'action': action}
+        req_dict.update(optionals)
+        path = self.L7POLICIES_PATH.format(lb_id=lb_id,
+                                           listener_id=listener_id)
+        response = self.post(path, req_dict)
+        return response.json
+
+    def create_l7rule(self, lb_id, listener_id, l7policy_id, type,
+                      compare_type, value, **optionals):
+        req_dict = {'type': type, 'compare_type': compare_type, 'value': value}
+        req_dict.update(optionals)
+        path = self.L7RULES_PATH.format(lb_id=lb_id, listener_id=listener_id,
+                                        l7policy_id=l7policy_id)
+        response = self.post(path, req_dict)
+        return response.json
+
     def _set_lb_and_children_statuses(self, lb_id, prov_status, op_status):
         self.lb_repo.update(db_api.get_session(), lb_id,
                             provisioning_status=prov_status,
@@ -163,11 +184,10 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         lb_listeners = self.listener_repo.get_all(db_api.get_session(),
                                                   load_balancer_id=lb_id)
         for listener in lb_listeners:
-            if listener.default_pool_id:
-                self.pool_repo.update(db_api.get_session(),
-                                      listener.default_pool_id,
+            for pool in listener.pools:
+                self.pool_repo.update(db_api.get_session(), pool.id,
                                       operating_status=op_status)
-                for member in listener.default_pool.members:
+                for member in pool.members:
                     self.member_repo.update(db_api.get_session(), member.id,
                                             operating_status=op_status)
             self.listener_repo.update(db_api.get_session(), listener.id,

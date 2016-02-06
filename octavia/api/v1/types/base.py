@@ -15,6 +15,9 @@
 import six
 from wsme import types as wtypes
 
+from octavia.common import exceptions
+from octavia.common import validate
+
 if six.PY3:
     unicode = str
 
@@ -36,6 +39,20 @@ class IPAddressType(wtypes.UserType):
             except ValueError:
                 error = 'Value should be IPv4 or IPv6 format'
                 raise ValueError(error)
+
+
+class URLType(wtypes.UserType):
+    basetype = unicode
+    name = 'url'
+
+    @staticmethod
+    def validate(value):
+        try:
+            validate.url(value)
+        except exceptions.InvalidURL:
+            error = 'Value must be a valid URL string'
+            raise ValueError(error)
+        return value
 
 
 class BaseType(wtypes.Base):

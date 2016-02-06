@@ -30,6 +30,8 @@ import oslo_messaging as messaging
 
 from octavia.api.v1.handlers.queue import producer
 from octavia.api.v1.types import health_monitor
+from octavia.api.v1.types import l7policy
+from octavia.api.v1.types import l7rule
 from octavia.api.v1.types import listener
 from octavia.api.v1.types import load_balancer
 from octavia.api.v1.types import member
@@ -183,3 +185,52 @@ class TestProducer(base.TestCase):
               'member_updates': member_updates.to_dict(render_unsets=False)}
         self.mck_client.cast.assert_called_once_with(
             {}, 'update_member', **kw)
+
+    def test_create_l7policy(self):
+        p = producer.L7PolicyProducer()
+        p.create(self.mck_model)
+        kw = {'l7policy_id': self.mck_model.id}
+        self.mck_client.cast.assert_called_once_with(
+            {}, 'create_l7policy', **kw)
+
+    def test_delete_l7policy(self):
+        p = producer.L7PolicyProducer()
+        p.delete(self.mck_model)
+        kw = {'l7policy_id': self.mck_model.id}
+        self.mck_client.cast.assert_called_once_with(
+            {}, 'delete_l7policy', **kw)
+
+    def test_update_l7policy(self):
+        p = producer.L7PolicyProducer()
+        l7policy_model = data_models.L7Policy(id=10)
+        l7policy_updates = l7policy.L7PolicyPUT(enabled=False)
+        p.update(l7policy_model, l7policy_updates)
+        kw = {'l7policy_id': l7policy_model.id,
+              'l7policy_updates': l7policy_updates.to_dict(
+                  render_unsets=False)}
+        self.mck_client.cast.assert_called_once_with(
+            {}, 'update_l7policy', **kw)
+
+    def test_create_l7rule(self):
+        p = producer.L7RuleProducer()
+        p.create(self.mck_model)
+        kw = {'l7rule_id': self.mck_model.id}
+        self.mck_client.cast.assert_called_once_with(
+            {}, 'create_l7rule', **kw)
+
+    def test_delete_l7rule(self):
+        p = producer.L7RuleProducer()
+        p.delete(self.mck_model)
+        kw = {'l7rule_id': self.mck_model.id}
+        self.mck_client.cast.assert_called_once_with(
+            {}, 'delete_l7rule', **kw)
+
+    def test_update_l7rule(self):
+        p = producer.L7RuleProducer()
+        l7rule_model = data_models.L7Rule(id=10)
+        l7rule_updates = l7rule.L7RulePUT(enabled=False)
+        p.update(l7rule_model, l7rule_updates)
+        kw = {'l7rule_id': l7rule_model.id,
+              'l7rule_updates': l7rule_updates.to_dict(render_unsets=False)}
+        self.mck_client.cast.assert_called_once_with(
+            {}, 'update_l7rule', **kw)
