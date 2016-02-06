@@ -36,14 +36,14 @@ class ListenerFlows(object):
         create_listener_flow.add(database_tasks.ReloadListener(
             requires='listener',
             provides='listener'))
-        create_listener_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        create_listener_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
         create_listener_flow.add(network_tasks.UpdateVIP(
             requires=constants.LOADBALANCER))
         create_listener_flow.add(database_tasks.
-                                 MarkLBAndListenerActiveInDB(
+                                 MarkLBAndListenersActiveInDB(
                                      requires=[constants.LOADBALANCER,
-                                               constants.LISTENER]))
+                                               constants.LISTENERS]))
         return create_listener_flow
 
     def get_delete_listener_flow(self):
@@ -74,13 +74,13 @@ class ListenerFlows(object):
                                      rebind={constants.OBJECT:
                                              constants.LISTENER},
                                      requires=[constants.UPDATE_DICT]))
-        update_listener_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        update_listener_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_listener_flow.add(database_tasks.UpdateListenerInDB(
             requires=[constants.LISTENER, constants.UPDATE_DICT]))
         update_listener_flow.add(database_tasks.
-                                 MarkLBAndListenerActiveInDB(
+                                 MarkLBAndListenersActiveInDB(
                                      requires=[constants.LOADBALANCER,
-                                               constants.LISTENER]))
+                                               constants.LISTENERS]))
 
         return update_listener_flow

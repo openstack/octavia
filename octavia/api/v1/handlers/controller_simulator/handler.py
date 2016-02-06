@@ -1,4 +1,5 @@
 #    Copyright 2014 Rackspace
+#    Copyright 2016 Blue Box, an IBM Company
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -52,21 +53,34 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
         time.sleep(ASYNC_TIME)
         LOG.info(_LI("Simulating controller operation for member..."))
 
+        db_mem = None
         if delete:
+            db_mem = repo.member.get(db_api.get_session(), member.id)
             repo.member.delete(db_api.get_session(), id=member.id)
         elif update:
-            old_mem = repo.member.get(db_api.get_session(), member.id)
+            db_mem = repo.member.get(db_api.get_session(), member.id)
             member_dict = member.to_dict()
-            member_dict['operating_status'] = old_mem.operating_status
+            member_dict['operating_status'] = db_mem.operating_status
             repo.member.update(db_api.get_session(), member.id, **member_dict)
         elif create:
             repo.member.update(db_api.get_session(), member.id,
                                operating_status=constants.ONLINE)
-        repo.listener.update(db_api.get_session(), member.pool.listener.id,
-                             operating_status=constants.ONLINE,
-                             provisioning_status=constants.ACTIVE)
+        listeners = []
+        if db_mem:
+            for listener in db_mem.pool.listeners:
+                if listener not in listeners:
+                    listeners.append(listener)
+        if member.pool.listeners:
+            for listener in member.pool.listeners:
+                if listener not in listeners:
+                    listeners.append(listener)
+        if listeners:
+            for listener in listeners:
+                repo.listener.update(db_api.get_session(), listener.id,
+                                     operating_status=constants.ONLINE,
+                                     provisioning_status=constants.ACTIVE)
         repo.load_balancer.update(db_api.get_session(),
-                                  member.pool.listener.load_balancer.id,
+                                  member.pool.load_balancer.id,
                                   operating_status=constants.ONLINE,
                                   provisioning_status=constants.ACTIVE)
         LOG.info(_LI("Simulated Controller Handler Thread Complete"))
@@ -76,30 +90,44 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
         time.sleep(ASYNC_TIME)
         LOG.info(_LI("Simulating controller operation for health monitor..."))
 
+        db_hm = None
         if delete:
+            db_hm = repo.health_monitor.get(db_api.get_session(),
+                                            pool_id=health_monitor.pool.id)
             repo.health_monitor.delete(db_api.get_session(),
                                        pool_id=health_monitor.pool.id)
         elif update:
-            hm = repo.health_monitor.get(db_api.get_session(),
-                                         health_monitor.pool_id)
+            db_hm = repo.health_monitor.get(db_api.get_session(),
+                                            health_monitor.pool_id)
             hm_dict = health_monitor.to_dict()
-            hm_dict['operating_status'] = hm.operating_status()
+            hm_dict['operating_status'] = db_hm.operating_status()
             repo.health_monitor.update(db_api.get_session(), **hm_dict)
         elif create:
             repo.pool.update(db_api.get_session(), health_monitor.pool_id,
                              operating_status=constants.ONLINE)
-        repo.test_and_set_lb_and_listener_prov_status(
-            db_api.get_session(),
-            health_monitor.pool.listener.load_balancer.id,
-            health_monitor.pool.listener.id, constants.ACTIVE,
-            constants.ACTIVE)
-        repo.listener.update(db_api.get_session(),
-                             health_monitor.pool.listener.id,
-                             operating_status=constants.ONLINE,
-                             provisioning_status=constants.ACTIVE)
+        listeners = []
+        if db_hm:
+            for listener in db_hm.pool.listeners:
+                if listener not in listeners:
+                    listeners.append(listener)
+        if health_monitor.pool.listeners:
+            for listener in health_monitor.pool.listeners:
+                if listener not in listeners:
+                    listeners.append(listener)
+        if listeners:
+            for listener in listeners:
+                repo.test_and_set_lb_and_listener_prov_status(
+                    db_api.get_session(),
+                    health_monitor.pool.load_balancer.id,
+                    listener.id, constants.ACTIVE,
+                    constants.ACTIVE)
+                repo.listener.update(db_api.get_session(),
+                                     listener.id,
+                                     operating_status=constants.ONLINE,
+                                     provisioning_status=constants.ACTIVE)
         repo.load_balancer.update(
             db_api.get_session(),
-            health_monitor.pool.listener.load_balancer.id,
+            health_monitor.pool.load_balancer.id,
             operating_status=constants.ONLINE,
             provisioning_status=constants.ACTIVE)
         LOG.info(_LI("Simulated Controller Handler Thread Complete"))
@@ -108,23 +136,36 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
         time.sleep(ASYNC_TIME)
         LOG.info(_LI("Simulating controller operation for pool..."))
 
+        db_pool = None
         if delete:
+            db_pool = repo.pool.get(db_api.get_session(), id=pool.id)
             repo.pool.delete(db_api.get_session(), id=pool.id)
         elif update:
             db_pool = repo.pool.get(db_api.get_session(), id=pool.id)
             pool_dict = pool.to_dict()
             pool_dict['operating_status'] = db_pool.operating_status
             sp_dict = pool_dict.pop('session_persistence', None)
-            repo.update_pool_on_listener(db_api.get_session(), pool.id,
-                                         pool_dict, sp_dict)
+            repo.update_pool_and_sp(db_api.get_session(), pool.id,
+                                    pool_dict, sp_dict)
         elif create:
             repo.pool.update(db_api.get_session(), pool.id,
                              operating_status=constants.ONLINE)
-        repo.listener.update(db_api.get_session(), pool.listener.id,
-                             operating_status=constants.ONLINE,
-                             provisioning_status=constants.ACTIVE)
+        listeners = []
+        if db_pool:
+            for listener in db_pool.listeners:
+                if listener not in listeners:
+                    listeners.append(listener)
+        if pool.listeners:
+            for listener in pool.listeners:
+                if listener not in listeners:
+                    listeners.append(listener)
+        if listeners:
+            for listener in listeners:
+                repo.listener.update(db_api.get_session(), listener.id,
+                                     operating_status=constants.ONLINE,
+                                     provisioning_status=constants.ACTIVE)
         repo.load_balancer.update(db_api.get_session(),
-                                  pool.listener.load_balancer.id,
+                                  pool.load_balancer.id,
                                   operating_status=constants.ONLINE,
                                   provisioning_status=constants.ACTIVE)
         LOG.info(_LI("Simulated Controller Handler Thread Complete"))

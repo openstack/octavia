@@ -134,6 +134,20 @@ class TestMember(base.BaseAPITest):
         api_member = {'name': 'test1'}
         self.post(self.members_path, api_member, status=400)
 
+    def test_create_with_bad_handler(self):
+        self.handler_mock().member.create.side_effect = Exception()
+        self.create_member(self.lb.get('id'),
+                           self.listener.get('id'),
+                           self.pool.get('id'),
+                           '10.0.0.1', 80)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ERROR)
+
     def test_duplicate_create(self):
         member = {'ip_address': '10.0.0.1', 'protocol_port': 80}
         self.post(self.members_path, member, status=202)
@@ -178,6 +192,24 @@ class TestMember(base.BaseAPITest):
         self.put(self.member_path.format(member_id=api_member.get('id')),
                  new_member, expect_errors=True)
 
+    def test_update_with_bad_handler(self):
+        api_member = self.create_member(self.lb.get('id'),
+                                        self.listener.get('id'),
+                                        self.pool.get('id'),
+                                        '10.0.0.1', 80)
+        self.set_lb_status(self.lb.get('id'))
+        new_member = {'protocol_port': 88}
+        self.handler_mock().member.update.side_effect = Exception()
+        self.put(self.member_path.format(
+            member_id=api_member.get('id')), new_member, status=202)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ERROR)
+
     def test_duplicate_update(self):
         self.skip('This test should pass after a validation layer.')
         member = {'ip_address': '10.0.0.1', 'protocol_port': 80}
@@ -220,6 +252,26 @@ class TestMember(base.BaseAPITest):
     def test_bad_delete(self):
         self.delete(self.member_path.format(
             member_id=uuidutils.generate_uuid()), status=404)
+
+    def test_delete_with_bad_handler(self):
+        api_member = self.create_member(self.lb.get('id'),
+                                        self.listener.get('id'),
+                                        self.pool.get('id'),
+                                        '10.0.0.1', 80)
+        self.set_lb_status(self.lb.get('id'))
+        response = self.get(self.member_path.format(
+            member_id=api_member.get('id')))
+        api_member['operating_status'] = constants.ONLINE
+        self.assertEqual(api_member, response.json)
+        self.handler_mock().member.delete.side_effect = Exception()
+        self.delete(self.member_path.format(member_id=api_member.get('id')))
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ERROR)
 
     def test_create_when_lb_pending_update(self):
         self.create_member(self.lb.get('id'), self.listener.get('id'),

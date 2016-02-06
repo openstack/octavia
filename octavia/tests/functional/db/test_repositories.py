@@ -21,6 +21,7 @@ from oslo_utils import uuidutils
 
 from octavia.common import constants
 from octavia.common import data_models as models
+from octavia.common import exceptions
 from octavia.db import repositories as repo
 from octavia.tests.functional.db import base
 
@@ -35,6 +36,7 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
     FAKE_UUID_1 = uuidutils.generate_uuid()
     FAKE_UUID_2 = uuidutils.generate_uuid()
     FAKE_UUID_3 = uuidutils.generate_uuid()
+    FAKE_UUID_4 = uuidutils.generate_uuid()
     FAKE_EXP_AGE = 10
 
     def setUp(self):
@@ -69,13 +71,22 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
 
 class AllRepositoriesTest(base.OctaviaDBTestBase):
 
+    FAKE_UUID_1 = uuidutils.generate_uuid()
+    FAKE_UUID_2 = uuidutils.generate_uuid()
+
     def setUp(self):
         super(AllRepositoriesTest, self).setUp()
         self.repos = repo.Repositories()
+        self.load_balancer = self.repos.load_balancer.create(
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
+            name="lb_name", description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, enabled=True)
         self.listener = self.repos.listener.create(
             self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
             enabled=True, provisioning_status=constants.ACTIVE,
-            operating_status=constants.ONLINE)
+            operating_status=constants.ONLINE,
+            load_balancer_id=self.load_balancer.id)
 
     def test_all_repos_has_correct_repos(self):
         repo_attr_names = ('load_balancer', 'vip', 'health_monitor',
@@ -118,6 +129,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del lb_dm_dict['vip']
         del lb_dm_dict['listeners']
         del lb_dm_dict['amphorae']
+        del lb_dm_dict['pools']
         self.assertEqual(lb, lb_dm_dict)
         vip_dm_dict = lb_dm.vip.to_dict()
         vip_dm_dict['load_balancer_id'] = lb_dm.id
@@ -130,14 +142,15 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'project_id': uuidutils.generate_uuid()}
-        pool_dm = self.repos.create_pool_on_listener(self.session,
-                                                     self.listener.id,
-                                                     pool)
+        pool_dm = self.repos.create_pool_on_load_balancer(
+            self.session, pool, listener_id=self.listener.id)
         pool_dm_dict = pool_dm.to_dict()
         del pool_dm_dict['members']
         del pool_dm_dict['health_monitor']
         del pool_dm_dict['session_persistence']
-        del pool_dm_dict['listener']
+        del pool_dm_dict['listeners']
+        del pool_dm_dict['load_balancer']
+        del pool_dm_dict['load_balancer_id']
         self.assertEqual(pool, pool_dm_dict)
         new_listener = self.repos.listener.get(self.session,
                                                id=self.listener.id)
@@ -151,14 +164,15 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'project_id': uuidutils.generate_uuid()}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster'}
-        pool_dm = self.repos.create_pool_on_listener(self.session,
-                                                     self.listener.id,
-                                                     pool, sp_dict=sp)
+        pool_dm = self.repos.create_pool_on_load_balancer(
+            self.session, pool, listener_id=self.listener.id, sp_dict=sp)
         pool_dm_dict = pool_dm.to_dict()
         del pool_dm_dict['members']
         del pool_dm_dict['health_monitor']
         del pool_dm_dict['session_persistence']
-        del pool_dm_dict['listener']
+        del pool_dm_dict['listeners']
+        del pool_dm_dict['load_balancer']
+        del pool_dm_dict['load_balancer_id']
         self.assertEqual(pool, pool_dm_dict)
         sp_dm_dict = pool_dm.session_persistence.to_dict()
         del sp_dm_dict['pool']
@@ -171,27 +185,29 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     pool_id=pool_dm.id)
         self.assertIsNotNone(new_sp)
 
-    def test_update_pool_on_listener_without_sp(self):
+    def test_update_pool_without_sp(self):
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'project_id': uuidutils.generate_uuid()}
-        pool_dm = self.repos.create_pool_on_listener(self.session,
-                                                     self.listener.id, pool)
+        pool_dm = self.repos.create_pool_on_load_balancer(
+            self.session, pool, listener_id=self.listener.id)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
-        new_pool_dm = self.repos.update_pool_on_listener(
+        new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool, None)
         pool_dm_dict = new_pool_dm.to_dict()
         del pool_dm_dict['members']
         del pool_dm_dict['health_monitor']
         del pool_dm_dict['session_persistence']
-        del pool_dm_dict['listener']
+        del pool_dm_dict['listeners']
+        del pool_dm_dict['load_balancer']
+        del pool_dm_dict['load_balancer_id']
         pool.update(update_pool)
         self.assertEqual(pool, pool_dm_dict)
         self.assertIsNone(new_pool_dm.session_persistence)
 
-    def test_update_pool_on_listener_with_existing_sp(self):
+    def test_update_pool_with_existing_sp(self):
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
@@ -199,18 +215,19 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'project_id': uuidutils.generate_uuid()}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster'}
-        pool_dm = self.repos.create_pool_on_listener(self.session,
-                                                     self.listener.id,
-                                                     pool, sp_dict=sp)
+        pool_dm = self.repos.create_pool_on_load_balancer(
+            self.session, pool, listener_id=self.listener.id, sp_dict=sp)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
         update_sp = {'type': constants.SESSION_PERSISTENCE_SOURCE_IP}
-        new_pool_dm = self.repos.update_pool_on_listener(
+        new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool, update_sp)
         pool_dm_dict = new_pool_dm.to_dict()
         del pool_dm_dict['members']
         del pool_dm_dict['health_monitor']
         del pool_dm_dict['session_persistence']
-        del pool_dm_dict['listener']
+        del pool_dm_dict['listeners']
+        del pool_dm_dict['load_balancer']
+        del pool_dm_dict['load_balancer_id']
         pool.update(update_pool)
         self.assertEqual(pool, pool_dm_dict)
         sp_dm_dict = new_pool_dm.session_persistence.to_dict()
@@ -219,19 +236,18 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         sp.update(update_sp)
         self.assertEqual(sp, sp_dm_dict)
 
-    def test_update_pool_on_listener_with_nonexisting_sp(self):
+    def test_update_pool_with_nonexisting_sp(self):
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'project_id': uuidutils.generate_uuid()}
-        pool_dm = self.repos.create_pool_on_listener(self.session,
-                                                     self.listener.id,
-                                                     pool)
+        pool_dm = self.repos.create_pool_on_load_balancer(
+            self.session, pool, listener_id=self.listener.id)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
         update_sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
                      'cookie_name': 'monster_cookie'}
-        new_pool_dm = self.repos.update_pool_on_listener(
+        new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool, update_sp)
         sp_dm_dict = new_pool_dm.session_persistence.to_dict()
         del sp_dm_dict['pool']
@@ -239,21 +255,20 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         update_sp.update(update_sp)
         self.assertEqual(update_sp, sp_dm_dict)
 
-    def test_update_pool_on_listener_with_nonexisting_sp_delete_sp(self):
+    def test_update_pool_with_nonexisting_sp_delete_sp(self):
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'project_id': uuidutils.generate_uuid()}
-        pool_dm = self.repos.create_pool_on_listener(self.session,
-                                                     self.listener.id,
-                                                     pool)
+        pool_dm = self.repos.create_pool_on_load_balancer(
+            self.session, pool, listener_id=self.listener.id)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
-        new_pool_dm = self.repos.update_pool_on_listener(
+        new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool, None)
         self.assertIsNone(new_pool_dm.session_persistence)
 
-    def test_update_pool_on_listener_with_existing_sp_delete_sp(self):
+    def test_update_pool_with_existing_sp_delete_sp(self):
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
@@ -261,11 +276,10 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'project_id': uuidutils.generate_uuid()}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster'}
-        pool_dm = self.repos.create_pool_on_listener(self.session,
-                                                     self.listener.id,
-                                                     pool, sp_dict=sp)
+        pool_dm = self.repos.create_pool_on_load_balancer(
+            self.session, pool, listener_id=self.listener.id, sp_dict=sp)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
-        new_pool_dm = self.repos.update_pool_on_listener(
+        new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool, None)
         self.assertIsNone(new_pool_dm.session_persistence)
 
@@ -572,6 +586,22 @@ class ListenerRepositoryTest(BaseRepositoryTest):
         self.assertEqual(constants.ONLINE, new_listener.operating_status)
         self.assertTrue(new_listener.enabled)
 
+    def test_create_listener_on_different_lb_than_default_pool(self):
+        load_balancer2 = self.lb_repo.create(
+            self.session, id=self.FAKE_UUID_3, project_id=self.FAKE_UUID_2,
+            name="lb_name2", description="lb_description2",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, enabled=True)
+        pool = self.pool_repo.create(
+            self.session, id=self.FAKE_UUID_4, project_id=self.FAKE_UUID_2,
+            name="pool_test", description="pool_description",
+            protocol=constants.PROTOCOL_HTTP,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            operating_status=constants.ONLINE, enabled=True,
+            load_balancer_id=load_balancer2.id)
+        self.assertRaises(exceptions.NotFound, self.create_listener,
+                          self.FAKE_UUID_1, 80, default_pool_id=pool.id)
+
     def test_update(self):
         name_change = "new_listener_name"
         listener = self.create_listener(self.FAKE_UUID_1, 80)
@@ -616,7 +646,8 @@ class ListenerRepositoryTest(BaseRepositoryTest):
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
-            operating_status=constants.ONLINE, enabled=True)
+            operating_status=constants.ONLINE, enabled=True,
+            load_balancer_id=self.load_balancer.id)
         listener = self.create_listener(self.FAKE_UUID_1, 80,
                                         default_pool_id=pool.id)
         new_listener = self.listener_repo.get(self.session, id=listener.id)
@@ -624,7 +655,8 @@ class ListenerRepositoryTest(BaseRepositoryTest):
         self.assertEqual(pool, new_listener.default_pool)
         self.listener_repo.delete(self.session, id=new_listener.id)
         self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
-        self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
+        # Pool should stick around
+        self.assertIsNotNone(self.pool_repo.get(self.session, id=pool.id))
 
     def test_delete_with_all_children(self):
         pool = self.pool_repo.create(
@@ -632,7 +664,8 @@ class ListenerRepositoryTest(BaseRepositoryTest):
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
-            operating_status=constants.ONLINE, enabled=True)
+            operating_status=constants.ONLINE, enabled=True,
+            load_balancer_id=self.load_balancer.id)
         listener = self.create_listener(self.FAKE_UUID_1, 80,
                                         default_pool_id=pool.id)
         sni = self.sni_repo.create(self.session, listener_id=listener.id,
@@ -651,7 +684,25 @@ class ListenerRepositoryTest(BaseRepositoryTest):
                                             listener_id=listener.id))
         self.assertIsNone(self.listener_stats_repo.get(
             self.session, listener_id=sni.listener_id))
-        self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
+        # Pool should stick around
+        self.assertIsNotNone(self.pool_repo.get(self.session, id=pool.id))
+
+    def test_delete_default_pool_from_beneath_listener(self):
+        pool = self.pool_repo.create(
+            self.session, id=self.FAKE_UUID_3, project_id=self.FAKE_UUID_2,
+            name="pool_test", description="pool_description",
+            protocol=constants.PROTOCOL_HTTP,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            operating_status=constants.ONLINE, enabled=True,
+            load_balancer_id=self.load_balancer.id)
+        listener = self.create_listener(self.FAKE_UUID_1, 80,
+                                        default_pool_id=pool.id)
+        new_listener = self.listener_repo.get(self.session, id=listener.id)
+        self.assertIsNotNone(new_listener)
+        self.assertEqual(pool, new_listener.default_pool)
+        self.pool_repo.delete(self.session, id=pool.id)
+        new_listener = self.listener_repo.get(self.session, id=listener.id)
+        self.assertIsNone(new_listener.default_pool)
 
 
 class ListenerStatisticsRepositoryTest(BaseRepositoryTest):

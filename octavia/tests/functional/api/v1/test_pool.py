@@ -27,17 +27,19 @@ class TestPool(base.BaseAPITest):
         self.listener = self.create_listener(self.lb.get('id'),
                                              constants.PROTOCOL_HTTP, 80)
         self.set_lb_status(self.lb.get('id'))
-        self.pools_path = self.POOLS_PATH.format(
-            lb_id=self.lb.get('id'), listener_id=self.listener.get('id'))
+        self.pools_path = self.POOLS_PATH.format(lb_id=self.lb.get('id'))
         self.pool_path = self.pools_path + '/{pool_id}'
+        self.pools_path_with_listener = (self.pools_path +
+                                         '?listener_id={listener_id}')
+        self.pools_path_deprecated = self.DEPRECATED_POOLS_PATH.format(
+            lb_id=self.lb.get('id'), listener_id=self.listener.get('id'))
+        self.pool_path_deprecated = self.pools_path_deprecated + '/{pool_id}'
 
     def test_get(self):
-        api_pool = self.create_pool(self.lb.get('id'),
-                                    self.listener.get('id'),
-                                    constants.PROTOCOL_HTTP,
-                                    constants.LB_ALGORITHM_ROUND_ROBIN)
+        api_pool = self.create_pool_sans_listener(
+            self.lb.get('id'), constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN)
         self.set_lb_status(lb_id=self.lb.get('id'))
-        api_pool['operating_status'] = constants.ONLINE
         response = self.get(self.pool_path.format(pool_id=api_pool.get('id')))
         response_body = response.json
         self.assertEqual(api_pool, response_body)
@@ -47,16 +49,32 @@ class TestPool(base.BaseAPITest):
                  status=404)
 
     def test_get_all(self):
-        api_pool = self.create_pool(self.lb.get('id'),
-                                    self.listener.get('id'),
-                                    constants.PROTOCOL_HTTP,
-                                    constants.LB_ALGORITHM_ROUND_ROBIN)
+        api_pool = self.create_pool_sans_listener(
+            self.lb.get('id'), constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN)
         self.set_lb_status(lb_id=self.lb.get('id'))
         response = self.get(self.pools_path)
         response_body = response.json
         self.assertIsInstance(response_body, list)
         self.assertEqual(1, len(response_body))
         self.assertEqual(api_pool.get('id'), response_body[0].get('id'))
+
+    def test_get_all_with_listener(self):
+        api_pool = self.create_pool(self.lb.get('id'),
+                                    self.listener.get('id'),
+                                    constants.PROTOCOL_HTTP,
+                                    constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.set_lb_status(lb_id=self.lb.get('id'))
+        response = self.get(self.pools_path_with_listener.format(
+            listener_id=self.listener.get('id')))
+        response_body = response.json
+        self.assertIsInstance(response_body, list)
+        self.assertEqual(1, len(response_body))
+        self.assertEqual(api_pool.get('id'), response_body[0].get('id'))
+
+    def test_get_all_with_bad_listener(self):
+        self.get(self.pools_path_with_listener.format(
+            listener_id='bad_id'), status=404, expect_errors=True)
 
     def test_empty_get_all(self):
         response = self.get(self.pools_path)
@@ -69,6 +87,46 @@ class TestPool(base.BaseAPITest):
                                     self.listener.get('id'),
                                     constants.PROTOCOL_HTTP,
                                     constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ONLINE)
+        self.set_lb_status(self.lb.get('id'))
+        self.assertEqual(constants.PROTOCOL_HTTP, api_pool.get('protocol'))
+        self.assertEqual(constants.LB_ALGORITHM_ROUND_ROBIN,
+                         api_pool.get('lb_algorithm'))
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.ACTIVE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.ACTIVE, constants.ONLINE)
+
+    def test_create_sans_listener(self):
+        api_pool = self.create_pool_sans_listener(
+            self.lb.get('id'), constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.assertEqual(constants.PROTOCOL_HTTP, api_pool.get('protocol'))
+        self.assertEqual(constants.LB_ALGORITHM_ROUND_ROBIN,
+                         api_pool.get('lb_algorithm'))
+        # Make sure listener / load balancer status are unchanged, as
+        # this should have been a pure DB operation
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.ACTIVE,
+                                            constants.ONLINE)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.ACTIVE,
+                                      constants.ONLINE)
+
+    def test_create_with_listener_id_in_pool_dict(self):
+        api_pool = self.create_pool_sans_listener(
+            self.lb.get('id'), constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener.get('id'))
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
                                       constants.ONLINE)
@@ -120,17 +178,43 @@ class TestPool(base.BaseAPITest):
     def test_bad_create(self):
         api_pool = {'name': 'test1'}
         self.post(self.pools_path, api_pool, status=400)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.ACTIVE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.ACTIVE, constants.ONLINE)
 
-    def test_duplicate_create(self):
-        pool = {'protocol': constants.PROTOCOL_HTTP,
+    def test_create_with_listener_with_default_pool_id_set(self):
+        self.create_pool(self.lb.get('id'),
+                         self.listener.get('id'),
+                         constants.PROTOCOL_HTTP,
+                         constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.set_lb_status(self.lb.get('id'), constants.ACTIVE)
+        path = self.pools_path_deprecated.format(
+            lb_id=self.lb.get('id'), listener_id=self.listener.get('id'))
+        body = {'protocol': constants.PROTOCOL_HTTP,
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN}
-        self.post(self.pools_path, pool)
-        self.post(self.pools_path, pool, status=409)
+        self.post(path, body, status=409, expect_errors=True)
 
     def test_create_bad_protocol(self):
         pool = {'protocol': 'STUPID_PROTOCOL',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN}
         self.post(self.pools_path, pool, status=400)
+
+    def test_create_with_bad_handler(self):
+        self.handler_mock().pool.create.side_effect = Exception()
+        self.create_pool(self.lb.get('id'),
+                         self.listener.get('id'),
+                         constants.PROTOCOL_HTTP,
+                         constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ERROR)
 
     def test_update(self):
         api_pool = self.create_pool(self.lb.get('id'),
@@ -164,9 +248,34 @@ class TestPool(base.BaseAPITest):
                                     self.listener.get('id'),
                                     constants.PROTOCOL_HTTP,
                                     constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.set_lb_status(self.lb.get('id'))
         new_pool = {'enabled': 'one'}
         self.put(self.pool_path.format(pool_id=api_pool.get('id')),
                  new_pool, status=400)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.ACTIVE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.ACTIVE, constants.ONLINE)
+
+    def test_update_with_bad_handler(self):
+        api_pool = self.create_pool(self.lb.get('id'),
+                                    self.listener.get('id'),
+                                    constants.PROTOCOL_HTTP,
+                                    constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.set_lb_status(lb_id=self.lb.get('id'))
+        new_pool = {'name': 'new_name'}
+        self.handler_mock().pool.update.side_effect = Exception()
+        self.put(self.pool_path.format(pool_id=api_pool.get('id')),
+                 new_pool, status=202)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ERROR)
 
     def test_delete(self):
         api_pool = self.create_pool(self.lb.get('id'),
@@ -197,6 +306,26 @@ class TestPool(base.BaseAPITest):
     def test_bad_delete(self):
         self.delete(self.pool_path.format(
             pool_id=uuidutils.generate_uuid()), status=404)
+
+    def test_delete_with_bad_handler(self):
+        api_pool = self.create_pool(self.lb.get('id'),
+                                    self.listener.get('id'),
+                                    constants.PROTOCOL_HTTP,
+                                    constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.set_lb_status(lb_id=self.lb.get('id'))
+        api_pool['operating_status'] = constants.ONLINE
+        response = self.get(self.pool_path.format(
+            pool_id=api_pool.get('id')))
+        self.assertEqual(api_pool, response.json)
+        self.handler_mock().pool.delete.side_effect = Exception()
+        self.delete(self.pool_path.format(pool_id=api_pool.get('id')))
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ERROR)
 
     def test_create_with_session_persistence(self):
         sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE,

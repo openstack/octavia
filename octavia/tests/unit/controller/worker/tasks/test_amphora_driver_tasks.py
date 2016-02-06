@@ -70,13 +70,13 @@ class TestAmphoraDriverTasks(base.TestCase):
                              mock_listener_repo_update,
                              mock_amphora_repo_update):
 
-        listener_update_obj = amphora_driver_tasks.ListenerUpdate()
-        listener_update_obj.execute(_load_balancer_mock, _listener_mock)
+        listener_update_obj = amphora_driver_tasks.ListenersUpdate()
+        listener_update_obj.execute(_load_balancer_mock, [_listener_mock])
 
         mock_driver.update.assert_called_once_with(_listener_mock, _vip_mock)
 
         # Test the revert
-        amp = listener_update_obj.revert(_listener_mock)
+        amp = listener_update_obj.revert([_listener_mock])
         repo.ListenerRepository.update.assert_called_once_with(
             _session_mock,
             id=LISTENER_ID,

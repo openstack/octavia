@@ -317,7 +317,10 @@ Listeners
 | default_tls\        | String     | Barbican ``UUID`` for TLS container |
 | _container_id       |            |                                     |
 +---------------------+------------+-------------------------------------+
-| project_id           | String    | ``UUID`` for project                |
+| default_pool_id     | UUID       | ``UUID`` of the pool to which \     |
+|                     |            | requests will be routed by default  |
++---------------------+------------+-------------------------------------+
+| project_id          | String     | ``UUID`` for project                |
 +---------------------+------------+-------------------------------------+
 | name                | String     | String detailing the name of the \  |
 |                     |            | listener                            |
@@ -362,7 +365,8 @@ Retrieve a list of listeners.
            'protocol_port': 80,
            'id': 'uuid',
            'operating_status': 'ONLINE',
-           'name': 'listener_name'
+           'name': 'listener_name',
+           'default_pool_id': 'uuid'
        }
    ］
 
@@ -394,7 +398,8 @@ Retrieve details of a listener.
          'protocol_port': 80,
          'id': 'uuid',
          'operating_status': 'ONLINE',
-         'name': 'listener_name'
+         'name': 'listener_name',
+         'default_pool_id': 'uuid'
     }
 
 List Listener Statistics
@@ -405,7 +410,7 @@ Retrieve the stats of a listener.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``GET``                                                   |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}``\ |
 |                | ``/stats``                                                |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 200                                             |
@@ -457,6 +462,8 @@ Create a listener.
 +------------------+----------+
 | description      | no       |
 +------------------+----------+
+| default_pool_id  | no       |
++------------------+----------+
 | enabled          | no       |
 +------------------+----------+
 
@@ -469,6 +476,7 @@ Create a listener.
         'default_tls_container_id': 'uuid',
         'name': 'listener_name',
         'description': 'listener_description',
+        'default_pool_id': 'uuid',
         'enabled': true
     }
 
@@ -485,7 +493,8 @@ Create a listener.
         'protocol_port': 88,
         'id': 'uuid',
         'operating_status': 'OFFLINE',
-        'name': 'listener_name'
+        'name': 'listener_name',
+        'default_pool_id': 'uuid'
    }
 
 Update Listener
@@ -521,6 +530,8 @@ Modify mutable fields of a listener.
 +------------------+----------+
 | description      | no       |
 +------------------+----------+
+| default_pool_id  | no       |
++------------------+----------+
 | enabled          | no       |
 +------------------+----------+
 
@@ -533,6 +544,7 @@ Modify mutable fields of a listener.
         'default_tls_container_id': 'uuid',
         'name': 'listener_name',
         'description': 'listener_description',
+        'default_pool_id': 'uuid',
         'enabled': true
     }
 
@@ -549,7 +561,8 @@ Modify mutable fields of a listener.
         'protocol_port': 88,
         'id': 'uuid',
         'operating_status': 'ONLINE',
-        'name': 'listener_name'
+        'name': 'listener_name',
+        'default_pool_id': 'uuid'
     }
 
 Delete Listener
@@ -618,13 +631,19 @@ Pools
 List Pools
 **********
 
-Retrieve a list of pools.
+Retrieve a list of pools on a loadbalancer. This API endpoint
+will list all pools on a loadbalancer or optionally all the active pools
+on a listener, depending on whether the ``listener_id`` query string is
+appended below.
 
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``GET``                                                   |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
-|                | ``/pools``                                                |
+| Endpoints      | ``URL/v1/loadbalancers/{lb_id}/pools``\                   |
+|                | ``[?listener_id={listener_id}]``                          |
+|                |                                                           |
+|                | **DEPRECATED** ``URL/v1/loadbalancers/{lb_id}``\          |
+|                | ``/listeners/{listener_id}/pools``                        |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 200                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -657,8 +676,10 @@ Retrieve details of a pool.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``GET``                                                   |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
-|                | ``/pools/{pool_id}``                                      |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/pools/{pool_id}``          |
+|                |                                                           |
+|                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
+|                | ``/listeners/{listener_id}/pools/{pool_id}``              |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 200                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -689,8 +710,10 @@ Create a pool.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``POST``                                                  |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
-|                | ``/pools``                                                |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/pools``                    |
+|                |                                                           |
+|                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
+|                | ``/listeners/{listener_id}/pools``                        |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 202                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -754,8 +777,10 @@ Modify mutable attributes of a pool.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``PUT``                                                   |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
-|                | ``/pools/{pool_id}``                                      |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/pools/{pool_id}``          |
+|                |                                                           |
+|                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
+|                | ``/listeners/{listener_id}/pools/{pool_id}``              |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 202                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -818,8 +843,10 @@ Delete a pool.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``DELETE``                                                |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
-|                | ``/pools/{pool_id}``                                      |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/pools/{pool_id}``          |
+|                |                                                           |
+|                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
+|                | ``/listeners/{listener_id}/pools/{pool_id}``              |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 202                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -874,8 +901,12 @@ Retrieve details of a health monitor.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``GET``                                                   |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
 |                | ``/pools/{pool_id}/health_monitor``                       |
+|                |                                                           |
+|                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
+|                | ``/listeners/{listener_id}/pools/{pool_id}``\             |
+|                | ``/health_monitor``                                       |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 200                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -904,8 +935,12 @@ Create a health monitor.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``POST``                                                  |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
 |                | ``/pools/{pool_id}/health_monitor``                       |
+|                |                                                           |
+|                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
+|                | ``/listeners/{listener_id}/pools/{pool_id}``\             |
+|                | ``/health_monitor``                                       |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 202                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -972,8 +1007,12 @@ Modify mutable attributes of a health monitor.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``PUT``                                                   |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
 |                | ``/pools/{pool_id}/health_monitor``                       |
+|                |                                                           |
+|                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
+|                | ``/listeners/{listener_id}/pools/{pool_id}``\             |
+|                | ``/health_monitor``                                       |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 202                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -1040,8 +1079,12 @@ Delete a health monitor.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``DELETE``                                                |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
 |                | ``/pools/{pool_id}/health_monitor``                       |
+|                |                                                           |
+|                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
+|                | ``/listeners/{listener_id}/pools/{pool_id}``\             |
+|                | ``/health_monitor``                                       |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 202                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -1081,8 +1124,12 @@ Retrieve a list of pool members.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``GET``                                                   |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
 |                | ``/pools/{pool_id}/members``                              |
+|                |                                                           |
+|                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
+|                | ``/listeners/{listener_id}/pools/{pool_id}``\             |
+|                | ``/members``                                              |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 200                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -1112,8 +1159,12 @@ Retrieve details of a pool member.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``GET``                                                   |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
 |                | ``/pools/{pool_id}/members/{member_id}``                  |
+|                |                                                           |
+|                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
+|                | ``/listeners/{listener_id}/pools/{pool_id}``\             |
+|                | ``/members/{member_id}``                                  |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 200                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -1140,8 +1191,12 @@ Create a pool member.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``POST``                                                  |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
-|                | ``/pools/{pool_id}/health_monitor``                       |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
+|                | ``/pools/{pool_id}/members``                              |
+|                |                                                           |
+|                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
+|                | ``/listeners/{listener_id}/pools/{pool_id}``\             |
+|                | ``/members``                                              |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 202                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -1194,8 +1249,12 @@ Modify mutable attributes of a pool member.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``PUT``                                                   |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
 |                | ``/pools/{pool_id}/members/{member_id}``                  |
+|                |                                                           |
+|                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
+|                | ``/listeners/{listener_id}/pools/{pool_id}``\             |
+|                | ``/members/{member_id}``                                  |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 202                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -1242,8 +1301,12 @@ Delete a pool member.
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``DELETE``                                                |
 +----------------+-----------------------------------------------------------+
-| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/listeners/{listener_id}\`` |
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
 |                | ``/pools/{pool_id}/members/{member_id}``                  |
+|                |                                                           |
+|                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
+|                | ``/listeners/{listener_id}/pools/{pool_id}``\             |
+|                | ``/members/{member_id}``                                  |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 202                                             |
 | Response Codes +---------+-------------------------------------------------+

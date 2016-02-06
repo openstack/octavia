@@ -688,37 +688,40 @@ class MarkLBPendingDeleteInDB(BaseDatabaseTask):
                                       provisioning_status=constants.ERROR)
 
 
-class MarkLBAndListenerActiveInDB(BaseDatabaseTask):
-    """Mark the load balancer and listener active in the DB.
+class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
+    """Mark the load balancer and specified listeners active in the DB.
 
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, loadbalancer, listener):
-        """Mark the load balancer and listener as active in DB."""
+    def execute(self, loadbalancer, listeners):
+        """Mark the load balancer and listeners as active in DB."""
 
-        LOG.debug("Mark ACTIVE in DB for load balancer id: %(lb)s "
-                  "and listener id: %(list)s",
-                  {'lb': loadbalancer.id, 'list': listener.id})
+        LOG.debug("Mark ACTIVE in DB for load balancer id: %s "
+                  "and listener ids: %s", loadbalancer.id,
+                  ', '.join([l.id for l in listeners]))
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
                                       provisioning_status=constants.ACTIVE)
-        self.listener_repo.update(db_apis.get_session(), listener.id,
-                                  provisioning_status=constants.ACTIVE)
+        for listener in listeners:
+            self.listener_repo.update(db_apis.get_session(), listener.id,
+                                      provisioning_status=constants.ACTIVE)
 
-    def revert(self, loadbalancer, listener, *args, **kwargs):
-        """Mark the load balancer and listener as broken."""
+    def revert(self, loadbalancer, listeners, *args, **kwargs):
+        """Mark the load balancer and listeners as broken."""
 
         LOG.warn(_LW("Reverting mark load balancer "
-                     "and listener active in DB "
+                     "and listeners active in DB "
                      "for load balancer id %(LB)s and "
-                     "listener id: %(list)s"),
-                 {'LB': loadbalancer.id, 'list': listener.id})
+                     "listener ids: %(list)s"),
+                 {'LB': loadbalancer.id,
+                  'list': ', '.join([l.id for l in listeners])})
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
                                       provisioning_status=constants.ERROR)
-        self.listener_repo.update(db_apis.get_session(), listener.id,
-                                  provisioning_status=constants.ERROR)
+        for listener in listeners:
+            self.listener_repo.update(db_apis.get_session(), listener.id,
+                                      provisioning_status=constants.ERROR)
 
 
 class MarkListenerActiveInDB(BaseDatabaseTask):
@@ -943,8 +946,8 @@ class UpdatePoolInDB(BaseDatabaseTask):
 
         LOG.debug("Update DB for pool id: %s ", pool.id)
         sp_dict = update_dict.pop('session_persistence', None)
-        self.repos.update_pool_on_listener(db_apis.get_session(), pool.id,
-                                           update_dict, sp_dict)
+        self.repos.update_pool_and_sp(db_apis.get_session(), pool.id,
+                                      update_dict, sp_dict)
 
     def revert(self, pool, *args, **kwargs):
         """Mark the pool ERROR since the update couldn't happen
@@ -955,8 +958,8 @@ class UpdatePoolInDB(BaseDatabaseTask):
         LOG.warn(_LW("Reverting update pool in DB "
                      "for pool id %s"), pool.id)
 # TODO(johnsom) fix this to set the upper ojects to ERROR
-        self.repos.update_pool_on_listener(db_apis.get_session(),
-                                           pool.id, {'enabled': 0}, None)
+        self.repos.update_pool_and_sp(db_apis.get_session(),
+                                      pool.id, {'enabled': 0}, None)
 
 
 class GetAmphoraDetails(BaseDatabaseTask):

@@ -29,10 +29,10 @@ class HealthMonitorFlows(object):
         :returns: The flow for creating a health monitor
         """
         create_hm_flow = linear_flow.Flow(constants.CREATE_HEALTH_MONITOR_FLOW)
-        create_hm_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
-        create_hm_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        create_hm_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+        create_hm_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
 
         return create_hm_flow
 
@@ -45,12 +45,12 @@ class HealthMonitorFlows(object):
         delete_hm_flow.add(model_tasks.
                            DeleteModelObject(rebind={constants.OBJECT:
                                                      constants.HEALTH_MON}))
-        delete_hm_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        delete_hm_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
         delete_hm_flow.add(database_tasks.DeleteHealthMonitorInDB(
             requires=constants.POOL_ID))
-        delete_hm_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        delete_hm_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
 
         return delete_hm_flow
 
@@ -64,11 +64,11 @@ class HealthMonitorFlows(object):
                            UpdateAttributes(
                                rebind={constants.OBJECT: constants.HEALTH_MON},
                                requires=[constants.UPDATE_DICT]))
-        update_hm_flow.add(amphora_driver_tasks.ListenerUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        update_hm_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_hm_flow.add(database_tasks.UpdateHealthMonInDB(
             requires=[constants.HEALTH_MON, constants.UPDATE_DICT]))
-        update_hm_flow.add(database_tasks.MarkLBAndListenerActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+        update_hm_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
 
         return update_hm_flow

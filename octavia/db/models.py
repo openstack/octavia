@@ -206,6 +206,21 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin):
                       name="fk_pool_operating_status_name"),
         nullable=False)
     enabled = sa.Column(sa.Boolean, nullable=False)
+    load_balancer_id = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("load_balancer.id", name="fk_pool_load_balancer_id"),
+        nullable=True)
+    load_balancer = orm.relationship("LoadBalancer", uselist=False,
+                                     backref=orm.backref("pools",
+                                                         uselist=True,
+                                                         cascade="delete"))
+
+    # Defining this as a custom method instead of an SQLAlchemy relationship
+    # for now. When L7 gets added, this list will also include any listeners
+    # referenced by enabled L7policies
+    @property
+    def listeners(self):
+        return self._default_listeners
 
 
 class LoadBalancer(base_models.BASE, base_models.IdMixin,
@@ -289,8 +304,6 @@ class Listener(base_models.BASE, base_models.IdMixin,
     __table_args__ = (
         sa.UniqueConstraint('load_balancer_id', 'protocol_port',
                             name='uq_listener_load_balancer_id_protocol_port'),
-        sa.UniqueConstraint('default_pool_id',
-                            name='uq_listener_default_pool_id')
     )
 
     name = sa.Column(sa.String(255), nullable=True)
@@ -309,7 +322,7 @@ class Listener(base_models.BASE, base_models.IdMixin,
     default_pool_id = sa.Column(
         sa.String(36),
         sa.ForeignKey("pool.id", name="fk_listener_pool_id"),
-        unique=True, nullable=True)
+        nullable=True)
     provisioning_status = sa.Column(
         sa.String(16),
         sa.ForeignKey("provisioning_status.name",
@@ -325,11 +338,23 @@ class Listener(base_models.BASE, base_models.IdMixin,
                                      backref=orm.backref("listeners",
                                                          uselist=True,
                                                          cascade="delete"))
+    # _default_listeners backref is used to generate part of pool.listeners
+    # list.
     default_pool = orm.relationship("Pool", uselist=False,
-                                    backref=orm.backref("listener",
-                                                        uselist=False),
-                                    cascade="delete")
+                                    backref=orm.backref("_default_listeners",
+                                                        uselist=True))
     peer_port = sa.Column(sa.Integer(), nullable=True)
+
+    # Defining this as a custom method instead of an SQLAlchemy relationship
+    # for now. When L7 gets added, this list will also include any pools
+    # referenced by enabled L7policies
+    @property
+    def pools(self):
+        _pools = []
+        _p_ids = [p.id for p in _pools]
+        if self.default_pool and self.default_pool.id not in _p_ids:
+            _pools.append(self.default_pool)
+        return _pools
 
 
 class SNI(base_models.BASE):

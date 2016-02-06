@@ -180,6 +180,7 @@ class JinjaTemplater(object):
         if listener.default_pool:
             ret_value['default_pool'] = self._transform_pool(
                 listener.default_pool)
+        # TODO(sbalukoff): Handle pools referenced by L7Policies
         return ret_value
 
     def _transform_pool(self, pool):

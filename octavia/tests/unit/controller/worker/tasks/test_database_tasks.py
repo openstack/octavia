@@ -757,19 +757,19 @@ class TestDatabaseTasks(base.TestCase):
             LISTENER_ID,
             provisioning_status=constants.ERROR)
 
-    def test_mark_lb_and_listener_active_in_db(self,
-                                               mock_generate_uuid,
-                                               mock_LOG,
-                                               mock_get_session,
-                                               mock_loadbalancer_repo_update,
-                                               mock_listener_repo_update,
-                                               mock_amphora_repo_update,
-                                               mock_amphora_repo_delete):
+    def test_mark_lb_and_listeners_active_in_db(self,
+                                                mock_generate_uuid,
+                                                mock_LOG,
+                                                mock_get_session,
+                                                mock_loadbalancer_repo_update,
+                                                mock_listener_repo_update,
+                                                mock_amphora_repo_update,
+                                                mock_amphora_repo_delete):
 
-        mark_lb_and_listener_active = (database_tasks.
-                                       MarkLBAndListenerActiveInDB())
-        mark_lb_and_listener_active.execute(self.loadbalancer_mock,
-                                            self.listener_mock)
+        mark_lb_and_listeners_active = (database_tasks.
+                                        MarkLBAndListenersActiveInDB())
+        mark_lb_and_listeners_active.execute(self.loadbalancer_mock,
+                                             [self.listener_mock])
 
         repo.ListenerRepository.update.assert_called_once_with(
             'TEST',
@@ -785,8 +785,8 @@ class TestDatabaseTasks(base.TestCase):
         mock_loadbalancer_repo_update.reset_mock()
         mock_listener_repo_update.reset_mock()
 
-        mark_lb_and_listener_active.revert(self.loadbalancer_mock,
-                                           self.listener_mock)
+        mark_lb_and_listeners_active.revert(self.loadbalancer_mock,
+                                            [self.listener_mock])
 
         repo.ListenerRepository.update.assert_called_once_with(
             'TEST',
@@ -1033,7 +1033,7 @@ class TestDatabaseTasks(base.TestCase):
             enabled=0)
 
     @mock.patch(
-        'octavia.db.repositories.Repositories.update_pool_on_listener')
+        'octavia.db.repositories.Repositories.update_pool_and_sp')
     def test_update_pool_in_db(self,
                                mock_repos_pool_update,
                                mock_generate_uuid,
@@ -1051,7 +1051,7 @@ class TestDatabaseTasks(base.TestCase):
         update_pool.execute(self.pool_mock,
                             update_dict)
 
-        repo.Repositories.update_pool_on_listener.assert_called_once_with(
+        repo.Repositories.update_pool_and_sp.assert_called_once_with(
             'TEST',
             POOL_ID,
             update_dict, sp_dict)
@@ -1062,7 +1062,7 @@ class TestDatabaseTasks(base.TestCase):
         update_pool.revert(self.pool_mock)
 
 # TODO(johnsom) fix this to set the upper ojects to ERROR
-        repo.Repositories.update_pool_on_listener.assert_called_once_with(
+        repo.Repositories.update_pool_and_sp.assert_called_once_with(
             'TEST',
             POOL_ID,
             {'enabled': 0}, None)

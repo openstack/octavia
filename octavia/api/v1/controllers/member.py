@@ -1,4 +1,5 @@
 #    Copyright 2014 Rackspace
+#    Copyright 2016 Blue Box, an IBM Company
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -33,22 +34,27 @@ LOG = logging.getLogger(__name__)
 
 class MembersController(base.BaseController):
 
-    def __init__(self, load_balancer_id, listener_id, pool_id):
+    def __init__(self, load_balancer_id, pool_id, listener_id=None):
         super(MembersController, self).__init__()
         self.load_balancer_id = load_balancer_id
         self.listener_id = listener_id
         self.pool_id = pool_id
         self.handler = self.handler.member
 
-    @wsme_pecan.wsexpose(member_types.MemberResponse, wtypes.text)
-    def get(self, id):
-        """Gets a single pool member's details."""
-        context = pecan.request.context.get('octavia_context')
-        db_member = self.repositories.member.get(context.session, id=id)
+    def _get_db_member(self, session, id):
+        """Gets a specific member object from the database."""
+        db_member = self.repositories.member.get(session, id=id)
         if not db_member:
             LOG.info(_LI("Member %s not found"), id)
             raise exceptions.NotFound(
                 resource=data_models.Member._name(), id=id)
+        return db_member
+
+    @wsme_pecan.wsexpose(member_types.MemberResponse, wtypes.text)
+    def get(self, id):
+        """Gets a single pool member's details."""
+        context = pecan.request.context.get('octavia_context')
+        db_member = self._get_db_member(context.session, id)
         return self._convert_db_to_type(db_member, member_types.MemberResponse)
 
     @wsme_pecan.wsexpose([member_types.MemberResponse])
@@ -60,6 +66,26 @@ class MembersController(base.BaseController):
         return self._convert_db_to_type(db_members,
                                         [member_types.MemberResponse])
 
+    def _test_lb_and_listener_statuses(self, session, member=None):
+        """Verify load balancer is in a mutable state."""
+        # We need to verify that any listeners referencing this member's
+        # pool are also mutable
+        listener_ids = []
+        if member:
+            listener_ids = [l.id for l in member.pool.listeners]
+        if self.listener_id and self.listener_id not in listener_ids:
+            listener_ids.append(self.listener_id)
+        if not self.repositories.test_and_set_lb_and_listeners_prov_status(
+                session, self.load_balancer_id,
+                constants.PENDING_UPDATE, constants.PENDING_UPDATE,
+                listener_ids=listener_ids):
+            LOG.info(_LI("Member cannot be created or modified because the "
+                         "Load Balancer is in an immutable state"))
+            lb_repo = self.repositories.load_balancer
+            db_lb = lb_repo.get(session, id=self.load_balancer_id)
+            raise exceptions.ImmutableObject(resource=db_lb._name(),
+                                             id=self.load_balancer_id)
+
     @wsme_pecan.wsexpose(member_types.MemberResponse,
                          body=member_types.MemberPOST, status_code=202)
     def post(self, member):
@@ -68,30 +94,21 @@ class MembersController(base.BaseController):
         member_dict = member.to_dict()
         member_dict['pool_id'] = self.pool_id
         member_dict['operating_status'] = constants.OFFLINE
-        # Verify load balancer is in a mutable status.  If so it can be assumed
-        # that the listener is also in a mutable status because a load balancer
-        # will only be ACTIVE when all its listeners as ACTIVE.
-        if not self.repositories.test_and_set_lb_and_listener_prov_status(
-                context.session, self.load_balancer_id, self.listener_id,
-                constants.PENDING_UPDATE, constants.PENDING_UPDATE):
-            LOG.info(_LI("Member cannot be created because its Load "
-                         "Balancer is in an immutable state."))
-            lb_repo = self.repositories.load_balancer
-            db_lb = lb_repo.get(context.session, id=self.load_balancer_id)
-            raise exceptions.ImmutableObject(resource=db_lb._name(),
-                                             id=self.load_balancer_id)
+        self._test_lb_and_listener_statuses(context.session)
+
         try:
-            db_member = self.repositories.member.create(
-                context.session, **member_dict)
+            db_member = self.repositories.member.create(context.session,
+                                                        **member_dict)
         except oslo_exc.DBDuplicateEntry as de:
             # Setting LB and Listener back to active because this is just a
             # validation failure
             self.repositories.load_balancer.update(
                 context.session, self.load_balancer_id,
                 provisioning_status=constants.ACTIVE)
-            self.repositories.listener.update(
-                context.session, self.listener_id,
-                provisioning_status=constants.ACTIVE)
+            if self.listener_id:
+                self.repositories.listener.update(
+                    context.session, self.listener_id,
+                    provisioning_status=constants.ACTIVE)
             if ['id'] == de.columns:
                 raise exceptions.IDAlreadyExists()
             elif (set(['pool_id', 'ip_address', 'protocol_port']) ==
@@ -108,8 +125,7 @@ class MembersController(base.BaseController):
                 self.repositories.listener.update(
                     context.session, self.listener_id,
                     operating_status=constants.ERROR)
-        db_member = self.repositories.member.get(context.session,
-                                                 id=db_member.id)
+        db_member = self._get_db_member(context.session, db_member.id)
         return self._convert_db_to_type(db_member, member_types.MemberResponse)
 
     @wsme_pecan.wsexpose(member_types.MemberResponse,
@@ -118,64 +134,37 @@ class MembersController(base.BaseController):
     def put(self, id, member):
         """Updates a pool member."""
         context = pecan.request.context.get('octavia_context')
-        db_member = self.repositories.member.get(context.session, id=id)
-        if not db_member:
-            LOG.info(_LI("Member %s cannot be updated because its Load "
-                         "Balancer is in an immutable state."), id)
-            LOG.info(_LI("Member %s not found"), id)
-            raise exceptions.NotFound(
-                resource=data_models.Member._name(), id=id)
-        # Verify load balancer is in a mutable status.  If so it can be assumed
-        # that the listener is also in a mutable status because a load balancer
-        # will only be ACTIVE when all its listeners as ACTIVE.
-        if not self.repositories.test_and_set_lb_and_listener_prov_status(
-                context.session, self.load_balancer_id, self.listener_id,
-                constants.PENDING_UPDATE, constants.PENDING_UPDATE):
-            lb_repo = self.repositories.load_balancer
-            db_lb = lb_repo.get(context.session, id=self.load_balancer_id)
-            raise exceptions.ImmutableObject(resource=db_lb._name(),
-                                             id=self.load_balancer_id)
+        db_member = self._get_db_member(context.session, id)
+        self._test_lb_and_listener_statuses(context.session, member=db_member)
+
         try:
             LOG.info(_LI("Sending Update of Member %s to handler"), id)
             self.handler.update(db_member, member)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
-                self.repositories.listener.update(
-                    context.session, self.listener_id,
-                    operating_status=constants.ERROR)
-        db_member = self.repositories.member.get(context.session, id=id)
+                if self.listener_id:
+                    self.repositories.listener.update(
+                        context.session, self.listener_id,
+                        operating_status=constants.ERROR)
+        db_member = self._get_db_member(context.session, id)
         return self._convert_db_to_type(db_member, member_types.MemberResponse)
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
     def delete(self, id):
         """Deletes a pool member."""
         context = pecan.request.context.get('octavia_context')
-        db_member = self.repositories.member.get(context.session, id=id)
-        if not db_member:
-            LOG.info(_LI("Member %s not found"), id)
-            raise exceptions.NotFound(
-                resource=data_models.Member._name(), id=id)
-        # Verify load balancer is in a mutable status.  If so it can be assumed
-        # that the listener is also in a mutable status because a load balancer
-        # will only be ACTIVE when all its listeners as ACTIVE.
-        if not self.repositories.test_and_set_lb_and_listener_prov_status(
-                context.session, self.load_balancer_id, self.listener_id,
-                constants.PENDING_UPDATE, constants.PENDING_UPDATE):
-            LOG.info(_LI("Member %s cannot be deleted because its Load "
-                         "Balancer is in an immutable state."), id)
-            lb_repo = self.repositories.load_balancer
-            db_lb = lb_repo.get(context.session, id=self.load_balancer_id)
-            raise exceptions.ImmutableObject(resource=db_lb._name(),
-                                             id=self.load_balancer_id)
-        db_member = self.repositories.member.get(context.session, id=id)
+        db_member = self._get_db_member(context.session, id)
+        self._test_lb_and_listener_statuses(context.session, member=db_member)
+
         try:
             LOG.info(_LI("Sending Deletion of Member %s to handler"),
                      db_member.id)
             self.handler.delete(db_member)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
-                self.repositories.listener.update(
-                    context.session, self.listener_id,
-                    operating_status=constants.ERROR)
+                if self.listener_id:
+                    self.repositories.listener.update(
+                        context.session, self.listener_id,
+                        operating_status=constants.ERROR)
         db_member = self.repositories.member.get(context.session, id=id)
         return self._convert_db_to_type(db_member, member_types.MemberResponse)

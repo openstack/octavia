@@ -322,7 +322,7 @@ class AmphoraFlows(object):
         failover_amphora_flow.add(database_tasks.GetVipFromLoadbalancer(
             requires=constants.LOADBALANCER, provides=constants.VIP))
         failover_amphora_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=(constants.LISTENERS, constants.VIP)))
+            requires=(constants.LOADBALANCER, constants.LISTENERS)))
         failover_amphora_flow.add(amphora_driver_tasks.AmphoraPostVIPPlug(
             requires=(constants.LOADBALANCER,
                       constants.AMPHORAE_NETWORK_CONFIG)))
@@ -355,7 +355,7 @@ class AmphoraFlows(object):
                     requires=constants.AMPHORA))
 
         failover_amphora_flow.add(amphora_driver_tasks.ListenersStart(
-            requires=(constants.LISTENERS, constants.VIP)))
+            requires=(constants.LOADBALANCER, constants.LISTENERS)))
 
         return failover_amphora_flow
 

@@ -88,6 +88,27 @@ class TestHealthMonitor(base.BaseAPITest):
     def test_bad_create(self):
         hm_json = {'name': 'test1'}
         self.post(self.hm_path, hm_json, status=400)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.ACTIVE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.ACTIVE, constants.ONLINE)
+
+    def test_create_with_bad_handler(self):
+        self.handler_mock().health_monitor.create.side_effect = Exception()
+        self.create_health_monitor(self.lb.get('id'),
+                                   self.listener.get('id'),
+                                   self.pool.get('id'),
+                                   constants.HEALTH_MONITOR_HTTP,
+                                   1, 1, 1, 1)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ERROR)
 
     def test_duplicate_create(self):
         api_hm = self.create_health_monitor(self.lb.get('id'),
@@ -131,6 +152,29 @@ class TestHealthMonitor(base.BaseAPITest):
         new_hm = {'type': 'bad_type', 'delay': 2}
         self.set_lb_status(self.lb.get('id'))
         self.put(self.hm_path, new_hm, status=400)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.ACTIVE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.ACTIVE, constants.ONLINE)
+
+    def test_update_with_bad_handler(self):
+        self.create_health_monitor(self.lb.get('id'), self.listener.get('id'),
+                                   self.pool.get('id'),
+                                   constants.HEALTH_MONITOR_HTTP,
+                                   1, 1, 1, 1)
+        self.set_lb_status(lb_id=self.lb.get('id'))
+        new_hm = {'type': constants.HEALTH_MONITOR_HTTPS}
+        self.handler_mock().health_monitor.update.side_effect = Exception()
+        self.put(self.hm_path, new_hm)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ERROR)
 
     def test_delete(self):
         api_hm = self.create_health_monitor(self.lb.get('id'),
@@ -159,6 +203,25 @@ class TestHealthMonitor(base.BaseAPITest):
 
     def test_bad_delete(self):
         self.delete(self.hm_path, status=404)
+
+    def test_delete_with_bad_handler(self):
+        api_hm = self.create_health_monitor(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            self.pool['id'],
+                                            constants.HEALTH_MONITOR_HTTP,
+                                            1, 1, 1, 1)
+        self.set_lb_status(lb_id=self.lb.get('id'))
+        response = self.get(self.hm_path)
+        self.assertEqual(api_hm, response.json)
+        self.handler_mock().health_monitor.delete.side_effect = Exception()
+        self.delete(self.hm_path)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ERROR)
 
     def test_create_when_lb_pending_update(self):
         self.put(self.LB_PATH.format(lb_id=self.lb.get('id')),
