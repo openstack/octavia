@@ -324,7 +324,7 @@ class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
                                      load_balancer_id=loadbalancer_id,
                                      amphora_id=amphora_id)
 
-    def revert(self, amphora_id):
+    def revert(self, amphora_id, *args, **kwargs):
         self.repos.amphora.update(db_apis.get_session(), amphora_id,
                                   loadbalancer_id=None)
 
@@ -367,7 +367,7 @@ class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
                                  role=amp_role,
                                  vrrp_priority=vrrp_priority)
 
-    def _revert(self, result, amphora):
+    def _revert(self, result, amphora, *args, **kwargs):
         """Assigns None role and vrrp_priority."""
 
         if isinstance(result, failure.Failure):
@@ -389,8 +389,8 @@ class MarkAmphoraMasterInDB(_MarkAmphoraRoleAndPriorityInDB):
         amp_role = constants.ROLE_MASTER
         self._execute(amphora, amp_role, constants.ROLE_MASTER_PRIORITY)
 
-    def revert(self, result, amphora):
-        self._revert(result, amphora)
+    def revert(self, result, amphora, *args, **kwargs):
+        self._revert(result, amphora, *args, **kwargs)
 
 
 class MarkAmphoraBackupInDB(_MarkAmphoraRoleAndPriorityInDB):
@@ -400,8 +400,8 @@ class MarkAmphoraBackupInDB(_MarkAmphoraRoleAndPriorityInDB):
         amp_role = constants.ROLE_BACKUP
         self._execute(amphora, amp_role, constants.ROLE_BACKUP_PRIORITY)
 
-    def revert(self, result, amphora):
-        self._revert(result, amphora)
+    def revert(self, result, amphora, *args, **kwargs):
+        self._revert(result, amphora, *args, **kwargs)
 
 
 class MarkAmphoraStandAloneInDB(_MarkAmphoraRoleAndPriorityInDB):
@@ -411,8 +411,8 @@ class MarkAmphoraStandAloneInDB(_MarkAmphoraRoleAndPriorityInDB):
         amp_role = constants.ROLE_STANDALONE
         self._execute(amphora, amp_role, None)
 
-    def revert(self, result, amphora):
-        self._revert(result, amphora)
+    def revert(self, result, amphora, *args, **kwargs):
+        self._revert(result, amphora, *args, **kwargs)
 
 
 class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
