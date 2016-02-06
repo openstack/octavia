@@ -27,11 +27,12 @@ class NovaAuth(object):
     nova_client = None
 
     @classmethod
-    def get_nova_client(cls, region, service_name=None):
+    def get_nova_client(cls, region, service_name=None, endpoint=None):
         """Create nova client object.
 
         :param region: The region of the service
         :param service_name: The name of the nova service in the catalog
+        :param endpoint: The endpoint of the service
         :return: a Nova Client object.
         :raises Exception: if the client cannot be created
         """
@@ -40,10 +41,11 @@ class NovaAuth(object):
                       'session': keystone.get_session()}
             if service_name:
                 kwargs['service_name'] = service_name
+            if endpoint:
+                kwargs['endpoint_override'] = endpoint
             try:
                 cls.nova_client = nova_client.Client(
-                    NOVA_VERSION, **kwargs
-                )
+                    NOVA_VERSION, **kwargs)
             except Exception:
                 with excutils.save_and_reraise_exception():
                     LOG.exception(_LE("Error creating Nova client."))
@@ -54,11 +56,12 @@ class NeutronAuth(object):
     neutron_client = None
 
     @classmethod
-    def get_neutron_client(cls, region, service_name=None):
+    def get_neutron_client(cls, region, service_name=None, endpoint=None):
         """Create neutron client object.
 
         :param region: The region of the service
         :param service_name: The name of the neutron service in the catalog
+        :param endpoint: The endpoint of the service
         :return: a Neutron Client object.
         :raises Exception: if the client cannot be created
         """
@@ -67,10 +70,11 @@ class NeutronAuth(object):
                       'session': keystone.get_session()}
             if service_name:
                 kwargs['service_name'] = service_name
+            if endpoint:
+                kwargs['endpoint_override'] = endpoint
             try:
                 cls.neutron_client = neutron_client.Client(
-                    NEUTRON_VERSION, **kwargs
-                )
+                    NEUTRON_VERSION, **kwargs)
             except Exception:
                 with excutils.save_and_reraise_exception():
                     LOG.exception(_LE("Error creating Neutron client."))

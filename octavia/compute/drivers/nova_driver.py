@@ -37,7 +37,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
         super(VirtualMachineManager, self).__init__()
         # Must initialize nova api
         region = CONF.os_region_name
-        self._nova_client = clients.NovaAuth.get_nova_client(region)
+        self._nova_client = clients.NovaAuth.get_nova_client(
+            region, endpoint=CONF.nova.endpoint)
         self.manager = self._nova_client.servers
 
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
