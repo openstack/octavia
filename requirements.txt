@@ -40,5 +40,3 @@ Flask<1.0,>=0.10 # BSD
 netifaces>=0.10.4 # MIT
 
 cryptography>=1.0 # BSD/Apache-2.0
-pyasn1  # BSD
-ndg-httpsclient>=0.4.0

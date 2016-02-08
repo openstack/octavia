@@ -16,6 +16,7 @@
 import functools
 import hashlib
 import time
+import warnings
 
 from oslo_log import log as logging
 import requests
@@ -229,7 +230,12 @@ class AmphoraAPIClient(object):
         # Keep retrying
         for a in six.moves.xrange(CONF.haproxy_amphora.connection_max_retries):
             try:
-                r = _request(**reqargs)
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore",
+                        message="A true SSLContext object is not available"
+                    )
+                    r = _request(**reqargs)
             except requests.ConnectionError:
                 LOG.warn(_LW("Could not connect to instance. Retrying."))
                 time.sleep(CONF.haproxy_amphora.connection_retry_interval)
