@@ -327,17 +327,18 @@ if [ "$AMP_ROOTPW" ]; then
     export DIB_PASSWORD=$AMP_ROOTPW
 fi
 
-# Add the devstack no-resolvconf hack
-AMP_element_sequence="$AMP_element_sequence no-resolvconf"
-
-# Add the Octavia Amphora agent.py element
-AMP_element_sequence="$AMP_element_sequence amphora-agent"
-
-# Add pyroute2 element
-AMP_element_sequence="$AMP_element_sequence pyroute2"
-
-# Add the keepalived Octavia element
-AMP_element_sequence="$AMP_element_sequence keepalived-octavia-ubuntu"
+# Add the Octavia keepalived, Amphora Agent and Pyroute elements
+if [ "$AMP_BASEOS" = "ubuntu" ]; then
+    AMP_element_sequence="$AMP_element_sequence no-resolvconf"
+    AMP_element_sequence="$AMP_element_sequence amphora-agent-ubuntu"
+    AMP_element_sequence="$AMP_element_sequence pyroute2"
+    AMP_element_sequence="$AMP_element_sequence keepalived-octavia-ubuntu"
+else
+    AMP_element_sequence="$AMP_element_sequence no-resolvconf"
+    AMP_element_sequence="$AMP_element_sequence amphora-agent"
+    AMP_element_sequence="$AMP_element_sequence pyroute2"
+    AMP_element_sequence="$AMP_element_sequence keepalived-octavia"
+fi
 
 # Allow full elements override
 if [ "$DIB_ELEMENTS" ]; then
