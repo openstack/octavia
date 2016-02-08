@@ -635,9 +635,9 @@ class ServerTestCase(base.TestCase):
         interface_res = {'interface': 'eth0'}
         mock_interfaces.return_value = ['lo', 'eth0']
         mock_ifaddresses.return_value = {
-            17: [{'addr': '00:00:00:00:00:00'}],
-            2: [{'addr': '203.0.113.2'}],
-            10: [{'addr': '::1'}]}
+            netifaces.AF_ROUTE: [{'addr': '00:00:00:00:00:00'}],
+            netifaces.AF_INET: [{'addr': '203.0.113.2'}],
+            netifaces.AF_INET6: [{'addr': '::1'}]}
         rv = self.app.get('/' + api_server.VERSION + '/interface/203.0.113.2',
                           data=json.dumps(interface_res),
                           content_type='application/json')
