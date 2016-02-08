@@ -52,11 +52,6 @@ class ListenersUpdate(BaseAmphoraTask):
     def execute(self, loadbalancer, listeners):
         """Execute updates per listener for an amphora."""
         for listener in listeners:
-            # Ideally this shouldn't be needed. This is a workaround, for a
-            # not very well understood bug not related to Octavia.
-            # https://bugs.launchpad.net/octavia/+bug/1492493
-            listener = self.listener_repo.get(db_apis.get_session(),
-                                              id=listener.id)
             self.amphora_driver.update(listener, loadbalancer.vip)
 
     def revert(self, listeners, *args, **kwargs):
