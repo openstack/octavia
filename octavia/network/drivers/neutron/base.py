@@ -27,15 +27,20 @@ from octavia.network.drivers.neutron import utils
 LOG = logging.getLogger(__name__)
 SEC_GRP_EXT_ALIAS = 'security-group'
 
+CONF = cfg.CONF
+CONF.import_group('neutron', 'octavia.common.config')
+
 
 class BaseNeutronDriver(base.AbstractNetworkDriver):
 
     def __init__(self):
         self.sec_grp_enabled = True
         self.neutron_client = clients.NeutronAuth.get_neutron_client(
-            cfg.CONF.os_region_name,
-            service_name=cfg.CONF.neutron.service_name,
-            endpoint=cfg.CONF.neutron.endpoint)
+            endpoint=CONF.neutron.endpoint,
+            region=CONF.neutron.region_name,
+            endpoint_type=CONF.neutron.endpoint_type,
+            service_name=CONF.neutron.service_name
+        )
         extensions = self.neutron_client.list_extensions()
         self._extensions = extensions.get('extensions')
         self._check_sec_grps()

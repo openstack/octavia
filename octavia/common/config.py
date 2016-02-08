@@ -54,27 +54,6 @@ core_opts = [
                       "means no limit")),
     cfg.StrOpt('host', default=utils.get_hostname(),
                help=_("The hostname Octavia is running on")),
-    cfg.StrOpt('nova_url',
-               default='http://127.0.0.1:8774/v2',
-               help=_('URL for connection to nova')),
-    cfg.StrOpt('nova_admin_username',
-               help=_('Username for connecting to nova in admin context')),
-    cfg.StrOpt('nova_admin_password',
-               help=_('Password for connection to nova in admin context'),
-               secret=True),
-    cfg.StrOpt('nova_admin_tenant_id',
-               help=_('The uuid of the admin nova tenant')),
-    cfg.StrOpt('nova_admin_auth_url',
-               default='http://localhost:5000/v2.0',
-               help=_('Authorization URL for connecting to nova in admin '
-                      'context')),
-    cfg.StrOpt('nova_ca_certificates_file',
-               help=_('CA file for novaclient to verify server certificates')),
-    cfg.BoolOpt('nova_api_insecure', default=False,
-                help=_("If True, ignore any SSL validation issues")),
-    cfg.StrOpt('os_region_name',
-               help=_('Region in Identity service catalog to use for '
-                      'communication with the OpenStack services.')),
     cfg.StrOpt('octavia_plugins',
                default='hot_plug_plugin',
                help=_('Name of the controller plugin to use'))
@@ -357,7 +336,12 @@ nova_opts = [
     cfg.StrOpt('service_name',
                help=_('The name of the nova service in the keystone catalog')),
     cfg.StrOpt('endpoint', help=_('A new endpoint to override the endpoint '
-                                  'in the keystone catalog.'))
+                                  'in the keystone catalog.')),
+    cfg.StrOpt('region_name',
+               help=_('Region in Identity service catalog to use for '
+                      'communication with the OpenStack services.')),
+    cfg.StrOpt('endpoint_type', default='publicURL',
+               help=_('Endpoint interface in identity service to use')),
 ]
 
 neutron_opts = [
@@ -365,7 +349,12 @@ neutron_opts = [
                help=_('The name of the neutron service in the '
                       'keystone catalog')),
     cfg.StrOpt('endpoint', help=_('A new endpoint to override the endpoint '
-                                  'in the keystone catalog.'))
+                                  'in the keystone catalog.')),
+    cfg.StrOpt('region_name',
+               help=_('Region in Identity service catalog to use for '
+                      'communication with the OpenStack services.')),
+    cfg.StrOpt('endpoint_type', default='publicURL',
+               help=_('Endpoint interface in identity service to use')),
 ]
 
 # Register the configuration options

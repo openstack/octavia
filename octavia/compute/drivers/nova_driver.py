@@ -28,6 +28,7 @@ LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
 CONF.import_group('keystone_authtoken', 'octavia.common.config')
 CONF.import_group('networking', 'octavia.common.config')
+CONF.import_group('nova', 'octavia.common.config')
 
 
 class VirtualMachineManager(compute_base.ComputeBase):
@@ -36,9 +37,10 @@ class VirtualMachineManager(compute_base.ComputeBase):
     def __init__(self):
         super(VirtualMachineManager, self).__init__()
         # Must initialize nova api
-        region = CONF.os_region_name
         self._nova_client = clients.NovaAuth.get_nova_client(
-            region, endpoint=CONF.nova.endpoint)
+            endpoint=CONF.nova.endpoint,
+            region=CONF.nova.region_name,
+            endpoint_type=CONF.nova.endpoint_type)
         self.manager = self._nova_client.servers
 
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,

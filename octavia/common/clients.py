@@ -27,18 +27,21 @@ class NovaAuth(object):
     nova_client = None
 
     @classmethod
-    def get_nova_client(cls, region, service_name=None, endpoint=None):
+    def get_nova_client(cls, region, service_name=None, endpoint=None,
+                        endpoint_type='publicURL'):
         """Create nova client object.
 
         :param region: The region of the service
         :param service_name: The name of the nova service in the catalog
         :param endpoint: The endpoint of the service
+        :param endpoint_type: The type of the endpoint
         :return: a Nova Client object.
         :raises Exception: if the client cannot be created
         """
         if not cls.nova_client:
             kwargs = {'region_name': region,
-                      'session': keystone.get_session()}
+                      'session': keystone.get_session(),
+                      'endpoint_type': endpoint_type}
             if service_name:
                 kwargs['service_name'] = service_name
             if endpoint:
@@ -56,18 +59,21 @@ class NeutronAuth(object):
     neutron_client = None
 
     @classmethod
-    def get_neutron_client(cls, region, service_name=None, endpoint=None):
+    def get_neutron_client(cls, region, service_name=None, endpoint=None,
+                           endpoint_type='publicURL'):
         """Create neutron client object.
 
         :param region: The region of the service
         :param service_name: The name of the neutron service in the catalog
         :param endpoint: The endpoint of the service
+        :param endpoint_type: The endpoint_type of the service
         :return: a Neutron Client object.
         :raises Exception: if the client cannot be created
         """
         if not cls.neutron_client:
             kwargs = {'region_name': region,
-                      'session': keystone.get_session()}
+                      'session': keystone.get_session(),
+                      'endpoint_type': endpoint_type}
             if service_name:
                 kwargs['service_name'] = service_name
             if endpoint:
