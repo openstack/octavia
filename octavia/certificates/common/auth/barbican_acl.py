@@ -17,6 +17,7 @@
 Barbican ACL auth class for Barbican certificate handling
 """
 from barbicanclient import client as barbican_client
+from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
 
@@ -27,6 +28,9 @@ from octavia.i18n import _LE
 
 LOG = logging.getLogger(__name__)
 
+CONF = cfg.CONF
+CONF.import_group('certificates', 'octavia.common.config')
+
 
 class BarbicanACLAuth(barbican_common.BarbicanAuth):
     _barbican_client = None
@@ -36,7 +40,9 @@ class BarbicanACLAuth(barbican_common.BarbicanAuth):
         if not cls._barbican_client:
             try:
                 cls._barbican_client = barbican_client.Client(
-                    session=keystone.get_session()
+                    session=keystone.get_session(),
+                    region_name=CONF.certificates.region_name,
+                    interface=CONF.certificates.endpoint_type
                 )
             except Exception:
                 with excutils.save_and_reraise_exception():

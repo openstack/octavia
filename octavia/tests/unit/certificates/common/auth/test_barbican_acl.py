@@ -14,11 +14,15 @@
 
 from barbicanclient import client as barbican_client
 import mock
+from oslo_config import cfg
 
 import octavia.certificates.common.auth.barbican_acl as barbican_acl
 import octavia.certificates.manager.barbican as barbican_cert_mgr
 from octavia.common import keystone
 import octavia.tests.unit.base as base
+
+CONF = cfg.CONF
+CONF.import_group('certificates', 'octavia.common.config')
 
 
 class TestBarbicanACLAuth(base.TestCase):
@@ -26,7 +30,10 @@ class TestBarbicanACLAuth(base.TestCase):
     def setUp(self):
         # Reset the client
         keystone._SESSION = None
-
+        CONF.set_override(name='region_name', override=None,
+                          group='certificates')
+        CONF.set_override(name='endpoint_type', override='publicURL',
+                          group='certificates')
         super(TestBarbicanACLAuth, self).setUp()
 
     def test_get_barbican_client(self):
@@ -51,4 +58,4 @@ class TestBarbicanACLAuth(base.TestCase):
 
     def test_load_auth_driver(self):
         bcm = barbican_cert_mgr.BarbicanCertManager()
-        self.assertTrue(isinstance(bcm.auth, barbican_acl.BarbicanACLAuth))
+        self.assertIsInstance(bcm.auth, barbican_acl.BarbicanACLAuth)
