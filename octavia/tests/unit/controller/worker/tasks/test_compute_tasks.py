@@ -17,17 +17,12 @@ import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
-import six
+import six.moves.builtins as builtins
 
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.controller.worker.tasks import compute_tasks
 import octavia.tests.unit.base as base
-
-
-BUILTINS = '__builtin__'
-if six.PY3:
-    BUILTINS = 'builtins'
 
 AMP_FLAVOR_ID = 10
 AMP_IMAGE_ID = 11
@@ -194,7 +189,7 @@ class TestComputeTasks(base.TestCase):
 
         mock_driver.build.return_value = COMPUTE_ID
         m = mock.mock_open(read_data='test')
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m, create=True):
             # Test execute()
             compute_id = createcompute.execute(_amphora_mock.id,
                                                'test_cert')
@@ -217,7 +212,7 @@ class TestComputeTasks(base.TestCase):
         assert(compute_id == COMPUTE_ID)
 
         # Test that a build exception is raised
-        with mock.patch('%s.open' % BUILTINS, m, create=True):
+        with mock.patch.object(builtins, 'open', m, create=True):
             createcompute = compute_tasks.ComputeCreate()
             self.assertRaises(TypeError,
                               createcompute.execute,
