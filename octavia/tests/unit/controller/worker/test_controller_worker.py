@@ -29,10 +29,17 @@ POOL_ID = uuidutils.generate_uuid()
 HM_ID = uuidutils.generate_uuid()
 MEMBER_ID = uuidutils.generate_uuid()
 COMPUTE_ID = uuidutils.generate_uuid()
+L7POLICY_ID = uuidutils.generate_uuid()
+L7RULE_ID = uuidutils.generate_uuid()
 HEALTH_UPDATE_DICT = {'delay': 1, 'timeout': 2}
 LISTENER_UPDATE_DICT = {'name': 'test', 'description': 'test2'}
 MEMBER_UPDATE_DICT = {'weight': 1, 'ip_address': '10.0.0.0'}
 POOL_UPDATE_DICT = {'name': 'test', 'description': 'test2'}
+L7POLICY_UPDATE_DICT = {'action': constants.L7POLICY_ACTION_REJECT}
+L7RULE_UPDATE_DICT = {
+    'type': constants.L7RULE_TYPE_PATH,
+    'compare_type': constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+    'value': '/api'}
 
 _amphora_mock = mock.MagicMock()
 _flow_mock = mock.MagicMock()
@@ -42,6 +49,8 @@ _listener_mock = mock.MagicMock()
 _load_balancer_mock = mock.MagicMock()
 _member_mock = mock.MagicMock()
 _pool_mock = mock.MagicMock()
+_l7policy_mock = mock.MagicMock()
+_l7rule_mock = mock.MagicMock()
 _create_map_flow_mock = mock.MagicMock()
 _amphora_mock.load_balancer_id = LB_ID
 _amphora_mock.id = AMP_ID
@@ -57,6 +66,10 @@ CONF = cfg.CONF
             return_value=_load_balancer_mock)
 @mock.patch('octavia.db.repositories.ListenerRepository.get',
             return_value=_listener_mock)
+@mock.patch('octavia.db.repositories.L7PolicyRepository.get',
+            return_value=_l7policy_mock)
+@mock.patch('octavia.db.repositories.L7RuleRepository.get',
+            return_value=_l7rule_mock)
 @mock.patch('octavia.db.repositories.MemberRepository.get',
             return_value=_member_mock)
 @mock.patch('octavia.db.repositories.PoolRepository.get',
@@ -82,6 +95,8 @@ class TestControllerWorker(base.TestCase):
         _pool_mock.listeners = [_listener_mock]
         _pool_mock.load_balancer = _load_balancer_mock
         _pool_mock.load_balancer.vip = _vip_mock
+        _l7policy_mock.listener = _listener_mock
+        _l7rule_mock.l7policy = _l7policy_mock
 
         fetch_mock = mock.MagicMock(return_value=AMP_ID)
         _flow_mock.storage.fetch = fetch_mock
@@ -101,6 +116,8 @@ class TestControllerWorker(base.TestCase):
                             mock_taskflow_load,
                             mock_pool_repo_get,
                             mock_member_repo_get,
+                            mock_l7rule_repo_get,
+                            mock_l7policy_repo_get,
                             mock_listener_repo_get,
                             mock_lb_repo_get,
                             mock_health_mon_repo_get,
@@ -130,6 +147,8 @@ class TestControllerWorker(base.TestCase):
                             mock_taskflow_load,
                             mock_pool_repo_get,
                             mock_member_repo_get,
+                            mock_l7rule_repo_get,
+                            mock_l7policy_repo_get,
                             mock_listener_repo_get,
                             mock_lb_repo_get,
                             mock_health_mon_repo_get,
@@ -161,6 +180,8 @@ class TestControllerWorker(base.TestCase):
                                    mock_taskflow_load,
                                    mock_pool_repo_get,
                                    mock_member_repo_get,
+                                   mock_l7rule_repo_get,
+                                   mock_l7policy_repo_get,
                                    mock_listener_repo_get,
                                    mock_lb_repo_get,
                                    mock_health_mon_repo_get,
@@ -193,6 +214,8 @@ class TestControllerWorker(base.TestCase):
                                    mock_taskflow_load,
                                    mock_pool_repo_get,
                                    mock_member_repo_get,
+                                   mock_l7rule_repo_get,
+                                   mock_l7policy_repo_get,
                                    mock_listener_repo_get,
                                    mock_lb_repo_get,
                                    mock_health_mon_repo_get,
@@ -226,6 +249,8 @@ class TestControllerWorker(base.TestCase):
                                    mock_taskflow_load,
                                    mock_pool_repo_get,
                                    mock_member_repo_get,
+                                   mock_l7rule_repo_get,
+                                   mock_l7policy_repo_get,
                                    mock_listener_repo_get,
                                    mock_lb_repo_get,
                                    mock_health_mon_repo_get,
@@ -260,6 +285,8 @@ class TestControllerWorker(base.TestCase):
                              mock_taskflow_load,
                              mock_pool_repo_get,
                              mock_member_repo_get,
+                             mock_l7rule_repo_get,
+                             mock_l7policy_repo_get,
                              mock_listener_repo_get,
                              mock_lb_repo_get,
                              mock_health_mon_repo_get,
@@ -289,6 +316,8 @@ class TestControllerWorker(base.TestCase):
                              mock_taskflow_load,
                              mock_pool_repo_get,
                              mock_member_repo_get,
+                             mock_l7rule_repo_get,
+                             mock_l7policy_repo_get,
                              mock_listener_repo_get,
                              mock_lb_repo_get,
                              mock_health_mon_repo_get,
@@ -316,6 +345,8 @@ class TestControllerWorker(base.TestCase):
                              mock_taskflow_load,
                              mock_pool_repo_get,
                              mock_member_repo_get,
+                             mock_l7rule_repo_get,
+                             mock_l7policy_repo_get,
                              mock_listener_repo_get,
                              mock_lb_repo_get,
                              mock_health_mon_repo_get,
@@ -351,6 +382,8 @@ class TestControllerWorker(base.TestCase):
                                   mock_taskflow_load,
                                   mock_pool_repo_get,
                                   mock_member_repo_get,
+                                  mock_l7rule_repo_get,
+                                  mock_l7policy_repo_get,
                                   mock_listener_repo_get,
                                   mock_lb_repo_get,
                                   mock_health_mon_repo_get,
@@ -417,6 +450,8 @@ class TestControllerWorker(base.TestCase):
                                   mock_taskflow_load,
                                   mock_pool_repo_get,
                                   mock_member_repo_get,
+                                  mock_l7rule_repo_get,
+                                  mock_l7policy_repo_get,
                                   mock_listener_repo_get,
                                   mock_lb_repo_get,
                                   mock_health_mon_repo_get,
@@ -448,6 +483,8 @@ class TestControllerWorker(base.TestCase):
                                   mock_taskflow_load,
                                   mock_pool_repo_get,
                                   mock_member_repo_get,
+                                  mock_l7rule_repo_get,
+                                  mock_l7policy_repo_get,
                                   mock_listener_repo_get,
                                   mock_lb_repo_get,
                                   mock_health_mon_repo_get,
@@ -481,6 +518,8 @@ class TestControllerWorker(base.TestCase):
                            mock_taskflow_load,
                            mock_pool_repo_get,
                            mock_member_repo_get,
+                           mock_l7rule_repo_get,
+                           mock_l7policy_repo_get,
                            mock_listener_repo_get,
                            mock_lb_repo_get,
                            mock_health_mon_repo_get,
@@ -511,6 +550,8 @@ class TestControllerWorker(base.TestCase):
                            mock_taskflow_load,
                            mock_pool_repo_get,
                            mock_member_repo_get,
+                           mock_l7rule_repo_get,
+                           mock_l7policy_repo_get,
                            mock_listener_repo_get,
                            mock_lb_repo_get,
                            mock_health_mon_repo_get,
@@ -541,6 +582,8 @@ class TestControllerWorker(base.TestCase):
                            mock_taskflow_load,
                            mock_pool_repo_get,
                            mock_member_repo_get,
+                           mock_l7rule_repo_get,
+                           mock_l7policy_repo_get,
                            mock_listener_repo_get,
                            mock_lb_repo_get,
                            mock_health_mon_repo_get,
@@ -573,6 +616,8 @@ class TestControllerWorker(base.TestCase):
                          mock_taskflow_load,
                          mock_pool_repo_get,
                          mock_member_repo_get,
+                         mock_l7rule_repo_get,
+                         mock_l7policy_repo_get,
                          mock_listener_repo_get,
                          mock_lb_repo_get,
                          mock_health_mon_repo_get,
@@ -603,6 +648,8 @@ class TestControllerWorker(base.TestCase):
                          mock_taskflow_load,
                          mock_pool_repo_get,
                          mock_member_repo_get,
+                         mock_l7rule_repo_get,
+                         mock_l7policy_repo_get,
                          mock_listener_repo_get,
                          mock_lb_repo_get,
                          mock_health_mon_repo_get,
@@ -633,6 +680,8 @@ class TestControllerWorker(base.TestCase):
                          mock_taskflow_load,
                          mock_pool_repo_get,
                          mock_member_repo_get,
+                         mock_l7rule_repo_get,
+                         mock_l7policy_repo_get,
                          mock_listener_repo_get,
                          mock_lb_repo_get,
                          mock_health_mon_repo_get,
@@ -656,6 +705,202 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
+                'l7policy_flows.L7PolicyFlows.get_create_l7policy_flow',
+                return_value=_flow_mock)
+    def test_create_l7policy(self,
+                             mock_get_create_listener_flow,
+                             mock_api_get_session,
+                             mock_dyn_log_listener,
+                             mock_taskflow_load,
+                             mock_pool_repo_get,
+                             mock_member_repo_get,
+                             mock_l7rule_repo_get,
+                             mock_l7policy_repo_get,
+                             mock_listener_repo_get,
+                             mock_lb_repo_get,
+                             mock_health_mon_repo_get,
+                             mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+
+        cw = controller_worker.ControllerWorker()
+        cw.create_l7policy(L7POLICY_ID)
+
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+            assert_called_once_with(_flow_mock,
+                                    store={constants.L7POLICY: _l7policy_mock,
+                                           constants.LISTENERS:
+                                               [_listener_mock],
+                                           constants.LOADBALANCER:
+                                               _load_balancer_mock}))
+
+        _flow_mock.run.assert_called_once_with()
+
+    @mock.patch('octavia.controller.worker.flows.'
+                'l7policy_flows.L7PolicyFlows.get_delete_l7policy_flow',
+                return_value=_flow_mock)
+    def test_delete_l7policy(self,
+                             mock_get_delete_listener_flow,
+                             mock_api_get_session,
+                             mock_dyn_log_listener,
+                             mock_taskflow_load,
+                             mock_pool_repo_get,
+                             mock_member_repo_get,
+                             mock_l7rule_repo_get,
+                             mock_l7policy_repo_get,
+                             mock_listener_repo_get,
+                             mock_lb_repo_get,
+                             mock_health_mon_repo_get,
+                             mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+
+        cw = controller_worker.ControllerWorker()
+        cw.delete_l7policy(L7POLICY_ID)
+
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+            assert_called_once_with(_flow_mock,
+                                    store={constants.L7POLICY: _l7policy_mock,
+                                           constants.LISTENERS:
+                                               [_listener_mock],
+                                           constants.LOADBALANCER:
+                                               _load_balancer_mock}))
+
+        _flow_mock.run.assert_called_once_with()
+
+    @mock.patch('octavia.controller.worker.flows.'
+                'l7policy_flows.L7PolicyFlows.get_update_l7policy_flow',
+                return_value=_flow_mock)
+    def test_update_l7policy(self,
+                             mock_get_update_listener_flow,
+                             mock_api_get_session,
+                             mock_dyn_log_listener,
+                             mock_taskflow_load,
+                             mock_pool_repo_get,
+                             mock_member_repo_get,
+                             mock_l7rule_repo_get,
+                             mock_l7policy_repo_get,
+                             mock_listener_repo_get,
+                             mock_lb_repo_get,
+                             mock_health_mon_repo_get,
+                             mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+
+        cw = controller_worker.ControllerWorker()
+        cw.update_l7policy(L7POLICY_ID, L7POLICY_UPDATE_DICT)
+
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+            assert_called_once_with(_flow_mock,
+                                    store={constants.L7POLICY: _l7policy_mock,
+                                           constants.LISTENERS:
+                                               [_listener_mock],
+                                           constants.LOADBALANCER:
+                                               _load_balancer_mock,
+                                           constants.UPDATE_DICT:
+                                               L7POLICY_UPDATE_DICT}))
+
+        _flow_mock.run.assert_called_once_with()
+
+    @mock.patch('octavia.controller.worker.flows.'
+                'l7rule_flows.L7RuleFlows.get_create_l7rule_flow',
+                return_value=_flow_mock)
+    def test_create_l7rule(self,
+                           mock_get_create_listener_flow,
+                           mock_api_get_session,
+                           mock_dyn_log_listener,
+                           mock_taskflow_load,
+                           mock_pool_repo_get,
+                           mock_member_repo_get,
+                           mock_l7rule_repo_get,
+                           mock_l7policy_repo_get,
+                           mock_listener_repo_get,
+                           mock_lb_repo_get,
+                           mock_health_mon_repo_get,
+                           mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+
+        cw = controller_worker.ControllerWorker()
+        cw.create_l7rule(L7RULE_ID)
+
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+            assert_called_once_with(_flow_mock,
+                                    store={constants.L7RULE: _l7rule_mock,
+                                           constants.LISTENERS:
+                                               [_listener_mock],
+                                           constants.LOADBALANCER:
+                                               _load_balancer_mock}))
+
+        _flow_mock.run.assert_called_once_with()
+
+    @mock.patch('octavia.controller.worker.flows.'
+                'l7rule_flows.L7RuleFlows.get_delete_l7rule_flow',
+                return_value=_flow_mock)
+    def test_delete_l7rule(self,
+                           mock_get_delete_listener_flow,
+                           mock_api_get_session,
+                           mock_dyn_log_listener,
+                           mock_taskflow_load,
+                           mock_pool_repo_get,
+                           mock_member_repo_get,
+                           mock_l7rule_repo_get,
+                           mock_l7policy_repo_get,
+                           mock_listener_repo_get,
+                           mock_lb_repo_get,
+                           mock_health_mon_repo_get,
+                           mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+
+        cw = controller_worker.ControllerWorker()
+        cw.delete_l7rule(L7RULE_ID)
+
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+            assert_called_once_with(_flow_mock,
+                                    store={constants.L7RULE: _l7rule_mock,
+                                           constants.LISTENERS:
+                                               [_listener_mock],
+                                           constants.LOADBALANCER:
+                                               _load_balancer_mock}))
+
+        _flow_mock.run.assert_called_once_with()
+
+    @mock.patch('octavia.controller.worker.flows.'
+                'l7rule_flows.L7RuleFlows.get_update_l7rule_flow',
+                return_value=_flow_mock)
+    def test_update_l7rule(self,
+                           mock_get_update_listener_flow,
+                           mock_api_get_session,
+                           mock_dyn_log_listener,
+                           mock_taskflow_load,
+                           mock_pool_repo_get,
+                           mock_member_repo_get,
+                           mock_l7rule_repo_get,
+                           mock_l7policy_repo_get,
+                           mock_listener_repo_get,
+                           mock_lb_repo_get,
+                           mock_health_mon_repo_get,
+                           mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+
+        cw = controller_worker.ControllerWorker()
+        cw.update_l7rule(L7RULE_ID, L7RULE_UPDATE_DICT)
+
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+            assert_called_once_with(_flow_mock,
+                                    store={constants.L7RULE: _l7rule_mock,
+                                           constants.LISTENERS:
+                                               [_listener_mock],
+                                           constants.LOADBALANCER:
+                                               _load_balancer_mock,
+                                           constants.UPDATE_DICT:
+                                               L7RULE_UPDATE_DICT}))
+
+        _flow_mock.run.assert_called_once_with()
+
+    @mock.patch('octavia.controller.worker.flows.'
                 'amphora_flows.AmphoraFlows.get_failover_flow',
                 return_value=_flow_mock)
     def test_failover_amphora(self,
@@ -665,6 +910,8 @@ class TestControllerWorker(base.TestCase):
                               mock_taskflow_load,
                               mock_pool_repo_get,
                               mock_member_repo_get,
+                              mock_l7rule_repo_get,
+                              mock_l7policy_repo_get,
                               mock_listener_repo_get,
                               mock_lb_repo_get,
                               mock_health_mon_repo_get,
@@ -694,6 +941,8 @@ class TestControllerWorker(base.TestCase):
                                    mock_taskflow_load,
                                    mock_pool_repo_get,
                                    mock_member_repo_get,
+                                   mock_l7rule_repo_get,
+                                   mock_l7policy_repo_get,
                                    mock_listener_repo_get,
                                    mock_lb_repo_get,
                                    mock_health_mon_repo_get,

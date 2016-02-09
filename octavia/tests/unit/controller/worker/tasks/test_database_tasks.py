@@ -37,6 +37,8 @@ PORT_ID = uuidutils.generate_uuid()
 SUBNET_ID = uuidutils.generate_uuid()
 VRRP_PORT_ID = uuidutils.generate_uuid()
 HA_PORT_ID = uuidutils.generate_uuid()
+L7POLICY_ID = uuidutils.generate_uuid()
+L7RULE_ID = uuidutils.generate_uuid()
 VIP_IP = '192.0.5.2'
 VRRP_IP = '192.0.5.3'
 HA_IP = '192.0.5.4'
@@ -61,6 +63,10 @@ _loadbalancer_mock.id = LB_ID
 _loadbalancer_mock.amphorae = [_amphora_mock]
 _pool_mock = mock.MagicMock()
 _pool_mock.id = POOL_ID
+_l7policy_mock = mock.MagicMock()
+_l7policy_mock.id = L7POLICY_ID
+_l7rule_mock = mock.MagicMock()
+_l7rule_mock.id = L7RULE_ID
 _listener_mock = mock.MagicMock()
 _listener_mock.id = LISTENER_ID
 _tf_failure_mock = mock.Mock(spec=failure.Failure)
@@ -133,6 +139,13 @@ class TestDatabaseTasks(base.TestCase):
 
         self.pool_mock = mock.MagicMock()
         self.pool_mock.id = POOL_ID
+
+        self.l7policy_mock = mock.MagicMock()
+        self.l7policy_mock.id = L7POLICY_ID
+
+        self.l7rule_mock = mock.MagicMock()
+        self.l7rule_mock.id = L7RULE_ID
+        self.l7rule_mock.l7policy = self.l7policy_mock
 
         super(TestDatabaseTasks, self).setUp()
 
@@ -278,6 +291,64 @@ class TestDatabaseTasks(base.TestCase):
 #        repo.PoolRepository.update.assert_called_once_with(
 #            'TEST',
 #            POOL_ID,
+#            operating_status=constants.ERROR)
+
+    @mock.patch('octavia.db.repositories.L7PolicyRepository.delete')
+    def test_delete_l7policy_in_db(self,
+                                   mock_l7policy_repo_delete,
+                                   mock_generate_uuid,
+                                   mock_LOG,
+                                   mock_get_session,
+                                   mock_loadbalancer_repo_update,
+                                   mock_listener_repo_update,
+                                   mock_amphora_repo_update,
+                                   mock_amphora_repo_delete):
+
+        delete_l7policy = database_tasks.DeleteL7PolicyInDB()
+        delete_l7policy.execute(_l7policy_mock)
+
+        repo.L7PolicyRepository.delete.assert_called_once_with(
+            'TEST',
+            id=L7POLICY_ID)
+
+        # Test the revert
+
+        mock_l7policy_repo_delete.reset_mock()
+        delete_l7policy.revert(L7POLICY_ID)
+
+# TODO(sbalukoff) Fix
+#        repo.ListenerRepository.update.assert_called_once_with(
+#            'TEST',
+#            LISTENER_ID,
+#            operating_status=constants.ERROR)
+
+    @mock.patch('octavia.db.repositories.L7RuleRepository.delete')
+    def test_delete_l7rule_in_db(self,
+                                 mock_l7rule_repo_delete,
+                                 mock_generate_uuid,
+                                 mock_LOG,
+                                 mock_get_session,
+                                 mock_loadbalancer_repo_update,
+                                 mock_listener_repo_update,
+                                 mock_amphora_repo_update,
+                                 mock_amphora_repo_delete):
+
+        delete_l7rule = database_tasks.DeleteL7RuleInDB()
+        delete_l7rule.execute(_l7rule_mock)
+
+        repo.L7RuleRepository.delete.assert_called_once_with(
+            'TEST',
+            id=L7RULE_ID)
+
+        # Test the revert
+
+        mock_l7rule_repo_delete.reset_mock()
+        delete_l7rule.revert(L7RULE_ID)
+
+# TODO(sbalukoff) Fix
+#        repo.ListenerRepository.update.assert_called_once_with(
+#            'TEST',
+#            LISTENER_ID,
 #            operating_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.get',
@@ -1045,6 +1116,75 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             POOL_ID,
             {'enabled': 0}, None)
+
+    @mock.patch('octavia.db.repositories.L7PolicyRepository.update')
+    def test_update_l7policy_in_db(self,
+                                   mock_l7policy_repo_update,
+                                   mock_generate_uuid,
+                                   mock_LOG,
+                                   mock_get_session,
+                                   mock_loadbalancer_repo_update,
+                                   mock_listener_repo_update,
+                                   mock_amphora_repo_update,
+                                   mock_amphora_repo_delete):
+
+        update_l7policy = database_tasks.UpdateL7PolicyInDB()
+        update_l7policy.execute(self.l7policy_mock,
+                                {'action': constants.L7POLICY_ACTION_REJECT})
+
+        repo.L7PolicyRepository.update.assert_called_once_with(
+            'TEST',
+            L7POLICY_ID,
+            action=constants.L7POLICY_ACTION_REJECT)
+
+        # Test the revert
+
+        mock_l7policy_repo_update.reset_mock()
+        update_l7policy.revert(self.l7policy_mock)
+
+# TODO(sbalukoff) fix this to set the upper objects to ERROR
+        repo.L7PolicyRepository.update.assert_called_once_with(
+            'TEST',
+            L7POLICY_ID,
+            enabled=0)
+
+    @mock.patch('octavia.db.repositories.L7RuleRepository.update')
+    @mock.patch('octavia.db.repositories.L7PolicyRepository.update')
+    def test_update_l7rule_in_db(self,
+                                 mock_l7rule_repo_update,
+                                 mock_l7policy_repo_update,
+                                 mock_generate_uuid,
+                                 mock_LOG,
+                                 mock_get_session,
+                                 mock_loadbalancer_repo_update,
+                                 mock_listener_repo_update,
+                                 mock_amphora_repo_update,
+                                 mock_amphora_repo_delete):
+
+        update_l7rule = database_tasks.UpdateL7RuleInDB()
+        update_l7rule.execute(
+            self.l7rule_mock,
+            {'type': constants.L7RULE_TYPE_PATH,
+             'compare_type': constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+             'value': '/api'})
+
+        repo.L7RuleRepository.update.assert_called_once_with(
+            'TEST',
+            L7RULE_ID,
+            type=constants.L7RULE_TYPE_PATH,
+            compare_type=constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            value='/api')
+
+        # Test the revert
+
+        mock_l7rule_repo_update.reset_mock()
+        update_l7rule.revert(self.l7rule_mock)
+
+# TODO(sbalukoff) fix this to set the upper objects to ERROR
+        repo.L7PolicyRepository.update.assert_called_once_with(
+            'TEST',
+            L7POLICY_ID,
+            enabled=0)
 
     def test_get_amphora_details(self,
                                  mock_generate_uuid,
