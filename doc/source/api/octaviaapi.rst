@@ -19,13 +19,14 @@ Available Statuses on Entities
 +---------------------+--------------------------------+
 | Status type         | Statuses                       |
 +---------------------+--------------------------------+
-| Operating Status    | ``ACTIVE``, ``DELETED``,       |
+| Operating Status    | ``ONLINE``, ``OFFLINE``,       |
+|                     | ``DEGRADED``, ``ERROR``,       |
+|                     | ``NO_MONITOR``                 |
++---------------------+--------------------------------+
+| Provisioning Status | ``ACTIVE``, ``DELETED``,       |
 |                     | ``ERROR``, ``PENDING_DELETE``, |
 |                     | ``PENDING_UPDATE``,            |
 |                     | ``PENDING_CREATE``             |
-+---------------------+--------------------------------+
-| Provisioning Status | ``ONLINE``, ``OFFLINE``,       |
-|                     | ``DEGRADED``, ``ERROR``        |
 +---------------------+--------------------------------+
 
 Response Codes
