@@ -13,6 +13,7 @@
 #    under the License.
 
 import os
+import re
 
 import jinja2
 import six
@@ -42,7 +43,7 @@ BASE_CRT_DIR = BASE_PATH + '/certs'
 
 HAPROXY_TEMPLATE = os.path.abspath(
     os.path.join(os.path.dirname(__file__),
-                 'templates/haproxy_listener.template'))
+                 'templates/haproxy.cfg.j2'))
 
 CONF = cfg.CONF
 CONF.import_group('haproxy_amphora', 'octavia.common.config')
@@ -180,7 +181,10 @@ class JinjaTemplater(object):
         if listener.default_pool:
             ret_value['default_pool'] = self._transform_pool(
                 listener.default_pool)
-        # TODO(sbalukoff): Handle pools referenced by L7Policies
+        pools = [self._transform_pool(x) for x in listener.pools]
+        ret_value['pools'] = pools
+        l7policies = [self._transform_l7policy(x) for x in listener.l7policies]
+        ret_value['l7policies'] = l7policies
         return ret_value
 
     def _transform_pool(self, pool):
@@ -258,6 +262,52 @@ class JinjaTemplater(object):
             'expected_codes': codes,
             'enabled': monitor.enabled,
         }
+
+    def _transform_l7policy(self, l7policy):
+        """Transforms an L7 policy into an object that will
+
+            be processed by the templating system
+        """
+        ret_value = {
+            'id': l7policy.id,
+            'action': l7policy.action,
+            'redirect_url': l7policy.redirect_url,
+            'enabled': l7policy.enabled
+        }
+        if l7policy.redirect_pool:
+            ret_value['redirect_pool'] = self._transform_pool(
+                l7policy.redirect_pool)
+        else:
+            ret_value['redirect_pool'] = None
+        l7rules = [self._transform_l7rule(x) for x in l7policy.l7rules]
+        ret_value['l7rules'] = l7rules
+        return ret_value
+
+    def _transform_l7rule(self, l7rule):
+        """Transforms an L7 rule into an object that will
+
+            be processed by the templating system
+        """
+        return {
+            'id': l7rule.id,
+            'type': l7rule.type,
+            'compare_type': l7rule.compare_type,
+            'key': l7rule.key,
+            'value': self._escape_haproxy_config_string(l7rule.value),
+            'invert': l7rule.invert
+        }
+
+    @staticmethod
+    def _escape_haproxy_config_string(value):
+        """Escapes certain characters in a given string such that
+
+            haproxy will parse the string as a single value
+        """
+        # Escape backslashes first
+        value = re.sub(r'\\', r'\\\\', value)
+        # Spaces next
+        value = re.sub(' ', '\\ ', value)
+        return value
 
     @staticmethod
     def _expand_expected_codes(codes):
