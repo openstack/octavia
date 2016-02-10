@@ -23,10 +23,12 @@ class TestPool(base.BaseAPITest):
     def setUp(self):
         super(TestPool, self).setUp()
         self.lb = self.create_load_balancer({})
-        self.set_lb_status(self.lb.get('id'))
+        self.lb = self.set_lb_status(self.lb.get('id'))
         self.listener = self.create_listener(self.lb.get('id'),
                                              constants.PROTOCOL_HTTP, 80)
-        self.set_lb_status(self.lb.get('id'))
+        self.lb = self.set_lb_status(self.lb.get('id'))
+        self.listener = self.get_listener(self.lb.get('id'),
+                                          self.listener.get('id'))
         self.pools_path = self.POOLS_PATH.format(lb_id=self.lb.get('id'))
         self.pool_path = self.pools_path + '/{pool_id}'
         self.pools_path_with_listener = (self.pools_path +

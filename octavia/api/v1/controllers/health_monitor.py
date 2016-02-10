@@ -25,6 +25,7 @@ from octavia.api.v1.types import health_monitor as hm_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
 
@@ -102,8 +103,8 @@ class HealthMonitorController(base.BaseController):
                 raise exceptions.DuplicateHealthMonitor()
         except exceptions.NotFound:
             pass
-        hm_dict = health_monitor.to_dict()
-        hm_dict['pool_id'] = self.pool_id
+        hm_dict = db_prepare.create_health_monitor(
+            health_monitor.to_dict(), self.pool_id)
         self._test_lb_and_listener_statuses(context.session)
 
         try:

@@ -17,6 +17,8 @@ import sys
 from wsme import types as wtypes
 
 from octavia.api.v1.types import base
+from octavia.api.v1.types import l7rule
+from octavia.api.v1.types import pool
 from octavia.common import constants
 
 
@@ -30,6 +32,29 @@ class L7PolicyResponse(base.BaseType):
     redirect_pool_id = wtypes.wsattr(wtypes.StringType(max_length=255))
     redirect_url = wtypes.wsattr(wtypes.StringType(max_length=255))
     position = wtypes.wsattr(wtypes.IntegerType())
+    l7rules = wtypes.wsattr([l7rule.L7RuleResponse])
+    redirect_pool = wtypes.wsattr(pool.PoolResponse)
+
+    @classmethod
+    def from_data_model(cls, data_model, children=False):
+        policy = super(L7PolicyResponse, cls).from_data_model(
+            data_model, children=children)
+        if not children:
+            del policy.l7rules
+            del policy.redirect_pool
+            return policy
+        policy.l7rules = [
+            l7rule.L7RuleResponse.from_data_model(
+                l7rule_dm, children=children)
+            for l7rule_dm in data_model.l7rules
+        ]
+        if policy.redirect_pool_id:
+            policy.redirect_pool = pool.PoolResponse.from_data_model(
+                data_model.redirect_pool, children=children)
+        else:
+            del policy.redirect_pool
+            del policy.redirect_pool_id
+        return policy
 
 
 class L7PolicyPOST(base.BaseType):
@@ -44,6 +69,8 @@ class L7PolicyPOST(base.BaseType):
     redirect_pool_id = wtypes.wsattr(wtypes.StringType(max_length=255))
     redirect_url = wtypes.wsattr(base.URLType())
     position = wtypes.wsattr(wtypes.IntegerType(), default=sys.maxsize)
+    redirect_pool = wtypes.wsattr(pool.PoolPOST)
+    l7rules = wtypes.wsattr([l7rule.L7RulePOST], default=[])
 
 
 class L7PolicyPUT(base.BaseType):

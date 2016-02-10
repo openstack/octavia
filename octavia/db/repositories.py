@@ -149,7 +149,7 @@ class Repositories(object):
         :param vip_dict: Dictionary representation of a vip
         :returns: octava.common.data_models.LoadBalancer
         """
-        with session.begin():
+        with session.begin(subtransactions=True):
             if not lb_dict.get('id'):
                 lb_dict['id'] = uuidutils.generate_uuid()
             lb = models.LoadBalancer(**lb_dict)
@@ -238,6 +238,69 @@ class Repositories(object):
             self.listener.update(session, id,
                                  provisioning_status=listener_prov_status)
         return success
+
+    def create_load_balancer_tree(self, session, lb_dict):
+        listener_dicts = lb_dict.pop('listeners', [])
+        vip_dict = lb_dict.pop('vip')
+        with session.begin(subtransactions=True):
+            lb_dm = self.create_load_balancer_and_vip(
+                session, lb_dict, vip_dict)
+            for listener_dict in listener_dicts:
+                pool_dict = listener_dict.pop('default_pool', None)
+                l7policies_dict = listener_dict.pop('l7policies', None)
+                sni_containers = listener_dict.pop('sni_containers', [])
+                if pool_dict:
+                    hm_dict = pool_dict.pop('health_monitor', None)
+                    member_dicts = pool_dict.pop('members', [])
+                    sp_dict = pool_dict.pop('session_persistence') or None
+                    pool_dict['load_balancer_id'] = lb_dm.id
+                    del pool_dict['listener_id']
+                    pool_dm = self.pool.create(session, **pool_dict)
+                    if sp_dict:
+                        sp_dict['pool_id'] = pool_dm.id
+                        self.session_persistence.create(session, **sp_dict)
+                    if hm_dict:
+                        hm_dict['pool_id'] = pool_dm.id
+                        self.health_monitor.create(session, **hm_dict)
+                    for r_member_dict in member_dicts:
+                        r_member_dict['pool_id'] = pool_dm.id
+                        self.member.create(session, **r_member_dict)
+                    listener_dict['default_pool_id'] = pool_dm.id
+                self.listener.create(session, **listener_dict)
+                for sni_container in sni_containers:
+                    self.sni.create(session, **sni_container)
+                if l7policies_dict:
+                    for policy_dict in l7policies_dict:
+                        l7rules_dict = policy_dict.pop('l7rules')
+                        if policy_dict.get('redirect_pool'):
+                            r_pool_dict = policy_dict.pop(
+                                'redirect_pool')
+                            r_hm_dict = r_pool_dict.pop('health_monitor', None)
+                            r_sp_dict = r_pool_dict.pop(
+                                'session_persistence') or None
+                            r_member_dicts = r_pool_dict.pop('members', [])
+                            if 'listener_id' in r_pool_dict.keys():
+                                del r_pool_dict['listener_id']
+                            r_pool_dm = self.pool.create(
+                                session, **r_pool_dict)
+                            if r_sp_dict:
+                                r_sp_dict['pool_id'] = r_pool_dm.id
+                                self.session_persistence.create(session,
+                                                                **r_sp_dict)
+                            if r_hm_dict:
+                                r_hm_dict['pool_id'] = r_pool_dm.id
+                                self.health_monitor.create(session,
+                                                           **r_hm_dict)
+                            for r_member_dict in r_member_dicts:
+                                r_member_dict['pool_id'] = r_pool_dm.id
+                                self.member.create(session, **r_member_dict)
+                            policy_dict['redirect_pool_id'] = r_pool_dm.id
+                        policy_dm = self.l7policy.create(session,
+                                                         **policy_dict)
+                        for rule_dict in l7rules_dict:
+                            rule_dict['l7policy_id'] = policy_dm.id
+                            self.l7rule.create(session, **rule_dict)
+        return self.load_balancer.get(session, id=lb_dm.id)
 
 
 class LoadBalancerRepository(BaseRepository):
@@ -348,6 +411,7 @@ class ListenerRepository(BaseRepository):
         if not pool_db:
             raise exceptions.NotFound(
                 resource=data_models.Pool._name(), id=pool_id)
+        return pool_db
 
     def has_default_pool(self, session, id):
         """Checks if a listener has a default pool."""
@@ -370,17 +434,16 @@ class ListenerRepository(BaseRepository):
             listener_db.update(model_kwargs)
 
     def create(self, session, **model_kwargs):
-        """Creates a new Listener with a some validation."""
+        """Creates a new Listener with some validation."""
         with session.begin(subtransactions=True):
-            # Verify any specified default_pool_id exists
-            default_pool_id = model_kwargs.get('default_pool_id')
-            if default_pool_id:
-                self._pool_check(session, default_pool_id,
-                                 lb_id=model_kwargs.get('load_balancer_id'))
-            if model_kwargs.get('peer_port') is None:
-                model_kwargs.update(peer_port=self._find_next_peer_port(
-                    session, model_kwargs.get('load_balancer_id')))
             model = self.model_class(**model_kwargs)
+            if model.default_pool_id:
+                model.default_pool = self._pool_check(
+                    session, model.default_pool_id,
+                    lb_id=model.load_balancer_id)
+            if model.peer_port is None:
+                model.peer_port = self._find_next_peer_port(
+                    session, lb_id=model.load_balancer_id)
             session.add(model)
         return model.to_data_model()
 
@@ -668,6 +731,8 @@ class L7PolicyRepository(BaseRepository):
             if l7policy.redirect_url is not None:
                 raise exceptions.InvalidL7PolicyArg(
                     action=l7policy.action, arg='redirect_url')
+            session.expire(session.query(models.Listener).filter_by(
+                id=l7policy.listener_id).first())
             listener = (session.query(models.Listener).
                         filter_by(id=l7policy.listener_id).first())
             self._pool_check(session, l7policy.redirect_pool_id,
@@ -760,10 +825,18 @@ class L7PolicyRepository(BaseRepository):
             model_kwargs.update(position=2147483647)
             if not model_kwargs.get('id'):
                 model_kwargs.update(id=uuidutils.generate_uuid())
+            if model_kwargs.get('redirect_pool_id'):
+                pool_db = session.query(models.Pool).filter_by(
+                    id=model_kwargs.get('redirect_pool_id')).first()
+                model_kwargs.update(redirect_pool=pool_db)
             l7policy = self.model_class(**model_kwargs)
             self._validate_l7policy_data(session, l7policy)
             session.add(l7policy)
             session.flush()
+
+        listener = (session.query(models.Listener).
+                    filter_by(id=l7policy.listener_id).first())
+        session.refresh(listener)
 
         # Must be done outside the transaction which creates the L7Policy
         listener = (session.query(models.Listener).

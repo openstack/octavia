@@ -28,6 +28,7 @@ from octavia.api.v1.types import pool as pool_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
 
@@ -60,8 +61,8 @@ class PoolsController(base.BaseController):
             pools = self._get_db_listener(context.session,
                                           self.listener_id).pools
         else:
-            pools = self.repositories.load_balancer.get(
-                context.session, id=self.load_balancer_id).pools
+            pools = self.repositories.pool.get_all(
+                context.session, load_balancer_id=self.load_balancer_id)
         return self._convert_db_to_type(pools, [pool_types.PoolResponse])
 
     def _get_affected_listener_ids(self, session, pool=None):
@@ -138,13 +139,13 @@ class PoolsController(base.BaseController):
         """
         # For some API requests the listener_id will be passed in the
         # pool_dict:
-        pool_dict = pool.to_dict()
+        context = pecan.request.context.get('octavia_context')
+        pool_dict = db_prepare.create_pool(pool.to_dict())
         if 'listener_id' in pool_dict:
             if pool_dict['listener_id'] is not None:
                 self.listener_id = pool_dict.pop('listener_id')
             else:
                 del pool_dict['listener_id']
-        context = pecan.request.context.get('octavia_context')
         if self.listener_id and self.repositories.listener.has_default_pool(
                 context.session, self.listener_id):
             raise exceptions.DuplicatePoolEntry()

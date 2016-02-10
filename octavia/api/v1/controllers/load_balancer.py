@@ -27,6 +27,7 @@ from octavia.api.v1.types import load_balancer as lb_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
 
@@ -71,16 +72,36 @@ class LoadBalancersController(base.BaseController):
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=id)
 
+    def _create_load_balancer_graph(self, context, load_balancer):
+        prepped_lb = db_prepare.create_load_balancer_tree(
+            load_balancer.to_dict())
+        try:
+            db_lb = self.repositories.create_load_balancer_tree(
+                context.session, prepped_lb)
+        except Exception:
+            # TODO(blogan): handle exceptions
+            raise
+        try:
+            LOG.info(_LI("Sending full load balancer configuration %s to "
+                         "the handler"), db_lb.id)
+            self.handler.create(db_lb)
+        except Exception:
+            with excutils.save_and_reraise_exception(reraise=False):
+                self.repositories.load_balancer.update(
+                    context.session, db_lb.id,
+                    provisioning_status=constants.ERROR)
+        return self._convert_db_to_type(db_lb, lb_types.LoadBalancerResponse,
+                                        children=True)
+
     @wsme_pecan.wsexpose(lb_types.LoadBalancerResponse,
                          body=lb_types.LoadBalancerPOST, status_code=202)
     def post(self, load_balancer):
         """Creates a load balancer."""
         context = pecan.request.context.get('octavia_context')
-        lb_dict = load_balancer.to_dict()
-        vip_dict = lb_dict.pop('vip')
-        lb_dict['provisioning_status'] = constants.PENDING_CREATE
-        lb_dict['operating_status'] = constants.OFFLINE
-        lb_dict['project_id'] = lb_dict.get('project_id') or context.project_id
+        if load_balancer.listeners:
+            return self._create_load_balancer_graph(context, load_balancer)
+        lb_dict = db_prepare.create_load_balancer(load_balancer.to_dict())
+        vip_dict = lb_dict.pop('vip', {})
         try:
             db_lb = self.repositories.create_load_balancer_and_vip(
                 context.session, lb_dict, vip_dict)

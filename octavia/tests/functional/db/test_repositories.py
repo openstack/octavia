@@ -121,7 +121,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
               'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
               'vrrp_group': None,
               'server_group_id': uuidutils.generate_uuid(),
-              'project_id': uuidutils.generate_uuid()}
+              'project_id': uuidutils.generate_uuid(),
+              'id': uuidutils.generate_uuid()}
         vip = {'ip_address': '10.0.0.1',
                'port_id': uuidutils.generate_uuid(),
                'subnet_id': uuidutils.generate_uuid()}
@@ -142,7 +143,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
-                'project_id': uuidutils.generate_uuid()}
+                'project_id': uuidutils.generate_uuid(),
+                'id': uuidutils.generate_uuid()}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         pool_dm_dict = pool_dm.to_dict()
@@ -163,9 +165,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
-                'project_id': uuidutils.generate_uuid()}
+                'project_id': uuidutils.generate_uuid(),
+                'id': uuidutils.generate_uuid()}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
-              'cookie_name': 'cookie_monster'}
+              'cookie_name': 'cookie_monster',
+              'pool_id': pool['id']}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id, sp_dict=sp)
         pool_dm_dict = pool_dm.to_dict()
@@ -193,7 +197,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
-                'project_id': uuidutils.generate_uuid()}
+                'project_id': uuidutils.generate_uuid(),
+                'id': uuidutils.generate_uuid()}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
@@ -216,9 +221,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
-                'project_id': uuidutils.generate_uuid()}
+                'project_id': uuidutils.generate_uuid(),
+                'id': uuidutils.generate_uuid()}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
-              'cookie_name': 'cookie_monster'}
+              'cookie_name': 'cookie_monster',
+              'pool_id': pool['id']}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id, sp_dict=sp)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
@@ -246,7 +253,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
-                'project_id': uuidutils.generate_uuid()}
+                'project_id': uuidutils.generate_uuid(),
+                'id': uuidutils.generate_uuid()}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
@@ -265,7 +273,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
-                'project_id': uuidutils.generate_uuid()}
+                'project_id': uuidutils.generate_uuid(),
+                'id': uuidutils.generate_uuid()}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
@@ -278,9 +287,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
-                'project_id': uuidutils.generate_uuid()}
+                'project_id': uuidutils.generate_uuid(),
+                'id': uuidutils.generate_uuid()}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
-              'cookie_name': 'cookie_monster'}
+              'cookie_name': 'cookie_monster',
+              'pool_id': pool['id']}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id, sp_dict=sp)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}

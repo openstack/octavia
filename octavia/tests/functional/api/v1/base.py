@@ -131,6 +131,11 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
             bytes_out=0, active_connections=0, total_connections=0)
         return db_ls.to_dict()
 
+    def get_listener(self, lb_id, listener_id):
+        path = self.LISTENER_PATH.format(lb_id=lb_id, listener_id=listener_id)
+        response = self.get(path)
+        return response.json
+
     def create_pool_sans_listener(self, lb_id, protocol, lb_algorithm,
                                   **optionals):
         req_dict = {'protocol': protocol, 'lb_algorithm': lb_algorithm}

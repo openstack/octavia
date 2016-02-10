@@ -29,6 +29,7 @@ from octavia.api.v1.types import listener as listener_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
 
@@ -111,13 +112,14 @@ class ListenersController(base.BaseController):
         """
         lb_repo = self.repositories.load_balancer
         try:
-            sni_container_ids = listener_dict.pop('sni_containers')
+            sni_containers = listener_dict.pop('sni_containers', [])
             db_listener = self.repositories.listener.create(
                 session, **listener_dict)
-            if sni_container_ids is not None:
-                for container_id in sni_container_ids:
+            if sni_containers:
+                for container in sni_containers:
                     sni_dict = {'listener_id': db_listener.id,
-                                'tls_container_id': container_id}
+                                'tls_container_id': container.get(
+                                    'tls_container_id')}
                     self.repositories.sni.create(session, **sni_dict)
                 db_listener = self.repositories.listener.get(session,
                                                              id=db_listener.id)
@@ -157,10 +159,8 @@ class ListenersController(base.BaseController):
         """Creates a listener on a load balancer."""
         self._secure_data(listener)
         context = pecan.request.context.get('octavia_context')
-        listener_dict = listener.to_dict()
-        listener_dict['load_balancer_id'] = self.load_balancer_id
-        listener_dict['provisioning_status'] = constants.PENDING_CREATE
-        listener_dict['operating_status'] = constants.OFFLINE
+        listener_dict = db_prepare.create_listener(
+            listener.to_dict(), self.load_balancer_id)
         if listener_dict['default_pool_id']:
             self._validate_pool(context.session,
                                 listener_dict['default_pool_id'])

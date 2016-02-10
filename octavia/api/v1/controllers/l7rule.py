@@ -26,6 +26,7 @@ from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import validate
+from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
 
@@ -80,8 +81,8 @@ class L7RuleController(base.BaseController):
         except Exception as e:
             raise exceptions.L7RuleValidation(error=e)
         context = pecan.request.context.get('octavia_context')
-        l7rule_dict = l7rule.to_dict()
-        l7rule_dict['l7policy_id'] = self.l7policy_id
+        l7rule_dict = db_prepare.create_l7rule(l7rule.to_dict(),
+                                               self.l7policy_id)
         self._test_lb_and_listener_statuses(context.session)
 
         try:

@@ -25,6 +25,7 @@ from octavia.api.v1.controllers import base
 from octavia.api.v1.types import member as member_types
 from octavia.common import constants
 from octavia.common import exceptions
+from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
 
@@ -90,9 +91,7 @@ class MembersController(base.BaseController):
     def post(self, member):
         """Creates a pool member on a pool."""
         context = pecan.request.context.get('octavia_context')
-        member_dict = member.to_dict()
-        member_dict['pool_id'] = self.pool_id
-        member_dict['operating_status'] = constants.OFFLINE
+        member_dict = db_prepare.create_member(member.to_dict(), self.pool_id)
         self._test_lb_and_listener_statuses(context.session)
 
         try:

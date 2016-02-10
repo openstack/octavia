@@ -26,6 +26,7 @@ from octavia.api.v1.types import l7policy as l7policy_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
 
@@ -75,8 +76,9 @@ class L7PolicyController(base.BaseController):
     def post(self, l7policy):
         """Creates a l7policy on a listener."""
         context = pecan.request.context.get('octavia_context')
-        l7policy_dict = l7policy.to_dict()
-        l7policy_dict['listener_id'] = self.listener_id
+        l7policy_dict = db_prepare.create_l7policy(l7policy.to_dict(),
+                                                   self.load_balancer_id,
+                                                   self.listener_id)
         self._test_lb_and_listener_statuses(context.session)
 
         try:

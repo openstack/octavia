@@ -15,6 +15,8 @@
 from wsme import types as wtypes
 
 from octavia.api.v1.types import base
+from octavia.api.v1.types import health_monitor
+from octavia.api.v1.types import member
 from octavia.common import constants
 
 
@@ -47,7 +49,37 @@ class PoolResponse(base.BaseType):
     protocol = wtypes.wsattr(wtypes.text)
     lb_algorithm = wtypes.wsattr(wtypes.text)
     session_persistence = wtypes.wsattr(SessionPersistenceResponse)
-    project_id = wtypes.wsattr(wtypes.StringType())
+    project_id = wtypes.wsattr(wtypes.UuidType())
+    health_monitor = wtypes.wsattr(health_monitor.HealthMonitorResponse)
+    members = wtypes.wsattr([member.MemberResponse])
+
+    @classmethod
+    def from_data_model(cls, data_model, children=False):
+        pool = super(PoolResponse, cls).from_data_model(
+            data_model, children=children)
+        # NOTE(blogan): we should show session persistence on every request
+        # to show a pool
+        if data_model.session_persistence:
+            pool.session_persistence = (
+                SessionPersistenceResponse.from_data_model(
+                    data_model.session_persistence))
+        if not children:
+            # NOTE(blogan): do not show members or health_monitor if the
+            # request does not want to see children
+            del pool.members
+            del pool.health_monitor
+            return pool
+        pool.members = [
+            member.MemberResponse.from_data_model(member_dm, children=children)
+            for member_dm in data_model.members
+        ]
+        if data_model.health_monitor:
+            pool.health_monitor = (
+                health_monitor.HealthMonitorResponse.from_data_model(
+                    data_model.health_monitor, children=children))
+        if not pool.health_monitor:
+            del pool.health_monitor
+        return pool
 
 
 class PoolPOST(base.BaseType):
@@ -59,12 +91,13 @@ class PoolPOST(base.BaseType):
     listener_id = wtypes.wsattr(wtypes.UuidType())
     protocol = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROTOCOLS),
                              mandatory=True)
-    lb_algorithm = wtypes.wsattr(wtypes.text, mandatory=True)
     lb_algorithm = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_LB_ALGORITHMS),
         mandatory=True)
     session_persistence = wtypes.wsattr(SessionPersistencePOST)
-    project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
+    project_id = wtypes.wsattr(wtypes.UuidType())
+    health_monitor = wtypes.wsattr(health_monitor.HealthMonitorPOST)
+    members = wtypes.wsattr([member.MemberPOST])
 
 
 class PoolPUT(base.BaseType):
