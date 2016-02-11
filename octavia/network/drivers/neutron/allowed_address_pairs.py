@@ -215,7 +215,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                     vip.load_balancer.amphorae):
 
                 self.neutron_client.delete_port(amphora.vrrp_port_id)
-        except base.PortNotFound:
+        except (neutron_client_exceptions.NotFound,
+                neutron_client_exceptions.PortNotFoundClient):
             LOG.debug('VIP instance port {0} already deleted.  '
                       'Skipping.'.format(amphora.vrrp_port_id))
 
@@ -426,5 +427,6 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             try:
                 self.neutron_client.update_port(port.id,
                                                 {'port': {'device_id': ''}})
-            except neutron_client_exceptions.NotFound:
+            except (neutron_client_exceptions.NotFound,
+                    neutron_client_exceptions.PortNotFoundClient):
                 raise base.PortNotFound()
