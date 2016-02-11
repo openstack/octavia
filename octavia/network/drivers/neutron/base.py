@@ -61,6 +61,7 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
         return data_models.Vip(ip_address=fixed_ip.ip_address,
                                subnet_id=fixed_ip.subnet_id,
                                port_id=port.id,
+                               load_balancer=load_balancer,
                                load_balancer_id=load_balancer.id)
 
     def _nova_interface_to_octavia_interface(self, compute_id, nova_interface):
