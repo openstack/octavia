@@ -171,7 +171,9 @@ CREATE_LISTENER_FLOW = 'octavia-create-listener_flow'
 PRE_CREATE_LOADBALANCER_FLOW = 'octavia-pre-create-loadbalancer-flow'
 CREATE_SERVER_GROUP_FLOW = 'octavia-create-server-group-flow'
 UPDATE_LB_SERVERGROUPID_FLOW = 'octavia-update-lb-server-group-id-flow'
+CREATE_LISTENERS_FLOW = 'octavia-create-all-listeners-flow'
 CREATE_LOADBALANCER_FLOW = 'octavia-create-loadbalancer-flow'
+CREATE_LOADBALANCER_GRAPH_FLOW = 'octavia-create-loadbalancer-graph-flow'
 CREATE_MEMBER_FLOW = 'octavia-create-member-flow'
 CREATE_POOL_FLOW = 'octavia-create-pool-flow'
 CREATE_L7POLICY_FLOW = 'octavia-create-l7policy-flow'
@@ -234,6 +236,7 @@ GENERATE_SERVER_PEM_TASK = 'GenerateServerPEMTask'
 
 # Task Names
 RELOAD_LB_AFTER_AMP_ASSOC = 'reload-lb-after-amp-assoc'
+RELOAD_LB_AFTER_AMP_ASSOC_FULL_GRAPH = 'reload-lb-after-amp-assoc-full-graph'
 RELOAD_LB_AFTER_PLUG_VIP = 'reload-lb-after-plug-vip'
 
 NOVA_1 = '1.1'

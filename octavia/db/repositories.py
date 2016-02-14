@@ -834,16 +834,13 @@ class L7PolicyRepository(BaseRepository):
             session.add(l7policy)
             session.flush()
 
-        listener = (session.query(models.Listener).
-                    filter_by(id=l7policy.listener_id).first())
-        session.refresh(listener)
-
         # Must be done outside the transaction which creates the L7Policy
         listener = (session.query(models.Listener).
                     filter_by(id=l7policy.listener_id).first())
         # Immediate refresh, as we have found that sqlalchemy will sometimes
         # cache the above query
         session.refresh(listener)
+        session.refresh(l7policy)
 
         if position is not None and position < len(listener.l7policies) + 1:
             with session.begin(subtransactions=True):

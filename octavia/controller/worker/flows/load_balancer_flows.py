@@ -22,6 +22,7 @@ from octavia.common import constants
 from octavia.common import exceptions
 from octavia.controller.worker.flows import amphora_flows
 from octavia.controller.worker.flows import listener_flows
+from octavia.controller.worker.flows import member_flows
 from octavia.controller.worker.flows import pool_flows
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import compute_tasks
@@ -43,6 +44,7 @@ class LoadBalancerFlows(object):
         self.amp_flows = amphora_flows.AmphoraFlows()
         self.listener_flows = listener_flows.ListenerFlows()
         self.pool_flows = pool_flows.PoolFlows()
+        self.member_flows = member_flows.MemberFlows()
 
     def get_create_load_balancer_flow(self, topology):
         """Creates a conditional graph flow that allocates a loadbalancer to
@@ -101,6 +103,45 @@ class LoadBalancerFlows(object):
 
         create_lb_flow_wrapper.add(lb_create_flow)
         return create_lb_flow_wrapper
+
+    def get_create_load_balancer_graph_flows(self, topology, prefix):
+        allocate_amphorae_flow = self.get_create_load_balancer_flow(topology)
+        f_name = constants.CREATE_LOADBALANCER_GRAPH_FLOW
+        lb_create_graph_flow = linear_flow.Flow(f_name)
+        lb_create_graph_flow.add(
+            self.get_post_lb_amp_association_flow(prefix, topology)
+        )
+        lb_create_graph_flow.add(
+            database_tasks.ReloadLoadBalancer(
+                name=constants.RELOAD_LB_AFTER_AMP_ASSOC_FULL_GRAPH,
+                requires=constants.LOADBALANCER_ID,
+                provides=constants.LOADBALANCER
+            )
+        )
+        lb_create_graph_flow.add(
+            network_tasks.CalculateDelta(
+                requires=constants.LOADBALANCER, provides=constants.DELTAS
+            )
+        )
+        lb_create_graph_flow.add(
+            network_tasks.HandleNetworkDeltas(
+                requires=constants.DELTAS, provides=constants.ADDED_PORTS
+            )
+        )
+        lb_create_graph_flow.add(
+            amphora_driver_tasks.AmphoraePostNetworkPlug(
+                requires=(constants.LOADBALANCER, constants.ADDED_PORTS)
+            )
+        )
+        lb_create_graph_flow.add(
+            self.listener_flows.get_create_all_listeners_flow()
+        )
+
+        lb_create_graph_flow.add(database_tasks.MarkLBActiveInDB(
+            mark_listeners=True,
+            requires=constants.LOADBALANCER)
+        )
+        return allocate_amphorae_flow, lb_create_graph_flow
 
     def get_post_lb_amp_association_flow(self, prefix, topology):
         """Reload the loadbalancer and create networking subflows for

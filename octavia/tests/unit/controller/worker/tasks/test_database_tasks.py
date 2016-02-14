@@ -22,6 +22,7 @@ from sqlalchemy.orm import exc
 from taskflow.types import failure
 
 from octavia.common import constants
+from octavia.common import data_models
 from octavia.controller.worker.tasks import database_tasks
 from octavia.db import repositories as repo
 import octavia.tests.unit.base as base
@@ -932,6 +933,7 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             LB_ID,
             provisioning_status=constants.ACTIVE)
+        self.assertEqual(0, repo.ListenerRepository.update.call_count)
 
         # Test the revert
 
@@ -942,6 +944,47 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             LB_ID,
             provisioning_status=constants.ERROR)
+        self.assertEqual(0, repo.ListenerRepository.update.call_count)
+
+    def test_mark_LB_active_in_db_and_listeners(self,
+                                                mock_generate_uuid,
+                                                mock_LOG,
+                                                mock_get_session,
+                                                mock_loadbalancer_repo_update,
+                                                mock_listener_repo_update,
+                                                mock_amphora_repo_update,
+                                                mock_amphora_repo_delete):
+        listeners = [data_models.Listener(id='listener1'),
+                     data_models.Listener(id='listener2')]
+        lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners)
+        mark_lb_active = database_tasks.MarkLBActiveInDB(mark_listeners=True)
+        mark_lb_active.execute(lb)
+
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            lb.id,
+            provisioning_status=constants.ACTIVE)
+        self.assertEqual(2, repo.ListenerRepository.update.call_count)
+        repo.ListenerRepository.update.has_calls(
+            [mock.call('TEST', listeners[0].id,
+                       provisioning_status=constants.ACTIVE),
+             mock.call('TEST', listeners[1].id,
+                       provisioning_status=constants.ACTIVE)])
+
+        mock_loadbalancer_repo_update.reset_mock()
+        mock_listener_repo_update.reset_mock()
+        mark_lb_active.revert(lb)
+
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            lb.id,
+            provisioning_status=constants.ERROR)
+        self.assertEqual(2, repo.ListenerRepository.update.call_count)
+        repo.ListenerRepository.update.has_calls(
+            [mock.call('TEST', listeners[0].id,
+                       provisioning_status=constants.ERROR),
+             mock.call('TEST', listeners[1].id,
+                       provisioning_status=constants.ERROR)])
 
     def test_mark_LB_deleted_in_db(self,
                                    mock_generate_uuid,

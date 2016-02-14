@@ -76,3 +76,12 @@ class TestListenerFlows(base.TestCase):
 
         self.assertEqual(4, len(listener_flow.requires))
         self.assertEqual(0, len(listener_flow.provides))
+
+    def test_get_create_all_listeners_flow(self):
+        listeners_flow = self.ListenerFlow.get_create_all_listeners_flow()
+        self.assertIsInstance(listeners_flow, flow.Flow)
+        self.assertIn(constants.LOADBALANCER, listeners_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, listeners_flow.requires)
+        self.assertIn(constants.LOADBALANCER, listeners_flow.provides)
+        self.assertEqual(2, len(listeners_flow.requires))
+        self.assertEqual(2, len(listeners_flow.provides))

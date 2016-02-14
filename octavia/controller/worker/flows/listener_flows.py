@@ -40,6 +40,26 @@ class ListenerFlows(object):
                                                constants.LISTENERS]))
         return create_listener_flow
 
+    def get_create_all_listeners_flow(self):
+        """Create a flow to create all listeners
+
+        :returns: The flow for creating all listeners
+        """
+        create_all_listeners_flow = linear_flow.Flow(
+            constants.CREATE_LISTENERS_FLOW)
+        create_all_listeners_flow.add(
+            database_tasks.GetListenersFromLoadbalancer(
+                requires=constants.LOADBALANCER,
+                provides=constants.LISTENERS))
+        create_all_listeners_flow.add(database_tasks.ReloadLoadBalancer(
+            requires=constants.LOADBALANCER_ID,
+            provides=constants.LOADBALANCER))
+        create_all_listeners_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+        create_all_listeners_flow.add(network_tasks.UpdateVIP(
+            requires=constants.LOADBALANCER))
+        return create_all_listeners_flow
+
     def get_delete_listener_flow(self):
         """Create a flow to delete a listener
 

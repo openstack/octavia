@@ -690,8 +690,20 @@ class MarkLBActiveInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
+    def __init__(self, mark_listeners=False, **kwargs):
+        super(MarkLBActiveInDB, self).__init__(**kwargs)
+        self.mark_listeners = mark_listeners
+
     def execute(self, loadbalancer):
         """Mark the load balancer as active in DB."""
+
+        if self.mark_listeners:
+            LOG.debug("Marking all listeners of loadbalancer %s ACTIVE",
+                      loadbalancer.id)
+            for listener in loadbalancer.listeners:
+                self.listener_repo.update(db_apis.get_session(),
+                                          listener.id,
+                                          provisioning_status=constants.ACTIVE)
 
         LOG.info(_LI("Mark ACTIVE in DB for load balancer id: %s"),
                  loadbalancer.id)
@@ -701,6 +713,18 @@ class MarkLBActiveInDB(BaseDatabaseTask):
 
     def revert(self, loadbalancer, *args, **kwargs):
         """Mark the load balancer as broken and ready to be cleaned up."""
+
+        if self.mark_listeners:
+            LOG.debug("Marking all listeners of loadbalancer %s ERROR",
+                      loadbalancer.id)
+            for listener in loadbalancer.listeners:
+                try:
+                    self.listener_repo.update(
+                        db_apis.get_session(), listener.id,
+                        provisioning_status=constants.ERROR)
+                except Exception:
+                    LOG.warn(_LW("Error updating listener %s provisioning "
+                                 "status"), listener.id)
 
         LOG.warn(_LW("Reverting mark load balancer deleted in DB "
                      "for load balancer id %s"), loadbalancer.id)
@@ -811,8 +835,12 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
                                       loadbalancer.id,
                                       provisioning_status=constants.ERROR)
         for listener in listeners:
-            self.listener_repo.update(db_apis.get_session(), listener.id,
-                                      provisioning_status=constants.ERROR)
+            try:
+                self.listener_repo.update(db_apis.get_session(), listener.id,
+                                          provisioning_status=constants.ERROR)
+            except Exception:
+                LOG.warn(_LW("Failed to update listener %s provisioning "
+                             "status..."), listener.id)
 
 
 class MarkListenerActiveInDB(BaseDatabaseTask):

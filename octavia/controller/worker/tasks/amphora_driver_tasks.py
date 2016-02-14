@@ -52,15 +52,21 @@ class ListenersUpdate(BaseAmphoraTask):
     def execute(self, loadbalancer, listeners):
         """Execute updates per listener for an amphora."""
         for listener in listeners:
+            listener.load_balancer = loadbalancer
             self.amphora_driver.update(listener, loadbalancer.vip)
 
-    def revert(self, listeners, *args, **kwargs):
+    def revert(self, loadbalancer, *args, **kwargs):
         """Handle failed listeners updates."""
 
         LOG.warn(_LW("Reverting listeners updates."))
-        for listener in listeners:
-            self.listener_repo.update(db_apis.get_session(), id=listener.id,
-                                      provisioning_status=constants.ERROR)
+        for listener in loadbalancer.listeners:
+            try:
+                self.listener_repo.update(db_apis.get_session(),
+                                          id=listener.id,
+                                          provisioning_status=constants.ERROR)
+            except Exception:
+                LOG.warn(_LW("Failed to update listener %s provisioning "
+                             "status..."), listener.id)
         return None
 
 
@@ -112,8 +118,13 @@ class ListenersStart(BaseAmphoraTask):
 
         LOG.warn(_LW("Reverting listeners starts."))
         for listener in listeners:
-            self.listener_repo.update(db_apis.get_session(), id=listener.id,
-                                      provisioning_status=constants.ERROR)
+            try:
+                self.listener_repo.update(db_apis.get_session(),
+                                          id=listener.id,
+                                          provisioning_status=constants.ERROR)
+            except Exception:
+                LOG.warn(_LW("Failed to update listener %s provisioning "
+                             "status..."), listener.id)
         return None
 
 

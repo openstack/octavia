@@ -18,6 +18,7 @@ from oslo_utils import uuidutils
 from taskflow.types import failure
 
 from octavia.common import constants
+from octavia.common import data_models
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.db import repositories as repo
 import octavia.tests.unit.base as base
@@ -31,10 +32,11 @@ LB_ID = uuidutils.generate_uuid()
 _amphora_mock = mock.MagicMock()
 _amphora_mock.id = AMP_ID
 _amphora_mock.status = constants.AMPHORA_ALLOCATED
-_listener_mock = mock.MagicMock()
-_listener_mock.id = LISTENER_ID
 _load_balancer_mock = mock.MagicMock()
 _load_balancer_mock.id = LB_ID
+_listener_mock = mock.MagicMock()
+_listener_mock.id = LISTENER_ID
+_load_balancer_mock.listeners = [_listener_mock]
 _vip_mock = mock.MagicMock()
 _load_balancer_mock.vip = _vip_mock
 _LB_mock = mock.MagicMock()
@@ -76,11 +78,43 @@ class TestAmphoraDriverTasks(base.TestCase):
         mock_driver.update.assert_called_once_with(_listener_mock, _vip_mock)
 
         # Test the revert
-        amp = listener_update_obj.revert([_listener_mock])
+        amp = listener_update_obj.revert(_load_balancer_mock)
         repo.ListenerRepository.update.assert_called_once_with(
             _session_mock,
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
+        self.assertIsNone(amp)
+
+    def test_listeners_update(self,
+                              mock_driver,
+                              mock_generate_uuid,
+                              mock_log,
+                              mock_get_session,
+                              mock_listener_repo_get,
+                              mock_listener_repo_update,
+                              mock_amphora_repo_update):
+        listeners_update_obj = amphora_driver_tasks.ListenersUpdate()
+        listeners = [data_models.Listener(id='listener1'),
+                     data_models.Listener(id='listener2')]
+        vip = data_models.Vip(ip_address='10.0.0.1')
+        lb = data_models.LoadBalancer(id='lb1', listeners=listeners, vip=vip)
+        listeners_update_obj.execute(lb, listeners)
+        mock_driver.update.assert_has_calls([mock.call(listeners[0], vip),
+                                             mock.call(listeners[1], vip)])
+        self.assertEqual(2, mock_driver.update.call_count)
+        self.assertIsNotNone(listeners[0].load_balancer)
+        self.assertIsNotNone(listeners[1].load_balancer)
+
+        # Test the revert
+        amp = listeners_update_obj.revert(lb)
+        expected_db_calls = [mock.call(_session_mock,
+                                       id=listeners[0].id,
+                                       provisioning_status=constants.ERROR),
+                             mock.call(_session_mock,
+                                       id=listeners[1].id,
+                                       provisioning_status=constants.ERROR)]
+        repo.ListenerRepository.update.has_calls(expected_db_calls)
+        self.assertEqual(2, repo.ListenerRepository.update.call_count)
         self.assertIsNone(amp)
 
     def test_listener_stop(self,
