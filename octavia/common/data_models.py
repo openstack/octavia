@@ -173,7 +173,7 @@ class Listener(BaseDataModel):
         self.stats = stats
         self.default_pool = default_pool
         self.load_balancer = load_balancer
-        self.sni_containers = sni_containers
+        self.sni_containers = sni_containers or []
         self.peer_port = peer_port
         self.pools = pools or []
 

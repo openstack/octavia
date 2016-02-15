@@ -21,6 +21,8 @@ from octavia.common import data_models
 from octavia.db import models
 from octavia.tests.functional.db import base
 
+from sqlalchemy.orm import collections
+
 
 class ModelTestMixin(object):
 
@@ -588,13 +590,13 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
         super(DataModelConversionTest, self).setUp()
-        self.pool = self.create_pool(self.session)
+        self.lb = self.create_load_balancer(self.session)
+        self.pool = self.create_pool(self.session, load_balancer_id=self.lb.id)
         self.hm = self.create_health_monitor(self.session, self.pool.id)
         self.member = self.create_member(self.session, self.pool.id,
                                          id=self.FAKE_UUID_1,
                                          ip_address='10.0.0.1')
         self.sp = self.create_session_persistence(self.session, self.pool.id)
-        self.lb = self.create_load_balancer(self.session)
         self.vip = self.create_vip(self.session, self.lb.id)
         self.listener = self.create_listener(self.session,
                                              default_pool_id=self.pool.id,
@@ -602,6 +604,97 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.stats = self.create_listener_statistics(self.session,
                                                      self.listener.id)
         self.sni = self.create_sni(self.session, listener_id=self.listener.id)
+
+    @staticmethod
+    def _get_unique_key(obj):
+        """Returns a unique key for passed object for data model building."""
+        # First handle all objects with their own ID, then handle subordinate
+        # objects.
+        if obj.__class__.__name__ in ['Member', 'Pool', 'LoadBalancer',
+                                      'Listener', 'Amphora']:
+            return obj.__class__.__name__ + obj.id
+        elif obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
+            return obj.__class__.__name__ + obj.pool_id
+        elif obj.__class__.__name__ in ['ListenerStatistics', 'SNI']:
+            return obj.__class__.__name__ + obj.listener_id
+        elif obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
+            return obj.__class__.__name__ + obj.load_balancer_id
+        elif obj.__class__.__name__ in ['AmphoraHealth']:
+            return obj.__class__.__name__ + obj.amphora_id
+        else:
+            raise NotImplementedError
+
+    def count_graph_nodes(self, node, _graph_nodes=None):
+        """Counts connected BaseDataModel nodes in a graph given the
+
+        starting node. Node should be a data model in any case.
+        """
+        _graph_nodes = _graph_nodes or []
+        total = 0
+        mykey = self._get_unique_key(node)
+        if mykey in _graph_nodes:
+            # Seen this node already
+            return total
+        else:
+            total += 1
+            _graph_nodes.append(mykey)
+            attr_names = [attr_name for attr_name in dir(node)
+                          if not attr_name.startswith('_')]
+            for attr_name in attr_names:
+                attr = getattr(node, attr_name)
+                if isinstance(attr, data_models.BaseDataModel):
+                    total += self.count_graph_nodes(
+                        attr, _graph_nodes=_graph_nodes)
+                elif isinstance(attr, (collections.InstrumentedList, list)):
+                    for item in attr:
+                        if isinstance(item, data_models.BaseDataModel):
+                            total += self.count_graph_nodes(
+                                item, _graph_nodes=_graph_nodes)
+        return total
+
+    def test_graph_completeness(self):
+        # Generate equivalent graphs starting arbitrarily from different
+        # nodes within it; Make sure the resulting graphs all contain the
+        # same number of nodes.
+        lb_dm = self.session.query(models.LoadBalancer).filter_by(
+            id=self.lb.id).first().to_data_model()
+        lb_graph_count = self.count_graph_nodes(lb_dm)
+        ls_dm = self.session.query(models.ListenerStatistics).filter_by(
+            listener_id=self.listener.id).first().to_data_model()
+        ls_graph_count = self.count_graph_nodes(ls_dm)
+        p_dm = self.session.query(models.Pool).filter_by(
+            id=self.pool.id).first().to_data_model()
+        p_graph_count = self.count_graph_nodes(p_dm)
+        mem_dm = self.session.query(models.Member).filter_by(
+            id=self.member.id).first().to_data_model()
+        mem_graph_count = self.count_graph_nodes(mem_dm)
+        self.assertNotEqual(0, lb_graph_count)
+        self.assertNotEqual(1, lb_graph_count)
+        self.assertEqual(lb_graph_count, ls_graph_count)
+        self.assertEqual(lb_graph_count, p_graph_count)
+        self.assertEqual(lb_graph_count, mem_graph_count)
+
+    def test_data_model_graph_traversal(self):
+        lb_dm = self.session.query(models.LoadBalancer).filter_by(
+            id=self.lb.id).first().to_data_model()
+        # This is an arbitrary traversal that covers one of each type
+        # of parent an child relationship.
+        lb_id = (lb_dm.listeners[0].default_pool.members[0].pool.
+                 session_persistence.pool.health_monitor.pool.listeners[0].
+                 stats.listener.sni_containers[0].listener.load_balancer.
+                 listeners[0].load_balancer.pools[0].listeners[0].
+                 load_balancer.listeners[0].pools[0].load_balancer.vip.
+                 load_balancer.id)
+        self.assertEqual(lb_dm.id, lb_id)
+        mem_dm = self.session.query(models.Member).filter_by(
+            id=self.member.id).first().to_data_model()
+        # Same as the above, but we generate the graph starting with an
+        # arbitrary member.
+        m_lb_id = (mem_dm.pool.listeners[0].load_balancer.vip.load_balancer.
+                   pools[0].session_persistence.pool.health_monitor.pool.
+                   listeners[0].stats.listener.sni_containers[0].listener.
+                   load_balancer.pools[0].members[0].pool.load_balancer.id)
+        self.assertEqual(lb_dm.id, m_lb_id)
 
     def test_load_balancer_tree(self):
         lb_db = self.session.query(models.LoadBalancer).filter_by(
@@ -649,19 +742,25 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.check_member(member_db.to_data_model())
 
     def check_load_balancer(self, lb, check_listeners=True,
-                            check_amphorae=True, check_vip=True):
+                            check_amphorae=True, check_vip=True,
+                            check_pools=True):
         self.assertIsInstance(lb, data_models.LoadBalancer)
         self.check_load_balancer_data_model(lb)
         self.assertIsInstance(lb.listeners, list)
         self.assertIsInstance(lb.amphorae, list)
         if check_listeners:
             for listener in lb.listeners:
-                self.check_listener(listener, check_lb=False)
+                self.check_listener(listener, check_lb=False,
+                                    check_pools=check_pools)
         if check_amphorae:
             for amphora in lb.amphorae:
                 self.check_amphora(amphora, check_load_balancer=False)
         if check_vip:
             self.check_vip(lb.vip, check_lb=False)
+        if check_pools:
+            for pool in lb.pools:
+                self.check_pool(pool, check_lb=False,
+                                check_listeners=check_listeners)
 
     def check_vip(self, vip, check_lb=True):
         self.assertIsInstance(vip, data_models.Vip)
@@ -687,19 +786,22 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         if check_load_balancer:
             self.check_load_balancer(amphora.load_balancer)
 
-    def check_listener(self, listener, check_sni=True, check_pool=True,
+    def check_listener(self, listener, check_sni=True, check_pools=True,
                        check_lb=True, check_statistics=True):
         self.assertIsInstance(listener, data_models.Listener)
         self.check_listener_data_model(listener)
         if check_lb:
-            self.check_load_balancer(listener.load_balancer)
+            self.check_load_balancer(listener.load_balancer,
+                                     check_listeners=False,
+                                     check_pools=check_pools)
         if check_sni:
             c_containers = listener.sni_containers
             self.assertIsInstance(c_containers, list)
             for sni in c_containers:
                 self.check_sni(sni, check_listener=False)
-        if check_pool:
-            self.check_pool(listener.default_pool, check_listener=False)
+        if check_pools:
+            for pool in listener.pools:
+                self.check_pool(pool, check_listeners=False, check_lb=check_lb)
         if check_statistics:
             self.check_listener_statistics(listener.stats,
                                            check_listener=False)
@@ -715,7 +817,7 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertIsInstance(member, data_models.Member)
         self.check_member_data_model(member)
         if check_pool:
-            self.check_pool(member.pool)
+            self.check_pool(member.pool, check_members=False)
 
     def check_health_monitor(self, health_monitor, check_pool=True):
         self.assertIsInstance(health_monitor, data_models.HealthMonitor)
@@ -723,12 +825,14 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         if check_pool:
             self.check_pool(health_monitor.pool, check_hm=False)
 
-    def check_pool(self, pool, check_listener=True, check_sp=True,
-                   check_hm=True, check_members=True):
+    def check_pool(self, pool, check_listeners=True, check_sp=True,
+                   check_hm=True, check_members=True, check_lb=True):
         self.assertIsInstance(pool, data_models.Pool)
         self.check_pool_data_model(pool)
-        if check_listener:
-            self.check_listener(pool.listeners[0], check_pool=False)
+        if check_listeners:
+            for listener in pool.listeners:
+                self.check_listener(listener, check_pools=False,
+                                    check_lb=check_lb)
         if check_sp:
             self.check_session_persistence(pool.session_persistence,
                                            check_pool=False)
@@ -740,6 +844,9 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
                 self.check_member(c_member, check_pool=False)
         if check_hm:
             self.check_health_monitor(pool.health_monitor, check_pool=False)
+        if check_lb:
+            self.check_load_balancer(pool.load_balancer, check_pools=False,
+                                     check_listeners=check_listeners)
 
     def check_load_balancer_data_model(self, lb):
         self.assertEqual(self.FAKE_UUID_1, lb.project_id)

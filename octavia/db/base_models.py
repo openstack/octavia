@@ -23,13 +23,38 @@ class OctaviaBase(models.ModelBase):
 
     __data_model__ = None
 
-    def to_data_model(self, _calling_classes=None):
-        """Converts to a data model.
+    @staticmethod
+    def _get_unique_key(obj):
+        """Returns a unique key for passed object for data model building."""
+        # First handle all objects with their own ID, then handle subordinate
+        # objects.
+        if obj.__class__.__name__ in ['Member', 'Pool', 'LoadBalancer',
+                                      'Listener', 'Amphora']:
+            return obj.__class__.__name__ + obj.id
+        elif obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
+            return obj.__class__.__name__ + obj.pool_id
+        elif obj.__class__.__name__ in ['ListenerStatistics', 'SNI']:
+            return obj.__class__.__name__ + obj.listener_id
+        elif obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
+            return obj.__class__.__name__ + obj.load_balancer_id
+        elif obj.__class__.__name__ in ['AmphoraHealth']:
+            return obj.__class__.__name__ + obj.amphora_id
+        else:
+            raise NotImplementedError
 
-        :param _calling_classes: Used only for internal recursion of this
-                                 method. Should not be called from the outside.
+    def to_data_model(self, _graph_nodes=None):
+        """Converts to a data model graph.
+
+        In order to make the resulting data model graph usable no matter how
+        many internal references are followed, we generate a complete graph of
+        OctaviaBase nodes connected to the object passed to this method.
+
+        :param _graph_nodes: Used only for internal recursion of this
+                             method. Should not be called from the outside.
+                             Contains a dictionary of all OctaviaBase type
+                             objects in the generated graph
         """
-        calling_classes = _calling_classes or []
+        _graph_nodes = _graph_nodes or {}
         if not self.__data_model__:
             raise NotImplementedError
         dm_kwargs = {}
@@ -37,29 +62,38 @@ class OctaviaBase(models.ModelBase):
             dm_kwargs[column.name] = getattr(self, column.name)
         attr_names = [attr_name for attr_name in dir(self)
                       if not attr_name.startswith('_')]
+        # Appending early, as any unique ID should be defined already and
+        # the rest of this object will get filled out more fully later on,
+        # and we need to add ourselves to the _graph_nodes before we
+        # attempt recursion.
+        dm_self = self.__data_model__(**dm_kwargs)
+        dm_key = self._get_unique_key(dm_self)
+        _graph_nodes.update({dm_key: dm_self})
         for attr_name in attr_names:
             attr = getattr(self, attr_name)
-            # Handle 1:N or M:N relationships
-            # Don't recurse down object classes too far. If we have seen the
-            # same object class more than twice, we are probably in a loop.
-            if (isinstance(attr, OctaviaBase)
-                    and attr.__class__
-                    and calling_classes.count(attr.__class__) < 2):
-                dm_kwargs[attr_name] = attr.to_data_model(
-                    _calling_classes=calling_classes + [self.__class__])
+            if isinstance(attr, OctaviaBase) and attr.__class__:
+                # If this attr is already in the graph node list, just
+                # reference it there and don't recurse.
+                ukey = self._get_unique_key(attr)
+                if ukey in _graph_nodes.keys():
+                    setattr(dm_self, attr_name, _graph_nodes[ukey])
+                else:
+                    setattr(dm_self, attr_name, attr.to_data_model(
+                        _graph_nodes=_graph_nodes))
             elif isinstance(attr, (collections.InstrumentedList, list)):
-                dm_kwargs[attr_name] = []
+                setattr(dm_self, attr_name, [])
+                listref = getattr(dm_self, attr_name)
                 for item in attr:
-                    if (isinstance(item, OctaviaBase)
-                            and item.__class__
-                            and calling_classes.count(item.__class__) < 2):
-                        dm_kwargs[attr_name].append(
-                            item.to_data_model(
-                                _calling_classes=(calling_classes +
-                                                  [self.__class__])))
+                    if isinstance(item, OctaviaBase) and item.__class__:
+                        ukey = self._get_unique_key(item)
+                        if ukey in _graph_nodes.keys():
+                            listref.append(_graph_nodes[ukey])
+                        else:
+                            listref.append(
+                                item.to_data_model(_graph_nodes=_graph_nodes))
                     elif not isinstance(item, OctaviaBase):
-                        dm_kwargs[attr_name].append(item)
-        return self.__data_model__(**dm_kwargs)
+                        listref.append(item)
+        return dm_self
 
 
 class LookupTableMixin(object):
