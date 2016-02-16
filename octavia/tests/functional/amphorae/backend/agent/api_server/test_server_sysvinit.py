@@ -428,13 +428,12 @@ class ServerTestCase(base.TestCase):
     def test_upload_certificate_md5(self, mock_makedir, mock_chmod,
                                     mock_exists):
         # wrong file name
-        mock_exists.side_effect = [True]
         rv = self.app.put('/' + api_server.VERSION +
                           '/listeners/123/certificates/test.bla',
                           data='TestTest')
         self.assertEqual(400, rv.status_code)
 
-        mock_exists.side_effect = [True, True, True]
+        mock_exists.return_value = True
         m = mock.mock_open()
 
         with mock.patch.object(builtins, 'open', m):
@@ -447,7 +446,7 @@ class ServerTestCase(base.TestCase):
             handle.write.assert_called_once_with(six.b('TestTest'))
             mock_chmod.assert_called_once_with(handle.fileno(), 0o600)
 
-        mock_exists.side_effect = [True, False]
+        mock_exists.return_value = False
         m = mock.mock_open()
 
         with mock.patch.object(builtins, 'open', m):
@@ -458,7 +457,7 @@ class ServerTestCase(base.TestCase):
             self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
             handle = m()
             handle.write.assert_called_once_with(six.b('TestTest'))
-            mock_makedir.called_once_with('/var/lib/octavia/123')
+            mock_makedir.assert_called_once_with('/var/lib/octavia/certs/123')
 
     @mock.patch('os.fchmod')
     def test_upload_server_certificate(self, mock_chmod):
