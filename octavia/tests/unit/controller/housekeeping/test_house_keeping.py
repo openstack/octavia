@@ -175,7 +175,7 @@ class TestCertRotation(base.TestCase):
 
         cr = house_keeping.CertRotation()
 
-        self.assertEqual(None, cr.rotate())
+        self.assertIsNone(cr.rotate())
         amp_cert_mock.assert_called_once_with(AMPHORA_ID)
 
     @mock.patch('octavia.controller.worker.controller_worker.'

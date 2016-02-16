@@ -67,14 +67,12 @@ assert_equal_with_true_re = re.compile(
 assert_equal_with_false_re = re.compile(
     r"assertEqual\(False,")
 mutable_default_args = re.compile(r"^\s*def .+\((.+=\{\}|.+=\[\])")
-assert_equal_end_with_none_re = re.compile(
-    r"(.)*assertEqual\((\w|\.|\'|\"|\[|\])+, None\)")
-assert_equal_start_with_none_re = re.compile(
-    r"(.)*assertEqual\(None, (\w|\.|\'|\"|\[|\])+\)")
+assert_equal_end_with_none_re = re.compile(r"(.)*assertEqual\(.+, None\)")
+assert_equal_start_with_none_re = re.compile(r".*assertEqual\(None, .+\)")
 assert_not_equal_end_with_none_re = re.compile(
-    r"(.)*assertNotEqual\((\w|\.|\'|\"|\[|\])+, None\)")
+    r"(.)*assertNotEqual\(.+, None\)")
 assert_not_equal_start_with_none_re = re.compile(
-    r"(.)*assertNotEqual\(None, (\w|\.|\'|\"|\[|\])+\)")
+    r"(.)*assertNotEqual\(None, .+\)")
 
 
 def _directory_to_check_translation(filename):

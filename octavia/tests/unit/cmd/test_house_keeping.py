@@ -110,7 +110,7 @@ class TestHouseKeepingCMD(base.TestCase):
         cert_rotate_event_mock.is_set = mock.MagicMock()
         cert_rotate_event_mock.is_set.side_effect = [True, None]
 
-        self.assertEqual(None, house_keeping.cert_rotation())
+        self.assertIsNone(house_keeping.cert_rotation())
 
         mock_CertRotation.assert_called_once_with()
         self.assertEqual(1, cert_rotate_mock.rotate.call_count)
