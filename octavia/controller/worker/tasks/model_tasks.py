@@ -29,5 +29,4 @@ class UpdateAttributes(task.Task):
 
     def execute(self, object, update_dict):
 
-        for key, value in update_dict.items():
-            setattr(object, key, value)
+        object.update(update_dict)
