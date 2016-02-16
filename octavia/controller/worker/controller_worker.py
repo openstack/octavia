@@ -53,6 +53,18 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         self._member_repo = repo.MemberRepository()
         self._pool_repo = repo.PoolRepository()
 
+        self._exclude_result_logging_tasks = (
+            constants.ROLE_STANDALONE + '-' +
+            constants.CREATE_AMP_FOR_LB_SUBFLOW + '-' +
+            constants.GENERATE_SERVER_PEM,
+            constants.ROLE_BACKUP + '-' +
+            constants.CREATE_AMP_FOR_LB_SUBFLOW + '-' +
+            constants.GENERATE_SERVER_PEM,
+            constants.ROLE_MASTER + '-' +
+            constants.CREATE_AMP_FOR_LB_SUBFLOW + '-' +
+            constants.GENERATE_SERVER_PEM,
+            constants.GENERATE_SERVER_PEM_TASK)
+
         super(ControllerWorker, self).__init__()
 
     def create_amphora(self):
@@ -62,8 +74,10 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         """
         create_amp_tf = self._taskflow_load(self._amphora_flows.
                                             get_create_amphora_flow())
-        with tf_logging.DynamicLoggingListener(create_amp_tf,
-                                               log=LOG):
+        with tf_logging.DynamicLoggingListener(
+                create_amp_tf, log=LOG,
+                hide_inputs_outputs_of=self._exclude_result_logging_tasks):
+
             create_amp_tf.run()
 
         return create_amp_tf.storage.fetch('amphora')
@@ -263,9 +277,12 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             self._lb_flows.get_create_load_balancer_flow(
                 topology=CONF.controller_worker.loadbalancer_topology),
             store=store)
-        with tf_logging.DynamicLoggingListener(create_lb_tf,
-                                               log=LOG):
+        with tf_logging.DynamicLoggingListener(
+                create_lb_tf, log=LOG,
+                hide_inputs_outputs_of=self._exclude_result_logging_tasks):
+
             create_lb_tf.run()
+
             # Ideally the following flow should be integrated with the
             # create_active_standby flow. This is not possible with the
             # current version of taskflow as it flatten out the flows.
@@ -477,9 +494,12 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                 self._amphora_flows.get_failover_flow(role=amp.role),
                 store={constants.FAILED_AMPHORA: amp,
                        constants.LOADBALANCER_ID: amp.load_balancer_id})
-            with tf_logging.DynamicLoggingListener(failover_amphora_tf,
-                                                   log=LOG):
+            with tf_logging.DynamicLoggingListener(
+                    failover_amphora_tf, log=LOG,
+                    hide_inputs_outputs_of=self._exclude_result_logging_tasks):
+
                 failover_amphora_tf.run()
+
         except Exception as e:
             with excutils.save_and_reraise_exception():
                 LOG.error(_LE("Failover exception: %s") % e)

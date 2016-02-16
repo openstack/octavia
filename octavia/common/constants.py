@@ -170,6 +170,8 @@ AMP_UPDATE_VRRP_INTF = 'octavia-amphora-update-vrrp-intf'
 CREATE_VRRP_GROUP_FOR_LB = 'octavia-create-vrrp-group-for-lb'
 CREATE_VRRP_SECURITY_RULES = 'octavia-create-vrrp-security-rules'
 
+GENERATE_SERVER_PEM_TASK = 'GenerateServerPEMTask'
+
 
 # Task Names
 RELOAD_LB_AFTER_AMP_ASSOC = 'reload-lb-after-amp-assoc'
