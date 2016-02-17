@@ -89,7 +89,7 @@ The Active/Standby loadbalancers require the following high level changes:
   the same listeners, and pools configuration. Note: topology is a property
   of a load balancer and not of one of its amphorae.
 
-* Extend the amphora driver interface, the amphora REST/SSH drivers, and Jinja
+* Extend the amphora driver interface, the amphora REST driver, and Jinja
   configuration templates for the newly introduced VRRP service [4].
 
 * Develop a Keepalived driver.
