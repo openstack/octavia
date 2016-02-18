@@ -1368,6 +1368,12 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
             self.session, self.amphora.id, exp_age)
         self.assertTrue(checkres)
 
+    def test_check_amphora_expired_with_no_age(self):
+        """When the amphora_health entry is missing in the DB."""
+        checkres = self.amphora_health_repo.check_amphora_expired(
+            self.session, self.amphora.id)
+        self.assertTrue(checkres)
+
     def test_get_stale_amphora(self):
         stale_amphora = self.amphora_health_repo.get_stale_amphora(
             self.session)

@@ -538,7 +538,11 @@ class AmphoraHealthRepository(BaseRepository):
         else:
             timestamp = datetime.datetime.utcnow() - exp_age
         amphora_health = self.get(session, amphora_id=amphora_id)
-        return amphora_health.last_update < timestamp
+        if amphora_health is not None:
+            return amphora_health.last_update < timestamp
+        else:
+            # Amphora was just destroyed.
+            return True
 
     def get_stale_amphora(self, session):
         """Retrieves a staled amphora from the health manager database.
