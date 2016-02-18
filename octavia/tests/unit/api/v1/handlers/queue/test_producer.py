@@ -73,8 +73,9 @@ class TestProducer(base.TestCase):
 
     def test_delete_loadbalancer(self):
         p = producer.LoadBalancerProducer()
-        p.delete(self.mck_model)
-        kw = {'load_balancer_id': self.mck_model.id}
+        p.delete(self.mck_model, False)
+        kw = {'load_balancer_id': self.mck_model.id,
+              'cascade': False}
         self.mck_client.cast.assert_called_once_with(
             {}, 'delete_load_balancer', **kw)
 

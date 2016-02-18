@@ -80,27 +80,6 @@ class TestControllerTasks(base.TestCase):
              mock.call(LB2_ID)], any_order=False)
 
     @mock.patch('octavia.controller.worker.controller_worker.'
-                'ControllerWorker.delete_listener_internal')
-    @mock.patch('octavia.db.repositories.ListenerRepository.'
-                'get_all', return_value=_listeners)
-    def test_delete_listeners_on_lb(self,
-                                    mock_get_all,
-                                    mock_delete_listener,
-                                    mock_get_session):
-
-        delete_listeners_on_lb = controller_tasks.DeleteListenersOnLB()
-        delete_listeners_on_lb.execute(self.loadbalancer_mock)
-
-        repo.ListenerRepository.get_all.assert_called_once_with(
-            'TEST',
-            load_balancer_id=LB1_ID)
-
-        (controller_worker.
-         ControllerWorker.delete_listener_internal.assert_has_calls)([
-             mock.call(LISTENER1_ID),
-             mock.call(LISTENER2_ID)], any_order=False)
-
-    @mock.patch('octavia.controller.worker.controller_worker.'
                 'ControllerWorker.update_listener')
     @mock.patch('octavia.db.repositories.ListenerRepository.'
                 'get_all', return_value=_listeners)

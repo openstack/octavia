@@ -109,6 +109,18 @@ class LoadBalancerProducer(BaseProducer):
     def payload_class(self):
         return self.PAYLOAD_CLASS
 
+    def delete(self, data_model, cascade):
+        """sends a delete message to the controller via oslo.messaging
+
+        :param data_model:
+        :param: cascade: delete listeners, etc. as well
+        """
+        model_id = getattr(data_model, 'id', None)
+        p_class = self.payload_class
+        kw = {"{0}_id".format(p_class): model_id, "cascade": cascade}
+        method_name = "delete_{0}".format(self.payload_class)
+        self.client.cast({}, method_name, **kw)
+
 
 class ListenerProducer(BaseProducer):
     """Sends updates,deletes and creates to the RPC end of the queue consumer

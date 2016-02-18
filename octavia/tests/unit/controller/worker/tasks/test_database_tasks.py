@@ -18,6 +18,7 @@ import random
 import mock
 from oslo_db import exception as odb_exceptions
 from oslo_utils import uuidutils
+from sqlalchemy.orm import exc
 from taskflow.types import failure
 
 from octavia.common import constants
@@ -230,6 +231,38 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_health_mon_repo_delete.reset_mock()
         delete_health_mon.revert(POOL_ID)
+
+        # Test Not Found Exception
+        mock_health_mon_repo_delete.reset_mock()
+        mock_health_mon_repo_delete.side_effect = [exc.NoResultFound()]
+        delete_health_mon.execute(POOL_ID)
+
+        repo.HealthMonitorRepository.delete.assert_called_once_with(
+            'TEST',
+            pool_id=POOL_ID)
+
+    @mock.patch('octavia.db.repositories.HealthMonitorRepository.delete')
+    def test_delete_health_monitor_in_db_by_pool(self,
+                                                 mock_health_mon_repo_delete,
+                                                 mock_generate_uuid,
+                                                 mock_LOG,
+                                                 mock_get_session,
+                                                 mock_loadbalancer_repo_update,
+                                                 mock_listener_repo_update,
+                                                 mock_amphora_repo_update,
+                                                 mock_amphora_repo_delete):
+
+        delete_health_mon = database_tasks.DeleteHealthMonitorInDBByPool()
+        delete_health_mon.execute(self.pool_mock)
+
+        repo.HealthMonitorRepository.delete.assert_called_once_with(
+            'TEST',
+            pool_id=POOL_ID)
+
+        # Test the revert
+
+        mock_health_mon_repo_delete.reset_mock()
+        delete_health_mon.revert(self.pool_mock)
 
 # TODO(johnsom) fix once provisioning status added
 #        repo.HealthMonitorRepository.update.assert_called_once_with(

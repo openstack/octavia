@@ -442,7 +442,7 @@ class TestControllerWorker(base.TestCase):
 
     @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
                 'LoadBalancerFlows.get_delete_load_balancer_flow',
-                return_value=_flow_mock)
+                return_value=(_flow_mock, {'test': 'test'}))
     def test_delete_load_balancer(self,
                                   mock_get_delete_lb_flow,
                                   mock_api_get_session,
@@ -471,11 +471,11 @@ class TestControllerWorker(base.TestCase):
                                     store={constants.LOADBALANCER:
                                            _load_balancer_mock,
                                            constants.SERVER_GROUP_ID:
-                                           _load_balancer_mock.server_group_id
+                                           _load_balancer_mock.server_group_id,
+                                           'test': 'test'
                                            }
                                     )
          )
-
         _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
