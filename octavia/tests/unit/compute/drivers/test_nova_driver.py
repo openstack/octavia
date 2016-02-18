@@ -13,6 +13,7 @@
 #    under the License.
 
 import mock
+from novaclient import exceptions as nova_exceptions
 from oslo_config import cfg
 from oslo_utils import uuidutils
 
@@ -50,18 +51,33 @@ class TestNovaClient(base.TestCase):
         self.interface_list.fixed_ips = [mock.MagicMock()]
         self.interface_list.fixed_ips[0] = {'ip_address': '10.0.0.1'}
 
+        self.loadbalancer_id = uuidutils.generate_uuid()
+        self.server_group_policy = constants.ANTI_AFFINITY
+        self.server_group_id = uuidutils.generate_uuid()
+
         self.manager = nova_common.VirtualMachineManager()
         self.manager.manager = mock.MagicMock()
+        self.manager.server_groups = mock.MagicMock()
         self.manager._nova_client = mock.MagicMock()
 
         self.nova_response.interface_list.side_effect = [[self.interface_list]]
         self.manager.manager.get.return_value = self.nova_response
         self.manager.manager.create.return_value = self.nova_response
+        self.manager.server_groups.create.return_value = mock.Mock()
 
         self.nova_response.addresses = {self.net_name: [{'addr': '10.0.0.1'}]}
 
         self.nova_network = mock.Mock()
         self.nova_network.label = self.net_name
+
+        self.server_group_name = 'octavia-lb-' + self.loadbalancer_id
+        self.server_group_kwargs = {'name': self.server_group_name,
+                                    'policies': [self.server_group_policy]}
+
+        self.server_group_mock = mock.Mock()
+        self.server_group_mock.name = self.server_group_name
+        self.server_group_mock.policy = self.server_group_policy
+        self.server_group_mock.id = self.server_group_id
 
         super(TestNovaClient, self).setUp()
 
@@ -85,7 +101,8 @@ class TestNovaClient(base.TestCase):
             security_groups=1,
             files='Files Blah',
             userdata='Blah',
-            config_drive=True)
+            config_drive=True,
+            scheduler_hints=None)
 
     def test_bad_build(self):
         self.manager.manager.create.side_effect = Exception
@@ -144,3 +161,43 @@ class TestNovaClient(base.TestCase):
         self.assertEqual(self.amphora, amphora)
         self.assertTrue(self.nova_response.interface_list.called)
         self.manager._nova_client.networks.get.called_with(self.net_name)
+
+    def test_create_server_group(self):
+        self.manager.server_groups.create.return_value = self.server_group_mock
+
+        sg = self.manager.create_server_group(self.server_group_name,
+                                              self.server_group_policy)
+
+        self.assertEqual(sg.id, self.server_group_id)
+        self.assertEqual(sg.name, self.server_group_name)
+        self.assertEqual(sg.policy, self.server_group_policy)
+        self.manager.server_groups.create.called_with(
+            **self.server_group_kwargs)
+
+    def test_bad_create_server_group(self):
+        self.manager.server_groups.create.side_effect = Exception
+        self.assertRaises(exceptions.ServerGroupObjectCreateException,
+                          self.manager.create_server_group,
+                          self.server_group_name, self.server_group_policy)
+        self.manager.server_groups.create.called_with(
+            **self.server_group_kwargs)
+
+    def test_delete_server_group(self):
+        self.manager.delete_server_group(self.server_group_id)
+        self.manager.server_groups.delete.called_with(self.server_group_id)
+
+    def test_bad_delete_server_group(self):
+        self.manager.server_groups.delete.side_effect = [
+            nova_exceptions.NotFound('test_exception'), Exception]
+
+        # NotFound should not raise an exception
+
+        self.manager.delete_server_group(self.server_group_id)
+        self.manager.server_groups.delete.called_with(self.server_group_id)
+
+        # Catch the exception for server group object delete exception
+
+        self.assertRaises(exceptions.ServerGroupObjectDeleteException,
+                          self.manager.delete_server_group,
+                          self.server_group_id)
+        self.manager.server_groups.delete.called_with(self.server_group_id)

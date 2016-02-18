@@ -103,7 +103,8 @@ class ModelTestMixin(object):
                   'id': self.FAKE_UUID_1,
                   'provisioning_status': constants.ACTIVE,
                   'operating_status': constants.ONLINE,
-                  'enabled': True}
+                  'enabled': True,
+                  'server_group_id': self.FAKE_UUID_1}
         kwargs.update(overrides)
         return self._insert(session, models.LoadBalancer, kwargs)
 

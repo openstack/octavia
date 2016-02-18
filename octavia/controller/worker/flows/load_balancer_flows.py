@@ -31,6 +31,7 @@ from octavia.i18n import _LE
 
 CONF = cfg.CONF
 CONF.import_group('controller_worker', 'octavia.common.config')
+CONF.import_group('nova', 'octavia.common.config')
 LOG = logging.getLogger(__name__)
 
 
@@ -44,18 +45,46 @@ class LoadBalancerFlows(object):
 
         two spare amphorae.
         :raises InvalidTopology: Invalid topology specified
-        :return: The graph flow for creating an active_standby loadbalancer.
+        :return: The graph flow for creating a loadbalancer.
         """
+        # create a linear flow as a wrapper
+        lf_name = constants.PRE_CREATE_LOADBALANCER_FLOW
+        create_lb_flow_wrapper = linear_flow.Flow(lf_name)
 
         f_name = constants.CREATE_LOADBALANCER_FLOW
         lb_create_flow = unordered_flow.Flow(f_name)
 
         if topology == constants.TOPOLOGY_ACTIVE_STANDBY:
+            # When we boot up amphora for an active/standby topology,
+            # we should leverage the Nova anti-affinity capabilities
+            # to place the amphora on different hosts, also we need to check
+            # if anti-affinity-flag is enabled or not:
+            anti_affinity = CONF.nova.enable_anti_affinity
+            if anti_affinity:
+                # we need to create a server group first
+                create_lb_flow_wrapper.add(
+                    compute_tasks.NovaServerGroupCreate(
+                        name=lf_name + '-' +
+                        constants.CREATE_SERVER_GROUP_FLOW,
+                        requires=(constants.LOADBALANCER_ID),
+                        provides=constants.SERVER_GROUP_ID))
+
+                # update server group id in lb table
+                create_lb_flow_wrapper.add(
+                    database_tasks.UpdateLBServerGroupInDB(
+                        name=lf_name + '-' +
+                        constants.UPDATE_LB_SERVERGROUPID_FLOW,
+                        requires=(constants.LOADBALANCER_ID,
+                                  constants.SERVER_GROUP_ID)))
+
             master_amp_sf = self.amp_flows.get_amphora_for_lb_subflow(
                 prefix=constants.ROLE_MASTER, role=constants.ROLE_MASTER)
+
             backup_amp_sf = self.amp_flows.get_amphora_for_lb_subflow(
                 prefix=constants.ROLE_BACKUP, role=constants.ROLE_BACKUP)
+
             lb_create_flow.add(master_amp_sf, backup_amp_sf)
+
         elif topology == constants.TOPOLOGY_SINGLE:
             amphora_sf = self.amp_flows.get_amphora_for_lb_subflow(
                 prefix=constants.ROLE_STANDALONE,
@@ -66,7 +95,8 @@ class LoadBalancerFlows(object):
                           "balancer."), topology)
             raise exceptions.InvalidTopology(topology=topology)
 
-        return lb_create_flow
+        create_lb_flow_wrapper.add(lb_create_flow)
+        return create_lb_flow_wrapper
 
     def get_post_lb_amp_association_flow(self, prefix, topology):
         """Reload the loadbalancer and create networking subflows for
@@ -109,6 +139,8 @@ class LoadBalancerFlows(object):
         :returns: The flow for deleting a load balancer
         """
         delete_LB_flow = linear_flow.Flow(constants.DELETE_LOADBALANCER_FLOW)
+        delete_LB_flow.add(compute_tasks.NovaServerGroupDelete(
+            requires=constants.SERVER_GROUP_ID))
         delete_LB_flow.add(database_tasks.MarkLBAmphoraeHealthBusy(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(controller_tasks.DeleteListenersOnLB(

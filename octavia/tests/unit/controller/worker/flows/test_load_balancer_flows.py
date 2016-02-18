@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
-
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from taskflow.patterns import linear_flow as flow
-from taskflow.patterns import unordered_flow
 
 from octavia.common import constants
 from octavia.common import exceptions
@@ -26,13 +26,14 @@ class TestLoadBalancerFlows(base.TestCase):
 
     def setUp(self):
         self.LBFlow = load_balancer_flows.LoadBalancerFlows()
-
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group="nova", enable_anti_affinity=False)
         super(TestLoadBalancerFlows, self).setUp()
 
     def test_get_create_load_balancer_flow(self):
         amp_flow = self.LBFlow.get_create_load_balancer_flow(
             constants.TOPOLOGY_SINGLE)
-        self.assertIsInstance(amp_flow, unordered_flow.Flow)
+        self.assertIsInstance(amp_flow, flow.Flow)
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
         self.assertIn(constants.AMPHORA, amp_flow.provides)
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
@@ -42,8 +43,22 @@ class TestLoadBalancerFlows(base.TestCase):
     def test_get_create_active_standby_load_balancer_flow(self):
         amp_flow = self.LBFlow.get_create_load_balancer_flow(
             constants.TOPOLOGY_ACTIVE_STANDBY)
-        self.assertIsInstance(amp_flow, unordered_flow.Flow)
+        self.assertIsInstance(amp_flow, flow.Flow)
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+
+    def test_get_create_anti_affinity_active_standby_load_balancer_flow(self):
+        cfg.CONF.set_override('enable_anti_affinity', True,
+                              group='nova')
+        self._LBFlow = load_balancer_flows.LoadBalancerFlows()
+        amp_flow = self._LBFlow.get_create_load_balancer_flow(
+            constants.TOPOLOGY_ACTIVE_STANDBY)
+        self.assertIsInstance(amp_flow, flow.Flow)
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+        self.assertIn(constants.SERVER_GROUP_ID, amp_flow.provides)
         self.assertIn(constants.AMPHORA, amp_flow.provides)
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
@@ -61,9 +76,10 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIsInstance(lb_flow, flow.Flow)
 
         self.assertIn(constants.LOADBALANCER, lb_flow.requires)
+        self.assertIn(constants.SERVER_GROUP_ID, lb_flow.requires)
 
         self.assertEqual(0, len(lb_flow.provides))
-        self.assertEqual(1, len(lb_flow.requires))
+        self.assertEqual(2, len(lb_flow.requires))
 
     def test_get_new_LB_networking_subflow(self):
 

@@ -36,15 +36,20 @@ class TestNoopComputeDriver(base.TestCase):
         self.confdrivefiles = "config_driver_files"
         self.user_data = "user_data"
         self.amphora_id = self.FAKE_UUID_1
+        self.loadbalancer_id = self.FAKE_UUID_1
+        self.server_group_policy = 'anti-affinity'
+        self.server_group_id = self.FAKE_UUID_1
 
     def build(self):
         self.driver.build(self.name, self.amphora_flavor, self.image_id,
                           self.key_name, self.sec_groups, self.network_ids,
-                          self.confdrivefiles, self.user_data)
+                          self.confdrivefiles, self.user_data,
+                          self.server_group_id)
 
         self.assertEqual((self.name, self.amphora_flavor, self.image_id,
                           self.key_name, self.sec_groups, self.network_ids,
-                          self.config_drive_files, self.user_data, 'build'),
+                          self.config_drive_files, self.user_data,
+                          self.server_group_id, 'build'),
                          self.driver.driver.computeconfig[(self.name,
                                                            self.amphora_flavor,
                                                            self.image_id,
@@ -52,7 +57,9 @@ class TestNoopComputeDriver(base.TestCase):
                                                            self.sec_groups,
                                                            self.network_ids,
                                                            self.confdrivefiles,
-                                                           self.user_data)])
+                                                           self.user_data,
+                                                           self.server_group_id
+                                                           )])
 
     def test_delete(self):
         self.driver.delete(self.amphora_id)
@@ -65,3 +72,10 @@ class TestNoopComputeDriver(base.TestCase):
 
     def get_amphora(self):
         self.driver.get_amphora(self.amphora_id)
+
+    def test_create_server_group(self):
+        self.driver.create_server_group(self.loadbalancer_id,
+                                        self.server_group_policy)
+
+    def test_delete_server_group(self):
+        self.driver.delete_server_group(self.server_group_id)

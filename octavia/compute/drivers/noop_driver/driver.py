@@ -29,13 +29,15 @@ class NoopManager(object):
 
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
               key_name=None, sec_groups=None, network_ids=None,
-              config_drive_files=None, user_data=None, port_ids=None):
+              config_drive_files=None, user_data=None, port_ids=None,
+              server_group_id=None):
         LOG.debug("Compute %s no-op, build name %s, amphora_flavor %s, "
                   "image_id %s, key_name %s, sec_groups %s, network_ids %s,"
-                  "config_drive_files %s, user_data %s, port_ids %s",
+                  "config_drive_files %s, user_data %s, port_ids %s,"
+                  "server_group_id %s",
                   self.__class__.__name__, name, amphora_flavor, image_id,
                   key_name, sec_groups, network_ids, config_drive_files,
-                  user_data, port_ids)
+                  user_data, port_ids, server_group_id)
         self.computeconfig[(name, amphora_flavor, image_id, key_name,
                             user_data)] = (
             name, amphora_flavor,
@@ -66,6 +68,16 @@ class NoopManager(object):
             lb_network_ip='192.0.2.1'
         )
 
+    def create_server_group(self, name, policy):
+        LOG.debug("Create Server Group %s no-op, name %s, policy %s ",
+                  self.__class__.__name__, name, policy)
+        self.computeconfig[(name, policy)] = (name, policy, 'create')
+
+    def delete_server_group(self, server_group_id):
+        LOG.debug("Delete Server Group %s no-op, id %s ",
+                  self.__class__.__name__, server_group_id)
+        self.computeconfig[server_group_id] = (server_group_id, 'delete')
+
 
 class NoopComputeDriver(driver_base.ComputeBase):
     def __init__(self):
@@ -74,11 +86,13 @@ class NoopComputeDriver(driver_base.ComputeBase):
 
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
               key_name=None, sec_groups=None, network_ids=None,
-              config_drive_files=None, user_data=None, port_ids=None):
+              config_drive_files=None, user_data=None, port_ids=None,
+              server_group_id=None):
 
         compute_id = self.driver.build(name, amphora_flavor, image_id,
                                        key_name, sec_groups, network_ids,
-                                       config_drive_files, user_data, port_ids)
+                                       config_drive_files, user_data, port_ids,
+                                       server_group_id)
         return compute_id
 
     def delete(self, compute_id):
@@ -89,3 +103,9 @@ class NoopComputeDriver(driver_base.ComputeBase):
 
     def get_amphora(self, compute_id):
         return self.driver.get_amphora(compute_id)
+
+    def create_server_group(self, name, policy):
+        return self.driver.create_server_group(name, policy)
+
+    def delete_server_group(self, server_group_id):
+        self.driver.delete_server_group(server_group_id)

@@ -23,7 +23,7 @@ class ComputeBase(object):
     @abc.abstractmethod
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
               key_name=None, sec_groups=None, network_ids=None,
-              config_drive_files=None, user_data=None):
+              config_drive_files=None, user_data=None, server_group_id=None):
         """Build a new amphora.
 
         :param name: Optional name for Amphora
@@ -40,6 +40,8 @@ class ComputeBase(object):
         :param user_data: Optional user data to pass to be exposed by the
         metadata server this can be a file type object as well or
         a string
+        :param server_group_id: Optional server group id(uuid) which is used
+        for anti_affinity feature
 
         :raises ComputeBuildException: if compute failed to build amphora
         :returns: UUID of amphora
@@ -69,5 +71,23 @@ class ComputeBase(object):
 
         :param compute_id: the id of the desired amphora
         :returns: the amphora object
+        """
+        pass
+
+    @abc.abstractmethod
+    def create_server_group(self, name, policy):
+        """Create a server group object
+
+        :param name: the name of the server group
+        :param policy: the policy of the server group
+        :returns: the server group object
+        """
+        pass
+
+    @abc.abstractmethod
+    def delete_server_group(self, server_group_id):
+        """Delete a server group object
+
+        :param server_group_id: the uuid of a server group
         """
         pass

@@ -48,7 +48,8 @@ class BaseComputeTask(task.Task):
 class ComputeCreate(BaseComputeTask):
     """Create the compute instance for a new amphora."""
 
-    def execute(self, amphora_id, ports=None, config_drive_files=None):
+    def execute(self, amphora_id, ports=None, config_drive_files=None,
+                server_group_id=None):
         """Create an amphora
 
         :returns: an amphora
@@ -82,7 +83,8 @@ class ComputeCreate(BaseComputeTask):
                 network_ids=[CONF.controller_worker.amp_network],
                 port_ids=[port.id for port in ports],
                 config_drive_files=config_drive_files,
-                user_data=user_data)
+                user_data=user_data,
+                server_group_id=server_group_id)
 
             LOG.debug("Server created with id: %s for amphora id: %s",
                       compute_id, amphora_id)
@@ -111,7 +113,8 @@ class ComputeCreate(BaseComputeTask):
 
 
 class CertComputeCreate(ComputeCreate):
-    def execute(self, amphora_id, server_pem, ports=None):
+    def execute(self, amphora_id, server_pem, ports=None,
+                server_group_id=None):
         """Create an amphora
 
         :returns: an amphora
@@ -125,7 +128,8 @@ class CertComputeCreate(ComputeCreate):
             '/etc/octavia/certs/server.pem': server_pem,
             '/etc/octavia/certs/client_ca.pem': ca}
         return super(CertComputeCreate, self).execute(
-            amphora_id, ports=ports, config_drive_files=config_drive_files)
+            amphora_id, ports=ports, config_drive_files=config_drive_files,
+            server_group_id=server_group_id)
 
 
 class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
@@ -177,3 +181,39 @@ class ComputeWait(BaseComputeTask):
             time.sleep(CONF.controller_worker.amp_active_wait_sec)
 
         raise exceptions.ComputeWaitTimeoutException()
+
+
+class NovaServerGroupCreate(BaseComputeTask):
+    def execute(self, loadbalancer_id):
+        """Create a server group by nova client api
+
+        :param loadbalancer_id: will be used for server group's name
+        :param policy: will used for server group's policy
+        :raises: Generic exception if the server group is not created
+        :returns: server group's id
+        """
+
+        name = 'octavia-lb-' + loadbalancer_id
+        server_group = self.compute.create_server_group(
+            name, constants.ANTI_AFFINITY)
+        LOG.debug("Server Group created with id: %s for load balancer id: "
+                  "%s", server_group.id, loadbalancer_id)
+        return server_group.id
+
+    def revert(self, result, *args, **kwargs):
+        """This method will revert the creation of the
+
+        :param result: here it refers to server group id
+        """
+        server_group_id = result
+        LOG.warn(_LW("Reverting server group create with id:%s"),
+                 server_group_id)
+        self.compute.delete_server_group(server_group_id)
+
+
+class NovaServerGroupDelete(BaseComputeTask):
+    def execute(self, server_group_id):
+        if server_group_id is not None:
+            self.compute.delete_server_group(server_group_id)
+        else:
+            return

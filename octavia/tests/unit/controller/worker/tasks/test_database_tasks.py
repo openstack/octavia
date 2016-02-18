@@ -29,6 +29,7 @@ import octavia.tests.unit.base as base
 AMP_ID = uuidutils.generate_uuid()
 COMPUTE_ID = uuidutils.generate_uuid()
 LB_ID = uuidutils.generate_uuid()
+SERVER_GROUP_ID = uuidutils.generate_uuid()
 LB_NET_IP = '192.0.2.2'
 LISTENER_ID = uuidutils.generate_uuid()
 POOL_ID = uuidutils.generate_uuid()
@@ -1348,3 +1349,27 @@ class TestDatabaseTasks(base.TestCase):
         mark_busy.execute(_loadbalancer_mock)
         mock_amp_health_repo_update.assert_called_once_with(
             'TEST', amphora_id=AMP_ID, busy=True)
+
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    def test_update_lb_server_group_in_db(self,
+                                          mock_listner_repo_update,
+                                          mock_generate_uuid,
+                                          mock_LOG,
+                                          mock_get_session,
+                                          mock_loadbalancer_repo_update,
+                                          mock_listener_repo_update,
+                                          mock_amphora_repo_update,
+                                          mock_amphora_repo_delete):
+
+        update_server_group_info = database_tasks.UpdateLBServerGroupInDB()
+        update_server_group_info.execute(LB_ID, SERVER_GROUP_ID)
+
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            id=LB_ID,
+            server_group_id=SERVER_GROUP_ID)
+
+        # Test the revert
+
+        mock_listener_repo_update.reset_mock()
+        update_server_group_info.revert(LB_ID, SERVER_GROUP_ID)

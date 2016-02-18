@@ -277,6 +277,7 @@ class LoadBalancer(base_models.BASE, base_models.IdMixin,
     amphorae = orm.relationship("Amphora", uselist=True,
                                 backref=orm.backref("load_balancer",
                                                     uselist=False))
+    server_group_id = sa.Column(sa.String(36), nullable=True)
 
 
 class VRRPGroup(base_models.BASE):

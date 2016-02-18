@@ -217,3 +217,11 @@ class InvalidRegex(OctaviaException):
 
 class InvalidL7Rule(OctaviaException):
     message = _LE('Invalid L7 Rule: $(msg)s')
+
+
+class ServerGroupObjectCreateException(OctaviaException):
+    message = _LE('Failed to create server group object.')
+
+
+class ServerGroupObjectDeleteException(OctaviaException):
+    message = _LE('Failed to delete server group object.')

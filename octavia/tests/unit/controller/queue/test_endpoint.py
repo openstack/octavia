@@ -37,6 +37,7 @@ class TestEndpoint(base.TestCase):
         self.context = {}
         self.resource_updates = {}
         self.resource_id = 1234
+        self.server_group_id = 3456
 
     def test_create_load_balancer(self):
         self.ep.create_load_balancer(self.context, self.resource_id)
