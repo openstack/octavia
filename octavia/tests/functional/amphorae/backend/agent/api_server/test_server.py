@@ -451,6 +451,7 @@ class ServerTestCase(base.TestCase):
             self.assertEqual(200, rv.status_code)
             self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
             handle = m()
+            handle.write.assert_called_once_with(six.b('TestTest'))
             mock_makedir.called_once_with('/var/lib/octavia/123')
 
     @mock.patch('os.fchmod')
