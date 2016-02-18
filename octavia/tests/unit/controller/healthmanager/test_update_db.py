@@ -82,6 +82,24 @@ class TestUpdateHealthDb(base.TestCase):
                 'info_payload': {'operating_status': 'ONLINE'}})
 
     @mock.patch('octavia.db.api.get_session')
+    def test_update_health_no_listener(self, session):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {}}
+
+        session.return_value = 'blah'
+        lb = mock.MagicMock()
+        lb.operating_status.lower.return_value = 'blah'
+        self.amphora_repo.get.load_balancer_id.return_value = self.FAKE_UUID_1
+        self.loadbalancer_repo.get.return_value = lb
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_repo.get.called)
+        self.assertTrue(lb.operating_status.lower.called)
+        self.assertTrue(self.loadbalancer_repo.update.called)
+
+    @mock.patch('octavia.db.api.get_session')
     def test_update_health_Online(self, session):
 
         health = {
