@@ -188,10 +188,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         create_listener_tf = self._taskflow_load(self._listener_flows.
                                                  get_create_listener_flow(),
-                                                 store={constants.LISTENER:
-                                                        listener,
-                                                        constants.LOADBALANCER:
-                                                            load_balancer,
+                                                 store={constants.LOADBALANCER:
+                                                        load_balancer,
                                                         constants.LISTENERS:
                                                             [listener]})
         with tf_logging.DynamicLoggingListener(create_listener_tf,

@@ -30,12 +30,6 @@ class ListenerFlows(object):
         :returns: The flow for creating a listener
         """
         create_listener_flow = linear_flow.Flow(constants.CREATE_LISTENER_FLOW)
-        create_listener_flow.add(database_tasks.AllocateListenerPeerPort(
-            requires='listener',
-            provides='listener'))
-        create_listener_flow.add(database_tasks.ReloadListener(
-            requires='listener',
-            provides='listener'))
         create_listener_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         create_listener_flow.add(network_tasks.UpdateVIP(

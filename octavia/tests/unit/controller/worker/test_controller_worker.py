@@ -272,9 +272,7 @@ class TestControllerWorker(base.TestCase):
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={constants.LISTENER:
-                                           _listener_mock,
-                                           constants.LOADBALANCER:
+                                    store={constants.LOADBALANCER:
                                            _load_balancer_mock,
                                            constants.LISTENERS:
                                            [_listener_mock]}))
