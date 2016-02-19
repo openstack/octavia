@@ -51,6 +51,18 @@ class TestListenerFlows(base.TestCase):
         self.assertEqual(2, len(listener_flow.requires))
         self.assertEqual(0, len(listener_flow.provides))
 
+    def test_get_delete_listener_internal_flow(self):
+
+        listener_flow = self.ListenerFlow.get_delete_listener_internal_flow()
+
+        self.assertIsInstance(listener_flow, flow.Flow)
+
+        self.assertIn(constants.LISTENER, listener_flow.requires)
+        self.assertIn(constants.LOADBALANCER, listener_flow.requires)
+
+        self.assertEqual(2, len(listener_flow.requires))
+        self.assertEqual(0, len(listener_flow.provides))
+
     def test_get_update_listener_flow(self):
 
         listener_flow = self.ListenerFlow.get_update_listener_flow()

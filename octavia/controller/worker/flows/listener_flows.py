@@ -57,6 +57,20 @@ class ListenerFlows(object):
 
         return delete_listener_flow
 
+    def get_delete_listener_internal_flow(self):
+        """Create a flow to delete a listener internally
+
+           (will skip deletion on the amp and marking LB active)
+        :returns: The flow for deleting a listener
+        """
+        delete_listener_flow = linear_flow.Flow(constants.DELETE_LISTENER_FLOW)
+        delete_listener_flow.add(network_tasks.UpdateVIP(
+            requires=constants.LOADBALANCER))
+        delete_listener_flow.add(database_tasks.DeleteListenerInDB(
+            requires=constants.LISTENER))
+
+        return delete_listener_flow
+
     def get_update_listener_flow(self):
         """Create a flow to update a listener
 

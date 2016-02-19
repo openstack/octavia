@@ -64,7 +64,7 @@ class DeleteListenersOnLB(BaseControllerTask):
                                                load_balancer_id=(
                                                    loadbalancer.id))
         for listener in listeners:
-            self.cntrlr_worker.delete_listener(listener.id)
+            self.cntrlr_worker.delete_listener_internal(listener.id)
 
 
 class DisableEnableLB(BaseControllerTask):
