@@ -340,6 +340,9 @@ else
     AMP_element_sequence="$AMP_element_sequence keepalived-octavia"
 fi
 
+# Add pip-cache element
+AMP_element_sequence="$AMP_element_sequence pip-cache"
+
 # Allow full elements override
 if [ "$DIB_ELEMENTS" ]; then
     AMP_element_sequence="$DIB_ELEMENTS"
