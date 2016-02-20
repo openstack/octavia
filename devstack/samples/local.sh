@@ -43,8 +43,9 @@ if is_service_enabled nova; then
     echo "Waiting ${BOOT_DELAY} seconds for instances to boot"
     sleep ${BOOT_DELAY}
 
-    IP1=$(nova show node1 | grep "private network" | awk '{print $5}')
-    IP2=$(nova show node2 | grep "private network" | awk '{print $5}')
+    IP1=$(nova show node1 | grep "private network" | awk '/private network/ {ip = substr($5, 0, length($5)-1); if (ip ~ "\\.") print ip; else print $6}')
+    IP2=$(nova show node2 | grep "private network" | awk '/private network/ {ip = substr($5, 0, length($5)-1); if (ip ~ "\\.") print ip; else print $6}')
+
 
     ssh-keygen -R ${IP1}
     ssh-keygen -R ${IP2}
