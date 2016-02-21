@@ -459,8 +459,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         list_sec_grps.return_value = {'security_groups': [{'id': 'secgrp-1'}]}
         fake_rules = {
             'security_group_rules': [
-                {'id': 'rule-80', 'port_range_max': 80},
-                {'id': 'rule-22', 'port_range_max': 22}
+                {'id': 'rule-80', 'port_range_max': 80, 'protocol': 'tcp'},
+                {'id': 'rule-22', 'port_range_max': 22, 'protocol': 'tcp'}
             ]
         }
         list_rules = self.driver.neutron_client.list_security_group_rules
@@ -510,8 +510,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         list_sec_grps.return_value = {'security_groups': [{'id': 'secgrp-1'}]}
         fake_rules = {
             'security_group_rules': [
-                {'id': 'rule-80', 'port_range_max': 80},
-                {'id': 'rule-22', 'port_range_max': 443}
+                {'id': 'rule-80', 'port_range_max': 80, 'protocol': 'tcp'},
+                {'id': 'rule-22', 'port_range_max': 443, 'protocol': 'tcp'}
             ]
         }
         list_rules = self.driver.neutron_client.list_security_group_rules
@@ -530,7 +530,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         fake_rules = {
             'security_group_rules': [
                 {'id': 'all-egress', 'protocol': None, 'direction': 'egress'},
-                {'id': 'ssh-rule', 'protocol': 'TCP', 'port_range_max': 22}
+                {'id': 'ssh-rule', 'protocol': 'tcp', 'port_range_max': 22}
             ]
         }
         list_rules = self.driver.neutron_client.list_security_group_rules
