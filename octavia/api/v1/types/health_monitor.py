@@ -29,7 +29,7 @@ class HealthMonitorResponse(base.BaseType):
     url_path = wtypes.wsattr(wtypes.text)
     expected_codes = wtypes.wsattr(wtypes.text)
     enabled = wtypes.wsattr(bool)
-    project_id = wtypes.wsattr(wtypes.UuidType())
+    project_id = wtypes.wsattr(wtypes.StringType())
 
 
 class HealthMonitorPOST(base.BaseType):
@@ -45,7 +45,7 @@ class HealthMonitorPOST(base.BaseType):
     url_path = wtypes.wsattr(wtypes.text)
     expected_codes = wtypes.wsattr(wtypes.text)
     enabled = wtypes.wsattr(bool, default=True)
-    project_id = wtypes.wsattr(wtypes.UuidType())
+    project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
 
 
 class HealthMonitorPUT(base.BaseType):

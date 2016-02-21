@@ -26,7 +26,7 @@ class MemberResponse(base.BaseType):
     protocol_port = wtypes.wsattr(wtypes.IntegerType())
     weight = wtypes.wsattr(wtypes.IntegerType())
     subnet_id = wtypes.wsattr(wtypes.UuidType())
-    project_id = wtypes.wsattr(wtypes.UuidType())
+    project_id = wtypes.wsattr(wtypes.StringType())
 
 
 class MemberPOST(base.BaseType):
@@ -37,7 +37,7 @@ class MemberPOST(base.BaseType):
     protocol_port = wtypes.wsattr(wtypes.IntegerType(), mandatory=True)
     weight = wtypes.wsattr(wtypes.IntegerType(), default=1)
     subnet_id = wtypes.wsattr(wtypes.UuidType())
-    project_id = wtypes.wsattr(wtypes.UuidType())
+    project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
 
 
 class MemberPUT(base.BaseType):

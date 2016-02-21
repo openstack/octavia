@@ -47,7 +47,7 @@ class PoolResponse(base.BaseType):
     protocol = wtypes.wsattr(wtypes.text)
     lb_algorithm = wtypes.wsattr(wtypes.text)
     session_persistence = wtypes.wsattr(SessionPersistenceResponse)
-    project_id = wtypes.wsattr(wtypes.UuidType())
+    project_id = wtypes.wsattr(wtypes.StringType())
 
 
 class PoolPOST(base.BaseType):
@@ -64,7 +64,7 @@ class PoolPOST(base.BaseType):
         wtypes.Enum(str, *constants.SUPPORTED_LB_ALGORITHMS),
         mandatory=True)
     session_persistence = wtypes.wsattr(SessionPersistencePOST)
-    project_id = wtypes.wsattr(wtypes.UuidType())
+    project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
 
 
 class PoolPUT(base.BaseType):
