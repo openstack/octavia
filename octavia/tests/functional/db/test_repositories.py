@@ -16,7 +16,6 @@ import datetime
 import random
 
 from oslo_config import cfg
-from oslo_log import log as logging
 from oslo_utils import uuidutils
 
 from octavia.common import constants
@@ -25,7 +24,6 @@ from octavia.common import exceptions
 from octavia.db import repositories as repo
 from octavia.tests.functional.db import base
 
-LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
 CONF.import_group('house_keeping', 'octavia.common.config')
 
