@@ -1313,3 +1313,531 @@ Delete a pool member.
 | Response Codes +---------+-------------------------------------------------+
 |                | Error   | 401, 404, 409, 500                              |
 +----------------+---------+-------------------------------------------------+
+
+Layer 7 Policies
+----------------
+Layer 7 policies can be used to alter the behavior of the load balancing
+service such that some action can be taken other than sending requests
+to the listener's default_pool. If a given request matches all the layer 7
+rules associated with a layer 7 policy, that layer 7 policy's action will
+be taken instead of the default behavior.
+
++------------------------------------------------------------------------+
+| **Fully Populated L7Policy Object**                                    |
++------------------+-------------+---------------------------------------+
+| Parameters       | Type        | Description                           |
++==================+=============+=======================================+
+| id               | UUID        | L7 Policy ID                          |
++------------------+-------------+---------------------------------------+
+| name             | String      | String detailing the name of the \    |
+|                  |             | l7policy                              |
++------------------+-------------+---------------------------------------+
+| description      | String      | String detailing information \        |
+|                  |             | about the l7policy                    |
++------------------+-------------+---------------------------------------+
+| action           | String      | What action to take if the l7policy \ |
+|                  |             | is matched                            |
++------------------+-------------+---------------------------------------+
+| redirect_pool_id | UUID        | ID of the pool to which requests \    |
+|                  |             | should be sent if action is \         |
+|                  |             | ``REDIRECT_TO_POOL``                  |
++------------------+-------------+---------------------------------------+
+| redirect_url     | String      | URL to which requests should be \     |
+|                  |             | redirected if action is \             |
+|                  |             | ``REDIRECT_TO_URL``                   |
++------------------+-------------+---------------------------------------+
+| position         | Integer     | Sequence number of this L7 Policy. \  |
+|                  |             | L7 Policies are evaluated in order \  |
+|                  |             | starting with 1.                      |
++------------------+-------------+---------------------------------------+
+| enabled          | Boolean     | Whether or not the l7policy \         |
+|                  |             | should be online immediately          |
++------------------+-------------+---------------------------------------+
+
+Layer 7 Policy actions
+
++----------------------+---------------------------------+
+| L7 policy action     | Description                     |
++======================+=================================+
+| ``REJECT``           | Requests matching this policy \ |
+|                      | will be blocked.                |
++----------------------+---------------------------------+
+| ``REDIRECT_TO_POOL`` | Requests matching this policy \ |
+|                      | will be sent to the pool \      |
+|                      | referenced by \                 |
+|                      | ``redirect_pool_id``            |
++----------------------+---------------------------------+
+| ``REDIRECT_TO_URL``  | Requests matching this policy \ |
+|                      | will be redirected to the URL \ |
+|                      | referenced by ``redirect_url``  |
++----------------------+---------------------------------+
+
+List L7 Policies
+****************
+
+Retrieve a list of layer 7 policies.
+
++----------------+-----------------------------------------------------------+
+| Request Type   | ``GET``                                                   |
++----------------+-----------------------------------------------------------+
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
+|                | ``/listeners/{listener_id}/l7policies``                   |
++----------------+---------+-------------------------------------------------+
+|                | Success | 200                                             |
+| Response Codes +---------+-------------------------------------------------+
+|                | Error   | 401, 404, 500                                   |
++----------------+---------+-------------------------------------------------+
+
+**Response Example**::
+
+    [
+        {
+            'id': 'uuid',
+            'name': 'Policy Name',
+            'description': 'Policy Description',
+            'action': 'REDIRECT_TO_POOL',
+            'redirect_pool_id': 'uuid',
+            'redirect_url': None,
+            'position': 1,
+            'enabled': True,
+        },
+        {
+            'id': 'uuid',
+            'name': 'Policy Name 2',
+            'description': 'Policy Description 2',
+            'action': 'REDIRECT_TO_URL',
+            'redirect_pool_id': None,
+            'redirect_url': 'http://www.example.com',
+            'position': 2,
+            'enabled': True,
+        }
+    ]
+
+List L7 Policy Details
+**********************
+
+Retrieve details of a layer 7 policy.
+
++----------------+-----------------------------------------------------------+
+| Request Type   | ``GET``                                                   |
++----------------+-----------------------------------------------------------+
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
+|                | ``/listeners/{listener_id}/l7policies/{l7policy_id}``     |
++----------------+---------+-------------------------------------------------+
+|                | Success | 200                                             |
+| Response Codes +---------+-------------------------------------------------+
+|                | Error   | 401, 404, 500                                   |
++----------------+---------+-------------------------------------------------+
+
+**Response Example**::
+
+    {
+        'id': 'uuid',
+        'name': 'Policy Name',
+        'description': 'Policy Description',
+        'action': 'REDIRECT_TO_POOL',
+        'redirect_pool_id': 'uuid',
+        'redirect_url': None,
+        'position': 1,
+        'enabled': True,
+    }
+
+Create Layer 7 Policy
+*********************
+
+Create a layer 7 policy.
+
++----------------+-----------------------------------------------------------+
+| Request Type   | ``POST``                                                  |
++----------------+-----------------------------------------------------------+
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
+|                | ``/listeners/{listener_id}/l7policies``                   |
++----------------+---------+-------------------------------------------------+
+|                | Success | 202                                             |
+| Response Codes +---------+-------------------------------------------------+
+|                | Error   | 400, 401, 404, 500                              |
++----------------+---------+-------------------------------------------------+
+
+|
+
++------------------+----------------------------------------+
+| Parameters       | Required                               |
++==================+========================================+
+| name             | no                                     |
++------------------+----------------------------------------+
+| description      | no                                     |
++------------------+----------------------------------------+
+| action           | yes                                    |
++------------------+----------------------------------------+
+| redirect_pool_id | only if action == ``REDIRECT_TO_POOL`` |
++------------------+----------------------------------------+
+| redirect_url     | only if action == ``REDIRECT_TO_URL``  |
++------------------+----------------------------------------+
+| position         | no (defaults to append to list)        |
++------------------+----------------------------------------+
+| enabled          | no (defaults to ``True``)              |
++------------------+----------------------------------------+
+
+**Request Example**::
+
+    {
+        'action': 'REDIRECT_TO_POOL',
+        'redirect_pool_id': 'uuid'
+    }
+
+**Response Example**::
+
+    {
+        'id': 'uuid',
+        'name': None,
+        'description': None,
+        'action': 'REDIRECT_TO_POOL',
+        'redirect_pool_id': 'uuid',
+        'redirect_url': None,
+        'position': 1,
+        'enabled': True
+    }
+
+Update Layer 7 Policy
+*********************
+
+Modify mutable attributes of a layer 7 policy.
+
++----------------+-----------------------------------------------------------+
+| Request Type   | ``PUT``                                                   |
++----------------+-----------------------------------------------------------+
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
+|                | ``/listeners/{listener_id}/l7policies/{l7policy_id}``     |
++----------------+---------+-------------------------------------------------+
+|                | Success | 202                                             |
+| Response Codes +---------+-------------------------------------------------+
+|                | Error   | 400, 401, 404, 409, 500                         |
++----------------+---------+-------------------------------------------------+
+
+|
+
++------------------+----------------------------------------+
+| Parameters       | Required                               |
++==================+========================================+
+| name             | no                                     |
++------------------+----------------------------------------+
+| description      | no                                     |
++------------------+----------------------------------------+
+| action           | no                                     |
++------------------+----------------------------------------+
+| redirect_pool_id | only if action == ``REDIRECT_TO_POOL`` |
++------------------+----------------------------------------+
+| redirect_url     | only if action == ``REDIRECT_TO_URL``  |
++------------------+----------------------------------------+
+| position         | no                                     |
++------------------+----------------------------------------+
+| enabled          | no                                     |
++------------------+----------------------------------------+
+
+**Request Example**::
+
+    {
+        'action': 'REDIRECT_TO_URL',
+        'redirect_url': 'http://www.example.com',
+        'enabled': True
+    }
+
+**Response Example**::
+
+    {
+        'id': 'uuid',
+        'name': None,
+        'description': None,
+        'action': 'REDIRECT_TO_URL',
+        'redirect_pool_id': None,
+        'redirect_url': 'http://www.example.com',
+        'position': 1,
+        'enabled': True
+    }
+
+Delete Layer 7 Policy
+*********************
+
+Delete a layer 7 policy.
+
++----------------+-----------------------------------------------------------+
+| Request Type   | ``DELETE``                                                |
++----------------+-----------------------------------------------------------+
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
+|                | ``/listeners/{listener_id}/l7policies/{l7policy_id}``     |
++----------------+---------+-------------------------------------------------+
+|                | Success | 202                                             |
+| Response Codes +---------+-------------------------------------------------+
+|                | Error   | 401, 404, 409, 500                              |
++----------------+---------+-------------------------------------------------+
+
+Layer 7 Rules
+-------------
+Layer 7 rules are individual statements of logic which match parts of
+an HTTP request, session, or other protocol-specific data for any given
+client request. All the layer 7 rules associated with a given layer 7 policy
+are logically ANDed together to see wether the policy matches a given client
+request. If logical OR behavior is desired instead, the user should instead
+create multiple layer 7 policies with rules which match each of the components
+of the logical OR statement.
+
++------------------------------------------------------------------------+
+| **Fully Populated L7Rule Object**                                      |
++------------------+-------------+---------------------------------------+
+| Parameters       | Type        | Description                           |
++==================+=============+=======================================+
+| id               | UUID        | L7 Rule ID                            |
++------------------+-------------+---------------------------------------+
+| type             | String      | type of L7 rule (see chart below)     |
++------------------+-------------+---------------------------------------+
+| compare_type     | String      | comparison type to be used with the \ |
+|                  |             | value in this L7 rule (see chart \    |
+|                  |             | below)                                |
++------------------+-------------+---------------------------------------+
+| key              | String      | Header or cookie name to match if \   |
+|                  |             | rule type is ``HEADER`` or ``COOKIE`` |
++------------------+-------------+---------------------------------------+
+| value            | String      | value to be compared with             |
++------------------+-------------+---------------------------------------+
+| invert           | Boolean     | inverts the logic of the rule if \    |
+|                  |             | ``True`` (ie. perform a logical NOT \ |
+|                  |             | on the rule)                          |
++------------------+-------------+---------------------------------------+
+
+Layer 7 rule types
+
++----------------------+---------------------------------+--------------------+
+| L7 rule type         | Description                     | Valid comparisons  |
++======================+=================================+====================+
+| ``HOST_NAME``        | Matches against the http \      | ``REGEX``, \       |
+|                      | Host: header in the request.    | ``STARTS_WITH``, \ |
+|                      |                                 | ``ENDS_WITH``, \   |
+|                      |                                 | ``CONTAINS``, \    |
+|                      |                                 | ``EQUAL_TO``       |
++----------------------+---------------------------------+--------------------+
+| ``PATH``             | Matches against the path \      | ``REGEX``, \       |
+|                      | portion of the URL requested    | ``STARTS_WITH``, \ |
+|                      |                                 | ``ENDS_WITH``, \   |
+|                      |                                 | ``CONTAINS``, \    |
+|                      |                                 | ``EQUAL_TO``       |
++----------------------+---------------------------------+--------------------+
+| ``FILE_TYPE``        | Matches against the file name \ | ``REGEX``, \       |
+|                      | extension in the URL requested  | ``EQUAL_TO``       |
++----------------------+---------------------------------+--------------------+
+| ``HEADER``           | Matches against a specified \   | ``REGEX``, \       |
+|                      | header in the request           | ``STARTS_WITH``, \ |
+|                      |                                 | ``ENDS_WITH``, \   |
+|                      |                                 | ``CONTAINS``, \    |
+|                      |                                 | ``EQUAL_TO``       |
++----------------------+---------------------------------+--------------------+
+| ``COOKIE``           | Matches against a specified \   | ``REGEX``, \       |
+|                      | cookie in the request           | ``STARTS_WITH``, \ |
+|                      |                                 | ``ENDS_WITH``, \   |
+|                      |                                 | ``CONTAINS``, \    |
+|                      |                                 | ``EQUAL_TO``       |
++----------------------+---------------------------------+--------------------+
+
+Layer 7 rule comparison types
+
++----------------------+----------------------------------------------------+
+| L7 rule compare type | Description                                        |
++======================+====================================================+
+| ``REGEX``            | string will be evaluated against regular \         |
+|                      | expression stored in ``value``                     |
++----------------------+----------------------------------------------------+
+| ``STARTS_WITH``      | start of string will be compared against ``value`` |
++----------------------+----------------------------------------------------+
+| ``ENDS_WITH``        | end of string will be compared against ``value``   |
++----------------------+----------------------------------------------------+
+| ``CONTAINS``         | string contains ``value``                          |
++----------------------+----------------------------------------------------+
+| ``EQUAL_TO``         | string is exactly equal to ``value``               |
++----------------------+----------------------------------------------------+
+
+List L7 Rules
+*************
+
+Retrieve a list of layer 7 rules.
+
++----------------+-----------------------------------------------------------+
+| Request Type   | ``GET``                                                   |
++----------------+-----------------------------------------------------------+
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
+|                | ``/listeners/{listener_id}/l7policies/{l7policy_id}`` \   |
+|                | ``/l7rules``                                              |
++----------------+---------+-------------------------------------------------+
+|                | Success | 200                                             |
+| Response Codes +---------+-------------------------------------------------+
+|                | Error   | 401, 404, 500                                   |
++----------------+---------+-------------------------------------------------+
+
+**Response Example**::
+
+    [
+        {
+            'id': 'uuid',
+            'type': 'PATH',
+            'compare_type': 'STARTS_WITH',
+            'key': None,
+            'value': '/api',
+            'invert': False
+        },
+        {
+            'id': 'uuid',
+            'type': 'COOKIE',
+            'compare_type': 'REGEX',
+            'key': 'my-cookie',
+            'value': 'some-value',
+            'invert': True
+        }
+    ]
+
+List L7 Rule Details
+********************
+
+Retrieve details of a layer 7 rule.
+
++----------------+-----------------------------------------------------------+
+| Request Type   | ``GET``                                                   |
++----------------+-----------------------------------------------------------+
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
+|                | ``/listeners/{listener_id}/l7policies/{l7policy_id}`` \   |
+|                | ``/l7rules/{l7rule_id}``                                  |
++----------------+---------+-------------------------------------------------+
+|                | Success | 200                                             |
+| Response Codes +---------+-------------------------------------------------+
+|                | Error   | 401, 404, 500                                   |
++----------------+---------+-------------------------------------------------+
+
+**Response Example**::
+
+    {
+        'id': 'uuid',
+        'type': 'PATH',
+        'compare_type': 'STARTS_WITH',
+        'key': None,
+        'value': '/api',
+        'invert': False
+    }
+
+Create Layer 7 Rule
+*******************
+
+Create a layer 7 rule.
+
++----------------+-----------------------------------------------------------+
+| Request Type   | ``POST``                                                  |
++----------------+-----------------------------------------------------------+
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
+|                | ``/listeners/{listener_id}/l7policies/{l7policy_id}`` \   |
+|                | ``/l7rules``                                              |
++----------------+---------+-------------------------------------------------+
+|                | Success | 202                                             |
+| Response Codes +---------+-------------------------------------------------+
+|                | Error   | 400, 401, 404, 500                              |
++----------------+---------+-------------------------------------------------+
+
+|
+
++----------------+------------------------------------------+
+| Parameters     | Required                                 |
++================+==========================================+
+| type           | yes                                      |
++----------------+------------------------------------------+
+| compare_type   | yes                                      |
++----------------+------------------------------------------+
+| key            | only if type is ``HEADER`` or ``COOKIE`` |
++----------------+------------------------------------------+
+| value          | yes                                      |
++----------------+------------------------------------------+
+| invert         | no (Defaults to ``False``)               |
++----------------+------------------------------------------+
+
+**Request Example**::
+
+    {
+        'type': 'HOST_NAME',
+        'compare_type': 'ENDS_WITH',
+        'value': '.example.com'
+    }
+
+**Response Example**::
+
+    {
+        'id': 'uuid',
+        'type': 'HOST_NAME',
+        'compare_type': 'ENDS_WITH',
+        'key': None,
+        'value': '.example.com',
+        'invert': False
+    }
+
+Update Layer 7 Rule
+*******************
+
+Modify mutable attributes of a layer 7 rule.
+
++----------------+-----------------------------------------------------------+
+| Request Type   | ``PUT``                                                   |
++----------------+-----------------------------------------------------------+
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
+|                | ``/listeners/{listener_id}/l7policies/{l7policy_id}`` \   |
+|                | ``/l7rules/{l7rule_id}``                                  |
++----------------+---------+-------------------------------------------------+
+|                | Success | 202                                             |
+| Response Codes +---------+-------------------------------------------------+
+|                | Error   | 400, 401, 404, 409, 500                         |
++----------------+---------+-------------------------------------------------+
+
+|
+
++----------------+------------------------------------------+
+| Parameters     | Required                                 |
++================+==========================================+
+| type           | no                                       |
++----------------+------------------------------------------+
+| compare_type   | no                                       |
++----------------+------------------------------------------+
+| key            | only if type is ``HEADER`` or ``COOKIE`` |
++----------------+------------------------------------------+
+| value          | no                                       |
++----------------+------------------------------------------+
+| invert         | no                                       |
++----------------+------------------------------------------+
+
+**Request Example**::
+
+    {
+        'type': 'HEADER',
+        'compare_type': 'CONTAINS',
+        'key': 'X-My-Header',
+        'value': 'sample_substring'
+    }
+
+**Response Example**::
+
+    {
+        'id': 'uuid',
+        'type': 'HEADER',
+        'compare_type': 'CONTAINS',
+        'key': 'X-My-Header',
+        'value': 'sample_substring',
+        'invert': False
+    }
+
+Delete Layer 7 Rule
+*******************
+
+Delete a layer 7 rule.
+
++----------------+-----------------------------------------------------------+
+| Request Type   | ``DELETE``                                                |
++----------------+-----------------------------------------------------------+
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
+|                | ``/listeners/{listener_id}/l7policies/{l7policy_id}`` \   |
+|                | ``/l7rules/{l7rule_id}``                                  |
++----------------+---------+-------------------------------------------------+
+|                | Success | 202                                             |
+| Response Codes +---------+-------------------------------------------------+
+|                | Error   | 401, 404, 409, 500                              |
++----------------+---------+-------------------------------------------------+
