@@ -903,11 +903,11 @@ Retrieve details of a health monitor.
 | Request Type   | ``GET``                                                   |
 +----------------+-----------------------------------------------------------+
 | Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
-|                | ``/pools/{pool_id}/health_monitor``                       |
+|                | ``/pools/{pool_id}/healthmonitor``                        |
 |                |                                                           |
 |                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
 |                | ``/listeners/{listener_id}/pools/{pool_id}``\             |
-|                | ``/health_monitor``                                       |
+|                | ``/healthmonitor``                                        |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 200                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -937,11 +937,11 @@ Create a health monitor.
 | Request Type   | ``POST``                                                  |
 +----------------+-----------------------------------------------------------+
 | Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
-|                | ``/pools/{pool_id}/health_monitor``                       |
+|                | ``/pools/{pool_id}/healthmonitor``                        |
 |                |                                                           |
 |                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
 |                | ``/listeners/{listener_id}/pools/{pool_id}``\             |
-|                | ``/health_monitor``                                       |
+|                | ``/healthmonitor``                                        |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 202                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -1009,11 +1009,11 @@ Modify mutable attributes of a health monitor.
 | Request Type   | ``PUT``                                                   |
 +----------------+-----------------------------------------------------------+
 | Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
-|                | ``/pools/{pool_id}/health_monitor``                       |
+|                | ``/pools/{pool_id}/healthmonitor``                        |
 |                |                                                           |
 |                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
 |                | ``/listeners/{listener_id}/pools/{pool_id}``\             |
-|                | ``/health_monitor``                                       |
+|                | ``/healthmonitor``                                        |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 202                                             |
 | Response Codes +---------+-------------------------------------------------+
@@ -1081,11 +1081,11 @@ Delete a health monitor.
 | Request Type   | ``DELETE``                                                |
 +----------------+-----------------------------------------------------------+
 | Endpoint       | ``URL/v1/loadbalancers/{lb_id}``\                         |
-|                | ``/pools/{pool_id}/health_monitor``                       |
+|                | ``/pools/{pool_id}/healthmonitor``                        |
 |                |                                                           |
 |                | **DEPRECATED:** ``URL/v1/loadbalancers/{lb_id}``\         |
 |                | ``/listeners/{listener_id}/pools/{pool_id}``\             |
-|                | ``/health_monitor``                                       |
+|                | ``/healthmonitor``                                        |
 +----------------+---------+-------------------------------------------------+
 |                | Success | 202                                             |
 | Response Codes +---------+-------------------------------------------------+
