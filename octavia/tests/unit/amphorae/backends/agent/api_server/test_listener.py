@@ -16,8 +16,8 @@ import mock
 import six.moves.builtins as builtins
 
 from octavia.amphorae.backends.agent.api_server import listener
-from octavia.amphorae.drivers.haproxy.jinja import jinja_cfg
 from octavia.common import constants as consts
+from octavia.common.jinja.haproxy import jinja_cfg
 import octavia.tests.unit.base as base
 from octavia.tests.unit.common.sample_configs import sample_configs
 

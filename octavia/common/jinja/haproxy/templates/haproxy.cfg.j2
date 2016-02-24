@@ -1,4 +1,4 @@
-{# #    Copyright (c) 2015 Rackspace
+{#   Copyright (c) 2015 Rackspace
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,23 +13,27 @@
 #    under the License.
 #
 #}
-{% extends 'haproxy_proxies.template' %}
+{% extends 'base.j2' %}
+
+
+{% from 'macros.j2' import frontend_macro, backend_macro %}
+{% from 'macros.j2' import peers_macro %}
+
+
 {% set loadbalancer_name = loadbalancer.name %}
 {% set usergroup = user_group %}
 {% set sock_path = stats_sock %}
 
+
 {% block peers %}
-{% from 'haproxy_proxies.template' import peers_macro%}
 {{ peers_macro(constants, loadbalancer.listener) }}
 {% endblock peers %}
 
+
 {% block proxies %}
-{% from 'haproxy_proxies.template' import frontend_macro as frontend_macro, backend_macro%}
-{{ frontend_macro(constants, loadbalancer.listener, loadbalancer.vip_address) }}
-{% if loadbalancer.listener.default_pool %}
-{{ backend_macro(constants, loadbalancer.listener, loadbalancer.listener.default_pool) }}
-{% endif %}
-{#  TODO(sbalukoff): Will need to add pools referenced by L7Policies attached
-#   to the listener, but ensure each only gets listed once, eh.
-#}
+    {{- frontend_macro(constants, loadbalancer.listener,
+                       loadbalancer.vip_address) }}
+    {% for pool in loadbalancer.listener.pools %}
+        {{- backend_macro(constants, loadbalancer.listener, pool) }}
+    {% endfor %}
 {% endblock proxies %}
