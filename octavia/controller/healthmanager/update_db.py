@@ -98,7 +98,7 @@ class UpdateHealthDb(object):
 
         listeners = health['listeners']
 
-        # Do not update ampohra health if the reporting listener count
+        # Do not update amphora health if the reporting listener count
         # does not match the expected listener count
         if len(listeners) == expected_listener_count:
 
@@ -118,9 +118,6 @@ class UpdateHealthDb(object):
 
         # update listener and nodes db information
         for listener_id, listener in six.iteritems(listeners):
-
-            listener_model = self.listener_repo.get(session, id=listener_id)
-            lb_id = listener_model.load_balancer_id
 
             listener_status = None
             # OPEN = HAProxy listener status nbconn < maxconn
@@ -199,6 +196,12 @@ class UpdateHealthDb(object):
                 except sqlalchemy.orm.exc.NoResultFound:
                     LOG.error(_LE("Pool %s is not in DB"), pool_id)
 
+        # Update the load balancer status last
+        # TODO(sbalukoff): This logic will need to be adjusted if we
+        # start supporting multiple load balancers per amphora
+        lb_id = self.amphora_repo.get(
+            session, id=health['id']).load_balancer_id
+        if lb_id is not None:
             try:
                 self._update_status_and_emit_event(
                     session, self.loadbalancer_repo,
