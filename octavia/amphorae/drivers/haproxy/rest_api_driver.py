@@ -219,9 +219,12 @@ class AmphoraAPIClient(object):
         _request = getattr(self.session, method.lower())
         _url = self._base_url(amp.lb_network_ip) + path
         LOG.debug("request url " + _url)
+        timeout_tuple = (CONF.haproxy_amphora.rest_request_conn_timeout,
+                         CONF.haproxy_amphora.rest_request_read_timeout)
         reqargs = {
             'verify': CONF.haproxy_amphora.server_ca,
-            'url': _url, }
+            'url': _url,
+            'timeout': timeout_tuple, }
         reqargs.update(kwargs)
         headers = reqargs.setdefault('headers', {})
 
@@ -236,7 +239,7 @@ class AmphoraAPIClient(object):
                         message="A true SSLContext object is not available"
                     )
                     r = _request(**reqargs)
-            except requests.ConnectionError:
+            except (requests.ConnectionError, requests.Timeout):
                 LOG.warn(_LW("Could not connect to instance. Retrying."))
                 time.sleep(CONF.haproxy_amphora.connection_retry_interval)
                 if a >= CONF.haproxy_amphora.connection_max_retries:

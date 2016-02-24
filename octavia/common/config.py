@@ -184,6 +184,12 @@ haproxy_amphora_opts = [
                help=_("The respawn interval for haproxy's upstart script")),
     cfg.StrOpt('haproxy_cert_dir', default='/tmp/',
                help=_("The directory to store haproxy cert files in")),
+    cfg.FloatOpt('rest_request_conn_timeout', default=10,
+                 help=_("The time in seconds to wait for a REST API "
+                        "to connect.")),
+    cfg.FloatOpt('rest_request_read_timeout', default=60,
+                 help=_("The time in seconds to wait for a REST API "
+                        "response.")),
     # REST client
     cfg.StrOpt('client_cert', default='/etc/octavia/certs/client.pem',
                help=_("The client certificate to talk to the agent")),
