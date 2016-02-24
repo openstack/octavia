@@ -101,3 +101,27 @@ class Endpoint(object):
     def delete_member(self, context, member_id):
         LOG.info(_LI('Deleting member \'%s\'...') % member_id)
         self.worker.delete_member(member_id)
+
+    def create_l7policy(self, context, l7policy_id):
+        LOG.info(_LI('Creating l7policy \'%s\'...') % l7policy_id)
+        self.worker.create_l7policy(l7policy_id)
+
+    def update_l7policy(self, context, l7policy_id, l7policy_updates):
+        LOG.info(_LI('Updating l7policy \'%s\'...') % l7policy_id)
+        self.worker.update_l7policy(l7policy_id, l7policy_updates)
+
+    def delete_l7policy(self, context, l7policy_id):
+        LOG.info(_LI('Deleting l7policy \'%s\'...') % l7policy_id)
+        self.worker.delete_l7policy(l7policy_id)
+
+    def create_l7rule(self, context, l7rule_id):
+        LOG.info(_LI('Creating l7rule \'%s\'...') % l7rule_id)
+        self.worker.create_l7rule(l7rule_id)
+
+    def update_l7rule(self, context, l7rule_id, l7rule_updates):
+        LOG.info(_LI('Updating l7rule \'%s\'...') % l7rule_id)
+        self.worker.update_l7rule(l7rule_id, l7rule_updates)
+
+    def delete_l7rule(self, context, l7rule_id):
+        LOG.info(_LI('Deleting l7rule \'%s\'...') % l7rule_id)
+        self.worker.delete_l7rule(l7rule_id)

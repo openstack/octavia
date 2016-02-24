@@ -46,6 +46,8 @@ class BaseDatabaseTask(task.Task):
         self.member_repo = repo.MemberRepository()
         self.pool_repo = repo.PoolRepository()
         self.amp_health_repo = repo.AmphoraHealthRepository()
+        self.l7policy_repo = repo.L7PolicyRepository()
+        self.l7rule_repo = repo.L7RuleRepository()
         super(BaseDatabaseTask, self).__init__(**kwargs)
 
     def _delete_from_amp_health(self, amphora_id):
@@ -236,6 +238,65 @@ class DeletePoolInDB(BaseDatabaseTask):
 # TODO(johnsom) Fix this
 #        self.pool_repo.update(db_apis.get_session(), pool.id,
 #                              operating_status=constants.ERROR)
+
+
+class DeleteL7PolicyInDB(BaseDatabaseTask):
+    """Delete the L7 policy in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7policy):
+        """Delete the l7policy in DB
+
+        :param l7policy: The l7policy to be deleted
+        :returns: None
+        """
+
+        LOG.debug("Delete in DB for l7policy id: %s ", l7policy.id)
+        self.l7policy_repo.delete(db_apis.get_session(), id=l7policy.id)
+
+    def revert(self, l7policy_id, *args, **kwargs):
+        """Mark the l7policy ERROR since the delete couldn't happen
+
+        :returns: None
+        """
+
+        LOG.warn(_LW("Reverting delete in DB "
+                     "for l7policy id %s"), l7policy_id)
+# TODO(sbalukoff) Fix this
+#        self.listener_repo.update(db_apis.get_session(), l7policy.listener.id,
+#                                  operating_status=constants.ERROR)
+
+
+class DeleteL7RuleInDB(BaseDatabaseTask):
+    """Delete the L7 rule in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7rule):
+        """Delete the l7rule in DB
+
+        :param l7rule: The l7rule to be deleted
+        :returns: None
+        """
+
+        LOG.debug("Delete in DB for l7rule id: %s ", l7rule.id)
+        self.l7rule_repo.delete(db_apis.get_session(), id=l7rule.id)
+
+    def revert(self, l7rule_id, *args, **kwargs):
+        """Mark the l7rule ERROR since the delete couldn't happen
+
+        :returns: None
+        """
+
+        LOG.warn(_LW("Reverting delete in DB "
+                     "for l7rule id %s"), l7rule_id)
+# TODO(sbalukoff) Fix this
+#        self.listener_repo.update(db_apis.get_session(),
+#                                  l7rule.l7policy.listener.id,
+#                                  operating_status=constants.ERROR)
 
 
 class ReloadAmphora(BaseDatabaseTask):
@@ -952,6 +1013,68 @@ class UpdatePoolInDB(BaseDatabaseTask):
 # TODO(johnsom) fix this to set the upper ojects to ERROR
         self.repos.update_pool_and_sp(db_apis.get_session(),
                                       pool.id, {'enabled': 0}, None)
+
+
+class UpdateL7PolicyInDB(BaseDatabaseTask):
+    """Update the L7 policy in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7policy, update_dict):
+        """Update the L7 policy in the DB
+
+        :param l7policy: The L7 policy to be updated
+        :param update_dict: The dictionary of updates to apply
+        :returns: None
+        """
+
+        LOG.debug("Update DB for l7policy id: %s ", l7policy.id)
+        self.l7policy_repo.update(db_apis.get_session(), l7policy.id,
+                                  **update_dict)
+
+    def revert(self, l7policy, *args, **kwargs):
+        """Mark the l7policy ERROR since the update couldn't happen
+
+        :returns: None
+        """
+
+        LOG.warn(_LW("Reverting update l7policy in DB "
+                     "for l7policy id %s"), l7policy.id)
+# TODO(sbalukoff) fix this to set the upper objects to ERROR
+        self.l7policy_repo.update(db_apis.get_session(), l7policy.id,
+                                  enabled=0)
+
+
+class UpdateL7RuleInDB(BaseDatabaseTask):
+    """Update the L7 rule in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7rule, update_dict):
+        """Update the L7 rule in the DB
+
+        :param l7rule: The L7 rule to be updated
+        :param update_dict: The dictionary of updates to apply
+        :returns: None
+        """
+
+        LOG.debug("Update DB for l7rule id: %s ", l7rule.id)
+        self.l7rule_repo.update(db_apis.get_session(), l7rule.id,
+                                **update_dict)
+
+    def revert(self, l7rule, *args, **kwargs):
+        """Mark the L7 rule ERROR since the update couldn't happen
+
+        :returns: None
+        """
+
+        LOG.warn(_LW("Reverting update l7rule in DB "
+                     "for l7rule id %s"), l7rule.id)
+# TODO(sbalukoff) fix this to set appropriate upper objects to ERROR
+        self.l7policy_repo.update(db_apis.get_session(), l7rule.l7policy.id,
+                                  enabled=0)
 
 
 class GetAmphoraDetails(BaseDatabaseTask):

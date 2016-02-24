@@ -117,3 +117,35 @@ class TestEndpoint(base.TestCase):
         self.ep.delete_member(self.context, self.resource_id)
         self.ep.worker.delete_member.assert_called_once_with(
             self.resource_id)
+
+    def test_create_l7policy(self):
+        self.ep.create_l7policy(self.context, self.resource_id)
+        self.ep.worker.create_l7policy.assert_called_once_with(
+            self.resource_id)
+
+    def test_update_l7policy(self):
+        self.ep.update_l7policy(self.context, self.resource_id,
+                                self.resource_updates)
+        self.ep.worker.update_l7policy.assert_called_once_with(
+            self.resource_id, self.resource_updates)
+
+    def test_delete_l7policy(self):
+        self.ep.delete_l7policy(self.context, self.resource_id)
+        self.ep.worker.delete_l7policy.assert_called_once_with(
+            self.resource_id)
+
+    def test_create_l7rule(self):
+        self.ep.create_l7rule(self.context, self.resource_id)
+        self.ep.worker.create_l7rule.assert_called_once_with(
+            self.resource_id)
+
+    def test_update_l7rule(self):
+        self.ep.update_l7rule(self.context, self.resource_id,
+                              self.resource_updates)
+        self.ep.worker.update_l7rule.assert_called_once_with(
+            self.resource_id, self.resource_updates)
+
+    def test_delete_l7rule(self):
+        self.ep.delete_l7rule(self.context, self.resource_id)
+        self.ep.worker.delete_l7rule.assert_called_once_with(
+            self.resource_id)

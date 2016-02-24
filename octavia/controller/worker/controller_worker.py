@@ -19,6 +19,8 @@ from octavia.common import base_taskflow
 from octavia.common import constants
 from octavia.controller.worker.flows import amphora_flows
 from octavia.controller.worker.flows import health_monitor_flows
+from octavia.controller.worker.flows import l7policy_flows
+from octavia.controller.worker.flows import l7rule_flows
 from octavia.controller.worker.flows import listener_flows
 from octavia.controller.worker.flows import load_balancer_flows
 from octavia.controller.worker.flows import member_flows
@@ -45,6 +47,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         self._listener_flows = listener_flows.ListenerFlows()
         self._member_flows = member_flows.MemberFlows()
         self._pool_flows = pool_flows.PoolFlows()
+        self._l7policy_flows = l7policy_flows.L7PolicyFlows()
+        self._l7rule_flows = l7rule_flows.L7RuleFlows()
 
         self._amphora_repo = repo.AmphoraRepository()
         self._health_mon_repo = repo.HealthMonitorRepository()
@@ -52,6 +56,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         self._listener_repo = repo.ListenerRepository()
         self._member_repo = repo.MemberRepository()
         self._pool_repo = repo.PoolRepository()
+        self._l7policy_repo = repo.L7PolicyRepository()
+        self._l7rule_repo = repo.L7RuleRepository()
 
         self._exclude_result_logging_tasks = (
             constants.ROLE_STANDALONE + '-' +
@@ -475,6 +481,142 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         with tf_logging.DynamicLoggingListener(update_pool_tf,
                                                log=LOG):
             update_pool_tf.run()
+
+    def create_l7policy(self, l7policy_id):
+        """Creates an L7 Policy.
+
+        :param l7policy_id: ID of the l7policy to create
+        :returns: None
+        :raises NoSuitableLB: Unable to find the load balancer
+        """
+        l7policy = self._l7policy_repo.get(db_apis.get_session(),
+                                           id=l7policy_id)
+
+        listeners = [l7policy.listener]
+        load_balancer = l7policy.listener.load_balancer
+
+        create_l7policy_tf = self._taskflow_load(
+            self._l7policy_flows.get_create_l7policy_flow(),
+            store={constants.L7POLICY: l7policy,
+                   constants.LISTENERS: listeners,
+                   constants.LOADBALANCER: load_balancer})
+        with tf_logging.DynamicLoggingListener(create_l7policy_tf,
+                                               log=LOG):
+            create_l7policy_tf.run()
+
+    def delete_l7policy(self, l7policy_id):
+        """Deletes an L7 policy.
+
+        :param l7policy_id: ID of the l7policy to delete
+        :returns: None
+        :raises L7PolicyNotFound: The referenced l7policy was not found
+        """
+        l7policy = self._l7policy_repo.get(db_apis.get_session(),
+                                           id=l7policy_id)
+
+        load_balancer = l7policy.listener.load_balancer
+        listeners = [l7policy.listener]
+
+        delete_l7policy_tf = self._taskflow_load(
+            self._l7policy_flows.get_delete_l7policy_flow(),
+            store={constants.L7POLICY: l7policy,
+                   constants.LISTENERS: listeners,
+                   constants.LOADBALANCER: load_balancer})
+        with tf_logging.DynamicLoggingListener(delete_l7policy_tf,
+                                               log=LOG):
+            delete_l7policy_tf.run()
+
+    def update_l7policy(self, l7policy_id, l7policy_updates):
+        """Updates an L7 policy.
+
+        :param l7policy_id: ID of the l7policy to update
+        :param l7policy_updates: Dict containing updated l7policy attributes
+        :returns: None
+        :raises L7PolicyNotFound: The referenced l7policy was not found
+        """
+        l7policy = self._l7policy_repo.get(db_apis.get_session(),
+                                           id=l7policy_id)
+
+        listeners = [l7policy.listener]
+        load_balancer = l7policy.listener.load_balancer
+
+        update_l7policy_tf = self._taskflow_load(
+            self._l7policy_flows.get_update_l7policy_flow(),
+            store={constants.L7POLICY: l7policy,
+                   constants.LISTENERS: listeners,
+                   constants.LOADBALANCER: load_balancer,
+                   constants.UPDATE_DICT: l7policy_updates})
+        with tf_logging.DynamicLoggingListener(update_l7policy_tf,
+                                               log=LOG):
+            update_l7policy_tf.run()
+
+    def create_l7rule(self, l7rule_id):
+        """Creates an L7 Rule.
+
+        :param l7rule_id: ID of the l7rule to create
+        :returns: None
+        :raises NoSuitableLB: Unable to find the load balancer
+        """
+        l7rule = self._l7rule_repo.get(db_apis.get_session(),
+                                       id=l7rule_id)
+
+        listeners = [l7rule.l7policy.listener]
+        load_balancer = l7rule.l7policy.listener.load_balancer
+
+        create_l7rule_tf = self._taskflow_load(
+            self._l7rule_flows.get_create_l7rule_flow(),
+            store={constants.L7RULE: l7rule,
+                   constants.LISTENERS: listeners,
+                   constants.LOADBALANCER: load_balancer})
+        with tf_logging.DynamicLoggingListener(create_l7rule_tf,
+                                               log=LOG):
+            create_l7rule_tf.run()
+
+    def delete_l7rule(self, l7rule_id):
+        """Deletes an L7 rule.
+
+        :param l7rule_id: ID of the l7rule to delete
+        :returns: None
+        :raises L7RuleNotFound: The referenced l7rule was not found
+        """
+        l7rule = self._l7rule_repo.get(db_apis.get_session(),
+                                       id=l7rule_id)
+
+        load_balancer = l7rule.l7policy.listener.load_balancer
+        listeners = [l7rule.l7policy.listener]
+
+        delete_l7rule_tf = self._taskflow_load(
+            self._l7rule_flows.get_delete_l7rule_flow(),
+            store={constants.L7RULE: l7rule,
+                   constants.LISTENERS: listeners,
+                   constants.LOADBALANCER: load_balancer})
+        with tf_logging.DynamicLoggingListener(delete_l7rule_tf,
+                                               log=LOG):
+            delete_l7rule_tf.run()
+
+    def update_l7rule(self, l7rule_id, l7rule_updates):
+        """Updates an L7 rule.
+
+        :param l7rule_id: ID of the l7rule to update
+        :param l7rule_updates: Dict containing updated l7rule attributes
+        :returns: None
+        :raises L7RuleNotFound: The referenced l7rule was not found
+        """
+        l7rule = self._l7rule_repo.get(db_apis.get_session(),
+                                       id=l7rule_id)
+
+        listeners = [l7rule.l7policy.listener]
+        load_balancer = l7rule.l7policy.listener.load_balancer
+
+        update_l7rule_tf = self._taskflow_load(
+            self._l7rule_flows.get_update_l7rule_flow(),
+            store={constants.L7RULE: l7rule,
+                   constants.LISTENERS: listeners,
+                   constants.LOADBALANCER: load_balancer,
+                   constants.UPDATE_DICT: l7rule_updates})
+        with tf_logging.DynamicLoggingListener(update_l7rule_tf,
+                                               log=LOG):
+            update_l7rule_tf.run()
 
     def failover_amphora(self, amphora_id):
         """Perform failover operations for an amphora.
