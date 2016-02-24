@@ -80,6 +80,11 @@ class InvalidOption(APIException):
     code = 400
 
 
+class L7RuleValidation(APIException):
+    msg = _("Error parsing L7Rule: %(error)s")
+    code = 400
+
+
 class InvalidHMACException(OctaviaException):
     message = _("HMAC hashes didn't match")
 
