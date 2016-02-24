@@ -645,6 +645,20 @@ class ListenerRepositoryTest(BaseRepositoryTest):
         self.assertRaises(exceptions.NotFound, self.create_listener,
                           self.FAKE_UUID_1, 80, default_pool_id=pool.id)
 
+    def test_create_2_sni_containers(self):
+        listener = self.create_listener(self.FAKE_UUID_1, 80)
+        container1 = {'listener_id': listener.id,
+                      'tls_container_id': self.FAKE_UUID_1}
+        container2 = {'listener_id': listener.id,
+                      'tls_container_id': self.FAKE_UUID_2}
+        container1_dm = models.SNI(**container1)
+        container2_dm = models.SNI(**container2)
+        self.sni_repo.create(self.session, **container1)
+        self.sni_repo.create(self.session, **container2)
+        new_listener = self.listener_repo.get(self.session, id=listener.id)
+        self.assertIn(container1_dm, new_listener.sni_containers)
+        self.assertIn(container2_dm, new_listener.sni_containers)
+
     def test_update(self):
         name_change = "new_listener_name"
         listener = self.create_listener(self.FAKE_UUID_1, 80)

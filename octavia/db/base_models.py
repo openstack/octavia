@@ -34,12 +34,15 @@ class OctaviaBase(models.ModelBase):
             return obj.__class__.__name__ + obj.id
         elif obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
             return obj.__class__.__name__ + obj.pool_id
-        elif obj.__class__.__name__ in ['ListenerStatistics', 'SNI']:
+        elif obj.__class__.__name__ in ['ListenerStatistics']:
             return obj.__class__.__name__ + obj.listener_id
         elif obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
             return obj.__class__.__name__ + obj.load_balancer_id
         elif obj.__class__.__name__ in ['AmphoraHealth']:
             return obj.__class__.__name__ + obj.amphora_id
+        elif obj.__class__.__name__ in ['SNI']:
+            return (obj.__class__.__name__ +
+                    obj.listener_id + obj.tls_container_id)
         else:
             raise NotImplementedError
 
