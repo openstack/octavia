@@ -53,6 +53,8 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
         self.amphora_repo = repo.AmphoraRepository()
         self.amphora_health_repo = repo.AmphoraHealthRepository()
         self.vrrp_group_repo = repo.VRRPGroupRepository()
+        self.l7policy_repo = repo.L7PolicyRepository()
+        self.l7rule_repo = repo.L7RuleRepository()
 
     def test_get_all_return_value(self):
         pool_list = self.pool_repo.get_all(self.session,
@@ -92,7 +94,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         repo_attr_names = ('load_balancer', 'vip', 'health_monitor',
                            'session_persistence', 'pool', 'member', 'listener',
                            'listener_stats', 'amphora', 'sni',
-                           'amphorahealth', 'vrrpgroup')
+                           'amphorahealth', 'vrrpgroup', 'l7rule', 'l7policy')
         for repo_attr in repo_attr_names:
             single_repo = getattr(self.repos, repo_attr, None)
             message = ("Class Repositories should have %s instance"
@@ -1491,3 +1493,285 @@ class VRRPGroupRepositoryTest(BaseRepositoryTest):
         self.assertEqual('AH', new_vrrp_group.vrrp_auth_type)
         self.assertEqual('TESTPASS2', new_vrrp_group.vrrp_auth_pass)
         self.assertEqual(2, new_vrrp_group.advert_int)
+
+
+class L7PolicyRepositoryTest(BaseRepositoryTest):
+
+    def setUp(self):
+        super(L7PolicyRepositoryTest, self).setUp()
+        self.pool = self.create_pool(self.FAKE_UUID_1)
+        self.listener = self.create_listener(self.FAKE_UUID_1, 80)
+
+    def create_listener(self, listener_id, port):
+        listener = self.listener_repo.create(
+            self.session, id=listener_id, project_id=self.FAKE_UUID_2,
+            name="listener_name", description="listener_description",
+            protocol=constants.PROTOCOL_HTTP, protocol_port=port,
+            connection_limit=1, operating_status=constants.ONLINE,
+            provisioning_status=constants.ACTIVE, enabled=True, peer_port=1025)
+        return listener
+
+    def create_pool(self, pool_id):
+        pool = self.pool_repo.create(
+            self.session, id=pool_id, project_id=self.FAKE_UUID_2,
+            name="pool_test", description="pool_description",
+            protocol=constants.PROTOCOL_HTTP,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            operating_status=constants.ONLINE, enabled=True)
+        return pool
+
+    def create_l7policy(self, l7policy_id, listener_id, position,
+                        action=constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                        redirect_pool_id=None, redirect_url=None):
+        l7policy = self.l7policy_repo.create(
+            self.session, id=l7policy_id, name='l7policy_test',
+            description='l7policy_description', listener_id=listener_id,
+            position=position, action=action,
+            redirect_pool_id=redirect_pool_id, redirect_url=redirect_url,
+            enabled=True)
+        return l7policy
+
+    def create_l7rule(self, l7rule_id, l7policy_id,
+                      type=constants.L7RULE_TYPE_PATH,
+                      compare_type=constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+                      key=None, value="/api"):
+        l7rule = self.l7rule_repo.create(
+            self.session, id=l7rule_id, l7policy_id=l7policy_id,
+            type=type, compare_type=compare_type, key=key, value=value)
+        return l7rule
+
+    def test_get(self):
+        listener = self.create_listener(uuidutils.generate_uuid(), 80)
+        pool = self.create_pool(uuidutils.generate_uuid())
+        l7policy = self.create_l7policy(uuidutils.generate_uuid(),
+                                        listener.id, 999,
+                                        redirect_pool_id=pool.id)
+        new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
+        self.assertIsInstance(new_l7policy, models.L7Policy)
+        self.assertEqual(l7policy, new_l7policy)
+        self.assertEqual(1, new_l7policy.position)
+
+    def test_get_all(self):
+        listener = self.create_listener(uuidutils.generate_uuid(), 80)
+        pool = self.create_pool(uuidutils.generate_uuid())
+        l7policy_a = self.create_l7policy(uuidutils.generate_uuid(),
+                                          listener.id,
+                                          1, redirect_pool_id=pool.id)
+        l7policy_c = self.create_l7policy(uuidutils.generate_uuid(),
+                                          listener.id,
+                                          2, redirect_pool_id=pool.id)
+        l7policy_b = self.create_l7policy(uuidutils.generate_uuid(),
+                                          listener.id,
+                                          2, redirect_pool_id=pool.id)
+        new_l7policy_a = self.l7policy_repo.get(self.session,
+                                                id=l7policy_a.id)
+        new_l7policy_b = self.l7policy_repo.get(self.session,
+                                                id=l7policy_b.id)
+        new_l7policy_c = self.l7policy_repo.get(self.session,
+                                                id=l7policy_c.id)
+
+        self.assertEqual(1, new_l7policy_a.position)
+        self.assertEqual(2, new_l7policy_b.position)
+        self.assertEqual(3, new_l7policy_c.position)
+        l7policy_list = self.l7policy_repo.get_all(
+            self.session, listener_id=listener.id)
+        self.assertIsInstance(l7policy_list, list)
+        self.assertEqual(3, len(l7policy_list))
+        self.assertEqual(l7policy_a.id, l7policy_list[0].id)
+        self.assertEqual(l7policy_b.id, l7policy_list[1].id)
+        self.assertEqual(l7policy_c.id, l7policy_list[2].id)
+
+    def test_create(self):
+        listener = self.create_listener(uuidutils.generate_uuid(), 80)
+        pool = self.create_pool(uuidutils.generate_uuid())
+        l7policy = self.create_l7policy(self.FAKE_UUID_1, listener.id, 1,
+                                        redirect_pool_id=pool.id)
+        new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
+        self.assertEqual(self.FAKE_UUID_1, new_l7policy.id)
+        self.assertEqual(listener.id, new_l7policy.listener_id)
+        self.assertEqual(pool.id, new_l7policy.redirect_pool_id)
+        self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                         new_l7policy.action)
+        self.assertEqual(1, new_l7policy.position)
+        self.assertIsNone(new_l7policy.redirect_url)
+
+    def test_update(self):
+        new_url = 'http://www.example.com/'
+        listener = self.create_listener(uuidutils.generate_uuid(), 80)
+        pool = self.create_pool(uuidutils.generate_uuid())
+        l7policy = self.create_l7policy(uuidutils.generate_uuid(),
+                                        listener.id, 1,
+                                        redirect_pool_id=pool.id)
+        self.l7policy_repo.update(
+            self.session, id=l7policy.id,
+            action=constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            redirect_url=new_url)
+        new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
+        new_pool = self.pool_repo.get(self.session, id=pool.id)
+        self.assertEqual(new_url, new_l7policy.redirect_url)
+        self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+                         new_l7policy.action)
+        self.assertIsNone(new_l7policy.redirect_pool_id)
+        self.assertNotIn(new_l7policy.id, new_pool.l7policies)
+
+    def test_delete(self):
+        listener = self.create_listener(uuidutils.generate_uuid(), 80)
+        pool = self.create_pool(uuidutils.generate_uuid())
+        l7policy = self.create_l7policy(uuidutils.generate_uuid(),
+                                        listener.id, 1,
+                                        redirect_pool_id=pool.id)
+        self.l7policy_repo.delete(self.session, id=l7policy.id)
+        self.assertIsNone(self.l7policy_repo.get(self.session, id=l7policy.id))
+        new_listener = self.listener_repo.get(self.session, id=listener.id)
+        self.assertIsNotNone(new_listener)
+        self.assertEqual(0, len(new_listener.l7policies))
+
+    def test_reorder_policies(self):
+        listener = self.create_listener(uuidutils.generate_uuid(), 80)
+        pool = self.create_pool(uuidutils.generate_uuid())
+        l7policy_a = self.create_l7policy(uuidutils.generate_uuid(),
+                                          listener.id,
+                                          1, redirect_pool_id=pool.id)
+        l7policy_b = self.create_l7policy(uuidutils.generate_uuid(),
+                                          listener.id,
+                                          2, redirect_pool_id=pool.id)
+        l7policy_c = self.create_l7policy(uuidutils.generate_uuid(),
+                                          listener.id,
+                                          3, redirect_pool_id=pool.id)
+        new_l7policy_a = self.l7policy_repo.get(self.session,
+                                                id=l7policy_a.id)
+        new_l7policy_b = self.l7policy_repo.get(self.session,
+                                                id=l7policy_b.id)
+        new_l7policy_c = self.l7policy_repo.get(self.session,
+                                                id=l7policy_c.id)
+        self.assertEqual(1, new_l7policy_a.position)
+        self.assertEqual(2, new_l7policy_b.position)
+        self.assertEqual(3, new_l7policy_c.position)
+        self.l7policy_repo.update(self.session, id=l7policy_a.id, position=2)
+        new_l7policy_a = self.l7policy_repo.get(self.session,
+                                                id=l7policy_a.id)
+        new_l7policy_b = self.l7policy_repo.get(self.session,
+                                                id=l7policy_b.id)
+        new_l7policy_c = self.l7policy_repo.get(self.session,
+                                                id=l7policy_c.id)
+        self.assertEqual(2, new_l7policy_a.position)
+        self.assertEqual(1, new_l7policy_b.position)
+        self.assertEqual(3, new_l7policy_c.position)
+        self.l7policy_repo.update(self.session, id=l7policy_c.id, position=1)
+        new_l7policy_a = self.l7policy_repo.get(self.session,
+                                                id=l7policy_a.id)
+        new_l7policy_b = self.l7policy_repo.get(self.session,
+                                                id=l7policy_b.id)
+        new_l7policy_c = self.l7policy_repo.get(self.session,
+                                                id=l7policy_c.id)
+        self.assertEqual(3, new_l7policy_a.position)
+        self.assertEqual(2, new_l7policy_b.position)
+        self.assertEqual(1, new_l7policy_c.position)
+
+    def test_delete_forcing_reorder(self):
+        listener = self.create_listener(uuidutils.generate_uuid(), 80)
+        pool = self.create_pool(uuidutils.generate_uuid())
+        l7policy_a = self.create_l7policy(uuidutils.generate_uuid(),
+                                          listener.id,
+                                          1, redirect_pool_id=pool.id)
+        l7policy_b = self.create_l7policy(uuidutils.generate_uuid(),
+                                          listener.id,
+                                          2, redirect_pool_id=pool.id)
+        l7policy_c = self.create_l7policy(uuidutils.generate_uuid(),
+                                          listener.id,
+                                          999, redirect_pool_id=pool.id)
+        new_l7policy_a = self.l7policy_repo.get(self.session,
+                                                id=l7policy_a.id)
+        new_l7policy_b = self.l7policy_repo.get(self.session,
+                                                id=l7policy_b.id)
+        new_l7policy_c = self.l7policy_repo.get(self.session,
+                                                id=l7policy_c.id)
+        self.assertEqual(1, new_l7policy_a.position)
+        self.assertEqual(2, new_l7policy_b.position)
+        self.assertEqual(3, new_l7policy_c.position)
+        self.l7policy_repo.delete(self.session, id=l7policy_b.id)
+        l7policy_list = self.l7policy_repo.get_all(
+            self.session, listener_id=listener.id)
+        self.assertIsInstance(l7policy_list, list)
+        self.assertEqual(2, len(l7policy_list))
+        new_l7policy_a = self.l7policy_repo.get(self.session,
+                                                id=l7policy_a.id)
+        new_l7policy_c = self.l7policy_repo.get(self.session,
+                                                id=l7policy_c.id)
+        self.assertEqual(1, new_l7policy_a.position)
+        self.assertEqual(2, new_l7policy_c.position)
+
+    def test_delete_with_rule(self):
+        listener = self.create_listener(uuidutils.generate_uuid(), 80)
+        pool = self.create_pool(uuidutils.generate_uuid())
+        l7policy = self.create_l7policy(uuidutils.generate_uuid(),
+                                        listener.id, 1,
+                                        redirect_pool_id=pool.id)
+        l7rule = self.create_l7rule(uuidutils.generate_uuid(), l7policy.id)
+        new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
+        new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
+        self.assertEqual(l7policy.id, new_l7policy.id)
+        self.assertEqual(l7rule.id, new_l7rule.id)
+        self.l7policy_repo.delete(self.session, id=l7policy.id)
+        self.assertIsNone(self.l7policy_repo.get(self.session, id=l7policy.id))
+        self.assertIsNone(self.l7rule_repo.get(self.session, id=l7rule.id))
+
+    def test_update_redirect_pool(self):
+        listener = self.create_listener(uuidutils.generate_uuid(), 80)
+        pool = self.create_pool(uuidutils.generate_uuid())
+        l7policy = self.create_l7policy(
+            uuidutils.generate_uuid(), listener.id, 1,
+            action=constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            redirect_url="http://www.example.com/")
+        new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
+        self.assertIsNone(new_l7policy.redirect_pool_id)
+        self.l7policy_repo.update(
+            self.session, id=l7policy.id,
+            redirect_pool_id=pool.id)
+        new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
+        self.assertEqual(pool.id, new_l7policy.redirect_pool.id)
+        self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                         new_l7policy.action)
+        self.assertIsNone(new_l7policy.redirect_url)
+
+    def test_update_action_reject(self):
+        listener = self.create_listener(uuidutils.generate_uuid(), 80)
+        l7policy = self.create_l7policy(
+            uuidutils.generate_uuid(), listener.id, 1,
+            action=constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            redirect_url="http://www.example.com/")
+        new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
+        self.assertIsNone(new_l7policy.redirect_pool_id)
+        self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+                         new_l7policy.action)
+        self.l7policy_repo.update(
+            self.session, id=l7policy.id,
+            action=constants.L7POLICY_ACTION_REJECT)
+        new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
+        self.assertEqual(constants.L7POLICY_ACTION_REJECT,
+                         new_l7policy.action)
+        self.assertIsNone(new_l7policy.redirect_url)
+        self.assertIsNone(new_l7policy.redirect_pool_id)
+
+    def test_create_with_invalid_redirect_pool_id(self):
+        bad_lb = self.lb_repo.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=uuidutils.generate_uuid(),
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, enabled=True)
+        bad_pool = self.pool_repo.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=bad_lb.project_id,
+            protocol=constants.PROTOCOL_HTTP,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            operating_status=constants.ONLINE, enabled=True)
+        self.assertRaises(exceptions.NotFound, self.create_l7policy,
+                          uuidutils.generate_uuid(), self.listener.id, 1,
+                          action=constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                          redirect_pool_id=bad_pool.id)
+
+    def test_create_with_invalid_redirect_url(self):
+        self.assertRaises(exceptions.InvalidURL, self.create_l7policy,
+                          uuidutils.generate_uuid(), self.listener.id, 1,
+                          action=constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+                          redirect_url="This is not a URL.")

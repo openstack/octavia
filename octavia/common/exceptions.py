@@ -183,3 +183,20 @@ class ComputeWaitTimeoutException(OctaviaException):
 
 class InvalidTopology(OctaviaException):
     message = _LE('Invalid topology specified: %(topology)s')
+
+
+# L7 policy and rule exceptions
+class InvalidL7PolicyAction(OctaviaException):
+    message = _LE('Invalid L7 Policy action specified: %(action)s')
+
+
+class InvalidL7PolicyArg(OctaviaException):
+    message = _LE('Invalid L7 Policy argument for action %(action)s:  %(arg)s')
+
+
+class InvalidL7PolicyArgs(OctaviaException):
+    message = _LE('Invalid L7 Policy arguments: %(msg)s')
+
+
+class InvalidURL(OctaviaException):
+    message = _LE('Not a valid URL: %(url)s')

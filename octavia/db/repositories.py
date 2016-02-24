@@ -26,6 +26,7 @@ from oslo_utils import uuidutils
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.common import validate
 from octavia.db import models
 
 
@@ -134,6 +135,8 @@ class Repositories(object):
         self.sni = SNIRepository()
         self.amphorahealth = AmphoraHealthRepository()
         self.vrrpgroup = VRRPGroupRepository()
+        self.l7rule = L7RuleRepository()
+        self.l7policy = L7PolicyRepository()
 
     def create_load_balancer_and_vip(self, session, lb_dict, vip_dict):
         """Inserts load balancer and vip entities into the database.
@@ -592,3 +595,176 @@ class VRRPGroupRepository(BaseRepository):
         with session.begin(subtransactions=True):
             session.query(self.model_class).filter_by(
                 load_balancer_id=load_balancer_id).update(model_kwargs)
+
+
+class L7RuleRepository(BaseRepository):
+    model_class = models.L7Rule
+
+
+class L7PolicyRepository(BaseRepository):
+    model_class = models.L7Policy
+
+    def _pool_check(self, session, pool_id, lb_id, project_id):
+        """Sanity checks for the redirect_pool if specified."""
+        pool_db = (session.query(models.Pool).
+                   filter_by(id=pool_id).
+                   filter_by(project_id=project_id).
+                   filter_by(load_balancer_id=lb_id).first())
+        if not pool_db:
+            raise exceptions.NotFound(
+                resource=data_models.Pool._name(), id=pool_id)
+
+    def _validate_l7policy_data(self, session, l7policy):
+        """Does validations on a given L7 policy."""
+        if l7policy.redirect_url and l7policy.redirect_pool_id:
+            raise exceptions.InvalidL7PolicyArgs(
+                msg='Cannot specify redirect_pool_id and redirect_url '
+                    'at the same time')
+        if l7policy.action == constants.L7POLICY_ACTION_REJECT:
+            if l7policy.redirect_pool_id is not None:
+                raise exceptions.InvalidL7PolicyArg(
+                    action=l7policy.action, arg='redirect_pool_id')
+            if l7policy.redirect_url is not None:
+                raise exceptions.InvalidL7PolicyArg(
+                    action=l7policy.action, arg='redirect_url')
+        elif l7policy.action == constants.L7POLICY_ACTION_REDIRECT_TO_URL:
+            if l7policy.redirect_pool_id is not None:
+                raise exceptions.InvalidL7PolicyArg(
+                    action=l7policy.action, arg='redirect_pool_id')
+            validate.url(l7policy.redirect_url)
+        elif l7policy.action == constants.L7POLICY_ACTION_REDIRECT_TO_POOL:
+            if l7policy.redirect_url is not None:
+                raise exceptions.InvalidL7PolicyArg(
+                    action=l7policy.action, arg='redirect_url')
+            listener = (session.query(models.Listener).
+                        filter_by(id=l7policy.listener_id).first())
+            self._pool_check(session, l7policy.redirect_pool_id,
+                             listener.load_balancer_id, listener.project_id)
+        else:
+            raise exceptions.InvalidL7PolicyAction(action=l7policy.action)
+
+    def get_all(self, session, **filters):
+        l7policy_list = session.query(self.model_class).filter_by(
+            **filters).order_by(self.model_class.position).all()
+        data_model_list = [p.to_data_model() for p in l7policy_list]
+        return data_model_list
+
+    def update(self, session, id, **model_kwargs):
+        with session.begin(subtransactions=True):
+            l7policy_db = session.query(self.model_class).filter_by(
+                id=id).first()
+            if not l7policy_db:
+                raise exceptions.NotFound(
+                    resource=data_models.L7Policy._name(), id=id)
+
+            # Necessary to work around unexpected / idiotic behavior of
+            # the SQLAlchemy Orderinglist extension if the position changes.
+            position = model_kwargs.pop('position', None)
+            if position == l7policy_db.position:
+                position = None
+
+            model_kwargs.update(listener_id=l7policy_db.listener_id)
+            l7policy = self.model_class(**model_kwargs)
+
+            if l7policy.action:
+                self._validate_l7policy_data(session, l7policy)
+                if l7policy.action == constants.L7POLICY_ACTION_REJECT:
+                    model_kwargs.update(redirect_url=None)
+                    model_kwargs.update(redirect_pool_id=None)
+                elif (l7policy.action ==
+                        constants.L7POLICY_ACTION_REDIRECT_TO_URL):
+                    model_kwargs.update(redirect_pool_id=None)
+                elif (l7policy.action ==
+                        constants.L7POLICY_ACTION_REDIRECT_TO_POOL):
+                    model_kwargs.update(redirect_url=None)
+            elif l7policy.redirect_url and l7policy.redirect_pool_id:
+                self._validate_l7policy_data(session, l7policy)
+            elif l7policy.redirect_url:
+                model_kwargs.update(
+                    action=constants.L7POLICY_ACTION_REDIRECT_TO_URL)
+                model_kwargs.update(redirect_pool_id=None)
+                l7policy = self.model_class(**model_kwargs)
+                self._validate_l7policy_data(session, l7policy)
+            elif l7policy.redirect_pool_id:
+                model_kwargs.update(
+                    action=constants.L7POLICY_ACTION_REDIRECT_TO_POOL)
+                model_kwargs.update(redirect_url=None)
+                l7policy = self.model_class(**model_kwargs)
+                self._validate_l7policy_data(session, l7policy)
+
+            l7policy_db.update(model_kwargs)
+
+        # Position manipulation must happen outside the other alterations
+        # in the previous transaction
+        listener = (session.query(models.Listener).
+                    filter_by(id=l7policy_db.listener_id).first())
+        # Immediate refresh, as we have found that sqlalchemy will sometimes
+        # cache the above query
+        session.refresh(listener)
+        if position is not None and position < len(listener.l7policies) + 1:
+            with session.begin(subtransactions=True):
+                l7policy_db = listener.l7policies.pop(l7policy_db.position - 1)
+                listener.l7policies.insert(position - 1, l7policy_db)
+            listener.l7policies.reorder()
+        elif position is not None:
+            with session.begin(subtransactions=True):
+                l7policy_db = listener.l7policies.pop(l7policy_db.position - 1)
+                listener.l7policies.append(l7policy_db)
+            listener.l7policies.reorder()
+
+        return self.get(session, id=l7policy.id)
+
+    def create(self, session, **model_kwargs):
+        with session.begin(subtransactions=True):
+            # We must append the new policy to the end of the collection. We
+            # later re-insert it wherever it was requested to appear in order.
+            # This is to work around unexpected / idiotic behavior of the
+            # SQLAlchemy orderinglist extension.
+            position = model_kwargs.pop('position', None)
+            # Largest a 32-bit integer can be, which is a limitation
+            # here if you're using MySQL, as most probably are. This just needs
+            # to be larger than any existing rule position numbers which will
+            # definitely be the case with 2147483647
+            model_kwargs.update(position=2147483647)
+            if not model_kwargs.get('id'):
+                model_kwargs.update(id=uuidutils.generate_uuid())
+            l7policy = self.model_class(**model_kwargs)
+            self._validate_l7policy_data(session, l7policy)
+            session.add(l7policy)
+            session.flush()
+
+        # Must be done outside the transaction which creates the L7Policy
+        listener = (session.query(models.Listener).
+                    filter_by(id=l7policy.listener_id).first())
+        # Immediate refresh, as we have found that sqlalchemy will sometimes
+        # cache the above query
+        session.refresh(listener)
+
+        if position is not None and position < len(listener.l7policies) + 1:
+            with session.begin(subtransactions=True):
+                # New L7Policy will always be at the end of the list
+                l7policy_db = listener.l7policies.pop()
+                listener.l7policies.insert(position - 1, l7policy_db)
+
+        listener.l7policies.reorder()
+        return self.get(session, id=l7policy.id)
+
+    def delete(self, session, id, **filters):
+        with session.begin(subtransactions=True):
+            l7policy_db = session.query(self.model_class).filter_by(
+                id=id).first()
+            if not l7policy_db:
+                raise exceptions.NotFound(
+                    resource=data_models.L7Policy._name(), id=id)
+            listener_id = l7policy_db.listener_id
+            session.delete(l7policy_db)
+            session.flush()
+
+        # Must do reorder outside of the delete transaction.
+        listener = (session.query(models.Listener).
+                    filter_by(id=listener_id).first())
+        # Immediate refresh, as we have found that sqlalchemy will sometimes
+        # cache the above query
+        session.refresh(listener)
+        listener.l7policies.reorder()
+        session.flush()
