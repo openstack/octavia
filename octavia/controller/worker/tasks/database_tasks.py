@@ -268,14 +268,6 @@ class ReloadLoadBalancer(BaseDatabaseTask):
                                           id=loadbalancer_id)
 
 
-class ReloadListener(BaseDatabaseTask):
-    """Reload listener data from database."""
-
-    def execute(self, listener):
-        """Reloads listener in DB."""
-        return self.listener_repo.get(db_apis.get_session(), id=listener.id)
-
-
 class UpdateVIPAfterAllocation(BaseDatabaseTask):
 
     def execute(self, loadbalancer_id, vip):
@@ -1009,39 +1001,6 @@ class CreateVRRPGroupForLB(BaseDatabaseTask):
             LOG.debug('VRRP_GROUP entry already exists for load balancer, '
                       'skipping create.')
         return loadbalancer
-
-
-class AllocateListenerPeerPort(BaseDatabaseTask):
-    """Get a new peer port number for a listener."""
-
-    def execute(self, listener):
-        """Allocate a peer port (TCP port)
-
-        :param listener: The listener to be marked deleted
-        :returns: None
-        """
-        max_peer_port = 0
-        for listener in listener.load_balancer.listeners:
-            if listener.peer_port > max_peer_port:
-                max_peer_port = listener.peer_port
-
-        if max_peer_port == 0:
-            port = constants.HAPROXY_BASE_PEER_PORT
-        else:
-            port = max_peer_port + 1
-
-        self.listener_repo.update(db_apis.get_session(), listener.id,
-                                  peer_port=port)
-
-        return self.listener_repo.get(db_apis.get_session(), id=listener.id)
-
-    def revert(self, listener, *args, **kwargs):
-        """nulls the peer port
-
-        :returns: None
-        """
-        self.listener_repo.update(db_apis.get_session(), listener.id,
-                                  peer_port=None)
 
 
 class DisableAmphoraHealthMonitoring(BaseDatabaseTask):

@@ -322,27 +322,6 @@ class TestDatabaseTasks(base.TestCase):
 
         self.assertEqual(_loadbalancer_mock, lb)
 
-    @mock.patch('octavia.db.repositories.ListenerRepository.get',
-                return_value=_listener_mock)
-    def test_reload_listener(self,
-                             mock_listener_get,
-                             mock_generate_uuid,
-                             mock_LOG,
-                             mock_get_session,
-                             mock_loadbalancer_repo_update,
-                             mock_listener_repo_update,
-                             mock_amphora_repo_update,
-                             mock_amphora_repo_delete):
-
-        reload_listener = database_tasks.ReloadListener()
-        listener = reload_listener.execute(_listener_mock)
-
-        repo.ListenerRepository.get.assert_called_once_with(
-            'TEST',
-            id=LISTENER_ID)
-
-        self.assertEqual(_listener_mock, listener)
-
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
                 return_value=_loadbalancer_mock)
     @mock.patch('octavia.db.repositories.VipRepository.update')
@@ -1165,29 +1144,6 @@ class TestDatabaseTasks(base.TestCase):
                                                                    '')[0:7],
             advert_int=1)
         create_vrrp_group.execute(_loadbalancer_mock)
-
-    @mock.patch('octavia.db.repositories.ListenerRepository.get')
-    def test_allocate_listener_peer_port(self,
-                                         mock_listener_repo_get,
-                                         mock_generate_uuid,
-                                         mock_LOG,
-                                         mock_get_session,
-                                         mock_loadbalancer_repo_update,
-                                         mock_listener_repo_update,
-                                         mock_amphora_repo_update,
-                                         mock_amphora_repo_delete):
-        allocate_listener_peer_port = database_tasks.AllocateListenerPeerPort()
-        allocate_listener_peer_port.execute(_listener_mock)
-        mock_listener_repo_update.assert_called_once_with(
-            'TEST', _listener_mock.id,
-            peer_port=constants.HAPROXY_BASE_PEER_PORT)
-
-        mock_listener_repo_update.reset_mock()
-
-        allocate_listener_peer_port.revert(_listener_mock)
-        mock_listener_repo_update.assert_called_once_with(
-            'TEST', _listener_mock.id,
-            peer_port=None)
 
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
     def test_disable_amphora_health_monitoring(self,

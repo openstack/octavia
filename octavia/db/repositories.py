@@ -321,6 +321,20 @@ class MemberRepository(BaseRepository):
 class ListenerRepository(BaseRepository):
     model_class = models.Listener
 
+    def _find_next_peer_port(self, session, lb_id):
+        """Finds the next available peer port on the load balancer."""
+        max_peer_port = 0
+        load_balancer = session.query(models.LoadBalancer).filter_by(
+            id=lb_id).first()
+        for listener in load_balancer.listeners:
+            if (listener.peer_port is not None and
+                    listener.peer_port > max_peer_port):
+                max_peer_port = listener.peer_port
+        if max_peer_port == 0:
+            return constants.HAPROXY_BASE_PEER_PORT
+        else:
+            return max_peer_port + 1
+
     def _pool_check(self, session, pool_id, listener_id=None,
                     lb_id=None):
         """Sanity checks for default_pool_id if specified."""
@@ -368,6 +382,9 @@ class ListenerRepository(BaseRepository):
             if default_pool_id:
                 self._pool_check(session, default_pool_id,
                                  lb_id=model_kwargs.get('load_balancer_id'))
+            if model_kwargs.get('peer_port') is None:
+                model_kwargs.update(peer_port=self._find_next_peer_port(
+                    session, model_kwargs.get('load_balancer_id')))
             model = self.model_class(**model_kwargs)
             session.add(model)
         return model.to_data_model()

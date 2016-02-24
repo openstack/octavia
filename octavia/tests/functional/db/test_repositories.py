@@ -552,8 +552,17 @@ class ListenerRepositoryTest(BaseRepositoryTest):
             protocol=constants.PROTOCOL_HTTP, protocol_port=port,
             connection_limit=1, load_balancer_id=self.load_balancer.id,
             default_pool_id=default_pool_id, operating_status=constants.ONLINE,
-            provisioning_status=constants.ACTIVE, enabled=True)
+            provisioning_status=constants.ACTIVE, enabled=True, peer_port=1025)
         return listener
+
+    def create_loadbalancer(self, lb_id):
+        lb = self.lb_repo.create(self.session, id=lb_id,
+                                 project_id=self.FAKE_UUID_2, name="lb_name",
+                                 description="lb_description",
+                                 provisioning_status=constants.ACTIVE,
+                                 operating_status=constants.ONLINE,
+                                 enabled=True)
+        return lb
 
     def test_get(self):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
@@ -584,7 +593,37 @@ class ListenerRepositoryTest(BaseRepositoryTest):
         self.assertEqual(self.load_balancer.id, new_listener.load_balancer_id)
         self.assertEqual(constants.ACTIVE, new_listener.provisioning_status)
         self.assertEqual(constants.ONLINE, new_listener.operating_status)
+        self.assertEqual(1025, new_listener.peer_port)
         self.assertTrue(new_listener.enabled)
+
+    def test_create_no_peer_port(self):
+        lb = self.create_loadbalancer(uuidutils.generate_uuid())
+        listener = self.listener_repo.create(
+            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
+            load_balancer_id=lb.id, protocol=constants.PROTOCOL_HTTP,
+            protocol_port=80, provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, enabled=True)
+        new_listener = self.listener_repo.get(self.session, id=listener.id)
+        self.assertEqual(1025, new_listener.peer_port)
+
+    def test_create_no_peer_port_increments(self):
+        lb = self.create_loadbalancer(uuidutils.generate_uuid())
+        listener_a = self.listener_repo.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=self.FAKE_UUID_2,
+            load_balancer_id=lb.id, protocol=constants.PROTOCOL_HTTP,
+            protocol_port=80, provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, enabled=True)
+        listener_b = self.listener_repo.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=self.FAKE_UUID_2,
+            load_balancer_id=lb.id, protocol=constants.PROTOCOL_HTTP,
+            protocol_port=81, provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, enabled=True)
+        new_listener_a = self.listener_repo.get(self.session, id=listener_a.id)
+        new_listener_b = self.listener_repo.get(self.session, id=listener_b.id)
+        self.assertEqual(1025, new_listener_a.peer_port)
+        self.assertEqual(1026, new_listener_b.peer_port)
 
     def test_create_listener_on_different_lb_than_default_pool(self):
         load_balancer2 = self.lb_repo.create(
@@ -714,7 +753,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
             name="listener_name", description="listener_description",
             protocol=constants.PROTOCOL_HTTP, protocol_port=80,
             connection_limit=1, provisioning_status=constants.ACTIVE,
-            operating_status=constants.ONLINE, enabled=True)
+            operating_status=constants.ONLINE, enabled=True, peer_port=1025)
 
     def create_listener_stats(self, listener_id):
         stats = self.listener_stats_repo.create(
@@ -1119,7 +1158,7 @@ class SNIRepositoryTest(BaseRepositoryTest):
             name="listener_name", description="listener_description",
             protocol=constants.PROTOCOL_HTTP, protocol_port=80,
             connection_limit=1, provisioning_status=constants.ACTIVE,
-            operating_status=constants.ONLINE, enabled=True)
+            operating_status=constants.ONLINE, enabled=True, peer_port=1025)
 
     def create_sni(self, listener_id):
         sni = self.sni_repo.create(self.session,
