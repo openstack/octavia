@@ -200,3 +200,15 @@ class InvalidL7PolicyArgs(OctaviaException):
 
 class InvalidURL(OctaviaException):
     message = _LE('Not a valid URL: %(url)s')
+
+
+class InvalidString(OctaviaException):
+    message = _LE('Invalid characters in %(what)s')
+
+
+class InvalidRegex(OctaviaException):
+    message = _LE('Unable to parse regular expression: %(e)s')
+
+
+class InvalidL7Rule(OctaviaException):
+    message = _LE('Invalid L7 Rule: $(msg)s')

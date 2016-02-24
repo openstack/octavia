@@ -600,6 +600,42 @@ class VRRPGroupRepository(BaseRepository):
 class L7RuleRepository(BaseRepository):
     model_class = models.L7Rule
 
+    def update(self, session, id, **model_kwargs):
+        with session.begin(subtransactions=True):
+            l7rule_db = session.query(self.model_class).filter_by(
+                id=id).first()
+            if not l7rule_db:
+                raise exceptions.NotFound(
+                    resource=data_models.L7Rule._name(), id=id)
+
+            l7rule_dict = l7rule_db.to_data_model().to_dict()
+            # Ignore values that are None
+            for k, v in model_kwargs.items():
+                if v is not None:
+                    l7rule_dict.update({k: v})
+            # Clear out the 'key' attribute for rule types that don't use it.
+            if ('type' in l7rule_dict.keys() and
+                l7rule_dict['type'] in (constants.L7RULE_TYPE_HOST_NAME,
+                                        constants.L7RULE_TYPE_PATH,
+                                        constants.L7RULE_TYPE_FILE_TYPE)):
+                l7rule_dict['key'] = None
+            validate.l7rule_data(self.model_class(**l7rule_dict))
+            l7rule_db.update(model_kwargs)
+
+        l7rule_db = self.get(session, id=id)
+        return l7rule_db
+
+    def create(self, session, **model_kwargs):
+        with session.begin(subtransactions=True):
+            if not model_kwargs.get('id'):
+                model_kwargs.update(id=uuidutils.generate_uuid())
+            l7rule = self.model_class(**model_kwargs)
+            validate.l7rule_data(l7rule)
+            session.add(l7rule)
+
+        l7rule_db = self.get(session, id=l7rule.id)
+        return l7rule_db
+
 
 class L7PolicyRepository(BaseRepository):
     model_class = models.L7Policy
