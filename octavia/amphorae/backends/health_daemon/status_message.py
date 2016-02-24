@@ -19,6 +19,7 @@ import json
 import zlib
 
 from oslo_log import log as logging
+from oslo_utils import secretutils
 
 from octavia.common import exceptions
 from octavia.i18n import _LW
@@ -56,7 +57,7 @@ def unwrap_envelope(envelope, key):
     payload = envelope[:-hash_len]
     expected_hmc = envelope[-hash_len:]
     calculated_hmc = get_hmac(payload, key)
-    if expected_hmc != calculated_hmc:
+    if not secretutils.constant_time_compare(expected_hmc, calculated_hmc):
         LOG.warn(_LW('calculated hmac: %(s1)s not equal to msg hmac: '
                      '%(s2)s dropping packet'), {'s1': to_hex(calculated_hmc),
                                                  's2': to_hex(expected_hmc)})
