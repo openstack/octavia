@@ -188,7 +188,10 @@ class Repositories(object):
         :returns: octavia.common.data_models.Pool
         """
         with session.begin(subtransactions=True):
-            self.pool.update(session, pool_id, **pool_dict)
+            # If only the session persistence is being updated, this will be
+            # empty
+            if len(pool_dict.keys()) > 0:
+                self.pool.update(session, pool_id, **pool_dict)
             if sp_dict:
                 if self.session_persistence.exists(session, pool_id):
                     self.session_persistence.update(session, pool_id,

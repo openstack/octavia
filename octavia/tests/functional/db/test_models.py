@@ -696,6 +696,23 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
                    load_balancer.pools[0].members[0].pool.load_balancer.id)
         self.assertEqual(lb_dm.id, m_lb_id)
 
+    def test_update_data_model_listener_default_pool_id(self):
+        lb_dm = self.create_load_balancer(
+            self.session, id=uuidutils.generate_uuid()).to_data_model()
+        pool1_dm = self.create_pool(
+            self.session, id=uuidutils.generate_uuid(),
+            load_balancer_id=lb_dm.id).to_data_model()
+        pool2_dm = self.create_pool(
+            self.session, id=uuidutils.generate_uuid(),
+            load_balancer_id=lb_dm.id).to_data_model()
+        listener_dm = self.create_listener(
+            self.session, id=uuidutils.generate_uuid(),
+            load_balancer_id=lb_dm.id,
+            default_pool_id=pool1_dm.id).to_data_model()
+        self.assertEqual(pool1_dm.id, listener_dm.default_pool.id)
+        listener_dm.update({'default_pool_id': pool2_dm.id})
+        self.assertEqual(listener_dm.default_pool.id, pool2_dm.id)
+
     def test_load_balancer_tree(self):
         lb_db = self.session.query(models.LoadBalancer).filter_by(
             id=self.lb.id).first()

@@ -15,6 +15,8 @@
 
 import re
 
+from sqlalchemy.orm import collections
+
 
 class BaseDataModel(object):
 
@@ -47,6 +49,66 @@ class BaseDataModel(object):
         # Split the class name up by capitalized words
         return ' '.join(re.findall('[A-Z][^A-Z]*', cls.__name__))
 
+    def _get_unique_key(self, obj=None):
+        """Returns a unique key for passed object for data model building."""
+        obj = obj or self
+        # First handle all objects with their own ID, then handle subordinate
+        # objects.
+        if obj.__class__.__name__ in ['Member', 'Pool', 'LoadBalancer',
+                                      'Listener', 'Amphora']:
+            return obj.__class__.__name__ + obj.id
+        elif obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
+            return obj.__class__.__name__ + obj.pool_id
+        elif obj.__class__.__name__ in ['ListenerStatistics', 'SNI']:
+            return obj.__class__.__name__ + obj.listener_id
+        elif obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
+            return obj.__class__.__name__ + obj.load_balancer_id
+        elif obj.__class__.__name__ in ['AmphoraHealth']:
+            return obj.__class__.__name__ + obj.amphora_id
+        else:
+            raise NotImplementedError
+
+    def _find_in_graph(self, key, _visited_nodes=None):
+        """Locates an object with the given unique key in the current
+
+        object graph and returns a reference to it.
+        """
+        _visited_nodes = _visited_nodes or []
+        mykey = self._get_unique_key()
+        if mykey in _visited_nodes:
+            # Seen this node already, don't traverse further
+            return None
+        elif mykey == key:
+            return self
+        else:
+            _visited_nodes.append(mykey)
+            attr_names = [attr_name for attr_name in dir(self)
+                          if not attr_name.startswith('_')]
+            for attr_name in attr_names:
+                attr = getattr(self, attr_name)
+                if isinstance(attr, BaseDataModel):
+                    result = attr._find_in_graph(
+                        key, _visited_nodes=_visited_nodes)
+                    if result is not None:
+                        return result
+                elif isinstance(attr, (collections.InstrumentedList, list)):
+                    for item in attr:
+                        if isinstance(item, BaseDataModel):
+                            result = item._find_in_graph(
+                                key, _visited_nodes=_visited_nodes)
+                            if result is not None:
+                                return result
+        # If we are here we didn't find it.
+        return None
+
+    def update(self, update_dict):
+        """Generic update method which works for simple,
+
+        non-relational attributes.
+        """
+        for key, value in update_dict.items():
+            setattr(self, key, value)
+
 
 class SessionPersistence(BaseDataModel):
 
@@ -56,6 +118,9 @@ class SessionPersistence(BaseDataModel):
         self.type = type
         self.cookie_name = cookie_name
         self.pool = pool
+
+    def delete(self):
+        self.pool.session_persistence = None
 
 
 class ListenerStatistics(BaseDataModel):
@@ -69,6 +134,9 @@ class ListenerStatistics(BaseDataModel):
         self.active_connections = active_connections
         self.total_connections = total_connections
         self.listener = listener
+
+    def delete(self):
+        self.listener.stats = None
 
 
 class HealthMonitor(BaseDataModel):
@@ -117,12 +185,31 @@ class Pool(BaseDataModel):
         self.session_persistence = session_persistence
         self.listeners = listeners or []
 
+    def update(self, update_dict):
+        for key, value in update_dict.items():
+            if key == 'session_persistence':
+                if self.session_persistence is not None:
+                    self.session_persistence.update(value)
+                else:
+                    value.update({'pool_id': self.id})
+                    self.session_persistence = SessionPersistence(**value)
+            else:
+                setattr(self, key, value)
+
     def delete(self):
         # TODO(sbalukoff): Clean up L7Policies that reference this pool
         for listener in self.listeners:
             if listener.default_pool_id == self.id:
                 listener.default_pool = None
                 listener.default_pool_id = None
+            for pool in listener.pools:
+                if pool.id == self.id:
+                    listener.pools.remove(pool)
+                    break
+        for pool in self.load_balancer.pools:
+            if pool.id == self.id:
+                self.load_balancer.pools.remove(pool)
+                break
 
 
 class Member(BaseDataModel):
@@ -176,6 +263,28 @@ class Listener(BaseDataModel):
         self.sni_containers = sni_containers or []
         self.peer_port = peer_port
         self.pools = pools or []
+
+    def update(self, update_dict):
+        for key, value in update_dict.items():
+            setattr(self, key, value)
+            if key == 'default_pool_id':
+                if value is not None:
+                    pool = self._find_in_graph('Pool' + value)
+                    if pool not in self.pools:
+                        self.pools.append(pool)
+                    if self not in pool.listeners:
+                        pool.listeners.append(self)
+                else:
+                    pool = None
+                setattr(self, 'default_pool', pool)
+
+    def delete(self):
+        for listener in self.load_balancer.listeners:
+            if listener.id == self.id:
+                self.load_balancer.listeners.remove(listener)
+                break
+        for pool in self.pools:
+            pool.listeners.remove(self)
 
 
 class LoadBalancer(BaseDataModel):
@@ -270,6 +379,12 @@ class Amphora(BaseDataModel):
         self.load_balancer = load_balancer
         self.cert_expiration = cert_expiration
         self.cert_busy = cert_busy
+
+    def delete(self):
+        for amphora in self.load_balancer.amphorae:
+            if amphora.id == self.id:
+                self.load_balancer.amphorae.remove(amphora)
+                break
 
 
 class AmphoraHealth(BaseDataModel):

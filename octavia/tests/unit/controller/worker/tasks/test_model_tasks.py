@@ -41,4 +41,4 @@ class TestObjectUpdateTasks(base.TestCase):
         update_attr.execute(self.listener_mock,
                             {'name': 'TEST2'})
 
-        assert self.listener_mock.name == 'TEST2'
+        self.listener_mock.update.assert_called_once_with({'name': 'TEST2'})
