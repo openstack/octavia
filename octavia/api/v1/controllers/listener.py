@@ -23,6 +23,7 @@ from wsmeext import pecan as wsme_pecan
 
 from octavia.api.v1.controllers import base
 from octavia.api.v1.controllers import l7policy
+from octavia.api.v1.controllers import listener_statistics
 from octavia.api.v1.controllers import pool
 from octavia.api.v1.types import listener as listener_types
 from octavia.common import constants
@@ -227,7 +228,8 @@ class ListenersController(base.BaseController):
         """
         context = pecan.request.context.get('octavia_context')
         if listener_id and len(remainder) and (remainder[0] == 'pools' or
-                                               remainder[0] == 'l7policies'):
+                                               remainder[0] == 'l7policies' or
+                                               remainder[0] == 'stats'):
             controller = remainder[0]
             remainder = remainder[1:]
             db_listener = self.repositories.listener.get(
@@ -243,4 +245,7 @@ class ListenersController(base.BaseController):
             elif controller == 'l7policies':
                 return l7policy.L7PolicyController(
                     load_balancer_id=self.load_balancer_id,
+                    listener_id=db_listener.id), remainder
+            elif controller == 'stats':
+                return listener_statistics.ListenerStatisticsController(
                     listener_id=db_listener.id), remainder

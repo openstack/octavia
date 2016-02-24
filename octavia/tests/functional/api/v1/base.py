@@ -31,6 +31,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     LB_PATH = LBS_PATH + '/{lb_id}'
     LISTENERS_PATH = LB_PATH + '/listeners'
     LISTENER_PATH = LISTENERS_PATH + '/{listener_id}'
+    LISTENER_STATS_PATH = LISTENER_PATH + '/stats'
     POOLS_PATH = LB_PATH + '/pools'
     POOL_PATH = POOLS_PATH + '/{pool_id}'
     DEPRECATED_POOLS_PATH = LISTENER_PATH + '/pools'
@@ -48,6 +49,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         cfg.CONF.set_override('api_handler', 'simulated_handler')
         self.lb_repo = repositories.LoadBalancerRepository()
         self.listener_repo = repositories.ListenerRepository()
+        self.listener_stats_repo = repositories.ListenerStatisticsRepository()
         self.pool_repo = repositories.PoolRepository()
         self.member_repo = repositories.MemberRepository()
         patcher = mock.patch('octavia.api.v1.handlers.controller_simulator.'
@@ -119,6 +121,12 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         path = self.LISTENERS_PATH.format(lb_id=lb_id)
         response = self.post(path, req_dict)
         return response.json
+
+    def create_listener_stats(self, listener_id):
+        db_ls = self.listener_stats_repo.create(
+            db_api.get_session(), listener_id=listener_id, bytes_in=0,
+            bytes_out=0, active_connections=0, total_connections=0)
+        return db_ls.to_dict()
 
     def create_pool_sans_listener(self, lb_id, protocol, lb_algorithm,
                                   **optionals):
