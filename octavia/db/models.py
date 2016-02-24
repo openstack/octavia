@@ -1,4 +1,5 @@
 #    Copyright 2014 Rackspace
+#    Copyright 2016 Blue Box, an IBM Company
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -14,6 +15,7 @@
 
 
 import sqlalchemy as sa
+from sqlalchemy.ext import orderinglist
 from sqlalchemy import orm
 from sqlalchemy.orm import validates
 from sqlalchemy.sql import func
@@ -65,6 +67,21 @@ class HealthMonitorType(base_models.BASE, base_models.LookupTableMixin):
 class VRRPAuthMethod(base_models.BASE, base_models.LookupTableMixin):
 
     __tablename__ = "vrrp_auth_method"
+
+
+class L7RuleType(base_models.BASE, base_models.LookupTableMixin):
+
+    __tablename__ = "l7rule_type"
+
+
+class L7RuleCompareType(base_models.BASE, base_models.LookupTableMixin):
+
+    __tablename__ = "l7rule_compare_type"
+
+
+class L7PolicyAction(base_models.BASE, base_models.LookupTableMixin):
+
+    __tablename__ = "l7policy_action"
 
 
 class SessionPersistence(base_models.BASE):
@@ -215,12 +232,22 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin):
                                                          uselist=True,
                                                          cascade="delete"))
 
-    # Defining this as a custom method instead of an SQLAlchemy relationship
-    # for now. When L7 gets added, this list will also include any listeners
-    # referenced by enabled L7policies
+    # This property should be a unique list of any listeners that reference
+    # this pool as its default_pool and any listeners referenced by enabled
+    # L7Policies with at least one l7rule which also reference this pool. The
+    # intent is that pool.listeners should be a unique list of listeners
+    # *actually* using the pool.
     @property
     def listeners(self):
-        return self._default_listeners
+        _listeners = self._default_listeners[:]
+        _l_ids = [l.id for l in _listeners]
+        l7_listeners = [p.listener for p in self.l7policies
+                        if len(p.l7rules) > 0 and p.enabled is True]
+        for l in l7_listeners:
+            if l.id not in _l_ids:
+                _listeners.append(l)
+                _l_ids.append(l.id)
+        return _listeners
 
 
 class LoadBalancer(base_models.BASE, base_models.IdMixin,
@@ -338,22 +365,29 @@ class Listener(base_models.BASE, base_models.IdMixin,
                                      backref=orm.backref("listeners",
                                                          uselist=True,
                                                          cascade="delete"))
-    # _default_listeners backref is used to generate part of pool.listeners
-    # list.
     default_pool = orm.relationship("Pool", uselist=False,
                                     backref=orm.backref("_default_listeners",
                                                         uselist=True))
     peer_port = sa.Column(sa.Integer(), nullable=True)
 
-    # Defining this as a custom method instead of an SQLAlchemy relationship
-    # for now. When L7 gets added, this list will also include any pools
-    # referenced by enabled L7policies
+    # This property should be a unique list of the default_pool and anything
+    # referenced by enabled L7Policies with at least one rule that also
+    # reference this listener. The intent is that listener.pools should be a
+    # unique list of pools this listener is *actually* using.
     @property
     def pools(self):
         _pools = []
-        _p_ids = [p.id for p in _pools]
-        if self.default_pool and self.default_pool.id not in _p_ids:
+        _p_ids = []
+        if self.default_pool:
             _pools.append(self.default_pool)
+            _p_ids.append(self.default_pool.id)
+        l7_pools = [p.redirect_pool for p in self.l7policies
+                    if p.redirect_pool is not None and len(p.l7rules) > 0 and
+                    p.enabled is True]
+        for p in l7_pools:
+            if p.id not in _p_ids:
+                _pools.append(p)
+                _p_ids.append(p.id)
         return _pools
 
 
@@ -421,3 +455,75 @@ class AmphoraHealth(base_models.BASE):
                             nullable=False)
 
     busy = sa.Column(sa.Boolean(), default=False, nullable=False)
+
+
+class L7Rule(base_models.BASE, base_models.IdMixin):
+
+    __data_model__ = data_models.L7Rule
+
+    __tablename__ = "l7rule"
+
+    l7policy_id = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("l7policy.id", name="fk_l7rule_l7policy_id"),
+        nullable=False)
+    type = sa.Column(
+        sa.String(36),
+        sa.ForeignKey(
+            "l7rule_type.name",
+            name="fk_l7rule_l7rule_type_name"),
+        nullable=False)
+    compare_type = sa.Column(
+        sa.String(36),
+        sa.ForeignKey(
+            "l7rule_compare_type.name",
+            name="fk_l7rule_l7rule_compare_type_name"),
+        nullable=False)
+    key = sa.Column(sa.String(255), nullable=True)
+    value = sa.Column(sa.String(255), nullable=False)
+    invert = sa.Column(sa.Boolean(), default=False, nullable=False)
+    l7policy = orm.relationship("L7Policy", uselist=False,
+                                backref=orm.backref("l7rules",
+                                                    uselist=True,
+                                                    cascade="delete"))
+
+
+class L7Policy(base_models.BASE, base_models.IdMixin):
+
+    __data_model__ = data_models.L7Policy
+
+    __tablename__ = "l7policy"
+
+    name = sa.Column(sa.String(255), nullable=True)
+    description = sa.Column(sa.String(255), nullable=True)
+    listener_id = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("listener.id", name="fk_l7policy_listener_id"),
+        nullable=False)
+    action = sa.Column(
+        sa.String(36),
+        sa.ForeignKey(
+            "l7policy_action.name",
+            name="fk_l7policy_l7policy_action_name"),
+        nullable=False)
+    redirect_pool_id = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("pool.id", name="fk_l7policy_pool_id"),
+        nullable=True)
+    redirect_url = sa.Column(
+        sa.String(255),
+        nullable=True)
+    position = sa.Column(sa.Integer, nullable=False)
+    enabled = sa.Column(sa.Boolean(), nullable=False)
+    listener = orm.relationship(
+        "Listener", uselist=False,
+        backref=orm.backref(
+            "l7policies",
+            uselist=True,
+            order_by="L7Policy.position",
+            collection_class=orderinglist.ordering_list('position',
+                                                        count_from=1),
+            cascade="delete"))
+    redirect_pool = orm.relationship("Pool", uselist=False,
+                                     backref=orm.backref("l7policies",
+                                                         uselist=True))

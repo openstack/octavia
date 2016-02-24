@@ -139,6 +139,24 @@ class ModelTestMixin(object):
         kwargs.update(overrides)
         return self._insert(session, models.AmphoraHealth, kwargs)
 
+    def create_l7policy(self, session, listener_id, **overrides):
+        kwargs = {'id': self.FAKE_UUID_1,
+                  'listener_id': listener_id,
+                  'action': constants.L7POLICY_ACTION_REJECT,
+                  'position': 0,
+                  'enabled': True}
+        kwargs.update(overrides)
+        return self._insert(session, models.L7Policy, kwargs)
+
+    def create_l7rule(self, session, l7policy_id, **overrides):
+        kwargs = {'id': self.FAKE_UUID_1,
+                  'l7policy_id': l7policy_id,
+                  'type': constants.L7RULE_TYPE_PATH,
+                  'compare_type': constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+                  'value': '/api'}
+        kwargs.update(overrides)
+        return self._insert(session, models.L7Rule, kwargs)
+
 
 class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
@@ -195,12 +213,13 @@ class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_listener_relationship(self):
         pool = self.create_pool(self.session)
-        self.create_listener(self.session, default_pool_id=pool.id)
+        listener = self.create_listener(self.session, default_pool_id=pool.id)
         new_pool = self.session.query(models.Pool).filter_by(
             id=pool.id).first()
         self.assertIsNotNone(new_pool.listeners)
         self.assertIsInstance(new_pool.listeners, list)
         self.assertIsInstance(new_pool.listeners[0], models.Listener)
+        self.assertIn(listener.id, [l.id for l in new_pool.listeners])
 
 
 class MemberModelTest(base.OctaviaDBTestBase, ModelTestMixin):
@@ -316,13 +335,15 @@ class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertIsNotNone(new_listener.stats)
         self.assertIsInstance(new_listener.stats, models.ListenerStatistics)
 
-    def test_pool_relationship(self):
+    def test_default_pool_relationship(self):
         pool = self.create_pool(self.session)
         listener = self.create_listener(self.session, default_pool_id=pool.id)
         new_listener = self.session.query(models.Listener).filter_by(
             id=listener.id).first()
         self.assertIsNotNone(new_listener.default_pool)
         self.assertIsInstance(new_listener.default_pool, models.Pool)
+        self.assertIsInstance(new_listener.pools, list)
+        self.assertIn(pool.id, [p.id for p in new_listener.pools])
 
     def test_sni_relationship(self):
         listener = self.create_listener(self.session)
@@ -334,6 +355,15 @@ class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
             id=listener.id).first()
         self.assertIsNotNone(new_listener.sni_containers)
         self.assertEqual(2, len(new_listener.sni_containers))
+
+    def test_pools_list(self):
+        pool = self.create_pool(self.session)
+        listener = self.create_listener(self.session, default_pool_id=pool.id)
+        new_listener = self.session.query(models.Listener).filter_by(
+            id=listener.id).first()
+        self.assertIsNotNone(new_listener.pools)
+        self.assertIsInstance(new_listener.pools, list)
+        self.assertIsInstance(new_listener.pools[0], models.Pool)
 
 
 class ListenerStatisticsModelTest(base.OctaviaDBTestBase, ModelTestMixin):
@@ -586,6 +616,169 @@ class AmphoraHealthModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertIsNone(new_amphora_health)
 
 
+class L7PolicyModelTest(base.OctaviaDBTestBase, ModelTestMixin):
+    def setUp(self):
+        super(L7PolicyModelTest, self).setUp()
+        self.listener = self.create_listener(self.session)
+
+    def test_create(self):
+        l7policy = self.create_l7policy(self.session, self.listener.id)
+        self.assertIsInstance(l7policy, models.L7Policy)
+
+    def test_update(self):
+        l7policy = self.create_l7policy(self.session, self.listener.id)
+        pool = self.create_pool(self.session)
+        l7policy.action = constants.L7POLICY_ACTION_REDIRECT_TO_POOL
+        l7policy.redirect_pool_id = pool.id
+        new_l7policy = self.session.query(
+            models.L7Policy).filter_by(id=l7policy.id).first()
+        self.assertEqual(pool.id, new_l7policy.redirect_pool_id)
+        self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                         new_l7policy.action)
+
+    def test_delete(self):
+        l7policy = self.create_l7policy(self.session, self.listener.id)
+        l7policy_id = l7policy.id
+        with self.session.begin():
+            self.session.delete(l7policy)
+            self.session.flush()
+        new_l7policy = self.session.query(
+            models.L7Policy).filter_by(id=l7policy_id).first()
+        self.assertIsNone(new_l7policy)
+
+    def test_l7rule_relationship(self):
+        l7policy = self.create_l7policy(self.session, self.listener.id)
+        self.create_l7rule(
+            self.session, l7policy.id, id=self.FAKE_UUID_1,
+            type=constants.L7RULE_TYPE_HOST_NAME,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            value='www.example.com')
+        self.create_l7rule(
+            self.session, l7policy.id, id=self.FAKE_UUID_2,
+            type=constants.L7RULE_TYPE_PATH,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            value='/api')
+        new_l7policy = self.session.query(
+            models.L7Policy).filter_by(id=l7policy.id).first()
+        self.assertIsNotNone(new_l7policy.l7rules)
+        self.assertEqual(2, len(new_l7policy.l7rules))
+        self.assertIsInstance(new_l7policy.l7rules[0], models.L7Rule)
+        self.assertIsInstance(new_l7policy.l7rules[1], models.L7Rule)
+
+    def test_pool_relationship(self):
+        l7policy = self.create_l7policy(self.session, self.listener.id)
+        self.create_pool(self.session, id=self.FAKE_UUID_2)
+        l7policy.action = constants.L7POLICY_ACTION_REDIRECT_TO_POOL
+        l7policy.redirect_pool_id = self.FAKE_UUID_2
+        new_l7policy = self.session.query(
+            models.L7Policy).filter_by(id=l7policy.id).first()
+        self.assertIsNotNone(new_l7policy.redirect_pool)
+        self.assertIsInstance(new_l7policy.redirect_pool, models.Pool)
+
+    def test_listener_relationship(self):
+        l7policy = self.create_l7policy(self.session, self.listener.id,
+                                        id=self.FAKE_UUID_1)
+        self.create_l7policy(self.session, self.listener.id,
+                             id=self.FAKE_UUID_2, position=1)
+        new_l7policy = self.session.query(models.L7Policy).filter_by(
+            id=l7policy.id).first()
+        self.assertIsNotNone(new_l7policy.listener)
+        self.assertIsInstance(new_l7policy.listener, models.Listener)
+
+    def test_listeners_pools_refs_with_l7policy_with_l7rule(self):
+        pool = self.create_pool(self.session, id=self.FAKE_UUID_2)
+        l7policy = self.create_l7policy(
+            self.session, self.listener.id,
+            action=constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            redirect_pool_id=pool.id)
+        self.create_l7rule(self.session, l7policy.id, id=self.FAKE_UUID_1)
+        new_pool = self.session.query(models.Pool).filter_by(
+            id=pool.id).first()
+        new_listener = self.session.query(models.Listener).filter_by(
+            id=self.listener.id).first()
+        self.assertIsInstance(new_pool.listeners, list)
+        self.assertIn(new_listener.id, [l.id for l in new_pool.listeners])
+        self.assertIsInstance(new_listener.pools, list)
+        self.assertIn(new_pool.id, [p.id for p in new_listener.pools])
+
+    def test_listeners_pools_refs_with_l7policy_without_l7rule(self):
+        pool = self.create_pool(self.session, id=self.FAKE_UUID_2)
+        self.create_l7policy(
+            self.session, self.listener.id,
+            action=constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            redirect_pool_id=pool.id)
+        new_pool = self.session.query(models.Pool).filter_by(
+            id=pool.id).first()
+        new_listener = self.session.query(models.Listener).filter_by(
+            id=self.listener.id).first()
+        self.assertIsInstance(new_pool.listeners, list)
+        self.assertNotIn(new_listener.id, [l.id for l in new_pool.listeners])
+        self.assertIsInstance(new_listener.pools, list)
+        self.assertNotIn(new_pool.id, [p.id for p in new_listener.pools])
+
+    def test_listeners_pools_refs_with_disabled_l7policy(self):
+        pool = self.create_pool(self.session, id=self.FAKE_UUID_2)
+        l7policy = self.create_l7policy(
+            self.session, self.listener.id,
+            action=constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            redirect_pool_id=pool.id, enabled=False)
+        self.create_l7rule(self.session, l7policy.id, id=self.FAKE_UUID_1)
+        new_pool = self.session.query(models.Pool).filter_by(
+            id=pool.id).first()
+        new_listener = self.session.query(models.Listener).filter_by(
+            id=self.listener.id).first()
+        self.assertIsInstance(new_pool.listeners, list)
+        self.assertNotIn(new_listener.id, [l.id for l in new_pool.listeners])
+        self.assertIsInstance(new_listener.pools, list)
+        self.assertNotIn(new_pool.id, [p.id for p in new_listener.pools])
+
+
+class L7RuleModelTest(base.OctaviaDBTestBase, ModelTestMixin):
+
+    def setUp(self):
+        super(L7RuleModelTest, self).setUp()
+        self.listener = self.create_listener(self.session)
+        self.l7policy = self.create_l7policy(self.session, self.listener.id)
+
+    def test_create(self):
+        l7rule = self.create_l7rule(self.session, self.l7policy.id)
+        self.assertIsInstance(l7rule, models.L7Rule)
+
+    def test_update(self):
+        l7rule = self.create_l7rule(self.session, self.l7policy.id)
+        l7rule_id = l7rule.id
+        l7rule.value = '/images'
+        new_l7rule = self.session.query(
+            models.L7Rule).filter_by(id=l7rule_id).first()
+        self.assertEqual('/images', new_l7rule.value)
+
+    def test_delete(self):
+        l7rule = self.create_l7rule(self.session, self.l7policy.id)
+        l7rule_id = l7rule.id
+        with self.session.begin():
+            self.session.delete(l7rule)
+            self.session.flush()
+        new_l7rule = self.session.query(
+            models.L7Rule).filter_by(id=l7rule_id).first()
+        self.assertIsNone(new_l7rule)
+
+    def test_l7policy_relationship(self):
+        l7rule = self.create_l7rule(
+            self.session, self.l7policy.id, id=self.FAKE_UUID_1,
+            type=constants.L7RULE_TYPE_HOST_NAME,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            value='www.example.com')
+        self.create_l7rule(
+            self.session, self.l7policy.id, id=self.FAKE_UUID_2,
+            type=constants.L7RULE_TYPE_PATH,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            value='/api')
+        new_l7rule = self.session.query(models.L7Rule).filter_by(
+            id=l7rule.id).first()
+        self.assertIsNotNone(new_l7rule.l7policy)
+        self.assertIsInstance(new_l7rule.l7policy, models.L7Policy)
+
+
 class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
@@ -604,6 +797,12 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.stats = self.create_listener_statistics(self.session,
                                                      self.listener.id)
         self.sni = self.create_sni(self.session, listener_id=self.listener.id)
+        self.l7policy = self.create_l7policy(
+            self.session, listener_id=self.listener.id,
+            action=constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            redirect_pool_id=self.pool.id)
+        self.l7rule = self.create_l7rule(self.session,
+                                         l7policy_id=self.l7policy.id)
 
     @staticmethod
     def _get_unique_key(obj):
@@ -611,7 +810,8 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         # First handle all objects with their own ID, then handle subordinate
         # objects.
         if obj.__class__.__name__ in ['Member', 'Pool', 'LoadBalancer',
-                                      'Listener', 'Amphora']:
+                                      'Listener', 'Amphora', 'L7Policy',
+                                      'L7Rule']:
             return obj.__class__.__name__ + obj.id
         elif obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
             return obj.__class__.__name__ + obj.pool_id
@@ -758,6 +958,16 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
             id=self.member.id).first()
         self.check_member(member_db.to_data_model())
 
+    def test_l7policy_tree(self):
+        l7policy_db = self.session.query(models.L7Policy).filter_by(
+            id=self.l7policy.id).first()
+        self.check_l7policy(l7policy_db.to_data_model())
+
+    def test_l7rule_tree(self):
+        l7rule_db = self.session.query(models.L7Rule).filter_by(
+            id=self.l7rule.id).first()
+        self.check_l7rule(l7rule_db.to_data_model())
+
     def check_load_balancer(self, lb, check_listeners=True,
                             check_amphorae=True, check_vip=True,
                             check_pools=True):
@@ -804,7 +1014,8 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
             self.check_load_balancer(amphora.load_balancer)
 
     def check_listener(self, listener, check_sni=True, check_pools=True,
-                       check_lb=True, check_statistics=True):
+                       check_lb=True, check_statistics=True,
+                       check_l7policies=True):
         self.assertIsInstance(listener, data_models.Listener)
         self.check_listener_data_model(listener)
         if check_lb:
@@ -822,6 +1033,12 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         if check_statistics:
             self.check_listener_statistics(listener.stats,
                                            check_listener=False)
+        if check_l7policies:
+            c_l7policies = listener.l7policies
+            self.assertIsInstance(c_l7policies, list)
+            for policy in c_l7policies:
+                self.check_l7policy(policy, check_listener=False,
+                                    check_pool=check_pools, check_lb=check_lb)
 
     def check_session_persistence(self, session_persistence, check_pool=True):
         self.assertIsInstance(session_persistence,
@@ -836,6 +1053,31 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         if check_pool:
             self.check_pool(member.pool, check_members=False)
 
+    def check_l7policy(self, l7policy, check_listener=True, check_pool=True,
+                       check_l7rules=True, check_lb=True):
+        self.assertIsInstance(l7policy, data_models.L7Policy)
+        self.check_l7policy_data_model(l7policy)
+        if check_listener:
+            self.check_listener(l7policy.listener, check_l7policies=False,
+                                check_pools=check_pool, check_lb=check_lb)
+        if check_l7rules:
+            c_l7rules = l7policy.l7rules
+            self.assertIsInstance(c_l7rules, list)
+            for rule in c_l7rules:
+                self.check_l7rule(rule, check_l7policy=False)
+        if check_pool and l7policy.redirect_pool is not None:
+            self.assertEqual(l7policy.action,
+                             constants.L7POLICY_ACTION_REDIRECT_TO_POOL)
+            self.check_pool(l7policy.redirect_pool,
+                            check_listeners=check_listener,
+                            check_l7policies=False, check_lb=check_lb)
+
+    def check_l7rule(self, l7rule, check_l7policy=True):
+        self.assertIsInstance(l7rule, data_models.L7Rule)
+        self.check_l7rule_data_model(l7rule)
+        if check_l7policy:
+            self.check_l7policy(l7rule.l7policy)
+
     def check_health_monitor(self, health_monitor, check_pool=True):
         self.assertIsInstance(health_monitor, data_models.HealthMonitor)
         self.check_health_monitor_data_model(health_monitor)
@@ -843,7 +1085,8 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
             self.check_pool(health_monitor.pool, check_hm=False)
 
     def check_pool(self, pool, check_listeners=True, check_sp=True,
-                   check_hm=True, check_members=True, check_lb=True):
+                   check_hm=True, check_members=True, check_l7policies=True,
+                   check_lb=True):
         self.assertIsInstance(pool, data_models.Pool)
         self.check_pool_data_model(pool)
         if check_listeners:
@@ -864,6 +1107,13 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         if check_lb:
             self.check_load_balancer(pool.load_balancer, check_pools=False,
                                      check_listeners=check_listeners)
+        if check_l7policies:
+            c_l7policies = pool.l7policies
+            self.assertIsInstance(c_l7policies, list)
+            for policy in c_l7policies:
+                self.check_l7policy(policy, check_pool=False,
+                                    check_listener=check_listeners,
+                                    check_lb=check_lb)
 
     def check_load_balancer_data_model(self, lb):
         self.assertEqual(self.FAKE_UUID_1, lb.project_id)
@@ -923,6 +1173,23 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertEqual(80, member.protocol_port)
         self.assertEqual(constants.ONLINE, member.operating_status)
         self.assertTrue(member.enabled)
+
+    def check_l7policy_data_model(self, l7policy):
+        self.assertEqual(self.FAKE_UUID_1, l7policy.id)
+        self.assertEqual(self.listener.id, l7policy.listener_id)
+        self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                         l7policy.action)
+        self.assertEqual(self.pool.id, l7policy.redirect_pool_id)
+        self.assertEqual(0, l7policy.position)
+
+    def check_l7rule_data_model(self, l7rule):
+        self.assertEqual(self.FAKE_UUID_1, l7rule.id)
+        self.assertEqual(self.l7policy.id, l7rule.l7policy_id)
+        self.assertEqual(constants.L7RULE_TYPE_PATH, l7rule.type)
+        self.assertEqual(constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+                         l7rule.compare_type)
+        self.assertEqual('/api', l7rule.value)
+        self.assertFalse(l7rule.invert)
 
     def check_amphora_data_model(self, amphora):
         self.assertEqual(self.FAKE_UUID_1, amphora.id)
