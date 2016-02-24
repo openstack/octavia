@@ -154,6 +154,28 @@ class MemberProducer(BaseProducer):
         return self.PAYLOAD_CLASS
 
 
+class L7PolicyProducer(BaseProducer):
+    """Sends updates,deletes and creates to the RPC end of the queue consumer
+
+    """
+    PAYLOAD_CLASS = "l7policy"
+
+    @property
+    def payload_class(self):
+        return self.PAYLOAD_CLASS
+
+
+class L7RuleProducer(BaseProducer):
+    """Sends updates,deletes and creates to the RPC end of the queue consumer
+
+    """
+    PAYLOAD_CLASS = "l7rule"
+
+    @property
+    def payload_class(self):
+        return self.PAYLOAD_CLASS
+
+
 class ProducerHandler(abstract_handler.BaseHandler):
     """Base class for all QueueProducers.
 
@@ -166,3 +188,5 @@ class ProducerHandler(abstract_handler.BaseHandler):
     pool = PoolProducer()
     health_monitor = HealthMonitorProducer()
     member = MemberProducer()
+    l7policy = L7PolicyProducer()
+    l7rule = L7RuleProducer()

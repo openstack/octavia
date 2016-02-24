@@ -85,6 +85,58 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
                                   provisioning_status=constants.ACTIVE)
         LOG.info(_LI("Simulated Controller Handler Thread Complete"))
 
+    def l7policy_controller(l7policy, delete=False, update=False,
+                            create=False):
+        time.sleep(ASYNC_TIME)
+        LOG.info(_LI("Simulating controller operation for l7policy..."))
+
+        db_l7policy = None
+        if delete:
+            db_l7policy = repo.l7policy.get(db_api.get_session(), l7policy.id)
+            repo.l7policy.delete(db_api.get_session(), id=l7policy.id)
+        elif update:
+            db_l7policy = repo.l7policy.get(db_api.get_session(), l7policy.id)
+            l7policy_dict = l7policy.to_dict()
+            repo.l7policy.update(db_api.get_session(), l7policy.id,
+                                 **l7policy_dict)
+        elif create:
+            db_l7policy = repo.l7policy.create(db_api.get_session(),
+                                               **l7policy_dict)
+        if db_l7policy.listener:
+            repo.listener.update(db_api.get_session(), db_l7policy.listener.id,
+                                 operating_status=constants.ONLINE,
+                                 provisioning_status=constants.ACTIVE)
+            repo.load_balancer.update(db_api.get_session(),
+                                      db_l7policy.listener.load_balancer.id,
+                                      operating_status=constants.ONLINE,
+                                      provisioning_status=constants.ACTIVE)
+        LOG.info(_LI("Simulated Controller Handler Thread Complete"))
+
+    def l7rule_controller(l7rule, delete=False, update=False, create=False):
+        time.sleep(ASYNC_TIME)
+        LOG.info(_LI("Simulating controller operation for l7rule..."))
+
+        db_l7rule = None
+        if delete:
+            db_l7rule = repo.l7rule.get(db_api.get_session(), l7rule.id)
+            repo.l7rule.delete(db_api.get_session(), id=l7rule.id)
+        elif update:
+            db_l7rule = repo.l7rule.get(db_api.get_session(), l7rule.id)
+            l7rule_dict = l7rule.to_dict()
+            repo.l7rule.update(db_api.get_session(), l7rule.id, **l7rule_dict)
+        elif create:
+            db_l7rule = repo.l7rule.create(db_api.get_session(), **l7rule_dict)
+        if db_l7rule.l7policy.listener:
+            listener = db_l7rule.l7policy.listener
+            repo.listener.update(db_api.get_session(), listener.id,
+                                 operating_status=constants.ONLINE,
+                                 provisioning_status=constants.ACTIVE)
+            repo.load_balancer.update(db_api.get_session(),
+                                      listener.load_balancer.id,
+                                      operating_status=constants.ONLINE,
+                                      provisioning_status=constants.ACTIVE)
+        LOG.info(_LI("Simulated Controller Handler Thread Complete"))
+
     def health_monitor_controller(health_monitor, delete=False, update=False,
                                   create=False):
         time.sleep(ASYNC_TIME)
@@ -348,10 +400,52 @@ class MemberHandler(abstract_handler.BaseObjectHandler):
         simulate_controller(member_id, delete=True)
 
 
+class L7PolicyHandler(abstract_handler.BaseObjectHandler):
+
+    def create(self, l7policy_id):
+        LOG.info(_LI("%(entity)s handling the creation of l7policy %(id)s"),
+                 {"entity": self.__class__.__name__, "id": l7policy_id})
+        simulate_controller(l7policy_id, create=True)
+
+    def update(self, old_l7policy, l7policy):
+        validate_input(data_models.L7Policy, l7policy)
+        LOG.info(_LI("%(entity)s handling the update of l7policy %(id)s"),
+                 {"entity": self.__class__.__name__, "id": old_l7policy.id})
+        l7policy.id = old_l7policy.id
+        simulate_controller(l7policy, update=True)
+
+    def delete(self, l7policy_id):
+        LOG.info(_LI("%(entity)s handling the deletion of l7policy %(id)s"),
+                 {"entity": self.__class__.__name__, "id": l7policy_id})
+        simulate_controller(l7policy_id, delete=True)
+
+
+class L7RuleHandler(abstract_handler.BaseObjectHandler):
+
+    def create(self, l7rule):
+        LOG.info(_LI("%(entity)s handling the creation of l7rule %(id)s"),
+                 {"entity": self.__class__.__name__, "id": l7rule.id})
+        simulate_controller(l7rule, create=True)
+
+    def update(self, old_l7rule, l7rule):
+        validate_input(data_models.L7Rule, l7rule)
+        LOG.info(_LI("%(entity)s handling the update of l7rule %(id)s"),
+                 {"entity": self.__class__.__name__, "id": old_l7rule.id})
+        l7rule.id = old_l7rule.id
+        simulate_controller(l7rule, update=True)
+
+    def delete(self, l7rule):
+        LOG.info(_LI("%(entity)s handling the deletion of l7rule %(id)s"),
+                 {"entity": self.__class__.__name__, "id": l7rule.id})
+        simulate_controller(l7rule, delete=True)
+
+
 class SimulatedControllerHandler(abstract_handler.BaseHandler):
     """Handler that simulates database calls of a successful controller."""
     load_balancer = LoadBalancerHandler()
     listener = ListenerHandler()
     pool = PoolHandler()
-    member = MemberHandler()
     health_monitor = HealthMonitorHandler()
+    member = MemberHandler()
+    l7policy = L7PolicyHandler()
+    l7rule = L7RuleHandler()

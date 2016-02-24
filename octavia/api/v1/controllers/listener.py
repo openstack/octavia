@@ -22,6 +22,7 @@ from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
 from octavia.api.v1.controllers import base
+from octavia.api.v1.controllers import l7policy
 from octavia.api.v1.controllers import pool
 from octavia.api.v1.types import listener as listener_types
 from octavia.common import constants
@@ -225,7 +226,9 @@ class ListenersController(base.BaseController):
         which controller, if any, should control be passed.
         """
         context = pecan.request.context.get('octavia_context')
-        if listener_id and len(remainder) and remainder[0] == 'pools':
+        if listener_id and len(remainder) and (remainder[0] == 'pools' or
+                                               remainder[0] == 'l7policies'):
+            controller = remainder[0]
             remainder = remainder[1:]
             db_listener = self.repositories.listener.get(
                 context.session, id=listener_id)
@@ -233,5 +236,11 @@ class ListenersController(base.BaseController):
                 LOG.info(_LI("Listener %s not found."), listener_id)
                 raise exceptions.NotFound(
                     resource=data_models.Listener._name(), id=listener_id)
-            return pool.PoolsController(load_balancer_id=self.load_balancer_id,
-                                        listener_id=db_listener.id), remainder
+            if controller == 'pools':
+                return pool.PoolsController(
+                    load_balancer_id=self.load_balancer_id,
+                    listener_id=db_listener.id), remainder
+            elif controller == 'l7policies':
+                return l7policy.L7PolicyController(
+                    load_balancer_id=self.load_balancer_id,
+                    listener_id=db_listener.id), remainder
