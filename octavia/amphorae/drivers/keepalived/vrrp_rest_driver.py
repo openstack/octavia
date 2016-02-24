@@ -17,13 +17,11 @@ import six
 
 from octavia.amphorae.drivers import driver_base as driver_base
 from octavia.amphorae.drivers.keepalived.jinja import jinja_cfg
-from octavia.common.config import cfg
 from octavia.common import constants
 from octavia.i18n import _LI
 
 LOG = logging.getLogger(__name__)
 API_VERSION = constants.API_VERSION
-CONF = cfg.CONF
 
 
 class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):

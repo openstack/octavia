@@ -20,14 +20,10 @@ Common classes for Barbican certificate handling
 import abc
 
 from barbicanclient import client as barbican_client
-from oslo_config import cfg
 import six
 
 from octavia.certificates.common import cert
 from octavia.i18n import _LE
-
-
-CONF = cfg.CONF
 
 
 class BarbicanCert(cert.Cert):
