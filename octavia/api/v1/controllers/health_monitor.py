@@ -61,19 +61,28 @@ class HealthMonitorController(base.BaseController):
         db_hm = self._get_db_hm(context.session)
         return self._convert_db_to_type(db_hm, hm_types.HealthMonitorResponse)
 
+    def _get_affected_listener_ids(self, session, hm=None):
+        """Gets a list of all listeners this request potentially affects."""
+        listener_ids = []
+        if hm:
+            listener_ids = [l.id for l in hm.pool.listeners]
+        else:
+            pool = self._get_db_pool(session, self.pool_id)
+            for listener in pool.listeners:
+                if listener.id not in listener_ids:
+                    listener_ids.append(listener.id)
+        if self.listener_id and self.listener_id not in listener_ids:
+            listener_ids.append(self.listener_id)
+        return listener_ids
+
     def _test_lb_and_listener_statuses(self, session, hm=None):
         """Verify load balancer is in a mutable state."""
         # We need to verify that any listeners referencing this pool are also
         # mutable
-        listener_ids = []
-        if hm:
-            listener_ids = [l.id for l in hm.pool.listeners]
-        if self.listener_id and self.listener_id not in listener_ids:
-            listener_ids.append(self.listener_id)
         if not self.repositories.test_and_set_lb_and_listeners_prov_status(
                 session, self.load_balancer_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE,
-                listener_ids=listener_ids):
+                listener_ids=self._get_affected_listener_ids(session, hm)):
             LOG.info(_LI("Health Monitor cannot be created or modified "
                          "because the Load Balancer is in an immutable state"))
             lb_repo = self.repositories.load_balancer
@@ -106,9 +115,10 @@ class HealthMonitorController(base.BaseController):
             self.repositories.load_balancer.update(
                 context.session, self.load_balancer_id,
                 provisioning_status=constants.ACTIVE)
-            if self.listener_id:
+            for listener_id in self._get_affected_listener_ids(
+                    context.session):
                 self.repositories.listener.update(
-                    context.session, self.listener_id,
+                    context.session, listener_id,
                     provisioning_status=constants.ACTIVE)
             raise exceptions.InvalidOption(value=hm_dict.get('type'),
                                            option='type')
@@ -117,10 +127,11 @@ class HealthMonitorController(base.BaseController):
                          "handler"), self.pool_id)
             self.handler.create(db_hm)
         except Exception:
-            with excutils.save_and_reraise_exception(reraise=False):
-                if self.listener_id:
+            for listener_id in self._get_affected_listener_ids(
+                    context.session):
+                with excutils.save_and_reraise_exception(reraise=False):
                     self.repositories.listener.update(
-                        context.session, self.listener_id,
+                        context.session, listener_id,
                         operating_status=constants.ERROR)
         db_hm = self._get_db_hm(context.session)
         return self._convert_db_to_type(db_hm, hm_types.HealthMonitorResponse)
@@ -144,9 +155,10 @@ class HealthMonitorController(base.BaseController):
             self.handler.update(db_hm, health_monitor)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
-                if self.listener_id:
+                for listener_id in self._get_affected_listener_ids(
+                        context.session, db_hm):
                     self.repositories.listener.update(
-                        context.session, self.listener_id,
+                        context.session, listener_id,
                         operating_status=constants.ERROR)
         db_hm = self._get_db_hm(context.session)
         return self._convert_db_to_type(db_hm, hm_types.HealthMonitorResponse)
@@ -164,9 +176,10 @@ class HealthMonitorController(base.BaseController):
             self.handler.delete(db_hm)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
-                if self.listener_id:
+                for listener_id in self._get_affected_listener_ids(
+                        context.session, db_hm):
                     self.repositories.listener.update(
-                        context.session, self.listener_id,
+                        context.session, listener_id,
                         operating_status=constants.ERROR)
         db_hm = self.repositories.health_monitor.get(
             context.session, pool_id=self.pool_id)

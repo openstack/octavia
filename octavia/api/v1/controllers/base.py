@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import logging
+
 from oslo_config import cfg
 from pecan import rest
 from stevedore import driver as stevedore_driver
@@ -19,9 +21,13 @@ from stevedore import driver as stevedore_driver
 from octavia.api.v1.types import listener as listener_types
 from octavia.api.v1.types import load_balancer as lb_types
 from octavia.api.v1.types import pool as pool_types
+from octavia.common import data_models
+from octavia.common import exceptions
 from octavia.db import repositories
+from octavia.i18n import _LI
 
 CONF = cfg.CONF
+LOG = logging.getLogger(__name__)
 
 
 class BaseController(rest.RestController):
@@ -62,3 +68,43 @@ class BaseController(rest.RestController):
         else:
             converted = _convert(db_entity)
         return converted
+
+    @staticmethod
+    def _get_db_obj(session, repo, data_model, id):
+        """Gets an object from the database and returns it."""
+        db_obj = repo.get(session, id=id)
+        if not db_obj:
+            LOG.info(_LI("%s not found"), data_model._name() + id)
+            raise exceptions.NotFound(
+                resource=data_model._name(), id=id)
+        return db_obj
+
+    def _get_db_lb(self, session, id):
+        """Get a load balancer from the database."""
+        return self._get_db_obj(session, self.repositories.load_balancer,
+                                data_models.LoadBalancer, id)
+
+    def _get_db_listener(self, session, id):
+        """Get a listener from the database."""
+        return self._get_db_obj(session, self.repositories.listener,
+                                data_models.Listener, id)
+
+    def _get_db_pool(self, session, id):
+        """Get a pool from the database."""
+        return self._get_db_obj(session, self.repositories.pool,
+                                data_models.Pool, id)
+
+    def _get_db_member(self, session, id):
+        """Get a member from the database."""
+        return self._get_db_obj(session, self.repositories.member,
+                                data_models.Member, id)
+
+    def _get_db_l7policy(self, session, id):
+        """Get a L7 Policy from the database."""
+        return self._get_db_obj(session, self.repositories.l7policy,
+                                data_models.L7Policy, id)
+
+    def _get_db_l7rule(self, session, id):
+        """Get a L7 Rule from the database."""
+        return self._get_db_obj(session, self.repositories.l7rule,
+                                data_models.L7Rule, id)

@@ -39,15 +39,6 @@ class LoadBalancersController(base.BaseController):
         super(LoadBalancersController, self).__init__()
         self.handler = self.handler.load_balancer
 
-    def _get_db_lb(self, session, id):
-        """Gets a load_balancer object from the database."""
-        db_lb = self.repositories.load_balancer.get(session, id=id)
-        if not db_lb:
-            LOG.info(_LI("Load Balancer %s was not found."), id)
-            raise exceptions.NotFound(
-                resource=data_models.LoadBalancer._name(), id=id)
-        return db_lb
-
     @wsme_pecan.wsexpose(lb_types.LoadBalancerResponse, wtypes.text)
     def get_one(self, id):
         """Gets a single load balancer's details."""

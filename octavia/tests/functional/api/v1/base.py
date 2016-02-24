@@ -36,9 +36,12 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     POOL_PATH = POOLS_PATH + '/{pool_id}'
     DEPRECATED_POOLS_PATH = LISTENER_PATH + '/pools'
     DEPRECATED_POOL_PATH = DEPRECATED_POOLS_PATH + '/{pool_id}'
-    MEMBERS_PATH = DEPRECATED_POOL_PATH + '/members'
+    MEMBERS_PATH = POOL_PATH + '/members'
     MEMBER_PATH = MEMBERS_PATH + '/{member_id}'
-    HM_PATH = DEPRECATED_POOL_PATH + '/healthmonitor'
+    DEPRECATED_MEMBERS_PATH = DEPRECATED_POOL_PATH + '/members'
+    DEPRECATED_MEMBER_PATH = DEPRECATED_MEMBERS_PATH + '/{member_id}'
+    HM_PATH = POOL_PATH + '/healthmonitor'
+    DEPRECATED_HM_PATH = DEPRECATED_POOL_PATH + '/healthmonitor'
     L7POLICIES_PATH = LISTENER_PATH + '/l7policies'
     L7POLICY_PATH = L7POLICIES_PATH + '/{l7policy_id}'
     L7RULES_PATH = L7POLICY_PATH + '/l7rules'
@@ -145,16 +148,24 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         response = self.post(path, req_dict)
         return response.json
 
-    def create_member(self, lb_id, listener_id, pool_id, ip_address,
+    def create_member(self, lb_id, pool_id, ip_address,
                       protocol_port, **optionals):
         req_dict = {'ip_address': ip_address, 'protocol_port': protocol_port}
         req_dict.update(optionals)
-        path = self.MEMBERS_PATH.format(lb_id=lb_id, listener_id=listener_id,
-                                        pool_id=pool_id)
+        path = self.MEMBERS_PATH.format(lb_id=lb_id, pool_id=pool_id)
         response = self.post(path, req_dict)
         return response.json
 
-    def create_health_monitor(self, lb_id, listener_id, pool_id, type,
+    def create_member_with_listener(self, lb_id, listener_id, pool_id,
+                                    ip_address, protocol_port, **optionals):
+        req_dict = {'ip_address': ip_address, 'protocol_port': protocol_port}
+        req_dict.update(optionals)
+        path = self.DEPRECATED_MEMBERS_PATH.format(
+            lb_id=lb_id, listener_id=listener_id, pool_id=pool_id)
+        response = self.post(path, req_dict)
+        return response.json
+
+    def create_health_monitor(self, lb_id, pool_id, type,
                               delay, timeout, fall_threshold, rise_threshold,
                               **optionals):
         req_dict = {'type': type,
@@ -163,8 +174,22 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                     'fall_threshold': fall_threshold,
                     'rise_threshold': rise_threshold}
         req_dict.update(optionals)
-        path = self.HM_PATH.format(lb_id=lb_id, listener_id=listener_id,
+        path = self.HM_PATH.format(lb_id=lb_id,
                                    pool_id=pool_id)
+        response = self.post(path, req_dict)
+        return response.json
+
+    def create_health_monitor_with_listener(
+            self, lb_id, listener_id, pool_id, type,
+            delay, timeout, fall_threshold, rise_threshold, **optionals):
+        req_dict = {'type': type,
+                    'delay': delay,
+                    'timeout': timeout,
+                    'fall_threshold': fall_threshold,
+                    'rise_threshold': rise_threshold}
+        req_dict.update(optionals)
+        path = self.DEPRECATED_HM_PATH.format(
+            lb_id=lb_id, listener_id=listener_id, pool_id=pool_id)
         response = self.post(path, req_dict)
         return response.json
 

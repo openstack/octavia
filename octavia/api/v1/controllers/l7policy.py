@@ -40,15 +40,6 @@ class L7PolicyController(base.BaseController):
         self.listener_id = listener_id
         self.handler = self.handler.l7policy
 
-    def _get_db_l7policy(self, session, id):
-        """Gets the current l7policy object from the database."""
-        db_l7policy = self.repositories.l7policy.get(session, id=id)
-        if not db_l7policy:
-            LOG.info(_LI("L7Policy %s not found"), id)
-            raise exceptions.NotFound(
-                resource=data_models.L7Policy._name(), id=id)
-        return db_l7policy
-
     @wsme_pecan.wsexpose(l7policy_types.L7PolicyResponse, wtypes.text)
     def get(self, id):
         """Gets a single l7policy's details."""

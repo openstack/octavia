@@ -112,14 +112,15 @@ class TestPool(base.BaseAPITest):
         self.assertEqual(constants.PROTOCOL_HTTP, api_pool.get('protocol'))
         self.assertEqual(constants.LB_ALGORITHM_ROUND_ROBIN,
                          api_pool.get('lb_algorithm'))
-        # Make sure listener / load balancer status are unchanged, as
-        # this should have been a pure DB operation
+        # Make sure listener status is unchanged, but LB status is changed.
+        # LB should still be locked even with pool and subordinate object
+        # updates.
         self.assert_correct_listener_status(self.lb.get('id'),
                                             self.listener.get('id'),
                                             constants.ACTIVE,
                                             constants.ONLINE)
         self.assert_correct_lb_status(self.lb.get('id'),
-                                      constants.ACTIVE,
+                                      constants.PENDING_UPDATE,
                                       constants.ONLINE)
 
     def test_create_with_listener_id_in_pool_dict(self):

@@ -27,18 +27,24 @@ class TestHealthMonitor(base.BaseAPITest):
         self.listener = self.create_listener(self.lb.get('id'),
                                              constants.PROTOCOL_HTTP, 80)
         self.set_lb_status(self.lb.get('id'))
-        self.pool = self.create_pool(self.lb.get('id'),
-                                     self.listener.get('id'),
-                                     constants.PROTOCOL_HTTP,
-                                     constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.pool = self.create_pool_sans_listener(
+            self.lb.get('id'), constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.set_lb_status(self.lb.get('id'))
+        self.pool_with_listener = self.create_pool(
+            self.lb.get('id'),
+            self.listener.get('id'),
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN)
         self.set_lb_status(self.lb.get('id'))
         self.hm_path = self.HM_PATH.format(lb_id=self.lb.get('id'),
-                                           listener_id=self.listener.get('id'),
                                            pool_id=self.pool.get('id'))
+        self.deprecated_hm_path = self.DEPRECATED_HM_PATH.format(
+            lb_id=self.lb.get('id'), listener_id=self.listener.get('id'),
+            pool_id=self.pool_with_listener.get('id'))
 
     def test_get(self):
         api_hm = self.create_health_monitor(self.lb.get('id'),
-                                            self.listener.get('id'),
                                             self.pool.get('id'),
                                             constants.HEALTH_MONITOR_HTTP,
                                             1, 1, 1, 1)
@@ -50,12 +56,36 @@ class TestHealthMonitor(base.BaseAPITest):
     def test_bad_get(self):
         self.get(self.hm_path, status=404)
 
-    def test_create(self):
+    def test_create_sans_listener(self):
         api_hm = self.create_health_monitor(self.lb.get('id'),
-                                            self.listener.get('id'),
                                             self.pool.get('id'),
                                             constants.HEALTH_MONITOR_HTTP,
                                             1, 1, 1, 1)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.ACTIVE,
+                                            constants.ONLINE)
+        self.set_lb_status(self.lb.get('id'))
+        self.assertEqual(constants.HEALTH_MONITOR_HTTP, api_hm.get('type'))
+        self.assertEqual(1, api_hm.get('delay'))
+        self.assertEqual(1, api_hm.get('timeout'))
+        self.assertEqual(1, api_hm.get('fall_threshold'))
+        self.assertEqual(1, api_hm.get('rise_threshold'))
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.ACTIVE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.ACTIVE, constants.ONLINE)
+
+    def test_create_with_listener(self):
+        api_hm = self.create_health_monitor_with_listener(
+            self.lb.get('id'), self.listener.get('id'),
+            self.pool_with_listener.get('id'),
+            constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
                                       constants.ONLINE)
@@ -79,7 +109,6 @@ class TestHealthMonitor(base.BaseAPITest):
     def test_create_with_project_id(self):
         pid = uuidutils.generate_uuid()
         api_hm = self.create_health_monitor(self.lb.get('id'),
-                                            self.listener.get('id'),
                                             self.pool.get('id'),
                                             constants.HEALTH_MONITOR_HTTP,
                                             1, 1, 1, 1, project_id=pid)
@@ -87,7 +116,7 @@ class TestHealthMonitor(base.BaseAPITest):
 
     def test_bad_create(self):
         hm_json = {'name': 'test1'}
-        self.post(self.hm_path, hm_json, status=400)
+        self.post(self.deprecated_hm_path, hm_json, status=400)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.ACTIVE,
                                       constants.ONLINE)
@@ -97,11 +126,10 @@ class TestHealthMonitor(base.BaseAPITest):
 
     def test_create_with_bad_handler(self):
         self.handler_mock().health_monitor.create.side_effect = Exception()
-        self.create_health_monitor(self.lb.get('id'),
-                                   self.listener.get('id'),
-                                   self.pool.get('id'),
-                                   constants.HEALTH_MONITOR_HTTP,
-                                   1, 1, 1, 1)
+        self.create_health_monitor_with_listener(
+            self.lb.get('id'), self.listener.get('id'),
+            self.pool_with_listener.get('id'),
+            constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
                                       constants.ONLINE)
@@ -112,7 +140,6 @@ class TestHealthMonitor(base.BaseAPITest):
 
     def test_duplicate_create(self):
         api_hm = self.create_health_monitor(self.lb.get('id'),
-                                            self.listener.get('id'),
                                             self.pool.get('id'),
                                             constants.HEALTH_MONITOR_HTTP,
                                             1, 1, 1, 1)
@@ -120,13 +147,13 @@ class TestHealthMonitor(base.BaseAPITest):
         self.post(self.hm_path, api_hm, status=409)
 
     def test_update(self):
-        self.create_health_monitor(self.lb.get('id'), self.listener.get('id'),
-                                   self.pool.get('id'),
-                                   constants.HEALTH_MONITOR_HTTP,
-                                   1, 1, 1, 1)
+        self.create_health_monitor_with_listener(
+            self.lb.get('id'), self.listener.get('id'),
+            self.pool_with_listener.get('id'),
+            constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1)
         self.set_lb_status(lb_id=self.lb.get('id'))
         new_hm = {'type': constants.HEALTH_MONITOR_HTTPS}
-        self.put(self.hm_path, new_hm)
+        self.put(self.deprecated_hm_path, new_hm)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
                                       constants.ONLINE)
@@ -145,7 +172,7 @@ class TestHealthMonitor(base.BaseAPITest):
     def test_bad_update(self):
         self.skip("This test will need reviewed after a validation layer is "
                   "built")
-        self.create_health_monitor(self.lb.get('id'), self.listener.get('id'),
+        self.create_health_monitor(self.lb.get('id'),
                                    self.pool.get('id'),
                                    constants.HEALTH_MONITOR_HTTP,
                                    1, 1, 1, 1)
@@ -160,14 +187,14 @@ class TestHealthMonitor(base.BaseAPITest):
                                             constants.ACTIVE, constants.ONLINE)
 
     def test_update_with_bad_handler(self):
-        self.create_health_monitor(self.lb.get('id'), self.listener.get('id'),
-                                   self.pool.get('id'),
-                                   constants.HEALTH_MONITOR_HTTP,
-                                   1, 1, 1, 1)
+        self.create_health_monitor_with_listener(
+            self.lb.get('id'), self.listener.get('id'),
+            self.pool_with_listener.get('id'),
+            constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1)
         self.set_lb_status(lb_id=self.lb.get('id'))
         new_hm = {'type': constants.HEALTH_MONITOR_HTTPS}
         self.handler_mock().health_monitor.update.side_effect = Exception()
-        self.put(self.hm_path, new_hm)
+        self.put(self.deprecated_hm_path, new_hm)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
                                       constants.ONLINE)
@@ -177,15 +204,14 @@ class TestHealthMonitor(base.BaseAPITest):
                                             constants.ERROR)
 
     def test_delete(self):
-        api_hm = self.create_health_monitor(self.lb.get('id'),
-                                            self.listener.get('id'),
-                                            self.pool['id'],
-                                            constants.HEALTH_MONITOR_HTTP,
-                                            1, 1, 1, 1)
+        api_hm = self.create_health_monitor_with_listener(
+            self.lb.get('id'), self.listener.get('id'),
+            self.pool_with_listener.get('id'),
+            constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1)
         self.set_lb_status(lb_id=self.lb.get('id'))
-        response = self.get(self.hm_path)
+        response = self.get(self.deprecated_hm_path)
         self.assertEqual(api_hm, response.json)
-        self.delete(self.hm_path)
+        self.delete(self.deprecated_hm_path)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
                                       constants.ONLINE)
@@ -205,16 +231,15 @@ class TestHealthMonitor(base.BaseAPITest):
         self.delete(self.hm_path, status=404)
 
     def test_delete_with_bad_handler(self):
-        api_hm = self.create_health_monitor(self.lb.get('id'),
-                                            self.listener.get('id'),
-                                            self.pool['id'],
-                                            constants.HEALTH_MONITOR_HTTP,
-                                            1, 1, 1, 1)
+        api_hm = self.create_health_monitor_with_listener(
+            self.lb.get('id'), self.listener.get('id'),
+            self.pool_with_listener.get('id'),
+            constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1)
         self.set_lb_status(lb_id=self.lb.get('id'))
-        response = self.get(self.hm_path)
+        response = self.get(self.deprecated_hm_path)
         self.assertEqual(api_hm, response.json)
         self.handler_mock().health_monitor.delete.side_effect = Exception()
-        self.delete(self.hm_path)
+        self.delete(self.deprecated_hm_path)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
                                       constants.ONLINE)
@@ -232,8 +257,7 @@ class TestHealthMonitor(base.BaseAPITest):
                                       'rise_threshold': 1}, status=409)
 
     def test_update_when_lb_pending_update(self):
-        self.create_health_monitor(self.lb.get('id'), self.listener.get('id'),
-                                   self.pool.get('id'),
+        self.create_health_monitor(self.lb.get('id'), self.pool.get('id'),
                                    constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1)
         self.set_lb_status(self.lb.get('id'))
         self.put(self.LB_PATH.format(lb_id=self.lb.get('id')),
@@ -241,8 +265,7 @@ class TestHealthMonitor(base.BaseAPITest):
         self.put(self.hm_path, body={'rise_threshold': 2}, status=409)
 
     def test_delete_when_lb_pending_update(self):
-        self.create_health_monitor(self.lb.get('id'), self.listener.get('id'),
-                                   self.pool.get('id'),
+        self.create_health_monitor(self.lb.get('id'), self.pool.get('id'),
                                    constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1)
         self.set_lb_status(self.lb.get('id'))
         self.put(self.LB_PATH.format(lb_id=self.lb.get('id')),
@@ -257,16 +280,14 @@ class TestHealthMonitor(base.BaseAPITest):
                                       'rise_threshold': 1}, status=409)
 
     def test_update_when_lb_pending_delete(self):
-        self.create_health_monitor(self.lb.get('id'), self.listener.get('id'),
-                                   self.pool.get('id'),
+        self.create_health_monitor(self.lb.get('id'), self.pool.get('id'),
                                    constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1)
         self.set_lb_status(self.lb.get('id'))
         self.delete(self.LB_PATH.format(lb_id=self.lb.get('id')))
         self.put(self.hm_path, body={'rise_threshold': 2}, status=409)
 
     def test_delete_when_lb_pending_delete(self):
-        self.create_health_monitor(self.lb.get('id'), self.listener.get('id'),
-                                   self.pool.get('id'),
+        self.create_health_monitor(self.lb.get('id'), self.pool.get('id'),
                                    constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1)
         self.set_lb_status(self.lb.get('id'))
         self.delete(self.LB_PATH.format(lb_id=self.lb.get('id')))

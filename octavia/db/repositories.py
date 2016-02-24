@@ -228,24 +228,16 @@ class Repositories(object):
         :returns: bool
         """
         listener_ids = listener_ids or []
-        # Only update LB if we have listeners.
-        if listener_ids:
-            success = self.load_balancer.test_and_set_provisioning_status(
-                session, lb_id, lb_prov_status)
-            for id in listener_ids:
-                self.listener.update(session, id,
-                                     provisioning_status=listener_prov_status)
-            return success
-        else:
-            # Just make sure LB is mutable, even though we're not really
-            # changing anything on it
-            lb = session.query(
-                models.LoadBalancer).with_for_update().filter_by(
-                    id=lb_id).one()
-            if lb.provisioning_status not in constants.MUTABLE_STATUSES:
-                return False
-            else:
-                return True
+        # Always set the status requested, regardless of whether we have
+        # listeners-- sometimes pools will be disassociated with a listener
+        # and we still need the LB locked when Pools or subordinate objects
+        # are changed.
+        success = self.load_balancer.test_and_set_provisioning_status(
+            session, lb_id, lb_prov_status)
+        for id in listener_ids:
+            self.listener.update(session, id,
+                                 provisioning_status=listener_prov_status)
+        return success
 
 
 class LoadBalancerRepository(BaseRepository):
