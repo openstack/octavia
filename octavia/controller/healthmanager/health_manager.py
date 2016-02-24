@@ -38,8 +38,11 @@ class HealthManager(object):
 
         with futures.ThreadPoolExecutor(max_workers=self.threads) as executor:
             try:
+                # Don't start checking immediately, as the health manager may
+                # have been down for a while and amphorae not able to check in.
+                LOG.debug("Pausing before starting health check")
+                time.sleep(CONF.health_manager.heartbeat_timeout)
                 while True:
-                    time.sleep(CONF.health_manager.health_check_interval)
                     session = db_api.get_session()
                     LOG.debug("Starting amphora health check")
                     failover_count = 0
@@ -55,5 +58,6 @@ class HealthManager(object):
                     if failover_count > 0:
                         LOG.info(_LI("Failed over %s amphora"),
                                  failover_count)
+                    time.sleep(CONF.health_manager.health_check_interval)
             finally:
                 executor.shutdown(wait=True)
