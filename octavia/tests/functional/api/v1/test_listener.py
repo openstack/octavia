@@ -30,6 +30,7 @@ class TestListener(base.BaseAPITest):
         self.pool = self.create_pool_sans_listener(
             self.lb.get('id'), constants.PROTOCOL_HTTP,
             constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.set_lb_status(self.lb.get('id'))
 
     def test_get_all(self):
         listener1 = self.create_listener(self.lb.get('id'),

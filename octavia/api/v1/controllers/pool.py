@@ -42,23 +42,6 @@ class PoolsController(base.BaseController):
         self.listener_id = listener_id
         self.handler = self.handler.pool
 
-    def _get_db_pool(self, session, id):
-        """Gets a pool object from the database."""
-        db_pool = self.repositories.pool.get(session, id=id)
-        if not db_pool:
-            LOG.info(_LI("Pool %s not found."), id)
-            raise exceptions.NotFound(resource=data_models.Pool._name(), id=id)
-        return db_pool
-
-    def _get_db_listener(self, session, id):
-        """Gets a listener object from the database."""
-        db_listener = self.repositories.listener.get(session, id=id)
-        if not db_listener:
-            LOG.info(_LI("Listener %s not found."), id)
-            raise exceptions.NotFound(resource=data_models.Listener._name(),
-                                      id=id)
-        return db_listener
-
     @wsme_pecan.wsexpose(pool_types.PoolResponse, wtypes.text)
     def get(self, id):
         """Gets a pool's details."""
@@ -81,19 +64,23 @@ class PoolsController(base.BaseController):
                 context.session, id=self.load_balancer_id).pools
         return self._convert_db_to_type(pools, [pool_types.PoolResponse])
 
-    def _test_lb_and_listener_statuses(self, session, pool=None):
-        """Verify load balancer is in a mutable state."""
-        # We need to verify that any listeners referencing this pool are also
-        # mutable
+    def _get_affected_listener_ids(self, session, pool=None):
+        """Gets a list of all listeners this request potentially affects."""
         listener_ids = []
         if pool:
             listener_ids = [l.id for l in pool.listeners]
         if self.listener_id and self.listener_id not in listener_ids:
             listener_ids.append(self.listener_id)
+        return listener_ids
+
+    def _test_lb_and_listener_statuses(self, session, pool=None):
+        """Verify load balancer is in a mutable state."""
+        # We need to verify that any listeners referencing this pool are also
+        # mutable
         if not self.repositories.test_and_set_lb_and_listeners_prov_status(
                 session, self.load_balancer_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE,
-                listener_ids=listener_ids):
+                listener_ids=self._get_affected_listener_ids(session, pool)):
             LOG.info(_LI("Pool cannot be created or modified because the Load "
                          "Balancer is in an immutable state"))
             lb_repo = self.repositories.load_balancer
@@ -117,10 +104,9 @@ class PoolsController(base.BaseController):
         except odb_exceptions.DBError:
             # Setting LB and Listener back to active because this is just a
             # validation failure
-            if self.listener_id:
+            for listener_id in self._get_affected_listener_ids(session):
                 self.repositories.listener.update(
-                    session, self.listener_id,
-                    provisioning_status=constants.ACTIVE)
+                    session, listener_id, provisioning_status=constants.ACTIVE)
             self.repositories.load_balancer.update(
                 session, self.load_balancer_id,
                 provisioning_status=constants.ACTIVE)
@@ -133,11 +119,10 @@ class PoolsController(base.BaseController):
                      db_pool.id)
             self.handler.create(db_pool)
         except Exception:
-            if self.listener_id:
+            for listener_id in self._get_affected_listener_ids(session):
                 with excutils.save_and_reraise_exception(reraise=False):
                     self.repositories.listener.update(
-                        session, self.listener_id,
-                        operating_status=constants.ERROR)
+                        session, listener_id, operating_status=constants.ERROR)
         db_pool = self._get_db_pool(session, db_pool.id)
         return self._convert_db_to_type(db_pool, pool_types.PoolResponse)
 

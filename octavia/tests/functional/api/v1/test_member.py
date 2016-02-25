@@ -27,19 +27,28 @@ class TestMember(base.BaseAPITest):
         self.listener = self.create_listener(self.lb.get('id'),
                                              constants.PROTOCOL_HTTP, 80)
         self.set_lb_status(self.lb.get('id'))
-        self.pool = self.create_pool(self.lb.get('id'),
-                                     self.listener.get('id'),
-                                     constants.PROTOCOL_HTTP,
-                                     constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.pool = self.create_pool_sans_listener(
+            self.lb.get('id'), constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.set_lb_status(self.lb.get('id'))
+        self.pool_with_listener = self.create_pool(
+            self.lb.get('id'),
+            self.listener.get('id'),
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN)
         self.set_lb_status(self.lb.get('id'))
         self.members_path = self.MEMBERS_PATH.format(
-            lb_id=self.lb.get('id'), listener_id=self.listener.get('id'),
+            lb_id=self.lb.get('id'),
             pool_id=self.pool.get('id'))
         self.member_path = self.members_path + '/{member_id}'
+        self.deprecated_members_path = self.DEPRECATED_MEMBERS_PATH.format(
+            lb_id=self.lb.get('id'), listener_id=self.listener.get('id'),
+            pool_id=self.pool.get('id'))
+        self.deprecated_member_path = (self.deprecated_members_path +
+                                       '/{member_id}')
 
     def test_get(self):
         api_member = self.create_member(self.lb.get('id'),
-                                        self.listener.get('id'),
                                         self.pool.get('id'),
                                         '10.0.0.1', 80)
         response = self.get(self.member_path.format(
@@ -53,19 +62,17 @@ class TestMember(base.BaseAPITest):
 
     def test_get_all(self):
         api_m_1 = self.create_member(self.lb.get('id'),
-                                     self.listener.get('id'),
                                      self.pool.get('id'),
                                      '10.0.0.1', 80)
         self.set_lb_status(self.lb.get('id'))
         api_m_2 = self.create_member(self.lb.get('id'),
-                                     self.listener.get('id'),
                                      self.pool.get('id'),
                                      '10.0.0.2', 80)
         self.set_lb_status(self.lb.get('id'))
         # Original objects didn't have the updated operating status that exists
         # in the DB.
-        api_m_1['operating_status'] = constants.ONLINE
-        api_m_2['operating_status'] = constants.ONLINE
+        api_m_1['operating_status'] = constants.OFFLINE
+        api_m_2['operating_status'] = constants.OFFLINE
         response = self.get(self.members_path)
         response_body = response.json
         self.assertIsInstance(response_body, list)
@@ -79,11 +86,74 @@ class TestMember(base.BaseAPITest):
         self.assertIsInstance(response_body, list)
         self.assertEqual(0, len(response_body))
 
-    def test_create(self):
+    def test_create_sans_listener(self):
         api_member = self.create_member(self.lb.get('id'),
-                                        self.listener.get('id'),
                                         self.pool.get('id'),
                                         '10.0.0.1', 80)
+        self.assertEqual('10.0.0.1', api_member.get('ip_address'))
+        self.assertEqual(80, api_member.get('protocol_port'))
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.ACTIVE,
+                                            constants.ONLINE)
+        self.set_lb_status(self.lb.get('id'))
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.ACTIVE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.ACTIVE, constants.ONLINE)
+
+    def test_create_with_id(self):
+        mid = uuidutils.generate_uuid()
+        api_member = self.create_member(self.lb.get('id'),
+                                        self.pool.get('id'),
+                                        '10.0.0.1', 80, id=mid)
+        self.assertEqual(mid, api_member.get('id'))
+
+    def test_create_with_project_id(self):
+        pid = uuidutils.generate_uuid()
+        api_member = self.create_member(self.lb.get('id'),
+                                        self.pool.get('id'),
+                                        '10.0.0.1', 80, project_id=pid)
+        self.assertEqual(pid, api_member.get('project_id'))
+
+    def test_create_with_duplicate_id(self):
+        member = self.create_member(self.lb.get('id'),
+                                    self.pool.get('id'),
+                                    '10.0.0.1', 80)
+        self.set_lb_status(self.lb.get('id'), constants.ACTIVE)
+        path = self.MEMBERS_PATH.format(lb_id=self.lb.get('id'),
+                                        pool_id=self.pool.get('id'))
+        body = {'id': member.get('id'), 'ip_address': '10.0.0.3',
+                'protocol_port': 81}
+        self.post(path, body, status=409, expect_errors=True)
+
+    def test_bad_create(self):
+        api_member = {'name': 'test1'}
+        self.post(self.members_path, api_member, status=400)
+
+    def test_create_with_bad_handler(self):
+        self.handler_mock().member.create.side_effect = Exception()
+        self.create_member_with_listener(
+            self.lb.get('id'), self.listener.get('id'),
+            self.pool_with_listener.get('id'),
+            '10.0.0.1', 80)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ERROR)
+
+    def test_create_with_attached_listener(self):
+        api_member = self.create_member_with_listener(
+            self.lb.get('id'), self.listener.get('id'),
+            self.pool.get('id'), '10.0.0.1', 80)
         self.assertEqual('10.0.0.1', api_member.get('ip_address'))
         self.assertEqual(80, api_member.get('protocol_port'))
         self.assert_correct_lb_status(self.lb.get('id'),
@@ -101,53 +171,6 @@ class TestMember(base.BaseAPITest):
                                             self.listener.get('id'),
                                             constants.ACTIVE, constants.ONLINE)
 
-    def test_create_with_id(self):
-        mid = uuidutils.generate_uuid()
-        api_member = self.create_member(self.lb.get('id'),
-                                        self.listener.get('id'),
-                                        self.pool.get('id'),
-                                        '10.0.0.1', 80, id=mid)
-        self.assertEqual(mid, api_member.get('id'))
-
-    def test_create_with_project_id(self):
-        pid = uuidutils.generate_uuid()
-        api_member = self.create_member(self.lb.get('id'),
-                                        self.listener.get('id'),
-                                        self.pool.get('id'),
-                                        '10.0.0.1', 80, project_id=pid)
-        self.assertEqual(pid, api_member.get('project_id'))
-
-    def test_create_with_duplicate_id(self):
-        member = self.create_member(self.lb.get('id'),
-                                    self.listener.get('id'),
-                                    self.pool.get('id'),
-                                    '10.0.0.1', 80)
-        self.set_lb_status(self.lb.get('id'), constants.ACTIVE)
-        path = self.MEMBERS_PATH.format(lb_id=self.lb.get('id'),
-                                        listener_id=self.listener.get('id'),
-                                        pool_id=self.pool.get('id'))
-        body = {'id': member.get('id'), 'ip_address': '10.0.0.3',
-                'protocol_port': 81}
-        self.post(path, body, status=409, expect_errors=True)
-
-    def test_bad_create(self):
-        api_member = {'name': 'test1'}
-        self.post(self.members_path, api_member, status=400)
-
-    def test_create_with_bad_handler(self):
-        self.handler_mock().member.create.side_effect = Exception()
-        self.create_member(self.lb.get('id'),
-                           self.listener.get('id'),
-                           self.pool.get('id'),
-                           '10.0.0.1', 80)
-        self.assert_correct_lb_status(self.lb.get('id'),
-                                      constants.PENDING_UPDATE,
-                                      constants.ONLINE)
-        self.assert_correct_listener_status(self.lb.get('id'),
-                                            self.listener.get('id'),
-                                            constants.PENDING_UPDATE,
-                                            constants.ERROR)
-
     def test_duplicate_create(self):
         member = {'ip_address': '10.0.0.1', 'protocol_port': 80}
         self.post(self.members_path, member, status=202)
@@ -157,13 +180,12 @@ class TestMember(base.BaseAPITest):
     def test_update(self):
         old_port = 80
         new_port = 88
-        api_member = self.create_member(self.lb.get('id'),
-                                        self.listener.get('id'),
-                                        self.pool.get('id'),
-                                        '10.0.0.1', old_port)
+        api_member = self.create_member_with_listener(
+            self.lb.get('id'), self.listener.get('id'),
+            self.pool.get('id'), '10.0.0.1', old_port)
         self.set_lb_status(self.lb.get('id'))
         new_member = {'protocol_port': new_port}
-        response = self.put(self.member_path.format(
+        response = self.put(self.deprecated_member_path.format(
             member_id=api_member.get('id')), new_member, status=202)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
@@ -185,7 +207,6 @@ class TestMember(base.BaseAPITest):
 
     def test_bad_update(self):
         api_member = self.create_member(self.lb.get('id'),
-                                        self.listener.get('id'),
                                         self.pool.get('id'),
                                         '10.0.0.1', 80)
         new_member = {'protocol_port': 'ten'}
@@ -193,10 +214,10 @@ class TestMember(base.BaseAPITest):
                  new_member, expect_errors=True)
 
     def test_update_with_bad_handler(self):
-        api_member = self.create_member(self.lb.get('id'),
-                                        self.listener.get('id'),
-                                        self.pool.get('id'),
-                                        '10.0.0.1', 80)
+        api_member = self.create_member_with_listener(
+            self.lb.get('id'), self.listener.get('id'),
+            self.pool_with_listener.get('id'),
+            '10.0.0.1', 80)
         self.set_lb_status(self.lb.get('id'))
         new_member = {'protocol_port': 88}
         self.handler_mock().member.update.side_effect = Exception()
@@ -224,10 +245,10 @@ class TestMember(base.BaseAPITest):
                  member, status=409)
 
     def test_delete(self):
-        api_member = self.create_member(self.lb.get('id'),
-                                        self.listener.get('id'),
-                                        self.pool.get('id'),
-                                        '10.0.0.1', 80)
+        api_member = self.create_member_with_listener(
+            self.lb.get('id'), self.listener.get('id'),
+            self.pool_with_listener.get('id'),
+            '10.0.0.1', 80)
         self.set_lb_status(self.lb.get('id'))
         response = self.get(self.member_path.format(
             member_id=api_member.get('id')))
@@ -254,17 +275,18 @@ class TestMember(base.BaseAPITest):
             member_id=uuidutils.generate_uuid()), status=404)
 
     def test_delete_with_bad_handler(self):
-        api_member = self.create_member(self.lb.get('id'),
-                                        self.listener.get('id'),
-                                        self.pool.get('id'),
-                                        '10.0.0.1', 80)
+        api_member = self.create_member_with_listener(
+            self.lb.get('id'), self.listener.get('id'),
+            self.pool_with_listener.get('id'),
+            '10.0.0.1', 80)
         self.set_lb_status(self.lb.get('id'))
         response = self.get(self.member_path.format(
             member_id=api_member.get('id')))
         api_member['operating_status'] = constants.ONLINE
         self.assertEqual(api_member, response.json)
         self.handler_mock().member.delete.side_effect = Exception()
-        self.delete(self.member_path.format(member_id=api_member.get('id')))
+        self.delete(self.member_path.format(
+            member_id=api_member.get('id')))
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
                                       constants.ONLINE)
@@ -274,7 +296,7 @@ class TestMember(base.BaseAPITest):
                                             constants.ERROR)
 
     def test_create_when_lb_pending_update(self):
-        self.create_member(self.lb.get('id'), self.listener.get('id'),
+        self.create_member(self.lb.get('id'),
                            self.pool.get('id'), ip_address="10.0.0.2",
                            protocol_port=80)
         self.set_lb_status(self.lb.get('id'))
@@ -285,7 +307,7 @@ class TestMember(base.BaseAPITest):
                   status=409)
 
     def test_update_when_lb_pending_update(self):
-        member = self.create_member(self.lb.get('id'), self.listener.get('id'),
+        member = self.create_member(self.lb.get('id'),
                                     self.pool.get('id'), ip_address="10.0.0.1",
                                     protocol_port=80)
         self.set_lb_status(self.lb.get('id'))
@@ -295,7 +317,7 @@ class TestMember(base.BaseAPITest):
                  body={'protocol_port': 88}, status=409)
 
     def test_delete_when_lb_pending_update(self):
-        member = self.create_member(self.lb.get('id'), self.listener.get('id'),
+        member = self.create_member(self.lb.get('id'),
                                     self.pool.get('id'), ip_address="10.0.0.1",
                                     protocol_port=80)
         self.set_lb_status(self.lb.get('id'))
@@ -305,7 +327,7 @@ class TestMember(base.BaseAPITest):
                     status=409)
 
     def test_create_when_lb_pending_delete(self):
-        self.create_member(self.lb.get('id'), self.listener.get('id'),
+        self.create_member(self.lb.get('id'),
                            self.pool.get('id'), ip_address="10.0.0.1",
                            protocol_port=80)
         self.set_lb_status(self.lb.get('id'))
@@ -315,7 +337,7 @@ class TestMember(base.BaseAPITest):
                   status=409)
 
     def test_update_when_lb_pending_delete(self):
-        member = self.create_member(self.lb.get('id'), self.listener.get('id'),
+        member = self.create_member(self.lb.get('id'),
                                     self.pool.get('id'), ip_address="10.0.0.1",
                                     protocol_port=80)
         self.set_lb_status(self.lb.get('id'))
@@ -324,7 +346,7 @@ class TestMember(base.BaseAPITest):
                  body={'protocol_port': 88}, status=409)
 
     def test_delete_when_lb_pending_delete(self):
-        member = self.create_member(self.lb.get('id'), self.listener.get('id'),
+        member = self.create_member(self.lb.get('id'),
                                     self.pool.get('id'), ip_address="10.0.0.1",
                                     protocol_port=80)
         self.set_lb_status(self.lb.get('id'))

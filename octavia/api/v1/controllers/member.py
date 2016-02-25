@@ -24,7 +24,6 @@ from wsmeext import pecan as wsme_pecan
 from octavia.api.v1.controllers import base
 from octavia.api.v1.types import member as member_types
 from octavia.common import constants
-from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.i18n import _LI
 
@@ -40,15 +39,6 @@ class MembersController(base.BaseController):
         self.listener_id = listener_id
         self.pool_id = pool_id
         self.handler = self.handler.member
-
-    def _get_db_member(self, session, id):
-        """Gets a specific member object from the database."""
-        db_member = self.repositories.member.get(session, id=id)
-        if not db_member:
-            LOG.info(_LI("Member %s not found"), id)
-            raise exceptions.NotFound(
-                resource=data_models.Member._name(), id=id)
-        return db_member
 
     @wsme_pecan.wsexpose(member_types.MemberResponse, wtypes.text)
     def get(self, id):
@@ -66,19 +56,28 @@ class MembersController(base.BaseController):
         return self._convert_db_to_type(db_members,
                                         [member_types.MemberResponse])
 
+    def _get_affected_listener_ids(self, session, member=None):
+        """Gets a list of all listeners this request potentially affects."""
+        listener_ids = []
+        if member:
+            listener_ids = [l.id for l in member.pool.listeners]
+        else:
+            pool = self._get_db_pool(session, self.pool_id)
+            for listener in pool.listeners:
+                if listener.id not in listener_ids:
+                    listener_ids.append(listener.id)
+        if self.listener_id and self.listener_id not in listener_ids:
+            listener_ids.append(self.listener_id)
+        return listener_ids
+
     def _test_lb_and_listener_statuses(self, session, member=None):
         """Verify load balancer is in a mutable state."""
         # We need to verify that any listeners referencing this member's
         # pool are also mutable
-        listener_ids = []
-        if member:
-            listener_ids = [l.id for l in member.pool.listeners]
-        if self.listener_id and self.listener_id not in listener_ids:
-            listener_ids.append(self.listener_id)
         if not self.repositories.test_and_set_lb_and_listeners_prov_status(
                 session, self.load_balancer_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE,
-                listener_ids=listener_ids):
+                listener_ids=self._get_affected_listener_ids(session, member)):
             LOG.info(_LI("Member cannot be created or modified because the "
                          "Load Balancer is in an immutable state"))
             lb_repo = self.repositories.load_balancer
@@ -105,9 +104,10 @@ class MembersController(base.BaseController):
             self.repositories.load_balancer.update(
                 context.session, self.load_balancer_id,
                 provisioning_status=constants.ACTIVE)
-            if self.listener_id:
+            for listener_id in self._get_affected_listener_ids(
+                    context.session):
                 self.repositories.listener.update(
-                    context.session, self.listener_id,
+                    context.session, listener_id,
                     provisioning_status=constants.ACTIVE)
             if ['id'] == de.columns:
                 raise exceptions.IDAlreadyExists()
@@ -121,10 +121,12 @@ class MembersController(base.BaseController):
                      db_member.id)
             self.handler.create(db_member)
         except Exception:
-            with excutils.save_and_reraise_exception(reraise=False):
-                self.repositories.listener.update(
-                    context.session, self.listener_id,
-                    operating_status=constants.ERROR)
+            for listener_id in self._get_affected_listener_ids(
+                    context.session):
+                with excutils.save_and_reraise_exception(reraise=False):
+                    self.repositories.listener.update(
+                        context.session, listener_id,
+                        operating_status=constants.ERROR)
         db_member = self._get_db_member(context.session, db_member.id)
         return self._convert_db_to_type(db_member, member_types.MemberResponse)
 
@@ -142,9 +144,10 @@ class MembersController(base.BaseController):
             self.handler.update(db_member, member)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
-                if self.listener_id:
+                for listener_id in self._get_affected_listener_ids(
+                        context.session, db_member):
                     self.repositories.listener.update(
-                        context.session, self.listener_id,
+                        context.session, listener_id,
                         operating_status=constants.ERROR)
         db_member = self._get_db_member(context.session, id)
         return self._convert_db_to_type(db_member, member_types.MemberResponse)
@@ -162,9 +165,10 @@ class MembersController(base.BaseController):
             self.handler.delete(db_member)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
-                if self.listener_id:
+                for listener_id in self._get_affected_listener_ids(
+                        context.session, db_member):
                     self.repositories.listener.update(
-                        context.session, self.listener_id,
+                        context.session, listener_id,
                         operating_status=constants.ERROR)
         db_member = self.repositories.member.get(context.session, id=id)
         return self._convert_db_to_type(db_member, member_types.MemberResponse)

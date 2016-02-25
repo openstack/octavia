@@ -41,15 +41,6 @@ class L7RuleController(base.BaseController):
         self.l7policy_id = l7policy_id
         self.handler = self.handler.l7rule
 
-    def _get_db_l7rule(self, session, id):
-        """Gets the current l7rule object from the database."""
-        db_l7rule = self.repositories.l7rule.get(session, id=id)
-        if not db_l7rule:
-            LOG.info(_LI("L7Rule %s not found"), id)
-            raise exceptions.NotFound(
-                resource=data_models.L7Rule._name(), id=id)
-        return db_l7rule
-
     @wsme_pecan.wsexpose(l7rule_types.L7RuleResponse, wtypes.text)
     def get(self, id):
         """Gets a single l7rule's details."""
