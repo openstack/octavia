@@ -310,7 +310,8 @@ class LoadBalancer(BaseDataModel):
     def __init__(self, id=None, project_id=None, name=None, description=None,
                  provisioning_status=None, operating_status=None, enabled=None,
                  topology=None, vip=None, listeners=None, amphorae=None,
-                 pools=None, vrrp_group=None):
+                 pools=None, vrrp_group=None, server_group_id=None):
+
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -324,6 +325,7 @@ class LoadBalancer(BaseDataModel):
         self.listeners = listeners or []
         self.amphorae = amphorae or []
         self.pools = pools or []
+        self.server_group_id = server_group_id
 
 
 class VRRPGroup(BaseDataModel):

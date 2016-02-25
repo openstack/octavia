@@ -120,6 +120,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
               'operating_status': constants.OFFLINE,
               'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
               'vrrp_group': None,
+              'server_group_id': uuidutils.generate_uuid(),
               'project_id': uuidutils.generate_uuid()}
         vip = {'ip_address': '10.0.0.1',
                'port_id': uuidutils.generate_uuid(),
@@ -547,7 +548,8 @@ class ListenerRepositoryTest(BaseRepositoryTest):
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="lb_name", description="lb_description",
             provisioning_status=constants.ACTIVE,
-            operating_status=constants.ONLINE, enabled=True)
+            operating_status=constants.ONLINE, enabled=True,
+            server_group_id=self.FAKE_UUID_1)
 
     def create_listener(self, listener_id, port, default_pool_id=None):
         listener = self.listener_repo.create(

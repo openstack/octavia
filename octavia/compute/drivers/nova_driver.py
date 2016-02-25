@@ -42,10 +42,12 @@ class VirtualMachineManager(compute_base.ComputeBase):
             region=CONF.nova.region_name,
             endpoint_type=CONF.nova.endpoint_type)
         self.manager = self._nova_client.servers
+        self.server_groups = self._nova_client.server_groups
 
     def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
               key_name=None, sec_groups=None, network_ids=None,
-              port_ids=None, config_drive_files=None, user_data=None):
+              port_ids=None, config_drive_files=None, user_data=None,
+              server_group_id=None):
         '''Create a new virtual machine.
 
         :param name: optional name for amphora
@@ -63,6 +65,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
         :param user_data: Optional user data to pass to be exposed by the
         metadata server this can be a file type object as well or
         a string
+        :param server_group_id: Optional server group id(uuid) which is used
+        for anti_affinity feature
 
         :raises ComputeBuildException: if nova failed to build virtual machine
         :returns: UUID of amphora
@@ -77,13 +81,17 @@ class VirtualMachineManager(compute_base.ComputeBase):
             if port_ids:
                 nics.extend([{"port-id": port_id} for port_id in port_ids])
 
+            server_group = None if server_group_id is None else {
+                "group": server_group_id}
+
             amphora = self.manager.create(
                 name=name, image=image_id, flavor=amphora_flavor,
                 key_name=key_name, security_groups=sec_groups,
                 nics=nics,
                 files=config_drive_files,
                 userdata=user_data,
-                config_drive=True
+                config_drive=True,
+                scheduler_hints=server_group
             )
 
             return amphora.id
@@ -175,3 +183,36 @@ class VirtualMachineManager(compute_base.ComputeBase):
             lb_network_ip=lb_network_ip
         )
         return response
+
+    def create_server_group(self, name, policy):
+        """Create a server group object
+
+        :param name: the name of the server group
+        :param policy: the policy of the server group
+        :raises: Generic exception if the server group is not created
+        :returns: the server group object
+        """
+        kwargs = {'name': name,
+                  'policies': [policy]}
+        try:
+            server_group_obj = self.server_groups.create(**kwargs)
+            return server_group_obj
+        except Exception:
+            LOG.exception(_LE("Error create server group instance."))
+            raise exceptions.ServerGroupObjectCreateException()
+
+    def delete_server_group(self, server_group_id):
+        """Delete a server group object
+
+        :raises: Generic exception if the server group is not deleted
+        :param server_group_id: the uuid of a server group
+        """
+        try:
+            self.server_groups.delete(server_group_id)
+
+        except nova_exceptions.NotFound:
+            LOG.warn(_LW("Server group instance with id: %s not found. "
+                         "Assuming already deleted."), server_group_id)
+        except Exception:
+            LOG.exception(_LE("Error delete server group instance."))
+            raise exceptions.ServerGroupObjectDeleteException()

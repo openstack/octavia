@@ -690,6 +690,25 @@ class MarkLBActiveInDB(BaseDatabaseTask):
                                       provisioning_status=constants.ERROR)
 
 
+class UpdateLBServerGroupInDB(BaseDatabaseTask):
+    """Update the server group id info for load balancer in DB."""
+
+    def execute(self, loadbalancer_id, server_group_id):
+        LOG.debug("Server Group updated with id: %s for load balancer id: %s:",
+                  server_group_id, loadbalancer_id)
+        self.loadbalancer_repo.update(db_apis.get_session(),
+                                      id=loadbalancer_id,
+                                      server_group_id=server_group_id)
+
+    def revert(self, loadbalancer_id, server_group_id, *args, **kwargs):
+        LOG.warn(_LW('Reverting Server Group updated with id: %(s1)s for '
+                     'load balancer id: %(s2)s '),
+                 {'s1': server_group_id, 's2': loadbalancer_id})
+        self.loadbalancer_repo.update(db_apis.get_session(),
+                                      id=loadbalancer_id,
+                                      server_group_id=None)
+
+
 class MarkLBDeletedInDB(BaseDatabaseTask):
     """Mark the load balancer deleted in the DB.
 

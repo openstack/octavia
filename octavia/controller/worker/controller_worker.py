@@ -310,9 +310,12 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         lb = self._lb_repo.get(db_apis.get_session(),
                                id=load_balancer_id)
 
+        store = {constants.LOADBALANCER: lb,
+                 constants.SERVER_GROUP_ID: lb.server_group_id}
+
         delete_lb_tf = self._taskflow_load(self._lb_flows.
                                            get_delete_load_balancer_flow(),
-                                           store={constants.LOADBALANCER: lb})
+                                           store=store)
 
         with tf_logging.DynamicLoggingListener(delete_lb_tf,
                                                log=LOG):

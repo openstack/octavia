@@ -19,6 +19,7 @@ from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 import six.moves.builtins as builtins
 
+
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.controller.worker.tasks import compute_tasks
@@ -35,6 +36,7 @@ COMPUTE_ID = uuidutils.generate_uuid()
 LB_NET_IP = '192.0.2.1'
 PORT_ID = uuidutils.generate_uuid()
 AUTH_VERSION = '2'
+SERVER_GRPOUP_ID = uuidutils.generate_uuid()
 
 
 class TestException(Exception):
@@ -85,7 +87,8 @@ class TestComputeTasks(base.TestCase):
 
         mock_driver.build.return_value = COMPUTE_ID
         # Test execute()
-        compute_id = createcompute.execute(_amphora_mock.id, ports=[_port])
+        compute_id = createcompute.execute(_amphora_mock.id, ports=[_port],
+                                           server_group_id=SERVER_GRPOUP_ID)
 
         # Validate that the build method was called properly
         mock_driver.build.assert_called_once_with(
@@ -98,7 +101,8 @@ class TestComputeTasks(base.TestCase):
             port_ids=[PORT_ID],
             config_drive_files={'/etc/octavia/'
                                 'amphora-agent.conf': 'test_conf'},
-            user_data=None)
+            user_data=None,
+            server_group_id=SERVER_GRPOUP_ID)
 
         # Make sure it returns the expected compute_id
         assert(compute_id == COMPUTE_ID)
@@ -155,7 +159,8 @@ class TestComputeTasks(base.TestCase):
             network_ids=[AMP_NET],
             port_ids=[PORT_ID],
             config_drive_files=None,
-            user_data='test_ud_conf')
+            user_data='test_ud_conf',
+            server_group_id=None)
 
         # Make sure it returns the expected compute_id
         assert(compute_id == COMPUTE_ID)
@@ -199,7 +204,8 @@ class TestComputeTasks(base.TestCase):
         conf.config(group="controller_worker", amp_ssh_access_allowed=False)
 
         # Test execute()
-        compute_id = createcompute.execute(_amphora_mock.id, ports=[_port])
+        compute_id = createcompute.execute(_amphora_mock.id, ports=[_port],
+                                           server_group_id=SERVER_GRPOUP_ID)
 
         # Validate that the build method was called properly
         mock_driver.build.assert_called_once_with(
@@ -212,7 +218,8 @@ class TestComputeTasks(base.TestCase):
             port_ids=[PORT_ID],
             config_drive_files={'/etc/octavia/'
                                 'amphora-agent.conf': 'test_conf'},
-            user_data=None)
+            user_data=None,
+            server_group_id=SERVER_GRPOUP_ID)
 
         # Make sure it returns the expected compute_id
         self.assertEqual(COMPUTE_ID, compute_id)
@@ -252,8 +259,9 @@ class TestComputeTasks(base.TestCase):
         m = mock.mock_open(read_data='test')
         with mock.patch.object(builtins, 'open', m, create=True):
             # Test execute()
-            compute_id = createcompute.execute(_amphora_mock.id,
-                                               'test_cert')
+            compute_id = createcompute.execute(_amphora_mock.id, 'test_cert',
+                                               server_group_id=SERVER_GRPOUP_ID
+                                               )
 
             # Validate that the build method was called properly
             mock_driver.build.assert_called_once_with(
@@ -268,7 +276,8 @@ class TestComputeTasks(base.TestCase):
                 config_drive_files={
                     '/etc/octavia/certs/server.pem': 'test_cert',
                     '/etc/octavia/certs/client_ca.pem': 'test',
-                    '/etc/octavia/amphora-agent.conf': 'test_conf'})
+                    '/etc/octavia/amphora-agent.conf': 'test_conf'},
+                server_group_id=SERVER_GRPOUP_ID)
 
         # Make sure it returns the expected compute_id
         assert(compute_id == COMPUTE_ID)
@@ -355,3 +364,44 @@ class TestComputeTasks(base.TestCase):
         delete_compute.execute(_amphora_mock)
 
         mock_driver.delete.assert_called_once_with(COMPUTE_ID)
+
+    @mock.patch('stevedore.driver.DriverManager.driver')
+    def test_nova_server_group_create(self, mock_driver):
+        nova_sever_group_obj = compute_tasks.NovaServerGroupCreate()
+
+        server_group_test_id = '6789'
+        fake_server_group = mock.MagicMock()
+        fake_server_group.id = server_group_test_id
+        fake_server_group.policy = 'anti-affinity'
+        mock_driver.create_server_group.return_value = fake_server_group
+
+        # Test execute()
+        sg_id = nova_sever_group_obj.execute('123')
+
+        # Validate that the build method was called properly
+        mock_driver.create_server_group.assert_called_once_with(
+            'octavia-lb-123', 'anti-affinity')
+
+        # Make sure it returns the expected server group_id
+        assert(sg_id == server_group_test_id)
+
+        # Test revert()
+        nova_sever_group_obj.revert(sg_id)
+
+        # Validate that the delete_server_group method was called properly
+        mock_driver.delete_server_group.assert_called_once_with(sg_id)
+        nova_sever_group_obj.revert(sg_id)
+
+    @mock.patch('stevedore.driver.DriverManager.driver')
+    def test_nova_server_group_delete_with_sever_group_id(self, mock_driver):
+        nova_sever_group_obj = compute_tasks.NovaServerGroupDelete()
+        sg_id = '6789'
+        nova_sever_group_obj.execute(sg_id)
+        mock_driver.delete_server_group.assert_called_once_with(sg_id)
+
+    @mock.patch('stevedore.driver.DriverManager.driver')
+    def test_nova_server_group_delete_with_None(self, mock_driver):
+        nova_sever_group_obj = compute_tasks.NovaServerGroupDelete()
+        sg_id = None
+        nova_sever_group_obj.execute(sg_id)
+        self.assertFalse(mock_driver.delete_server_group.called, sg_id)

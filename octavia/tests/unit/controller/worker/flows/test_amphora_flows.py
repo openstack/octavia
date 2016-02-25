@@ -30,6 +30,8 @@ class TestAmphoraFlows(base.TestCase):
     def setUp(self):
         cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
                               group='controller_worker')
+        cfg.CONF.set_override('enable_anti_affinity', False,
+                              group='nova')
         self.AmpFlow = amphora_flows.AmphoraFlows()
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="keystone_authtoken", auth_version=AUTH_VERSION)
@@ -89,6 +91,7 @@ class TestAmphoraFlows(base.TestCase):
     def test_get_cert_create_amphora_for_lb_flow(self):
         cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
                               group='controller_worker')
+
         self.AmpFlow = amphora_flows.AmphoraFlows()
 
         amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
@@ -110,6 +113,7 @@ class TestAmphoraFlows(base.TestCase):
     def test_get_cert_master_create_amphora_for_lb_flow(self):
         cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
                               group='controller_worker')
+
         self.AmpFlow = amphora_flows.AmphoraFlows()
 
         amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
@@ -127,6 +131,28 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertEqual(5, len(amp_flow.provides))
         self.assertEqual(1, len(amp_flow.requires))
+
+    def test_get_cert_master_rest_anti_affinity_create_amphora_for_lb_flow(
+            self):
+        cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
+                              group='controller_worker')
+
+        cfg.CONF.set_override('enable_anti_affinity', True,
+                              group='nova')
+
+        self.AmpFlow = amphora_flows.AmphoraFlows()
+        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+            'SOMEPREFIX', constants.ROLE_MASTER)
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.SERVER_GROUP_ID, amp_flow.requires)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.assertIn(constants.SERVER_PEM, amp_flow.provides)
+
+        self.assertEqual(5, len(amp_flow.provides))
+        self.assertEqual(2, len(amp_flow.requires))
 
     def test_get_cert_backup_create_amphora_for_lb_flow(self):
         cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
@@ -169,6 +195,27 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertEqual(5, len(amp_flow.provides))
         self.assertEqual(1, len(amp_flow.requires))
+
+    def test_get_cert_backup_rest_anti_affinity_create_amphora_for_lb_flow(
+            self):
+        cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
+                              group='controller_worker')
+        cfg.CONF.set_override('enable_anti_affinity', True,
+                              group='nova')
+
+        self.AmpFlow = amphora_flows.AmphoraFlows()
+        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+            'SOMEPREFIX', constants.ROLE_BACKUP)
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.SERVER_GROUP_ID, amp_flow.requires)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.assertIn(constants.SERVER_PEM, amp_flow.provides)
+
+        self.assertEqual(5, len(amp_flow.provides))
+        self.assertEqual(2, len(amp_flow.requires))
 
     def test_get_delete_amphora_flow(self):
 
