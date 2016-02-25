@@ -17,6 +17,7 @@ from novaclient import exceptions as nova_exceptions
 from oslo_config import cfg
 from oslo_utils import uuidutils
 
+from octavia.common import clients
 from octavia.common import constants
 from octavia.common import data_models as models
 from octavia.common import exceptions
@@ -25,6 +26,62 @@ import octavia.tests.unit.base as base
 
 
 CONF = cfg.CONF
+
+
+class Test_GetImageUuid(base.TestCase):
+
+    def test__get_image_uuid_tag(self):
+        client = mock.Mock()
+        with mock.patch.object(nova_common,
+                               '_extract_amp_image_id_by_tag',
+                               return_value='fakeid') as extract:
+            image_id = nova_common._get_image_uuid(client, '', 'faketag')
+        self.assertEqual('fakeid', image_id)
+        extract.assert_called_with(client, 'faketag')
+
+    def test__get_image_uuid_notag(self):
+        client = mock.Mock()
+        image_id = nova_common._get_image_uuid(client, 'fakeid', '')
+        self.assertEqual('fakeid', image_id)
+
+    def test__get_image_uuid_id_beats_tag(self):
+        client = mock.Mock()
+        image_id = nova_common._get_image_uuid(client, 'fakeid', 'faketag')
+        self.assertEqual('fakeid', image_id)
+
+
+class Test_ExtractAmpImageIdByTag(base.TestCase):
+
+    def setUp(self):
+        super(Test_ExtractAmpImageIdByTag, self).setUp()
+        client_mock = mock.patch.object(clients.GlanceAuth,
+                                        'get_glance_client')
+        self.client = client_mock.start().return_value
+
+    def test_no_images(self):
+        self.client.images.list.return_value = []
+        self.assertRaises(
+            exceptions.GlanceNoTaggedImages,
+            nova_common._extract_amp_image_id_by_tag, self.client, 'faketag')
+
+    def test_single_image(self):
+        images = [
+            {'id': uuidutils.generate_uuid(), 'tag': 'faketag'}
+        ]
+        self.client.images.list.return_value = images
+        image_id = nova_common._extract_amp_image_id_by_tag(self.client,
+                                                            'faketag')
+        self.assertIn(image_id, images[0]['id'])
+
+    def test_multiple_images_returns_one_of_images(self):
+        images = [
+            {'id': image_id, 'tag': 'faketag'}
+            for image_id in [uuidutils.generate_uuid() for i in range(10)]
+        ]
+        self.client.images.list.return_value = images
+        image_id = nova_common._extract_amp_image_id_by_tag(self.client,
+                                                            'faketag')
+        self.assertIn(image_id, [image['id'] for image in images])
 
 
 class TestNovaClient(base.TestCase):
@@ -107,6 +164,15 @@ class TestNovaClient(base.TestCase):
     def test_bad_build(self):
         self.manager.manager.create.side_effect = Exception
         self.assertRaises(exceptions.ComputeBuildException, self.manager.build)
+
+    def test_build_extracts_image_id_by_tag(self):
+        expected_id = 'fakeid-by-tag'
+        with mock.patch.object(nova_common, '_get_image_uuid',
+                               return_value=expected_id):
+            self.manager.build(image_id='fakeid', image_tag='tag')
+
+        self.assertEqual(expected_id,
+                         self.manager.manager.create.call_args[1]['image'])
 
     def test_delete(self):
         amphora_id = self.manager.build(amphora_flavor=1, image_id=1,

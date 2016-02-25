@@ -174,6 +174,10 @@ class NoReadyAmphoraeException(OctaviaException):
     message = _LE('There are not any READY amphora available.')
 
 
+class GlanceNoTaggedImages(OctaviaException):
+    message = _LE("No Glance images are tagged with %(tag)s tag.")
+
+
 class NoSuitableAmphoraException(OctaviaException):
     message = _LE('Unable to allocate an amphora due to: %(msg)s')
 
