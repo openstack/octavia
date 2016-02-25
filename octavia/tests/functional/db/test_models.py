@@ -780,10 +780,10 @@ class L7RuleModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertIsInstance(new_l7rule.l7policy, models.L7Policy)
 
 
-class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
+class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
-        super(DataModelConversionTest, self).setUp()
+        super(TestDataModelConversionTest, self).setUp()
         self.lb = self.create_load_balancer(self.session)
         self.pool = self.create_pool(self.session, load_balancer_id=self.lb.id)
         self.hm = self.create_health_monitor(self.session, self.pool.id)
@@ -822,6 +822,9 @@ class DataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
             return obj.__class__.__name__ + obj.load_balancer_id
         elif obj.__class__.__name__ in ['AmphoraHealth']:
             return obj.__class__.__name__ + obj.amphora_id
+        elif obj.__class__.__name__ in ['SNI']:
+            return (obj.__class__.__name__ +
+                    obj.listener_id + obj.tls_container_id)
         else:
             raise NotImplementedError
 
