@@ -23,12 +23,12 @@ from octavia.common import constants
 class L7PolicyResponse(base.BaseType):
     """Defines which attributes are to be shown on any response."""
     id = wtypes.wsattr(wtypes.UuidType())
-    name = wtypes.wsattr(wtypes.StringType(max_length=255))
-    description = wtypes.wsattr(wtypes.StringType(max_length=255))
+    name = wtypes.wsattr(wtypes.StringType())
+    description = wtypes.wsattr(wtypes.StringType())
     enabled = wtypes.wsattr(bool)
-    action = wtypes.wsattr(wtypes.StringType(max_length=255))
-    redirect_pool_id = wtypes.wsattr(wtypes.StringType(max_length=255))
-    redirect_url = wtypes.wsattr(wtypes.StringType(max_length=255))
+    action = wtypes.wsattr(wtypes.StringType())
+    redirect_pool_id = wtypes.wsattr(wtypes.UuidType())
+    redirect_url = wtypes.wsattr(wtypes.StringType())
     position = wtypes.wsattr(wtypes.IntegerType())
     l7rules = wtypes.wsattr([l7rule.L7RuleResponse])
     redirect_pool = wtypes.wsattr(pool.PoolResponse)
@@ -64,7 +64,7 @@ class L7PolicyPOST(base.BaseType):
     action = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_L7POLICY_ACTIONS),
         mandatory=True)
-    redirect_pool_id = wtypes.wsattr(wtypes.StringType(max_length=255))
+    redirect_pool_id = wtypes.wsattr(wtypes.UuidType())
     redirect_url = wtypes.wsattr(base.URLType())
     position = wtypes.wsattr(wtypes.IntegerType(),
                              default=constants.MAX_POLICY_POSITION)
@@ -79,6 +79,6 @@ class L7PolicyPUT(base.BaseType):
     enabled = wtypes.wsattr(bool)
     action = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_L7POLICY_ACTIONS))
-    redirect_pool_id = wtypes.wsattr(wtypes.StringType(max_length=255))
+    redirect_pool_id = wtypes.wsattr(wtypes.UuidType())
     redirect_url = wtypes.wsattr(base.URLType())
     position = wtypes.wsattr(wtypes.IntegerType())

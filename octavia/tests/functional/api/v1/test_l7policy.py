@@ -279,7 +279,7 @@ class TestL7Policy(base.BaseAPITest):
             constants.L7POLICY_ACTION_REJECT)
         self.set_lb_status(self.lb.get('id'))
         path = self.l7policy_path.format(l7policy_id=api_l7policy.get('id'))
-        new_l7policy = {'redirect_pool_id': 'bad-pool-id'}
+        new_l7policy = {'redirect_pool_id': uuidutils.generate_uuid()}
         self.put(path, new_l7policy, status=404)
 
     def test_update_redirect_to_pool_minimal(self):
