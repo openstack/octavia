@@ -23,6 +23,7 @@ from barbicanclient import client as barbican_client
 import six
 
 from octavia.certificates.common import cert
+from octavia.common.tls_utils import cert_parser
 from octavia.i18n import _LE
 
 
@@ -42,7 +43,8 @@ class BarbicanCert(cert.Cert):
 
     def get_intermediates(self):
         if self._cert_container.intermediates:
-            return self._cert_container.intermediates.payload
+            intermediates = self._cert_container.intermediates.payload
+            return [imd for imd in cert_parser._split_x509s(intermediates)]
 
     def get_private_key(self):
         if self._cert_container.private_key:

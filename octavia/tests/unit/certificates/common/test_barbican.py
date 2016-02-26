@@ -18,13 +18,29 @@ import mock
 import octavia.certificates.common.barbican as barbican_common
 import octavia.tests.unit.base as base
 
+X509_IMDS = """-----BEGIN CERTIFICATE-----
+First Intermediate Data
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+Second Intermediate Data
+-----END CERTIFICATE-----"""
+
+X509_IMDS_LIST = [
+    """-----BEGIN CERTIFICATE-----
+First Intermediate Data
+-----END CERTIFICATE-----""",
+    """-----BEGIN CERTIFICATE-----
+Second Intermediate Data
+-----END CERTIFICATE-----"""
+]
+
 
 class TestBarbicanCert(base.TestCase):
 
     def setUp(self):
         # Certificate data
         self.certificate = "My Certificate"
-        self.intermediates = "My Intermediates"
+        self.intermediates = X509_IMDS_LIST
         self.private_key = "My Private Key"
         self.private_key_passphrase = "My Private Key Passphrase"
 
@@ -34,7 +50,7 @@ class TestBarbicanCert(base.TestCase):
         )
         self.intermediates_secret = barbican_client.secrets.Secret(
             api=mock.MagicMock(),
-            payload=self.intermediates
+            payload=X509_IMDS
         )
         self.private_key_secret = barbican_client.secrets.Secret(
             api=mock.MagicMock(),

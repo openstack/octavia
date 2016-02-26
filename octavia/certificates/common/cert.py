@@ -29,7 +29,7 @@ class Cert(object):
 
     @abc.abstractmethod
     def get_intermediates(self):
-        """Returns the intermediate certificates."""
+        """Returns the intermediate certificates as a list."""
         pass
 
     @abc.abstractmethod

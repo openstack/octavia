@@ -26,6 +26,22 @@ import octavia.tests.unit.base as base
 
 PROJECT_ID = "12345"
 
+X509_IMDS = """-----BEGIN CERTIFICATE-----
+First Intermediate Data
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+Second Intermediate Data
+-----END CERTIFICATE-----"""
+
+X509_IMDS_LIST = [
+    """-----BEGIN CERTIFICATE-----
+First Intermediate Data
+-----END CERTIFICATE-----""",
+    """-----BEGIN CERTIFICATE-----
+Second Intermediate Data
+-----END CERTIFICATE-----"""
+]
+
 
 class TestBarbicanManager(base.TestCase):
 
@@ -42,6 +58,7 @@ class TestBarbicanManager(base.TestCase):
         self.private_key = mock.Mock(spec=secrets.Secret)
         self.certificate = mock.Mock(spec=secrets.Secret)
         self.intermediates = mock.Mock(spec=secrets.Secret)
+        self.intermediates.payload = X509_IMDS
         self.private_key_passphrase = mock.Mock(spec=secrets.Secret)
 
         container = mock.Mock(spec=containers.CertificateContainer)
@@ -180,7 +197,7 @@ class TestBarbicanManager(base.TestCase):
         self.assertEqual(data.get_certificate(),
                          self.certificate.payload)
         self.assertEqual(data.get_intermediates(),
-                         self.intermediates.payload)
+                         X509_IMDS_LIST)
         self.assertEqual(data.get_private_key_passphrase(),
                          self.private_key_passphrase.payload)
 
@@ -205,7 +222,7 @@ class TestBarbicanManager(base.TestCase):
         self.assertEqual(data.get_certificate(),
                          self.certificate.payload)
         self.assertEqual(data.get_intermediates(),
-                         self.intermediates.payload)
+                         X509_IMDS_LIST)
         self.assertEqual(data.get_private_key_passphrase(),
                          self.private_key_passphrase.payload)
 
