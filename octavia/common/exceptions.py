@@ -150,6 +150,11 @@ class ImmutableObject(APIException):
     code = 409
 
 
+class TooManyL7RulesOnL7Policy(APIException):
+    message = _("Too many rules on L7 policy %(id)s")
+    code = 409
+
+
 class ComputeBuildException(OctaviaException):
     message = _LE('Failed to build compute instance.')
 

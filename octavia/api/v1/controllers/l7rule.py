@@ -72,6 +72,13 @@ class L7RuleController(base.BaseController):
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
 
+    def _check_l7policy_max_rules(self, session):
+        """Checks to make sure the L7Policy doesn't have too many rules."""
+        count = self.repositories.l7rule.count(
+            session, l7policy_id=self.l7policy_id)
+        if count >= constants.MAX_L7RULES_PER_L7POLICY:
+            raise exceptions.TooManyL7RulesOnL7Policy(id=self.l7policy_id)
+
     @wsme_pecan.wsexpose(l7rule_types.L7RuleResponse,
                          body=l7rule_types.L7RulePOST, status_code=202)
     def post(self, l7rule):
@@ -81,6 +88,7 @@ class L7RuleController(base.BaseController):
         except Exception as e:
             raise exceptions.L7RuleValidation(error=e)
         context = pecan.request.context.get('octavia_context')
+        self._check_l7policy_max_rules(context.session)
         l7rule_dict = db_prepare.create_l7rule(l7rule.to_dict(),
                                                self.l7policy_id)
         self._test_lb_and_listener_statuses(context.session)
