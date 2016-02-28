@@ -146,13 +146,6 @@ keystone_authtoken_v3_opts = [
 ]
 
 haproxy_amphora_opts = [
-    cfg.StrOpt('username',
-               default='ubuntu',
-               help=_('Name of user for access to amphora.')),
-    cfg.StrOpt('key_path',
-               default='/opt/stack/.ssh/id_rsa',
-               help=_('Local absolute path to the private key '
-                      'loaded on amphora at boot.')),
     cfg.StrOpt('base_path',
                default='/var/lib/octavia',
                help=_('Base directory for amphora files.')),
