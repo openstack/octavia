@@ -273,6 +273,42 @@ class TestL7Policy(base.BaseAPITest):
                                             constants.PENDING_UPDATE,
                                             constants.ERROR)
 
+    def test_update_redirect_to_pool_bad_pool_id(self):
+        api_l7policy = self.create_l7policy(
+            self.lb.get('id'), self.listener.get('id'),
+            constants.L7POLICY_ACTION_REJECT)
+        self.set_lb_status(self.lb.get('id'))
+        path = self.l7policy_path.format(l7policy_id=api_l7policy.get('id'))
+        new_l7policy = {'redirect_pool_id': 'bad-pool-id'}
+        self.put(path, new_l7policy, status=404)
+
+    def test_update_redirect_to_pool_minimal(self):
+        api_l7policy = self.create_l7policy(
+            self.lb.get('id'), self.listener.get('id'),
+            constants.L7POLICY_ACTION_REJECT)
+        self.set_lb_status(self.lb.get('id'))
+        path = self.l7policy_path.format(l7policy_id=api_l7policy.get('id'))
+        new_l7policy = {'redirect_pool_id': self.pool.get('id')}
+        self.put(path, new_l7policy, status=202)
+
+    def test_update_redirect_to_url_bad_url(self):
+        api_l7policy = self.create_l7policy(
+            self.lb.get('id'), self.listener.get('id'),
+            constants.L7POLICY_ACTION_REJECT)
+        self.set_lb_status(self.lb.get('id'))
+        path = self.l7policy_path.format(l7policy_id=api_l7policy.get('id'))
+        new_l7policy = {'redirect_url': 'bad-url'}
+        self.put(path, new_l7policy, status=400)
+
+    def test_update_redirect_to_url_minimal(self):
+        api_l7policy = self.create_l7policy(
+            self.lb.get('id'), self.listener.get('id'),
+            constants.L7POLICY_ACTION_REJECT)
+        self.set_lb_status(self.lb.get('id'))
+        path = self.l7policy_path.format(l7policy_id=api_l7policy.get('id'))
+        new_l7policy = {'redirect_url': 'http://www.example.com/'}
+        self.put(path, new_l7policy, status=202)
+
     def test_delete(self):
         api_l7policy = self.create_l7policy(
             self.lb.get('id'), self.listener.get('id'),

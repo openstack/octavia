@@ -106,6 +106,12 @@ SUPPORTED_L7POLICY_ACTIONS = (L7POLICY_ACTION_REJECT,
                               L7POLICY_ACTION_REDIRECT_TO_URL,
                               L7POLICY_ACTION_REDIRECT_TO_POOL)
 
+# Largest a 32-bit integer can be, which is a limitation
+# here if you're using MySQL, as most probably are. This just needs
+# to be larger than any existing rule position numbers which will
+# definitely be the case with 2147483647
+MAX_POLICY_POSITION = 2147483647
+
 URL_REGEX = (r'\Ahttp[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|'
              r'(?:%[0-9a-fA-F][0-9a-fA-F]))+')
 

@@ -26,6 +26,7 @@ from octavia.api.v1.types import l7policy as l7policy_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.common import validate
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
@@ -76,7 +77,13 @@ class L7PolicyController(base.BaseController):
     def post(self, l7policy):
         """Creates a l7policy on a listener."""
         context = pecan.request.context.get('octavia_context')
-        l7policy_dict = db_prepare.create_l7policy(l7policy.to_dict(),
+        l7policy_dict = validate.sanitize_l7policy_api_args(
+            l7policy.to_dict(), create=True)
+        # Make sure any pool specified by redirect_pool_id exists
+        if 'redirect_pool_id' in l7policy_dict.keys():
+            self._get_db_pool(
+                context.session, l7policy_dict['redirect_pool_id'])
+        l7policy_dict = db_prepare.create_l7policy(l7policy_dict,
                                                    self.load_balancer_id,
                                                    self.listener_id)
         self._test_lb_and_listener_statuses(context.session)
@@ -113,13 +120,18 @@ class L7PolicyController(base.BaseController):
                          status_code=202)
     def put(self, id, l7policy):
         """Updates a l7policy."""
+        l7policy_dict = validate.sanitize_l7policy_api_args(l7policy.to_dict())
         context = pecan.request.context.get('octavia_context')
+        # Make sure any specified redirect_pool_id exists
+        if 'redirect_pool_id' in l7policy_dict.keys():
+            self._get_db_pool(
+                context.session, l7policy_dict['redirect_pool_id'])
         db_l7policy = self._get_db_l7policy(context.session, id)
         self._test_lb_and_listener_statuses(context.session)
 
         try:
             LOG.info(_LI("Sending Update of L7Policy %s to handler"), id)
-            self.handler.update(db_l7policy, l7policy)
+            self.handler.update(db_l7policy, l7policy_dict)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.listener.update(
