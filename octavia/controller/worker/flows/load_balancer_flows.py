@@ -21,6 +21,8 @@ from taskflow.patterns import unordered_flow
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.controller.worker.flows import amphora_flows
+from octavia.controller.worker.flows import listener_flows
+from octavia.controller.worker.flows import pool_flows
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import compute_tasks
 from octavia.controller.worker.tasks import controller_tasks
@@ -39,6 +41,8 @@ class LoadBalancerFlows(object):
 
     def __init__(self):
         self.amp_flows = amphora_flows.AmphoraFlows()
+        self.listener_flows = listener_flows.ListenerFlows()
+        self.pool_flows = pool_flows.PoolFlows()
 
     def get_create_load_balancer_flow(self, topology):
         """Creates a conditional graph flow that allocates a loadbalancer to
@@ -133,18 +137,38 @@ class LoadBalancerFlows(object):
             requires=constants.LOADBALANCER))
         return post_create_LB_flow
 
-    def get_delete_load_balancer_flow(self):
+    def _get_delete_listeners_flow(self, lb):
+        """Sets up an internal delete flow
+
+        Because task flow doesn't support loops we store each listener
+        we want to delete in the store part and then rebind
+        :param lb: load balancer
+        :return: (flow, store) -- flow for the deletion and store with all
+                    the listeners stored properly
+        """
+        listeners_delete_flow = unordered_flow.Flow('listener_delete_flow')
+        store = {}
+        for listener in lb.listeners:
+            listener_name = 'listener_' + listener.id
+            store[listener_name] = listener
+            listeners_delete_flow.add(
+                self.listener_flows.get_delete_listener_internal_flow(
+                    listener_name))
+        return (listeners_delete_flow, store)
+
+    def get_delete_load_balancer_flow(self, lb):
         """Creates a flow to delete a load balancer.
 
         :returns: The flow for deleting a load balancer
         """
+        (listeners_delete, store) = self._get_delete_listeners_flow(lb)
+
         delete_LB_flow = linear_flow.Flow(constants.DELETE_LOADBALANCER_FLOW)
         delete_LB_flow.add(compute_tasks.NovaServerGroupDelete(
             requires=constants.SERVER_GROUP_ID))
         delete_LB_flow.add(database_tasks.MarkLBAmphoraeHealthBusy(
             requires=constants.LOADBALANCER))
-        delete_LB_flow.add(controller_tasks.DeleteListenersOnLB(
-            requires=constants.LOADBALANCER))
+        delete_LB_flow.add(listeners_delete)
         delete_LB_flow.add(network_tasks.UnplugVIP(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(compute_tasks.DeleteAmphoraeOnLoadBalancer(
@@ -158,7 +182,56 @@ class LoadBalancerFlows(object):
         delete_LB_flow.add(database_tasks.MarkLBDeletedInDB(
             requires=constants.LOADBALANCER))
 
-        return delete_LB_flow
+        return (delete_LB_flow, store)
+
+    def _get_delete_pools_flow(self, lb):
+        """Sets up an internal delete flow
+
+        Because task flow doesn't support loops we store each pool
+        we want to delete in the store part and then rebind
+        :param lb: load balancer
+        :return: (flow, store) -- flow for the deletion and store with all
+                    the listeners stored properly
+        """
+        pools_delete_flow = unordered_flow.Flow('pool_delete_flow')
+        store = {}
+        for pool in lb.pools:
+            pool_name = 'pool' + pool.id
+            store[pool_name] = pool
+            pools_delete_flow.add(
+                self.pool_flows.get_delete_pool_flow_internal(
+                    pool_name))
+        return (pools_delete_flow, store)
+
+    def get_cascade_delete_load_balancer_flow(self, lb):
+        """Creates a flow to delete a load balancer.
+
+        :returns: The flow for deleting a load balancer
+        """
+
+        (listeners_delete, store) = self._get_delete_listeners_flow(lb)
+        (pools_delete, pool_store) = self._get_delete_pools_flow(lb)
+        store.update(pool_store)
+
+        delete_LB_flow = linear_flow.Flow(constants.DELETE_LOADBALANCER_FLOW)
+        delete_LB_flow.add(database_tasks.MarkLBAmphoraeHealthBusy(
+            requires=constants.LOADBALANCER))
+        delete_LB_flow.add(pools_delete)
+        delete_LB_flow.add(listeners_delete)
+        delete_LB_flow.add(network_tasks.UnplugVIP(
+            requires=constants.LOADBALANCER))
+        delete_LB_flow.add(compute_tasks.DeleteAmphoraeOnLoadBalancer(
+            requires=constants.LOADBALANCER))
+        delete_LB_flow.add(database_tasks.MarkLBAmphoraeDeletedInDB(
+            requires=constants.LOADBALANCER))
+        delete_LB_flow.add(network_tasks.DeallocateVIP(
+            requires=constants.LOADBALANCER))
+        delete_LB_flow.add(database_tasks.DisableLBAmphoraeHealthMonitoring(
+            requires=constants.LOADBALANCER))
+        delete_LB_flow.add(database_tasks.MarkLBDeletedInDB(
+            requires=constants.LOADBALANCER))
+
+        return (delete_LB_flow, store)
 
     def get_new_LB_networking_subflow(self):
         """Create a sub-flow to setup networking.

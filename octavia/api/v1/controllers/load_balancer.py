@@ -118,8 +118,7 @@ class LoadBalancersController(base.BaseController):
         db_lb = self._get_db_lb(context.session, id)
         return self._convert_db_to_type(db_lb, lb_types.LoadBalancerResponse)
 
-    @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
-    def delete(self, id):
+    def _delete(self, id, cascade=False):
         """Deletes a load balancer."""
         context = pecan.request.context.get('octavia_context')
         db_lb = self._get_db_lb(context.session, id)
@@ -129,13 +128,18 @@ class LoadBalancersController(base.BaseController):
         try:
             LOG.info(_LI("Sending deleted Load Balancer %s to the handler"),
                      db_lb.id)
-            self.handler.delete(db_lb)
+            self.handler.delete(db_lb, cascade)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.load_balancer.update(
                     context.session, db_lb.id,
                     provisioning_status=constants.ERROR)
         return self._convert_db_to_type(db_lb, lb_types.LoadBalancerResponse)
+
+    @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
+    def delete(self, id):
+        """Deletes a load balancer."""
+        return self._delete(id, cascade=False)
 
     @pecan.expose()
     def _lookup(self, lb_id, *remainder):
@@ -146,7 +150,8 @@ class LoadBalancersController(base.BaseController):
         """
         context = pecan.request.context.get('octavia_context')
         if lb_id and len(remainder) and (remainder[0] == 'listeners' or
-                                         remainder[0] == 'pools'):
+                                         remainder[0] == 'pools' or
+                                         remainder[0] == 'delete_cascade'):
             controller = remainder[0]
             remainder = remainder[1:]
             db_lb = self.repositories.load_balancer.get(context.session,
@@ -161,3 +166,16 @@ class LoadBalancersController(base.BaseController):
             elif controller == 'pools':
                 return pool.PoolsController(
                     load_balancer_id=db_lb.id), remainder
+            elif (controller == 'delete_cascade'):
+                return LBCascadeDeleteController(db_lb.id), ''
+
+
+class LBCascadeDeleteController(LoadBalancersController):
+        def __init__(self, lb_id):
+            super(LBCascadeDeleteController, self).__init__()
+            self.lb_id = lb_id
+
+        @wsme_pecan.wsexpose(None, status_code=202)
+        def delete(self):
+            """Deletes a load balancer."""
+            return self._delete(self.lb_id, cascade=True)

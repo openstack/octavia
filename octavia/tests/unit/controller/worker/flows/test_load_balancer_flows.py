@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+
+import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from taskflow.patterns import linear_flow as flow
@@ -70,16 +72,45 @@ class TestLoadBalancerFlows(base.TestCase):
                           'BOGUS')
 
     def test_get_delete_load_balancer_flow(self):
+        lb_mock = mock.Mock()
+        listener_mock = mock.Mock()
+        listener_mock.id = '123'
+        lb_mock.listeners = [listener_mock]
 
-        lb_flow = self.LBFlow.get_delete_load_balancer_flow()
+        lb_flow, store = self.LBFlow.get_delete_load_balancer_flow(lb_mock)
 
         self.assertIsInstance(lb_flow, flow.Flow)
+        self.assertEqual({'listener_123': listener_mock}, store)
 
         self.assertIn(constants.LOADBALANCER, lb_flow.requires)
         self.assertIn(constants.SERVER_GROUP_ID, lb_flow.requires)
 
         self.assertEqual(0, len(lb_flow.provides))
-        self.assertEqual(2, len(lb_flow.requires))
+        self.assertEqual(3, len(lb_flow.requires))
+
+    def test_get_delete_load_balancer_flow_cascade(self):
+        lb_mock = mock.Mock()
+        listener_mock = mock.Mock()
+        listener_mock.id = '123'
+        lb_mock.listeners = [listener_mock]
+        pool_mock = mock.Mock()
+        pool_mock.id = '345'
+        lb_mock.pools = [pool_mock]
+        l7_mock = mock.Mock()
+        l7_mock.id = '678'
+        listener_mock.l7policies = [l7_mock]
+
+        lb_flow, store = self.LBFlow.get_cascade_delete_load_balancer_flow(
+            lb_mock)
+
+        self.assertIsInstance(lb_flow, flow.Flow)
+        self.assertEqual({'listener_123': listener_mock,
+                          'pool345': pool_mock}, store)
+
+        self.assertIn(constants.LOADBALANCER, lb_flow.requires)
+
+        self.assertEqual(0, len(lb_flow.provides))
+        self.assertEqual(3, len(lb_flow.requires))
 
     def test_get_new_LB_networking_subflow(self):
 

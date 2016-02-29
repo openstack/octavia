@@ -50,9 +50,9 @@ class Endpoint(object):
         self.worker.update_load_balancer(load_balancer_id,
                                          load_balancer_updates)
 
-    def delete_load_balancer(self, context, load_balancer_id):
+    def delete_load_balancer(self, context, load_balancer_id, cascade=False):
         LOG.info(_LI('Deleting load balancer \'%s\'...'), load_balancer_id)
-        self.worker.delete_load_balancer(load_balancer_id)
+        self.worker.delete_load_balancer(load_balancer_id, cascade)
 
     def create_listener(self, context, listener_id):
         LOG.info(_LI('Creating listener \'%s\'...'), listener_id)

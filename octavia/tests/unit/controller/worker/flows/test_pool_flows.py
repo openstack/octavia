@@ -52,6 +52,16 @@ class TestPoolFlows(base.TestCase):
         self.assertEqual(3, len(pool_flow.requires))
         self.assertEqual(0, len(pool_flow.provides))
 
+    def test_get_delete_pool_flow_internal(self):
+
+        pool_flow = self.PoolFlow.get_delete_pool_flow_internal('test')
+
+        self.assertIsInstance(pool_flow, flow.Flow)
+        self.assertIn('test', pool_flow.requires)
+
+        self.assertEqual(1, len(pool_flow.requires))
+        self.assertEqual(0, len(pool_flow.provides))
+
     def test_get_update_pool_flow(self):
 
         pool_flow = self.PoolFlow.get_update_pool_flow()

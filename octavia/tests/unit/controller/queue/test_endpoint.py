@@ -53,7 +53,7 @@ class TestEndpoint(base.TestCase):
     def test_delete_load_balancer(self):
         self.ep.delete_load_balancer(self.context, self.resource_id)
         self.ep.worker.delete_load_balancer.assert_called_once_with(
-            self.resource_id)
+            self.resource_id, False)
 
     def test_create_listener(self):
         self.ep.create_listener(self.context, self.resource_id)

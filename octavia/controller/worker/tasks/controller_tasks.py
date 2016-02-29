@@ -27,9 +27,11 @@ class BaseControllerTask(task.Task):
         self.cntrlr_worker = controller_worker.ControllerWorker()
         self.listener_repo = repo.ListenerRepository()
         self.amp_repo = repo.AmphoraRepository()
+        self.pool_repo = repo.PoolRepository()
         super(BaseControllerTask, self).__init__(**kwargs)
 
 
+# todo(xgerman): Make sure this is used outside tests
 class DeleteLoadBalancersOnAmp(BaseControllerTask):
     """Delete the load balancers on an amphora."""
 
@@ -46,25 +48,6 @@ class DeleteLoadBalancersOnAmp(BaseControllerTask):
                                                    amphora_id=amphora.id)
         for lb in lbs:
             self.cntrlr_worker.delete_load_balancer(lb.id)
-
-
-class DeleteListenersOnLB(BaseControllerTask):
-    """Deletes listeners on a load balancer."""
-
-    def execute(self, loadbalancer):
-        """Deletes listeners on a load balancer.
-
-        Iterate across the listeners on a load balancer and
-        call back into the controller worker to delete the
-        listeners.
-
-        :param loadbalancer: The load balancer to delete listeners from
-        """
-        listeners = self.listener_repo.get_all(db_apis.get_session(),
-                                               load_balancer_id=(
-                                                   loadbalancer.id))
-        for listener in listeners:
-            self.cntrlr_worker.delete_listener_internal(listener.id)
 
 
 class DisableEnableLB(BaseControllerTask):

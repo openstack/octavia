@@ -221,25 +221,6 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             delete_listener_tf.run()
 
-    def delete_listener_internal(self, listener_id):
-        """Deletes a listener as part of an LB delete call
-
-        :param listener_id: ID of the listener to delete
-        :returns: None
-        :raises ListenerNotFound: The referenced listener was not found
-        """
-        listener = self._listener_repo.get(db_apis.get_session(),
-                                           id=listener_id)
-        load_balancer = listener.load_balancer
-
-        delete_listener_tf = self._taskflow_load(
-            self._listener_flows.get_delete_listener_internal_flow(),
-            store={constants.LOADBALANCER: load_balancer,
-                   constants.LISTENER: listener})
-        with tf_logging.DynamicLoggingListener(delete_listener_tf,
-                                               log=LOG):
-            delete_listener_tf.run()
-
     def update_listener(self, listener_id, listener_updates):
         """Updates a listener.
 
@@ -319,7 +300,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                    log=LOG):
                 post_lb_amp_assoc.run()
 
-    def delete_load_balancer(self, load_balancer_id):
+    def delete_load_balancer(self, load_balancer_id, cascade=False):
         """Deletes a load balancer by de-allocating Amphorae.
 
         :param load_balancer_id: ID of the load balancer to delete
@@ -329,12 +310,14 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         lb = self._lb_repo.get(db_apis.get_session(),
                                id=load_balancer_id)
 
-        store = {constants.LOADBALANCER: lb,
-                 constants.SERVER_GROUP_ID: lb.server_group_id}
-
-        delete_lb_tf = self._taskflow_load(self._lb_flows.
-                                           get_delete_load_balancer_flow(),
-                                           store=store)
+        if cascade:
+            (flow,
+             store) = self._lb_flows.get_cascade_delete_load_balancer_flow(lb)
+        else:
+            (flow, store) = self._lb_flows.get_delete_load_balancer_flow(lb)
+        store.update({constants.LOADBALANCER: lb,
+                      constants.SERVER_GROUP_ID: lb.server_group_id})
+        delete_lb_tf = self._taskflow_load(flow, store=store)
 
         with tf_logging.DynamicLoggingListener(delete_lb_tf,
                                                log=LOG):

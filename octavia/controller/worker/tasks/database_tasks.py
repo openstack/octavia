@@ -19,6 +19,7 @@ from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_utils import uuidutils
 import sqlalchemy
+from sqlalchemy.orm import exc
 from taskflow import task
 from taskflow.types import failure
 
@@ -144,7 +145,11 @@ class DeleteHealthMonitorInDB(BaseDatabaseTask):
         """
 
         LOG.debug("DB delete health monitor for id: %s ", pool_id)
-        self.health_mon_repo.delete(db_apis.get_session(), pool_id=pool_id)
+        try:
+            self.health_mon_repo.delete(db_apis.get_session(), pool_id=pool_id)
+        except exc.NoResultFound:
+            # ignore if the HelathMonitor was not found
+            pass
 
     def revert(self, pool_id, *args, **kwargs):
         """Mark the health monitor ERROR since the mark active couldn't happen
@@ -157,6 +162,20 @@ class DeleteHealthMonitorInDB(BaseDatabaseTask):
 # TODO(johnsom) fix this
 #        self.health_mon_repo.update(db_apis.get_session(), health_mon.id,
 #                                    provisioning_status=constants.ERROR)
+
+
+class DeleteHealthMonitorInDBByPool(DeleteHealthMonitorInDB):
+    """Delete the health monitor in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, pool):
+        super(DeleteHealthMonitorInDBByPool, self).execute(pool.id)
+
+    def revert(self, pool, *args, **kwargs):
+        super(DeleteHealthMonitorInDBByPool, self).revert(
+            pool.id, *args, **kwargs)
 
 
 class DeleteMemberInDB(BaseDatabaseTask):
