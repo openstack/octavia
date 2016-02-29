@@ -221,6 +221,25 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             delete_listener_tf.run()
 
+    def delete_listener_internal(self, listener_id):
+        """Deletes a listener as part of an LB delete call
+
+        :param listener_id: ID of the listener to delete
+        :returns: None
+        :raises ListenerNotFound: The referenced listener was not found
+        """
+        listener = self._listener_repo.get(db_apis.get_session(),
+                                           id=listener_id)
+        load_balancer = listener.load_balancer
+
+        delete_listener_tf = self._taskflow_load(
+            self._listener_flows.get_delete_listener_internal_flow(),
+            store={constants.LOADBALANCER: load_balancer,
+                   constants.LISTENER: listener})
+        with tf_logging.DynamicLoggingListener(delete_listener_tf,
+                                               log=LOG):
+            delete_listener_tf.run()
+
     def update_listener(self, listener_id, listener_updates):
         """Updates a listener.
 
