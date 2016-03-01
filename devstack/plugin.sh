@@ -177,7 +177,10 @@ function octavia_start {
     fi
 
     OCTAVIA_AMP_IMAGE_ID=$(glance image-list | grep ${OCTAVIA_AMP_IMAGE_NAME} | awk '{print $2}')
-    iniset $OCTAVIA_CONF controller_worker amp_image_id ${OCTAVIA_AMP_IMAGE_ID}
+    if [ -n "$OCTAVIA_AMP_IMAGE_ID" ]; then
+        glance image-tag-update ${OCTAVIA_AMP_IMAGE_ID} ${OCTAVIA_AMP_IMAGE_TAG}
+    fi
+    iniset $OCTAVIA_CONF controller_worker amp_image_tag ${OCTAVIA_AMP_IMAGE_TAG}
 
     create_amphora_flavor
 

@@ -203,8 +203,16 @@ controller_worker_opts = [
     cfg.StrOpt('amp_flavor_id',
                default='',
                help=_('Nova instance flavor id for the Amphora')),
+    cfg.StrOpt('amp_image_tag',
+               default='',
+               help=_('Glance image tag for the Amphora image to boot. '
+                      'Use this option to be able to update the image '
+                      'without reconfiguring Octavia. '
+                      'Ignored if amp_image_id is defined.')),
     cfg.StrOpt('amp_image_id',
                default='',
+               deprecated_for_removal=True,
+               deprecated_reason='Superseded by amp_image_tag option.',
                help=_('Glance image id for the Amphora image to boot')),
     cfg.StrOpt('amp_ssh_key_name',
                default='',
@@ -370,6 +378,20 @@ neutron_opts = [
                help=_('Endpoint interface in identity service to use')),
 ]
 
+glance_opts = [
+    cfg.StrOpt('service_name',
+               help=_('The name of the glance service in the '
+                      'keystone catalog')),
+    cfg.StrOpt('endpoint', help=_('A new endpoint to override the endpoint '
+                                  'in the keystone catalog.')),
+    cfg.StrOpt('region_name',
+               help=_('Region in Identity service catalog to use for '
+                      'communication with the OpenStack services.')),
+    cfg.StrOpt('endpoint_type', default='publicURL',
+               help=_('Endpoint interface in identity service to use')),
+]
+
+
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_opts(amphora_agent_opts, group='amphora_agent')
@@ -389,6 +411,7 @@ cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
 cfg.CONF.register_opts(keystone_authtoken_v3_opts,
                        group='keystone_authtoken_v3')
 cfg.CONF.register_opts(nova_opts, group='nova')
+cfg.CONF.register_opts(glance_opts, group='glance')
 cfg.CONF.register_opts(neutron_opts, group='neutron')
 
 

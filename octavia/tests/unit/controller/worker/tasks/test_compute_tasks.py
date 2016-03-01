@@ -27,6 +27,7 @@ import octavia.tests.unit.base as base
 
 AMP_FLAVOR_ID = 10
 AMP_IMAGE_ID = 11
+AMP_IMAGE_TAG = 'glance_tag'
 AMP_SSH_KEY_NAME = None
 AMP_NET = uuidutils.generate_uuid()
 AMP_SEC_GROUPS = []
@@ -62,6 +63,7 @@ class TestComputeTasks(base.TestCase):
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="controller_worker", amp_flavor_id=AMP_FLAVOR_ID)
         conf.config(group="controller_worker", amp_image_id=AMP_IMAGE_ID)
+        conf.config(group="controller_worker", amp_image_tag=AMP_IMAGE_TAG)
         conf.config(group="controller_worker",
                     amp_ssh_key_name=AMP_SSH_KEY_NAME)
         conf.config(group="controller_worker", amp_network=AMP_NET)
@@ -95,6 +97,7 @@ class TestComputeTasks(base.TestCase):
             name="amphora-" + _amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
+            image_tag=AMP_IMAGE_TAG,
             key_name=AMP_SSH_KEY_NAME,
             sec_groups=AMP_SEC_GROUPS,
             network_ids=[AMP_NET],
@@ -154,6 +157,7 @@ class TestComputeTasks(base.TestCase):
             name="amphora-" + _amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
+            image_tag=AMP_IMAGE_TAG,
             key_name=AMP_SSH_KEY_NAME,
             sec_groups=AMP_SEC_GROUPS,
             network_ids=[AMP_NET],
@@ -212,6 +216,7 @@ class TestComputeTasks(base.TestCase):
             name="amphora-" + _amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
+            image_tag=AMP_IMAGE_TAG,
             key_name=None,
             sec_groups=AMP_SEC_GROUPS,
             network_ids=[AMP_NET],
@@ -268,6 +273,7 @@ class TestComputeTasks(base.TestCase):
                 name="amphora-" + _amphora_mock.id,
                 amphora_flavor=AMP_FLAVOR_ID,
                 image_id=AMP_IMAGE_ID,
+                image_tag=AMP_IMAGE_TAG,
                 key_name=AMP_SSH_KEY_NAME,
                 sec_groups=AMP_SEC_GROUPS,
                 network_ids=[AMP_NET],

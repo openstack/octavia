@@ -78,6 +78,7 @@ class ComputeCreate(BaseComputeTask):
                 name="amphora-" + amphora_id,
                 amphora_flavor=CONF.controller_worker.amp_flavor_id,
                 image_id=CONF.controller_worker.amp_image_id,
+                image_tag=CONF.controller_worker.amp_image_tag,
                 key_name=key_name,
                 sec_groups=CONF.controller_worker.amp_secgroup_list,
                 network_ids=[CONF.controller_worker.amp_network],

@@ -26,9 +26,38 @@ from octavia.i18n import _LE, _LW
 LOG = logging.getLogger(__name__)
 
 CONF = cfg.CONF
+CONF.import_group('glance', 'octavia.common.config')
 CONF.import_group('keystone_authtoken', 'octavia.common.config')
 CONF.import_group('networking', 'octavia.common.config')
 CONF.import_group('nova', 'octavia.common.config')
+
+
+def _extract_amp_image_id_by_tag(client, image_tag):
+    images = list(client.images.list(
+        filters={'tag': [image_tag]},
+        sort='created_at'))
+    if not images:
+        raise exceptions.GlanceNoTaggedImages(tag=image_tag)
+    image_id = images[-1]['id']
+    num_images = len(images)
+    if num_images > 1:
+        LOG.warn(
+            _LW("A single Glance image should be tagged with %(tag)s tag, "
+                "but %(num)d found. Using %(image_id)s."),
+            {'tag': image_tag, 'num': num_images, 'image_id': image_id}
+        )
+    return image_id
+
+
+def _get_image_uuid(client, image_id, image_tag):
+    if image_id:
+        if image_tag:
+            LOG.warn(
+                _LW("Both amp_image_id and amp_image_tag options defined. "
+                    "Using the former."))
+        return image_id
+
+    return _extract_amp_image_id_by_tag(client, image_tag)
 
 
 class VirtualMachineManager(compute_base.ComputeBase):
@@ -41,10 +70,16 @@ class VirtualMachineManager(compute_base.ComputeBase):
             endpoint=CONF.nova.endpoint,
             region=CONF.nova.region_name,
             endpoint_type=CONF.nova.endpoint_type)
+        self._glance_client = clients.GlanceAuth.get_glance_client(
+            service_name=CONF.glance.service_name,
+            endpoint=CONF.glance.endpoint,
+            region=CONF.glance.region_name,
+            endpoint_type=CONF.glance.endpoint_type)
         self.manager = self._nova_client.servers
         self.server_groups = self._nova_client.server_groups
 
-    def build(self, name="amphora_name", amphora_flavor=None, image_id=None,
+    def build(self, name="amphora_name", amphora_flavor=None,
+              image_id=None, image_tag=None,
               key_name=None, sec_groups=None, network_ids=None,
               port_ids=None, config_drive_files=None, user_data=None,
               server_group_id=None):
@@ -53,6 +88,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
         :param name: optional name for amphora
         :param amphora_flavor: image flavor for virtual machine
         :param image_id: image ID for virtual machine
+        :param image_tag: image tag for virtual machine
         :param key_name: keypair to add to the virtual machine
         :param sec_groups: Security group IDs for virtual machine
         :param network_ids: Network IDs to include on virtual machine
@@ -84,6 +120,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
             server_group = None if server_group_id is None else {
                 "group": server_group_id}
 
+            image_id = _get_image_uuid(
+                self._glance_client, image_id, image_tag)
             amphora = self.manager.create(
                 name=name, image=image_id, flavor=amphora_flavor,
                 key_name=key_name, security_groups=sec_groups,

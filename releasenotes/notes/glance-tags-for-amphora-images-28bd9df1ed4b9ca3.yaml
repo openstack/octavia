@@ -1,0 +1,9 @@
+---
+features:
+  - Glance image containing the latest Amphora image can now be referenced
+    using a Glance tag. To use the feature, set amp_image_tag in
+    [controller_worker]. Note that amp_image_id should be unset for the new
+    feature to take into effect.
+upgrade:
+  - amp_image_id option is deprecated and will be removed in one of the next
+    releases. Operators are adviced to migrate to the new amp_image_tag option.
