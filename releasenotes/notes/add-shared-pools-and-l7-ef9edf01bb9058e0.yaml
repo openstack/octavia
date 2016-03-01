@@ -1,0 +1,26 @@
+---
+features:
+  - |
+    Adds support for Layer 7 switching and shared pools
+    features to Octavia. This supports the equivalent
+    feature added to Neutron LBaaS v2.
+
+    * Layer 7 policies allow a tenant / user to define
+      actions the load balancer may take other than
+      routing requests to the default pool.
+    * Layer 7 rules control the logic behind whether a
+      given Layer 7 policy is followed.
+    * Works for HTTP and TERMINATED_HTTPS listeners.
+    * Shared pools allow listeners or Layer 7
+      REDIRECT_TO_POOL policies to share back-end
+      pools.
+upgrade:
+  - |
+    Upgrade requires a database migration.
+
+    * Shared-pools introduces a new ``load_balancer_id``
+      column into the ``pools`` table.
+    * ``pools.load_balancer_id`` column is populated
+      from ``listeners`` data using ETL in the migration.
+    * Two new tables are created to handle Layer 7
+      switching. These are ``l7policy`` and ``l7rule``.
