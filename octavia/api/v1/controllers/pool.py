@@ -89,7 +89,7 @@ class PoolsController(base.BaseController):
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=self.load_balancer_id)
 
-    def _validate_create_pool(self, session, sp_dict, pool_dict):
+    def _validate_create_pool(self, session, pool_dict):
         """Validate creating pool on load balancer.
 
         Update database for load balancer and (optional) listener based on
@@ -97,8 +97,7 @@ class PoolsController(base.BaseController):
         """
         try:
             db_pool = self.repositories.create_pool_on_load_balancer(
-                session, pool_dict, listener_id=self.listener_id,
-                sp_dict=sp_dict)
+                session, pool_dict, listener_id=self.listener_id)
         except odb_exceptions.DBDuplicateEntry as de:
             if ['id'] == de.columns:
                 raise exceptions.IDAlreadyExists()
@@ -151,11 +150,10 @@ class PoolsController(base.BaseController):
             raise exceptions.DuplicatePoolEntry()
         self._test_lb_and_listener_statuses(context.session)
 
-        sp_dict = pool_dict.pop('session_persistence', None)
         pool_dict['operating_status'] = constants.OFFLINE
         pool_dict['load_balancer_id'] = self.load_balancer_id
 
-        return self._validate_create_pool(context.session, sp_dict, pool_dict)
+        return self._validate_create_pool(context.session, pool_dict)
 
     @wsme_pecan.wsexpose(pool_types.PoolResponse, wtypes.text,
                          body=pool_types.PoolPUT, status_code=202)

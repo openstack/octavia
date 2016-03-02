@@ -170,8 +170,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id']}
+        pool.update({'session_persistence': sp})
         pool_dm = self.repos.create_pool_on_load_balancer(
-            self.session, pool, listener_id=self.listener.id, sp_dict=sp)
+            self.session, pool, listener_id=self.listener.id)
         pool_dm_dict = pool_dm.to_dict()
         del pool_dm_dict['members']
         del pool_dm_dict['health_monitor']
@@ -203,7 +204,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, pool, listener_id=self.listener.id)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
         new_pool_dm = self.repos.update_pool_and_sp(
-            self.session, pool_dm.id, update_pool, None)
+            self.session, pool_dm.id, update_pool)
         pool_dm_dict = new_pool_dm.to_dict()
         del pool_dm_dict['members']
         del pool_dm_dict['health_monitor']
@@ -226,12 +227,14 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id']}
+        pool.update({'session_persistence': sp})
         pool_dm = self.repos.create_pool_on_load_balancer(
-            self.session, pool, listener_id=self.listener.id, sp_dict=sp)
+            self.session, pool, listener_id=self.listener.id)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
         update_sp = {'type': constants.SESSION_PERSISTENCE_SOURCE_IP}
+        update_pool.update({'session_persistence': update_sp})
         new_pool_dm = self.repos.update_pool_and_sp(
-            self.session, pool_dm.id, update_pool, update_sp)
+            self.session, pool_dm.id, update_pool)
         pool_dm_dict = new_pool_dm.to_dict()
         del pool_dm_dict['members']
         del pool_dm_dict['health_monitor']
@@ -260,8 +263,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
         update_sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
                      'cookie_name': 'monster_cookie'}
+        update_pool.update({'session_persistence': update_sp})
         new_pool_dm = self.repos.update_pool_and_sp(
-            self.session, pool_dm.id, update_pool, update_sp)
+            self.session, pool_dm.id, update_pool)
         sp_dm_dict = new_pool_dm.session_persistence.to_dict()
         del sp_dm_dict['pool']
         update_sp['pool_id'] = pool_dm.id
@@ -277,9 +281,10 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'id': uuidutils.generate_uuid()}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
-        update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
+        update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool',
+                       'session_persistence': None}
         new_pool_dm = self.repos.update_pool_and_sp(
-            self.session, pool_dm.id, update_pool, None)
+            self.session, pool_dm.id, update_pool)
         self.assertIsNone(new_pool_dm.session_persistence)
 
     def test_update_pool_with_existing_sp_delete_sp(self):
@@ -292,11 +297,13 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id']}
+        pool.update({'session_persistence': sp})
         pool_dm = self.repos.create_pool_on_load_balancer(
-            self.session, pool, listener_id=self.listener.id, sp_dict=sp)
-        update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
+            self.session, pool, listener_id=self.listener.id)
+        update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool',
+                       'session_persistence': {}}
         new_pool_dm = self.repos.update_pool_and_sp(
-            self.session, pool_dm.id, update_pool, None)
+            self.session, pool_dm.id, update_pool)
         self.assertIsNone(new_pool_dm.session_persistence)
 
 

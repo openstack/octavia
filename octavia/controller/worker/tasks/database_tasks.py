@@ -1064,9 +1064,8 @@ class UpdatePoolInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Update DB for pool id: %s ", pool.id)
-        sp_dict = update_dict.pop('session_persistence', None)
         self.repos.update_pool_and_sp(db_apis.get_session(), pool.id,
-                                      update_dict, sp_dict)
+                                      update_dict)
 
     def revert(self, pool, *args, **kwargs):
         """Mark the pool ERROR since the update couldn't happen
@@ -1078,7 +1077,7 @@ class UpdatePoolInDB(BaseDatabaseTask):
                         "for pool id %s"), pool.id)
 # TODO(johnsom) fix this to set the upper ojects to ERROR
         self.repos.update_pool_and_sp(db_apis.get_session(),
-                                      pool.id, {'enabled': 0}, None)
+                                      pool.id, {'enabled': 0})
 
 
 class UpdateL7PolicyInDB(BaseDatabaseTask):

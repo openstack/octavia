@@ -433,6 +433,29 @@ class TestPool(base.BaseAPITest):
                                             self.listener.get('id'),
                                             constants.ACTIVE, constants.ONLINE)
 
+    def test_update_preserve_session_persistence(self):
+        sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+              "cookie_name": "test_cookie_name"}
+        api_pool = self.create_pool(self.lb.get('id'),
+                                    self.listener.get('id'),
+                                    constants.PROTOCOL_HTTP,
+                                    constants.LB_ALGORITHM_ROUND_ROBIN,
+                                    session_persistence=sp)
+        self.set_lb_status(lb_id=self.lb.get('id'))
+        pool_update = {'lb_algorithm': constants.LB_ALGORITHM_SOURCE_IP}
+        api_pool = self.put(self.pool_path.format(pool_id=api_pool.get('id')),
+                            body=pool_update).json
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ONLINE)
+        response = self.get(self.pool_path.format(
+            pool_id=api_pool.get('id'))).json
+        self.assertEqual(sp, response.get('session_persistence'))
+
     def test_update_bad_session_persistence(self):
         self.skip('This test should pass after a validation layer.')
         sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE,
