@@ -296,6 +296,24 @@ Delete a load balancer.
 
 **No request/response body**
 
+Delete Load Balancer Cascade
+****************************
+
+Delete a load balancer and all the underlying resources (e.g. listener, pool).
+
++----------------+-------------------------------------------------+
+| Request Type   | ``DELETE``                                      |
++----------------+-------------------------------------------------+
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/delete_cascade`` |
++----------------+---------+---------------------------------------+
+|                | Success | 202                                   |
+| Response Codes +---------+---------------------------------------+
+|                | Error   | 401, 404, 409, 500                    |
++----------------+---------+---------------------------------------+
+
+**No request/response body**
+
+
 Listeners
 ---------
 
