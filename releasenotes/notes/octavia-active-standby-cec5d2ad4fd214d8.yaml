@@ -1,0 +1,19 @@
+---
+features:
+  - |
+    Active/Standby support for Octavia.
+
+    * When enabled in the configuration file, Octavia
+      will boot an active and standby amphora for each
+      load balancer.
+    * Session persistence is maintained between the
+      active and standby amphora.
+    * Amphora failover is supported when active/standby
+      is enabled.  Should the master or backup amphora
+      fail, the health manager will rebuild it.
+upgrade:
+  - |
+    Upgrade requires a database migration.
+
+    * Adds tables for active/standby.
+    * Updates load balancer, listener, and amphora tables.
