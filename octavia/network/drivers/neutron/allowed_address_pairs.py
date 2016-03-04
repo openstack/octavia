@@ -50,6 +50,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             region=CONF.nova.region_name,
             endpoint_type=CONF.nova.endpoint_type,
             service_name=CONF.nova.service_name,
+            insecure=CONF.nova.insecure,
+            cacert=CONF.nova.ca_certificates_file
         )
 
     def _check_aap_loaded(self):

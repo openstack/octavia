@@ -39,7 +39,9 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             endpoint=CONF.neutron.endpoint,
             region=CONF.neutron.region_name,
             endpoint_type=CONF.neutron.endpoint_type,
-            service_name=CONF.neutron.service_name
+            service_name=CONF.neutron.service_name,
+            insecure=CONF.neutron.insecure,
+            ca_cert=CONF.neutron.ca_certificates_file
         )
         extensions = self.neutron_client.list_extensions()
         self._extensions = extensions.get('extensions')

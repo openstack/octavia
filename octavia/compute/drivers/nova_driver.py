@@ -69,12 +69,16 @@ class VirtualMachineManager(compute_base.ComputeBase):
         self._nova_client = clients.NovaAuth.get_nova_client(
             endpoint=CONF.nova.endpoint,
             region=CONF.nova.region_name,
-            endpoint_type=CONF.nova.endpoint_type)
+            endpoint_type=CONF.nova.endpoint_type,
+            insecure=CONF.nova.insecure,
+            cacert=CONF.nova.ca_certificates_file)
         self._glance_client = clients.GlanceAuth.get_glance_client(
             service_name=CONF.glance.service_name,
             endpoint=CONF.glance.endpoint,
             region=CONF.glance.region_name,
-            endpoint_type=CONF.glance.endpoint_type)
+            endpoint_type=CONF.glance.endpoint_type,
+            insecure=CONF.glance.insecure,
+            cacert=CONF.glance.ca_certificates_file)
         self.manager = self._nova_client.servers
         self.server_groups = self._nova_client.server_groups
 
