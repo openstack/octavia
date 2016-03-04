@@ -216,6 +216,10 @@ class Pool(BaseDataModel):
                 break
         for l7policy in self.l7policies:
             if l7policy.redirect_pool_id == self.id:
+                # Technically this should never happen, as we block deletion
+                # of pools in use by L7Policies at the API. However, we should
+                # probably keep this here in case the data model gets
+                # manipulated in some other way in the future.
                 l7policy.action = constants.L7POLICY_ACTION_REJECT
                 l7policy.redirect_pool = None
                 l7policy.redirect_pool_id = None

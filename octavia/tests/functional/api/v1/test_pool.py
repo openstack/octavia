@@ -310,6 +310,18 @@ class TestPool(base.BaseAPITest):
         self.delete(self.pool_path.format(
             pool_id=uuidutils.generate_uuid()), status=404)
 
+    def test_delete_with_l7policy(self):
+        api_pool = self.create_pool_sans_listener(
+            self.lb.get('id'), constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.set_lb_status(lb_id=self.lb.get('id'))
+        self.create_l7policy(self.lb.get('id'), self.listener.get('id'),
+                             constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                             redirect_pool_id=api_pool.get('id'))
+        self.set_lb_status(lb_id=self.lb.get('id'))
+        self.delete(self.pool_path.format(
+            pool_id=api_pool.get('id')), status=409)
+
     def test_delete_with_bad_handler(self):
         api_pool = self.create_pool(self.lb.get('id'),
                                     self.listener.get('id'),

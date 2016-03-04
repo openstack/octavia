@@ -185,6 +185,9 @@ class PoolsController(base.BaseController):
         """Deletes a pool from a load balancer."""
         context = pecan.request.context.get('octavia_context')
         db_pool = self._get_db_pool(context.session, id)
+        if len(db_pool.l7policies) > 0:
+            raise exceptions.PoolInUseByL7Policy(
+                id=db_pool.id, l7policy_id=db_pool.l7policies[0].id)
         self._test_lb_and_listener_statuses(context.session, pool=db_pool)
 
         try:
