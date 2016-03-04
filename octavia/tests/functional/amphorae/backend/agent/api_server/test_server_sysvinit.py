@@ -11,9 +11,10 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 import hashlib
 import json
+import os
+import stat
 import subprocess
 
 import mock
@@ -49,27 +50,32 @@ class ServerTestCase(base.TestCase):
     @mock.patch('os.remove')
     def test_haproxy(self, mock_remove, mock_subprocess, mock_rename,
                      mock_makedirs, mock_exists):
+
         mock_exists.return_value = True
         m = mock.mock_open()
 
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        file_name = '/var/lib/octavia/123/haproxy.cfg.new'
+
         # happy case init file exists
-        with mock.patch.object(builtins, 'open', m):
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/amp_123/123/haproxy',
                               data='test')
+            mode = stat.S_IRUSR | stat.S_IWUSR
+            mock_open.assert_called_with(file_name, flags, mode)
+            mock_fdopen.assert_called_with(123, 'w')
             self.assertEqual(202, rv.status_code)
-            m.assert_called_once_with(
-                '/var/lib/octavia/123/haproxy.cfg.new', 'w')
+
             handle = m()
             handle.write.assert_called_once_with(six.b('test'))
             calls = [
                 mock.call("haproxy -c -L {peer} -f {config_file}".format(
-                    config_file='/var/lib/octavia/123/haproxy.cfg.new',
+                    config_file=file_name,
                     peer=(octavia_utils.base64_sha1_string('amp_123')
-                          .rstrip('='))).split(), stderr=-2),
-                mock.call(['chmod', '755', '/etc/init.d/haproxy-123'],
-                          stderr=-2),
-                mock.call(['insserv', '/etc/init.d/haproxy-123'], stderr=-2)
+                          .rstrip('='))).split(), stderr=-2)
             ]
             mock_subprocess.assert_has_calls(calls)
             mock_rename.assert_called_once_with(
@@ -79,7 +85,7 @@ class ServerTestCase(base.TestCase):
         # exception writing
         m = mock.mock_open()
         m.side_effect = IOError()  # open crashes
-        with mock.patch.object(builtins, 'open', m):
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/amp_123/123/haproxy',
                               data='test')
@@ -90,14 +96,20 @@ class ServerTestCase(base.TestCase):
         m = mock.mock_open()
 
         # happy case init file exists
-        with mock.patch.object(builtins, 'open', m):
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/amp_123/123/haproxy',
                               data='test')
+
             self.assertEqual(202, rv.status_code)
-            m.assert_any_call('/var/lib/octavia/123/haproxy.cfg.new', 'w')
-            m.assert_any_call(util.SYSVINIT_DIR + '/haproxy-123', 'w')
-            handle = m()
+            mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
+                    stat.S_IROTH | stat.S_IXOTH)
+            mock_open.assert_called_with(util.SYSVINIT_DIR + '/haproxy-123',
+                                         flags, mode)
+            mock_fdopen.assert_called_with(123, 'w')
+            handle = mock_fdopen()
             handle.write.assert_any_call(six.b('test'))
             # skip the template stuff
             mock_makedirs.assert_called_with('/var/lib/octavia/123')
@@ -106,7 +118,10 @@ class ServerTestCase(base.TestCase):
         mock_exists.return_value = True
         mock_subprocess.side_effect = [subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR)]
-        with mock.patch.object(builtins, 'open', m):
+
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/amp_123/123/haproxy',
                               data='test')
@@ -114,17 +129,18 @@ class ServerTestCase(base.TestCase):
             self.assertEqual(
                 {'message': 'Invalid request', u'details': u'random error'},
                 json.loads(rv.data.decode('utf-8')))
-            m.assert_called_with('/var/lib/octavia/123/haproxy.cfg.new', 'w')
-            handle = m()
+            mode = stat.S_IRUSR | stat.S_IWUSR
+            mock_open.assert_called_with(file_name, flags, mode)
+            mock_fdopen.assert_called_with(123, 'w')
+            handle = mock_fdopen()
             handle.write.assert_called_with(six.b('test'))
             mock_subprocess.assert_called_with(
                 "haproxy -c -L {peer} -f {config_file}".format(
-                    config_file='/var/lib/octavia/123/haproxy.cfg.new',
+                    config_file=file_name,
                     peer=(octavia_utils.
                           base64_sha1_string('amp_123').rstrip('='))).split(),
                 stderr=-2)
-            mock_remove.assert_called_once_with(
-                '/var/lib/octavia/123/haproxy.cfg.new')
+            mock_remove.assert_called_once_with(file_name)
 
     @mock.patch('os.path.exists')
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
@@ -423,10 +439,8 @@ class ServerTestCase(base.TestCase):
                          json.loads(rv.data.decode('utf-8')))
 
     @mock.patch('os.path.exists')
-    @mock.patch('os.fchmod')
     @mock.patch('os.makedirs')
-    def test_upload_certificate_md5(self, mock_makedir, mock_chmod,
-                                    mock_exists):
+    def test_upload_certificate_md5(self, mock_makedir, mock_exists):
         # wrong file name
         rv = self.app.put('/' + api_server.VERSION +
                           '/listeners/123/certificates/test.bla',
@@ -436,7 +450,7 @@ class ServerTestCase(base.TestCase):
         mock_exists.return_value = True
         m = mock.mock_open()
 
-        with mock.patch.object(builtins, 'open', m):
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/certificates/test.pem',
                               data='TestTest')
@@ -444,12 +458,11 @@ class ServerTestCase(base.TestCase):
             self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
             handle = m()
             handle.write.assert_called_once_with(six.b('TestTest'))
-            mock_chmod.assert_called_once_with(handle.fileno(), 0o600)
 
         mock_exists.return_value = False
         m = mock.mock_open()
 
-        with mock.patch.object(builtins, 'open', m):
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             rv = self.app.put('/' + api_server.VERSION +
                               '/listeners/123/certificates/test.pem',
                               data='TestTest')
@@ -459,12 +472,10 @@ class ServerTestCase(base.TestCase):
             handle.write.assert_called_once_with(six.b('TestTest'))
             mock_makedir.assert_called_once_with('/var/lib/octavia/certs/123')
 
-    @mock.patch('os.fchmod')
-    def test_upload_server_certificate(self, mock_chmod):
+    def test_upload_server_certificate(self):
         certificate_update.BUFFER = 5  # test the while loop
         m = mock.mock_open()
-
-        with mock.patch.object(builtins, 'open', m):
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             rv = self.app.put('/' + api_server.VERSION +
                               '/certificate',
                               data='TestTest')
@@ -473,7 +484,6 @@ class ServerTestCase(base.TestCase):
             handle = m()
             handle.write.assert_any_call(six.b('TestT'))
             handle.write.assert_any_call(six.b('est'))
-            mock_chmod.assert_called_once_with(handle.fileno(), 0o600)
 
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
@@ -506,14 +516,20 @@ class ServerTestCase(base.TestCase):
         mock_interfaces.side_effect = [['blah']]
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
                                       {netifaces.AF_LINK: [{'addr': '123'}]}]
+
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+        file_name = '/etc/network/interfaces.d/blah.cfg'
         m = mock.mock_open()
-        with mock.patch.object(builtins, 'open', m):
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
             rv = self.app.post('/' + api_server.VERSION + "/plug/network",
                                content_type='application/json',
                                data=json.dumps(port_info))
             self.assertEqual(202, rv.status_code)
-            m.assert_called_once_with(
-                '/etc/network/interfaces.d/blah.cfg', 'w')
+            mock_open.assert_called_with(file_name, flags, mode)
+            mock_fdopen.assert_called_with(123, 'w')
             handle = m()
             handle.write.assert_called_once_with(
                 '\n# Generated by Octavia agent\n'
@@ -530,7 +546,7 @@ class ServerTestCase(base.TestCase):
             7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR)]
         m = mock.mock_open()
-        with mock.patch.object(builtins, 'open', m):
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             rv = self.app.post('/' + api_server.VERSION + "/plug/network",
                                content_type='application/json',
                                data=json.dumps(port_info))
@@ -584,15 +600,21 @@ class ServerTestCase(base.TestCase):
         mock_interfaces.side_effect = [['blah']]
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
                                       {netifaces.AF_LINK: [{'addr': '123'}]}]
+
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+        file_name = '/etc/network/interfaces.d/blah.cfg'
         m = mock.mock_open()
-        with mock.patch.object(builtins, 'open', m):
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
             rv = self.app.post('/' + api_server.VERSION +
                                "/plug/vip/203.0.113.2",
                                content_type='application/json',
                                data=json.dumps(subnet_info))
             self.assertEqual(202, rv.status_code)
-            m.assert_called_once_with(
-                '/etc/network/interfaces.d/blah.cfg', 'w')
+            mock_open.assert_called_with(file_name, flags, mode)
+            mock_fdopen.assert_called_with(123, 'w')
             handle = m()
             handle.write.assert_called_once_with(
                 '\n# Generated by Octavia agent\n'
@@ -614,7 +636,7 @@ class ServerTestCase(base.TestCase):
                 7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
                 7, 'test', RANDOM_ERROR)]
         m = mock.mock_open()
-        with mock.patch.object(builtins, 'open', m):
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             rv = self.app.post('/' + api_server.VERSION +
                                "/plug/vip/203.0.113.2",
                                content_type='application/json',
@@ -658,41 +680,41 @@ class ServerTestCase(base.TestCase):
     @mock.patch('os.path.exists')
     @mock.patch('os.makedirs')
     @mock.patch('os.rename')
-    @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
-    def test_upload_keepalived_config(self, mock_remove, mock_subprocess,
+    def test_upload_keepalived_config(self, mock_remove,
                                       mock_rename, mock_makedirs, mock_exists):
 
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+
         mock_exists.return_value = True
+        cfg_path = util.keepalived_cfg_path()
         m = mock.mock_open()
-        with mock.patch.object(builtins, 'open', m):
+
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
             rv = self.app.put('/' + api_server.VERSION + '/vrrp/upload',
                               data='test')
+
+            mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+            mock_open.assert_called_with(cfg_path, flags, mode)
+            mock_fdopen(123, 'w')
             self.assertEqual(200, rv.status_code)
 
         mock_exists.return_value = False
+        script_path = util.keepalived_check_script_path()
         m = mock.mock_open()
-        with mock.patch.object(builtins, 'open', m):
+
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
             rv = self.app.put('/' + api_server.VERSION + '/vrrp/upload',
                               data='test')
+            mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
+                    stat.S_IROTH | stat.S_IXOTH)
+            mock_open.assert_called_with(script_path, flags, mode)
+            mock_fdopen(123, 'w')
             self.assertEqual(200, rv.status_code)
-
-        mock_subprocess.side_effect = subprocess.CalledProcessError(1,
-                                                                    'blah!')
-
-        with mock.patch.object(builtins, 'open', m):
-            rv = self.app.put('/' + api_server.VERSION + '/vrrp/upload',
-                              data='test')
-            self.assertEqual(500, rv.status_code)
-
-        mock_subprocess.side_effect = [True,
-                                       subprocess.CalledProcessError(1,
-                                                                     'blah!')]
-
-        with mock.patch.object(builtins, 'open', m):
-            rv = self.app.put('/' + api_server.VERSION + '/vrrp/upload',
-                              data='test')
-            self.assertEqual(500, rv.status_code)
 
     @mock.patch('subprocess.check_output')
     def test_manage_service_vrrp(self, mock_check_output):
