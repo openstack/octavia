@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import sys
-
 from wsme import exc
 from wsme.rest import json as wsme_json
 from wsme import types as wsme_types
@@ -30,7 +28,7 @@ class TestL7PolicyPOST(base.BaseTypesTest):
     def test_l7policy(self):
         body = {"action": constants.L7POLICY_ACTION_REJECT}
         l7policy = wsme_json.fromjson(self._type, body)
-        self.assertEqual(sys.maxsize, l7policy.position)
+        self.assertEqual(constants.MAX_POLICY_POSITION, l7policy.position)
         self.assertEqual(wsme_types.Unset, l7policy.redirect_url)
         self.assertEqual(wsme_types.Unset, l7policy.redirect_pool_id)
         self.assertTrue(l7policy.enabled)
@@ -50,7 +48,7 @@ class TestL7PolicyPOST(base.BaseTypesTest):
         body = {"action": constants.L7POLICY_ACTION_REDIRECT_TO_URL,
                 "redirect_url": url}
         l7policy = wsme_json.fromjson(self._type, body)
-        self.assertEqual(sys.maxsize, l7policy.position)
+        self.assertEqual(constants.MAX_POLICY_POSITION, l7policy.position)
         self.assertEqual(url, l7policy.redirect_url)
         self.assertEqual(wsme_types.Unset, l7policy.redirect_pool_id)
 

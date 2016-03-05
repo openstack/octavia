@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import sys
-
 from wsme import types as wtypes
 
 from octavia.api.v1.types import base
@@ -68,7 +66,8 @@ class L7PolicyPOST(base.BaseType):
         mandatory=True)
     redirect_pool_id = wtypes.wsattr(wtypes.StringType(max_length=255))
     redirect_url = wtypes.wsattr(base.URLType())
-    position = wtypes.wsattr(wtypes.IntegerType(), default=sys.maxsize)
+    position = wtypes.wsattr(wtypes.IntegerType(),
+                             default=constants.MAX_POLICY_POSITION)
     redirect_pool = wtypes.wsattr(pool.PoolPOST)
     l7rules = wtypes.wsattr([l7rule.L7RulePOST], default=[])
 

@@ -709,36 +709,15 @@ class L7PolicyRepository(BaseRepository):
             raise exceptions.NotFound(
                 resource=data_models.Pool._name(), id=pool_id)
 
-    def _validate_l7policy_data(self, session, l7policy):
+    def _validate_l7policy_pool_data(self, session, l7policy):
         """Does validations on a given L7 policy."""
-        if l7policy.redirect_url and l7policy.redirect_pool_id:
-            raise exceptions.InvalidL7PolicyArgs(
-                msg='Cannot specify redirect_pool_id and redirect_url '
-                    'at the same time')
-        if l7policy.action == constants.L7POLICY_ACTION_REJECT:
-            if l7policy.redirect_pool_id is not None:
-                raise exceptions.InvalidL7PolicyArg(
-                    action=l7policy.action, arg='redirect_pool_id')
-            if l7policy.redirect_url is not None:
-                raise exceptions.InvalidL7PolicyArg(
-                    action=l7policy.action, arg='redirect_url')
-        elif l7policy.action == constants.L7POLICY_ACTION_REDIRECT_TO_URL:
-            if l7policy.redirect_pool_id is not None:
-                raise exceptions.InvalidL7PolicyArg(
-                    action=l7policy.action, arg='redirect_pool_id')
-            validate.url(l7policy.redirect_url)
-        elif l7policy.action == constants.L7POLICY_ACTION_REDIRECT_TO_POOL:
-            if l7policy.redirect_url is not None:
-                raise exceptions.InvalidL7PolicyArg(
-                    action=l7policy.action, arg='redirect_url')
+        if l7policy.action == constants.L7POLICY_ACTION_REDIRECT_TO_POOL:
             session.expire(session.query(models.Listener).filter_by(
                 id=l7policy.listener_id).first())
             listener = (session.query(models.Listener).
                         filter_by(id=l7policy.listener_id).first())
             self._pool_check(session, l7policy.redirect_pool_id,
                              listener.load_balancer_id, listener.project_id)
-        else:
-            raise exceptions.InvalidL7PolicyAction(action=l7policy.action)
 
     def get_all(self, session, **filters):
         l7policy_list = session.query(self.model_class).filter_by(
@@ -761,10 +740,11 @@ class L7PolicyRepository(BaseRepository):
                 position = None
 
             model_kwargs.update(listener_id=l7policy_db.listener_id)
-            l7policy = self.model_class(**model_kwargs)
+            l7policy = self.model_class(
+                **validate.sanitize_l7policy_api_args(model_kwargs))
+            self._validate_l7policy_pool_data(session, l7policy)
 
             if l7policy.action:
-                self._validate_l7policy_data(session, l7policy)
                 if l7policy.action == constants.L7POLICY_ACTION_REJECT:
                     model_kwargs.update(redirect_url=None)
                     model_kwargs.update(redirect_pool_id=None)
@@ -774,20 +754,14 @@ class L7PolicyRepository(BaseRepository):
                 elif (l7policy.action ==
                         constants.L7POLICY_ACTION_REDIRECT_TO_POOL):
                     model_kwargs.update(redirect_url=None)
-            elif l7policy.redirect_url and l7policy.redirect_pool_id:
-                self._validate_l7policy_data(session, l7policy)
             elif l7policy.redirect_url:
                 model_kwargs.update(
                     action=constants.L7POLICY_ACTION_REDIRECT_TO_URL)
                 model_kwargs.update(redirect_pool_id=None)
-                l7policy = self.model_class(**model_kwargs)
-                self._validate_l7policy_data(session, l7policy)
             elif l7policy.redirect_pool_id:
                 model_kwargs.update(
                     action=constants.L7POLICY_ACTION_REDIRECT_TO_POOL)
                 model_kwargs.update(redirect_url=None)
-                l7policy = self.model_class(**model_kwargs)
-                self._validate_l7policy_data(session, l7policy)
 
             l7policy_db.update(model_kwargs)
 
@@ -818,19 +792,17 @@ class L7PolicyRepository(BaseRepository):
             # This is to work around unexpected / idiotic behavior of the
             # SQLAlchemy orderinglist extension.
             position = model_kwargs.pop('position', None)
-            # Largest a 32-bit integer can be, which is a limitation
-            # here if you're using MySQL, as most probably are. This just needs
-            # to be larger than any existing rule position numbers which will
-            # definitely be the case with 2147483647
-            model_kwargs.update(position=2147483647)
+            model_kwargs.update(position=constants.MAX_POLICY_POSITION)
             if not model_kwargs.get('id'):
                 model_kwargs.update(id=uuidutils.generate_uuid())
             if model_kwargs.get('redirect_pool_id'):
                 pool_db = session.query(models.Pool).filter_by(
                     id=model_kwargs.get('redirect_pool_id')).first()
                 model_kwargs.update(redirect_pool=pool_db)
-            l7policy = self.model_class(**model_kwargs)
-            self._validate_l7policy_data(session, l7policy)
+            l7policy = self.model_class(
+                **validate.sanitize_l7policy_api_args(model_kwargs,
+                                                      create=True))
+            self._validate_l7policy_pool_data(session, l7policy)
             session.add(l7policy)
             session.flush()
 

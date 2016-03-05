@@ -200,16 +200,14 @@ class InvalidTopology(OctaviaException):
 
 
 # L7 policy and rule exceptions
-class InvalidL7PolicyAction(OctaviaException):
+class InvalidL7PolicyAction(APIException):
     message = _LE('Invalid L7 Policy action specified: %(action)s')
+    code = 400
 
 
-class InvalidL7PolicyArg(OctaviaException):
-    message = _LE('Invalid L7 Policy argument for action %(action)s:  %(arg)s')
-
-
-class InvalidL7PolicyArgs(OctaviaException):
+class InvalidL7PolicyArgs(APIException):
     message = _LE('Invalid L7 Policy arguments: %(msg)s')
+    code = 400
 
 
 class InvalidURL(OctaviaException):

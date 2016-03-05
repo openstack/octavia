@@ -485,7 +485,7 @@ class L7Policy(BaseDataModel):
 
     def update(self, update_dict):
         for key, value in update_dict.items():
-            if key == 'redirect_pool_id':
+            if key == 'redirect_pool_id' and value is not None:
                 self._conditionally_remove_pool_links(self.redirect_pool)
                 self.action = constants.L7POLICY_ACTION_REDIRECT_TO_POOL
                 self.redirect_url = None
@@ -499,7 +499,7 @@ class L7Policy(BaseDataModel):
                         self.listener.pools.append(pool)
                     if self.listener not in pool.listeners:
                         pool.listeners.append(self.listener)
-            elif key == 'redirect_url':
+            elif key == 'redirect_url' and value is not None:
                 self.action = constants.L7POLICY_ACTION_REDIRECT_TO_URL
                 self._conditionally_remove_pool_links(self.redirect_pool)
                 self.redirect_pool = None
@@ -520,10 +520,12 @@ class L7Policy(BaseDataModel):
                            constants.L7POLICY_ACTION_REDIRECT_TO_POOL))
                   and (self.redirect_pool is not None
                        or ('redirect_pool_id' in update_dict.keys() and
+                           update_dict['redirect_pool_id'] is not None and
                            self._find_in_graph(
                                'Pool' + update_dict['redirect_pool_id'])
                            is not None))):
-                if self.redirect_pool is None:
+                if (self.redirect_pool is None and
+                        update_dict['redirect_pool_id'] is not None):
                     self.redirect_pool = self._find_in_graph(
                         'Pool' + update_dict['redirect_pool_id'])
                 self.listener.pools.append(self.redirect_pool)

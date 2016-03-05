@@ -129,3 +129,97 @@ def l7rule_data(l7rule):
     else:
         raise exceptions.InvalidL7Rule(msg='invalid rule type')
     return True
+
+
+def sanitize_l7policy_api_args(l7policy, create=False):
+    """Validate and make consistent L7Policy API arguments.
+
+    This method is mainly meant to sanitize L7 Policy create and update
+    API dictionaries, so that we strip 'None' values that don't apply for
+    our particular update. This method does *not* verify that any
+    redirect_pool_id exists in the database, but will raise an
+    error if a redirect_url doesn't look like a URL.
+
+    :param l7policy: The L7 Policy dictionary we are santizing / validating
+    """
+    if 'action' in l7policy.keys():
+        if l7policy['action'] == constants.L7POLICY_ACTION_REJECT:
+            l7policy.pop('redirect_url', None)
+            l7policy.pop('redirect_pool_id', None)
+            l7policy.pop('redirect_pool', None)
+        elif l7policy['action'] == constants.L7POLICY_ACTION_REDIRECT_TO_URL:
+            l7policy.pop('redirect_pool_id', None)
+            l7policy.pop('redirect_pool', None)
+        elif l7policy['action'] == constants.L7POLICY_ACTION_REDIRECT_TO_POOL:
+            l7policy.pop('redirect_url', None)
+        elif l7policy['action'] is None:
+            if create:
+                raise exceptions.InvalidL7PolicyAction(action='None')
+            l7policy.pop('action', None)
+        else:
+            raise exceptions.InvalidL7PolicyAction(
+                action=l7policy['action'])
+    if ((('redirect_pool_id' in l7policy.keys() and
+            l7policy['redirect_pool_id'] is not None) or
+            ('redirect_pool' in l7policy.keys() and
+                l7policy['redirect_pool'] is not None)) and
+            'redirect_url' in l7policy.keys() and
+            l7policy['redirect_url'] is not None):
+        raise exceptions.InvalidL7PolicyArgs(
+            msg='Cannot specify redirect_pool_id and redirect_url '
+                'at the same time')
+    if 'redirect_pool_id' in l7policy.keys():
+        if l7policy['redirect_pool_id'] is not None:
+            l7policy.update({
+                'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL})
+            l7policy.pop('redirect_url', None)
+            l7policy.pop('redirect_pool', None)
+        else:
+            if create and 'redirect_pool' not in l7policy.keys():
+                raise exceptions.InvalidL7PolicyArgs(
+                    msg='redirect_pool_id must not be None')
+            l7policy.pop('redirect_pool_id', None)
+    if 'redirect_pool' in l7policy.keys():
+        if l7policy['redirect_pool'] is not None:
+            l7policy.update({
+                'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL})
+            l7policy.pop('redirect_url', None)
+            l7policy.pop('redirect_pool_id', None)
+        else:
+            if create and 'redirect_pool_id' not in l7policy.keys():
+                raise exceptions.InvalidL7PolicyArgs(
+                    msg='redirect_pool must not be None')
+            l7policy.pop('redirect_pool', None)
+    if 'redirect_url' in l7policy.keys():
+        if l7policy['redirect_url'] is not None:
+            url(l7policy['redirect_url'])
+            l7policy.update({
+                'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL})
+            l7policy.pop('redirect_pool_id', None)
+            l7policy.pop('redirect_pool', None)
+        else:
+            if create:
+                raise exceptions.InvalidL7PolicyArgs(
+                    msg='redirect_url must not be None')
+            l7policy.pop('redirect_url', None)
+
+    # If we have an action, there are other options required
+    if 'action' in l7policy.keys():
+        if (l7policy['action'] == constants.L7POLICY_ACTION_REDIRECT_TO_POOL
+                and 'redirect_pool_id' not in l7policy.keys() and
+                'redirect_pool' not in l7policy.keys()):
+            raise exceptions.InvalidL7PolicyArgs(
+                msg='redirect_pool_id or redirect_pool must not be None')
+        if (l7policy['action'] == constants.L7POLICY_ACTION_REDIRECT_TO_URL
+                and 'redirect_url' not in l7policy.keys()):
+            raise exceptions.InvalidL7PolicyArgs(
+                msg='redirect_url must not be None')
+
+    # If we are creating, we need an action at this point
+    if create and 'action' not in l7policy.keys():
+        raise exceptions.InvalidL7PolicyAction(action='None')
+
+    # See if we have anything left after that...
+    if len(l7policy.keys()) == 0:
+        raise exceptions.InvalidL7PolicyArgs(msg='Invalid update options')
+    return l7policy
