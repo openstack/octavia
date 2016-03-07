@@ -331,6 +331,24 @@ class TestL7Rule(base.BaseAPITest):
                                             constants.PENDING_UPDATE,
                                             constants.ERROR)
 
+    def test_update_with_invalid_rule(self):
+        l7rule = self.create_l7rule(
+            self.lb.get('id'), self.listener.get('id'),
+            self.l7policy.get('id'), constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH, '/api')
+        self.set_lb_status(self.lb.get('id'))
+        new_l7rule = {'compare_type': constants.L7RULE_COMPARE_TYPE_REGEX,
+                      'value': 'bad string\\'}
+        self.put(self.l7rule_path.format(
+            l7rule_id=l7rule.get('id')), new_l7rule, status=400)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.ACTIVE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.ACTIVE,
+                                            constants.ONLINE)
+
     def test_delete(self):
         l7rule = self.create_l7rule(
             self.lb.get('id'), self.listener.get('id'),
