@@ -1020,11 +1020,12 @@ Delete SSL certificate PEM file
 Upload listener haproxy configuration
 -------------------------------------
 
-* **URL:** /*:version*/listeners/*:listener*/haproxy
+* **URL:** /*:version*/listeners/*:amphora_id*/*:listener*/haproxy
 * **Method:** PUT
 * **URL params:**
 
   * *:listener* = Listener UUID
+  * *:amphora_id* = Amphora UUID
 
 * **Data params:** haproxy configuration file for the listener
 * **Success Response:**
@@ -1070,7 +1071,7 @@ out of the haproxy daemon status interface for tracking health and stats).
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/haproxy
+  https://octavia-haproxy-img-00328.local/v0.1/listeners/d459b1c8-54b0-4030-9bec-4f449e73b1ef/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/haproxy
   (Upload PUT data should be a raw haproxy.conf file.)
 
   JSON Response:
