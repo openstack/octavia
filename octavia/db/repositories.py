@@ -678,6 +678,7 @@ class L7RuleRepository(BaseRepository):
                                         constants.L7RULE_TYPE_PATH,
                                         constants.L7RULE_TYPE_FILE_TYPE)):
                 l7rule_dict['key'] = None
+                model_kwargs.update({'key': None})
             validate.l7rule_data(self.model_class(**l7rule_dict))
             l7rule_db.update(model_kwargs)
 
@@ -745,6 +746,7 @@ class L7PolicyRepository(BaseRepository):
             self._validate_l7policy_pool_data(session, l7policy)
 
             if l7policy.action:
+                model_kwargs.update(action=l7policy.action)
                 if l7policy.action == constants.L7POLICY_ACTION_REJECT:
                     model_kwargs.update(redirect_url=None)
                     model_kwargs.update(redirect_pool_id=None)
@@ -754,33 +756,20 @@ class L7PolicyRepository(BaseRepository):
                 elif (l7policy.action ==
                         constants.L7POLICY_ACTION_REDIRECT_TO_POOL):
                     model_kwargs.update(redirect_url=None)
-            elif l7policy.redirect_url:
-                model_kwargs.update(
-                    action=constants.L7POLICY_ACTION_REDIRECT_TO_URL)
-                model_kwargs.update(redirect_pool_id=None)
-            elif l7policy.redirect_pool_id:
-                model_kwargs.update(
-                    action=constants.L7POLICY_ACTION_REDIRECT_TO_POOL)
-                model_kwargs.update(redirect_url=None)
 
             l7policy_db.update(model_kwargs)
 
         # Position manipulation must happen outside the other alterations
         # in the previous transaction
-        listener = (session.query(models.Listener).
-                    filter_by(id=l7policy_db.listener_id).first())
-        # Immediate refresh, as we have found that sqlalchemy will sometimes
-        # cache the above query
-        session.refresh(listener)
-        if position is not None and position < len(listener.l7policies) + 1:
+        if position is not None:
+            listener = (session.query(models.Listener).
+                        filter_by(id=l7policy_db.listener_id).first())
+            # Immediate refresh, as we have found that sqlalchemy will
+            # sometimes cache the above query
+            session.refresh(listener)
             with session.begin(subtransactions=True):
                 l7policy_db = listener.l7policies.pop(l7policy_db.position - 1)
                 listener.l7policies.insert(position - 1, l7policy_db)
-            listener.l7policies.reorder()
-        elif position is not None:
-            with session.begin(subtransactions=True):
-                l7policy_db = listener.l7policies.pop(l7policy_db.position - 1)
-                listener.l7policies.append(l7policy_db)
             listener.l7policies.reorder()
 
         return self.get(session, id=l7policy.id)
