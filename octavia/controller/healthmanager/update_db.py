@@ -107,11 +107,11 @@ class UpdateHealthDb(object):
                                              last_update=(datetime.
                                                           datetime.utcnow()))
         else:
-            LOG.warn(_LW('Amphora %(id)s health message reports %(found)i '
-                         'listeners when %(expected)i expected'),
-                     {'id': health['id'],
-                      'found': len(listeners),
-                      'expected': expected_listener_count})
+            LOG.warning(_LW('Amphora %(id)s health message reports %(found)i '
+                            'listeners when %(expected)i expected'),
+                        {'id': health['id'],
+                         'found': len(listeners),
+                         'expected': expected_listener_count})
 
         # We got a heartbeat so lb is healthy until proven otherwise
         lb_status = constants.ONLINE
@@ -129,9 +129,9 @@ class UpdateHealthDb(object):
                 if lb_status == constants.ONLINE:
                     lb_status = constants.DEGRADED
             else:
-                LOG.warn(_LW('Listener %(list)s reported status of '
-                             '%(status)s'), {'list': listener_id,
-                         'status': listener.get('status')})
+                LOG.warning(_LW('Listener %(list)s reported status of '
+                                '%(status)s'), {'list': listener_id,
+                            'status': listener.get('status')})
 
             try:
                 if listener_status is not None:
@@ -154,9 +154,9 @@ class UpdateHealthDb(object):
                     pool_status = constants.ERROR
                     lb_status = constants.ERROR
                 else:
-                    LOG.warn(_LW('Pool %(pool)s reported status of '
-                                 '%(status)s'), {'pool': pool_id,
-                             'status': pool.get('status')})
+                    LOG.warning(_LW('Pool %(pool)s reported status of '
+                                    '%(status)s'), {'pool': pool_id,
+                                'status': pool.get('status')})
 
                 members = pool['members']
                 for member_id, status in six.iteritems(members):
@@ -173,9 +173,9 @@ class UpdateHealthDb(object):
                     elif status == constants.NO_CHECK:
                         member_status = constants.NO_MONITOR
                     else:
-                        LOG.warn(_LW('Member %(mem)s reported status of '
-                                     '%(status)s'), {'mem': member_id,
-                                 'status': status})
+                        LOG.warning(_LW('Member %(mem)s reported status of '
+                                        '%(status)s'), {'mem': member_id,
+                                    'status': status})
 
                     try:
                         if member_status is not None:

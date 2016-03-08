@@ -58,9 +58,9 @@ def unwrap_envelope(envelope, key):
     expected_hmc = envelope[-hash_len:]
     calculated_hmc = get_hmac(payload, key)
     if not secretutils.constant_time_compare(expected_hmc, calculated_hmc):
-        LOG.warn(_LW('calculated hmac: %(s1)s not equal to msg hmac: '
-                     '%(s2)s dropping packet'), {'s1': to_hex(calculated_hmc),
-                                                 's2': to_hex(expected_hmc)})
+        LOG.warning(_LW('calculated hmac: %(s1)s not equal to msg hmac: '
+                    '%(s2)s dropping packet'), {'s1': to_hex(calculated_hmc),
+                                                's2': to_hex(expected_hmc)})
         fmt = 'calculated hmac: {0} not equal to msg hmac: {1} dropping packet'
         raise exceptions.InvalidHMACException(fmt.format(
             to_hex(calculated_hmc), to_hex(expected_hmc)))

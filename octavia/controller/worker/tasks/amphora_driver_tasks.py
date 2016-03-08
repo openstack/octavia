@@ -58,15 +58,15 @@ class ListenersUpdate(BaseAmphoraTask):
     def revert(self, loadbalancer, *args, **kwargs):
         """Handle failed listeners updates."""
 
-        LOG.warn(_LW("Reverting listeners updates."))
+        LOG.warning(_LW("Reverting listeners updates."))
         for listener in loadbalancer.listeners:
             try:
                 self.listener_repo.update(db_apis.get_session(),
                                           id=listener.id,
                                           provisioning_status=constants.ERROR)
             except Exception:
-                LOG.warn(_LW("Failed to update listener %s provisioning "
-                             "status..."), listener.id)
+                LOG.warning(_LW("Failed to update listener %s provisioning "
+                                "status..."), listener.id)
         return None
 
 
@@ -81,7 +81,7 @@ class ListenerStop(BaseAmphoraTask):
     def revert(self, listener, *args, **kwargs):
         """Handle a failed listener stop."""
 
-        LOG.warn(_LW("Reverting listener stop."))
+        LOG.warning(_LW("Reverting listener stop."))
         self.listener_repo.update(db_apis.get_session(), id=listener.id,
                                   provisioning_status=constants.ERROR)
         return None
@@ -98,7 +98,7 @@ class ListenerStart(BaseAmphoraTask):
     def revert(self, listener, *args, **kwargs):
         """Handle a failed listener start."""
 
-        LOG.warn(_LW("Reverting listener start."))
+        LOG.warning(_LW("Reverting listener start."))
         self.listener_repo.update(db_apis.get_session(), id=listener.id,
                                   provisioning_status=constants.ERROR)
         return None
@@ -116,15 +116,15 @@ class ListenersStart(BaseAmphoraTask):
     def revert(self, listeners, *args, **kwargs):
         """Handle failed listeners starts."""
 
-        LOG.warn(_LW("Reverting listeners starts."))
+        LOG.warning(_LW("Reverting listeners starts."))
         for listener in listeners:
             try:
                 self.listener_repo.update(db_apis.get_session(),
                                           id=listener.id,
                                           provisioning_status=constants.ERROR)
             except Exception:
-                LOG.warn(_LW("Failed to update listener %s provisioning "
-                             "status..."), listener.id)
+                LOG.warning(_LW("Failed to update listener %s provisioning "
+                                "status..."), listener.id)
         return None
 
 
@@ -139,7 +139,7 @@ class ListenerDelete(BaseAmphoraTask):
     def revert(self, listener, *args, **kwargs):
         """Handle a failed listener delete."""
 
-        LOG.warn(_LW("Reverting listener delete."))
+        LOG.warning(_LW("Reverting listener delete."))
         self.listener_repo.update(db_apis.get_session(), id=listener.id,
                                   provisioning_status=constants.ERROR)
 
@@ -172,7 +172,7 @@ class AmphoraFinalize(BaseAmphoraTask):
         """Handle a failed amphora finalize."""
         if isinstance(result, failure.Failure):
             return
-        LOG.warn(_LW("Reverting amphora finalize."))
+        LOG.warning(_LW("Reverting amphora finalize."))
         self.amphora_repo.update(db_apis.get_session(), id=amphora.id,
                                  status=constants.ERROR)
 
@@ -192,7 +192,7 @@ class AmphoraPostNetworkPlug(BaseAmphoraTask):
         """Handle a failed post network plug."""
         if isinstance(result, failure.Failure):
             return
-        LOG.warn(_LW("Reverting post network plug."))
+        LOG.warning(_LW("Reverting post network plug."))
         self.amphora_repo.update(db_apis.get_session(), id=amphora.id,
                                  status=constants.ERROR)
 
@@ -211,7 +211,7 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
         """Handle a failed post network plug."""
         if isinstance(result, failure.Failure):
             return
-        LOG.warn(_LW("Reverting post network plug."))
+        LOG.warning(_LW("Reverting post network plug."))
         for amphora in six.moves.filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
@@ -233,7 +233,7 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
         """Handle a failed amphora vip plug notification."""
         if isinstance(result, failure.Failure):
             return
-        LOG.warn(_LW("Reverting post vip plug."))
+        LOG.warning(_LW("Reverting post vip plug."))
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       id=loadbalancer.id,
                                       provisioning_status=constants.ERROR)
@@ -270,7 +270,7 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
         """Handle a failed amphora vip plug notification."""
         if isinstance(result, failure.Failure):
             return
-        LOG.warn(_LW("Reverting Get Amphora VRRP Interface."))
+        LOG.warning(_LW("Reverting Get Amphora VRRP Interface."))
         for amp in six.moves.filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):

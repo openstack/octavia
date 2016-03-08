@@ -159,7 +159,7 @@ class PlugNetworks(BaseNetworkTask):
     def revert(self, amphora, delta, *args, **kwargs):
         """Handle a failed network plug by removing all nics added."""
 
-        LOG.warn(_LW("Unable to plug networks for amp id %s"), amphora.id)
+        LOG.warning(_LW("Unable to plug networks for amp id %s"), amphora.id)
         if not delta:
             return
 
@@ -254,8 +254,8 @@ class HandleNetworkDeltas(BaseNetworkTask):
         if isinstance(result, failure.Failure):
             return
         for amp_id, delta in six.iteritems(deltas):
-            LOG.warn(_LW("Unable to plug networks for amp id %s"),
-                     delta.amphora_id)
+            LOG.warning(_LW("Unable to plug networks for amp id %s"),
+                        delta.amphora_id)
             if not delta:
                 return
 
@@ -284,8 +284,8 @@ class PlugVIP(BaseNetworkTask):
 
         if isinstance(result, failure.Failure):
             return
-        LOG.warn(_LW("Unable to plug VIP for loadbalancer id %s"),
-                 loadbalancer.id)
+        LOG.warning(_LW("Unable to plug VIP for loadbalancer id %s"),
+                    loadbalancer.id)
 
         self.network_driver.unplug_vip(loadbalancer, loadbalancer.vip)
 
@@ -324,7 +324,7 @@ class AllocateVIP(BaseNetworkTask):
             LOG.exception(_LE("Unable to allocate VIP"))
             return
         vip = result
-        LOG.warn(_LW("Deallocating vip %s"), vip.ip_address)
+        LOG.warning(_LW("Deallocating vip %s"), vip.ip_address)
         self.network_driver.deallocate_vip(vip)
 
 

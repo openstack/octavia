@@ -104,9 +104,9 @@ class ComputeCreate(BaseComputeTask):
         if isinstance(result, failure.Failure):
             return
         compute_id = result
-        LOG.warn(_LW("Reverting compute create for amphora with id"
-                     "%(amp)s and compute id: %(comp)s"),
-                 {'amp': amphora_id, 'comp': compute_id})
+        LOG.warning(_LW("Reverting compute create for amphora with id"
+                        "%(amp)s and compute id: %(comp)s"),
+                    {'amp': amphora_id, 'comp': compute_id})
         try:
             self.compute.delete(compute_id)
         except Exception:
@@ -207,8 +207,8 @@ class NovaServerGroupCreate(BaseComputeTask):
         :param result: here it refers to server group id
         """
         server_group_id = result
-        LOG.warn(_LW("Reverting server group create with id:%s"),
-                 server_group_id)
+        LOG.warning(_LW("Reverting server group create with id:%s"),
+                    server_group_id)
         self.compute.delete_server_group(server_group_id)
 
 
