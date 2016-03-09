@@ -175,8 +175,6 @@ haproxy_amphora_opts = [
                help=_("The respawn count for haproxy's upstart script")),
     cfg.IntOpt('respawn_interval', default=2,
                help=_("The respawn interval for haproxy's upstart script")),
-    cfg.StrOpt('haproxy_cert_dir', default='/tmp/',
-               help=_("The directory to store haproxy cert files in")),
     cfg.FloatOpt('rest_request_conn_timeout', default=10,
                  help=_("The time in seconds to wait for a REST API "
                         "to connect.")),
