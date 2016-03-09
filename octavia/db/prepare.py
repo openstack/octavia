@@ -93,6 +93,9 @@ def create_l7policy(l7policy_dict, lb_id, listener_id):
         l7policy_dict['redirect_pool'] = prepped_pool
         l7policy_dict['redirect_pool_id'] = prepped_pool['id']
     if l7policy_dict.get('l7rules'):
+        if (len(l7policy_dict.get('l7rules')) >
+                constants.MAX_L7RULES_PER_L7POLICY):
+            raise exceptions.TooManyL7RulesOnL7Policy(id=l7policy_dict['id'])
         prepped_l7rules = []
         for l7rule_dict in l7policy_dict.get('l7rules'):
             try:

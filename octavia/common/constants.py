@@ -112,6 +112,10 @@ SUPPORTED_L7POLICY_ACTIONS = (L7POLICY_ACTION_REJECT,
 # definitely be the case with 2147483647
 MAX_POLICY_POSITION = 2147483647
 
+# Testing showed haproxy config failed to parse after more than
+# 53 rules per policy
+MAX_L7RULES_PER_L7POLICY = 50
+
 URL_REGEX = (r'\Ahttp[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|'
              r'(?:%[0-9a-fA-F][0-9a-fA-F]))+')
 

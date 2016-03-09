@@ -228,7 +228,19 @@ class TestL7Rule(base.BaseAPITest):
                 'type': constants.L7RULE_TYPE_PATH,
                 'compare_type': constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
                 'value': '/api'}
-        self.post(path, body, status=409, expect_errors=True)
+        self.post(path, body, status=409)
+
+    def test_create_too_many_rules(self):
+        for i in range(0, constants.MAX_L7RULES_PER_L7POLICY):
+            self.create_l7rule(
+                self.lb.get('id'), self.listener.get('id'),
+                self.l7policy.get('id'), constants.L7RULE_TYPE_PATH,
+                constants.L7RULE_COMPARE_TYPE_STARTS_WITH, '/api')
+            self.set_lb_status(self.lb.get('id'), constants.ACTIVE)
+        body = {'type': constants.L7RULE_TYPE_PATH,
+                'compare_type': constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+                'value': '/api'}
+        self.post(self.l7rules_path, body, status=409)
 
     def test_bad_create(self):
         l7rule = {'name': 'test1'}

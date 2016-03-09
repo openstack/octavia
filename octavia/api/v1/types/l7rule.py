@@ -21,10 +21,10 @@ from octavia.common import constants
 class L7RuleResponse(base.BaseType):
     """Defines which attributes are to be shown on any response."""
     id = wtypes.wsattr(wtypes.UuidType())
-    type = wtypes.wsattr(wtypes.StringType(max_length=255))
-    compare_type = wtypes.wsattr(wtypes.StringType(max_length=255))
-    key = wtypes.wsattr(wtypes.StringType(max_length=255))
-    value = wtypes.wsattr(wtypes.StringType(max_length=255))
+    type = wtypes.wsattr(wtypes.StringType())
+    compare_type = wtypes.wsattr(wtypes.StringType())
+    key = wtypes.wsattr(wtypes.StringType())
+    value = wtypes.wsattr(wtypes.StringType())
     invert = wtypes.wsattr(bool)
 
 
