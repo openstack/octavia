@@ -112,7 +112,8 @@ class CreateAmphoraInDB(BaseDatabaseTask):
         # executed after this failed so we will need to do something and
         # result is the amphora's id
 
-        LOG.warn(_LW("Reverting create amphora in DB for amp id %s "), result)
+        LOG.warning(_LW("Reverting create amphora in DB for amp id %s "),
+                    result)
 
         # Delete the amphora for now. May want to just update status later
         self.amphora_repo.delete(db_apis.get_session(), id=result)
@@ -157,8 +158,8 @@ class DeleteHealthMonitorInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting mark health monitor delete in DB "
-                     "for health monitor on pool with id %s"), pool_id)
+        LOG.warning(_LW("Reverting mark health monitor delete in DB "
+                        "for health monitor on pool with id %s"), pool_id)
 # TODO(johnsom) fix this
 #        self.health_mon_repo.update(db_apis.get_session(), health_mon.id,
 #                                    provisioning_status=constants.ERROR)
@@ -200,8 +201,8 @@ class DeleteMemberInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting delete in DB "
-                     "for member id %s"), member.id)
+        LOG.warning(_LW("Reverting delete in DB "
+                        "for member id %s"), member.id)
 # TODO(johnsom) fix this
 #        self.member_repo.update(db_apis.get_session(), member.id,
 #                                operating_status=constants.ERROR)
@@ -225,9 +226,8 @@ class DeleteListenerInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW(
-            "Reverting mark listener delete in DB for listener id %s"),
-            listener_id)
+        LOG.warning(_LW("Reverting mark listener delete in DB "
+                        "for listener id %s"), listener_id)
 
 
 class DeletePoolInDB(BaseDatabaseTask):
@@ -252,8 +252,8 @@ class DeletePoolInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting delete in DB "
-                     "for pool id %s"), pool_id)
+        LOG.warning(_LW("Reverting delete in DB "
+                        "for pool id %s"), pool_id)
 # TODO(johnsom) Fix this
 #        self.pool_repo.update(db_apis.get_session(), pool.id,
 #                              operating_status=constants.ERROR)
@@ -281,8 +281,8 @@ class DeleteL7PolicyInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting delete in DB "
-                     "for l7policy id %s"), l7policy_id)
+        LOG.warning(_LW("Reverting delete in DB "
+                        "for l7policy id %s"), l7policy_id)
 # TODO(sbalukoff) Fix this
 #        self.listener_repo.update(db_apis.get_session(), l7policy.listener.id,
 #                                  operating_status=constants.ERROR)
@@ -310,8 +310,8 @@ class DeleteL7RuleInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting delete in DB "
-                     "for l7rule id %s"), l7rule_id)
+        LOG.warning(_LW("Reverting delete in DB "
+                        "for l7rule id %s"), l7rule_id)
 # TODO(sbalukoff) Fix this
 #        self.listener_repo.update(db_apis.get_session(),
 #                                  l7rule.l7policy.listener.id,
@@ -445,9 +445,9 @@ class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
         if isinstance(result, failure.Failure):
             return
 
-        LOG.warn(_LW("Reverting amphora role in DB for amp "
-                     "id %(amp)s"),
-                 {'amp': amphora.id})
+        LOG.warning(_LW("Reverting amphora role in DB for amp "
+                        "id %(amp)s"),
+                    {'amp': amphora.id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  role=None,
                                  vrrp_priority=None)
@@ -513,9 +513,9 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
         if isinstance(result, failure.Failure):
             return
 
-        LOG.warn(_LW("Reverting mark amphora ready in DB for amp "
-                     "id %(amp)s and compute id %(comp)s"),
-                 {'amp': amphora.id, 'comp': amphora.compute_id})
+        LOG.warning(_LW("Reverting mark amphora ready in DB for amp "
+                        "id %(amp)s and compute id %(comp)s"),
+                    {'amp': amphora.id, 'comp': amphora.compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.ERROR)
 
@@ -538,9 +538,9 @@ class MarkAmphoraBootingInDB(BaseDatabaseTask):
         if isinstance(result, failure.Failure):
             return
 
-        LOG.warn(_LW("Reverting mark amphora booting in DB for amp "
-                     "id %(amp)s and compute id %(comp)s"),
-                 {'amp': amphora_id, 'comp': compute_id})
+        LOG.warning(_LW("Reverting mark amphora booting in DB for amp "
+                        "id %(amp)s and compute id %(comp)s"),
+                    {'amp': amphora_id, 'comp': compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  status=constants.ERROR,
                                  compute_id=compute_id)
@@ -564,9 +564,9 @@ class MarkAmphoraDeletedInDB(BaseDatabaseTask):
     def revert(self, amphora, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up."""
 
-        LOG.warn(_LW("Reverting mark amphora deleted in DB "
-                     "for amp id %(amp)s and compute id %(comp)s"),
-                 {'amp': amphora.id, 'comp': amphora.compute_id})
+        LOG.warning(_LW("Reverting mark amphora deleted in DB "
+                        "for amp id %(amp)s and compute id %(comp)s"),
+                    {'amp': amphora.id, 'comp': amphora.compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.ERROR)
 
@@ -589,9 +589,9 @@ class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
     def revert(self, amphora, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up."""
 
-        LOG.warn(_LW("Reverting mark amphora pending delete in DB "
-                     "for amp id %(amp)s and compute id %(comp)s"),
-                 {'amp': amphora.id, 'comp': amphora.compute_id})
+        LOG.warning(_LW("Reverting mark amphora pending delete in DB "
+                        "for amp id %(amp)s and compute id %(comp)s"),
+                    {'amp': amphora.id, 'comp': amphora.compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.ERROR)
 
@@ -614,9 +614,9 @@ class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
     def revert(self, amphora, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up."""
 
-        LOG.warn(_LW("Reverting mark amphora pending update in DB "
-                     "for amp id %(amp)s and compute id %(comp)s"),
-                 {'amp': amphora.id, 'comp': amphora.compute_id})
+        LOG.warning(_LW("Reverting mark amphora pending update in DB "
+                        "for amp id %(amp)s and compute id %(comp)s"),
+                    {'amp': amphora.id, 'comp': amphora.compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.ERROR)
 
@@ -642,9 +642,9 @@ class MarkAmphoraReadyInDB(BaseDatabaseTask):
     def revert(self, amphora, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up."""
 
-        LOG.warn(_LW("Reverting mark amphora ready in DB for amp "
-                     "id %(amp)s and compute id %(comp)s"),
-                 {'amp': amphora.id, 'comp': amphora.compute_id})
+        LOG.warning(_LW("Reverting mark amphora ready in DB for amp "
+                        "id %(amp)s and compute id %(comp)s"),
+                    {'amp': amphora.id, 'comp': amphora.compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.ERROR,
                                  compute_id=amphora.compute_id,
@@ -723,11 +723,11 @@ class MarkLBActiveInDB(BaseDatabaseTask):
                         db_apis.get_session(), listener.id,
                         provisioning_status=constants.ERROR)
                 except Exception:
-                    LOG.warn(_LW("Error updating listener %s provisioning "
-                                 "status"), listener.id)
+                    LOG.warning(_LW("Error updating listener %s provisioning "
+                                    "status"), listener.id)
 
-        LOG.warn(_LW("Reverting mark load balancer deleted in DB "
-                     "for load balancer id %s"), loadbalancer.id)
+        LOG.warning(_LW("Reverting mark load balancer deleted in DB "
+                        "for load balancer id %s"), loadbalancer.id)
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
                                       provisioning_status=constants.ERROR)
@@ -744,9 +744,9 @@ class UpdateLBServerGroupInDB(BaseDatabaseTask):
                                       server_group_id=server_group_id)
 
     def revert(self, loadbalancer_id, server_group_id, *args, **kwargs):
-        LOG.warn(_LW('Reverting Server Group updated with id: %(s1)s for '
-                     'load balancer id: %(s2)s '),
-                 {'s1': server_group_id, 's2': loadbalancer_id})
+        LOG.warning(_LW('Reverting Server Group updated with id: %(s1)s for '
+                        'load balancer id: %(s2)s '),
+                    {'s1': server_group_id, 's2': loadbalancer_id})
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       id=loadbalancer_id,
                                       server_group_id=None)
@@ -770,8 +770,8 @@ class MarkLBDeletedInDB(BaseDatabaseTask):
     def revert(self, loadbalancer, *args, **kwargs):
         """Mark the load balancer as broken and ready to be cleaned up."""
 
-        LOG.warn(_LW("Reverting mark load balancer deleted in DB "
-                     "for load balancer id %s"), loadbalancer.id)
+        LOG.warning(_LW("Reverting mark load balancer deleted in DB "
+                        "for load balancer id %s"), loadbalancer.id)
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
                                       provisioning_status=constants.ERROR)
@@ -796,8 +796,8 @@ class MarkLBPendingDeleteInDB(BaseDatabaseTask):
     def revert(self, loadbalancer, *args, **kwargs):
         """Mark the load balancer as broken and ready to be cleaned up."""
 
-        LOG.warn(_LW("Reverting mark load balancer pending delete in DB "
-                     "for load balancer id %s"), loadbalancer.id)
+        LOG.warning(_LW("Reverting mark load balancer pending delete in DB "
+                        "for load balancer id %s"), loadbalancer.id)
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
                                       provisioning_status=constants.ERROR)
@@ -825,12 +825,12 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
     def revert(self, loadbalancer, listeners, *args, **kwargs):
         """Mark the load balancer and listeners as broken."""
 
-        LOG.warn(_LW("Reverting mark load balancer "
-                     "and listeners active in DB "
-                     "for load balancer id %(LB)s and "
-                     "listener ids: %(list)s"),
-                 {'LB': loadbalancer.id,
-                  'list': ', '.join([l.id for l in listeners])})
+        LOG.warning(_LW("Reverting mark load balancer "
+                        "and listeners active in DB "
+                        "for load balancer id %(LB)s and "
+                        "listener ids: %(list)s"),
+                    {'LB': loadbalancer.id,
+                     'list': ', '.join([l.id for l in listeners])})
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
                                       provisioning_status=constants.ERROR)
@@ -839,8 +839,8 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
                 self.listener_repo.update(db_apis.get_session(), listener.id,
                                           provisioning_status=constants.ERROR)
             except Exception:
-                LOG.warn(_LW("Failed to update listener %s provisioning "
-                             "status..."), listener.id)
+                LOG.warning(_LW("Failed to update listener %s provisioning "
+                                "status..."), listener.id)
 
 
 class MarkListenerActiveInDB(BaseDatabaseTask):
@@ -866,8 +866,8 @@ class MarkListenerActiveInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting mark listener deleted in DB "
-                     "for listener id %s"), listener.id)
+        LOG.warning(_LW("Reverting mark listener deleted in DB "
+                        "for listener id %s"), listener.id)
         self.listener_repo.update(db_apis.get_session(), listener.id,
                                   provisioning_status=constants.ERROR)
 
@@ -895,8 +895,8 @@ class MarkListenerDeletedInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting mark listener deleted in DB "
-                     "for listener id %s"), listener.id)
+        LOG.warning(_LW("Reverting mark listener deleted in DB "
+                        "for listener id %s"), listener.id)
         self.listener_repo.update(db_apis.get_session(), listener.id,
                                   provisioning_status=constants.ERROR)
 
@@ -918,8 +918,8 @@ class MarkListenerPendingDeleteInDB(BaseDatabaseTask):
     def revert(self, listener, *args, **kwargs):
         """Mark the listener as broken and ready to be cleaned up."""
 
-        LOG.warn(_LW("Reverting mark listener pending delete in DB "
-                     "for listener id %s"), listener.id)
+        LOG.warning(_LW("Reverting mark listener pending delete in DB "
+                        "for listener id %s"), listener.id)
         self.listener_repo.update(db_apis.get_session(), listener.id,
                                   provisioning_status=constants.ERROR)
 
@@ -948,8 +948,8 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting update loadbalancer in DB "
-                     "for loadbalancer id %s"), loadbalancer.id)
+        LOG.warning(_LW("Reverting update loadbalancer in DB "
+                        "for loadbalancer id %s"), loadbalancer.id)
 
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
@@ -980,8 +980,8 @@ class UpdateHealthMonInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting update health monitor in DB "
-                     "for health monitor id %s"), health_mon.pool_id)
+        LOG.warning(_LW("Reverting update health monitor in DB "
+                        "for health monitor id %s"), health_mon.pool_id)
 # TODO(johnsom) fix this to set the upper ojects to ERROR
         self.health_mon_repo.update(db_apis.get_session(), health_mon.pool_id,
                                     enabled=0)
@@ -1011,8 +1011,8 @@ class UpdateListenerInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting update listener in DB "
-                     "for listener id %s"), listener.id)
+        LOG.warning(_LW("Reverting update listener in DB "
+                        "for listener id %s"), listener.id)
 # TODO(johnsom) fix this to set the upper ojects to ERROR
         self.listener_repo.update(db_apis.get_session(), listener.id,
                                   enabled=0)
@@ -1042,8 +1042,8 @@ class UpdateMemberInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting update member in DB "
-                     "for member id %s"), member.id)
+        LOG.warning(_LW("Reverting update member in DB "
+                        "for member id %s"), member.id)
 # TODO(johnsom) fix this to set the upper ojects to ERROR
         self.member_repo.update(db_apis.get_session(), member.id,
                                 enabled=0)
@@ -1074,8 +1074,8 @@ class UpdatePoolInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting update pool in DB "
-                     "for pool id %s"), pool.id)
+        LOG.warning(_LW("Reverting update pool in DB "
+                        "for pool id %s"), pool.id)
 # TODO(johnsom) fix this to set the upper ojects to ERROR
         self.repos.update_pool_and_sp(db_apis.get_session(),
                                       pool.id, {'enabled': 0}, None)
@@ -1105,8 +1105,8 @@ class UpdateL7PolicyInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting update l7policy in DB "
-                     "for l7policy id %s"), l7policy.id)
+        LOG.warning(_LW("Reverting update l7policy in DB "
+                        "for l7policy id %s"), l7policy.id)
 # TODO(sbalukoff) fix this to set the upper objects to ERROR
         self.l7policy_repo.update(db_apis.get_session(), l7policy.id,
                                   enabled=0)
@@ -1136,8 +1136,8 @@ class UpdateL7RuleInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warn(_LW("Reverting update l7rule in DB "
-                     "for l7rule id %s"), l7rule.id)
+        LOG.warning(_LW("Reverting update l7rule in DB "
+                        "for l7rule id %s"), l7rule.id)
 # TODO(sbalukoff) fix this to set appropriate upper objects to ERROR
         self.l7policy_repo.update(db_apis.get_session(), l7rule.l7policy.id,
                                   enabled=0)

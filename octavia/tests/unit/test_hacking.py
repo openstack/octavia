@@ -128,3 +128,10 @@ class HackingTestCase(base.BaseTestCase):
 
         self.assertEqual(0, len(list(checks.assert_equal_true_or_false(
             "self.assertFalse()"))))
+
+    def test_no_log_warn(self):
+        self.assertEqual(1, len(list(checks.no_log_warn(
+            "LOG.warn()"))))
+
+        self.assertEqual(0, len(list(checks.no_log_warn(
+            "LOG.warning()"))))

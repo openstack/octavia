@@ -200,6 +200,15 @@ def assert_equal_in(logical_line):
                "contents.")
 
 
+def no_log_warn(logical_line):
+    """Disallow 'LOG.warn('
+
+    O339
+    """
+    if logical_line.startswith('LOG.warn('):
+        yield(0, "O339:Use LOG.warning() rather than LOG.warn()")
+
+
 def factory(register):
     register(assert_true_instance)
     register(assert_equal_or_not_none)
@@ -210,3 +219,4 @@ def factory(register):
     register(assert_equal_true_or_false)
     register(no_mutable_default_args)
     register(assert_equal_in)
+    register(no_log_warn)

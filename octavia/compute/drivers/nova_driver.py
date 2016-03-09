@@ -41,7 +41,7 @@ def _extract_amp_image_id_by_tag(client, image_tag):
     image_id = images[-1]['id']
     num_images = len(images)
     if num_images > 1:
-        LOG.warn(
+        LOG.warning(
             _LW("A single Glance image should be tagged with %(tag)s tag, "
                 "but %(num)d found. Using %(image_id)s."),
             {'tag': image_tag, 'num': num_images, 'image_id': image_id}
@@ -52,7 +52,7 @@ def _extract_amp_image_id_by_tag(client, image_tag):
 def _get_image_uuid(client, image_id, image_tag):
     if image_id:
         if image_tag:
-            LOG.warn(
+            LOG.warning(
                 _LW("Both amp_image_id and amp_image_tag options defined. "
                     "Using the former."))
         return image_id
@@ -149,8 +149,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
         try:
             self.manager.delete(server=compute_id)
         except nova_exceptions.NotFound:
-            LOG.warn(_LW("Nova instance with id: %s not found. "
-                         "Assuming already deleted."), compute_id)
+            LOG.warning(_LW("Nova instance with id: %s not found. "
+                            "Assuming already deleted."), compute_id)
         except Exception:
             LOG.exception(_LE("Error deleting nova virtual machine."))
             raise exceptions.ComputeDeleteException()
@@ -253,8 +253,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
             self.server_groups.delete(server_group_id)
 
         except nova_exceptions.NotFound:
-            LOG.warn(_LW("Server group instance with id: %s not found. "
-                         "Assuming already deleted."), server_group_id)
+            LOG.warning(_LW("Server group instance with id: %s not found. "
+                            "Assuming already deleted."), server_group_id)
         except Exception:
             LOG.exception(_LE("Error delete server group instance."))
             raise exceptions.ServerGroupObjectDeleteException()

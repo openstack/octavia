@@ -22,6 +22,7 @@ Octavia Specific Commandments
 - [O338] Change assertEqual(A in B, True), assertEqual(True, A in B),
   assertEqual(A in B, False) or assertEqual(False, A in B) to the more
   specific assertIn/NotIn(A, B)
+- [O339] LOG.warn() is not allowed. Use LOG.warning()
 
 Creating Unit Tests
 -------------------
