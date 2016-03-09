@@ -568,7 +568,10 @@ class TestControllerWorker(base.TestCase):
     @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
                 'LoadBalancerFlows.get_update_load_balancer_flow',
                 return_value=_flow_mock)
+    @mock.patch('octavia.db.repositories.ListenerRepository.get_all',
+                return_value=[_listener_mock])
     def test_update_load_balancer(self,
+                                  mock_listener_repo_get_all,
                                   mock_get_update_lb_flow,
                                   mock_api_get_session,
                                   mock_dyn_log_listener,
@@ -596,7 +599,9 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with(_flow_mock,
                                     store={constants.UPDATE_DICT: change,
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock}))
+                                               _load_balancer_mock,
+                                           constants.LISTENERS:
+                                               [_listener_mock]}))
 
         _flow_mock.run.assert_called_once_with()
 

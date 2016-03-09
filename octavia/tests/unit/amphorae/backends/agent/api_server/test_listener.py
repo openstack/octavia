@@ -13,16 +13,20 @@
 #    under the License.
 
 import mock
+from oslo_utils import uuidutils
 import six.moves.builtins as builtins
 
 from octavia.amphorae.backends.agent.api_server import listener
+from octavia.amphorae.backends.agent.api_server import util as agent_util
 from octavia.common import constants as consts
 from octavia.common.jinja.haproxy import jinja_cfg
+from octavia.tests.common import utils as test_utils
 import octavia.tests.unit.base as base
 from octavia.tests.unit.common.sample_configs import sample_configs
 
 BASE_AMP_PATH = '/var/lib/octavia'
 BASE_CRT_PATH = BASE_AMP_PATH + '/certs'
+LISTENER_ID1 = uuidutils.generate_uuid()
 
 
 class ListenerTestCase(base.TestCase):
@@ -113,19 +117,22 @@ class ListenerTestCase(base.TestCase):
     def test_check_listener_status(self, mock_pid, mock_exists):
         mock_pid.return_value = '1245'
         mock_exists.side_effect = [True, True]
+        config_path = agent_util.config_path(LISTENER_ID1)
+        file_contents = 'frontend {}'.format(LISTENER_ID1)
+        self.useFixture(test_utils.OpenFixture(config_path, file_contents))
         self.assertEqual(
             consts.ACTIVE,
-            listener._check_listener_status('123'))
+            listener._check_listener_status(LISTENER_ID1))
 
         mock_exists.side_effect = [True, False]
         self.assertEqual(
             consts.ERROR,
-            listener._check_listener_status('123'))
+            listener._check_listener_status(LISTENER_ID1))
 
         mock_exists.side_effect = [False]
         self.assertEqual(
             consts.OFFLINE,
-            listener._check_listener_status('123'))
+            listener._check_listener_status(LISTENER_ID1))
 
     @mock.patch('os.makedirs')
     @mock.patch('os.path.exists')

@@ -78,23 +78,3 @@ class TestControllerTasks(base.TestCase):
          ControllerWorker.delete_load_balancer.assert_has_calls)([
              mock.call(LB1_ID),
              mock.call(LB2_ID)], any_order=False)
-
-    @mock.patch('octavia.controller.worker.controller_worker.'
-                'ControllerWorker.update_listener')
-    @mock.patch('octavia.db.repositories.ListenerRepository.'
-                'get_all', return_value=_listeners)
-    def test_disable_enable_lb(self,
-                               mock_get_all,
-                               mock_update_listener,
-                               mock_get_session):
-
-        disable_enable_lb = controller_tasks.DisableEnableLB()
-        disable_enable_lb.execute(self.loadbalancer_mock)
-
-        repo.ListenerRepository.get_all.assert_called_once_with(
-            'TEST',
-            load_balancer_id=LB1_ID)
-
-        (controller_worker.
-         ControllerWorker.update_listener.assert_has_calls)([
-             mock.call({'enabled': True}, LISTENER1_ID)], any_order=False)

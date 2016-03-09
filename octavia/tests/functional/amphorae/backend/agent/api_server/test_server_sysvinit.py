@@ -304,7 +304,7 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(200, rv.status_code)
         self.assertEqual(
             [{'status': consts.ACTIVE, 'type': 'test', 'uuid': '123'},
-             {'status': consts.ERROR, 'type': 'http', 'uuid': '456'}],
+             {'status': consts.ERROR, 'type': '', 'uuid': '456'}],
             json.loads(rv.data.decode('utf-8')))
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
@@ -332,7 +332,7 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(200, rv.status_code)
         self.assertEqual(dict(
             status=consts.ERROR,
-            type='test',
+            type='',
             uuid='123'), json.loads(rv.data.decode('utf-8')))
 
         # Listener ACTIVE

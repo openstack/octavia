@@ -48,23 +48,3 @@ class DeleteLoadBalancersOnAmp(BaseControllerTask):
                                                    amphora_id=amphora.id)
         for lb in lbs:
             self.cntrlr_worker.delete_load_balancer(lb.id)
-
-
-class DisableEnableLB(BaseControllerTask):
-    """Enables or disables a load balancer."""
-
-    def execute(self, loadbalancer):
-        """Enables or disables a load balancer.
-
-        Iterate across the listeners starting or stoping them
-        based on the load balancer enabled / disable.
-
-        :param loadbalancer: The load balancer to enable/disable
-        """
-        listeners = self.listener_repo.get_all(db_apis.get_session(),
-                                               load_balancer_id=(
-                                                   loadbalancer.id))
-        for listener in listeners:
-            if loadbalancer.enabled != listener.enabled:
-                self.cntrlr_worker.update_listener(
-                    {'enabled': loadbalancer.enabled}, listener.id)

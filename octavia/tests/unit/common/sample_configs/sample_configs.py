@@ -203,7 +203,8 @@ RET_LISTENER = {
     'peer_port': 1024,
     'topology': 'SINGLE',
     'pools': [RET_POOL_1],
-    'l7policies': []}
+    'l7policies': [],
+    'enabled': True}
 
 RET_LISTENER_L7 = {
     'id': 'sample_listener_id_1',
@@ -217,7 +218,8 @@ RET_LISTENER_L7 = {
     'topology': 'SINGLE',
     'pools': [RET_POOL_1, RET_POOL_2],
     'l7policies': [RET_L7POLICY_1, RET_L7POLICY_2, RET_L7POLICY_3,
-                   RET_L7POLICY_4, RET_L7POLICY_5]}
+                   RET_L7POLICY_4, RET_L7POLICY_5],
+    'enabled': True}
 
 RET_LISTENER_TLS = {
     'id': 'sample_listener_id_1',
@@ -230,7 +232,8 @@ RET_LISTENER_TLS = {
     'default_tls_path': '/etc/ssl/sample_loadbalancer_id_1/fakeCN.pem',
     'default_tls_container': RET_DEF_TLS_CONT,
     'pools': [RET_POOL_1],
-    'l7policies': []}
+    'l7policies': [],
+    'enabled': True}
 
 RET_LISTENER_TLS_SNI = {
     'id': 'sample_listener_id_1',
@@ -246,38 +249,44 @@ RET_LISTENER_TLS_SNI = {
     'sni_container_ids': ['cont_id_2', 'cont_id_3'],
     'sni_containers': [RET_SNI_CONT_1, RET_SNI_CONT_2],
     'pools': [RET_POOL_1],
-    'l7policies': []}
+    'l7policies': [],
+    'enabled': True}
 
 RET_LB = {
     'name': 'test-lb',
     'vip_address': '10.0.0.2',
     'listener': RET_LISTENER,
-    'topology': 'SINGLE'}
+    'topology': 'SINGLE',
+    'enabled': True}
 
 RET_LB_TLS = {
     'name': 'test-lb',
     'vip_address': '10.0.0.2',
-    'listener': RET_LISTENER_TLS}
+    'listener': RET_LISTENER_TLS,
+    'enabled': True}
 
 RET_LB_TLS_SNI = {
     'name': 'test-lb',
     'vip_address': '10.0.0.2',
-    'listener': RET_LISTENER_TLS_SNI}
+    'listener': RET_LISTENER_TLS_SNI,
+    'enabled': True}
 
 RET_LB_L7 = {
     'name': 'test-lb',
     'vip_address': '10.0.0.2',
     'listener': RET_LISTENER_L7,
-    'topology': 'SINGLE'}
+    'topology': 'SINGLE',
+    'enabled': True}
 
 
 def sample_loadbalancer_tuple(proto=None, monitor=True, persistence=True,
                               persistence_type=None, tls=False, sni=False,
-                              topology=None, l7=False):
+                              topology=None, l7=False, enabled=True):
     proto = 'HTTP' if proto is None else proto
     topology = 'SINGLE' if topology is None else topology
     in_lb = collections.namedtuple(
-        'load_balancer', 'id, name, protocol, vip, listeners, amphorae')
+        'load_balancer', 'id, name, protocol, vip, listeners, amphorae,'
+        ' enabled')
     return in_lb(
         id='sample_loadbalancer_id_1',
         name='test-lb',
@@ -289,22 +298,27 @@ def sample_loadbalancer_tuple(proto=None, monitor=True, persistence=True,
                                          persistence_type=persistence_type,
                                          tls=tls,
                                          sni=sni,
-                                         l7=l7)]
+                                         l7=l7,
+                                         enabled=enabled)],
+        enabled=enabled
     )
 
 
-def sample_listener_loadbalancer_tuple(proto=None, topology=None):
+def sample_listener_loadbalancer_tuple(proto=None, topology=None,
+                                       enabled=True):
     proto = 'HTTP' if proto is None else proto
     topology = 'SINGLE' if topology is None else topology
     in_lb = collections.namedtuple(
-        'load_balancer', 'id, name, protocol, vip, amphorae, topology')
+        'load_balancer', 'id, name, protocol, vip, amphorae, topology, '
+        'enabled')
     return in_lb(
         id='sample_loadbalancer_id_1',
         name='test-lb',
         protocol=proto,
         vip=sample_vip_tuple(),
         amphorae=[sample_amphora_tuple()],
-        topology=topology
+        topology=topology,
+        enabled=enabled
     )
 
 
@@ -331,7 +345,7 @@ def sample_vip_tuple():
 def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                           persistence_type=None, persistence_cookie=None,
                           tls=False, sni=False, peer_port=None, topology=None,
-                          l7=False):
+                          l7=False, enabled=True):
     proto = 'HTTP' if proto is None else proto
     be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
     topology = 'SINGLE' if topology is None else topology
@@ -342,7 +356,7 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                     'connection_limit, tls_certificate_id, '
                     'sni_container_ids, default_tls_container, '
                     'sni_containers, load_balancer, peer_port, pools, '
-                    'l7policies')
+                    'l7policies, enabled',)
     if l7:
         pools = [
             sample_pool_tuple(
@@ -402,7 +416,8 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                     ], primary_cn='aFakeCN'))]
         if sni else [],
         pools=pools,
-        l7policies=l7policies
+        l7policies=l7policies,
+        enabled=enabled
     )
 
 

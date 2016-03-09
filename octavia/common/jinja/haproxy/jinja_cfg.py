@@ -152,7 +152,8 @@ class JinjaTemplater(object):
             'name': loadbalancer.name,
             'vip_address': loadbalancer.vip.ip_address,
             'listener': listener,
-            'topology': loadbalancer.topology
+            'topology': loadbalancer.topology,
+            'enabled': loadbalancer.enabled
         }
 
     def _transform_listener(self, listener, tls_cert):
@@ -167,7 +168,8 @@ class JinjaTemplater(object):
             'protocol': listener.protocol,
             'peer_port': listener.peer_port,
             'topology': listener.load_balancer.topology,
-            'amphorae': listener.load_balancer.amphorae
+            'amphorae': listener.load_balancer.amphorae,
+            'enabled': listener.enabled
         }
         if listener.connection_limit and listener.connection_limit > -1:
             ret_value['connection_limit'] = listener.connection_limit

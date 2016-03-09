@@ -248,10 +248,16 @@ def get_all_listeners_status():
     listeners = list()
 
     for listener in util.get_listeners():
+        status = _check_listener_status(listener)
+        listener_type = ''
+
+        if status == consts.ACTIVE:
+            listener_type = _parse_haproxy_file(listener)['mode']
+
         listeners.append({
-            'status': _check_listener_status(listener),
+            'status': status,
             'uuid': listener,
-            'type': _parse_haproxy_file(listener)['mode'],
+            'type': listener_type,
         })
 
     # Can't use jsonify since lists are not supported
@@ -276,15 +282,21 @@ def get_listener_status(listener_id):
     _check_listener_exists(listener_id)
 
     status = _check_listener_status(listener_id)
+
+    if status != consts.ACTIVE:
+        stats = dict(
+            status=status,
+            uuid=listener_id,
+            type=''
+        )
+        return flask.jsonify(stats)
+
     cfg = _parse_haproxy_file(listener_id)
     stats = dict(
         status=status,
         uuid=listener_id,
         type=cfg['mode']
     )
-    # not active don't bother...
-    if status != consts.ACTIVE:
-        return flask.jsonify(stats)
 
     # read stats socket
     q = query.HAProxyQuery(cfg['stats_socket'])
@@ -348,7 +360,14 @@ def _check_listener_status(listener_id):
     if os.path.exists(util.pid_path(listener_id)):
         if os.path.exists(
                 os.path.join('/proc', util.get_haproxy_pid(listener_id))):
-            return consts.ACTIVE
+            # Check if the listener is disabled
+            with open(util.config_path(listener_id), 'r') as file:
+                cfg = file.read()
+                m = re.search('frontend {}'.format(listener_id), cfg)
+                if m:
+                    return consts.ACTIVE
+                else:
+                    return consts.OFFLINE
         else:  # pid file but no process...
             return consts.ERROR
     else:

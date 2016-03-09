@@ -31,9 +31,11 @@
 
 
 {% block proxies %}
-    {{- frontend_macro(constants, loadbalancer.listener,
-                       loadbalancer.vip_address) }}
-    {% for pool in loadbalancer.listener.pools %}
-        {{- backend_macro(constants, loadbalancer.listener, pool) }}
-    {% endfor %}
+    {% if loadbalancer.enabled and loadbalancer.listener.enabled %}
+        {{- frontend_macro(constants, loadbalancer.listener,
+                           loadbalancer.vip_address) }}
+        {% for pool in loadbalancer.listener.pools if pool.enabled %}
+            {{- backend_macro(constants, loadbalancer.listener, pool) }}
+        {% endfor %}
+    {% endif %}
 {% endblock proxies %}

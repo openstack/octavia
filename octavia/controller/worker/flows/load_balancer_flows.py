@@ -26,8 +26,8 @@ from octavia.controller.worker.flows import member_flows
 from octavia.controller.worker.flows import pool_flows
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import compute_tasks
-from octavia.controller.worker.tasks import controller_tasks
 from octavia.controller.worker.tasks import database_tasks
+from octavia.controller.worker.tasks import model_tasks
 from octavia.controller.worker.tasks import network_tasks
 from octavia.i18n import _LE
 
@@ -312,8 +312,13 @@ class LoadBalancerFlows(object):
         :returns: The flow for update a load balancer
         """
         update_LB_flow = linear_flow.Flow(constants.UPDATE_LOADBALANCER_FLOW)
-        update_LB_flow.add(controller_tasks.DisableEnableLB(
-            requires=constants.LOADBALANCER))
+        update_LB_flow.add(model_tasks.
+                           UpdateAttributes(
+                               rebind={constants.OBJECT:
+                                       constants.LOADBALANCER},
+                               requires=[constants.UPDATE_DICT]))
+        update_LB_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_LB_flow.add(database_tasks.UpdateLoadbalancerInDB(
             requires=[constants.LOADBALANCER, constants.UPDATE_DICT]))
         update_LB_flow.add(database_tasks.MarkLBActiveInDB(

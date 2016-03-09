@@ -126,14 +126,14 @@ frontend {{ listener.id }}
                                                l7policy.l7rules|length > 0) %}
         {{- l7policy_macro(constants, l7policy) -}}
     {% endfor %}
-    {% if listener.default_pool %}
+    {% if listener.default_pool and listener.default_pool.enabled %}
     default_backend {{ listener.default_pool.id }}
     {% endif %}
 {% endmacro %}
 
 
 {% macro member_macro(constants, pool, member) %}
-    {% if pool.health_monitor %}
+    {% if pool.health_monitor and pool.health_monitor.enabled %}
         {% set hm_opt = " check inter %ds fall %d rise %d"|format(
             pool.health_monitor.delay, pool.health_monitor.fall_threshold,
             pool.health_monitor.rise_threshold) %}
@@ -182,7 +182,7 @@ backend {{ pool.id }}
     cookie SRV insert indirect nocache
         {% endif %}
     {% endif %}
-    {% if pool.health_monitor %}
+    {% if pool.health_monitor and pool.health_monitor.enabled %}
     timeout check {{ pool.health_monitor.timeout }}
         {% if (pool.health_monitor.type ==
                constants.HEALTH_MONITOR_HTTP or pool.health_monitor.type ==
@@ -198,7 +198,7 @@ backend {{ pool.id }}
     {% if pool.protocol.lower() == constants.PROTOCOL_HTTP.lower() %}
     option forwardfor
     {% endif %}
-    {% for member in pool.members %}
+    {% for member in pool.members if member.enabled %}
         {{- member_macro(constants, pool, member) -}}
     {% endfor %}
 {% endmacro %}

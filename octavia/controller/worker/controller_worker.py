@@ -354,10 +354,14 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         """
         lb = self._lb_repo.get(db_apis.get_session(),
                                id=load_balancer_id)
+        listeners = self._listener_repo.get_all(
+            db_apis.get_session(),
+            load_balancer_id=load_balancer_id)
 
         update_lb_tf = self._taskflow_load(
             self._lb_flows.get_update_load_balancer_flow(),
             store={constants.LOADBALANCER: lb,
+                   constants.LISTENERS: listeners,
                    constants.UPDATE_DICT: load_balancer_updates})
 
         with tf_logging.DynamicLoggingListener(update_lb_tf,
