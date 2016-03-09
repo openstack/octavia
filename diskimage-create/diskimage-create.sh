@@ -28,7 +28,7 @@ usage() {
     echo "            [-o **amphora-x64-haproxy** | <filename> ]"
     echo "            [-r <root password> ]"
     echo "            [-s **5** | <size in GB> ]"
-    echo "            [-t **qcow2** | tar ]"
+    echo "            [-t **qcow2** | tar | vhd ]"
     echo "            [-v]"
     echo "            [-w <working directory> ]"
     echo
@@ -99,7 +99,8 @@ while getopts "a:b:c:hi:o:t:r:s:vw:" opt; do
         t)
             AMP_IMAGETYPE=$OPTARG
             if [ $AMP_IMAGETYPE != "qcow2" ] && \
-                [ $AMP_IMAGETYPE != "tar" ]; then
+                [ $AMP_IMAGETYPE != "tar" ] && \
+                [ $AMP_IMAGETYPE != "vhd" ]; then
                 echo "Error: Unsupported image type " $AMP_IMAGETYPE " specified"
                 exit 3
             fi
