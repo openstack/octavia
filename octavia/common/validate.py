@@ -20,6 +20,7 @@ Defined here so these can also be used at deeper levels than the API.
 
 import re
 
+import rfc3986
 
 from octavia.common import constants
 from octavia.common import exceptions
@@ -27,8 +28,13 @@ from octavia.common import exceptions
 
 def url(url):
     """Raises an error if the url doesn't look like a URL."""
-    p = re.compile(constants.URL_REGEX)
-    if not p.match(url):
+    try:
+        if not rfc3986.is_valid_uri(url, require_scheme=True):
+            raise exceptions.InvalidURL(url=url)
+        p_url = rfc3986.urlparse(rfc3986.normalize_uri(url))
+        if p_url.scheme != 'http' and p_url.scheme != 'https':
+            raise exceptions.InvalidURL(url=url)
+    except Exception:
         raise exceptions.InvalidURL(url=url)
     return True
 

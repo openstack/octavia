@@ -29,6 +29,10 @@ class TestValidations(base.TestCase):
     def test_validate_bad_url(self):
         self.assertRaises(exceptions.InvalidURL, validate.url, 'bad url')
 
+    def test_validate_url_bad_schema(self):
+        self.assertRaises(exceptions.InvalidURL, validate.url,
+                          'ssh://www.example.com/')
+
     def test_validate_header_name(self):
         ret = validate.header_name('Some-header')
         self.assertTrue(ret)

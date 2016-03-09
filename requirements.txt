@@ -8,6 +8,7 @@ SQLAlchemy<1.1.0,>=1.0.10 # MIT
 Babel>=1.3 # BSD
 eventlet!=0.18.3,>=0.18.2 # MIT
 requests!=2.9.0,>=2.8.1 # Apache-2.0
+rfc3986>=0.2.0 # Apache-2.0
 keystoneauth1>=2.1.0 # Apache-2.0
 keystonemiddleware!=4.1.0,>=4.0.0 # Apache-2.0
 python-neutronclient!=4.1.0,>=2.6.0 # Apache-2.0
