@@ -46,6 +46,13 @@ class TestL7Rule(base.BaseAPITest):
         response_body = response.json
         self.assertEqual(l7rule, response_body)
 
+    def test_get_bad_parent_policy(self):
+        bad_path = (self.L7RULES_PATH.format(
+            lb_id=self.lb.get('id'), listener_id=self.listener.get('id'),
+            l7policy_id=uuidutils.generate_uuid()) + '/' +
+            uuidutils.generate_uuid())
+        self.get(bad_path, status=404)
+
     def test_bad_get(self):
         self.get(self.l7rule_path.format(
             l7rule_id=uuidutils.generate_uuid()), status=404)
