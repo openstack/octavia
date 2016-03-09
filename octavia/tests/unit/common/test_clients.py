@@ -58,7 +58,7 @@ class TestNovaAuth(base.TestCase):
         # Getting the session again should return the same object
         bc2 = clients.NovaAuth.get_nova_client(
             region="test-region", service_name='novaEndpoint1',
-            endpoint="test-endpoint", endpoint_type='adminURL')
+            endpoint="test-endpoint", endpoint_type='adminURL', insecure=True)
         self.assertIs(bc1, bc2)
 
 
@@ -97,7 +97,7 @@ class TestNeutronAuth(base.TestCase):
         # Getting the session again should return the same object
         bc2 = clients.NeutronAuth.get_neutron_client(
             region="test-region", service_name="neutronEndpoint1",
-            endpoint="test-endpoint", endpoint_type='publicURL')
+            endpoint="test-endpoint", endpoint_type='publicURL', insecure=True)
         self.assertIs(bc1, bc2)
 
 
@@ -121,7 +121,7 @@ class TestGlanceAuth(base.TestCase):
         # Mock out the keystone session and get the client
         keystone._SESSION = mock.MagicMock()
         bc1 = clients.GlanceAuth.get_glance_client(
-            region=None, endpoint_type='publicURL')
+            region=None, endpoint_type='publicURL', insecure=True)
 
         # Our returned client should also be the saved client
         self.assertIsInstance(
@@ -136,5 +136,5 @@ class TestGlanceAuth(base.TestCase):
         # Getting the session again should return the same object
         bc2 = clients.GlanceAuth.get_glance_client(
             region="test-region", service_name="glanceEndpoint1",
-            endpoint="test-endpoint", endpoint_type='publicURL')
+            endpoint="test-endpoint", endpoint_type='publicURL', insecure=True)
         self.assertIs(bc1, bc2)

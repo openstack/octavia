@@ -358,6 +358,11 @@ nova_opts = [
                       'communication with the OpenStack services.')),
     cfg.StrOpt('endpoint_type', default='publicURL',
                help=_('Endpoint interface in identity service to use')),
+    cfg.StrOpt('ca_certificates_file',
+               help=_('CA certificates file path')),
+    cfg.BoolOpt('insecure',
+                default=False,
+                help=_('Disable certificate validation on SSL connections ')),
     cfg.BoolOpt('enable_anti_affinity', default=False,
                 help=_('Flag to indicate if nova anti-affinity feature is '
                        'turned on.'))
@@ -374,6 +379,11 @@ neutron_opts = [
                       'communication with the OpenStack services.')),
     cfg.StrOpt('endpoint_type', default='publicURL',
                help=_('Endpoint interface in identity service to use')),
+    cfg.StrOpt('ca_certificates_file',
+               help=_('CA certificates file path')),
+    cfg.BoolOpt('insecure',
+                default=False,
+                help=_('Disable certificate validation on SSL connections ')),
 ]
 
 glance_opts = [
@@ -387,6 +397,11 @@ glance_opts = [
                       'communication with the OpenStack services.')),
     cfg.StrOpt('endpoint_type', default='publicURL',
                help=_('Endpoint interface in identity service to use')),
+    cfg.StrOpt('ca_certificates_file',
+               help=_('CA certificates file path')),
+    cfg.BoolOpt('insecure',
+                default=False,
+                help=_('Disable certificate validation on SSL connections ')),
 ]
 
 

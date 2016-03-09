@@ -61,7 +61,8 @@ def get_session():
         try:
             kc = client.Password(**kwargs)
             _SESSION = session.Session(
-                auth=kc, verify=not cfg.CONF.keystone_authtoken.insecure)
+                auth=kc, verify=(cfg.CONF.keystone_authtoken.cafile or
+                                 not cfg.CONF.keystone_authtoken.insecure))
         except Exception:
             with excutils.save_and_reraise_exception():
                 LOG.exception(_LE("Error creating Keystone session."))
