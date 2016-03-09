@@ -71,7 +71,8 @@ class ModelTestMixin(object):
 
     def create_session_persistence(self, session, pool_id, **overrides):
         kwargs = {'pool_id': pool_id,
-                  'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE}
+                  'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+                  'cookie_name': 'cookie_name'}
         kwargs.update(overrides)
         return self._insert(session, models.SessionPersistence, kwargs)
 
@@ -144,7 +145,7 @@ class ModelTestMixin(object):
         kwargs = {'id': self.FAKE_UUID_1,
                   'listener_id': listener_id,
                   'action': constants.L7POLICY_ACTION_REJECT,
-                  'position': 0,
+                  'position': 1,
                   'enabled': True}
         kwargs.update(overrides)
         return self._insert(session, models.L7Policy, kwargs)
@@ -785,6 +786,9 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
     def setUp(self):
         super(TestDataModelConversionTest, self).setUp()
         self.lb = self.create_load_balancer(self.session)
+        self.amphora = self.create_amphora(self.session)
+        self.associate_amphora(self.lb, self.amphora)
+        self.amphora_health = self.create_amphora_health(self.session)
         self.pool = self.create_pool(self.session, load_balancer_id=self.lb.id)
         self.hm = self.create_health_monitor(self.session, self.pool.id)
         self.member = self.create_member(self.session, self.pool.id,
@@ -816,7 +820,7 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
             return obj.__class__.__name__ + obj.id
         elif obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
             return obj.__class__.__name__ + obj.pool_id
-        elif obj.__class__.__name__ in ['ListenerStatistics', 'SNI']:
+        elif obj.__class__.__name__ in ['ListenerStatistics']:
             return obj.__class__.__name__ + obj.listener_id
         elif obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
             return obj.__class__.__name__ + obj.load_balancer_id
@@ -855,6 +859,34 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
                             total += self.count_graph_nodes(
                                 item, _graph_nodes=_graph_nodes)
         return total
+
+    def test_unique_key_generation(self):
+        self.assertEqual(self._get_unique_key(self.lb),
+                         self.lb.to_data_model()._get_unique_key())
+        self.assertEqual(self._get_unique_key(self.amphora),
+                         self.amphora.to_data_model()._get_unique_key())
+        self.assertEqual(self._get_unique_key(self.amphora_health),
+                         self.amphora_health.to_data_model()._get_unique_key())
+        self.assertEqual(self._get_unique_key(self.pool),
+                         self.pool.to_data_model()._get_unique_key())
+        self.assertEqual(self._get_unique_key(self.hm),
+                         self.hm.to_data_model()._get_unique_key())
+        self.assertEqual(self._get_unique_key(self.member),
+                         self.member.to_data_model()._get_unique_key())
+        self.assertEqual(self._get_unique_key(self.sp),
+                         self.sp.to_data_model()._get_unique_key())
+        self.assertEqual(self._get_unique_key(self.vip),
+                         self.vip.to_data_model()._get_unique_key())
+        self.assertEqual(self._get_unique_key(self.listener),
+                         self.listener.to_data_model()._get_unique_key())
+        self.assertEqual(self._get_unique_key(self.stats),
+                         self.stats.to_data_model()._get_unique_key())
+        self.assertEqual(self._get_unique_key(self.sni),
+                         self.sni.to_data_model()._get_unique_key())
+        self.assertEqual(self._get_unique_key(self.l7policy),
+                         self.l7policy.to_data_model()._get_unique_key())
+        self.assertEqual(self._get_unique_key(self.l7rule),
+                         self.l7rule.to_data_model()._get_unique_key())
 
     def test_graph_completeness(self):
         # Generate equivalent graphs starting arbitrarily from different
@@ -1184,7 +1216,7 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
                          l7policy.action)
         self.assertEqual(self.pool.id, l7policy.redirect_pool_id)
-        self.assertEqual(0, l7policy.position)
+        self.assertEqual(1, l7policy.position)
 
     def check_l7rule_data_model(self, l7rule):
         self.assertEqual(self.FAKE_UUID_1, l7rule.id)
@@ -1198,8 +1230,432 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
     def check_amphora_data_model(self, amphora):
         self.assertEqual(self.FAKE_UUID_1, amphora.id)
         self.assertEqual(self.FAKE_UUID_1, amphora.compute_id)
-        self.assertEqual(constants.ONLINE, amphora.status)
+        self.assertEqual(constants.ACTIVE, amphora.status)
 
     def check_load_balancer_amphora_data_model(self, amphora):
         self.assertEqual(self.FAKE_UUID_1, amphora.amphora_id)
         self.assertEqual(self.FAKE_UUID_1, amphora.load_balancer_id)
+
+
+class TestDataModelManipulations(base.OctaviaDBTestBase, ModelTestMixin):
+
+    def setUp(self):
+        super(TestDataModelManipulations, self).setUp()
+        self.lb = self.create_load_balancer(self.session)
+        self.amphora = self.create_amphora(self.session)
+        self.associate_amphora(self.lb, self.amphora)
+        # This pool will be the listener's default_pool and be referenced
+        # by self.l7policy
+        self.pool = self.create_pool(self.session, load_balancer_id=self.lb.id)
+        self.hm = self.create_health_monitor(self.session, self.pool.id)
+        self.member = self.create_member(self.session, self.pool.id,
+                                         id=self.FAKE_UUID_1,
+                                         ip_address='10.0.0.1')
+        self.sp = self.create_session_persistence(self.session, self.pool.id)
+        self.vip = self.create_vip(self.session, self.lb.id)
+        self.listener = self.create_listener(self.session,
+                                             default_pool_id=self.pool.id,
+                                             load_balancer_id=self.lb.id)
+        self.stats = self.create_listener_statistics(self.session,
+                                                     self.listener.id)
+        self.sni = self.create_sni(self.session, listener_id=self.listener.id)
+        self.l7policy = self.create_l7policy(
+            self.session, listener_id=self.listener.id,
+            action=constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            redirect_pool_id=self.pool.id)
+        self.l7rule = self.create_l7rule(self.session,
+                                         l7policy_id=self.l7policy.id)
+        # This pool, l7policy and l7rule are connected to the listener,
+        # but are not the default_pool
+        self.pool2 = self.create_pool(
+            self.session, load_balancer_id=self.lb.id,
+            id=uuidutils.generate_uuid())
+        self.l7policy2 = self.create_l7policy(
+            self.session, listener_id=self.listener.id,
+            action=constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            redirect_pool_id=self.pool2.id,
+            id=uuidutils.generate_uuid(), position=2)
+        self.l7rule2 = self.create_l7rule(
+            self.session, l7policy_id=self.l7policy2.id,
+            id=uuidutils.generate_uuid())
+        # This pool is not connected to the listener at all
+        self.pool3 = self.create_pool(
+            self.session, load_balancer_id=self.lb.id,
+            id=uuidutils.generate_uuid())
+
+    def test_dm_simple_update(self):
+        lb = self.lb.to_data_model()
+        self.assertIsNone(lb.name)
+        lb.update({'name': 'test_name_change'})
+        self.assertEqual(lb.name, 'test_name_change')
+
+    def test_dm_session_persistence_delete(self):
+        sp = self.sp.to_data_model()
+        pool = sp.pool
+        sp.delete()
+        self.assertIsNone(pool.session_persistence)
+
+    def test_dm_listener_statistics_delete(self):
+        stats = self.stats.to_data_model()
+        listener = stats.listener
+        stats.delete()
+        self.assertIsNone(listener.stats)
+
+    def test_dm_health_monitor_delete(self):
+        hm = self.hm.to_data_model()
+        pool = hm.pool
+        hm.delete()
+        self.assertIsNone(pool.health_monitor)
+
+    def test_dm_pool_simple_update(self):
+        pool = self.pool.to_data_model()
+        self.assertIsNone(pool.name)
+        pool.update({'name': 'new_pool_name'})
+        self.assertEqual(pool.name, 'new_pool_name')
+
+    def test_dm_pool_session_persistence_update(self):
+        pool = self.pool.to_data_model()
+        self.assertEqual(pool.session_persistence.cookie_name,
+                         'cookie_name')
+        sp_dict = {'cookie_name': 'new_name'}
+        pool.update({'session_persistence': sp_dict})
+        self.assertEqual(pool.session_persistence.cookie_name,
+                         'new_name')
+
+    def test_dm_pool_session_persistence_delete(self):
+        pool = self.pool.to_data_model()
+        self.assertEqual(pool.session_persistence.cookie_name,
+                         'cookie_name')
+        sp_dict = {}
+        pool.update({'session_persistence': sp_dict})
+        self.assertIsNone(pool.session_persistence)
+
+    def test_dm_pool_session_persistence_create(self):
+        pool = self.pool.to_data_model()
+        pool.update({'session_persistence': {}})
+        self.assertIsNone(pool.session_persistence)
+        sp_dict = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+                   'cookie_name': 'cookie_name'}
+        pool.update({'session_persistence': sp_dict})
+        self.assertEqual(pool.session_persistence.type,
+                         constants.SESSION_PERSISTENCE_HTTP_COOKIE)
+        self.assertEqual(pool.session_persistence.pool_id, pool.id)
+
+    def test_dm_pool_delete(self):
+        pool = self.pool.to_data_model()
+        listener = pool.listeners[0]
+        lb = pool.load_balancer
+        l7policy = pool.l7policies[0]
+        self.assertIn(pool, listener.pools)
+        self.assertIn(pool, lb.pools)
+        self.assertEqual(pool.id, l7policy.redirect_pool_id)
+        pool.delete()
+        self.assertNotIn(pool, listener.pools)
+        self.assertIsNone(listener.default_pool)
+        self.assertIsNone(listener.default_pool_id)
+        self.assertNotIn(pool, lb.pools)
+        self.assertEqual(l7policy.action, constants.L7POLICY_ACTION_REJECT)
+        self.assertIsNone(l7policy.redirect_pool_id)
+        self.assertIsNone(l7policy.redirect_pool)
+
+    def test_dm_member_delete(self):
+        member = self.member.to_data_model()
+        pool = member.pool
+        self.assertIn(member, pool.members)
+        member.delete()
+        self.assertNotIn(member, pool.members)
+
+    def test_dm_listener_update_and_clear_default_pool(self):
+        listener = self.listener.to_data_model()
+        new_pool = listener._find_in_graph('Pool' + self.pool3.id)
+        self.assertNotEqual(new_pool.id, listener.default_pool_id)
+        self.assertNotIn(listener, new_pool.listeners)
+        self.assertNotIn(new_pool, listener.pools)
+        listener.update({'default_pool_id': new_pool.id})
+        self.assertEqual(new_pool.id, listener.default_pool_id)
+        self.assertIn(listener, new_pool.listeners)
+        self.assertIn(new_pool, listener.pools)
+        listener.update({'default_pool_id': None})
+        self.assertIsNone(listener.default_pool_id)
+        self.assertIsNone(listener.default_pool)
+        self.assertNotIn(listener, new_pool.listeners)
+        self.assertNotIn(new_pool, listener.pools)
+
+    def test_dm_listener_update_clear_default_pool_with_l7p_referral(self):
+        listener = self.listener.to_data_model()
+        pool = listener.default_pool
+        self.assertEqual(pool.id, listener.default_pool_id)
+        self.assertIn(listener, pool.listeners)
+        self.assertIn(pool, listener.pools)
+        listener.update({'default_pool_id': None})
+        self.assertIsNone(listener.default_pool_id)
+        self.assertIsNone(listener.default_pool)
+        self.assertIn(listener, pool.listeners)
+        self.assertIn(pool, listener.pools)
+
+    def test_dm_listener_delete(self):
+        listener = self.listener.to_data_model()
+        lb = listener.load_balancer
+        pools = listener.pools
+        self.assertIn(listener, lb.listeners)
+        for pool in pools:
+            self.assertIn(listener, pool.listeners)
+        listener.delete()
+        self.assertNotIn(listener, lb.listeners)
+        for pool in pools:
+            self.assertNotIn(listener, pool.listeners)
+
+    def test_dm_amphora_delete(self):
+        amphora = self.amphora.to_data_model()
+        lb = amphora.load_balancer
+        self.assertIn(amphora, lb.amphorae)
+        amphora.delete()
+        self.assertNotIn(amphora, lb.amphorae)
+
+    def test_dm_l7rule_delete(self):
+        l7r = self.l7rule2.to_data_model()
+        l7p = l7r.l7policy
+        listener = l7p.listener
+        pool2 = l7p.redirect_pool
+        self.assertIn(pool2, listener.pools)
+        self.assertNotEqual(pool2.id, listener.default_pool_id)
+        self.assertIn(l7r, l7p.l7rules)
+        self.assertEqual(1, len(l7p.l7rules))
+        l7r.delete()
+        self.assertNotIn(l7r, l7p.l7rules)
+        self.assertNotIn(pool2, listener.pools)
+
+    def test_dm_l7policy_delete_with_listener_default_pool_ref(self):
+        l7p = self.l7policy.to_data_model()
+        listener = l7p.listener
+        pool = l7p.redirect_pool
+        self.assertIn(pool, listener.pools)
+        self.assertEqual(pool.id, listener.default_pool_id)
+        self.assertIn(l7p, listener.l7policies)
+        self.assertIn(l7p, pool.l7policies)
+        l7p.delete()
+        self.assertIn(pool, listener.pools)
+        self.assertEqual(pool.id, listener.default_pool_id)
+        self.assertNotIn(l7p, listener.l7policies)
+        self.assertNotIn(l7p, pool.l7policies)
+
+    def test_dm_l7policy_delete_not_listener_default_pool(self):
+        l7p = self.l7policy2.to_data_model()
+        listener = l7p.listener
+        pool2 = l7p.redirect_pool
+        self.assertIn(pool2, listener.pools)
+        self.assertNotEqual(pool2.id, listener.default_pool_id)
+        self.assertIn(l7p, listener.l7policies)
+        self.assertIn(l7p, pool2.l7policies)
+        l7p.delete()
+        self.assertNotIn(pool2, listener.pools)
+        self.assertNotIn(l7p, listener.l7policies)
+        self.assertNotIn(l7p, pool2.l7policies)
+
+    def test_dm_l7policy_update_simple(self):
+        l7p = self.l7policy.to_data_model()
+        self.assertIsNone(l7p.name)
+        l7p.update({'name': 'new_name'})
+        self.assertEqual(l7p.name, 'new_name')
+
+    def test_dm_l7policy_update_action_rdr_url_no_default_pool_link(self):
+        l7p = self.l7policy2.to_data_model()
+        listener = l7p.listener
+        pool2 = l7p.redirect_pool
+        self.assertEqual(l7p.action,
+                         constants.L7POLICY_ACTION_REDIRECT_TO_POOL)
+        self.assertIn(pool2, listener.pools)
+        self.assertIn(listener, pool2.listeners)
+        self.assertIsNone(l7p.redirect_url)
+        update_dict = {'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+                       'redirect_url': 'http://www.example.com/'}
+        l7p.update(update_dict)
+        self.assertEqual(l7p.action,
+                         constants.L7POLICY_ACTION_REDIRECT_TO_URL)
+        self.assertEqual(l7p.redirect_url, 'http://www.example.com/')
+        self.assertIsNone(l7p.redirect_pool_id)
+        self.assertIsNone(l7p.redirect_pool)
+        self.assertNotIn(pool2, listener.pools)
+        self.assertNotIn(listener, pool2.listeners)
+
+    def test_dm_l7policy_update_action_rdr_url_with_default_pool_link(self):
+        l7p = self.l7policy.to_data_model()
+        listener = l7p.listener
+        pool = l7p.redirect_pool
+        self.assertEqual(l7p.action,
+                         constants.L7POLICY_ACTION_REDIRECT_TO_POOL)
+        self.assertIn(pool, listener.pools)
+        self.assertIn(listener, pool.listeners)
+        self.assertIsNone(l7p.redirect_url)
+        update_dict = {'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+                       'redirect_url': 'http://www.example.com/'}
+        l7p.update(update_dict)
+        self.assertEqual(l7p.action,
+                         constants.L7POLICY_ACTION_REDIRECT_TO_URL)
+        self.assertEqual(l7p.redirect_url, 'http://www.example.com/')
+        self.assertIsNone(l7p.redirect_pool_id)
+        self.assertIsNone(l7p.redirect_pool)
+        self.assertIn(pool, listener.pools)
+        self.assertIn(listener, pool.listeners)
+
+    def test_dm_l7policy_update_action_reject_no_default_pool_link(self):
+        l7p = self.l7policy2.to_data_model()
+        listener = l7p.listener
+        pool2 = l7p.redirect_pool
+        self.assertEqual(l7p.action,
+                         constants.L7POLICY_ACTION_REDIRECT_TO_POOL)
+        self.assertIn(pool2, listener.pools)
+        self.assertIn(listener, pool2.listeners)
+        self.assertIsNone(l7p.redirect_url)
+        update_dict = {'action': constants.L7POLICY_ACTION_REJECT}
+        l7p.update(update_dict)
+        self.assertEqual(l7p.action, constants.L7POLICY_ACTION_REJECT)
+        self.assertIsNone(l7p.redirect_url)
+        self.assertIsNone(l7p.redirect_pool_id)
+        self.assertIsNone(l7p.redirect_pool)
+        self.assertNotIn(pool2, listener.pools)
+        self.assertNotIn(listener, pool2.listeners)
+
+    def test_dm_l7policy_update_action_reject_with_default_pool_link(self):
+        l7p = self.l7policy.to_data_model()
+        listener = l7p.listener
+        pool = l7p.redirect_pool
+        self.assertEqual(l7p.action,
+                         constants.L7POLICY_ACTION_REDIRECT_TO_POOL)
+        self.assertIn(pool, listener.pools)
+        self.assertIn(listener, pool.listeners)
+        self.assertIsNone(l7p.redirect_url)
+        update_dict = {'action': constants.L7POLICY_ACTION_REJECT}
+        l7p.update(update_dict)
+        self.assertEqual(l7p.action, constants.L7POLICY_ACTION_REJECT)
+        self.assertIsNone(l7p.redirect_url)
+        self.assertIsNone(l7p.redirect_pool_id)
+        self.assertIsNone(l7p.redirect_pool)
+        self.assertIn(pool, listener.pools)
+        self.assertIn(listener, pool.listeners)
+
+    def test_dm_l7policy_update_position(self):
+        l7p = self.l7policy.to_data_model()
+        listener = l7p.listener
+        self.assertEqual(l7p, listener.l7policies[l7p.position - 1])
+        update_dict = {'position': 1}
+        l7p.update(update_dict)
+        self.assertEqual(l7p, listener.l7policies[0])
+        update_dict = {'position': 2}
+        l7p.update(update_dict)
+        self.assertEqual(l7p, listener.l7policies[1])
+
+    def test_dm_l7policy_update_reject_to_rdr_pool(self):
+        l7p = self.l7policy.to_data_model()
+        listener = l7p.listener
+        new_pool = listener._find_in_graph('Pool' + self.pool3.id)
+        update_dict = {'action': constants.L7POLICY_ACTION_REJECT}
+        l7p.update(update_dict)
+        self.assertEqual(l7p.action, constants.L7POLICY_ACTION_REJECT)
+        self.assertIsNone(l7p.redirect_url)
+        self.assertIsNone(l7p.redirect_pool_id)
+        self.assertIsNone(l7p.redirect_pool)
+        self.assertNotIn(new_pool, listener.pools)
+        self.assertNotIn(listener, new_pool.listeners)
+        update_dict = {'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                       'redirect_pool_id': new_pool.id}
+        l7p.update(update_dict)
+        self.assertEqual(l7p.action,
+                         constants.L7POLICY_ACTION_REDIRECT_TO_POOL)
+        self.assertIsNone(l7p.redirect_url)
+        self.assertEqual(l7p.redirect_pool_id, new_pool.id)
+        self.assertEqual(l7p.redirect_pool, new_pool)
+        self.assertIn(new_pool, listener.pools)
+        self.assertIn(listener, new_pool.listeners)
+
+    def test_dm_l7policy_update_reject_to_rdr_pool_with_no_l7rules(self):
+        l7p = self.l7policy.to_data_model()
+        listener = l7p.listener
+        new_pool = listener._find_in_graph('Pool' + self.pool3.id)
+        update_dict = {'action': constants.L7POLICY_ACTION_REJECT}
+        l7p.update(update_dict)
+        self.assertEqual(l7p.action, constants.L7POLICY_ACTION_REJECT)
+        self.assertIsNone(l7p.redirect_url)
+        self.assertIsNone(l7p.redirect_pool_id)
+        self.assertIsNone(l7p.redirect_pool)
+        self.assertNotIn(new_pool, listener.pools)
+        self.assertNotIn(listener, new_pool.listeners)
+        l7p.l7rules[0].delete()
+        update_dict = {'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                       'redirect_pool_id': new_pool.id}
+        l7p.update(update_dict)
+        self.assertEqual(l7p.action,
+                         constants.L7POLICY_ACTION_REDIRECT_TO_POOL)
+        self.assertIsNone(l7p.redirect_url)
+        self.assertEqual(l7p.redirect_pool_id, new_pool.id)
+        self.assertEqual(l7p.redirect_pool, new_pool)
+        self.assertNotIn(new_pool, listener.pools)
+        self.assertNotIn(listener, new_pool.listeners)
+
+    def test_dm_l7policy_update_reject_to_rdr_pool_with_disabled_policy(self):
+        l7p = self.l7policy.to_data_model()
+        listener = l7p.listener
+        new_pool = listener._find_in_graph('Pool' + self.pool3.id)
+        update_dict = {'action': constants.L7POLICY_ACTION_REJECT}
+        l7p.update(update_dict)
+        self.assertEqual(l7p.action, constants.L7POLICY_ACTION_REJECT)
+        self.assertIsNone(l7p.redirect_url)
+        self.assertIsNone(l7p.redirect_pool_id)
+        self.assertIsNone(l7p.redirect_pool)
+        self.assertNotIn(new_pool, listener.pools)
+        self.assertNotIn(listener, new_pool.listeners)
+        update_dict = {'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                       'redirect_pool_id': new_pool.id,
+                       'enabled': False}
+        l7p.update(update_dict)
+        self.assertEqual(l7p.action,
+                         constants.L7POLICY_ACTION_REDIRECT_TO_POOL)
+        self.assertIsNone(l7p.redirect_url)
+        self.assertEqual(l7p.redirect_pool_id, new_pool.id)
+        self.assertEqual(l7p.redirect_pool, new_pool)
+        self.assertNotIn(new_pool, listener.pools)
+        self.assertNotIn(listener, new_pool.listeners)
+
+    def test_dm_l7policy_update_enable_and_disable(self):
+        l7p = self.l7policy2.to_data_model()
+        listener = l7p.listener
+        self.assertIn(l7p.redirect_pool, listener.pools)
+        update_dict = {'enabled': False}
+        l7p.update(update_dict)
+        self.assertNotIn(l7p.redirect_pool, listener.pools)
+        update_dict = {'enabled': True}
+        l7p.update(update_dict)
+        self.assertIn(l7p.redirect_pool, listener.pools)
+
+    def test_dm_l7policy_update_disable_with_default_pool_link(self):
+        l7p = self.l7policy.to_data_model()
+        listener = l7p.listener
+        self.assertIn(l7p.redirect_pool, listener.pools)
+        update_dict = {'enabled': False}
+        l7p.update(update_dict)
+        self.assertIn(l7p.redirect_pool, listener.pools)
+
+    def test_dm_l7policy_update_enable_with_reject_to_rdr_pool(self):
+        l7p = self.l7policy.to_data_model()
+        listener = l7p.listener
+        new_pool = listener._find_in_graph('Pool' + self.pool3.id)
+        update_dict = {'action': constants.L7POLICY_ACTION_REJECT,
+                       'enabled': False}
+        l7p.update(update_dict)
+        self.assertEqual(l7p.action, constants.L7POLICY_ACTION_REJECT)
+        self.assertIsNone(l7p.redirect_url)
+        self.assertIsNone(l7p.redirect_pool_id)
+        self.assertIsNone(l7p.redirect_pool)
+        self.assertNotIn(new_pool, listener.pools)
+        self.assertNotIn(listener, new_pool.listeners)
+        update_dict = {'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                       'redirect_pool_id': new_pool.id,
+                       'enabled': True}
+        l7p.update(update_dict)
+        self.assertEqual(l7p.action,
+                         constants.L7POLICY_ACTION_REDIRECT_TO_POOL)
+        self.assertIsNone(l7p.redirect_url)
+        self.assertEqual(l7p.redirect_pool_id, new_pool.id)
+        self.assertEqual(l7p.redirect_pool, new_pool)
+        self.assertIn(new_pool, listener.pools)
+        self.assertIn(listener, new_pool.listeners)

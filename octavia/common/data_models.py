@@ -63,12 +63,15 @@ class BaseDataModel(object):
             return obj.__class__.__name__ + obj.id
         elif obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
             return obj.__class__.__name__ + obj.pool_id
-        elif obj.__class__.__name__ in ['ListenerStatistics', 'SNI']:
+        elif obj.__class__.__name__ in ['ListenerStatistics']:
             return obj.__class__.__name__ + obj.listener_id
         elif obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
             return obj.__class__.__name__ + obj.load_balancer_id
         elif obj.__class__.__name__ in ['AmphoraHealth']:
             return obj.__class__.__name__ + obj.amphora_id
+        elif obj.__class__.__name__ in ['SNI']:
+            return (obj.__class__.__name__ +
+                    obj.listener_id + obj.tls_container_id)
         else:
             raise NotImplementedError
 
@@ -515,24 +518,19 @@ class L7Policy(BaseDataModel):
             elif key == 'position':
                 self.listener.l7policies.remove(self)
                 self.listener.l7policies.insert(value - 1, self)
-            elif (key == 'enabled'
-                  and (self.action ==
-                       constants.L7POLICY_ACTION_REDIRECT_TO_POOL
-                       or ('action' in update_dict.keys()
-                           and update_dict['action'] ==
-                           constants.L7POLICY_ACTION_REDIRECT_TO_POOL))
-                  and (self.redirect_pool is not None
-                       or ('redirect_pool_id' in update_dict.keys() and
-                           update_dict['redirect_pool_id'] is not None and
-                           self._find_in_graph(
-                               'Pool' + update_dict['redirect_pool_id'])
-                           is not None))):
-                if (self.redirect_pool is None and
-                        update_dict['redirect_pool_id'] is not None):
-                    self.redirect_pool = self._find_in_graph(
-                        'Pool' + update_dict['redirect_pool_id'])
-                self.listener.pools.append(self.redirect_pool)
-                self.redirect_pool.listeners.append(self.listener)
+            elif key == 'enabled':
+                if (value is True and self.action ==
+                        constants.L7POLICY_ACTION_REDIRECT_TO_POOL
+                        and self.redirect_pool is not None
+                        and len(self.l7rules) > 0
+                        and self.redirect_pool not in self.listener.pools):
+                    self.listener.pools.append(self.redirect_pool)
+                    self.redirect_pool.listeners.append(self.listener)
+                elif (value is False and self.action ==
+                        constants.L7POLICY_ACTION_REDIRECT_TO_POOL
+                        and self.redirect_pool is not None):
+                    self._conditionally_remove_pool_links(
+                        self.redirect_pool)
             setattr(self, key, value)
 
     def delete(self):
