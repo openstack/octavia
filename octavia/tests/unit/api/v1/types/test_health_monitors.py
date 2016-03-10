@@ -109,6 +109,13 @@ class TestHealthMonitorPOST(base.BaseTypesTest, TestHealthMonitor):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
+    def test_non_uuid_project_id(self):
+        body = {"type": constants.HEALTH_MONITOR_HTTP, "delay": 1,
+                "timeout": 1, "fall_threshold": 1, "rise_threshold": 1,
+                "project_id": "non-uuid"}
+        hm = wsme_json.fromjson(self._type, body)
+        self.assertEqual(hm.project_id, body['project_id'])
+
 
 class TestHealthMonitorPUT(base.BaseTypesTest, TestHealthMonitor):
 

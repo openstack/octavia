@@ -86,6 +86,13 @@ class TestPoolPOST(base.BaseTypesTest):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
+    def test_non_uuid_project_id(self):
+        body = {"protocol": constants.PROTOCOL_HTTP,
+                "lb_algorithm": constants.LB_ALGORITHM_ROUND_ROBIN,
+                "project_id": "non-uuid"}
+        pool = wsme_json.fromjson(self._type, body)
+        self.assertEqual(pool.project_id, body['project_id'])
+
 
 class TestPoolPUT(base.BaseTypesTest):
 

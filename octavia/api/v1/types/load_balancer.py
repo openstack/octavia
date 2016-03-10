@@ -34,7 +34,7 @@ class LoadBalancerResponse(base.BaseType):
     operating_status = wtypes.wsattr(wtypes.StringType())
     enabled = wtypes.wsattr(bool)
     vip = wtypes.wsattr(VIP)
-    project_id = wtypes.wsattr(wtypes.UuidType())
+    project_id = wtypes.wsattr(wtypes.StringType())
     listeners = wtypes.wsattr([listener.ListenerResponse])
 
     @classmethod
@@ -64,7 +64,7 @@ class LoadBalancerPOST(base.BaseType):
     description = wtypes.wsattr(wtypes.StringType(max_length=255))
     enabled = wtypes.wsattr(bool, default=True)
     vip = wtypes.wsattr(VIP, mandatory=True)
-    project_id = wtypes.wsattr(wtypes.UuidType())
+    project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     listeners = wtypes.wsattr([listener.ListenerPOST], default=[])
 
 

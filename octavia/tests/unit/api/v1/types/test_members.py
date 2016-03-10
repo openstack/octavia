@@ -67,6 +67,12 @@ class TestMemberPOST(base.BaseTypesTest):
                 "weight": "test"}
         self.assertRaises(ValueError, wsme_json.fromjson, self._type, body)
 
+    def test_non_uuid_project_id(self):
+        body = {"ip_address": "10.0.0.1", "protocol_port": 80,
+                "project_id": "non-uuid"}
+        member = wsme_json.fromjson(self._type, body)
+        self.assertEqual(member.project_id, body['project_id'])
+
 
 class TestMemberPUT(base.BaseTypesTest):
 

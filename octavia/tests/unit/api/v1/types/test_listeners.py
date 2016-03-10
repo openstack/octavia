@@ -80,6 +80,14 @@ class TestListenerPOST(base.BaseTypesTest, TestListener):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
+    def test_non_uuid_project_id(self):
+        body = {"name": "test", "description": "test", "connection_limit": 10,
+                "protocol": constants.PROTOCOL_HTTP, "protocol_port": 80,
+                "default_pool_id": uuidutils.generate_uuid(),
+                "project_id": "non-uuid"}
+        listener = wsme_json.fromjson(self._type, body)
+        self.assertEqual(listener.project_id, body['project_id'])
+
 
 class TestListenerPUT(base.BaseTypesTest, TestListener):
 

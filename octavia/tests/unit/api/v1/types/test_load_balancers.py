@@ -66,6 +66,12 @@ class TestLoadBalancerPOST(base.BaseTypesTest, TestLoadBalancer):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
+    def test_non_uuid_project_id(self):
+        body = {"name": "test_name", "description": "test_description",
+                "vip": {}, "project_id": "non-uuid"}
+        lb = wsme_json.fromjson(self._type, body)
+        self.assertEqual(lb.project_id, body['project_id'])
+
 
 class TestLoadBalancerPUT(base.BaseTypesTest, TestLoadBalancer):
 
