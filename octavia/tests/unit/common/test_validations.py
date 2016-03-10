@@ -76,8 +76,8 @@ class TestValidations(base.TestCase):
                    'protocol': constants.PROTOCOL_HTTP,
                    'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN}}
         s_l7p = validate.sanitize_l7policy_api_args(l7p)
-        self.assertNotIn('redirect_url', s_l7p.keys())
-        self.assertNotIn('redirect_pool_id', s_l7p.keys())
+        self.assertIsNone(s_l7p['redirect_url'])
+        self.assertIsNone(s_l7p['redirect_pool_id'])
         self.assertNotIn('redirect_pool', s_l7p.keys())
 
     def test_sanitize_l7policy_api_args_action_rdr_pool_id(self):
@@ -88,7 +88,7 @@ class TestValidations(base.TestCase):
                    'protocol': constants.PROTOCOL_HTTP,
                    'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN}}
         s_l7p = validate.sanitize_l7policy_api_args(l7p)
-        self.assertNotIn('redirect_url', s_l7p.keys())
+        self.assertIsNone(s_l7p['redirect_url'])
         self.assertNotIn('redirect_pool', s_l7p.keys())
         self.assertIn('redirect_pool_id', s_l7p.keys())
 
@@ -100,7 +100,7 @@ class TestValidations(base.TestCase):
                    'protocol': constants.PROTOCOL_HTTP,
                    'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN}}
         s_l7p = validate.sanitize_l7policy_api_args(l7p)
-        self.assertNotIn('redirect_url', s_l7p.keys())
+        self.assertIsNone(s_l7p['redirect_url'])
         self.assertNotIn('redirect_pool_id', s_l7p.keys())
         self.assertIn('redirect_pool', s_l7p.keys())
 
@@ -113,7 +113,7 @@ class TestValidations(base.TestCase):
                    'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN}}
         s_l7p = validate.sanitize_l7policy_api_args(l7p)
         self.assertIn('redirect_url', s_l7p.keys())
-        self.assertNotIn('redirect_pool_id', s_l7p.keys())
+        self.assertIsNone(s_l7p['redirect_pool_id'])
         self.assertNotIn('redirect_pool', s_l7p.keys())
 
     def test_sanitize_l7policy_api_args_bad_action(self):
@@ -126,15 +126,8 @@ class TestValidations(base.TestCase):
         self.assertRaises(exceptions.InvalidL7PolicyAction,
                           validate.sanitize_l7policy_api_args, l7p)
 
-    def test_sanitize_l7policy_api_args_no_action_update(self):
-        l7p = {'action': None,
-               'position': 5}
-        s_l7p = validate.sanitize_l7policy_api_args(l7p)
-        self.assertNotIn('action', s_l7p.keys())
-
-    def test_sanitize_l7policy_api_args_no_action_create(self):
-        l7p = {'action': None,
-               'position': 5}
+    def test_sanitize_l7policy_api_args_action_none(self):
+        l7p = {'action': None}
         self.assertRaises(exceptions.InvalidL7PolicyAction,
                           validate.sanitize_l7policy_api_args, l7p, True)
 
@@ -158,7 +151,7 @@ class TestValidations(base.TestCase):
                'redirect_pool': None}
         s_l7p = validate.sanitize_l7policy_api_args(l7p)
         self.assertIn('redirect_pool_id', s_l7p.keys())
-        self.assertNotIn('redirect_url', s_l7p.keys())
+        self.assertIsNone(s_l7p['redirect_url'])
         self.assertNotIn('redirect_pool', s_l7p.keys())
         self.assertIn('action', s_l7p.keys())
         self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
@@ -172,7 +165,7 @@ class TestValidations(base.TestCase):
                    'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN}}
         s_l7p = validate.sanitize_l7policy_api_args(l7p)
         self.assertIn('redirect_pool', s_l7p.keys())
-        self.assertNotIn('redirect_url', s_l7p.keys())
+        self.assertIsNone(s_l7p['redirect_url'])
         self.assertNotIn('redirect_pool_id', s_l7p.keys())
         self.assertIn('action', s_l7p.keys())
         self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
@@ -180,18 +173,18 @@ class TestValidations(base.TestCase):
 
     def test_sanitize_l7policy_api_args_rdr_pool_id_none_create(self):
         l7p = {'redirect_pool_id': None}
-        self.assertRaises(exceptions.InvalidL7PolicyArgs,
+        self.assertRaises(exceptions.InvalidL7PolicyAction,
                           validate.sanitize_l7policy_api_args, l7p, True)
 
     def test_sanitize_l7policy_api_args_rdr_pool_noid_none_create(self):
         l7p = {'redirect_pool': None}
-        self.assertRaises(exceptions.InvalidL7PolicyArgs,
+        self.assertRaises(exceptions.InvalidL7PolicyAction,
                           validate.sanitize_l7policy_api_args, l7p, True)
 
     def test_sanitize_l7policy_api_args_rdr_pool_both_none_create(self):
         l7p = {'redirect_pool': None,
                'redirect_pool_id': None}
-        self.assertRaises(exceptions.InvalidL7PolicyArgs,
+        self.assertRaises(exceptions.InvalidL7PolicyAction,
                           validate.sanitize_l7policy_api_args, l7p, True)
 
     def test_sanitize_l7policy_api_args_rdr_url(self):
@@ -199,7 +192,7 @@ class TestValidations(base.TestCase):
                'redirect_url': 'http://www.example.com/',
                'redirect_pool': None}
         s_l7p = validate.sanitize_l7policy_api_args(l7p)
-        self.assertNotIn('redirect_pool_id', s_l7p.keys())
+        self.assertIsNone(s_l7p['redirect_pool_id'])
         self.assertNotIn('redirect_pool', s_l7p.keys())
         self.assertIn('redirect_url', s_l7p.keys())
         self.assertIn('action', s_l7p.keys())
@@ -208,7 +201,7 @@ class TestValidations(base.TestCase):
 
     def test_sanitize_l7policy_api_args_rdr_url_none_create(self):
         l7p = {'redirect_url': None}
-        self.assertRaises(exceptions.InvalidL7PolicyArgs,
+        self.assertRaises(exceptions.InvalidL7PolicyAction,
                           validate.sanitize_l7policy_api_args, l7p, True)
 
     def test_sanitize_l7policy_api_args_rdr_url_bad_url(self):
@@ -238,9 +231,6 @@ class TestValidations(base.TestCase):
                           validate.sanitize_l7policy_api_args, l7p, True)
 
     def test_sanitize_l7policy_api_args_update_must_have_args(self):
-        l7p = {'action': None,
-               'redirect_pool_id': None,
-               'redirect_url': None,
-               'redirect_pool': None}
+        l7p = {}
         self.assertRaises(exceptions.InvalidL7PolicyArgs,
                           validate.sanitize_l7policy_api_args, l7p)
