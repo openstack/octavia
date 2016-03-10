@@ -74,7 +74,7 @@ class LoadBalancersController(base.BaseController):
 
     def _create_load_balancer_graph(self, context, load_balancer):
         prepped_lb = db_prepare.create_load_balancer_tree(
-            load_balancer.to_dict())
+            load_balancer.to_dict(render_unsets=True))
         try:
             db_lb = self.repositories.create_load_balancer_tree(
                 context.session, prepped_lb)
@@ -100,7 +100,9 @@ class LoadBalancersController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         if load_balancer.listeners:
             return self._create_load_balancer_graph(context, load_balancer)
-        lb_dict = db_prepare.create_load_balancer(load_balancer.to_dict())
+        lb_dict = db_prepare.create_load_balancer(load_balancer.to_dict(
+            render_unsets=True
+        ))
         vip_dict = lb_dict.pop('vip', {})
         try:
             db_lb = self.repositories.create_load_balancer_and_vip(

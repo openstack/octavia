@@ -104,7 +104,7 @@ class HealthMonitorController(base.BaseController):
         except exceptions.NotFound:
             pass
         hm_dict = db_prepare.create_health_monitor(
-            health_monitor.to_dict(), self.pool_id)
+            health_monitor.to_dict(render_unsets=True), self.pool_id)
         self._test_lb_and_listener_statuses(context.session)
 
         try:

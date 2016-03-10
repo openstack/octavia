@@ -160,7 +160,7 @@ class ListenersController(base.BaseController):
         self._secure_data(listener)
         context = pecan.request.context.get('octavia_context')
         listener_dict = db_prepare.create_listener(
-            listener.to_dict(), self.load_balancer_id)
+            listener.to_dict(render_unsets=True), self.load_balancer_id)
         if listener_dict['default_pool_id']:
             self._validate_pool(context.session,
                                 listener_dict['default_pool_id'])
@@ -181,7 +181,7 @@ class ListenersController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         db_listener = self._get_db_listener(context.session, id)
         listener_dict = listener.to_dict()
-        if listener_dict['default_pool_id']:
+        if listener_dict.get('default_pool_id'):
             self._validate_pool(context.session,
                                 listener_dict['default_pool_id'])
         self._test_lb_and_listener_statuses(context.session, id=id)
