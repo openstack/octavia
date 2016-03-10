@@ -116,9 +116,6 @@ MAX_POLICY_POSITION = 2147483647
 # 53 rules per policy
 MAX_L7RULES_PER_L7POLICY = 50
 
-URL_REGEX = (r'\Ahttp[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|'
-             r'(?:%[0-9a-fA-F][0-9a-fA-F]))+')
-
 # See RFCs 2616, 2965, 6265, 7230: Should match characters valid in a
 # http header or cookie name.
 HTTP_HEADER_NAME_REGEX = r'\A[a-zA-Z0-9!#$%&\'*+-.^_`|~]+\Z'
