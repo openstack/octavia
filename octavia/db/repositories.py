@@ -252,7 +252,7 @@ class Repositories(object):
                 if pool_dict:
                     hm_dict = pool_dict.pop('health_monitor', None)
                     member_dicts = pool_dict.pop('members', [])
-                    sp_dict = pool_dict.pop('session_persistence') or None
+                    sp_dict = pool_dict.pop('session_persistence', None)
                     pool_dict['load_balancer_id'] = lb_dm.id
                     del pool_dict['listener_id']
                     pool_dm = self.pool.create(session, **pool_dict)
@@ -276,8 +276,8 @@ class Repositories(object):
                             r_pool_dict = policy_dict.pop(
                                 'redirect_pool')
                             r_hm_dict = r_pool_dict.pop('health_monitor', None)
-                            r_sp_dict = r_pool_dict.pop(
-                                'session_persistence') or None
+                            r_sp_dict = r_pool_dict.pop('session_persistence',
+                                                        None)
                             r_member_dicts = r_pool_dict.pop('members', [])
                             if 'listener_id' in r_pool_dict.keys():
                                 del r_pool_dict['listener_id']

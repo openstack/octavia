@@ -299,6 +299,71 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, pool_dm.id, update_pool, None)
         self.assertIsNone(new_pool_dm.session_persistence)
 
+    def test_create_load_balancer_tree(self):
+        project_id = uuidutils.generate_uuid()
+        member = {'project_id': project_id, 'ip_address': '11.0.0.1',
+                  'protocol_port': 80, 'enabled': True,
+                  'operating_status': constants.ONLINE,
+                  'id': uuidutils.generate_uuid()}
+        health_monitor = {'type': constants.HEALTH_MONITOR_HTTP, 'delay': 1,
+                          'timeout': 1, 'fall_threshold': 1,
+                          'rise_threshold': 1, 'enabled': True}
+        sp = {'type': constants.SESSION_PERSISTENCE_APP_COOKIE,
+              'cookie_name': 'cookie_name'}
+        pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
+                'description': 'desc1', 'listener_id': None,
+                'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                'enabled': True, 'operating_status': constants.ONLINE,
+                'project_id': project_id, 'members': [member],
+                'health_monitor': health_monitor, 'session_persistence': sp,
+                'id': uuidutils.generate_uuid()}
+        sp['pool_id'] = pool.get('id')
+        member['pool_id'] = pool.get('id')
+        health_monitor['pool_id'] = pool.get('id')
+        l7rule = {'type': constants.L7RULE_TYPE_HOST_NAME,
+                  'compare_type': constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+                  'value': 'localhost'}
+        r_health_monitor = {'type': constants.HEALTH_MONITOR_HTTP, 'delay': 1,
+                            'timeout': 1, 'fall_threshold': 1,
+                            'rise_threshold': 1, 'enabled': True}
+        redirect_pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
+                         'description': 'desc1', 'project_id': project_id,
+                         'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                         'enabled': True, 'operating_status': constants.ONLINE,
+                         'id': uuidutils.generate_uuid(),
+                         'health_monitor': r_health_monitor}
+        l7policy = {'name': 'l7policy1', 'enabled': True,
+                    'description': 'l7policy_description', 'position': 1,
+                    'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                    'redirect_pool': redirect_pool, 'l7rules': [l7rule],
+                    'redirect_pool_id': redirect_pool.get('id'),
+                    'id': uuidutils.generate_uuid()}
+        l7rule['l7policy_id'] = l7policy.get('id')
+        listener = {'project_id': project_id, 'name': 'listener1',
+                    'description': 'listener_description',
+                    'protocol': constants.PROTOCOL_HTTP, 'protocol_port': 80,
+                    'connection_limit': 1, 'enabled': True,
+                    'default_pool': pool, 'l7policies': [l7policy],
+                    'provisioning_status': constants.PENDING_CREATE,
+                    'operating_status': constants.ONLINE,
+                    'id': uuidutils.generate_uuid()}
+        l7policy['listener_id'] = listener.get('id')
+        vip = {'ip_address': '10.0.0.1', 'port_id': uuidutils.generate_uuid(),
+               'subnet_id': uuidutils.generate_uuid()}
+        lb = {'name': 'lb1', 'description': 'desc1', 'enabled': True,
+              'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
+              'vrrp_group': None, 'server_group_id': uuidutils.generate_uuid(),
+              'project_id': project_id, 'vip': vip,
+              'provisioning_status': constants.PENDING_CREATE,
+              'operating_status': constants.ONLINE,
+              'id': uuidutils.generate_uuid(), 'listeners': [listener]}
+        listener['load_balancer_id'] = lb.get('id')
+        pool['load_balancer_id'] = lb.get('id')
+        redirect_pool['load_balancer_id'] = lb.get('id')
+        db_lb = self.repos.create_load_balancer_tree(self.session, lb)
+        self.assertIsNotNone(db_lb)
+        self.assertIsInstance(db_lb, models.LoadBalancer)
+
 
 class PoolRepositoryTest(BaseRepositoryTest):
 
@@ -551,10 +616,10 @@ class SessionPersistenceRepositoryTest(BaseRepositoryTest):
         self.assertIsNone(new_pool.session_persistence)
 
 
-class ListenerRepositoryTest(BaseRepositoryTest):
+class TestListenerRepositoryTest(BaseRepositoryTest):
 
     def setUp(self):
-        super(ListenerRepositoryTest, self).setUp()
+        super(TestListenerRepositoryTest, self).setUp()
         self.load_balancer = self.lb_repo.create(
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="lb_name", description="lb_description",
