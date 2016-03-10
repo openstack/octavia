@@ -65,7 +65,7 @@ class BaseType(wtypes.Base):
         """
         return cls(**data_model.to_dict())
 
-    def to_dict(self, render_unsets=True):
+    def to_dict(self, render_unsets=False):
         """Converts Octavia WSME type to dictionary.
 
         :param render_unsets: If True, will convert items that are WSME Unset
@@ -79,9 +79,10 @@ class BaseType(wtypes.Base):
             if value and callable(value):
                 continue
             if value and isinstance(value, BaseType):
-                value = value.to_dict()
+                value = value.to_dict(render_unsets=render_unsets)
             if value and isinstance(value, list):
-                value = [val.to_dict() if isinstance(val, BaseType) else val
+                value = [val.to_dict(render_unsets=render_unsets)
+                         if isinstance(val, BaseType) else val
                          for val in value]
             if isinstance(value, wtypes.UnsetType):
                 if render_unsets:

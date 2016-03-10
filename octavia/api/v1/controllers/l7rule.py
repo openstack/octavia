@@ -89,8 +89,8 @@ class L7RuleController(base.BaseController):
             raise exceptions.L7RuleValidation(error=e)
         context = pecan.request.context.get('octavia_context')
         self._check_l7policy_max_rules(context.session)
-        l7rule_dict = db_prepare.create_l7rule(l7rule.to_dict(),
-                                               self.l7policy_id)
+        l7rule_dict = db_prepare.create_l7rule(
+            l7rule.to_dict(render_unsets=True), self.l7policy_id)
         self._test_lb_and_listener_statuses(context.session)
 
         try:
@@ -127,11 +127,9 @@ class L7RuleController(base.BaseController):
         """Updates a l7rule."""
         context = pecan.request.context.get('octavia_context')
         db_l7rule = self._get_db_l7rule(context.session, id)
-        new_l7rule_dict = db_l7rule.to_dict()
-        for k, v in l7rule.to_dict().items():
-            if v is not None:
-                new_l7rule_dict.update({k: v})
-        new_l7rule = data_models.L7Rule(**new_l7rule_dict)
+        new_l7rule = db_l7rule.to_dict()
+        new_l7rule.update(l7rule.to_dict())
+        new_l7rule = data_models.L7Rule.from_dict(new_l7rule)
         try:
             validate.l7rule_data(new_l7rule)
         except Exception as e:

@@ -140,7 +140,7 @@ class PoolsController(base.BaseController):
         # For some API requests the listener_id will be passed in the
         # pool_dict:
         context = pecan.request.context.get('octavia_context')
-        pool_dict = db_prepare.create_pool(pool.to_dict())
+        pool_dict = db_prepare.create_pool(pool.to_dict(render_unsets=True))
         if 'listener_id' in pool_dict:
             if pool_dict['listener_id'] is not None:
                 self.listener_id = pool_dict.pop('listener_id')

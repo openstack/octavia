@@ -91,7 +91,8 @@ class MembersController(base.BaseController):
     def post(self, member):
         """Creates a pool member on a pool."""
         context = pecan.request.context.get('octavia_context')
-        member_dict = db_prepare.create_member(member.to_dict(), self.pool_id)
+        member_dict = db_prepare.create_member(member.to_dict(
+            render_unsets=True), self.pool_id)
         self._test_lb_and_listener_statuses(context.session)
 
         try:
