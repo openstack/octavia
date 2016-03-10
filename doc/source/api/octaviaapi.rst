@@ -228,6 +228,170 @@ Create a load balancer.
     }
 
 
+Create Fully Populated Load Balancer
+++++++++++++++++++++++++++++++++++++
+
+Create a load balancer including listeners, sni containers, pools,
+health monitors, l7 policies, and l7 rules.
+
+Refer to the appropriate objects details for available attributes.
+
+**Request Example**::
+
+    {
+        'vip': {
+            'subnet_id': 'uuid'
+        },
+        'name': 'lb_name',
+        'description': 'lb_description',
+        'listeners': [{
+            'protocol': 'HTTP',
+            'protocol_port': 80,
+            'connection_limit': 10,
+            'name': 'listener_name',
+            'description': 'listener_description',
+            'enabled': true,
+            'l7policies': [{
+                'action': 'REDIRECT_TO_POOL',
+                'redirect_pool': {
+                    'protocol': 'HTTP',
+                    'lb_algorithm': 'ROUND_ROBIN',
+                    'session_persistence': {
+                       'type': 'HTTP_COOKIE',
+                       'cookie_name': 'cookie_name'
+                    },
+                    'name': 'redirect_pool',
+                    'description': 'redirect_pool_description',
+                    'enabled': true
+                }
+            }],
+            'default_pool': {
+                'protocol': 'HTTP',
+                'lb_algorithm': 'ROUND_ROBIN',
+                'session_persistence': {
+                   'type': 'HTTP_COOKIE',
+                   'cookie_name': 'cookie_name'
+                },
+                'name': 'pool_name',
+                'description': 'pool_description',
+                'enabled': true,
+                'members': [{
+                    'ip_address': '10.0.0.1',
+                    'protocol_port': 80,
+                    'weight': 10,
+                    'subnet_id': 'uuid',
+                    'enabled': true
+                }],
+                'health_monitor':{
+                    'type': 'HTTP',
+                    'delay': 10,
+                    'timeout': 10,
+                    'fall_threshold': 10,
+                    'rise_threshold': 10,
+                    'http_method': 'GET',
+                    'url_path': '/some/custom/path',
+                    'expected_codes': '200',
+                    'enabled': true
+                }
+            }
+        }]
+    }
+
+**Response Example**::
+
+    {
+        'description': 'lb_description',
+        'provisioning_status': 'PENDING_CREATE',
+        'enabled': true,
+        'listeners': [{
+            'tls_certificate_id': null,
+            'protocol': 'HTTP',
+            'description': 'listener_description',
+            'provisioning_status': 'PENDING_CREATE',
+            'default_pool': {
+                'lb_algorithm': 'ROUND_ROBIN',
+                'protocol': 'HTTP',
+                'description': 'pool_description',
+                'health_monitor': {
+                    'project_id': null,
+                    'expected_codes': '200',
+                    'enabled': true,
+                    'delay': 10,
+                    'fall_threshold': 10,
+                    'http_method': 'GET',
+                    'rise_threshold': 10,
+                    'timeout': 10,
+                    'url_path': '/some/custom/path',
+                    'type': 'HTTP'
+                },
+                'enabled': true,
+                'session_persistence': {
+                    'cookie_name': 'cookie_name',
+                    'type': 'HTTP_COOKIE'
+                },
+                'members': [{
+                    'project_id': null,
+                    'weight': 10,
+                    'subnet_id': 'uuid',
+                    'enabled': true,
+                    'protocol_port': 80,
+                    'ip_address': '10.0.0.1',
+                    'id': 'uuid',
+                    'operating_status': 'OFFLINE'
+                }],
+                'project_id': null,
+                'id': 'uuid',
+                'operating_status': 'OFFLINE',
+                'name': 'pool_name'
+            },
+            'connection_limit': 10,
+            'enabled': true,
+            'project_id': null,
+            'default_pool_id': 'uuid',
+            'l7policies': [{
+                'redirect_pool_id': 'uuid',
+                'description': null,
+                'redirect_pool': {
+                    'lb_algorithm': 'ROUND_ROBIN',
+                    'protocol': 'HTTP',
+                    'description': 'redirect_pool_description',
+                    'enabled': true,
+                    'session_persistence': {
+                        'cookie_name': 'cookie_name',
+                        'type': 'HTTP_COOKIE'
+                    },
+                    'members': [],
+                    'project_id': null,
+                    'id': 'uuid',
+                    'operating_status': 'OFFLINE',
+                    'name': 'redirect_pool'
+                },
+                'l7rules': [],
+                'enabled': true,
+                'redirect_url': null,
+                'action': 'REDIRECT_TO_POOL',
+                'position': 1,
+                'id': 'uuid',
+                'name': null
+            }],
+            'sni_containers': [],
+            'protocol_port': 80,
+            'id': 'uuid',
+            'operating_status': 'OFFLINE',
+            'name': 'listener_name'
+        }],
+        'vip': {
+            'subnet_id': 'uuid',
+            'port_id': null,
+            'ip_address': null
+        },
+        'project_id': null,
+        'id': 'uuid',
+        'operating_status': 'OFFLINE',
+        'name': 'lb_name'
+    }
+
+
 Update Load Balancer
 ********************
 
