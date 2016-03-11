@@ -135,3 +135,10 @@ class HackingTestCase(base.BaseTestCase):
 
         self.assertEqual(0, len(list(checks.no_log_warn(
             "LOG.warning()"))))
+
+    def test_no_xrange(self):
+        self.assertEqual(1, len(list(checks.no_xrange(
+            "xrange(45)"))))
+
+        self.assertEqual(0, len(list(checks.no_xrange(
+            "range(45)"))))

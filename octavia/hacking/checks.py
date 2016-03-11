@@ -73,6 +73,8 @@ assert_not_equal_end_with_none_re = re.compile(
     r"(.)*assertNotEqual\(.+, None\)")
 assert_not_equal_start_with_none_re = re.compile(
     r"(.)*assertNotEqual\(None, .+\)")
+assert_no_xrange_re = re.compile(
+    r"\s*xrange\s*\(")
 
 
 def _directory_to_check_translation(filename):
@@ -209,6 +211,15 @@ def no_log_warn(logical_line):
         yield(0, "O339:Use LOG.warning() rather than LOG.warn()")
 
 
+def no_xrange(logical_line):
+    """Disallow 'xrange()'
+
+    O340
+    """
+    if assert_no_xrange_re.match(logical_line):
+        yield(0, "O340: Do not use xrange().")
+
+
 def factory(register):
     register(assert_true_instance)
     register(assert_equal_or_not_none)
@@ -220,3 +231,4 @@ def factory(register):
     register(no_mutable_default_args)
     register(assert_equal_in)
     register(no_log_warn)
+    register(no_xrange)
