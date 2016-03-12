@@ -23,6 +23,7 @@ Octavia Specific Commandments
   assertEqual(A in B, False) or assertEqual(False, A in B) to the more
   specific assertIn/NotIn(A, B)
 - [O339] LOG.warn() is not allowed. Use LOG.warning()
+- [O340] Don't use xrange()
 
 Creating Unit Tests
 -------------------
