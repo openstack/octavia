@@ -193,7 +193,10 @@ class Pool(BaseDataModel):
     def update(self, update_dict):
         for key, value in update_dict.items():
             if key == 'session_persistence':
-                if self.session_persistence is not None:
+                if value is None or value == {}:
+                    if self.session_persistence is not None:
+                        self.session_persistence.delete()
+                elif self.session_persistence is not None:
                     self.session_persistence.update(value)
                 else:
                     value.update({'pool_id': self.id})

@@ -196,9 +196,7 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
             db_pool = repo.pool.get(db_api.get_session(), id=pool.id)
             pool_dict = pool.to_dict()
             pool_dict['operating_status'] = db_pool.operating_status
-            sp_dict = pool_dict.pop('session_persistence', None)
-            repo.update_pool_and_sp(db_api.get_session(), pool.id,
-                                    pool_dict, sp_dict)
+            repo.update_pool_and_sp(db_api.get_session(), pool.id, pool_dict)
         elif create:
             repo.pool.update(db_api.get_session(), pool.id,
                              operating_status=constants.ONLINE)

@@ -160,21 +160,21 @@ class Repositories(object):
         return self.load_balancer.get(session, id=lb.id)
 
     def create_pool_on_load_balancer(self, session, pool_dict,
-                                     listener_id=None, sp_dict=None):
+                                     listener_id=None):
         """Inserts a pool and session persistence entity into the database.
 
         :param session: A Sql Alchemy database session.
         :param pool_dict: Dictionary representation of a pool
         :param listener_id: Optional listener id that will
                              reference this pool as its default_pool_id
-        :param sp_dict: Dictionary representation of a session persistence
         :returns: octavia.common.data_models.Pool
         """
         with session.begin(subtransactions=True):
             if not pool_dict.get('id'):
                 pool_dict['id'] = uuidutils.generate_uuid()
+            sp_dict = pool_dict.pop('session_persistence', None)
             db_pool = self.pool.create(session, **pool_dict)
-            if sp_dict:
+            if sp_dict is not None and sp_dict != {}:
                 sp_dict['pool_id'] = pool_dict['id']
                 self.session_persistence.create(session, **sp_dict)
             if listener_id:
@@ -182,31 +182,31 @@ class Repositories(object):
                                      default_pool_id=pool_dict['id'])
         return self.pool.get(session, id=db_pool.id)
 
-    def update_pool_and_sp(self, session, pool_id, pool_dict, sp_dict):
+    def update_pool_and_sp(self, session, pool_id, pool_dict):
         """Updates a pool and session persistence entity in the database.
 
         :param session: A Sql Alchemy database session.
         :param pool_dict: Dictionary representation of a pool
-        :param sp_dict: Dictionary representation of a session persistence
         :returns: octavia.common.data_models.Pool
         """
         with session.begin(subtransactions=True):
-            # If only the session persistence is being updated, this will be
-            # empty
-            if len(pool_dict.keys()) > 0:
-                self.pool.update(session, pool_id, **pool_dict)
-            if sp_dict:
-                if self.session_persistence.exists(session, pool_id):
+            if 'session_persistence' in pool_dict.keys():
+                sp_dict = pool_dict.pop('session_persistence')
+                if sp_dict is None or sp_dict == {}:
+                    if self.session_persistence.exists(session, pool_id):
+                        self.session_persistence.delete(session,
+                                                        pool_id=pool_id)
+                elif self.session_persistence.exists(session, pool_id):
                     self.session_persistence.update(session, pool_id,
                                                     **sp_dict)
                 else:
                     sp_dict['pool_id'] = pool_id
                     self.session_persistence.create(session, **sp_dict)
-        db_pool = self.pool.get(session, id=pool_id)
-        if db_pool.session_persistence is not None and not sp_dict:
-            self.session_persistence.delete(session, pool_id=pool_id)
-            db_pool = self.pool.get(session, id=pool_id)
-        return db_pool
+            # If only the session_persistence is being updated, this will be
+            # empty
+            if len(pool_dict.keys()) > 0:
+                self.pool.update(session, pool_id, **pool_dict)
+        return self.pool.get(session, id=pool_id)
 
     def test_and_set_lb_and_listeners_prov_status(self, session, lb_id,
                                                   lb_prov_status,

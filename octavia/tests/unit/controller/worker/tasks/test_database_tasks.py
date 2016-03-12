@@ -1181,7 +1181,7 @@ class TestDatabaseTasks(base.TestCase):
         repo.Repositories.update_pool_and_sp.assert_called_once_with(
             'TEST',
             POOL_ID,
-            update_dict, sp_dict)
+            update_dict)
 
         # Test the revert
 
@@ -1192,7 +1192,7 @@ class TestDatabaseTasks(base.TestCase):
         repo.Repositories.update_pool_and_sp.assert_called_once_with(
             'TEST',
             POOL_ID,
-            {'enabled': 0}, None)
+            {'enabled': 0})
 
     @mock.patch('octavia.db.repositories.L7PolicyRepository.update')
     def test_update_l7policy_in_db(self,
