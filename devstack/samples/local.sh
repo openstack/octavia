@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -ex
 
 # Sample ``local.sh`` that configures two simple webserver instances and sets
 # up a Neutron LBaaS Version 2 loadbalancer backed by Octavia.
