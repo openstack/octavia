@@ -12,6 +12,14 @@ Getting started
 
    main/glossary.rst
 
+Configuration reference
+-----------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   config-reference/octavia-config-table.rst
+
 For developers
 --------------
 
