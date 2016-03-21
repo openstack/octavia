@@ -224,3 +224,14 @@ class AbstractNetworkDriver(object):
         :raises: PortNotFound
         """
         pass
+
+    @abc.abstractmethod
+    def plug_port(self, compute_id, port):
+        """Plug a neutron port in to a compute instance
+
+        :param compute_id: id of an amphora in the compute service
+        :param port: port to plug into the compute instance
+        :return: None
+        :raises: PlugNetworkException, AmphoraNotFound, NetworkNotFound
+        """
+        pass
