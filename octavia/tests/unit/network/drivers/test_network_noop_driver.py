@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
 from oslo_utils import uuidutils
 
 from octavia.db import models as models
@@ -27,7 +28,9 @@ class TestNoopNetworkDriver(base.TestCase):
     def setUp(self):
         super(TestNoopNetworkDriver, self).setUp()
         self.driver = driver.NoopNetworkDriver()
+        self.port = mock.MagicMock()
         self.port_id = 88
+        self.port.id = self.port_id
         self.network_id = self.FAKE_UUID_3
         self.ip_address = "10.0.0.2"
         self.load_balancer = models.LoadBalancer()
@@ -116,4 +119,11 @@ class TestNoopNetworkDriver(base.TestCase):
         self.assertEqual(
             (self.port_id, 'get_port'),
             self.driver.driver.networkconfigconfig[self.port_id]
+        )
+
+    def test_plug_port(self):
+        self.driver.plug_port(self.compute_id, self.port)
+        self.assertEqual(
+            (self.compute_id, self.port, 'plug_port'),
+            self.driver.driver.networkconfigconfig[self.compute_id, self.port]
         )

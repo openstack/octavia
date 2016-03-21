@@ -482,3 +482,14 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.get_port.return_value = port_mock
         ports = net_task.execute(amphora)
         self.assertEqual(1, len(ports))
+
+    def test_plug_ports(self, mock_driver):
+        amphora = mock.MagicMock()
+        port1 = mock.MagicMock()
+        port2 = mock.MagicMock()
+
+        plugports = network_tasks.PlugPorts()
+        plugports.execute(amphora, [port1, port2])
+
+        mock_driver.plug_port.assert_any_call(amphora, port1)
+        mock_driver.plug_port.assert_any_call(amphora, port2)

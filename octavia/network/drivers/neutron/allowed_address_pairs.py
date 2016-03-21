@@ -432,8 +432,42 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
         for port in ports:
             try:
+                self.nova_client.servers.interface_detach(
+                    server=amphora.compute_id, port=port.id)
+            except Exception as e:
+                LOG.warning(_LW('Failed to detach port %(portid)s from '
+                                'instance %(compid)s.  Error: '
+                                '%(error)s') % {'portid': port.id,
+                                                'compid': amphora.compute_id,
+                                                'error': str(e)})
+            try:
                 self.neutron_client.update_port(port.id,
-                                                {'port': {'device_id': ''}})
+                                                {'port': {'device_id': '',
+                                                          'dns_name': ''}})
             except (neutron_client_exceptions.NotFound,
                     neutron_client_exceptions.PortNotFoundClient):
                 raise base.PortNotFound()
+
+    def plug_port(self, amphora, port):
+        try:
+            self.nova_client.servers.interface_attach(
+                server=amphora.compute_id, net_id=None,
+                fixed_ip=None, port_id=port.id)
+        except nova_client_exceptions.NotFound as e:
+            if 'Instance' in e.message:
+                raise base.AmphoraNotFound(e.message)
+            elif 'Network' in e.message:
+                raise base.NetworkNotFound(e.message)
+            else:
+                raise base.PlugNetworkException(e.message)
+        except nova_client_exceptions.Conflict:
+            LOG.info(_LI('Port %(portid)s is already plugged, '
+                     'skipping') % {'portid': port.id})
+        except Exception:
+            message = _LE('Error plugging amphora (compute_id: '
+                          '{compute_id}) into port '
+                          '{port_id}.').format(
+                              compute_id=amphora.compute_id,
+                              port_id=port.id)
+            LOG.exception(message)
+            raise base.PlugNetworkException(message)
