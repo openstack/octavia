@@ -206,11 +206,9 @@ function octavia_start {
 
 function octavia_stop {
     # octavia-specific stop actions
-    # TODO (ajmiller): If octavia behaves similarly to the neutron-lbaas driver,
-    # there will be haproxy processes running as daemons.  The neutron-lbaas stop
-    # code searches for and kills all haproxy procs.  That seems like a very
-    # blunt club, is there a better way to do this?
-    pids=$(ps aux | awk '/haproxy/ { print $2 }')
+
+    # Kill dhclient process started for o-hm0 interface
+    pids=$(ps aux | awk '/o-hm0/ { print $2 }')
     [ ! -z "$pids" ] && sudo kill $pids
 }
 function octavia_configure_common {
