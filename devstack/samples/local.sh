@@ -19,7 +19,9 @@ DEST=${DEST:-/opt/stack}
 
 if is_service_enabled nova; then
 
-    # Get OpenStack demo user auth
+    # Unset DOMAIN env variables that are not needed for keystone v2 and set OpenStack demo user auth
+    unset OS_USER_DOMAIN_ID
+    unset OS_PROJECT_DOMAIN_ID
     source ${TOP_DIR}/openrc demo demo
 
     # Create an SSH key to use for the instances
