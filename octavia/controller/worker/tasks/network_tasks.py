@@ -416,3 +416,14 @@ class RetrievePortIDsOnAmphoraExceptLBNetwork(BaseNetworkTask):
                     ports.append(port)
 
         return ports
+
+
+class PlugPorts(BaseNetworkTask):
+    """Task to plug neutron ports into a compute instance."""
+
+    def execute(self, amphora, ports):
+        for port in ports:
+            LOG.debug('Plugging port ID: {port_id} into compute instance: '
+                      '{compute_id}.'.format(port_id=port.id,
+                                             compute_id=amphora.compute_id))
+            self.network_driver.plug_port(amphora, port)

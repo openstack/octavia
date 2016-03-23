@@ -17,6 +17,7 @@ import copy
 import mock
 from neutronclient.common import exceptions as neutron_exceptions
 from novaclient.client import exceptions as nova_exceptions
+from oslo_utils import uuidutils
 
 from octavia.common import clients
 from octavia.common import constants
@@ -50,6 +51,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
     LB_NET_PORT_ID = "6"
     HA_PORT_ID = "8"
     HA_IP = "12.0.0.2"
+    PORT_ID = uuidutils.generate_uuid()
 
     def setUp(self):
         super(TestAllowedAddressPairsDriver, self).setUp()
@@ -551,14 +553,22 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.driver.neutron_client.show_port = mock.Mock(
             side_effect=self._failover_show_port_side_effect)
         port_update = self.driver.neutron_client.update_port
+        interface_detach = self.driver.nova_client.servers.interface_detach
         amphora = data_models.Amphora(
             id=self.AMPHORA_ID, load_balancer_id=self.LB_ID,
             compute_id=self.COMPUTE_ID, status=self.ACTIVE,
             lb_network_ip=self.LB_NET_IP, ha_port_id=self.HA_PORT_ID,
             ha_ip=self.HA_IP)
         self.driver.failover_preparation(amphora)
-        port_update.assert_called_once_with(ports["ports"][1].get("id"),
-                                            {'port': {'device_id': ''}})
+        port_update.assert_called_once_with(ports['ports'][1].get('id'),
+                                            {'port': {'dns_name': '',
+                                                      'device_id': ''}})
+        interface_detach.assert_called_once_with(
+            server=amphora.compute_id, port=ports['ports'][1].get('id'))
+
+        # Test that the detach exception is caught and not raised
+        interface_detach.side_effect = Exception
+        self.driver.failover_preparation(amphora)
 
     def _failover_show_port_side_effect(self, port_id):
         if port_id == self.LB_NET_PORT_ID:
@@ -569,3 +579,50 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             return {"fixed_ips": [{"subnet_id": self.SUBNET_ID_2,
                                    "ip_address": self.IP_ADDRESS_2}],
                     "id": self.FIXED_IP_ID_2, "network_id": self.NETWORK_ID_2}
+
+    def test_plug_port(self):
+        port = mock.MagicMock()
+        port.id = self.PORT_ID
+        interface_attach = self.driver.nova_client.servers.interface_attach
+        amphora = data_models.Amphora(
+            id=self.AMPHORA_ID, load_balancer_id=self.LB_ID,
+            compute_id=self.COMPUTE_ID, status=self.ACTIVE,
+            lb_network_ip=self.LB_NET_IP, ha_port_id=self.HA_PORT_ID,
+            ha_ip=self.HA_IP)
+
+        self.driver.plug_port(amphora, port)
+        interface_attach.assert_called_once_with(server=amphora.compute_id,
+                                                 net_id=None,
+                                                 fixed_ip=None,
+                                                 port_id=self.PORT_ID)
+
+        # NotFound cases
+        interface_attach.side_effect = nova_exceptions.NotFound(
+            1, message='Instance')
+        self.assertRaises(network_base.AmphoraNotFound,
+                          self.driver.plug_port,
+                          amphora,
+                          port)
+        interface_attach.side_effect = nova_exceptions.NotFound(
+            1, message='Network')
+        self.assertRaises(network_base.NetworkNotFound,
+                          self.driver.plug_port,
+                          amphora,
+                          port)
+        interface_attach.side_effect = nova_exceptions.NotFound(
+            1, message='bogus')
+        self.assertRaises(network_base.PlugNetworkException,
+                          self.driver.plug_port,
+                          amphora,
+                          port)
+
+        # Already plugged case should not raise an exception
+        interface_attach.side_effect = nova_exceptions.Conflict(1)
+        self.driver.plug_port(amphora, port)
+
+        # Unknown error case
+        interface_attach.side_effect = TypeError
+        self.assertRaises(network_base.PlugNetworkException,
+                          self.driver.plug_port,
+                          amphora,
+                          port)

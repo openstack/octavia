@@ -341,6 +341,8 @@ class AmphoraFlows(object):
             requires=constants.LOADBALANCER, provides=constants.VIP))
         failover_amphora_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=(constants.LOADBALANCER, constants.LISTENERS)))
+        failover_amphora_flow.add(network_tasks.PlugPorts(
+            requires=(constants.AMPHORA, constants.PORTS)))
         failover_amphora_flow.add(amphora_driver_tasks.AmphoraPostVIPPlug(
             requires=(constants.LOADBALANCER,
                       constants.AMPHORAE_NETWORK_CONFIG)))
