@@ -7,8 +7,8 @@ function octavia_install {
     setup_develop $OCTAVIA_DIR
     if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
         install_package qemu kpartx
-        git_clone https://git.openstack.org/openstack/diskimage-builder.git $DEST/diskimage-builder master
-        git_clone https://git.openstack.org/openstack/tripleo-image-elements.git $DEST/tripleo-image-elements master
+        git_clone $DISKIMAGE_BUILDER_REPO $DISKIMAGE_BUILDER_DIR $DISKIMAGE_BUILDER_BRANCH
+        git_clone $TRIPLEO_IMAGE_ELEMENTS_REPO $TRIPLEO_IMAGE_ELEMENTS_DIR $TRIPLEO_IMAGE_ELEMENTS_BRANCH
         sudo -H -E pip install -r $DEST/diskimage-builder/requirements.txt
     fi
 }
