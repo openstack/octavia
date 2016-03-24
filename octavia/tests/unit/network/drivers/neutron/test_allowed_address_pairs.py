@@ -553,7 +553,6 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.driver.neutron_client.show_port = mock.Mock(
             side_effect=self._failover_show_port_side_effect)
         port_update = self.driver.neutron_client.update_port
-        interface_detach = self.driver.nova_client.servers.interface_detach
         amphora = data_models.Amphora(
             id=self.AMPHORA_ID, load_balancer_id=self.LB_ID,
             compute_id=self.COMPUTE_ID, status=self.ACTIVE,
@@ -563,12 +562,6 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         port_update.assert_called_once_with(ports['ports'][1].get('id'),
                                             {'port': {'dns_name': '',
                                                       'device_id': ''}})
-        interface_detach.assert_called_once_with(
-            server=amphora.compute_id, port=ports['ports'][1].get('id'))
-
-        # Test that the detach exception is caught and not raised
-        interface_detach.side_effect = Exception
-        self.driver.failover_preparation(amphora)
 
     def _failover_show_port_side_effect(self, port_id):
         if port_id == self.LB_NET_PORT_ID:

@@ -432,15 +432,6 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
         for port in ports:
             try:
-                self.nova_client.servers.interface_detach(
-                    server=amphora.compute_id, port=port.id)
-            except Exception as e:
-                LOG.warning(_LW('Failed to detach port %(portid)s from '
-                                'instance %(compid)s.  Error: '
-                                '%(error)s') % {'portid': port.id,
-                                                'compid': amphora.compute_id,
-                                                'error': str(e)})
-            try:
                 self.neutron_client.update_port(port.id,
                                                 {'port': {'device_id': '',
                                                           'dns_name': ''}})
