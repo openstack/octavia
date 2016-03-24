@@ -67,8 +67,7 @@ class HaproxyAmphoraLoadBalancerDriver(
         # Process listener certificate info
         certs = self._process_tls_certificates(listener)
         # Generate HaProxy configuration from listener object
-        config = self.jinja.build_config(listener, certs['tls_cert'],
-                                         certs['sni_certs'])
+        config = self.jinja.build_config(listener, certs['tls_cert'])
 
         for amp in listener.load_balancer.amphorae:
             if amp.status != constants.DELETED:

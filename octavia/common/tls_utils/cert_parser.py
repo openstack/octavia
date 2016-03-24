@@ -197,7 +197,7 @@ def load_certificates_data(cert_mngr, listener):
             for sni_cont in listener.sni_containers:
                 cert_container = _map_cert_tls_container(
                     cert_mngr.get_cert(listener.project_id,
-                                       sni_cont.tls_container.id,
+                                       sni_cont.tls_container_id,
                                        check_only=True))
                 sni_certs.append(cert_container)
         return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
