@@ -7,6 +7,7 @@ cover/
 covhtml/
 dist/
 doc/build
+doc/source/devref/flow_diagrams/
 .idea/*
 *.DS_Store
 *.pyc

@@ -28,6 +28,7 @@ For developers
 
    main/CONSTITUTION.rst
    main/HACKING.rst
+   devref/flows.rst
 
 ====
 APIs

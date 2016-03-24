@@ -10,3 +10,8 @@ sphinxcontrib-blockdiag
 sphinxcontrib-nwdiag
 sphinxcontrib-seqdiag
 graphviz
+
+# This needs to be installed after above modules
+pydotplus
+pyparsing
+networkx
