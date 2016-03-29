@@ -403,12 +403,14 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
         ) if tls else '',
         sni_containers=[
             sample_tls_sni_container_tuple(
+                tls_container_id='cont_id_2',
                 tls_container=sample_tls_container_tuple(
                     id='cont_id_2', certificate='--imapem2--\n',
                     private_key='--imakey2--\n', intermediates=[
                         '--imainter2--\n', '--imainter2too--\n'
                     ], primary_cn='aFakeCN')),
             sample_tls_sni_container_tuple(
+                tls_container_id='cont_id_3',
                 tls_container=sample_tls_container_tuple(
                     id='cont_id_3', certificate='--imapem3--\n',
                     private_key='--imakey3--\n', intermediates=[
@@ -421,14 +423,16 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
     )
 
 
-def sample_tls_sni_container_tuple(tls_container=None):
-    sc = collections.namedtuple('sni_container', 'tls_container')
-    return sc(tls_container=tls_container)
+def sample_tls_sni_container_tuple(tls_container_id=None, tls_container=None):
+    sc = collections.namedtuple('sni_container', 'tls_container_id, '
+                                                 'tls_container')
+    return sc(tls_container_id=tls_container_id, tls_container=tls_container)
 
 
-def sample_tls_sni_containers_tuple(tls_container=None):
-    sc = collections.namedtuple('sni_containers', 'tls_container')
-    return [sc(tls_container=tls_container)]
+def sample_tls_sni_containers_tuple(tls_container_id=None, tls_container=None):
+    sc = collections.namedtuple('sni_containers', 'tls_container_id, '
+                                                  'tls_container')
+    return [sc(tls_container_id=tls_container_id, tls_container=tls_container)]
 
 
 def sample_tls_container_tuple(id='cont_id_1', certificate=None,
