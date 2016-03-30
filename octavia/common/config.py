@@ -313,10 +313,8 @@ anchor_opts = [
                default='http://localhost:9999/v1/sign/default',
                help=_('Anchor URL')),
     cfg.StrOpt('username',
-               default='myusername',
                help=_('Anchor username')),
     cfg.StrOpt('password',
-               default='simplepassword',
                help=_('Anchor password'),
                secret=True)
 ]
