@@ -21,14 +21,15 @@ import mock
 import netifaces
 from oslo_config import cfg
 import six
-import six.moves.builtins as builtins
 
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import certificate_update
+from octavia.amphorae.backends.agent.api_server import listener
 from octavia.amphorae.backends.agent.api_server import server
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants as consts
 from octavia.common import utils as octavia_utils
+from octavia.tests.common import utils as test_utils
 import octavia.tests.unit.base as base
 
 RANDOM_ERROR = 'random error'
@@ -52,10 +53,10 @@ class ServerTestCase(base.TestCase):
                      mock_makedirs, mock_exists):
 
         mock_exists.return_value = True
-        m = mock.mock_open()
 
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         file_name = '/var/lib/octavia/123/haproxy.cfg.new'
+        m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
 
         # happy case init file exists
         with mock.patch('os.open') as mock_open, mock.patch.object(
@@ -83,7 +84,7 @@ class ServerTestCase(base.TestCase):
                 '/var/lib/octavia/123/haproxy.cfg')
 
         # exception writing
-        m = mock.mock_open()
+        m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         m.side_effect = IOError()  # open crashes
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             rv = self.app.put('/' + api_server.VERSION +
@@ -93,7 +94,8 @@ class ServerTestCase(base.TestCase):
 
         # check if files get created
         mock_exists.return_value = False
-        m = mock.mock_open()
+        init_path = '/etc/init/haproxy-123.conf'
+        m = self.useFixture(test_utils.OpenFixture(init_path)).mock_open
 
         # happy case init file exists
         with mock.patch('os.open') as mock_open, mock.patch.object(
@@ -276,15 +278,15 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(404, rv.status_code)
 
         mock_exists.side_effect = [True]
-        m = mock.mock_open(read_data=CONTENT)
+        path = util.config_path('123')
+        self.useFixture(test_utils.OpenFixture(path, CONTENT))
 
-        with mock.patch.object(builtins, 'open', m):
-            rv = self.app.get('/' + api_server.VERSION +
-                              '/listeners/123/haproxy')
-            self.assertEqual(200, rv.status_code)
-            self.assertEqual(six.b(CONTENT), rv.data)
-            self.assertEqual('text/plain; charset=utf-8',
-                             rv.headers['Content-Type'])
+        rv = self.app.get('/' + api_server.VERSION +
+                          '/listeners/123/haproxy')
+        self.assertEqual(200, rv.status_code)
+        self.assertEqual(six.b(CONTENT), rv.data)
+        self.assertEqual('text/plain; charset=utf-8',
+                         rv.headers['Content-Type'])
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 + 'get_listeners')
@@ -428,12 +430,12 @@ class ServerTestCase(base.TestCase):
                           data='TestTest')
         self.assertEqual(400, rv.status_code)
 
-        m = mock.mock_open(read_data=CONTENT)
         mock_exists.return_value = True
         mock_exists.side_effect = None
-        with mock.patch.object(builtins, 'open', m):
-            rv = self.app.get('/' + api_server.VERSION +
-                              '/listeners/123/certificates/test.pem')
+        path = listener._cert_file_path('123', 'test.pem')
+        self.useFixture(test_utils.OpenFixture(path, CONTENT))
+        rv = self.app.get('/' + api_server.VERSION +
+                          '/listeners/123/certificates/test.pem')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(dict(md5sum=hashlib.md5(six.b(CONTENT)).hexdigest()),
                          json.loads(rv.data.decode('utf-8')))
@@ -448,7 +450,8 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(400, rv.status_code)
 
         mock_exists.return_value = True
-        m = mock.mock_open()
+        path = listener._cert_file_path('123', 'test.pem')
+        m = self.useFixture(test_utils.OpenFixture(path)).mock_open
 
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             rv = self.app.put('/' + api_server.VERSION +
@@ -460,7 +463,7 @@ class ServerTestCase(base.TestCase):
             handle.write.assert_called_once_with(six.b('TestTest'))
 
         mock_exists.return_value = False
-        m = mock.mock_open()
+        m = self.useFixture(test_utils.OpenFixture(path)).mock_open
 
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             rv = self.app.put('/' + api_server.VERSION +
@@ -474,7 +477,8 @@ class ServerTestCase(base.TestCase):
 
     def test_upload_server_certificate(self):
         certificate_update.BUFFER = 5  # test the while loop
-        m = mock.mock_open()
+        path = '/etc/octavia/certs/server.pem'
+        m = self.useFixture(test_utils.OpenFixture(path)).mock_open
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             rv = self.app.put('/' + api_server.VERSION +
                               '/certificate',
@@ -520,10 +524,11 @@ class ServerTestCase(base.TestCase):
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
         file_name = '/etc/network/interfaces.d/blah.cfg'
-        m = mock.mock_open()
+        m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
+
             rv = self.app.post('/' + api_server.VERSION + "/plug/network",
                                content_type='application/json',
                                data=json.dumps(port_info))
@@ -545,7 +550,8 @@ class ServerTestCase(base.TestCase):
         mock_check_output.side_effect = [subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR)]
-        m = mock.mock_open()
+
+        m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             rv = self.app.post('/' + api_server.VERSION + "/plug/network",
                                content_type='application/json',
@@ -635,6 +641,7 @@ class ServerTestCase(base.TestCase):
             subprocess.CalledProcessError(
                 7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
                 7, 'test', RANDOM_ERROR)]
+
         m = mock.mock_open()
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             rv = self.app.post('/' + api_server.VERSION +
@@ -688,7 +695,7 @@ class ServerTestCase(base.TestCase):
 
         mock_exists.return_value = True
         cfg_path = util.keepalived_cfg_path()
-        m = mock.mock_open()
+        m = self.useFixture(test_utils.OpenFixture(cfg_path)).mock_open
 
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
@@ -703,7 +710,7 @@ class ServerTestCase(base.TestCase):
 
         mock_exists.return_value = False
         script_path = util.keepalived_check_script_path()
-        m = mock.mock_open()
+        m = self.useFixture(test_utils.OpenFixture(script_path)).mock_open
 
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
