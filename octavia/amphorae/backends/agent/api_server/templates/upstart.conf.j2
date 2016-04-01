@@ -18,7 +18,8 @@
 
 description "Properly handle haproxy"
 
-start on startup
+start on runlevel [2345]
+stop on runlevel [!2345]
 
 env PID_PATH={{ haproxy_pid }}
 env BIN_PATH={{ haproxy_cmd }}
@@ -30,15 +31,24 @@ respawn limit {{ respawn_count }} {{respawn_interval}}
 
 pre-start script
     [ -r $CONF_PATH ]
+    # Re-add the namespace
+    ip netns add {{ amphora_nsname }} || true
+    # We need the plugged_interfaces file sorted to join with the host
+    # interfaces
+    sort -k 1 /var/lib/octavia/plugged_interfaces > /var/lib/octavia/plugged_interfaces.sorted
+    # Assign the interfaces into the namespace with the appropriate name
+    ip link | awk '{getline n; print $0,n}' | awk '{sub(":","",$2)} {print $17 " " $2}' | sort -k 1 | join -j 1 - /var/lib/octavia/plugged_interfaces.sorted | awk '{system("ip link set "$2" netns {{ amphora_nsname }} name "$3"")}'
+    # Bring up all of the namespace interfaces
+    ip netns exec {{ amphora_nsname }} ifup -a || true
 end script
 
 script
 exec /bin/bash <<EOF
 echo \$(date) Starting HAProxy
 # The -L trick fixes the HAProxy limitation to have long peer names
-$BIN_PATH -f $CONF_PATH -L $PEER_NAME -D -p $PID_PATH
+ip netns exec {{ amphora_nsname }} $BIN_PATH -f $CONF_PATH -L $PEER_NAME -D -p $PID_PATH
 
-trap "$BIN_PATH -f $CONF_PATH -L $PEER_NAME -p $PID_PATH -sf \\\$(cat $PID_PATH)" SIGHUP
+trap "ip netns exec {{ amphora_nsname }} $BIN_PATH -f $CONF_PATH -L $PEER_NAME -p $PID_PATH -sf \\\$(cat $PID_PATH)" SIGHUP
 trap "kill -TERM \\\$(cat $PID_PATH) && rm $PID_PATH;echo \\\$(date) Exiting HAProxy; exit 0" SIGTERM SIGINT
 
 while true; do # Iterate to keep job running.
