@@ -67,7 +67,8 @@ amphora_agent_opts = [
                help=_("The server certificate for the agent.py server "
                       "to use")),
     cfg.StrOpt('agent_server_network_dir',
-               default='/etc/network/interfaces.d/',
+               default='/etc/netns/{}/network/interfaces.d/'.format(
+                   constants.AMPHORA_NAMESPACE),
                help=_("The directory where new network interfaces "
                       "are located")),
     cfg.StrOpt('agent_server_network_file',

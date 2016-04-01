@@ -21,6 +21,7 @@ import subprocess
 import flask
 import ipaddress
 import netifaces
+import pyroute2
 import six
 
 from octavia.amphorae.backends.agent import api_server
@@ -80,13 +81,6 @@ def _get_version_of_installed_package(name):
     return m.group(0)[len('Version: '):]
 
 
-def _get_network_bytes(interface, type):
-    file_name = "/sys/class/net/{interface}/statistics/{type}_bytes".format(
-        interface=interface, type=type)
-    with open(file_name, 'r') as f:
-        return f.readline()
-
-
 def _count_haproxy_processes(listener_list):
     num = 0
     for listener_id in listener_list:
@@ -133,20 +127,32 @@ def _load():
 
 def _get_networks():
     networks = dict()
-    for interface in netifaces.interfaces():
-        if not interface.startswith('eth') or ":" in interface:
-            continue
-        networks[interface] = dict(
-            network_tx=_get_network_bytes(interface, 'tx'),
-            network_rx=_get_network_bytes(interface, 'rx'))
+    with pyroute2.NetNS(consts.AMPHORA_NAMESPACE) as netns:
+        for interface in netns.get_links():
+            interface_name = None
+            for item in interface['attrs']:
+                if item[0] == 'IFLA_IFNAME' and not item[1].startswith('eth'):
+                    break
+                elif item[0] == 'IFLA_IFNAME':
+                    interface_name = item[1]
+                if item[0] == 'IFLA_STATS64':
+                    networks[interface_name] = dict(
+                        network_tx=item[1]['tx_bytes'],
+                        network_rx=item[1]['rx_bytes'])
     return networks
 
 
 def get_interface(ip_addr):
-    if six.PY2:
-        ip_version = ipaddress.ip_address(unicode(ip_addr)).version
-    else:
-        ip_version = ipaddress.ip_address(ip_addr).version
+
+    try:
+        if six.PY2:
+            ip_version = ipaddress.ip_address(unicode(ip_addr)).version
+        else:
+            ip_version = ipaddress.ip_address(ip_addr).version
+    except Exception:
+        return flask.make_response(
+            flask.jsonify(dict(message="Invalid IP address")), 400)
+
     if ip_version == 4:
         address_format = netifaces.AF_INET
     elif ip_version == 6:
@@ -154,12 +160,50 @@ def get_interface(ip_addr):
     else:
         return flask.make_response(
             flask.jsonify(dict(message="Bad IP address version")), 400)
-    for interface in netifaces.interfaces():
-        for i in netifaces.ifaddresses(interface)[address_format]:
-            if i['addr'] == ip_addr:
-                return flask.make_response(
-                    flask.jsonify(dict(message='OK', interface=interface)),
-                    200)
+
+    # We need to normalize the address as IPv6 has multiple representations
+    # fe80:0000:0000:0000:f816:3eff:fef2:2058 == fe80::f816:3eff:fef2:2058
+    normalized_addr = socket.inet_ntop(address_format,
+                                       socket.inet_pton(address_format,
+                                                        ip_addr))
+
+    with pyroute2.NetNS(consts.AMPHORA_NAMESPACE) as netns:
+        for addr in netns.get_addr():
+            # Save the interface index as IPv6 records don't list a
+            # textual interface
+            interface_idx = addr['index']
+            # Save the address family (IPv4/IPv6) for use normalizing
+            # the IP address for comparison
+            interface_af = addr['family']
+            # Search through the attributes of each address record
+            for attr in addr['attrs']:
+                # Look for the attribute name/value pair for the address
+                if attr[0] == 'IFA_ADDRESS':
+                    # Compare the normalized address with the address we
+                    # we are looking for.  Since we have matched the name
+                    # above, attr[1] is the address value
+                    if normalized_addr == socket.inet_ntop(
+                            interface_af,
+                            socket.inet_pton(interface_af, attr[1])):
+
+                        # Lookup the matching interface name by
+                        # getting the interface with the index we found
+                        # in the above address search
+                        lookup_int = netns.get_links(interface_idx)
+                        # Search through the attributes of the matching
+                        # interface record
+                        for int_attr in lookup_int[0]['attrs']:
+                            # Look for the attribute name/value pair
+                            # that includes the interface name
+                            if int_attr[0] == 'IFLA_IFNAME':
+                                # Return the response with the matching
+                                # interface name that is in int_attr[1]
+                                # for the matching interface attribute
+                                # name
+                                return flask.make_response(
+                                    flask.jsonify(
+                                        dict(message='OK',
+                                             interface=int_attr[1])), 200)
 
     return flask.make_response(
         flask.jsonify(dict(message="Error interface not found "

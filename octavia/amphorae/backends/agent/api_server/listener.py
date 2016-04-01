@@ -138,7 +138,8 @@ def upload_haproxy_config(amphora_id, listener_id):
                 haproxy_cmd=util.CONF.haproxy_amphora.haproxy_cmd,
                 haproxy_cfg=util.config_path(listener_id),
                 respawn_count=util.CONF.haproxy_amphora.respawn_count,
-                respawn_interval=util.CONF.haproxy_amphora.respawn_interval
+                respawn_interval=util.CONF.haproxy_amphora.respawn_interval,
+                amphora_nsname=consts.AMPHORA_NAMESPACE
             )
             text_file.write(text)
 

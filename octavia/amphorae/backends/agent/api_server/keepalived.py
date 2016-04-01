@@ -62,7 +62,8 @@ def upload_keepalived_config():
                 keepalived_pid=util.keepalived_pid_path(),
                 keepalived_cmd=consts.KEEPALIVED_CMD,
                 keepalived_cfg=util.keepalived_cfg_path(),
-                keepalived_log=util.keepalived_log_path()
+                keepalived_log=util.keepalived_log_path(),
+                amphora_nsname=consts.AMPHORA_NAMESPACE
             )
             text_file.write(text)
 

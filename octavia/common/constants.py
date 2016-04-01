@@ -311,3 +311,5 @@ API_VERSION = '0.5'
 HAPROXY_BASE_PEER_PORT = 1025
 KEEPALIVED_CONF = 'keepalived.conf.j2'
 CHECK_SCRIPT_CONF = 'keepalived_check_script.conf.j2'
+PLUGGED_INTERFACES = '/var/lib/octavia/plugged_interfaces'
+AMPHORA_NAMESPACE = 'amphora-haproxy'
