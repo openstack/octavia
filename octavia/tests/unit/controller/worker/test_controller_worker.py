@@ -530,24 +530,62 @@ class TestControllerWorker(base.TestCase):
     @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
                 'LoadBalancerFlows.get_delete_load_balancer_flow',
                 return_value=(_flow_mock, {'test': 'test'}))
-    def test_delete_load_balancer(self,
-                                  mock_get_delete_lb_flow,
-                                  mock_api_get_session,
-                                  mock_dyn_log_listener,
-                                  mock_taskflow_load,
-                                  mock_pool_repo_get,
-                                  mock_member_repo_get,
-                                  mock_l7rule_repo_get,
-                                  mock_l7policy_repo_get,
-                                  mock_listener_repo_get,
-                                  mock_lb_repo_get,
-                                  mock_health_mon_repo_get,
-                                  mock_amp_repo_get):
+    def test_delete_load_balancer_without_cascade(self,
+                                                  mock_get_delete_lb_flow,
+                                                  mock_api_get_session,
+                                                  mock_dyn_log_listener,
+                                                  mock_taskflow_load,
+                                                  mock_pool_repo_get,
+                                                  mock_member_repo_get,
+                                                  mock_l7rule_repo_get,
+                                                  mock_l7policy_repo_get,
+                                                  mock_listener_repo_get,
+                                                  mock_lb_repo_get,
+                                                  mock_health_mon_repo_get,
+                                                  mock_amp_repo_get):
 
         _flow_mock.reset_mock()
 
         cw = controller_worker.ControllerWorker()
-        cw.delete_load_balancer(LB_ID)
+        cw.delete_load_balancer(LB_ID, cascade=False)
+
+        mock_lb_repo_get.assert_called_once_with(
+            'TEST',
+            id=LB_ID)
+
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+            assert_called_once_with(_flow_mock,
+                                    store={constants.LOADBALANCER:
+                                           _load_balancer_mock,
+                                           constants.SERVER_GROUP_ID:
+                                           _load_balancer_mock.server_group_id,
+                                           'test': 'test'
+                                           }
+                                    )
+         )
+        _flow_mock.run.assert_called_once_with()
+
+    @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
+                'LoadBalancerFlows.get_cascade_delete_load_balancer_flow',
+                return_value=(_flow_mock, {'test': 'test'}))
+    def test_delete_load_balancer_with_cascade(self,
+                                               mock_get_delete_lb_flow,
+                                               mock_api_get_session,
+                                               mock_dyn_log_listener,
+                                               mock_taskflow_load,
+                                               mock_pool_repo_get,
+                                               mock_member_repo_get,
+                                               mock_l7rule_repo_get,
+                                               mock_l7policy_repo_get,
+                                               mock_listener_repo_get,
+                                               mock_lb_repo_get,
+                                               mock_health_mon_repo_get,
+                                               mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+
+        cw = controller_worker.ControllerWorker()
+        cw.delete_load_balancer(LB_ID, cascade=True)
 
         mock_lb_repo_get.assert_called_once_with(
             'TEST',
