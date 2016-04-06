@@ -172,11 +172,9 @@ def build_pem(tls_container):
         :param tls_container: Object container TLS certificates
         :returns: Pem encoded certificate file
         """
-        pem = []
+        pem = [tls_container.certificate, tls_container.private_key]
         if tls_container.intermediates:
-            pem = tls_container.intermediates[:]
-        pem.extend([tls_container.certificate, tls_container.private_key])
-
+            pem.extend(tls_container.intermediates[:])
         return '\n'.join(pem)
 
 

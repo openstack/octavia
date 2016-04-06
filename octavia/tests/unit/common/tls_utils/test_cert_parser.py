@@ -305,7 +305,7 @@ class TestTLSParseUtils(base.TestCase):
                     cert_mock).intermediates)
 
     def test_build_pem(self):
-        expected = 'imainter\nimainter2\nimacert\nimakey'
+        expected = 'imacert\nimakey\nimainter\nimainter2'
         tls_tupe = sample_configs.sample_tls_container_tuple(
             certificate='imacert', private_key='imakey',
             intermediates=['imainter', 'imainter2'])

@@ -79,12 +79,12 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.client.get_cert_md5sum.assert_called_with(
             self.amp, self.sl.id, 'aFakeCN.pem')
         # this is called three times (last MD5 matches)
-        fp1 = ('--imainter1--\n\n--imainter1too--\n'
-               '\n--imapem1--\n\n--imakey1--\n')
-        fp2 = ('--imainter2--\n\n--imainter2too--\n'
-               '\n--imapem2--\n\n--imakey2--\n')
-        fp3 = ('--imainter3--\n\n--imainter3too--\n'
-               '\n--imapem3--\n\n--imakey3--\n')
+        fp1 = ('--imapem1--\n\n--imakey1--\n'
+               '\n--imainter1--\n\n--imainter1too--\n')
+        fp2 = ('--imapem2--\n\n--imakey2--\n'
+               '\n--imainter2--\n\n--imainter2too--\n')
+        fp3 = ('--imapem3--\n\n--imakey3--\n'
+               '\n--imainter3--\n\n--imainter3too--\n')
         ucp_calls = [
             mock.call(self.amp, self.sl.id, 'aFakeCN.pem', fp1),
             mock.call(self.amp, self.sl.id, 'aFakeCN.pem', fp2),
