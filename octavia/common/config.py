@@ -219,12 +219,19 @@ controller_worker_opts = [
                 default=True,
                 help=_('Determines whether or not to allow access '
                        'to the Amphorae')),
+    cfg.ListOpt('amp_boot_network_list',
+                default='',
+                help=_('List of networks to attach to the Amphorae. '
+                       'All networks defined in the list will '
+                       'be attached to each amphora.')),
     cfg.StrOpt('amp_network',
+               deprecated_for_removal=True,
+               deprecated_reason='Replaced by amp_boot_network_list.',
                default='',
-               help=_('Network to attach to the Amphora')),
+               help=_('Network to attach to the Amphorae.')),
     cfg.ListOpt('amp_secgroup_list',
                 default='',
-                help=_('List of security groups to attach to the Amphora')),
+                help=_('List of security groups to attach to the Amphora.')),
     cfg.StrOpt('client_ca',
                default='/etc/octavia/certs/ca_01.pem',
                help=_('Client CA for the amphora agent to use')),

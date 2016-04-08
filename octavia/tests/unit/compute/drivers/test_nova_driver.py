@@ -92,6 +92,9 @@ class TestNovaClient(base.TestCase):
         self.net_name = "lb-mgmt-net"
         CONF.set_override(group='networking', name='lb_network_name',
                           override=self.net_name, enforce_type=True)
+        CONF.set_override(group='controller_worker',
+                          name='amp_boot_network_list',
+                          override=[1, 2], enforce_type=True)
 
         self.amphora = models.Amphora(
             compute_id=uuidutils.generate_uuid(),
@@ -104,7 +107,7 @@ class TestNovaClient(base.TestCase):
         self.nova_response.status = 'ACTIVE'
 
         self.interface_list = mock.MagicMock()
-        self.interface_list.net_id = CONF.controller_worker.amp_network
+        self.interface_list.net_id = 1
         self.interface_list.fixed_ips = [mock.MagicMock()]
         self.interface_list.fixed_ips[0] = {'ip_address': '10.0.0.1'}
 
@@ -219,14 +222,6 @@ class TestNovaClient(base.TestCase):
         self.assertIsNone(
             self.manager._translate_amphora(self.nova_response).lb_network_ip)
         self.nova_response.interface_list.called_with()
-
-    def test_translate_amphora_nova_networks(self):
-        self.nova_response.interface_list.side_effect = Exception
-        self.manager._nova_client.networks.get.return_value = self.nova_network
-        amphora = self.manager._translate_amphora(self.nova_response)
-        self.assertEqual(self.amphora, amphora)
-        self.assertTrue(self.nova_response.interface_list.called)
-        self.manager._nova_client.networks.get.called_with(self.net_name)
 
     def test_create_server_group(self):
         self.manager.server_groups.create.return_value = self.server_group_mock

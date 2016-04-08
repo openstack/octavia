@@ -152,11 +152,11 @@ function build_mgmt_network {
 }
 
 function configure_octavia_tempest {
-    # Load the amp_network_list to tempest.conf and copy to tree
+    # Load the amp_boot_network_list to tempest.conf and copy to tree
 
     # TODO (ptoohill): remove check when tempest structure merges
     if ! [ $OCTAVIA_TEMPEST == 'disabled' ] ; then
-        iniset $TEMPEST_CONFIG controller_worker amp_network $1
+        iniset $TEMPEST_CONFIG controller_worker amp_boot_network_list [$1]
         cp $TEMPEST_CONFIG $OCTAVIA_TEMPEST_DIR/etc
     fi
 }
@@ -188,7 +188,7 @@ function octavia_start {
     build_mgmt_network
     OCTAVIA_AMP_NETWORK_ID=$(neutron net-list | awk '/ lb-mgmt-net / {print $2}')
 
-    iniset $OCTAVIA_CONF controller_worker amp_network ${OCTAVIA_AMP_NETWORK_ID}
+    iniset $OCTAVIA_CONF controller_worker amp_boot_network_list [${OCTAVIA_AMP_NETWORK_ID}]
 
     if is_service_enabled tempest; then
         configure_octavia_tempest ${OCTAVIA_AMP_NETWORK_ID}

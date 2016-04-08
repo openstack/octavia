@@ -29,7 +29,7 @@ AMP_FLAVOR_ID = 10
 AMP_IMAGE_ID = 11
 AMP_IMAGE_TAG = 'glance_tag'
 AMP_SSH_KEY_NAME = None
-AMP_NET = uuidutils.generate_uuid()
+AMP_NET = [uuidutils.generate_uuid()]
 AMP_SEC_GROUPS = []
 AMP_WAIT = 12
 AMPHORA_ID = uuidutils.generate_uuid()
@@ -66,7 +66,7 @@ class TestComputeTasks(base.TestCase):
         conf.config(group="controller_worker", amp_image_tag=AMP_IMAGE_TAG)
         conf.config(group="controller_worker",
                     amp_ssh_key_name=AMP_SSH_KEY_NAME)
-        conf.config(group="controller_worker", amp_network=AMP_NET)
+        conf.config(group="controller_worker", amp_boot_network_list=AMP_NET)
         conf.config(group="controller_worker", amp_active_wait_sec=AMP_WAIT)
         conf.config(group="keystone_authtoken", auth_version=AUTH_VERSION)
 
@@ -100,7 +100,7 @@ class TestComputeTasks(base.TestCase):
             image_tag=AMP_IMAGE_TAG,
             key_name=AMP_SSH_KEY_NAME,
             sec_groups=AMP_SEC_GROUPS,
-            network_ids=[AMP_NET],
+            network_ids=AMP_NET,
             port_ids=[PORT_ID],
             config_drive_files={'/etc/octavia/'
                                 'amphora-agent.conf': 'test_conf'},
@@ -160,7 +160,7 @@ class TestComputeTasks(base.TestCase):
             image_tag=AMP_IMAGE_TAG,
             key_name=AMP_SSH_KEY_NAME,
             sec_groups=AMP_SEC_GROUPS,
-            network_ids=[AMP_NET],
+            network_ids=AMP_NET,
             port_ids=[PORT_ID],
             config_drive_files=None,
             user_data='test_ud_conf',
@@ -219,7 +219,7 @@ class TestComputeTasks(base.TestCase):
             image_tag=AMP_IMAGE_TAG,
             key_name=None,
             sec_groups=AMP_SEC_GROUPS,
-            network_ids=[AMP_NET],
+            network_ids=AMP_NET,
             port_ids=[PORT_ID],
             config_drive_files={'/etc/octavia/'
                                 'amphora-agent.conf': 'test_conf'},
@@ -276,7 +276,7 @@ class TestComputeTasks(base.TestCase):
             image_tag=AMP_IMAGE_TAG,
             key_name=AMP_SSH_KEY_NAME,
             sec_groups=AMP_SEC_GROUPS,
-            network_ids=[AMP_NET],
+            network_ids=AMP_NET,
             port_ids=[],
             user_data=None,
             config_drive_files={
