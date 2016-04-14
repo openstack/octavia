@@ -17,13 +17,13 @@ import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
-import six.moves.builtins as builtins
-
 
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.controller.worker.tasks import compute_tasks
+from octavia.tests.common import utils as test_utils
 import octavia.tests.unit.base as base
+
 
 AMP_FLAVOR_ID = 10
 AMP_IMAGE_ID = 11
@@ -257,44 +257,45 @@ class TestComputeTasks(base.TestCase):
                 'build_agent_config', return_value='test_conf')
     @mock.patch('stevedore.driver.DriverManager.driver')
     def test_compute_create_cert(self, mock_driver, mock_conf, mock_jinja):
-
         createcompute = compute_tasks.CertComputeCreate()
 
         mock_driver.build.return_value = COMPUTE_ID
-        m = mock.mock_open(read_data='test')
-        with mock.patch.object(builtins, 'open', m, create=True):
-            # Test execute()
-            compute_id = createcompute.execute(_amphora_mock.id, 'test_cert',
-                                               server_group_id=SERVER_GRPOUP_ID
-                                               )
+        path = '/etc/octavia/certs/ca_01.pem'
+        self.useFixture(test_utils.OpenFixture(path, 'test'))
 
-            # Validate that the build method was called properly
-            mock_driver.build.assert_called_once_with(
-                name="amphora-" + _amphora_mock.id,
-                amphora_flavor=AMP_FLAVOR_ID,
-                image_id=AMP_IMAGE_ID,
-                image_tag=AMP_IMAGE_TAG,
-                key_name=AMP_SSH_KEY_NAME,
-                sec_groups=AMP_SEC_GROUPS,
-                network_ids=[AMP_NET],
-                port_ids=[],
-                user_data=None,
-                config_drive_files={
-                    '/etc/octavia/certs/server.pem': 'test_cert',
-                    '/etc/octavia/certs/client_ca.pem': 'test',
-                    '/etc/octavia/amphora-agent.conf': 'test_conf'},
-                server_group_id=SERVER_GRPOUP_ID)
+        # Test execute()
+        compute_id = createcompute.execute(_amphora_mock.id, 'test_cert',
+                                           server_group_id=SERVER_GRPOUP_ID
+                                           )
+
+        # Validate that the build method was called properly
+        mock_driver.build.assert_called_once_with(
+            name="amphora-" + _amphora_mock.id,
+            amphora_flavor=AMP_FLAVOR_ID,
+            image_id=AMP_IMAGE_ID,
+            image_tag=AMP_IMAGE_TAG,
+            key_name=AMP_SSH_KEY_NAME,
+            sec_groups=AMP_SEC_GROUPS,
+            network_ids=[AMP_NET],
+            port_ids=[],
+            user_data=None,
+            config_drive_files={
+                '/etc/octavia/certs/server.pem': 'test_cert',
+                '/etc/octavia/certs/client_ca.pem': 'test',
+                '/etc/octavia/amphora-agent.conf': 'test_conf'},
+            server_group_id=SERVER_GRPOUP_ID)
 
         # Make sure it returns the expected compute_id
-        assert(compute_id == COMPUTE_ID)
+        assert (compute_id == COMPUTE_ID)
 
         # Test that a build exception is raised
-        with mock.patch.object(builtins, 'open', m, create=True):
-            createcompute = compute_tasks.ComputeCreate()
-            self.assertRaises(TypeError,
-                              createcompute.execute,
-                              _amphora_mock,
-                              config_drive_files='test_cert')
+        self.useFixture(test_utils.OpenFixture(path, 'test'))
+
+        createcompute = compute_tasks.ComputeCreate()
+        self.assertRaises(TypeError,
+                          createcompute.execute,
+                          _amphora_mock,
+                          config_drive_files='test_cert')
 
         # Test revert()
 
@@ -304,8 +305,7 @@ class TestComputeTasks(base.TestCase):
         createcompute.revert(compute_id, _amphora_mock.id)
 
         # Validate that the delete method was called properly
-        mock_driver.delete.assert_called_once_with(
-            COMPUTE_ID)
+        mock_driver.delete.assert_called_once_with(COMPUTE_ID)
 
         # Test that a delete exception is not raised
 
