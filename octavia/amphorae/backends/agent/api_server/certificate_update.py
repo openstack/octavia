@@ -13,11 +13,10 @@
 #    under the License.
 
 import os
+import stat
 
 import flask
 from oslo_config import cfg
-
-MODE_OWNER = 0o600
 
 BUFFER = 1024
 
@@ -27,12 +26,15 @@ CONF.import_group('amphora_agent', 'octavia.common.config')
 
 def upload_server_cert():
     stream = flask.request.stream
-    with open(CONF.amphora_agent.agent_server_cert, 'w') as crt_file:
+    file_path = CONF.amphora_agent.agent_server_cert
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    # mode 00600
+    mode = stat.S_IRUSR | stat.S_IWUSR
+    with os.fdopen(os.open(file_path, flags, mode), 'w') as crt_file:
         b = stream.read(BUFFER)
         while b:
             crt_file.write(b)
             b = stream.read(BUFFER)
-        os.fchmod(crt_file.fileno(), MODE_OWNER)  # only accessible by owner
 
     return flask.make_response(flask.jsonify({
         'message': 'OK'}), 202)

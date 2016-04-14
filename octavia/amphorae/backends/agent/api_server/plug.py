@@ -15,6 +15,7 @@
 import logging
 import os
 import socket
+import stat
 import subprocess
 
 import flask
@@ -54,7 +55,11 @@ def plug_vip(vip, subnet_cidr, gateway, mac_address):
     broadcast = '.'.join(sections)
 
     # write interface file
-    with open(util.get_network_interface_file(interface), 'w') as text_file:
+    mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+    name = util.get_network_interface_file(interface)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+
+    with os.fdopen(os.open(name, flags, mode), 'w') as text_file:
         text = template_vip.render(
             interface=interface,
             vip=vip,
@@ -114,7 +119,12 @@ def plug_network(mac_address):
     interface = _interface_by_mac(mac_address)
 
     # write interface file
-    with open(util.get_network_interface_file(interface), 'w') as text_file:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    # mode 00644
+    mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+    name = util.get_network_interface_file(interface)
+
+    with os.fdopen(os.open(name, flags, mode), 'w') as text_file:
         text = template_port.render(interface=interface)
         text_file.write(text)
 

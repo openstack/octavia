@@ -125,7 +125,6 @@ class CertComputeCreate(ComputeCreate):
         with open(CONF.controller_worker.client_ca, 'r') as client_ca:
             ca = client_ca.read()
         config_drive_files = {
-            # '/etc/octavia/octavia.conf'
             '/etc/octavia/certs/server.pem': server_pem,
             '/etc/octavia/certs/client_ca.pem': ca}
         return super(CertComputeCreate, self).execute(

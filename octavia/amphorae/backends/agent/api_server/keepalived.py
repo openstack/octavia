@@ -14,6 +14,7 @@
 
 import logging
 import os
+import stat
 import subprocess
 
 import flask
@@ -42,14 +43,21 @@ def upload_keepalived_config():
         os.makedirs(util.keepalived_check_scripts_dir())
 
     conf_file = util.keepalived_cfg_path()
-    with open(conf_file, 'w') as f:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    # mode 00644
+    mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+    with os.fdopen(os.open(conf_file, flags, mode), 'w') as f:
         b = stream.read(BUFFER)
         while b:
             f.write(b)
             b = stream.read(BUFFER)
 
-    if not os.path.exists(util.keepalived_init_path()):
-        with open(util.keepalived_init_path(), 'w') as text_file:
+    file_path = util.keepalived_init_path()
+    # mode 00755
+    mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
+            stat.S_IROTH | stat.S_IXOTH)
+    if not os.path.exists(file_path):
+        with os.fdopen(os.open(file_path, flags, mode), 'w') as text_file:
             text = template.render(
                 keepalived_pid=util.keepalived_pid_path(),
                 keepalived_cmd=consts.KEEPALIVED_CMD,
@@ -57,33 +65,15 @@ def upload_keepalived_config():
                 keepalived_log=util.keepalived_log_path()
             )
             text_file.write(text)
-        cmd = "chmod +x {file}".format(file=util.keepalived_init_path())
-        try:
-            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            LOG.debug("Failed to upload keepalived configuration. "
-                      "Unable to chmod init script.")
-            return flask.make_response(flask.jsonify(dict(
-                message="Failed to upload keepalived configuration.  "
-                        "Unable to chmod init script.",
-                details=e.output)), 500)
+
         # Renders the Keepalived check script
-        with open(util.keepalived_check_script_path(), 'w') as text_file:
+        keepalived_path = util.keepalived_check_script_path()
+        open_obj = os.open(keepalived_path, flags, mode)
+        with os.fdopen(open_obj, 'w') as text_file:
             text = check_script_template.render(
                 check_scripts_dir=util.keepalived_check_scripts_dir()
             )
             text_file.write(text)
-        cmd = ("chmod +x {file}".format(
-            file=util.keepalived_check_script_path()))
-        try:
-            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            LOG.debug("Failed to upload keepalived configuration. "
-                      "Unable to chmod check script.")
-            return flask.make_response(flask.jsonify(dict(
-                message="Failed to upload keepalived configuration. "
-                        "Unable to chmod check script.",
-                details=e.output)), 500)
 
     res = flask.make_response(flask.jsonify({
         'message': 'OK'}), 200)

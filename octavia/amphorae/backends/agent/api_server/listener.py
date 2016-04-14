@@ -18,6 +18,7 @@ import logging
 import os
 import re
 import shutil
+import stat
 import subprocess
 
 import flask
@@ -98,7 +99,10 @@ def upload_haproxy_config(amphora_id, listener_id):
         os.makedirs(util.haproxy_dir(listener_id))
 
     name = os.path.join(util.haproxy_dir(listener_id), 'haproxy.cfg.new')
-    with open(name, 'w') as file:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    # mode 00600
+    mode = stat.S_IRUSR | stat.S_IWUSR
+    with os.fdopen(os.open(name, flags, mode), 'w') as file:
         b = stream.read(BUFFER)
         while (b):
             file.write(b)
@@ -121,8 +125,12 @@ def upload_haproxy_config(amphora_id, listener_id):
     os.rename(name, util.config_path(listener_id))
 
     use_upstart = util.CONF.haproxy_amphora.use_upstart
-    if not os.path.exists(util.init_path(listener_id)):
-        with open(util.init_path(listener_id), 'w') as text_file:
+    file = util.init_path(listener_id)
+    # mode 00755
+    mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
+            stat.S_IROTH | stat.S_IXOTH)
+    if not os.path.exists(file):
+        with os.fdopen(os.open(file, flags, mode), 'w') as text_file:
             template = UPSTART_TEMPLATE if use_upstart else SYSVINIT_TEMPLATE
             text = template.render(
                 peer_name=peer_name,
@@ -135,13 +143,9 @@ def upload_haproxy_config(amphora_id, listener_id):
             text_file.write(text)
 
     if not use_upstart:
-        # make init.d script executable
-        file = util.init_path(listener_id)
-        permcmd = ("chmod 755 {file}".format(file=file))
         insrvcmd = ("insserv {file}".format(file=file))
 
         try:
-            subprocess.check_output(permcmd.split(), stderr=subprocess.STDOUT)
             subprocess.check_output(insrvcmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             LOG.debug("Failed to make %(file)s executable: %(err)s",
@@ -313,12 +317,15 @@ def upload_certificate(listener_id, filename):
         os.makedirs(_cert_dir(listener_id))
 
     stream = Wrapped(flask.request.stream)
-    with open(_cert_file_path(listener_id, filename), 'w') as crt_file:
+    file = _cert_file_path(listener_id, filename)
+    flags = os.O_WRONLY | os.O_CREAT
+    # mode 00600
+    mode = stat.S_IRUSR | stat.S_IWUSR
+    with os.fdopen(os.open(file, flags, mode), 'w') as crt_file:
         b = stream.read(BUFFER)
         while (b):
             crt_file.write(b)
             b = stream.read(BUFFER)
-        os.fchmod(crt_file.fileno(), 0o600)  # only accessible by owner
 
     resp = flask.jsonify(dict(message='OK'))
     resp.headers['ETag'] = stream.get_md5()
