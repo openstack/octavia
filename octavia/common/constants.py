@@ -258,6 +258,11 @@ SERVICE_AUTH = 'service_auth'
 
 RPC_NAMESPACE_CONTROLLER_AGENT = 'controller'
 
+# Build Type Priority
+LB_CREATE_FAILOVER_PRIORITY = 20
+LB_CREATE_NORMAL_PRIORITY = 40
+LB_CREATE_SPARES_POOL_PRIORITY = 60
+BUILD_TYPE_PRIORITY = 'build_type_priority'
 
 # Active standalone roles and topology
 TOPOLOGY_SINGLE = 'SINGLE'

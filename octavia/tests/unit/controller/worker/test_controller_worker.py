@@ -133,7 +133,10 @@ class TestControllerWorker(base.TestCase):
         amp = cw.create_amphora()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with('TEST'))
+            assert_called_once_with(
+                'TEST',
+                store={constants.BUILD_TYPE_PRIORITY:
+                       constants.LB_CREATE_SPARES_POOL_PRIORITY}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -400,7 +403,8 @@ class TestControllerWorker(base.TestCase):
         mock_taskflow_load.return_value = mock_eng
         store = {
             constants.LOADBALANCER_ID: LB_ID,
-            'update_dict': {'topology': constants.TOPOLOGY_SINGLE}
+            'update_dict': {'topology': constants.TOPOLOGY_SINGLE},
+            constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY
         }
         setattr(mock_lb_repo_get.return_value, 'listeners', [])
 
@@ -441,7 +445,8 @@ class TestControllerWorker(base.TestCase):
         mock_taskflow_load.return_value = mock_eng
         store = {
             constants.LOADBALANCER_ID: LB_ID,
-            'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY}
+            'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY},
+            constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY
         }
         setattr(mock_lb_repo_get.return_value, 'listeners', [])
 
@@ -483,7 +488,8 @@ class TestControllerWorker(base.TestCase):
         mock_taskflow_load.return_value = mock_eng
         store = {
             constants.LOADBALANCER_ID: LB_ID,
-            'update_dict': {'topology': constants.TOPOLOGY_SINGLE}
+            'update_dict': {'topology': constants.TOPOLOGY_SINGLE},
+            constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY
         }
 
         cw = controller_worker.ControllerWorker()
@@ -532,7 +538,8 @@ class TestControllerWorker(base.TestCase):
         mock_taskflow_load.return_value = mock_eng
         store = {
             constants.LOADBALANCER_ID: LB_ID,
-            'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY}
+            'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY},
+            constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY
         }
 
         cw = controller_worker.ControllerWorker()
@@ -1081,7 +1088,10 @@ class TestControllerWorker(base.TestCase):
                 _flow_mock,
                 store={constants.FAILED_AMPHORA: _amphora_mock,
                        constants.LOADBALANCER_ID:
-                           _amphora_mock.load_balancer_id}))
+                           _amphora_mock.load_balancer_id,
+                       constants.BUILD_TYPE_PRIORITY:
+                           constants.LB_CREATE_FAILOVER_PRIORITY
+                       }))
 
         _flow_mock.run.assert_called_once_with()
 

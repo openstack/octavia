@@ -80,8 +80,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         :returns: amphora_id
         """
-        create_amp_tf = self._taskflow_load(self._amphora_flows.
-                                            get_create_amphora_flow())
+        create_amp_tf = self._taskflow_load(
+            self._amphora_flows.get_create_amphora_flow(),
+            store={constants.BUILD_TYPE_PRIORITY:
+                   constants.LB_CREATE_SPARES_POOL_PRIORITY}
+        )
         with tf_logging.DynamicLoggingListener(
                 create_amp_tf, log=LOG,
                 hide_inputs_outputs_of=self._exclude_result_logging_tasks):
@@ -261,7 +264,9 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :raises NoSuitableAmphoraException: Unable to allocate an Amphora.
         """
 
-        store = {constants.LOADBALANCER_ID: load_balancer_id}
+        store = {constants.LOADBALANCER_ID: load_balancer_id,
+                 constants.BUILD_TYPE_PRIORITY:
+                 constants.LB_CREATE_NORMAL_PRIORITY}
 
         topology = CONF.controller_worker.loadbalancer_topology
 
@@ -622,7 +627,10 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                 self._amphora_flows.get_failover_flow(role=amp.role,
                                                       status=amp.status),
                 store={constants.FAILED_AMPHORA: amp,
-                       constants.LOADBALANCER_ID: amp.load_balancer_id})
+                       constants.LOADBALANCER_ID: amp.load_balancer_id,
+                       constants.BUILD_TYPE_PRIORITY:
+                       constants.LB_CREATE_FAILOVER_PRIORITY
+                       })
             with tf_logging.DynamicLoggingListener(
                     failover_amphora_tf, log=LOG,
                     hide_inputs_outputs_of=self._exclude_result_logging_tasks):

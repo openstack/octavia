@@ -53,16 +53,17 @@ class AmphoraFlows(object):
                     requires=(constants.AMPHORA_ID, constants.SERVER_PEM)))
 
             create_amphora_flow.add(compute_tasks.CertComputeCreate(
-                requires=(constants.AMPHORA_ID, constants.SERVER_PEM),
+                requires=(constants.AMPHORA_ID, constants.SERVER_PEM,
+                          constants.BUILD_TYPE_PRIORITY),
                 provides=constants.COMPUTE_ID))
         else:
             create_amphora_flow.add(compute_tasks.ComputeCreate(
-                requires=constants.AMPHORA_ID,
+                requires=(constants.AMPHORA_ID, constants.BUILD_TYPE_PRIORITY),
                 provides=constants.COMPUTE_ID))
         create_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
         create_amphora_flow.add(compute_tasks.ComputeWait(
-            requires=constants.COMPUTE_ID,
+            requires=(constants.COMPUTE_ID, constants.AMPHORA_ID),
             provides=constants.COMPUTE_OBJ))
         create_amphora_flow.add(database_tasks.UpdateAmphoraInfo(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
@@ -130,12 +131,14 @@ class AmphoraFlows(object):
                 create_amp_for_lb_subflow.add(compute_tasks.CertComputeCreate(
                     name=sf_name + '-' + constants.CERT_COMPUTE_CREATE,
                     requires=(constants.AMPHORA_ID, constants.SERVER_PEM,
-                              constants.SERVER_GROUP_ID),
+                              constants.SERVER_GROUP_ID,
+                              constants.BUILD_TYPE_PRIORITY),
                     provides=constants.COMPUTE_ID))
             else:
                 create_amp_for_lb_subflow.add(compute_tasks.CertComputeCreate(
                     name=sf_name + '-' + constants.CERT_COMPUTE_CREATE,
-                    requires=(constants.AMPHORA_ID, constants.SERVER_PEM),
+                    requires=(constants.AMPHORA_ID, constants.SERVER_PEM,
+                              constants.BUILD_TYPE_PRIORITY),
                     provides=constants.COMPUTE_ID))
         else:
 
@@ -143,12 +146,14 @@ class AmphoraFlows(object):
                         ) and anti_affinity:
                 create_amp_for_lb_subflow.add(compute_tasks.ComputeCreate(
                     name=sf_name + '-' + constants.COMPUTE_CREATE,
-                    requires=(constants.AMPHORA_ID, constants.SERVER_GROUP_ID),
+                    requires=(constants.AMPHORA_ID, constants.SERVER_GROUP_ID,
+                              constants.BUILD_TYPE_PRIORITY),
                     provides=constants.COMPUTE_ID))
             else:
                 create_amp_for_lb_subflow.add(compute_tasks.ComputeCreate(
                     name=sf_name + '-' + constants.COMPUTE_CREATE,
-                    requires=constants.AMPHORA_ID,
+                    requires=(constants.AMPHORA_ID,
+                              constants.BUILD_TYPE_PRIORITY),
                     provides=constants.COMPUTE_ID))
 
         create_amp_for_lb_subflow.add(database_tasks.UpdateAmphoraComputeId(
@@ -159,7 +164,7 @@ class AmphoraFlows(object):
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
         create_amp_for_lb_subflow.add(compute_tasks.ComputeWait(
             name=sf_name + '-' + constants.COMPUTE_WAIT,
-            requires=constants.COMPUTE_ID,
+            requires=(constants.COMPUTE_ID, constants.AMPHORA_ID),
             provides=constants.COMPUTE_OBJ))
         create_amp_for_lb_subflow.add(database_tasks.UpdateAmphoraInfo(
             name=sf_name + '-' + constants.UPDATE_AMPHORA_INFO,

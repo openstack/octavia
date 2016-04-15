@@ -20,6 +20,8 @@ Octavia base exception handling.
 from oslo_utils import excutils
 from webob import exc
 
+from octavia.i18n import _LE
+
 
 class OctaviaException(Exception):
     """Base Octavia Exception.
@@ -155,6 +157,10 @@ class TooManyL7RulesOnL7Policy(APIException):
 
 class ComputeBuildException(OctaviaException):
     message = _('Failed to build compute instance.')
+
+
+class ComputeBuildQueueTimeoutException(OctaviaException):
+    message = _LE('Failed to get an amphora build slot.')
 
 
 class ComputeDeleteException(OctaviaException):
