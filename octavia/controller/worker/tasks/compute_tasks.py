@@ -55,6 +55,10 @@ class ComputeCreate(BaseComputeTask):
         :returns: an amphora
         """
         ports = ports or []
+        network_ids = CONF.controller_worker.amp_boot_network_list
+        # TODO(ptoohill) amp_network is now deprecated, remove when ready...
+        if CONF.controller_worker.amp_network:
+            network_ids.append(CONF.controller_worker.amp_network)
         config_drive_files = config_drive_files or {}
         user_data = None
         LOG.debug("Compute create execute for amphora with id %s", amphora_id)
@@ -81,7 +85,7 @@ class ComputeCreate(BaseComputeTask):
                 image_tag=CONF.controller_worker.amp_image_tag,
                 key_name=key_name,
                 sec_groups=CONF.controller_worker.amp_secgroup_list,
-                network_ids=[CONF.controller_worker.amp_network],
+                network_ids=network_ids,
                 port_ids=[port.id for port in ports],
                 config_drive_files=config_drive_files,
                 user_data=user_data,

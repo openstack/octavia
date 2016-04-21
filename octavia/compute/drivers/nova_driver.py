@@ -198,26 +198,19 @@ class VirtualMachineManager(compute_base.ComputeBase):
         try:
             inf_list = nova_response.interface_list()
             for interface in inf_list:
-                if (getattr(interface, 'net_id') ==
-                        CONF.controller_worker.amp_network):
+                net_id = getattr(interface, 'net_id')
+                if net_id in CONF.controller_worker.amp_boot_network_list:
+                    lb_network_ip = getattr(
+                        interface, 'fixed_ips')[0]['ip_address']
+                    break
+                elif net_id == CONF.controller_worker.amp_network:
+                    # TODO(ptoohill) deprecated, remove this block when ready..
                     lb_network_ip = getattr(
                         interface, 'fixed_ips')[0]['ip_address']
                     break
         except Exception:
             LOG.debug('Extracting virtual interfaces through nova '
                       'os-interfaces extension failed.')
-
-        if not lb_network_ip:
-            # Try os-networks extension
-            # TODO(bharath) Remove when RAX doesn't need that any longer
-            try:
-                net_name = self._nova_client.networks.get(
-                    CONF.controller_worker.amp_network).label
-                if net_name in nova_response.addresses:
-                    lb_network_ip = nova_response.addresses[
-                        net_name][0]['addr']
-            except Exception:
-                LOG.exception(_LE('Error retrieving nova virtual interfaces'))
 
         response = models.Amphora(
             compute_id=getattr(nova_response, 'id'),

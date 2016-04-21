@@ -65,7 +65,7 @@ class TestNetworkTasks(base.TestCase):
         self.amphora_mock.compute_id = COMPUTE_ID
         self.amphora_mock.status = constants.AMPHORA_ALLOCATED
         conf = oslo_fixture.Config(cfg.CONF)
-        conf.config(group="controller_worker", amp_network='netid')
+        conf.config(group="controller_worker", amp_boot_network_list=['netid'])
 
         super(TestNetworkTasks, self).setUp()
 
