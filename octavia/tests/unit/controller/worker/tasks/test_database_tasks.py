@@ -494,9 +494,7 @@ class TestDatabaseTasks(base.TestCase):
             ha_ip=HA_IP,
             vrrp_port_id=VRRP_PORT_ID,
             ha_port_id=HA_PORT_ID,
-            role=AMP_ROLE,
-            vrrp_id=VRRP_ID,
-            vrrp_priority=VRRP_PRIORITY)
+            vrrp_id=VRRP_ID)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.associate')
     def test_associate_failover_amphora_with_lb_id(

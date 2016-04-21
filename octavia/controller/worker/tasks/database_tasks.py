@@ -379,14 +379,13 @@ class UpdateAmpFailoverDetails(BaseDatabaseTask):
         :param loadbalancer_id: The load balancer ID to lookup
         :param mps_data: The load balancer ID to lookup
         """
+        # role and vrrp_priority will be updated later.
         self.repos.amphora.update(db_apis.get_session(), amphora.id,
                                   vrrp_ip=amp_data.vrrp_ip,
                                   ha_ip=amp_data.ha_ip,
                                   vrrp_port_id=amp_data.vrrp_port_id,
                                   ha_port_id=amp_data.ha_port_id,
-                                  role=amp_data.role,
-                                  vrrp_id=amp_data.vrrp_id,
-                                  vrrp_priority=amp_data.vrrp_priority)
+                                  vrrp_id=amp_data.vrrp_id)
 
 
 class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
