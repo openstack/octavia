@@ -172,12 +172,12 @@ class HealthMonitor(BaseDataModel):
 
 
 class Pool(BaseDataModel):
-
     def __init__(self, id=None, project_id=None, name=None, description=None,
                  protocol=None, lb_algorithm=None, enabled=None,
                  operating_status=None, members=None, health_monitor=None,
                  session_persistence=None, load_balancer_id=None,
-                 load_balancer=None, listeners=None, l7policies=None):
+                 load_balancer=None, listeners=None, l7policies=None,
+                 created_at=None, updated_at=None):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -193,6 +193,8 @@ class Pool(BaseDataModel):
         self.session_persistence = session_persistence
         self.listeners = listeners or []
         self.l7policies = l7policies or []
+        self.created_at = created_at
+        self.updated_at = updated_at
 
     def update(self, update_dict):
         for key, value in update_dict.items():
@@ -236,7 +238,8 @@ class Member(BaseDataModel):
 
     def __init__(self, id=None, project_id=None, pool_id=None, ip_address=None,
                  protocol_port=None, weight=None, enabled=None,
-                 subnet_id=None, operating_status=None, pool=None):
+                 subnet_id=None, operating_status=None, pool=None,
+                 created_at=None, updated_at=None):
         self.id = id
         self.project_id = project_id
         self.pool_id = pool_id
@@ -247,6 +250,8 @@ class Member(BaseDataModel):
         self.subnet_id = subnet_id
         self.operating_status = operating_status
         self.pool = pool
+        self.created_at = created_at
+        self.updated_at = updated_at
 
     def delete(self):
         for mem in self.pool.members:
@@ -263,7 +268,8 @@ class Listener(BaseDataModel):
                  enabled=None, provisioning_status=None, operating_status=None,
                  tls_certificate_id=None, stats=None, default_pool=None,
                  load_balancer=None, sni_containers=None, peer_port=None,
-                 l7policies=None, pools=None, insert_headers=None):
+                 l7policies=None, pools=None, insert_headers=None,
+                 created_at=None, updated_at=None):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -285,6 +291,8 @@ class Listener(BaseDataModel):
         self.l7policies = l7policies or []
         self.insert_headers = insert_headers or {}
         self.pools = pools or []
+        self.created_at = created_at
+        self.updated_at = updated_at
 
     def update(self, update_dict):
         for key, value in update_dict.items():
@@ -322,7 +330,8 @@ class LoadBalancer(BaseDataModel):
     def __init__(self, id=None, project_id=None, name=None, description=None,
                  provisioning_status=None, operating_status=None, enabled=None,
                  topology=None, vip=None, listeners=None, amphorae=None,
-                 pools=None, vrrp_group=None, server_group_id=None):
+                 pools=None, vrrp_group=None, server_group_id=None,
+                 created_at=None, updated_at=None):
 
         self.id = id
         self.project_id = project_id
@@ -338,6 +347,8 @@ class LoadBalancer(BaseDataModel):
         self.amphorae = amphorae or []
         self.pools = pools or []
         self.server_group_id = server_group_id
+        self.created_at = created_at
+        self.updated_at = updated_at
 
 
 class VRRPGroup(BaseDataModel):

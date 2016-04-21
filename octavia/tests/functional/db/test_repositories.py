@@ -132,6 +132,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del lb_dm_dict['listeners']
         del lb_dm_dict['amphorae']
         del lb_dm_dict['pools']
+        del lb_dm_dict['created_at']
+        del lb_dm_dict['updated_at']
         self.assertEqual(lb, lb_dm_dict)
         vip_dm_dict = lb_dm.vip.to_dict()
         vip_dm_dict['load_balancer_id'] = lb_dm.id
@@ -155,6 +157,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['load_balancer']
         del pool_dm_dict['load_balancer_id']
         del pool_dm_dict['l7policies']
+        del pool_dm_dict['created_at']
+        del pool_dm_dict['updated_at']
         self.assertEqual(pool, pool_dm_dict)
         new_listener = self.repos.listener.get(self.session,
                                                id=self.listener.id)
@@ -181,6 +185,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['load_balancer']
         del pool_dm_dict['load_balancer_id']
         del pool_dm_dict['l7policies']
+        del pool_dm_dict['created_at']
+        del pool_dm_dict['updated_at']
         self.assertEqual(pool, pool_dm_dict)
         sp_dm_dict = pool_dm.session_persistence.to_dict()
         del sp_dm_dict['pool']
@@ -213,6 +219,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['load_balancer']
         del pool_dm_dict['load_balancer_id']
         del pool_dm_dict['l7policies']
+        del pool_dm_dict['created_at']
+        del pool_dm_dict['updated_at']
         pool.update(update_pool)
         self.assertEqual(pool, pool_dm_dict)
         self.assertIsNone(new_pool_dm.session_persistence)
@@ -243,6 +251,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['load_balancer']
         del pool_dm_dict['load_balancer_id']
         del pool_dm_dict['l7policies']
+        del pool_dm_dict['created_at']
+        del pool_dm_dict['updated_at']
         pool.update(update_pool)
         self.assertEqual(pool, pool_dm_dict)
         sp_dm_dict = new_pool_dm.session_persistence.to_dict()

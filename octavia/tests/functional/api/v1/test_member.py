@@ -92,6 +92,8 @@ class TestMember(base.BaseAPITest):
                                         '10.0.0.1', 80)
         self.assertEqual('10.0.0.1', api_member.get('ip_address'))
         self.assertEqual(80, api_member.get('protocol_port'))
+        self.assertIsNotNone(api_member.get('created_at'))
+        self.assertIsNone(api_member.get('updated_at'))
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
                                       constants.ONLINE)
@@ -197,7 +199,8 @@ class TestMember(base.BaseAPITest):
         self.set_lb_status(self.lb.get('id'))
         response_body = response.json
         self.assertEqual(old_port, response_body.get('protocol_port'))
-
+        self.assertEqual(api_member.get('created_at'),
+                         response_body.get('created_at'))
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.ACTIVE,
                                       constants.ONLINE)
@@ -250,10 +253,13 @@ class TestMember(base.BaseAPITest):
             self.pool_with_listener.get('id'),
             '10.0.0.1', 80)
         self.set_lb_status(self.lb.get('id'))
-        response = self.get(self.member_path.format(
-            member_id=api_member.get('id')))
+        member = self.get(self.member_path.format(
+            member_id=api_member.get('id'))).json
         api_member['operating_status'] = constants.ONLINE
-        self.assertEqual(api_member, response.json)
+
+        self.assertIsNone(api_member.pop('updated_at'))
+        self.assertIsNotNone(member.pop('updated_at'))
+        self.assertEqual(api_member, member)
         self.delete(self.member_path.format(member_id=api_member.get('id')))
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
@@ -280,10 +286,13 @@ class TestMember(base.BaseAPITest):
             self.pool_with_listener.get('id'),
             '10.0.0.1', 80)
         self.set_lb_status(self.lb.get('id'))
-        response = self.get(self.member_path.format(
-            member_id=api_member.get('id')))
+        member = self.get(self.member_path.format(
+            member_id=api_member.get('id'))).json
         api_member['operating_status'] = constants.ONLINE
-        self.assertEqual(api_member, response.json)
+
+        self.assertIsNone(api_member.pop('updated_at'))
+        self.assertIsNotNone(member.pop('updated_at'))
+        self.assertEqual(api_member, member)
         self.handler_mock().member.delete.side_effect = Exception()
         self.delete(self.member_path.format(
             member_id=api_member.get('id')))

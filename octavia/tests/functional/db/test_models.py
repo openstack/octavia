@@ -165,15 +165,21 @@ class ModelTestMixin(object):
 class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_create(self):
-        self.create_pool(self.session)
+        pool = self.create_pool(self.session)
+
+        self.assertIsNotNone(pool.created_at)
+        self.assertIsNone(pool.updated_at)
 
     def test_update(self):
         pool = self.create_pool(self.session)
+        self.assertIsNone(pool.updated_at)
+
         id = pool.id
-        pool.name = 'test1'
+        pool.enabled = False
         new_pool = self.session.query(
             models.Pool).filter_by(id=id).first()
-        self.assertEqual('test1', new_pool.name)
+        self.assertFalse(new_pool.enabled)
+        self.assertIsNotNone(new_pool.updated_at)
 
     def test_delete(self):
         pool = self.create_pool(self.session)
@@ -233,15 +239,22 @@ class MemberModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.pool = self.create_pool(self.session)
 
     def test_create(self):
-        self.create_member(self.session, self.pool.id)
+        member = self.create_member(self.session, self.pool.id)
+
+        self.assertIsNotNone(member.created_at)
+        self.assertIsNone(member.updated_at)
 
     def test_update(self):
         member = self.create_member(self.session, self.pool.id)
+        self.assertIsNone(member.updated_at)
+
         member_id = member.id
-        member.name = 'test1'
+        member.enabled = False
+
         new_member = self.session.query(
             models.Member).filter_by(id=member_id).first()
-        self.assertEqual('test1', new_member.name)
+        self.assertFalse(new_member.enabled)
+        self.assertIsNotNone(new_member.updated_at)
 
     def test_delete(self):
         member = self.create_member(self.session, self.pool.id)
@@ -303,15 +316,21 @@ class SessionPersistenceModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_create(self):
-        self.create_listener(self.session)
+        listener = self.create_listener(self.session)
+
+        self.assertIsNotNone(listener.created_at)
+        self.assertIsNone(listener.updated_at)
 
     def test_update(self):
         listener = self.create_listener(self.session)
+        self.assertIsNone(listener.updated_at)
+
         listener_id = listener.id
         listener.name = 'test1'
         new_listener = self.session.query(
             models.Listener).filter_by(id=listener_id).first()
         self.assertEqual('test1', new_listener.name)
+        self.assertIsNotNone(new_listener.updated_at)
 
     def test_delete(self):
         listener = self.create_listener(self.session)
@@ -449,15 +468,21 @@ class HealthMonitorModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 class LoadBalancerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_create(self):
-        self.create_load_balancer(self.session)
+        load_balancer = self.create_load_balancer(self.session)
+
+        self.assertIsNotNone(load_balancer.created_at)
+        self.assertIsNone(load_balancer.updated_at)
 
     def test_update(self):
         load_balancer = self.create_load_balancer(self.session)
+        self.assertIsNone(load_balancer.updated_at)
+
         lb_id = load_balancer.id
-        load_balancer.name = 'test1'
+        load_balancer.enabled = False
         new_load_balancer = self.session.query(
             models.LoadBalancer).filter_by(id=lb_id).first()
-        self.assertEqual('test1', new_load_balancer.name)
+        self.assertFalse(new_load_balancer.enabled)
+        self.assertIsNotNone(new_load_balancer.updated_at)
 
     def test_delete(self):
         load_balancer = self.create_load_balancer(self.session)
