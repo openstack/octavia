@@ -188,7 +188,7 @@ function octavia_start {
     build_mgmt_network
     OCTAVIA_AMP_NETWORK_ID=$(neutron net-list | awk '/ lb-mgmt-net / {print $2}')
 
-    iniset $OCTAVIA_CONF controller_worker amp_boot_network_list [${OCTAVIA_AMP_NETWORK_ID}]
+    iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
 
     if is_service_enabled tempest; then
         configure_octavia_tempest ${OCTAVIA_AMP_NETWORK_ID}
