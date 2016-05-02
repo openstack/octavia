@@ -490,8 +490,9 @@ class TestUpdateStatsDb(base.TestCase):
         self.sm.update_stats(health)
 
         self.listener_stats_repo.replace.assert_called_once_with(
-            'blah', self.listener_id, bytes_in=self.bytes_in,
-            bytes_out=self.bytes_out, active_connections=self.active_conns,
+            'blah', self.listener_id, self.loadbalancer_id,
+            bytes_in=self.bytes_in, bytes_out=self.bytes_out,
+            active_connections=self.active_conns,
             total_connections=self.total_conns)
         self.event_client.cast.assert_called_once_with(
             {}, 'update_info', container={

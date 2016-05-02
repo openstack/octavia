@@ -132,10 +132,11 @@ class SessionPersistence(BaseDataModel):
 
 class ListenerStatistics(BaseDataModel):
 
-    def __init__(self, listener_id=None, bytes_in=None, bytes_out=None,
-                 active_connections=None, total_connections=None,
-                 listener=None):
+    def __init__(self, listener_id=None, amphora_id=None, bytes_in=None,
+                 bytes_out=None, active_connections=None,
+                 total_connections=None, listener=None):
         self.listener_id = listener_id
+        self.amphora_id = amphora_id
         self.bytes_in = bytes_in
         self.bytes_out = bytes_out
         self.active_connections = active_connections

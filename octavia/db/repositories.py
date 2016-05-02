@@ -451,17 +451,20 @@ class ListenerRepository(BaseRepository):
 class ListenerStatisticsRepository(BaseRepository):
     model_class = models.ListenerStatistics
 
-    def replace(self, session, listener_id, **model_kwargs):
+    def replace(self, session, listener_id, amphora_id, **model_kwargs):
         """replace or insert listener into database."""
         with session.begin(subtransactions=True):
             count = session.query(self.model_class).filter_by(
-                listener_id=listener_id).count()
+                listener_id=listener_id, amphora_id=amphora_id).count()
             if count:
                 session.query(self.model_class).filter_by(
-                    listener_id=listener_id).update(model_kwargs,
-                                                    synchronize_session=False)
+                    listener_id=listener_id,
+                    amphora_id=amphora_id).update(
+                    model_kwargs,
+                    synchronize_session=False)
             else:
                 model_kwargs['listener_id'] = listener_id
+                model_kwargs['amphora_id'] = amphora_id
                 self.create(session, **model_kwargs)
 
     def update(self, session, listener_id, **model_kwargs):

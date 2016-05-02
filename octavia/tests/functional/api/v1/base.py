@@ -14,6 +14,7 @@
 
 import mock
 from oslo_config import cfg
+from oslo_utils import uuidutils
 import pecan
 import pecan.testing
 
@@ -55,6 +56,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.listener_stats_repo = repositories.ListenerStatisticsRepository()
         self.pool_repo = repositories.PoolRepository()
         self.member_repo = repositories.MemberRepository()
+        self.amphora_repo = repositories.AmphoraRepository()
         patcher = mock.patch('octavia.api.v1.handlers.controller_simulator.'
                              'handler.SimulatedControllerHandler')
         self.handler_mock = patcher.start()
@@ -125,11 +127,23 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         response = self.post(path, req_dict)
         return response.json
 
-    def create_listener_stats(self, listener_id):
+    def create_listener_stats(self, listener_id, amphora_id):
         db_ls = self.listener_stats_repo.create(
-            db_api.get_session(), listener_id=listener_id, bytes_in=0,
+            db_api.get_session(), listener_id=listener_id,
+            amphora_id=amphora_id, bytes_in=0,
             bytes_out=0, active_connections=0, total_connections=0)
         return db_ls.to_dict()
+
+    def create_amphora(self, amphora_id, loadbalancer_id, **optionals):
+        # We need to default these values in the request.
+        opts = {'compute_id': uuidutils.generate_uuid(),
+                'status': constants.ACTIVE}
+        opts.update(optionals)
+        amphora = self.amphora_repo.create(
+            self.session, id=amphora_id,
+            load_balancer_id=loadbalancer_id,
+            **opts)
+        return amphora
 
     def get_listener(self, lb_id, listener_id):
         path = self.LISTENER_PATH.format(lb_id=lb_id, listener_id=listener_id)

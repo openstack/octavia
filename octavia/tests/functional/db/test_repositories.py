@@ -644,6 +644,15 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             provisioning_status=constants.ACTIVE, enabled=True, peer_port=1025)
         return listener
 
+    def create_amphora(self, amphora_id, loadbalancer_id):
+        amphora = self.amphora_repo.create(self.session, id=amphora_id,
+                                           load_balancer_id=loadbalancer_id,
+                                           compute_id=self.FAKE_UUID_3,
+                                           status=constants.ACTIVE,
+                                           vrrp_ip=self.FAKE_IP,
+                                           lb_network_ip=self.FAKE_IP)
+        return amphora
+
     def create_loadbalancer(self, lb_id):
         lb = self.lb_repo.create(self.session, id=lb_id,
                                  project_id=self.FAKE_UUID_2, name="lb_name",
@@ -771,8 +780,11 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
 
     def test_delete_with_stats(self):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
+        lb = self.create_loadbalancer(uuidutils.generate_uuid())
+        amphora = self.create_amphora(uuidutils.generate_uuid(), lb.id)
         stats = self.listener_stats_repo.create(
-            self.session, listener_id=listener.id, bytes_in=1, bytes_out=1,
+            self.session, listener_id=listener.id, amphora_id=amphora.id,
+            bytes_in=1, bytes_out=1,
             active_connections=1, total_connections=1)
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIsNotNone(new_listener)
@@ -812,8 +824,12 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
                                         default_pool_id=pool.id)
         sni = self.sni_repo.create(self.session, listener_id=listener.id,
                                    tls_container_id=self.FAKE_UUID_3)
+        lb = self.create_loadbalancer(uuidutils.generate_uuid())
+        amphora = self.create_amphora(uuidutils.generate_uuid(), lb.id)
         stats = self.listener_stats_repo.create(
-            self.session, listener_id=listener.id, bytes_in=1, bytes_out=1,
+            self.session, listener_id=listener.id,
+            amphora_id=amphora.id,
+            bytes_in=1, bytes_out=1,
             active_connections=1, total_connections=1)
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIsNotNone(new_listener)
@@ -857,22 +873,38 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
             protocol=constants.PROTOCOL_HTTP, protocol_port=80,
             connection_limit=1, provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True, peer_port=1025)
+        self.lb = self.lb_repo.create(self.session,
+                                      id=uuidutils.generate_uuid(),
+                                      project_id=self.FAKE_UUID_2,
+                                      name="lb_name",
+                                      description="lb_description",
+                                      provisioning_status=constants.ACTIVE,
+                                      operating_status=constants.ONLINE,
+                                      enabled=True)
+        self.amphora = self.amphora_repo.create(self.session,
+                                                id=uuidutils.generate_uuid(),
+                                                load_balancer_id=self.lb.id,
+                                                compute_id=self.FAKE_UUID_3,
+                                                status=constants.ACTIVE,
+                                                vrrp_ip=self.FAKE_IP,
+                                                lb_network_ip=self.FAKE_IP)
 
-    def create_listener_stats(self, listener_id):
+    def create_listener_stats(self, listener_id, amphora_id):
         stats = self.listener_stats_repo.create(
-            self.session, listener_id=listener_id, bytes_in=1, bytes_out=1,
+            self.session, listener_id=listener_id, amphora_id=amphora_id,
+            bytes_in=1, bytes_out=1,
             active_connections=1, total_connections=1)
         return stats
 
     def test_get(self):
-        stats = self.create_listener_stats(self.listener.id)
+        stats = self.create_listener_stats(self.listener.id, self.amphora.id)
         new_stats = self.listener_stats_repo.get(self.session,
                                                  listener_id=stats.listener_id)
         self.assertIsInstance(new_stats, models.ListenerStatistics)
         self.assertEqual(stats.listener_id, new_stats.listener_id)
 
     def test_create(self):
-        stats = self.create_listener_stats(self.listener.id)
+        stats = self.create_listener_stats(self.listener.id, self.amphora.id)
         new_stats = self.listener_stats_repo.get(self.session,
                                                  listener_id=stats.listener_id)
         self.assertEqual(self.listener.id, new_stats.listener_id)
@@ -883,7 +915,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
 
     def test_update(self):
         bytes_in_change = 2
-        stats = self.create_listener_stats(self.listener.id)
+        stats = self.create_listener_stats(self.listener.id, self.amphora.id)
         self.listener_stats_repo.update(self.session, stats.listener_id,
                                         bytes_in=bytes_in_change)
         new_stats = self.listener_stats_repo.get(self.session,
@@ -892,7 +924,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         self.assertEqual(stats.listener_id, new_stats.listener_id)
 
     def test_delete(self):
-        stats = self.create_listener_stats(self.listener.id)
+        stats = self.create_listener_stats(self.listener.id, self.amphora.id)
         self.listener_stats_repo.delete(self.session,
                                         listener_id=stats.listener_id)
         self.assertIsNone(self.listener_stats_repo.get(
@@ -911,6 +943,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         self.assertIsNone(self.listener_stats_repo.get(
             self.session, listener_id=self.listener.id))
         self.listener_stats_repo.replace(self.session, self.listener.id,
+                                         self.amphora.id,
                                          bytes_in=bytes_in,
                                          bytes_out=bytes_out,
                                          active_connections=active_conns,
@@ -930,6 +963,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         active_conns_2 = random.randrange(1000000000)
         total_conns_2 = random.randrange(1000000000)
         self.listener_stats_repo.replace(self.session, self.listener.id,
+                                         self.amphora.id,
                                          bytes_in=bytes_in_2,
                                          bytes_out=bytes_out_2,
                                          active_connections=active_conns_2,

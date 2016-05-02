@@ -249,6 +249,7 @@ class UpdateStatsDb(object):
         """
         session = db_api.get_session()
 
+        amphora_id = health_message['id']
         listeners = health_message['listeners']
         for listener_id, listener in six.iteritems(listeners):
 
@@ -257,6 +258,8 @@ class UpdateStatsDb(object):
                      'active_connections': stats['conns'],
                      'total_connections': stats['totconns']}
             LOG.debug("Updating listener stats in db and sending event.")
-            LOG.debug("Listener %s stats: %s", listener_id, stats)
-            self.listener_stats_repo.replace(session, listener_id, **stats)
+            LOG.debug("Listener %s / Amphora %s stats: %s",
+                      listener_id, amphora_id, stats)
+            self.listener_stats_repo.replace(
+                session, listener_id, amphora_id, **stats)
             self.emit('listener_stats', listener_id, stats)

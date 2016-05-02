@@ -50,8 +50,10 @@ class ModelTestMixin(object):
         kwargs.update(overrides)
         return self._insert(session, models.Listener, kwargs)
 
-    def create_listener_statistics(self, session, listener_id, **overrides):
+    def create_listener_statistics(self, session, listener_id, amphora_id,
+                                   **overrides):
         kwargs = {'listener_id': listener_id,
+                  'amphora_id': amphora_id,
                   'bytes_in': 0,
                   'bytes_out': 0,
                   'active_connections': 0,
@@ -331,7 +333,9 @@ class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_listener_statistics_relationship(self):
         listener = self.create_listener(self.session)
-        self.create_listener_statistics(self.session, listener_id=listener.id)
+        amphora = self.create_amphora(self.session)
+        self.create_listener_statistics(self.session, listener_id=listener.id,
+                                        amphora_id=amphora.id)
         new_listener = self.session.query(models.Listener).filter_by(
             id=listener.id).first()
         self.assertIsNotNone(new_listener.stats)
@@ -373,19 +377,23 @@ class ListenerStatisticsModelTest(base.OctaviaDBTestBase, ModelTestMixin):
     def setUp(self):
         super(ListenerStatisticsModelTest, self).setUp()
         self.listener = self.create_listener(self.session)
+        self.amphora = self.create_amphora(self.session)
 
     def test_create(self):
-        self.create_listener_statistics(self.session, self.listener.id)
+        self.create_listener_statistics(self.session, self.listener.id,
+                                        self.amphora.id)
 
     def test_update(self):
-        stats = self.create_listener_statistics(self.session, self.listener.id)
+        stats = self.create_listener_statistics(self.session, self.listener.id,
+                                                self.amphora.id)
         stats.name = 'test1'
         new_stats = self.session.query(models.ListenerStatistics).filter_by(
             listener_id=self.listener.id).first()
         self.assertEqual('test1', new_stats.name)
 
     def test_delete(self):
-        stats = self.create_listener_statistics(self.session, self.listener.id)
+        stats = self.create_listener_statistics(self.session, self.listener.id,
+                                                self.amphora.id)
         with self.session.begin():
             self.session.delete(stats)
             self.session.flush()
@@ -394,7 +402,8 @@ class ListenerStatisticsModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertIsNone(new_stats)
 
     def test_listener_relationship(self):
-        self.create_listener_statistics(self.session, self.listener.id)
+        self.create_listener_statistics(self.session, self.listener.id,
+                                        self.amphora.id)
         new_stats = self.session.query(models.ListenerStatistics).filter_by(
             listener_id=self.listener.id).first()
         self.assertIsNotNone(new_stats.listener)
@@ -800,7 +809,8 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
                                              default_pool_id=self.pool.id,
                                              load_balancer_id=self.lb.id)
         self.stats = self.create_listener_statistics(self.session,
-                                                     self.listener.id)
+                                                     self.listener.id,
+                                                     self.amphora.id)
         self.sni = self.create_sni(self.session, listener_id=self.listener.id)
         self.l7policy = self.create_l7policy(
             self.session, listener_id=self.listener.id,
@@ -1257,7 +1267,8 @@ class TestDataModelManipulations(base.OctaviaDBTestBase, ModelTestMixin):
                                              default_pool_id=self.pool.id,
                                              load_balancer_id=self.lb.id)
         self.stats = self.create_listener_statistics(self.session,
-                                                     self.listener.id)
+                                                     self.listener.id,
+                                                     self.amphora.id)
         self.sni = self.create_sni(self.session, listener_id=self.listener.id)
         self.l7policy = self.create_l7policy(
             self.session, listener_id=self.listener.id,

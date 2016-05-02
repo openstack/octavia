@@ -15,8 +15,11 @@
 from octavia.common import constants
 from octavia.tests.functional.api.v1 import base
 
+from oslo_utils import uuidutils
+
 
 class TestListenerStatistics(base.BaseAPITest):
+    FAKE_UUID_1 = uuidutils.generate_uuid()
 
     def setUp(self):
         super(TestListenerStatistics, self).setUp()
@@ -27,11 +30,16 @@ class TestListenerStatistics(base.BaseAPITest):
         self.set_lb_status(self.lb.get('id'))
         self.ls_path = self.LISTENER_STATS_PATH.format(
             lb_id=self.lb.get('id'), listener_id=self.listener.get('id'))
+        self.amphora = self.create_amphora(uuidutils.generate_uuid(),
+                                           self.lb.get('id'))
 
     def test_get(self):
-        ls = self.create_listener_stats(listener_id=self.listener.get('id'))
+        ls = self.create_listener_stats(listener_id=self.listener.get('id'),
+                                        amphora_id=self.amphora.id)
         ls.pop('listener')
         ls.pop('listener_id')
+        ls.pop('amphora')
+        ls.pop('amphora_id')
         response = self.get(self.ls_path)
         response_body = response.json
         self.assertEqual(ls, response_body)
