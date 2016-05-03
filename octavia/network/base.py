@@ -75,6 +75,10 @@ class PluggedVIPNotFound(NetworkException):
     pass
 
 
+class TimeoutException(NetworkException):
+    pass
+
+
 @six.add_metaclass(abc.ABCMeta)
 class AbstractNetworkDriver(object):
     """This class defines the methods for a fully functional network driver.
@@ -255,5 +259,20 @@ class AbstractNetworkDriver(object):
         :return: dict of octavia.network.data_models.AmphoraNetworkConfig
         keyed off of the amphora id the config is associated with.
         :raises: NotFound, NetworkNotFound, SubnetNotFound, PortNotFound
+        """
+        pass
+
+    @abc.abstractmethod
+    def wait_for_port_detach(self, amphora):
+        """Waits for the amphora ports device_id to be unset.
+
+        This method waits for the ports on an amphora device_id
+        parameter to be '' or None which signifies that nova has
+        finished detaching the port from the instance.
+
+        :param amphora: Amphora to wait for ports to detach.
+        :returns: None
+        :raises TimeoutException: Port did not detach in interval.
+        :raises PortNotFound: Port was not found by neutron.
         """
         pass

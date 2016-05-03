@@ -223,17 +223,40 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
 class AmphoraPostVIPPlug(BaseAmphoraTask):
     """Task to notify the amphora post VIP plug."""
 
-    def execute(self, loadbalancer, amphorae_network_config):
+    def execute(self, amphora, loadbalancer, amphorae_network_config):
         """Execute post_vip_routine."""
         self.amphora_driver.post_vip_plug(
-            loadbalancer, amphorae_network_config)
+            amphora, loadbalancer, amphorae_network_config)
         LOG.debug("Notified amphora of vip plug")
+
+    def revert(self, result, amphora, loadbalancer, *args, **kwargs):
+        """Handle a failed amphora vip plug notification."""
+        if isinstance(result, failure.Failure):
+            return
+        LOG.warning(_LW("Reverting post vip plug."))
+        self.amphora_repo.update(db_apis.get_session(), id=amphora.id,
+                                 status=constants.ERROR)
+        self.loadbalancer_repo.update(db_apis.get_session(),
+                                      id=loadbalancer.id,
+                                      provisioning_status=constants.ERROR)
+
+
+class AmphoraePostVIPPlug(BaseAmphoraTask):
+    """Task to notify the amphorae post VIP plug."""
+
+    def execute(self, loadbalancer, amphorae_network_config):
+        """Execute post_vip_plug across the amphorae."""
+        amp_post_vip_plug = AmphoraPostVIPPlug()
+        for amphora in loadbalancer.amphorae:
+            amp_post_vip_plug.execute(amphora,
+                                      loadbalancer,
+                                      amphorae_network_config)
 
     def revert(self, result, loadbalancer, *args, **kwargs):
         """Handle a failed amphora vip plug notification."""
         if isinstance(result, failure.Failure):
             return
-        LOG.warning(_LW("Reverting post vip plug."))
+        LOG.warning(_LW("Reverting amphorae post vip plug."))
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       id=loadbalancer.id,
                                       provisioning_status=constants.ERROR)

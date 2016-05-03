@@ -135,7 +135,7 @@ class AmphoraLoadBalancerDriver(object):
         """
         pass
 
-    def post_vip_plug(self, load_balancer, amphorae_network_config):
+    def post_vip_plug(self, amphora, load_balancer, amphorae_network_config):
         """Called after network driver has allocated and plugged the VIP
 
         :param load_balancer: A load balancer that just had its vip allocated

@@ -53,9 +53,9 @@ haproxy_start()
     # Re-add the namespace
     ip netns add {{ amphora_nsname }} || true
     # We need the plugged_interfaces file sorted to join the host interfaces
-    sort -k 1 /var/lib/octavia/plugged_interfaces > /var/lib/octavia/plugged_interfaces.sorted
+    sort -k 1 /var/lib/octavia/plugged_interfaces > /var/lib/octavia/plugged_interfaces.sorted || true
     # Assign the interfaces into the namespace with the appropriate name
-    ip link | awk '{getline n; print $0,n}' | awk '{sub(":","",$2)} {print $17 " " $2}' | sort -k 1 | join -j 1 - /var/lib/octavia/plugged_interfaces.sorted | awk '{system("ip link set "$2" netns {{ amphora_nsname }} name "$3"")}'
+    ip link | awk '{getline n; print $0,n}' | awk '{sub(":","",$2)} {print $17 " " $2}' | sort -k 1 | join -j 1 - /var/lib/octavia/plugged_interfaces.sorted | awk '{system("ip link set "$2" netns {{ amphora_nsname }} name "$3"")}' || true
     # Bring up all of the namespace interfaces
     ip netns exec {{ amphora_nsname }} ifup -a || true
 

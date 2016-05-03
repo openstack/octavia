@@ -325,3 +325,5 @@ FLOW_DOC_TITLES = {'AmphoraFlows': 'Amphora Flows',
                    'HealthMonitorFlows': 'Health Monitor Flows',
                    'L7PolicyFlows': 'Layer 7 Policy Flows',
                    'L7RuleFlows': 'Layer 7 Rule Flows'}
+
+NETNS_PRIMARY_INTERFACE = 'eth1'

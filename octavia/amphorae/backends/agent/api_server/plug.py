@@ -69,14 +69,24 @@ def plug_vip(vip, subnet_cidr, gateway, mac_address, vrrp_ip=None):
         return flask.make_response(flask.jsonify(dict(
             message="Invalid VIP")), 400)
 
-    interface = _interface_by_mac(mac_address)
-    primary_interface = "{interface}".format(interface=interface)
-    secondary_interface = "{interface}:0".format(interface=interface)
+    # Check if the interface is already in the network namespace
+    # Do not attempt to re-plug the VIP if it is already in the
+    # network namespace
+    if _netns_interface_exists(mac_address):
+        return flask.make_response(flask.jsonify(dict(
+            message="Interface already exists")), 409)
+
+    # This is the interface prior to moving into the netns
+    default_netns_interface = _interface_by_mac(mac_address)
+
+    # Always put the VIP interface as eth1
+    primary_interface = consts.NETNS_PRIMARY_INTERFACE
+    secondary_interface = "{interface}:0".format(interface=primary_interface)
 
     # We need to setup the netns network directory so that the ifup
     # commands used here and in the startup scripts "sees" the right
     # interfaces and scripts.
-    interface_file_path = util.get_network_interface_file(interface)
+    interface_file_path = util.get_network_interface_file(primary_interface)
     os.makedirs('/etc/netns/' + consts.AMPHORA_NAMESPACE)
     shutil.copytree('/etc/network',
                     '/etc/netns/{}/network'.format(consts.AMPHORA_NAMESPACE),
@@ -109,7 +119,7 @@ def plug_vip(vip, subnet_cidr, gateway, mac_address, vrrp_ip=None):
     with os.fdopen(os.open(interface_file_path, flags, mode),
                    'w') as text_file:
         text = template_vip.render(
-            interface=interface,
+            interface=primary_interface,
             vip=vip,
             vip_ipv6=ip.version is 6,
             broadcast=broadcast,
@@ -122,7 +132,7 @@ def plug_vip(vip, subnet_cidr, gateway, mac_address, vrrp_ip=None):
 
     # Update the list of interfaces to add to the namespace
     # This is used in the amphora reboot case to re-establish the namespace
-    _update_plugged_interfaces_file(interface, mac_address)
+    _update_plugged_interfaces_file(primary_interface, mac_address)
 
     # Create the namespace
     netns = pyroute2.NetNS(consts.AMPHORA_NAMESPACE, flags=os.O_CREAT)
@@ -130,8 +140,9 @@ def plug_vip(vip, subnet_cidr, gateway, mac_address, vrrp_ip=None):
 
     with pyroute2.IPRoute() as ipr:
         # Move the interfaces into the namespace
-        idx = ipr.link_lookup(ifname=primary_interface)[0]
-        ipr.link('set', index=idx, net_ns_fd=consts.AMPHORA_NAMESPACE)
+        idx = ipr.link_lookup(ifname=default_netns_interface)[0]
+        ipr.link('set', index=idx, net_ns_fd=consts.AMPHORA_NAMESPACE,
+                 IFLA_IFNAME=primary_interface)
 
     # bring interfaces up
     _bring_if_down(primary_interface)
@@ -142,10 +153,18 @@ def plug_vip(vip, subnet_cidr, gateway, mac_address, vrrp_ip=None):
     return flask.make_response(flask.jsonify(dict(
         message="OK",
         details="VIP {vip} plugged on interface {interface}".format(
-            vip=vip, interface=interface))), 202)
+            vip=vip, interface=primary_interface))), 202)
 
 
 def plug_network(mac_address, fixed_ips):
+
+    # Check if the interface is already in the network namespace
+    # Do not attempt to re-plug the network if it is already in the
+    # network namespace
+    if _netns_interface_exists(mac_address):
+        return flask.make_response(flask.jsonify(dict(
+            message="Interface already exists")), 409)
+
     # This is the interface as it was initially plugged into the
     # default network namespace, this will likely always be eth1
     default_netns_interface = _interface_by_mac(mac_address)
@@ -283,3 +302,12 @@ def _update_plugged_interfaces_file(interface, mac_address):
         if mac_address not in inf_list:
             text_file.write("{mac_address} {interface}\n".format(
                 mac_address=mac_address, interface=interface))
+
+
+def _netns_interface_exists(mac_address):
+    with pyroute2.NetNS(consts.AMPHORA_NAMESPACE, flags=os.O_CREAT) as netns:
+        for link in netns.get_links():
+            for attr in link['attrs']:
+                if attr[0] == 'IFLA_ADDRESS' and attr[1] == mac_address:
+                    return True
+    return False

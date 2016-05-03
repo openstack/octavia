@@ -264,12 +264,9 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
         self.assertIn(constants.LISTENERS, amp_flow.provides)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
-        self.assertIn(constants.MEMBER_PORTS, amp_flow.provides)
-        self.assertIn(constants.PORTS, amp_flow.provides)
-        self.assertIn(constants.VIP, amp_flow.provides)
 
         self.assertEqual(2, len(amp_flow.requires))
-        self.assertEqual(12, len(amp_flow.provides))
+        self.assertEqual(11, len(amp_flow.provides))
 
         amp_flow = self.AmpFlow.get_failover_flow(role=constants.ROLE_MASTER)
 
@@ -286,12 +283,9 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
         self.assertIn(constants.LISTENERS, amp_flow.provides)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
-        self.assertIn(constants.MEMBER_PORTS, amp_flow.provides)
-        self.assertIn(constants.PORTS, amp_flow.provides)
-        self.assertIn(constants.VIP, amp_flow.provides)
 
         self.assertEqual(2, len(amp_flow.requires))
-        self.assertEqual(12, len(amp_flow.provides))
+        self.assertEqual(11, len(amp_flow.provides))
 
         amp_flow = self.AmpFlow.get_failover_flow(role=constants.ROLE_BACKUP)
 
@@ -308,12 +302,9 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
         self.assertIn(constants.LISTENERS, amp_flow.provides)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
-        self.assertIn(constants.MEMBER_PORTS, amp_flow.provides)
-        self.assertIn(constants.PORTS, amp_flow.provides)
-        self.assertIn(constants.VIP, amp_flow.provides)
 
         self.assertEqual(2, len(amp_flow.requires))
-        self.assertEqual(12, len(amp_flow.provides))
+        self.assertEqual(11, len(amp_flow.provides))
 
         amp_flow = self.AmpFlow.get_failover_flow(role='BOGUSROLE')
 
@@ -330,12 +321,9 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
         self.assertIn(constants.LISTENERS, amp_flow.provides)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
-        self.assertIn(constants.MEMBER_PORTS, amp_flow.provides)
-        self.assertIn(constants.PORTS, amp_flow.provides)
-        self.assertIn(constants.VIP, amp_flow.provides)
 
         self.assertEqual(2, len(amp_flow.requires))
-        self.assertEqual(12, len(amp_flow.provides))
+        self.assertEqual(11, len(amp_flow.provides))
 
     def test_cert_rotate_amphora_flow(self, mock_get_net_driver):
         self.AmpFlow = amphora_flows.AmphoraFlows()

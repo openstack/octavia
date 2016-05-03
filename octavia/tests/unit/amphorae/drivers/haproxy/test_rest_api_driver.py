@@ -159,7 +159,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         amphorae_network_config.get().vip_subnet.cidr = FAKE_CIDR
         amphorae_network_config.get().vip_subnet.gateway_ip = FAKE_GATEWAY
         amphorae_network_config.get().vrrp_port = self.port
-        self.driver.post_vip_plug(self.lb, amphorae_network_config)
+        self.driver.post_vip_plug(self.amp, self.lb, amphorae_network_config)
         self.driver.client.plug_vip.assert_called_once_with(
             self.amp, self.lb.vip.ip_address, self.subnet_info)
 

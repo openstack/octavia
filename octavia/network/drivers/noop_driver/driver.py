@@ -137,6 +137,10 @@ class NoopManager(object):
         self.networkconfigconfig[(loadbalancer)] = (
             loadbalancer, 'get_network_configs')
 
+    def wait_for_port_detach(self, amphora):
+        LOG.debug("failover %s no-op, wait_for_port_detach, amphora id %s",
+                  self.__class__.__name__, amphora.id)
+
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def __init__(self):
@@ -185,3 +189,6 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def get_network_configs(self, loadbalancer):
         return self.driver.get_network_configs(loadbalancer)
+
+    def wait_for_port_detach(self, amphora):
+        self.driver.wait_for_port_detach(amphora)
