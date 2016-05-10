@@ -202,9 +202,6 @@ UPDATE_MEMBER_FLOW = 'octavia-update-member-flow'
 UPDATE_POOL_FLOW = 'octavia-update-pool-flow'
 UPDATE_L7POLICY_FLOW = 'octavia-update-l7policy-flow'
 UPDATE_L7RULE_FLOW = 'octavia-update-l7rule-flow'
-WAIT_FOR_AMPHORA = 'wait-for-amphora'
-
-FAILOVER_AMPHORA_FLOW = 'octavia-failover-amphora-flow'
 
 POST_MAP_AMP_TO_LB_SUBFLOW = 'octavia-post-map-amp-to-lb-subflow'
 CREATE_AMP_FOR_LB_SUBFLOW = 'octavia-create-amp-for-lb-subflow'
