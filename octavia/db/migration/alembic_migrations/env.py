@@ -13,13 +13,15 @@
 #    under the License.
 
 from __future__ import with_statement
-from alembic import context
-from sqlalchemy import engine_from_config, pool
 from logging import config as logging_config
 
+from alembic import context
+from sqlalchemy import create_engine
+from sqlalchemy import pool
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+octavia_config = config.octavia_config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -49,8 +51,8 @@ def run_migrations_offline():
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
-    context.configure(url=url, target_metadata=target_metadata)
+    context.configure(url=octavia_config.database.connection,
+                      target_metadata=target_metadata)
 
     with context.begin_transaction():
         context.run_migrations()
@@ -63,14 +65,14 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    engine = engine_from_config(
-        config.get_section(config.config_ini_section),
-        prefix='sqlalchemy.',
+    engine = create_engine(
+        octavia_config.database.connection,
         poolclass=pool.NullPool)
 
     connection = engine.connect()
-    context.configure(connection=connection,
-                      target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata)
 
     try:
         with context.begin_transaction():
