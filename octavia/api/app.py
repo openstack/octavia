@@ -16,6 +16,7 @@ import pecan
 
 from octavia.api import config as app_config
 from octavia.api.v1 import hooks
+from octavia.common import service as octavia_service
 
 
 def get_pecan_config():
@@ -24,8 +25,10 @@ def get_pecan_config():
     return pecan.configuration.conf_from_file(filename)
 
 
-def setup_app(pecan_config=None, debug=False):
+def setup_app(pecan_config=None, debug=False, argv=None):
     """Creates and returns a pecan wsgi app."""
+    octavia_service.prepare_service(argv)
+
     app_hooks = [hooks.ContextHook()]
 
     if not pecan_config:
