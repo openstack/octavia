@@ -320,7 +320,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert
 
         mock_pool_repo_delete.reset_mock()
-        delete_pool.revert(POOL_ID)
+        delete_pool.revert(_pool_mock)
 
 # TODO(johnsom) Fix
 #        repo.PoolRepository.update.assert_called_once_with(
@@ -349,7 +349,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert
 
         mock_l7policy_repo_delete.reset_mock()
-        delete_l7policy.revert(L7POLICY_ID)
+        delete_l7policy.revert(_l7policy_mock)
 
 # TODO(sbalukoff) Fix
 #        repo.ListenerRepository.update.assert_called_once_with(
@@ -378,7 +378,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert
 
         mock_l7rule_repo_delete.reset_mock()
-        delete_l7rule.revert(L7RULE_ID)
+        delete_l7rule.revert(_l7rule_mock)
 
 # TODO(sbalukoff) Fix
 #        repo.ListenerRepository.update.assert_called_once_with(

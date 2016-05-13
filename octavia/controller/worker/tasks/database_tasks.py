@@ -220,14 +220,14 @@ class DeleteListenerInDB(BaseDatabaseTask):
         LOG.debug("Delete in DB for listener id: %s", listener.id)
         self.listener_repo.delete(db_apis.get_session(), id=listener.id)
 
-    def revert(self, listener_id, *args, **kwargs):
+    def revert(self, listener, *args, **kwargs):
         """Mark the listener ERROR since the listener didn't delete
 
         :returns: None
         """
 
         LOG.warning(_LW("Reverting mark listener delete in DB "
-                        "for listener id %s"), listener_id)
+                        "for listener id %s"), listener.id)
 
 
 class DeletePoolInDB(BaseDatabaseTask):
@@ -246,14 +246,14 @@ class DeletePoolInDB(BaseDatabaseTask):
         LOG.debug("Delete in DB for pool id: %s ", pool.id)
         self.pool_repo.delete(db_apis.get_session(), id=pool.id)
 
-    def revert(self, pool_id, *args, **kwargs):
+    def revert(self, pool, *args, **kwargs):
         """Mark the pool ERROR since the delete couldn't happen
 
         :returns: None
         """
 
         LOG.warning(_LW("Reverting delete in DB "
-                        "for pool id %s"), pool_id)
+                        "for pool id %s"), pool.id)
 # TODO(johnsom) Fix this
 #        self.pool_repo.update(db_apis.get_session(), pool.id,
 #                              operating_status=constants.ERROR)
@@ -275,14 +275,14 @@ class DeleteL7PolicyInDB(BaseDatabaseTask):
         LOG.debug("Delete in DB for l7policy id: %s ", l7policy.id)
         self.l7policy_repo.delete(db_apis.get_session(), id=l7policy.id)
 
-    def revert(self, l7policy_id, *args, **kwargs):
+    def revert(self, l7policy, *args, **kwargs):
         """Mark the l7policy ERROR since the delete couldn't happen
 
         :returns: None
         """
 
         LOG.warning(_LW("Reverting delete in DB "
-                        "for l7policy id %s"), l7policy_id)
+                        "for l7policy id %s"), l7policy.id)
 # TODO(sbalukoff) Fix this
 #        self.listener_repo.update(db_apis.get_session(), l7policy.listener.id,
 #                                  operating_status=constants.ERROR)
@@ -304,14 +304,14 @@ class DeleteL7RuleInDB(BaseDatabaseTask):
         LOG.debug("Delete in DB for l7rule id: %s ", l7rule.id)
         self.l7rule_repo.delete(db_apis.get_session(), id=l7rule.id)
 
-    def revert(self, l7rule_id, *args, **kwargs):
+    def revert(self, l7rule, *args, **kwargs):
         """Mark the l7rule ERROR since the delete couldn't happen
 
         :returns: None
         """
 
         LOG.warning(_LW("Reverting delete in DB "
-                        "for l7rule id %s"), l7rule_id)
+                        "for l7rule id %s"), l7rule.id)
 # TODO(sbalukoff) Fix this
 #        self.listener_repo.update(db_apis.get_session(),
 #                                  l7rule.l7policy.listener.id,
