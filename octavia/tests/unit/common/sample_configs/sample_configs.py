@@ -20,13 +20,21 @@ from octavia.common import constants
 
 
 def sample_amphora_tuple():
-    amphora = collections.namedtuple('amphora', 'id, load_balancer_id, '
-                                                'compute_id, status,'
-                                                'lb_network_ip, vrrp_ip')
-    return amphora(id='sample_amp_id_1', load_balancer_id='sample_lb_id_1',
-                   compute_id='sample_compute_id_1', status='ACTIVE',
-                   lb_network_ip='10.0.0.1',
-                   vrrp_ip='10.0.0.2')
+    in_amphora = collections.namedtuple(
+        'amphora', 'id, lb_network_ip, vrrp_ip, ha_ip, vrrp_port_id, '
+                   'ha_port_id, role, status, vrrp_interface,'
+                   'vrrp_priority')
+    return in_amphora(
+        id='sample_amphora_id_1',
+        lb_network_ip='10.0.1.1',
+        vrrp_ip='10.1.1.1',
+        ha_ip='192.168.10.1',
+        vrrp_port_id='1234',
+        ha_port_id='1234',
+        role=None,
+        status='ACTIVE',
+        vrrp_interface=None,
+        vrrp_priority=None)
 
 RET_PERSISTENCE = {
     'type': 'HTTP_COOKIE',
@@ -256,7 +264,20 @@ RET_LISTENER_TLS_SNI = {
     'enabled': True,
     'insert_headers': {}}
 
+RET_AMPHORA = {
+    'id': 'sample_amphora_id_1',
+    'lb_network_ip': '10.0.1.1',
+    'vrrp_ip': '10.1.1.1',
+    'ha_ip': '192.168.10.1',
+    'vrrp_port_id': '1234',
+    'ha_port_id': '1234',
+    'role': None,
+    'status': 'ACTIVE',
+    'vrrp_interface': None,
+    'vrrp_priority': None}
+
 RET_LB = {
+    'host_amphora': RET_AMPHORA,
     'name': 'test-lb',
     'vip_address': '10.0.0.2',
     'listener': RET_LISTENER,
@@ -276,6 +297,7 @@ RET_LB_TLS_SNI = {
     'enabled': True}
 
 RET_LB_L7 = {
+    'host_amphora': RET_AMPHORA,
     'name': 'test-lb',
     'vip_address': '10.0.0.2',
     'listener': RET_LISTENER_L7,

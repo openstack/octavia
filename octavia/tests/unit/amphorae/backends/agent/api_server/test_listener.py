@@ -41,6 +41,7 @@ class ListenerTestCase(base.TestCase):
             certificate='imaCert1', private_key='imaPrivateKey1',
             primary_cn='FakeCN')
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='TERMINATED_HTTPS',
                                                  tls=True, sni=True),
             tls_tupe)
@@ -58,6 +59,7 @@ class ListenerTestCase(base.TestCase):
 
         # render_template_tls_no_sni
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
                 proto='TERMINATED_HTTPS', tls=True),
             tls_cert=sample_configs.sample_tls_container_tuple(
@@ -77,6 +79,7 @@ class ListenerTestCase(base.TestCase):
 
         # render_template_http
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple())
 
         self.useFixture(test_utils.OpenFixture(path, rendered_obj))
@@ -89,6 +92,7 @@ class ListenerTestCase(base.TestCase):
 
         # template_https
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='HTTPS'))
         self.useFixture(test_utils.OpenFixture(path, rendered_obj))
 

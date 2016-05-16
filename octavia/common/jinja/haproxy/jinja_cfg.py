@@ -84,18 +84,19 @@ class JinjaTemplater(object):
         self.timeout_server = timeout_server
         self.timeout_connect = timeout_connect
 
-    def build_config(self, listener, tls_cert,
+    def build_config(self, host_amphora, listener, tls_cert,
                      socket_path=None,
                      user_group='nogroup'):
         """Convert a logical configuration to the HAProxy version
 
+        :param host_amphora: The Amphora this configuration is hosted on
         :param listener: The listener configuration
         :param tls_cert: The TLS certificates for the listener
         :param socket_path: The socket path for Haproxy process
         :param user_group: The user group
         :return: Rendered configuration
         """
-        return self.render_loadbalancer_obj(listener,
+        return self.render_loadbalancer_obj(host_amphora, listener,
                                             tls_cert=tls_cert,
                                             user_group=user_group,
                                             socket_path=socket_path)
@@ -113,12 +114,13 @@ class JinjaTemplater(object):
         JINJA_ENV.filters['hash_amp_id'] = octavia_utils.base64_sha1_string
         return JINJA_ENV.get_template(os.path.basename(self.haproxy_template))
 
-    def render_loadbalancer_obj(self, listener,
+    def render_loadbalancer_obj(self, host_amphora, listener,
                                 tls_cert=None,
                                 user_group='nogroup',
                                 socket_path=None):
         """Renders a templated configuration from a load balancer object
 
+        :param host_amphora: The Amphora this configuration is hosted on
         :param listener: The listener configuration
         :param tls_cert: The TLS certificates for the listener
         :param socket_path: The socket path for Haproxy process
@@ -126,6 +128,7 @@ class JinjaTemplater(object):
         :return: Rendered configuration
         """
         loadbalancer = self._transform_loadbalancer(
+            host_amphora,
             listener.load_balancer,
             listener,
             tls_cert)
@@ -142,7 +145,8 @@ class JinjaTemplater(object):
              'timeout_connect': self.timeout_connect},
             constants=constants)
 
-    def _transform_loadbalancer(self, loadbalancer, listener, tls_cert):
+    def _transform_loadbalancer(self, host_amphora, loadbalancer, listener,
+                                tls_cert):
         """Transforms a load balancer into an object that will
 
            be processed by the templating system
@@ -153,7 +157,26 @@ class JinjaTemplater(object):
             'vip_address': loadbalancer.vip.ip_address,
             'listener': listener,
             'topology': loadbalancer.topology,
-            'enabled': loadbalancer.enabled
+            'enabled': loadbalancer.enabled,
+            'host_amphora': self._transform_amphora(host_amphora)
+        }
+
+    def _transform_amphora(self, amphora):
+        """Transform an amphora into an object that will
+
+           be processed by the templating system.
+        """
+        return {
+            'id': amphora.id,
+            'lb_network_ip': amphora.lb_network_ip,
+            'vrrp_ip': amphora.vrrp_ip,
+            'ha_ip': amphora.ha_ip,
+            'vrrp_port_id': amphora.vrrp_port_id,
+            'ha_port_id': amphora.ha_port_id,
+            'role': amphora.role,
+            'status': amphora.status,
+            'vrrp_interface': amphora.vrrp_interface,
+            'vrrp_priority': amphora.vrrp_priority
         }
 
     def _transform_listener(self, listener, tls_cert):

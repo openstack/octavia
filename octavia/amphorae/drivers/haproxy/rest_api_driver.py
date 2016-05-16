@@ -66,11 +66,13 @@ class HaproxyAmphoraLoadBalancerDriver(
 
         # Process listener certificate info
         certs = self._process_tls_certificates(listener)
-        # Generate HaProxy configuration from listener object
-        config = self.jinja.build_config(listener, certs['tls_cert'])
 
         for amp in listener.load_balancer.amphorae:
             if amp.status != constants.DELETED:
+                # Generate HaProxy configuration from listener object
+                config = self.jinja.build_config(amp,
+                                                 listener,
+                                                 certs['tls_cert'])
                 self.client.upload_config(amp, listener.id, config)
                 # todo (german): add a method to REST interface to reload or
                 #                start without having to check
