@@ -619,3 +619,44 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                           self.driver.plug_port,
                           amphora,
                           port)
+
+    def test_get_network_configs(self):
+        amphora_mock = mock.MagicMock()
+        load_balancer_mock = mock.MagicMock()
+        vip_mock = mock.MagicMock()
+        amphora_mock.status = constants.DELETED
+        load_balancer_mock.amphorae = [amphora_mock]
+        show_port = self.driver.neutron_client.show_port
+        show_port.return_value = n_constants.MOCK_NEUTRON_PORT
+        fake_subnet = {'subnet': {
+            'id': n_constants.MOCK_SUBNET_ID,
+            'gateway_ip': n_constants.MOCK_IP_ADDRESS,
+            'cidr': n_constants.MOCK_CIDR}}
+        show_subnet = self.driver.neutron_client.show_subnet
+        show_subnet.return_value = fake_subnet
+        configs = self.driver.get_network_configs(load_balancer_mock)
+        self.assertEqual({}, configs)
+
+        vip_mock.port_id = 1
+        amphora_mock.id = 222
+        amphora_mock.status = constants.ACTIVE
+        amphora_mock.vrrp_port_id = 2
+        amphora_mock.vrrp_ip = "10.0.0.1"
+        amphora_mock.ha_port_id = 3
+        amphora_mock.ha_ip = "10.0.0.2"
+        load_balancer_mock.amphorae = [amphora_mock]
+
+        configs = self.driver.get_network_configs(load_balancer_mock)
+        self.assertEqual(1, len(configs))
+        config = configs[222]
+        # TODO(ptoohill): find a way to return different items for multiple
+        # calls to the same method, right now each call to show subnet
+        # will return the same values if a method happens to call it
+        # multiple times for different subnets. We should be able to verify
+        # different requests get different expected data.
+        expected_port_id = n_constants.MOCK_NEUTRON_PORT['port']['id']
+        self.assertEqual(expected_port_id, config.ha_port.id)
+        self.assertEqual(expected_port_id, config.vrrp_port.id)
+        expected_subnet_id = fake_subnet['subnet']['id']
+        self.assertEqual(expected_subnet_id, config.ha_subnet.id)
+        self.assertEqual(expected_subnet_id, config.vrrp_subnet.id)

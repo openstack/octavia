@@ -399,40 +399,10 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.update_vip.assert_called_once_with(lb)
 
     def test_get_amphorae_network_configs(self, mock_driver):
-
+        lb = o_data_models.LoadBalancer()
         net_task = network_tasks.GetAmphoraeNetworkConfigs()
-        net_task.execute(LB)
-        mock_driver.get_subnet.assert_called_once_with(SUBNET_ID)
-        mock_driver.get_port.assert_called_once_with(PORT_ID)
-
-        mock_driver.reset_mock()
-        self.amphora_mock.status = constants.DELETED
-        self.load_balancer_mock.amphorae = [self.amphora_mock]
-        net_task = network_tasks.GetAmphoraeNetworkConfigs()
-        configs = net_task.execute(self.load_balancer_mock)
-        self.assertEqual({}, configs)
-
-        mock_driver.reset_mock()
-        self.vip_mock.port_id = 1
-        self.amphora_mock.status = constants.ACTIVE
-        self.amphora_mock.vrrp_port_id = 2
-        self.amphora_mock.vrrp_ip = "10.0.0.1"
-        self.amphora_mock.ha_port_id = 3
-        self.amphora_mock.ha_ip = "10.0.0.2"
-        self.load_balancer_mock.amphorae = [self.amphora_mock]
-        net_task = network_tasks.GetAmphoraeNetworkConfigs()
-        configs = net_task.execute(self.load_balancer_mock)
-        vip_port_id = mock.call(1)
-        vrrp_port_id_call = mock.call(2)
-        ha_port_id_call = mock.call(3)
-        vrrp_port_subnet_call = mock.call().get_subnet_id('10.0.0.1')
-        ha_port_subnet_call = mock.call().get_subnet_id('10.0.0.2')
-        mock_driver.get_port.assert_has_calls([vip_port_id,
-                                               vrrp_port_id_call,
-                                               vrrp_port_subnet_call,
-                                               ha_port_id_call,
-                                               ha_port_subnet_call])
-        self.assertEqual(1, len(configs))
+        net_task.execute(lb)
+        mock_driver.get_network_configs.assert_called_once_with(lb)
 
     def test_failover_preparation_for_amphora(self, mock_driver):
         failover = network_tasks.FailoverPreparationForAmphora()

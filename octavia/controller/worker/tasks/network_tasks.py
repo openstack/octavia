@@ -363,28 +363,7 @@ class GetAmphoraeNetworkConfigs(BaseNetworkTask):
 
     def execute(self, loadbalancer):
         LOG.debug("Retrieving vip network details.")
-        vip_subnet = self.network_driver.get_subnet(loadbalancer.vip.subnet_id)
-        vip_port = self.network_driver.get_port(loadbalancer.vip.port_id)
-        amp_net_configs = {}
-        for amp in loadbalancer.amphorae:
-            if amp.status != constants.DELETED:
-                LOG.debug("Retrieving network details for amphora %s", amp.id)
-                vrrp_port = self.network_driver.get_port(amp.vrrp_port_id)
-                vrrp_subnet = self.network_driver.get_subnet(
-                    vrrp_port.get_subnet_id(amp.vrrp_ip))
-                ha_port = self.network_driver.get_port(amp.ha_port_id)
-                ha_subnet = self.network_driver.get_subnet(
-                    ha_port.get_subnet_id(amp.ha_ip))
-                amp_net_configs[amp.id] = n_data_models.AmphoraNetworkConfig(
-                    amphora=amp,
-                    vip_subnet=vip_subnet,
-                    vip_port=vip_port,
-                    vrrp_subnet=vrrp_subnet,
-                    vrrp_port=vrrp_port,
-                    ha_subnet=ha_subnet,
-                    ha_port=ha_port
-                )
-        return amp_net_configs
+        return self.network_driver.get_network_configs(loadbalancer)
 
 
 class FailoverPreparationForAmphora(BaseNetworkTask):
