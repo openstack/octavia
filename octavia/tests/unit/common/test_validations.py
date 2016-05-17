@@ -12,9 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
+from oslo_utils import uuidutils
+
 import octavia.common.constants as constants
 import octavia.common.exceptions as exceptions
 import octavia.common.validate as validate
+from octavia.network import base as network_base
 import octavia.tests.unit.base as base
 
 
@@ -238,3 +242,18 @@ class TestValidations(base.TestCase):
         l7p = {}
         self.assertRaises(exceptions.InvalidL7PolicyArgs,
                           validate.sanitize_l7policy_api_args, l7p)
+
+    def test_subnet_exists_with_bad_subnet(self):
+        with mock.patch(
+                'octavia.common.utils.get_network_driver') as net_mock:
+            net_mock.return_value.get_subnet = mock.Mock(
+                side_effect=network_base.SubnetNotFound('Subnet not found'))
+            subnet_id = uuidutils.generate_uuid()
+            self.assertEqual(validate.subnet_exists(subnet_id), False)
+
+    def test_subnet_exists_with_valid_subnet(self):
+        subnet_id = uuidutils.generate_uuid()
+        with mock.patch(
+                'octavia.common.utils.get_network_driver') as net_mock:
+            net_mock.return_value.get_subnet.return_value = subnet_id
+            self.assertEqual(validate.subnet_exists(subnet_id), True)

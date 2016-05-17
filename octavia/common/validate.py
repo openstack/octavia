@@ -18,12 +18,14 @@ Several handy validation functions that go beyond simple type checking.
 Defined here so these can also be used at deeper levels than the API.
 """
 
+
 import re
 
 import rfc3986
 
 from octavia.common import constants
 from octavia.common import exceptions
+from octavia.common import utils
 
 
 def url(url):
@@ -198,3 +200,14 @@ def sanitize_l7policy_api_args(l7policy, create=False):
     if len(l7policy.keys()) == 0:
         raise exceptions.InvalidL7PolicyArgs(msg='Invalid update options')
     return l7policy
+
+
+def subnet_exists(subnet_id):
+    network_driver = utils.get_network_driver()
+    # Throws an exception when trying to get a subnet which
+    # does not exist.
+    try:
+        network_driver.get_subnet(subnet_id)
+    except Exception:
+        return False
+    return True

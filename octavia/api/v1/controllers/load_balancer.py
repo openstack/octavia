@@ -27,6 +27,7 @@ from octavia.api.v1.types import load_balancer as lb_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+import octavia.common.validate as validate
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
@@ -97,6 +98,12 @@ class LoadBalancersController(base.BaseController):
                          body=lb_types.LoadBalancerPOST, status_code=202)
     def post(self, load_balancer):
         """Creates a load balancer."""
+        # Validate the subnet id
+        if load_balancer.vip.subnet_id:
+            if not validate.subnet_exists(load_balancer.vip.subnet_id):
+                raise exceptions.NotFound(resource='Subnet',
+                                          id=load_balancer.vip.subnet_id)
+
         context = pecan.request.context.get('octavia_context')
         if load_balancer.listeners:
             return self._create_load_balancer_graph(context, load_balancer)

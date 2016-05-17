@@ -168,11 +168,11 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         return response.json
 
     def create_member(self, lb_id, pool_id, ip_address,
-                      protocol_port, **optionals):
+                      protocol_port, expect_error=False, **optionals):
         req_dict = {'ip_address': ip_address, 'protocol_port': protocol_port}
         req_dict.update(optionals)
         path = self.MEMBERS_PATH.format(lb_id=lb_id, pool_id=pool_id)
-        response = self.post(path, req_dict)
+        response = self.post(path, req_dict, expect_errors=expect_error)
         return response.json
 
     def create_member_with_listener(self, lb_id, listener_id, pool_id,

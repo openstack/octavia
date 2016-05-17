@@ -14,9 +14,11 @@
 
 import copy
 
+import mock
 from oslo_utils import uuidutils
 
 from octavia.common import constants
+from octavia.network import base as network_base
 from octavia.tests.functional.api.v1 import base
 
 
@@ -228,6 +230,32 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_delete_bad_lb_id(self):
         path = self.LB_PATH.format(lb_id='bad_uuid')
         self.delete(path, status=404)
+
+    def test_create_with_bad_subnet(self, **optionals):
+        with mock.patch(
+                'octavia.common.utils.get_network_driver') as net_mock:
+            net_mock.return_value.get_subnet = mock.Mock(
+                side_effect=network_base.SubnetNotFound('Subnet not found'))
+            subnet_id = uuidutils.generate_uuid()
+            lb_json = {'name': 'test1', 'vip': {'subnet_id': subnet_id,
+                                                'ip_address': '10.0.0.1'}}
+            lb_json.update(optionals)
+            response = self.post(self.LBS_PATH, lb_json, expect_errors=True)
+            err_msg = 'Subnet ' + subnet_id + ' not found.'
+            self.assertEqual(response.json.get('faultstring'), err_msg)
+
+    def test_create_with_valid_subnet(self, **optionals):
+        subnet_id = uuidutils.generate_uuid()
+        with mock.patch(
+                'octavia.common.utils.get_network_driver') as net_mock:
+            net_mock.return_value.get_subnet.return_value = subnet_id
+            lb_json = {'name': 'test1', 'vip': {'subnet_id': subnet_id,
+                                                'ip_address': '10.0.0.1'}}
+            lb_json.update(optionals)
+            response = self.post(self.LBS_PATH, lb_json)
+            api_lb = response.json
+            self.assertEqual(lb_json.get('vip')['subnet_id'],
+                             api_lb.get('vip')['subnet_id'])
 
 
 class TestLoadBalancerGraph(base.BaseAPITest):
