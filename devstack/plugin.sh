@@ -53,7 +53,12 @@ function octavia_configure {
 
     iniset $OCTAVIA_CONF database connection "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia"
 
-    iniset $OCTAVIA_CONF keystone_authtoken auth_uri ${KEYSTONE_AUTH_URI}/v2.0
+    if [ "$OCTAVIA_AUTH_VERSION" == "2" ] ; then
+        AUTH_URI=${KEYSTONE_AUTH_URI%/v3}/v2.0
+    else
+        AUTH_URI=${KEYSTONE_AUTH_URI}
+    fi
+    iniset $OCTAVIA_CONF keystone_authtoken auth_uri ${AUTH_URI}
     iniset $OCTAVIA_CONF keystone_authtoken admin_user ${OCTAVIA_ADMIN_USER}
     iniset $OCTAVIA_CONF keystone_authtoken admin_tenant_name ${OCTAVIA_ADMIN_TENANT_NAME}
     iniset $OCTAVIA_CONF keystone_authtoken admin_password ${OCTAVIA_ADMIN_PASSWORD}
