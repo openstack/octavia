@@ -17,6 +17,14 @@ source ${TOP_DIR}/stackrc
 # Destination path for installation ``DEST``
 DEST=${DEST:-/opt/stack}
 
+# Polling functions
+function wait_for_loadbalancer_active() {
+  lb_name=$1
+  while [ $(neutron lbaas-loadbalancer-list | grep $lb_name | grep ACTIVE | wc --lines) == 0 ]; do
+    sleep 2
+  done
+}
+
 if is_service_enabled nova; then
 
     # Unset DOMAIN env variables that are not needed for keystone v2 and set OpenStack demo user auth
@@ -66,11 +74,17 @@ fi
 if is_service_enabled q-lbaasv2; then
 
     neutron lbaas-loadbalancer-create --name lb1 private-subnet
-    sleep 10
+    wait_for_loadbalancer_active lb1
+
     neutron lbaas-listener-create --loadbalancer lb1 --protocol HTTP --protocol-port 80 --name listener1
-    sleep 10
+    wait_for_loadbalancer_active lb1
+
     neutron lbaas-pool-create --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --name pool1
+    wait_for_loadbalancer_active lb1
+
     neutron lbaas-member-create  --subnet private-subnet --address ${IP1} --protocol-port 80 pool1
+    wait_for_loadbalancer_active lb1
+
     neutron lbaas-member-create  --subnet private-subnet --address ${IP2} --protocol-port 80 pool1
 
 fi
