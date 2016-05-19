@@ -17,6 +17,7 @@ import mock
 from oslo_utils import uuidutils
 import requests_mock
 
+from octavia.amphorae.driver_exceptions import exceptions as driver_except
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy import rest_api_driver as driver
 from octavia.db import models
@@ -160,6 +161,11 @@ class AmphoraAPIClientTest(base.TestCase):
         self.base_url = "https://127.0.0.1:9443/0.5"
         self.amp = models.Amphora(lb_network_ip='127.0.0.1', compute_id='123')
         self.port_info = dict(mac_address='123')
+
+    def test_request(self):
+        self.assertRaises(driver_except.TimeOutException,
+                          self.driver.request,
+                          'get', self.amp, 'unavailableURL')
 
     @requests_mock.mock()
     def test_get_info(self, m):

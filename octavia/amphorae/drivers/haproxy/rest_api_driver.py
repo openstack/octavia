@@ -217,7 +217,7 @@ class AmphoraAPIClient(object):
             except requests.ConnectionError:
                 LOG.warn(_LW("Could not talk  to instance"))
                 time.sleep(CONF.haproxy_amphora.connection_retry_interval)
-                if a >= CONF.haproxy_amphora.connection_max_retries:
+                if a == CONF.haproxy_amphora.connection_max_retries - 1:
                     raise driver_except.TimeOutException()
             else:
                 return r
