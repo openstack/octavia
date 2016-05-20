@@ -57,10 +57,6 @@ if is_service_enabled nova; then
     IP1=$(nova show node1 | grep "private network" | awk '/private network/ {ip = substr($5, 0, length($5)-1); if (ip ~ "\\.") print ip; else print $6}')
     IP2=$(nova show node2 | grep "private network" | awk '/private network/ {ip = substr($5, 0, length($5)-1); if (ip ~ "\\.") print ip; else print $6}')
 
-
-    ssh-keygen -R ${IP1}
-    ssh-keygen -R ${IP2}
-
     # Run a simple web server on the instances
     chmod 0755 ${TOP_DIR}/webserver.sh
     scp -i ${DEVSTACK_LBAAS_SSH_KEY} -o StrictHostKeyChecking=no ${TOP_DIR}/webserver.sh cirros@${IP1}:webserver.sh
