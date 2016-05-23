@@ -71,9 +71,7 @@ Vagrant.configure(2) do |config|
     sudo apt-get -y install git
 
     git clone https://git.openstack.org/openstack-dev/devstack
-    git clone https://git.openstack.org/openstack/octavia
-    cd octavia/devstack/samples
-    cp local.* webserver.sh ~/devstack
+    cp /vagrant/local.* /vagrant/webserver.sh ~/devstack
     cd ~/devstack
     ./stack.sh
 

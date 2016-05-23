@@ -13,7 +13,7 @@ the package appropriate for your system.  On Ubuntu, simply type:
 and run 'vagrant up':
 
     mkdir $HOME/lbaas-octavia-vagrant            # or any other appropriate directory
-    cp Vagrantfile $HOME/lbaas-octavia-vagrant
+    cp Vagrantfile *.sh $HOME/lbaas-octavia-vagrant
     cd $HOME/lbaas-octavia-vagrant
     vagrant up
 
