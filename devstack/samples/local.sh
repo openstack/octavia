@@ -57,6 +57,7 @@ if is_service_enabled nova; then
     IP1=$(nova show node1 | grep "private network" | awk '/private network/ {ip = substr($5, 0, length($5)-1); if (ip ~ "\\.") print ip; else print $6}')
     IP2=$(nova show node2 | grep "private network" | awk '/private network/ {ip = substr($5, 0, length($5)-1); if (ip ~ "\\.") print ip; else print $6}')
 
+    touch ~/.ssh/known_hosts
 
     ssh-keygen -R ${IP1}
     ssh-keygen -R ${IP2}
