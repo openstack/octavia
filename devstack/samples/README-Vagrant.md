@@ -17,6 +17,9 @@ and run 'vagrant up':
     cd $HOME/lbaas-octavia-vagrant
     vagrant up
 
+    Alternatively, you can specify the number of vcpus or memory:
+    VM_CPUS=4 VM_MEMORY=8192 vagrant up
+
 3) Wait for the vagrant VM to boot and install, typically 20-30 minutes
 
 4) SSH into the vagrant box
