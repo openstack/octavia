@@ -86,7 +86,6 @@ function octavia_configure {
     iniset $NEUTRON_CONF octavia request_poll_timeout 3000
 
     # Uncomment other default options
-    iniuncomment $OCTAVIA_CONF haproxy_amphora username
     iniuncomment $OCTAVIA_CONF haproxy_amphora base_path
     iniuncomment $OCTAVIA_CONF haproxy_amphora base_cert_dir
     iniuncomment $OCTAVIA_CONF haproxy_amphora connection_max_retries
