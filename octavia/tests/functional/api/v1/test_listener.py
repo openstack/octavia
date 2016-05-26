@@ -87,6 +87,7 @@ class TestListener(base.BaseAPITest):
                        'protocol_port': 80, 'connection_limit': 10,
                        'tls_certificate_id': uuidutils.generate_uuid(),
                        'sni_containers': [sni1, sni2],
+                       'insert_headers': {},
                        'project_id': uuidutils.generate_uuid()}
         lb_listener.update(optionals)
         response = self.post(self.listeners_path, lb_listener)
@@ -169,7 +170,8 @@ class TestListener(base.BaseAPITest):
         defaults = {'name': None, 'default_pool_id': None,
                     'description': None, 'enabled': True,
                     'connection_limit': None, 'tls_certificate_id': None,
-                    'sni_containers': [], 'project_id': None}
+                    'sni_containers': [], 'project_id': None,
+                    'insert_headers': {}}
         lb_listener = {'protocol': constants.PROTOCOL_HTTP,
                        'protocol_port': 80}
         response = self.post(self.listeners_path, lb_listener)
@@ -395,3 +397,16 @@ class TestListener(base.BaseAPITest):
         self.assertIsNone(listener.get('tls_termination'))
         get_listener = self.get(listener_path).json
         self.assertIsNone(get_listener.get('tls_termination'))
+
+    def test_create_with_valid_insert_headers(self):
+        lb_listener = {'protocol': 'HTTP',
+                       'protocol_port': 80,
+                       'insert_headers': {'X-Forwarded-For': 'true'}}
+        self.post(self.listeners_path, lb_listener, status=202)
+
+    def test_create_with_bad_insert_headers(self):
+        lb_listener = {'protocol': 'HTTP',
+                       'protocol_port': 80,
+                       # 'insert_headers': {'x': 'x'}}
+                       'insert_headers': {'X-Forwarded-Four': 'true'}}
+        self.post(self.listeners_path, lb_listener, status=400)

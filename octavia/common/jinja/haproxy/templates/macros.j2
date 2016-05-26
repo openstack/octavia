@@ -196,7 +196,14 @@ backend {{ pool.id }}
         {% endif %}
     {% endif %}
     {% if pool.protocol.lower() == constants.PROTOCOL_HTTP.lower() %}
+        {% if listener.insert_headers.get('X-Forwarded-For',
+                                          'False').lower() == 'true' %}
     option forwardfor
+        {% endif %}
+        {% if listener.insert_headers.get('X-Forwarded-Port',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-Forwarded-Port %[dst_port]
+        {% endif %}
     {% endif %}
     {% for member in pool.members if member.enabled %}
         {{- member_macro(constants, pool, member) -}}

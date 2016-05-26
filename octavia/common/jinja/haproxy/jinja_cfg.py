@@ -167,6 +167,7 @@ class JinjaTemplater(object):
             'protocol_mode': PROTOCOL_MAP[listener.protocol],
             'protocol': listener.protocol,
             'peer_port': listener.peer_port,
+            'insert_headers': listener.insert_headers,
             'topology': listener.load_balancer.topology,
             'amphorae': listener.load_balancer.amphorae,
             'enabled': listener.enabled

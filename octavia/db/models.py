@@ -378,7 +378,9 @@ class Listener(base_models.BASE, base_models.IdMixin,
     default_pool = orm.relationship("Pool", uselist=False,
                                     backref=orm.backref("_default_listeners",
                                                         uselist=True))
+
     peer_port = sa.Column(sa.Integer(), nullable=True)
+    insert_headers = sa.Column(sa.PickleType())
 
     # This property should be a unique list of the default_pool and anything
     # referenced by enabled L7Policies with at least one rule that also
