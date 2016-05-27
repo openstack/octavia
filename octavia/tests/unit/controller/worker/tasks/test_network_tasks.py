@@ -87,19 +87,14 @@ class TestNetworkTasks(base.TestCase):
 
         self.amphora_mock.load_balancer = self.load_balancer_mock
         self.load_balancer_mock.amphorae = [self.amphora_mock]
-        self.load_balancer_mock.listeners = None
-        self.assertEqual({self.amphora_mock.id: None},
-                         net.execute(self.load_balancer_mock))
+        self.load_balancer_mock.pools = []
 
-        listener_mock = mock.MagicMock()
-        self.load_balancer_mock.listeners = [listener_mock]
-        listener_mock.default_pool = None
         self.assertEqual(empty_deltas, net.execute(self.load_balancer_mock))
         mock_driver.get_plugged_networks.assert_called_once_with(COMPUTE_ID)
 
         pool_mock = mock.MagicMock()
-        listener_mock.default_pool = pool_mock
-        pool_mock.members = None
+        self.load_balancer_mock.pools = [pool_mock]
+        pool_mock.members = []
         self.assertEqual(empty_deltas, net.execute(self.load_balancer_mock))
 
         member_mock = mock.MagicMock()

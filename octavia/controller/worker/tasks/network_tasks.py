@@ -60,16 +60,10 @@ class CalculateAmphoraDelta(BaseNetworkTask):
         if CONF.controller_worker.amp_network:
             desired_network_ids.add(CONF.controller_worker.amp_network)
 
-        if not loadbalancer.listeners:
-            return None
-
-        for listener in loadbalancer.listeners:
-            if (not listener.default_pool) or (
-                    not listener.default_pool.members):
-                continue
+        for pool in loadbalancer.pools:
             member_networks = [
                 self.network_driver.get_subnet(member.subnet_id).network_id
-                for member in listener.default_pool.members
+                for member in pool.members
                 if member.subnet_id
             ]
             desired_network_ids.update(member_networks)
