@@ -57,6 +57,7 @@ class TestHaproxyCfg(base.TestCase):
             certificate='imaCert1', private_key='imaPrivateKey1',
             primary_cn='FakeCN')
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='TERMINATED_HTTPS',
                                                  tls=True, sni=True),
             tls_tupe)
@@ -89,6 +90,7 @@ class TestHaproxyCfg(base.TestCase):
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
                 proto='TERMINATED_HTTPS', tls=True),
             tls_cert=sample_configs.sample_tls_container_tuple(
@@ -115,6 +117,7 @@ class TestHaproxyCfg(base.TestCase):
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple())
         self.assertEqual(
             sample_configs.sample_base_expected_config(backend=be),
@@ -142,6 +145,7 @@ class TestHaproxyCfg(base.TestCase):
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='HTTPS'))
         self.assertEqual(sample_configs.sample_base_expected_config(
             frontend=fe, backend=be), rendered_obj)
@@ -156,6 +160,7 @@ class TestHaproxyCfg(base.TestCase):
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
               "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='HTTP', monitor=False))
         self.assertEqual(sample_configs.sample_base_expected_config(
             backend=be), rendered_obj)
@@ -176,6 +181,7 @@ class TestHaproxyCfg(base.TestCase):
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
               "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='HTTPS', monitor=False))
         self.assertEqual(sample_configs.sample_base_expected_config(
             frontend=fe, backend=be), rendered_obj)
@@ -193,6 +199,7 @@ class TestHaproxyCfg(base.TestCase):
               "    server sample_member_id_1 10.0.0.99:82 weight 13\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='HTTPS', monitor=False,
                                                  persistence=False))
         self.assertEqual(sample_configs.sample_base_expected_config(
@@ -205,6 +212,7 @@ class TestHaproxyCfg(base.TestCase):
               "    server sample_member_id_1 10.0.0.99:82 weight 13\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='HTTP', monitor=False,
                                                  persistence=False))
         self.assertEqual(sample_configs.sample_base_expected_config(
@@ -224,6 +232,7 @@ class TestHaproxyCfg(base.TestCase):
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
                 persistence_type='SOURCE_IP'))
         self.assertEqual(
@@ -245,6 +254,7 @@ class TestHaproxyCfg(base.TestCase):
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
                 persistence_type='APP_COOKIE',
                 persistence_cookie='JSESSIONID'))
@@ -294,6 +304,7 @@ class TestHaproxyCfg(base.TestCase):
               "    server sample_member_id_3 10.0.0.97:82 weight 13 check "
               "inter 30s fall 3 rise 2 cookie sample_member_id_3\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(l7=True))
         self.assertEqual(sample_configs.sample_base_expected_config(
             frontend=fe, backend=be), rendered_obj)
@@ -314,6 +325,7 @@ class TestHaproxyCfg(base.TestCase):
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
                 insert_headers={'X-Forwarded-For': 'true'}))
         self.assertEqual(
@@ -337,6 +349,7 @@ class TestHaproxyCfg(base.TestCase):
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
                 insert_headers={'X-Forwarded-For': 'true',
                                 'X-Forwarded-Port': 'true'}))
@@ -381,15 +394,22 @@ class TestHaproxyCfg(base.TestCase):
         self.assertEqual(sample_configs.RET_LISTENER_L7, ret)
 
     def test_transform_loadbalancer(self):
+        in_amphora = sample_configs.sample_amphora_tuple()
         in_listener = sample_configs.sample_listener_tuple()
         ret = self.jinja_cfg._transform_loadbalancer(
-            in_listener.load_balancer, in_listener, None)
+            in_amphora, in_listener.load_balancer, in_listener, None)
         self.assertEqual(sample_configs.RET_LB, ret)
 
+    def test_transform_amphora(self):
+        in_amphora = sample_configs.sample_amphora_tuple()
+        ret = self.jinja_cfg._transform_amphora(in_amphora)
+        self.assertEqual(sample_configs.RET_AMPHORA, ret)
+
     def test_transform_loadbalancer_with_l7(self):
+        in_amphora = sample_configs.sample_amphora_tuple()
         in_listener = sample_configs.sample_listener_tuple(l7=True)
         ret = self.jinja_cfg._transform_loadbalancer(
-            in_listener.load_balancer, in_listener, None)
+            in_amphora, in_listener.load_balancer, in_listener, None)
         self.assertEqual(sample_configs.RET_LB_L7, ret)
 
     def test_transform_l7policy(self):
