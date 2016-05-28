@@ -235,3 +235,25 @@ class AbstractNetworkDriver(object):
         :raises: PlugNetworkException, AmphoraNotFound, NetworkNotFound
         """
         pass
+
+    @abc.abstractmethod
+    def get_network_configs(self, load_balancer):
+        """Retrieve network configurations
+
+        This method assumes that a dictionary of AmphoraNetworkConfigs keyed
+        off of the related amphora id are returned.
+        The configs contain data pertaining to each amphora that is later
+        used for finalization of the entire load balancer configuration.
+        The data provided to these configs is left up to the driver, this
+        means the driver is responsible for providing data that is appropriate
+        for the amphora network configurations.
+
+        Example return:
+        {<amphora.id>: <AmphoraNetworkConfig>}
+
+        :param load_balancer: The load_balancer configuration
+        :return: dict of octavia.network.data_models.AmphoraNetworkConfig
+        keyed off of the amphora id the config is associated with.
+        :raises: NotFound, NetworkNotFound, SubnetNotFound, PortNotFound
+        """
+        pass

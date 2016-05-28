@@ -25,6 +25,7 @@ from octavia.common import constants
 from octavia.common import data_models
 from octavia.i18n import _LE, _LI, _LW
 from octavia.network import base
+from octavia.network import data_models as n_data_models
 from octavia.network.drivers.neutron import base as neutron_base
 from octavia.network.drivers.neutron import utils
 
@@ -462,3 +463,28 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                               port_id=port.id)
             LOG.exception(message)
             raise base.PlugNetworkException(message)
+
+    def get_network_configs(self, loadbalancer):
+        vip_subnet = self.get_subnet(loadbalancer.vip.subnet_id)
+        vip_port = self.get_port(loadbalancer.vip.port_id)
+        amp_configs = {}
+        for amp in loadbalancer.amphorae:
+            if amp.status != constants.DELETED:
+                LOG.debug("Retrieving network details for amphora %s", amp.id)
+                vrrp_port = self.get_port(amp.vrrp_port_id)
+                vrrp_subnet = self.get_subnet(
+                    vrrp_port.get_subnet_id(amp.vrrp_ip))
+                ha_port = self.get_port(amp.ha_port_id)
+                ha_subnet = self.get_subnet(
+                    ha_port.get_subnet_id(amp.ha_ip))
+
+                amp_configs[amp.id] = n_data_models.AmphoraNetworkConfig(
+                    amphora=amp,
+                    vip_subnet=vip_subnet,
+                    vip_port=vip_port,
+                    vrrp_subnet=vrrp_subnet,
+                    vrrp_port=vrrp_port,
+                    ha_subnet=ha_subnet,
+                    ha_port=ha_port
+                )
+        return amp_configs

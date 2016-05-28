@@ -131,6 +131,12 @@ class NoopManager(object):
         self.networkconfigconfig[(compute_id, port)] = (
             compute_id, port, 'plug_port')
 
+    def get_network_configs(self, loadbalancer):
+        LOG.debug("Network %s no-op, get_network_configs loadbalancer id %s ",
+                  self.__class__.__name__, loadbalancer.id)
+        self.networkconfigconfig[(loadbalancer)] = (
+            loadbalancer, 'get_network_configs')
+
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def __init__(self):
@@ -176,3 +182,6 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def plug_port(self, compute_id, port):
         return self.driver.plug_port(compute_id, port)
+
+    def get_network_configs(self, loadbalancer):
+        return self.driver.get_network_configs(loadbalancer)

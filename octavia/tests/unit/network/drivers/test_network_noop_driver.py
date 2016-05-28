@@ -127,3 +127,10 @@ class TestNoopNetworkDriver(base.TestCase):
             (self.compute_id, self.port, 'plug_port'),
             self.driver.driver.networkconfigconfig[self.compute_id, self.port]
         )
+
+    def test_get_network_configs(self):
+        self.driver.get_network_configs(self.load_balancer)
+        self.assertEqual(
+            (self.load_balancer, 'get_network_configs'),
+            self.driver.driver.networkconfigconfig[self.load_balancer]
+        )
