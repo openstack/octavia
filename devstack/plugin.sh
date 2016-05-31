@@ -251,7 +251,7 @@ if is_service_enabled $OCTAVIA; then
     fi
 
     # Check if an amphora image is already loaded
-    AMPHORA_IMAGE_NAME=$(nova image-list | awk '/ amphora-x64-haproxy / {print $4}')
+    AMPHORA_IMAGE_NAME=$(glance image-list | awk '/ amphora-x64-haproxy / {print $4}')
     export AMPHORA_IMAGE_NAME
 
     if [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
