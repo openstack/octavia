@@ -1,0 +1,1 @@
+../singlenode/local.sh

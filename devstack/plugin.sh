@@ -119,8 +119,10 @@ function octavia_configure {
     # Used to communicate with the amphora over the mgmt network, may differ from amp_ssh_key in a real deployment.
     iniset $OCTAVIA_CONF haproxy_amphora key_path ${OCTAVIA_AMP_SSH_KEY_PATH}
 
-    recreate_database_mysql octavia
-    octavia-db-manage upgrade head
+    if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
+        recreate_database_mysql octavia
+        octavia-db-manage upgrade head
+    fi
 
     if [[ -a $OCTAVIA_CERTS_DIR ]] ; then
         rm -rf $OCTAVIA_CERTS_DIR
@@ -145,7 +147,8 @@ function octavia_configure {
 }
 
 function create_mgmt_network_interface {
-    id_and_mac=$(neutron port-create --name octavia-health-manager-listen-port --security-group lb-mgmt-sec-grp --device-owner Octavia:health-mgr --binding:host_id=$(hostname) lb-mgmt-net | awk '/ id | mac_address / {print $4}')
+    id_and_mac=$(neutron port-create --name octavia-health-manager-$OCTAVIA_NODE-listen-port --security-group lb-mgmt-sec-grp --device-owner Octavia:health-mgr --binding:host_id=$(hostname) lb-mgmt-net | awk '/ id | mac_address / {print $4}')
+
     id_and_mac=($id_and_mac)
     MGMT_PORT_ID=${id_and_mac[0]}
     MGMT_PORT_MAC=${id_and_mac[1]}
@@ -153,7 +156,13 @@ function create_mgmt_network_interface {
     sudo ovs-vsctl -- --may-exist add-port ${OVS_BRIDGE:-br-int} o-hm0 -- set Interface o-hm0 type=internal -- set Interface o-hm0 external-ids:iface-status=active -- set Interface o-hm0 external-ids:attached-mac=$MGMT_PORT_MAC -- set Interface o-hm0 external-ids:iface-id=$MGMT_PORT_ID
     sudo ip link set dev o-hm0 address $MGMT_PORT_MAC
     sudo dhclient -v o-hm0 -cf $OCTAVIA_DHCLIENT_CONF
-    iniset $OCTAVIA_CONF health_manager controller_ip_port_list $MGMT_PORT_IP:$OCTAVIA_HM_LISTEN_PORT
+
+    if [ $OCTAVIA_CONTROLLER_IP_PORT_LIST == 'auto' ] ; then
+        iniset $OCTAVIA_CONF health_manager controller_ip_port_list $MGMT_PORT_IP:$OCTAVIA_HM_LISTEN_PORT
+    else
+        iniset $OCTAVIA_CONF health_manager controller_ip_port_list $OCTAVIA_CONTROLLER_IP_PORT_LIST
+    fi
+
     iniset $OCTAVIA_CONF health_manager bind_ip $MGMT_PORT_IP
     iniset $OCTAVIA_CONF health_manager bind_port $OCTAVIA_HM_LISTEN_PORT
 }
@@ -172,7 +181,6 @@ function build_mgmt_network {
     OCTAVIA_MGMT_SEC_GRP_ID=$(nova secgroup-list | awk ' / lb-mgmt-sec-grp / {print $2}')
     iniset ${OCTAVIA_CONF} controller_worker amp_secgroup_list ${OCTAVIA_MGMT_SEC_GRP_ID}
 
-    create_mgmt_network_interface
 }
 
 function configure_octavia_tempest {
@@ -194,32 +202,49 @@ function octavia_start {
     # Several steps in this function would more logically be in the configure function, but
     # we need nova, glance, and neutron to be running.
 
-    nova keypair-add --pub-key ${OCTAVIA_AMP_SSH_KEY_PATH}.pub ${OCTAVIA_AMP_SSH_KEY_NAME}
-
-    if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
-        build_octavia_worker_image
+    if [ $OCTAVIA_NODE != 'main' ] && [ $OCTAVIA_NODE != 'standalone' ] ; then
+        # without the other services enabled apparently we don't have
+        # credentials at this point
+        TOP_DIR=$(cd $(dirname "$0") && pwd)
+        source ${TOP_DIR}/openrc admin admin
     fi
 
-    OCTAVIA_AMP_IMAGE_ID=$(glance image-list | grep ${OCTAVIA_AMP_IMAGE_NAME} | awk '{print $2}')
-    if [ -n "$OCTAVIA_AMP_IMAGE_ID" ]; then
-        glance image-tag-update ${OCTAVIA_AMP_IMAGE_ID} ${OCTAVIA_AMP_IMAGE_TAG}
+    if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
+        # things that should only happen on the ha main node / or once
+        nova keypair-add --pub-key ${OCTAVIA_AMP_SSH_KEY_PATH}.pub ${OCTAVIA_AMP_SSH_KEY_NAME}
+
+        if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
+            build_octavia_worker_image
+        fi
+
+        OCTAVIA_AMP_IMAGE_ID=$(glance image-list | grep ${OCTAVIA_AMP_IMAGE_NAME} | awk '{print $2}')
+
+        if [ -n "$OCTAVIA_AMP_IMAGE_ID" ]; then
+            glance image-tag-update ${OCTAVIA_AMP_IMAGE_ID} ${OCTAVIA_AMP_IMAGE_TAG}
+        fi
+        create_amphora_flavor
+
+        # Create a management network.
+        build_mgmt_network
+
+        create_octavia_accounts
+
+        # Adds service and endpoint
+        if is_service_enabled tempest; then
+            configure_octavia_tempest ${OCTAVIA_AMP_NETWORK_ID}
+        fi
+    else
+        OCTAVIA_AMP_IMAGE_ID=$(glance image-list | grep ${OCTAVIA_AMP_IMAGE_NAME} | awk '{print $2}')
     fi
+
+    create_mgmt_network_interface
+
     iniset $OCTAVIA_CONF controller_worker amp_image_tag ${OCTAVIA_AMP_IMAGE_TAG}
 
-    create_amphora_flavor
-
-    # Create a management network.
-    build_mgmt_network
     OCTAVIA_AMP_NETWORK_ID=$(neutron net-list | awk '/ lb-mgmt-net / {print $2}')
 
     iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
 
-    if is_service_enabled tempest; then
-        configure_octavia_tempest ${OCTAVIA_AMP_NETWORK_ID}
-    fi
-
-    # Adds service and endpoint
-    create_octavia_accounts
 
     run_process $OCTAVIA_API  "$OCTAVIA_API_BINARY $OCTAVIA_API_ARGS"
     run_process $OCTAVIA_CONSUMER  "$OCTAVIA_CONSUMER_BINARY $OCTAVIA_CONSUMER_ARGS"
@@ -236,7 +261,7 @@ function octavia_stop {
     [ ! -z "$pids" ] && sudo kill $pids
 }
 function octavia_configure_common {
-    if is_service_enabled $OCTAVIA_SERVICE; then
+    if is_service_enabled $OCTAVIA_SERVICE && [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE = 'standalone' ] ; then
         inicomment $NEUTRON_LBAAS_CONF service_providers service_provider
         iniadd $NEUTRON_LBAAS_CONF service_providers service_provider $OCTAVIA_SERVICE_PROVIDER
     fi
@@ -258,32 +283,35 @@ function octavia_cleanup {
     if [ ${OCTAVIA_AMP_SSH_KEY_PATH}x != x ] ; then
         rm -f ${OCTAVIA_AMP_SSH_KEY_PATH} ${OCTAVIA_AMP_SSH_KEY_PATH}.pub
     fi
-    if [ ${OCTAVIA_AMP_SSH_KEY_NAME}x != x ] ; then
-        nova keypair-delete ${OCTAVIA_AMP_SSH_KEY_NAME}
+    if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
+        if [ ${OCTAVIA_AMP_SSH_KEY_NAME}x != x ] ; then
+            nova keypair-delete ${OCTAVIA_AMP_SSH_KEY_NAME}
+        fi
     fi
 }
 
 # check for service enabled
 if is_service_enabled $OCTAVIA; then
+    if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then # main-ha node stuff only
+        if ! is_service_enabled $Q_SVC || ! is_service_enabled $LBAAS_V2; then
+            die "The neutron $Q_SVC and $LBAAS_V2 services must be enabled to use $OCTAVIA"
+        fi
 
-    if ! is_service_enabled $Q_SVC || ! is_service_enabled $LBAAS_V2; then
-        die "The neutron $Q_SVC and $LBAAS_V2 services must be enabled to use $OCTAVIA"
-    fi
+        # Check if an amphora image is already loaded
+        AMPHORA_IMAGE_NAME=$(glance image-list | awk '/ amphora-x64-haproxy / {print $4}')
+        export AMPHORA_IMAGE_NAME
 
-    # Check if an amphora image is already loaded
-    AMPHORA_IMAGE_NAME=$(glance image-list | awk '/ amphora-x64-haproxy / {print $4}')
-    export AMPHORA_IMAGE_NAME
+        if [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
+            echo "Found DISABLE_AMP_IMAGE_BUILD == True"
+            echo "Skipping amphora image build"
+        fi
 
-    if [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
-        echo "Found DISABLE_AMP_IMAGE_BUILD == True"
-        echo "Skipping amphora image build"
-    fi
-
-    if [ "$AMPHORA_IMAGE_NAME" == 'amphora-x64-haproxy' ]; then
-        echo "Found existing amphora image: $AMPHORA_IMAGE_NAME"
-        echo "Skipping amphora image build"
-        DISABLE_AMP_IMAGE_BUILD=True
-        export DISABLE_AMP_IMAGE_BUILD
+        if [ "$AMPHORA_IMAGE_NAME" == 'amphora-x64-haproxy' ]; then
+            echo "Found existing amphora image: $AMPHORA_IMAGE_NAME"
+            echo "Skipping amphora image build"
+            DISABLE_AMP_IMAGE_BUILD=True
+            export DISABLE_AMP_IMAGE_BUILD
+        fi
     fi
 
     if [[ "$1" == "stack" && "$2" == "install" ]]; then
