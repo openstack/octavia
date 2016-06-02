@@ -37,7 +37,7 @@ def make_json_error(ex):
 
 
 for code in six.iterkeys(exceptions.default_exceptions):
-    app.error_handler_spec[None][code] = make_json_error
+    app.register_error_handler(code, make_json_error)
 
 
 @app.route('/' + api_server.VERSION +
