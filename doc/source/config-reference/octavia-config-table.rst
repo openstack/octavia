@@ -237,13 +237,13 @@ Use the following options in the /etc/octavia/octavia.conf file.
    * - ``vrrp_check_interval`` = ``5``
      - (IntOpt) VRRP health check script run interval in seconds.
    * - ``vrrp_fail_count`` = ``2``
-     - (IntOpt) Number of successive failure before transition to a fail state.
+     - (IntOpt) Number of successive failures before transition to a fail state.
    * - ``vrrp_garp_refresh_count`` = ``2``
      - (IntOpt) Number of gratuitous ARP announcements to make on each refresh interval.
    * - ``vrrp_garp_refresh_interval`` = ``5``
      - (IntOpt) Time in seconds between gratuitous ARP announcements from the MASTER.
    * - ``vrrp_success_count`` = ``2``
-     - (IntOpt) Number of successive failure before transition to a success state.
+     - (IntOpt) Number of consecutive successes before transition to a success state.
    * - **[keystone_authtoken]**
      -
    * - ``admin_password`` = ``None``

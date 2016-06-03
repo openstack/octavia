@@ -337,11 +337,11 @@ keepalived_vrrp_opts = [
                help=_('VRRP health check script run interval in seconds.')),
     cfg.IntOpt('vrrp_fail_count',
                default=2,
-               help=_('Number of successive failure before transition to a '
+               help=_('Number of successive failures before transition to a '
                       'fail state.')),
     cfg.IntOpt('vrrp_success_count',
                default=2,
-               help=_('Number of successive failure before transition to a '
+               help=_('Number of consecutive successes before transition to a '
                       'success state.')),
     cfg.IntOpt('vrrp_garp_refresh_interval',
                default=5,
