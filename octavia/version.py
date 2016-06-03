@@ -14,4 +14,19 @@
 
 import pbr.version
 
+OCTAVIA_VENDOR = "OpenStack Foundation"
+OCTAVIA_PRODUCT = "OpenStack Octavia"
+
 version_info = pbr.version.VersionInfo('octavia')
+
+
+def vendor_string():
+    return OCTAVIA_VENDOR
+
+
+def product_string():
+    return OCTAVIA_PRODUCT
+
+
+def version_string_with_package():
+    return version_info.version_string()
