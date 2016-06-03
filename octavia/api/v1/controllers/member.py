@@ -25,6 +25,7 @@ from octavia.api.v1.controllers import base
 from octavia.api.v1.types import member as member_types
 from octavia.common import constants
 from octavia.common import exceptions
+import octavia.common.validate as validate
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
@@ -91,6 +92,10 @@ class MembersController(base.BaseController):
     def post(self, member):
         """Creates a pool member on a pool."""
         context = pecan.request.context.get('octavia_context')
+        # Validate member subnet
+        if member.subnet_id and not validate.subnet_exists(member.subnet_id):
+            raise exceptions.NotFound(resource='Subnet',
+                                      id=member.subnet_id)
         member_dict = db_prepare.create_member(member.to_dict(
             render_unsets=True), self.pool_id)
         self._test_lb_and_listener_statuses(context.session)

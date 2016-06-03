@@ -12,9 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
 from oslo_utils import uuidutils
 
 from octavia.common import constants
+from octavia.network import base as network_base
 from octavia.tests.functional.api.v1 import base
 
 
@@ -176,6 +178,32 @@ class TestMember(base.BaseAPITest):
         self.post(self.members_path, member, status=202)
         self.set_lb_status(self.lb.get('id'))
         self.post(self.members_path, member, status=409)
+
+    def test_create_with_bad_subnet(self, **optionals):
+        with mock.patch(
+                'octavia.common.utils.get_network_driver') as net_mock:
+            net_mock.return_value.get_subnet = mock.Mock(
+                side_effect=network_base.SubnetNotFound('Subnet not found'))
+            subnet_id = uuidutils.generate_uuid()
+            response = self.create_member(self.lb.get('id'),
+                                          self.pool.get('id'),
+                                          '10.0.0.1', 80, expect_error=True,
+                                          subnet_id=subnet_id)
+            err_msg = 'Subnet ' + subnet_id + ' not found.'
+            self.assertEqual(response.get('faultstring'), err_msg)
+
+    def test_create_with_valid_subnet(self, **optionals):
+        with mock.patch(
+                'octavia.common.utils.get_network_driver') as net_mock:
+            subnet_id = uuidutils.generate_uuid()
+            net_mock.return_value.get_subnet.return_value = subnet_id
+            response = self.create_member(self.lb.get('id'),
+                                          self.pool.get('id'),
+                                          '10.0.0.1', 80, expect_error=True,
+                                          subnet_id=subnet_id)
+            self.assertEqual('10.0.0.1', response.get('ip_address'))
+            self.assertEqual(80, response.get('protocol_port'))
+            self.assertEqual(subnet_id, response.get('subnet_id'))
 
     def test_update(self):
         old_port = 80

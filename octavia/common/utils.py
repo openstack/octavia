@@ -24,8 +24,12 @@ import hashlib
 import random
 import socket
 
+from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
+from stevedore import driver as stevedore_driver
+
+CONF = cfg.CONF
 
 LOG = logging.getLogger(__name__)
 
@@ -54,6 +58,16 @@ def base64_sha1_string(string_to_hash):
     hash_str = hashlib.sha1(string_to_hash.encode('utf-8')).digest()
     b64_str = base64.b64encode(hash_str, str.encode('_-', 'ascii'))
     return b64_str.decode('UTF-8')
+
+
+def get_network_driver():
+    CONF.import_group('controller_worker', 'octavia.common.config')
+    network_driver = stevedore_driver.DriverManager(
+        namespace='octavia.network.drivers',
+        name=CONF.controller_worker.network_driver,
+        invoke_on_load=True
+    ).driver
+    return network_driver
 
 
 class exception_logger(object):
