@@ -229,7 +229,7 @@ class ListenersController(base.BaseController):
 
     @pecan.expose()
     def _lookup(self, listener_id, *remainder):
-        """Overriden pecan _lookup method for custom routing.
+        """Overridden pecan _lookup method for custom routing.
 
         Verifies that the listener passed in the url exists, and if so decides
         which controller, if any, should control be passed.

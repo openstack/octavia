@@ -52,7 +52,6 @@ class PoolsController(base.BaseController):
 
     @wsme_pecan.wsexpose([pool_types.PoolResponse], wtypes.text)
     def get_all(self, listener_id=None):
-
         """Lists all pools on a listener or loadbalancer."""
         context = pecan.request.context.get('octavia_context')
         if listener_id is not None:
@@ -206,7 +205,7 @@ class PoolsController(base.BaseController):
 
     @pecan.expose()
     def _lookup(self, pool_id, *remainder):
-        """Overriden pecan _lookup method for custom routing.
+        """Overridden pecan _lookup method for custom routing.
 
         Verifies that the pool passed in the url exists, and if so decides
         which controller, if any, should control be passed.
