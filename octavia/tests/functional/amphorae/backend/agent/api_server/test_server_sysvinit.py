@@ -15,6 +15,7 @@ import hashlib
 import json
 import os
 import random
+import socket
 import stat
 import subprocess
 
@@ -172,7 +173,7 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(
             {'message': 'OK',
              'details': 'Configuration file is valid\nhaproxy daemon for'
-                        + ' 123 started'},
+                        ' 123 started'},
             json.loads(rv.data.decode('utf-8')))
         mock_subprocess.assert_called_with(
             ['/usr/sbin/service', 'haproxy-123', 'start'], stderr=-2)
@@ -290,11 +291,11 @@ class ServerTestCase(base.TestCase):
                          rv.headers['Content-Type'])
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                + 'get_listeners')
+                'get_listeners')
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
-                + '_check_listener_status')
+                '_check_listener_status')
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
-                + '_parse_haproxy_file')
+                '_parse_haproxy_file')
     def test_get_all_listeners(self, mock_parse, mock_status, mock_listener):
         # no listeners
         mock_listener.side_effect = [[]]
@@ -327,9 +328,9 @@ class ServerTestCase(base.TestCase):
             json.loads(rv.data.decode('utf-8')))
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
-                + '_check_listener_status')
+                '_check_listener_status')
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
-                + '_parse_haproxy_file')
+                '_parse_haproxy_file')
     @mock.patch('octavia.amphorae.backends.utils.haproxy_query.HAProxyQuery')
     @mock.patch('os.path.exists')
     def test_get_listener(self, mock_exists, mock_query, mock_parse,
@@ -698,7 +699,7 @@ class ServerTestCase(base.TestCase):
 
         # Happy path
         netns_handle.get_addr.return_value = [{
-            'index': 3, 'family': 2,
+            'index': 3, 'family': socket.AF_INET,
             'attrs': [['IFA_ADDRESS', '203.0.113.2']]}]
         netns_handle.get_links.return_value = [{
             'attrs': [['IFLA_IFNAME', 'eth0']]}]
@@ -709,7 +710,7 @@ class ServerTestCase(base.TestCase):
 
         # Happy path with IPv6 address normalization
         netns_handle.get_addr.return_value = [{
-            'index': 3, 'family': 10,
+            'index': 3, 'family': socket.AF_INET6,
             'attrs': [['IFA_ADDRESS',
                        '0000:0000:0000:0000:0000:0000:0000:0001']]}]
         netns_handle.get_links.return_value = [{
