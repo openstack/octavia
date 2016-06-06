@@ -274,7 +274,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         """Creates a load balancer by allocating Amphorae.
 
         First tries to allocate an existing Amphora in READY state.
-        If none are available it will attempt to build one specificly
+        If none are available it will attempt to build one specifically
         for this load balancer.
 
         :param load_balancer_id: ID of the load balancer to create
