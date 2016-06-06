@@ -52,7 +52,7 @@ class LoadBalancersController(base.BaseController):
     @wsme_pecan.wsexpose([lb_types.LoadBalancerResponse], wtypes.text,
                          wtypes.text)
     def get_all(self, tenant_id=None, project_id=None):
-        """Lists all listeners on a load balancer."""
+        """Lists all load balancers."""
         # NOTE(blogan): tenant_id and project_id are optional query parameters
         # tenant_id and project_id are the same thing.  tenant_id will be kept
         # around for a short amount of time.
@@ -173,7 +173,7 @@ class LoadBalancersController(base.BaseController):
 
     @pecan.expose()
     def _lookup(self, lb_id, *remainder):
-        """Overriden pecan _lookup method for custom routing.
+        """Overridden pecan _lookup method for custom routing.
 
         Verifies that the load balancer passed in the url exists, and if so
         decides which controller, if any, should control be passed.

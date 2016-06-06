@@ -165,7 +165,7 @@ class L7PolicyController(base.BaseController):
 
     @pecan.expose()
     def _lookup(self, l7policy_id, *remainder):
-        """Overriden pecan _lookup method for custom routing.
+        """Overridden pecan _lookup method for custom routing.
 
         Verifies that the l7policy passed in the url exists, and if so decides
         which controller, if any, should control be passed.
