@@ -12,6 +12,7 @@
 
 from glanceclient import client as glance_client
 from neutronclient.neutron import client as neutron_client
+from novaclient import api_versions
 from novaclient import client as nova_client
 from oslo_log import log as logging
 from oslo_utils import excutils
@@ -22,7 +23,7 @@ from octavia.i18n import _LE
 LOG = logging.getLogger(__name__)
 GLANCE_VERSION = '2'
 NEUTRON_VERSION = '2.0'
-NOVA_VERSION = '2'
+NOVA_VERSION = '2.1'
 
 
 class NovaAuth(object):
@@ -56,7 +57,7 @@ class NovaAuth(object):
                 kwargs['cacert'] = cacert
             try:
                 cls.nova_client = nova_client.Client(
-                    NOVA_VERSION, **kwargs)
+                    version=api_versions.APIVersion(NOVA_VERSION), **kwargs)
             except Exception:
                 with excutils.save_and_reraise_exception():
                     LOG.exception(_LE("Error creating Nova client."))
