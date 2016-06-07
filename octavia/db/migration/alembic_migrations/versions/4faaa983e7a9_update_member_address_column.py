@@ -31,8 +31,3 @@ import sqlalchemy as sa
 def upgrade():
     op.alter_column(u'member', u'address', new_column_name=u'ip_address',
                     existing_type=sa.String(64))
-
-
-def downgrade():
-    op.alter_column(u'member', u'ip_address', new_column_name=u'address',
-                    existing_type=sa.String(64))

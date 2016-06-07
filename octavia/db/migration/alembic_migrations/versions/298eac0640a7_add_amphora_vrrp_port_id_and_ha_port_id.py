@@ -33,8 +33,3 @@ def upgrade():
                   sa.Column(u'vrrp_port_id', sa.String(36), nullable=True))
     op.add_column(u'amphora',
                   sa.Column(u'ha_port_id', sa.String(36), nullable=True))
-
-
-def downgrade():
-    op.drop_column(u'amphora', u'vrrp_port_id')
-    op.drop_column(u'amphora', u'ha_port_id')

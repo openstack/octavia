@@ -28,8 +28,6 @@ down_revision = '8c0851bdf6c3'
 
 
 def upgrade():
-    # OpenStack has decided that "down" migrations are not supported.
-    # The downgrade() method has been omitted for this reason.
     op.add_column('listener_statistics',
                   sa.Column('amphora_id',
                             sa.String(36),

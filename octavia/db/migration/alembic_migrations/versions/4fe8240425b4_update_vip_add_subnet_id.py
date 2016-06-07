@@ -31,9 +31,3 @@ def upgrade():
     with op.batch_alter_table(u'vip') as batch_op:
         batch_op.alter_column(u'network_id', new_column_name=u'subnet_id',
                               existing_type=sa.String(36))
-
-
-def downgrade():
-    with op.batch_alter_table(u'vip') as batch_op:
-        batch_op.alter_column(u'subnet_id', new_column_name=u'network_id',
-                              existing_type=sa.String(36))

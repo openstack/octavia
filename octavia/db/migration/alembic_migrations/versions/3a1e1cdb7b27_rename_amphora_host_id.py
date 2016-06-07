@@ -31,8 +31,3 @@ import sqlalchemy as sa
 def upgrade():
     op.alter_column(u'amphora', u'host_id', new_column_name='compute_id',
                     existing_type=sa.String(36), nullable=True)
-
-
-def downgrade():
-    op.alter_column(u'amphora', u'compute_id', new_column_name='host_id',
-                    existing_type=sa.String(36), nullable=False)
