@@ -1,4 +1,4 @@
-# Copyright 2016 Hewlett-Packard Development Company, L.P.
+# Copyright 2016 IBM
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -12,17 +12,17 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""change_tls_container_id_length_in_sni_table
+"""Fix migration for MySQL 5.7
 
-Revision ID: 8c0851bdf6c3
-Revises: 186509101b9b
-Create Date: 2016-03-23 19:08:53.148812
+Revision ID: 62816c232310
+Revises: 36b94648fef8
+Create Date: 2016-06-07 12:59:21.059619
 
 """
 
 # revision identifiers, used by Alembic.
-revision = '8c0851bdf6c3'
-down_revision = '186509101b9b'
+revision = '62816c232310'
+down_revision = '36b94648fef8'
 
 from alembic import op
 import sqlalchemy as sa

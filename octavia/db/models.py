@@ -418,7 +418,7 @@ class SNI(base_models.BASE):
         sa.String(36),
         sa.ForeignKey("listener.id", name="fk_sni_listener_id"),
         nullable=False)
-    tls_container_id = sa.Column(sa.String(36), nullable=False)
+    tls_container_id = sa.Column(sa.String(128), nullable=False)
     position = sa.Column(sa.Integer(), nullable=True)
     listener = orm.relationship("Listener", uselist=False,
                                 backref=orm.backref("sni_containers",
