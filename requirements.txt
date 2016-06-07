@@ -41,7 +41,7 @@ taskflow>=1.16.0
 networkx>=1.10
 
 #for the amphora api
-Flask<1.0,>=0.10
+Flask!=0.11,<1.0,>=0.10
 netifaces>=0.10.4
 
 cryptography>=1.0 # Apache-2.0
