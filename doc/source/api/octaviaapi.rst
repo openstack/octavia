@@ -790,8 +790,8 @@ Pools
 |                     |               | ``LEAST_CONNECTIONS``, \           |
 |                     |               | ``SOURCE_IP``, ``ROUND_ROBIN``     |
 +---------------------+---------------+------------------------------------+
-| session_persistence | Session \     | Number of connections allowed at \ |
-|                     | Persistence \ | any given time                     |
+| session_persistence | Session \     | JSON Session Persistence object \  |
+|                     | Persistence \ | (see below)                        |
 |                     | Object        |                                    |
 +---------------------+---------------+------------------------------------+
 | name                | String        | String for pool name               |
@@ -1062,7 +1062,7 @@ Health Monitors
 |                |         | a health check fails                 |
 +----------------+---------+--------------------------------------+
 | fall_threshold | Integer | Number of health checks that can \   |
-|                |         | pass before the pool member is \     |
+|                |         | fail before the pool member is \     |
 |                |         | moved from ``ONLINE`` to ``OFFLINE`` |
 +----------------+---------+--------------------------------------+
 | rise_threshold | Integer | Number of health checks that can \   |
