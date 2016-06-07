@@ -17,11 +17,11 @@ import logging
 
 from oslo_config import cfg
 import six
-from stevedore import driver as stevedore_driver
 from taskflow import task
 from taskflow.types import failure
 
 from octavia.common import constants
+from octavia.common import utils
 from octavia.i18n import _LW, _LE
 from octavia.network import base
 from octavia.network import data_models as n_data_models
@@ -37,11 +37,7 @@ class BaseNetworkTask(task.Task):
     def __init__(self, **kwargs):
         super(BaseNetworkTask, self).__init__(**kwargs)
 
-        self.network_driver = stevedore_driver.DriverManager(
-            namespace='octavia.network.drivers',
-            name=CONF.controller_worker.network_driver,
-            invoke_on_load=True
-        ).driver
+        self.network_driver = utils.get_network_driver()
 
 
 class CalculateAmphoraDelta(BaseNetworkTask):
