@@ -243,7 +243,7 @@ class AmphoraAPIClient(object):
             except (requests.ConnectionError, requests.Timeout):
                 LOG.warning(_LW("Could not connect to instance. Retrying."))
                 time.sleep(CONF.haproxy_amphora.connection_retry_interval)
-                if a >= CONF.haproxy_amphora.connection_max_retries:
+                if a == CONF.haproxy_amphora.connection_max_retries - 1:
                     raise driver_except.TimeOutException()
             else:
                 return r
