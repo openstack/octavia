@@ -51,6 +51,12 @@ class TestListener(base.BaseAPITest):
         listener2['operating_status'] = constants.ONLINE
         listener3['provisioning_status'] = constants.ACTIVE
         listener3['operating_status'] = constants.ONLINE
+        for listener in api_listeners:
+            del listener['updated_at']
+
+        self.assertIsNone(listener1.pop('updated_at'))
+        self.assertIsNone(listener2.pop('updated_at'))
+        self.assertIsNone(listener3.pop('updated_at'))
         self.assertIn(listener1, api_listeners)
         self.assertIn(listener2, api_listeners)
         self.assertIn(listener3, api_listeners)
@@ -105,6 +111,8 @@ class TestListener(base.BaseAPITest):
         self.assertEqual(2, len(sni_resp))
         for sni in sni_resp:
             self.assertIn(sni, sni_ex)
+        self.assertIsNotNone(listener_api.pop('created_at'))
+        self.assertIsNone(listener_api.pop('updated_at'))
         self.assertEqual(lb_listener, listener_api)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
@@ -182,6 +190,8 @@ class TestListener(base.BaseAPITest):
         lb_listener.update(defaults)
         self.assertTrue(uuidutils.is_uuid_like(listener_api.get('id')))
         lb_listener['id'] = listener_api.get('id')
+        self.assertIsNotNone(listener_api.pop('created_at'))
+        self.assertIsNone(listener_api.pop('updated_at'))
         self.assertEqual(lb_listener, listener_api)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
@@ -209,6 +219,10 @@ class TestListener(base.BaseAPITest):
                          'provisioning_status': constants.PENDING_UPDATE,
                          'operating_status': constants.ONLINE}
         listener.update(update_expect)
+        self.assertEqual(listener.pop('created_at'),
+                         api_listener.pop('created_at'))
+        self.assertNotEqual(listener.pop('updated_at'),
+                            api_listener.pop('updated_at'))
         self.assertNotEqual(listener, api_listener)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
@@ -277,6 +291,9 @@ class TestListener(base.BaseAPITest):
                     'provisioning_status': constants.PENDING_DELETE,
                     'connection_limit': None}
         listener.update(expected)
+
+        self.assertIsNone(listener.pop('updated_at'))
+        self.assertIsNotNone(api_listener.pop('updated_at'))
         self.assertEqual(listener, api_listener)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,

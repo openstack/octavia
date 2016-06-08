@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
+from oslo_db.sqlalchemy import models
 import sqlalchemy as sa
 from sqlalchemy.ext import orderinglist
 from sqlalchemy import orm
@@ -152,7 +152,8 @@ class ListenerStatistics(base_models.BASE):
         return value
 
 
-class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin):
+class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
+             models.TimestampMixin):
 
     __data_model__ = data_models.Member
 
@@ -210,7 +211,8 @@ class HealthMonitor(base_models.BASE, base_models.ProjectMixin):
                                                 cascade="delete"))
 
 
-class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin):
+class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
+           models.TimestampMixin):
 
     __data_model__ = data_models.Pool
 
@@ -260,7 +262,7 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin):
 
 
 class LoadBalancer(base_models.BASE, base_models.IdMixin,
-                   base_models.ProjectMixin):
+                   base_models.ProjectMixin, models.TimestampMixin):
 
     __data_model__ = data_models.LoadBalancer
 
@@ -333,7 +335,7 @@ class Vip(base_models.BASE):
 
 
 class Listener(base_models.BASE, base_models.IdMixin,
-               base_models.ProjectMixin):
+               base_models.ProjectMixin, models.TimestampMixin):
 
     __data_model__ = data_models.Listener
 

@@ -27,6 +27,8 @@ class MemberResponse(base.BaseType):
     weight = wtypes.wsattr(wtypes.IntegerType())
     subnet_id = wtypes.wsattr(wtypes.UuidType())
     project_id = wtypes.wsattr(wtypes.StringType())
+    created_at = wtypes.wsattr(wtypes.StringType())
+    updated_at = wtypes.wsattr(wtypes.StringType())
 
 
 class MemberPOST(base.BaseType):

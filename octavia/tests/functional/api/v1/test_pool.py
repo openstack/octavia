@@ -100,6 +100,8 @@ class TestPool(base.BaseAPITest):
         self.assertEqual(constants.PROTOCOL_HTTP, api_pool.get('protocol'))
         self.assertEqual(constants.LB_ALGORITHM_ROUND_ROBIN,
                          api_pool.get('lb_algorithm'))
+        self.assertIsNotNone(api_pool.get('created_at'))
+        self.assertIsNone(api_pool.get('updated_at'))
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.ACTIVE,
                                       constants.ONLINE)
@@ -239,6 +241,8 @@ class TestPool(base.BaseAPITest):
         response = self.get(self.pool_path.format(pool_id=api_pool.get('id')))
         response_body = response.json
         self.assertNotEqual('new_name', response_body.get('name'))
+        self.assertIsNotNone(response_body.get('created_at'))
+        self.assertIsNotNone(response_body.get('updated_at'))
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.ACTIVE,
                                       constants.ONLINE)
@@ -289,7 +293,11 @@ class TestPool(base.BaseAPITest):
         api_pool['operating_status'] = constants.ONLINE
         response = self.get(self.pool_path.format(
             pool_id=api_pool.get('id')))
-        self.assertEqual(api_pool, response.json)
+        pool = response.json
+
+        self.assertIsNone(api_pool.pop('updated_at'))
+        self.assertIsNotNone(pool.pop('updated_at'))
+        self.assertEqual(api_pool, pool)
         self.delete(self.pool_path.format(pool_id=api_pool.get('id')))
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,
@@ -331,7 +339,11 @@ class TestPool(base.BaseAPITest):
         api_pool['operating_status'] = constants.ONLINE
         response = self.get(self.pool_path.format(
             pool_id=api_pool.get('id')))
-        self.assertEqual(api_pool, response.json)
+        pool = response.json
+
+        self.assertIsNone(api_pool.pop('updated_at'))
+        self.assertIsNotNone(pool.pop('updated_at'))
+        self.assertEqual(api_pool, pool)
         self.handler_mock().pool.delete.side_effect = Exception()
         self.delete(self.pool_path.format(pool_id=api_pool.get('id')))
         self.assert_correct_lb_status(self.lb.get('id'),

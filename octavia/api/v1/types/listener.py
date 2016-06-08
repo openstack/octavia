@@ -45,6 +45,8 @@ class ListenerResponse(base.BaseType):
     default_pool = wtypes.wsattr(pool.PoolResponse)
     l7policies = wtypes.wsattr([l7policy.L7PolicyResponse])
     insert_headers = wtypes.wsattr(wtypes.DictType(str, str))
+    created_at = wtypes.wsattr(wtypes.StringType())
+    updated_at = wtypes.wsattr(wtypes.StringType())
 
     @classmethod
     def from_data_model(cls, data_model, children=False):

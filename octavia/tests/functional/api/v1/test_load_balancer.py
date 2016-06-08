@@ -41,6 +41,8 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(constants.OFFLINE,
                          api_lb.get('operating_status'))
         self.assertTrue(api_lb.get('enabled'))
+        self.assertIsNotNone(api_lb.get('created_at'))
+        self.assertIsNone(api_lb.get('updated_at'))
         for key, value in optionals.items():
             self.assertEqual(value, lb_json.get(key))
         self.assert_final_lb_statuses(api_lb.get('id'))
@@ -156,6 +158,8 @@ class TestLoadBalancer(base.BaseAPITest):
                          api_lb.get('provisioning_status'))
         self.assertEqual(lb.get('operational_status'),
                          api_lb.get('operational_status'))
+        self.assertIsNotNone(api_lb.get('created_at'))
+        self.assertIsNotNone(api_lb.get('updated_at'))
         self.assert_final_lb_statuses(api_lb.get('id'))
 
     def test_update_with_vip(self):
@@ -266,12 +270,18 @@ class TestLoadBalancerGraph(base.BaseAPITest):
 
     def _assert_graphs_equal(self, expected_graph, observed_graph):
         observed_graph_copy = copy.deepcopy(observed_graph)
+        del observed_graph_copy['created_at']
+        del observed_graph_copy['updated_at']
         obs_lb_id = observed_graph_copy.pop('id')
+
         self.assertTrue(uuidutils.is_uuid_like(obs_lb_id))
         expected_listeners = expected_graph.pop('listeners', [])
         observed_listeners = observed_graph_copy.pop('listeners', [])
         self.assertEqual(expected_graph, observed_graph_copy)
         for observed_listener in observed_listeners:
+            del observed_listener['created_at']
+            del observed_listener['updated_at']
+
             self.assertTrue(uuidutils.is_uuid_like(
                 observed_listener.pop('id')))
             default_pool = observed_listener.get('default_pool')
@@ -279,6 +289,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
                 observed_listener.pop('default_pool_id')
                 self.assertTrue(default_pool.get('id'))
                 default_pool.pop('id')
+                default_pool.pop('created_at')
+                default_pool.pop('updated_at')
                 hm = default_pool.get('healthmonitor')
                 if hm:
                     self.assertTrue(hm.get('id'))
@@ -286,6 +298,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
                 for member in default_pool.get('members', []):
                     self.assertTrue(member.get('id'))
                     member.pop('id')
+                    member.pop('created_at')
+                    member.pop('updated_at')
             if observed_listener.get('sni_containers'):
                 observed_listener['sni_containers'].sort()
             o_l7policies = observed_listener.get('l7policies')
@@ -295,12 +309,16 @@ class TestLoadBalancerGraph(base.BaseAPITest):
                         r_pool = o_l7policy.get('redirect_pool')
                         self.assertTrue(r_pool.get('id'))
                         r_pool.pop('id')
+                        r_pool.pop('created_at')
+                        r_pool.pop('updated_at')
                         self.assertTrue(o_l7policy.get('redirect_pool_id'))
                         o_l7policy.pop('redirect_pool_id')
                         if r_pool.get('members'):
                             for r_member in r_pool.get('members'):
                                 self.assertTrue(r_member.get('id'))
                                 r_member.pop('id')
+                                r_member.pop('created_at')
+                                r_member.pop('updated_at')
                     self.assertTrue(o_l7policy.get('id'))
                     o_l7policy.pop('id')
                     l7rules = o_l7policy.get('l7rules')
