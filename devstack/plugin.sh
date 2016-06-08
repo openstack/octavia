@@ -132,6 +132,10 @@ function octavia_configure {
     iniset $OCTAVIA_CONF certificates ca_private_key ${OCTAVIA_CERTS_DIR}/private/cakey.pem
     iniset $OCTAVIA_CONF certificates ca_private_key_passphrase foobar
 
+    # create dhclient.conf file for dhclient
+    mkdir -m755 -p $OCTAVIA_DHCLIENT_DIR
+    cp $OCTAVIA_DIR/etc/dhcp/dhclient.conf $OCTAVIA_DHCLIENT_CONF
+
 }
 
 function create_mgmt_network_interface {
@@ -142,7 +146,7 @@ function create_mgmt_network_interface {
     MGMT_PORT_IP=$(neutron port-show $MGMT_PORT_ID | awk '/ "ip_address": / {print $7; exit}' | sed -e 's/"//g' -e 's/,//g' -e 's/}//g')
     sudo ovs-vsctl -- --may-exist add-port ${OVS_BRIDGE:-br-int} o-hm0 -- set Interface o-hm0 type=internal -- set Interface o-hm0 external-ids:iface-status=active -- set Interface o-hm0 external-ids:attached-mac=$MGMT_PORT_MAC -- set Interface o-hm0 external-ids:iface-id=$MGMT_PORT_ID
     sudo ip link set dev o-hm0 address $MGMT_PORT_MAC
-    sudo dhclient -v o-hm0
+    sudo dhclient -v o-hm0 -cf $OCTAVIA_DHCLIENT_CONF
     iniset $OCTAVIA_CONF health_manager controller_ip_port_list $MGMT_PORT_IP:$OCTAVIA_HM_LISTEN_PORT
     iniset $OCTAVIA_CONF health_manager bind_ip $MGMT_PORT_IP
     iniset $OCTAVIA_CONF health_manager bind_port $OCTAVIA_HM_LISTEN_PORT
