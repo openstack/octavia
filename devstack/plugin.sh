@@ -135,7 +135,7 @@ function octavia_configure {
 }
 
 function create_mgmt_network_interface {
-    id_and_mac=$(neutron port-create --name octavia-health-manager-listen-port --binding:host_id=$(hostname) lb-mgmt-net | awk '/ id | mac_address / {print $4}')
+    id_and_mac=$(neutron port-create --name octavia-health-manager-listen-port --security-group lb-mgmt-sec-grp --binding:host_id=$(hostname) lb-mgmt-net | awk '/ id | mac_address / {print $4}')
     id_and_mac=($id_and_mac)
     MGMT_PORT_ID=${id_and_mac[0]}
     MGMT_PORT_MAC=${id_and_mac[1]}
