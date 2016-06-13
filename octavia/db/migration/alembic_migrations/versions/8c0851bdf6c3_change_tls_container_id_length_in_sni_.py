@@ -31,7 +31,3 @@ import sqlalchemy as sa
 def upgrade():
     op.alter_column(u'sni', u'tls_container_id', type_=sa.String(128),
                     existing_type=sa.String(36), nullable=True)
-
-
-def downgrade():
-    pass

@@ -32,7 +32,3 @@ import sqlalchemy as sa
 def upgrade():
     op.add_column(u'load_balancer', sa.Column(u'server_group_id',
                                               sa.String(36), nullable=True))
-
-
-def downgrade():
-    pass

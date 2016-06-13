@@ -45,7 +45,3 @@ def upgrade():
             {'name': 'ALLOCATED'}
         ]
     )
-
-
-def downgrade():
-    pass

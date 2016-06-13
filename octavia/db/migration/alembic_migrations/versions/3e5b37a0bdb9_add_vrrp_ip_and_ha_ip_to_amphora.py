@@ -33,8 +33,3 @@ def upgrade():
                   sa.Column(u'vrrp_ip', sa.String(64), nullable=True))
     op.add_column(u'amphora',
                   sa.Column(u'ha_ip', sa.String(64), nullable=True))
-
-
-def downgrade():
-    op.drop_column(u'amphora', u'vrrp_ip')
-    op.drop_column(u'amphora', u'ha_ip')

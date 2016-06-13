@@ -41,18 +41,3 @@ def upgrade():
                     existing_type=sa.String(255))
     op.alter_column(u'session_persistence_type', u'name',
                     existing_type=sa.String(255))
-
-
-def downgrade():
-    op.alter_column(u'provisioning_status', u'name',
-                    existing_type=sa.String(30))
-    op.alter_column(u'operating_status', u'name',
-                    existing_type=sa.String(30))
-    op.alter_column(u'health_monitor_type', u'name',
-                    existing_type=sa.String(30))
-    op.alter_column(u'protocol', u'name',
-                    existing_type=sa.String(30))
-    op.alter_column(u'algorithm', u'name',
-                    existing_type=sa.String(30))
-    op.alter_column(u'session_persistence_type', u'name',
-                    existing_type=sa.String(30))

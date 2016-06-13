@@ -31,7 +31,3 @@ import sqlalchemy as sa
 def upgrade():
     op.add_column(u'amphora', sa.Column(u'lb_network_ip', sa.String(64),
                                         nullable=True))
-
-
-def downgrade():
-    op.drop_column(u'amphora', u'lb_network_ip')

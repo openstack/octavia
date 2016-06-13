@@ -45,32 +45,3 @@ def upgrade():
         u'fk_amphora_provisioning_status_name', u'amphora',
         u'provisioning_status', [u'status'], [u'name']
     )
-
-
-def downgrade():
-    op.drop_constraint(
-        u'fk_amphora_load_balancer_id', u'amphora', type_=u'foreignkey'
-    )
-    op.drop_column(
-        u'amphora', u'load_balancer_id'
-    )
-    op.create_table(
-        u'load_balancer_amphora',
-        sa.Column(u'amphora_id', sa.String(36), nullable=False),
-        sa.Column(u'load_balancer_id', sa.String(36), nullable=False),
-        sa.ForeignKeyConstraint(
-            [u'load_balancer_id'], [u'load_balancer.id'],
-            name=u'fk_load_balancer_amphora_load_balancer_id'),
-        sa.ForeignKeyConstraint([u'amphora_id'],
-                                [u'amphora.id'],
-                                name=u'fk_load_balancer_amphora_id'),
-        sa.PrimaryKeyConstraint(u'amphora_id', u'load_balancer_id')
-    )
-    op.drop_constraint(
-        u'fk_amphora_provisioning_status_name', u'amphora',
-        type_=u'foreignkey'
-    )
-    op.create_foreign_key(
-        u'fk_container_provisioning_status_name', u'amphora',
-        u'provisioning_status', [u'status'], [u'name']
-    )
