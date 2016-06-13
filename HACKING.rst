@@ -100,19 +100,6 @@ effort to allow for Neutron LBaaS API deprecation of URIs. The rationale is
 that Neutron LBaaS API users should have the ability to transition from one
 version to the next easily.
 
-Upgrade and downgrade migrations will be supported
---------------------------------------------------
-Whenever large operators conduct upgrades it is important to have a backup
-plan in the form of downgrades. While upgrade migrations are commonplace,
-often, downgrade migrations are ignored. Octavia will support migrations that
-allow for seamless version to version upgrades/downgrades within the scope of a
-major version.
-
-For example, assume that an operator is currently hosting version 1.0 of
-Octavia and wants to upgrade to Octavia version 1.1. A database migration will
-consist of an upgrade migration and a downgrade migration that do not fail due
-to foreign key constraints or other typical migration issues.
-
 Scalability and resilience are as important as functionality
 ------------------------------------------------------------
 Octavia is meant to be an *operator scale* load balancer. As such, it's usually
