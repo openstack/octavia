@@ -50,7 +50,7 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
     def _check_sec_grps(self):
         aliases = [ext.get('alias') for ext in self._extensions]
         if SEC_GRP_EXT_ALIAS not in aliases:
-            LOG.info(_LI('Neutron security groups are disabled.  This driver'
+            LOG.info(_LI('Neutron security groups are disabled.  This driver '
                          'will not manage any security groups.'))
             self.sec_grp_enabled = False
 
