@@ -76,9 +76,7 @@ function octavia_configure {
 
     iniset $OCTAVIA_CONF DEFAULT api_handler queue_producer
 
-    iniset $OCTAVIA_CONF oslo_messaging_rabbit rabbit_hosts ${RABBIT_HOST}:5672
-    iniset $OCTAVIA_CONF oslo_messaging_rabbit rabbit_userid ${RABBIT_USERID}
-    iniset $OCTAVIA_CONF oslo_messaging_rabbit rabbit_password ${RABBIT_PASSWORD}
+    iniset $OCTAVIA_CONF DEFAULT transport_url $(get_transport_url)
 
     iniset $OCTAVIA_CONF oslo_messaging rpc_thread_pool_size 2
     iniset $OCTAVIA_CONF oslo_messaging topic octavia_prov
