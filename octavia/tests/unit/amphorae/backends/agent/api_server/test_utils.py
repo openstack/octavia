@@ -28,6 +28,8 @@ class TestUtils(base.TestCase):
         interface = 'eth0'
         cfg.CONF.set_override('agent_server_network_dir', dir,
                               group='amphora_agent')
+        cfg.CONF.set_override('agent_server_network_file', None,
+                              group='amphora_agent')
         path = util.get_network_interface_file(interface)
         expected_path = os.path.join(dir, interface + '.cfg')
         self.assertEqual(expected_path, path)
