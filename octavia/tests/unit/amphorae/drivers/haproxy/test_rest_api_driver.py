@@ -14,6 +14,8 @@
 # under the License.
 
 import mock
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 import requests_mock
 import six
@@ -173,6 +175,9 @@ class TestAmphoraAPIClientTest(base.TestCase):
         self.base_url = "https://127.0.0.1:9443/0.5"
         self.amp = models.Amphora(lb_network_ip='127.0.0.1', compute_id='123')
         self.port_info = dict(mac_address='123')
+        # Override with much lower values for testing purposes..
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group="haproxy_amphora", connection_max_retries=2)
 
     def test_request(self):
         self.assertRaises(driver_except.TimeOutException,
