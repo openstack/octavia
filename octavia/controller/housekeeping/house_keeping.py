@@ -65,6 +65,7 @@ class DatabaseCleanup(object):
     def __init__(self):
         self.amp_repo = repo.AmphoraRepository()
         self.amp_health_repo = repo.AmphoraHealthRepository()
+        self.lb_repo = repo.LoadBalancerRepository()
 
     def delete_old_amphorae(self):
         """Checks the DB for old amphora and deletes them based on it's age."""
@@ -80,6 +81,23 @@ class DatabaseCleanup(object):
                 LOG.info(_LI('Attempting to delete Amphora id : %s'), amp.id)
                 self.amp_repo.delete(session, id=amp.id)
                 LOG.info(_LI('Deleted Amphora id : %s') % amp.id)
+
+    def cleanup_load_balancers(self):
+        """Checks the DB for old load balancers and triggers their removal."""
+        exp_age = datetime.timedelta(
+            seconds=CONF.house_keeping.load_balancer_expiry_age)
+
+        session = db_api.get_session()
+        load_balancers = self.lb_repo.get_all(
+            session, provisioning_status=constants.DELETED)
+
+        for lb in load_balancers:
+            if self.lb_repo.check_load_balancer_expired(session, lb.id,
+                                                        exp_age):
+                LOG.info(_LI('Attempting to delete load balancer id : %s'),
+                         lb.id)
+                self.lb_repo.delete(session, id=lb.id)
+                LOG.info(_LI('Deleted load balancer id : %s') % lb.id)
 
 
 class CertRotation(object):

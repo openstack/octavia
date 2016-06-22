@@ -1,0 +1,10 @@
+---
+
+features:
+  - Stale load balancer entries with DELETED provisioning_status are now
+    cleaned-up by housekeeper after if they are older than
+    `load_balancer_expiry_age`.
+upgrade:
+  - New option `load_balancer_expiry_age` is added to the `house_keeping`
+    config section. It defines load balancer expiry age in seconds, the
+    default value is 604800.

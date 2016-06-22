@@ -218,6 +218,8 @@ Use the following options in the /etc/octavia/octavia.conf file.
      -
    * - ``amphora_expiry_age`` = ``604800``
      - (IntOpt) Amphora expiry age in seconds
+   * - ``load_balancer_expiry_age`` = ``604800``
+     - (IntOpt) Load balancer expiry age in seconds
    * - ``cert_expiry_buffer`` = ``1209600``
      - (IntOpt) Seconds until certificate expiration
    * - ``cert_interval`` = ``3600``

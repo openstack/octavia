@@ -92,6 +92,7 @@ class TestDatabaseCleanup(base.TestCase):
         self.amp_health_repo = mock.MagicMock()
         self.amp_repo = mock.MagicMock()
         self.amp = repo.AmphoraRepository()
+        self.lb = repo.LoadBalancerRepository()
 
         self.dbclean.amp_repo = self.amp_repo
         self.dbclean.amp_health_repo = self.amp_health_repo
@@ -132,6 +133,30 @@ class TestDatabaseCleanup(base.TestCase):
         self.assertTrue(self.amp_repo.get_all.called)
         self.assertTrue(self.amp_health_repo.check_amphora_expired.called)
         self.assertFalse(self.amp_repo.delete.called)
+
+    @mock.patch('octavia.db.api.get_session')
+    def test_delete_old_load_balancer(self, session):
+        """Check delete of load balancers in DELETED provisioning status."""
+        self.CONF.house_keeping.load_balancer_expiry_age = self.FAKE_EXP_AGE
+        session.return_value = session
+        load_balancer = self.lb.create(session, id=self.FAKE_UUID_1,
+                                       provisioning_status=constants.DELETED,
+                                       operating_status=constants.OFFLINE,
+                                       enabled=True)
+
+        for expired_status in [True, False]:
+            lb_repo = mock.MagicMock()
+            self.dbclean.lb_repo = lb_repo
+            lb_repo.get_all.return_value = [load_balancer]
+            lb_repo.check_load_balancer_expired.return_value = (
+                expired_status)
+            self.dbclean.cleanup_load_balancers()
+            self.assertTrue(lb_repo.get_all.called)
+            self.assertTrue(lb_repo.check_load_balancer_expired.called)
+            if expired_status:
+                self.assertTrue(lb_repo.delete.called)
+            else:
+                self.assertFalse(lb_repo.delete.called)
 
 
 class TestCertRotation(base.TestCase):

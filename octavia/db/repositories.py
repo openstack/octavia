@@ -328,6 +328,33 @@ class LoadBalancerRepository(BaseRepository):
             session.add(lb)
             return True
 
+    def check_load_balancer_expired(self, session, lb_id, exp_age=None):
+        """Checks if a given load balancer is expired.
+
+        :param session: A Sql Alchemy database session.
+        :param lb_id: id of an load balancer object
+        :param exp_age: A standard datetime delta which is used to see for how
+        long can a load balancer live without updates before it is considered
+        expired (default: CONF.house_keeping.load_balancer_expiry_age)
+        :returns: boolean
+        """
+        if not exp_age:
+            exp_age = datetime.timedelta(
+                seconds=CONF.house_keeping.load_balancer_expiry_age)
+
+        timestamp = datetime.datetime.utcnow() - exp_age
+        lb = self.get(session, id=lb_id)
+        if lb:
+            # If a load balancer was never updated use its creation timestamp
+            last_update = lb.updated_at or lb.created_at
+            # Convert string to timestamp
+            last_update = datetime.datetime.strptime(last_update,
+                                                     "%Y-%m-%d %H:%M:%S.%f")
+            return last_update < timestamp
+        else:
+            # Load balancer was just deleted.
+            return True
+
 
 class VipRepository(BaseRepository):
     model_class = models.Vip
@@ -609,15 +636,16 @@ class AmphoraHealthRepository(BaseRepository):
 
         :param session: A Sql Alchemy database session.
         :param amphora_id: id of an amphora object
-        :param exp_age: A standard datetime which is used to see if an
-        amphora needs to be updated (default: now - 10s)
+        :param exp_age: A standard datetime delta which is used to see for how
+        long can an amphora live without updates before it is considered
+        expired (default: CONF.house_keeping.amphora_expiry_age)
         :returns: boolean
         """
         if not exp_age:
-            timestamp = datetime.datetime.utcnow() - datetime.timedelta(
-                seconds=10)
-        else:
-            timestamp = datetime.datetime.utcnow() - exp_age
+            exp_age = datetime.timedelta(
+                seconds=CONF.house_keeping.amphora_expiry_age)
+
+        timestamp = datetime.datetime.utcnow() - exp_age
         amphora_health = self.get(session, amphora_id=amphora_id)
         if amphora_health is not None:
             return amphora_health.last_update < timestamp

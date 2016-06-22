@@ -52,17 +52,20 @@ def spare_amphora_check():
 
 
 def db_cleanup():
-    """Perform db cleanup for old amphora."""
+    """Perform db cleanup for old resources."""
     # Read the interval from CONF
     interval = CONF.house_keeping.cleanup_interval
     LOG.info(_LI("DB cleanup interval is set to %d sec"), interval)
     LOG.info(_LI('Amphora expiry age is %s seconds'),
              CONF.house_keeping.amphora_expiry_age)
+    LOG.info(_LI('Load balancer expiry age is %s seconds'),
+             CONF.house_keeping.load_balancer_expiry_age)
 
     db_cleanup = house_keeping.DatabaseCleanup()
     while db_cleanup_thread_event.is_set():
-        LOG.debug("Initiating the cleanup of old amphora...")
+        LOG.debug("Initiating the cleanup of old resources...")
         db_cleanup.delete_old_amphorae()
+        db_cleanup.cleanup_load_balancers()
         time.sleep(interval)
 
 
