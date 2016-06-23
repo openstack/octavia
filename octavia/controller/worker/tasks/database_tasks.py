@@ -430,6 +430,14 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
 
         return amp.id
 
+    def revert(self, result, loadbalancer_id, *args, **kwargs):
+        LOG.warning(_LW("Reverting Amphora allocation for the load "
+                        "balancer %s in the database."), loadbalancer_id)
+
+        self.loadbalancer_repo.update(db_apis.get_session(),
+                                      loadbalancer_id,
+                                      provisioning_status=constants.ERROR)
+
 
 class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
     """Alter the amphora role in DB."""
