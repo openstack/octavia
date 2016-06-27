@@ -77,6 +77,9 @@ function octavia_configure {
     iniuncomment $OCTAVIA_CONF health_manager heartbeat_key
     iniset $OCTAVIA_CONF health_manager heartbeat_key ${OCTAVIA_HEALTH_KEY}
 
+    iniset $OCTAVIA_CONF house_keeping amphora_expiry_age ${OCTAVIA_AMP_EXPIRY_AGE}
+    iniset $OCTAVIA_CONF house_keeping load_balancer_expiry_age ${OCTAVIA_LB_EXPIRY_AGE}
+
     iniset $OCTAVIA_CONF DEFAULT api_handler queue_producer
 
     iniset $OCTAVIA_CONF DEFAULT transport_url $(get_transport_url)
