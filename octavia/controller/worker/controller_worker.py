@@ -282,11 +282,6 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :raises NoSuitableAmphoraException: Unable to allocate an Amphora.
         """
 
-        # Note this is a bit strange in how it handles building
-        # Amphora if there are no spares.  TaskFlow has a spec for
-        # a conditional flow that would make this cleaner once implemented.
-        # https://review.openstack.org/#/c/98946/
-
         store = {constants.LOADBALANCER_ID: load_balancer_id}
 
         topology = CONF.controller_worker.loadbalancer_topology
