@@ -286,14 +286,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         topology = CONF.controller_worker.loadbalancer_topology
 
-        if topology == constants.TOPOLOGY_SINGLE:
-            store[constants.UPDATE_DICT] = {constants.LOADBALANCER_TOPOLOGY:
-                                            constants.TOPOLOGY_SINGLE}
-        elif topology == constants.TOPOLOGY_ACTIVE_STANDBY:
-            store[constants.UPDATE_DICT] = {constants.LOADBALANCER_TOPOLOGY:
-                                            constants.TOPOLOGY_ACTIVE_STANDBY}
-        # blogan and sbalukoff asked to remove the else check here
-        # as it is also checked later in the flow create code
+        store[constants.UPDATE_DICT] = {constants.LOADBALANCER_TOPOLOGY:
+                                        topology}
 
         lb = self._lb_repo.get(db_apis.get_session(), id=load_balancer_id)
         allocate_amphorae_flow, post_lb_amp_assoc_flow = (
