@@ -85,7 +85,7 @@ class CreateAmphoraInDB(BaseDatabaseTask):
     def execute(self, *args, **kwargs):
         """Creates an pending create amphora record in the database.
 
-        :returns: The amphora object created
+        :returns: The created amphora object
         """
 
         amphora = self.amphora_repo.create(db_apis.get_session(),
@@ -101,6 +101,9 @@ class CreateAmphoraInDB(BaseDatabaseTask):
 
         In a future version we might change the status to DELETED
         if deleting the amphora was successful
+
+        :param result: Id of created amphora.
+        :returns: None
         """
 
         if isinstance(result, failure.Failure):
@@ -123,8 +126,11 @@ class MarkLBAmphoraeDeletedInDB(BaseDatabaseTask):
     """Task to mark a list of amphora deleted in the Database."""
 
     def execute(self, loadbalancer):
-        """Update amphorae statuses to DELETED in the database.
+        """Update load balancer's amphorae statuses to DELETED in the database.
 
+        :param loadbalancer: The load balancer which amphorae should be
+               marked DELETED.
+        :returns: None
         """
         for amp in loadbalancer.amphorae:
             LOG.debug("Marking amphora %s DELETED ", amp.id)
@@ -141,20 +147,21 @@ class DeleteHealthMonitorInDB(BaseDatabaseTask):
     def execute(self, pool_id):
         """Delete the health monitor in DB
 
-        :param health_mon_id: The health monitor id to delete
+        :param pool_id: The id of pool which health monitor should be deleted
         :returns: None
         """
 
-        LOG.debug("DB delete health monitor for id: %s ", pool_id)
+        LOG.debug("DB delete health monitor for pool id: %s ", pool_id)
         try:
             self.health_mon_repo.delete(db_apis.get_session(), pool_id=pool_id)
         except exc.NoResultFound:
-            # ignore if the HelathMonitor was not found
+            # ignore if the HealthMonitor was not found
             pass
 
     def revert(self, pool_id, *args, **kwargs):
         """Mark the health monitor ERROR since the mark active couldn't happen
 
+        :param pool_id: Id of a pool which health monitor couldn't be deleted
         :returns: None
         """
 
@@ -172,9 +179,19 @@ class DeleteHealthMonitorInDBByPool(DeleteHealthMonitorInDB):
     """
 
     def execute(self, pool):
+        """Delete the health monitor in the DB.
+
+        :param pool: A pool which health monitor should be deleted.
+        :returns: None
+        """
         super(DeleteHealthMonitorInDBByPool, self).execute(pool.id)
 
     def revert(self, pool, *args, **kwargs):
+        """Mark the health monitor ERROR since the mark active couldn't happen
+
+        :param pool: A pool which health monitor couldn't be deleted
+        :returns: None
+        """
         super(DeleteHealthMonitorInDBByPool, self).revert(
             pool.id, *args, **kwargs)
 
@@ -198,6 +215,7 @@ class DeleteMemberInDB(BaseDatabaseTask):
     def revert(self, member, *args, **kwargs):
         """Mark the member ERROR since the delete couldn't happen
 
+        :param member: Member that failed to get deleted
         :returns: None
         """
 
@@ -223,6 +241,7 @@ class DeleteListenerInDB(BaseDatabaseTask):
     def revert(self, listener, *args, **kwargs):
         """Mark the listener ERROR since the listener didn't delete
 
+        :param listener: Listener that failed to get deleted
         :returns: None
         """
 
@@ -249,6 +268,7 @@ class DeletePoolInDB(BaseDatabaseTask):
     def revert(self, pool, *args, **kwargs):
         """Mark the pool ERROR since the delete couldn't happen
 
+        :param pool: Pool that failed to get deleted
         :returns: None
         """
 
@@ -278,6 +298,7 @@ class DeleteL7PolicyInDB(BaseDatabaseTask):
     def revert(self, l7policy, *args, **kwargs):
         """Mark the l7policy ERROR since the delete couldn't happen
 
+        :param l7policy: L7 policy that failed to get deleted
         :returns: None
         """
 
@@ -307,6 +328,7 @@ class DeleteL7RuleInDB(BaseDatabaseTask):
     def revert(self, l7rule, *args, **kwargs):
         """Mark the l7rule ERROR since the delete couldn't happen
 
+        :param l7rule: L7 rule that failed to get deleted
         :returns: None
         """
 
@@ -349,8 +371,16 @@ class ReloadLoadBalancer(BaseDatabaseTask):
 
 
 class UpdateVIPAfterAllocation(BaseDatabaseTask):
+    """Update a VIP associated with a given load balancer."""
 
     def execute(self, loadbalancer_id, vip):
+        """Update a VIP associated with a given load balancer.
+
+        :param loadbalancer_id: Id of a load balancer which VIP should be
+               updated.
+        :param vip: data_models.Vip object with update data.
+        :returns: The load balancer object.
+        """
         self.repos.vip.update(db_apis.get_session(), loadbalancer_id,
                               port_id=vip.port_id, subnet_id=vip.subnet_id,
                               ip_address=vip.ip_address)
@@ -359,8 +389,14 @@ class UpdateVIPAfterAllocation(BaseDatabaseTask):
 
 
 class UpdateAmphoraVIPData(BaseDatabaseTask):
+    """Update amphorae VIP data."""
 
     def execute(self, amps_data):
+        """Update amphorae VIP data.
+
+        :param amps_data: Amphorae update dicts.
+        :returns: None
+        """
         for amp_data in amps_data:
             self.repos.amphora.update(db_apis.get_session(), amp_data.id,
                                       vrrp_ip=amp_data.vrrp_ip,
@@ -376,8 +412,9 @@ class UpdateAmpFailoverDetails(BaseDatabaseTask):
     def execute(self, amphora, amp_data):
         """Update amphora failover details in the database.
 
-        :param loadbalancer_id: The load balancer ID to lookup
-        :param mps_data: The load balancer ID to lookup
+        :param amphora: The amphora to update
+        :param amp_data: data_models.Amphora object with update data
+        :returns: None
         """
         # role and vrrp_priority will be updated later.
         self.repos.amphora.update(db_apis.get_session(), amphora.id,
@@ -389,13 +426,27 @@ class UpdateAmpFailoverDetails(BaseDatabaseTask):
 
 
 class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
+    """Associate failover amphora with loadbalancer in the database."""
 
     def execute(self, amphora_id, loadbalancer_id):
+        """Associate failover amphora with loadbalancer in the database.
+
+        :param amphora_id: Id of an amphora to update
+        :param loadbalancer_id: Id of a load balancer to be associated with
+               a given amphora.
+        :returns: None
+        """
         self.repos.amphora.associate(db_apis.get_session(),
                                      load_balancer_id=loadbalancer_id,
                                      amphora_id=amphora_id)
 
     def revert(self, amphora_id, *args, **kwargs):
+        """Remove amphora-load balancer association.
+
+        :param amphora_id: Id of an amphora that couldn't be associated
+               with a load balancer.
+        :returns: None
+        """
         self.repos.amphora.update(db_apis.get_session(), amphora_id,
                                   loadbalancer_id=None)
 
@@ -406,7 +457,7 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
     def execute(self, loadbalancer_id):
         """Allocates an Amphora for the load balancer in the database.
 
-        :param lb_id: The load balancer id to map to an amphora
+        :param loadbalancer_id: The load balancer id to map to an amphora
         :returns: Amphora ID if one was allocated, None if it was
                   unable to allocate an Amphora
         """
@@ -429,9 +480,16 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
 
 
 class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
-    """Alter the amphora role in DB."""
+    """Alter the amphora role and priority in DB."""
 
     def _execute(self, amphora, amp_role, vrrp_priority):
+        """Alter the amphora role and priority in DB.
+
+        :param amphora: Amphora to update.
+        :param amp_role: Amphora role to be set.
+        :param vrrp_priority: VRRP priority to set.
+        :returns: None
+        """
         LOG.debug("Mark %(role)s in DB for amphora: %(amp)s",
                   {'role': amp_role, 'amp': amphora.id})
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
@@ -439,7 +497,13 @@ class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
                                  vrrp_priority=vrrp_priority)
 
     def _revert(self, result, amphora, *args, **kwargs):
-        """Assigns None role and vrrp_priority."""
+        """Removes role and vrrp_priority association.
+
+        :param result: Result of the association.
+        :param amphora: Amphora which role/vrrp_priority association
+               failed.
+        :returns: None
+        """
 
         if isinstance(result, failure.Failure):
             return
@@ -456,11 +520,20 @@ class MarkAmphoraMasterInDB(_MarkAmphoraRoleAndPriorityInDB):
     """Alter the amphora role to: MASTER."""
 
     def execute(self, amphora):
-        """Mark amphora as allocated to a load balancer in DB."""
+        """Mark amphora as MASTER in db.
+
+        :param amphora: Amphora to update role.
+        :returns: None
+        """
         amp_role = constants.ROLE_MASTER
         self._execute(amphora, amp_role, constants.ROLE_MASTER_PRIORITY)
 
     def revert(self, result, amphora, *args, **kwargs):
+        """Removes amphora role association.
+
+        :param amphora: Amphora to update role.
+        :returns: None
+        """
         self._revert(result, amphora, *args, **kwargs)
 
 
@@ -468,10 +541,20 @@ class MarkAmphoraBackupInDB(_MarkAmphoraRoleAndPriorityInDB):
     """Alter the amphora role to: Backup."""
 
     def execute(self, amphora):
+        """Mark amphora as BACKUP in db.
+
+        :param amphora: Amphora to update role.
+        :returns: None
+        """
         amp_role = constants.ROLE_BACKUP
         self._execute(amphora, amp_role, constants.ROLE_BACKUP_PRIORITY)
 
     def revert(self, result, amphora, *args, **kwargs):
+        """Removes amphora role association.
+
+        :param amphora: Amphora to update role.
+        :returns: None
+        """
         self._revert(result, amphora, *args, **kwargs)
 
 
@@ -479,10 +562,20 @@ class MarkAmphoraStandAloneInDB(_MarkAmphoraRoleAndPriorityInDB):
     """Alter the amphora role to: Standalone."""
 
     def execute(self, amphora):
+        """Mark amphora as STANDALONE in db.
+
+        :param amphora: Amphora to update role.
+        :returns: None
+        """
         amp_role = constants.ROLE_STANDALONE
         self._execute(amphora, amp_role, None)
 
     def revert(self, result, amphora, *args, **kwargs):
+        """Removes amphora role association.
+
+        :param amphora: Amphora to update role.
+        :returns: None
+        """
         self._revert(result, amphora, *args, **kwargs)
 
 
@@ -494,7 +587,13 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
     """
 
     def execute(self, amphora, loadbalancer_id):
-        """Mark amphora as allocated to a load balancer in DB."""
+        """Mark amphora as allocated to a load balancer in DB.
+
+        :param amphora: Amphora to be updated.
+        :param loadbalancer_id: Id of a load balancer to which an amphora
+               should be allocated.
+        :returns: None
+        """
 
         LOG.info(_LI("Mark ALLOCATED in DB for amphora: %(amp)s with "
                      "compute id %(comp)s for load balancer: %(lb)s"),
@@ -507,7 +606,14 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
                                  load_balancer_id=loadbalancer_id)
 
     def revert(self, result, amphora, loadbalancer_id, *args, **kwargs):
-        """Mark the amphora as broken and ready to be cleaned up."""
+        """Mark the amphora as broken and ready to be cleaned up.
+
+        :param result: Execute task result
+        :param amphora: Amphora that was updated.
+        :param loadbalancer_id: Id of a load balancer to which an amphora
+               failed to be allocated.
+        :returns: None
+        """
 
         if isinstance(result, failure.Failure):
             return
@@ -523,7 +629,12 @@ class MarkAmphoraBootingInDB(BaseDatabaseTask):
     """Mark the amphora as booting in the database."""
 
     def execute(self, amphora_id, compute_id):
-        """Mark amphora booting in DB."""
+        """Mark amphora booting in DB.
+
+        :param amphora_id: Id of the amphora to update
+        :param compute_id: Id of a compute on which an amphora resides
+        :returns: None
+        """
 
         LOG.debug("Mark BOOTING in DB for amphora: %(amp)s with "
                   "compute id %(id)s", {'amp': amphora_id, 'id': compute_id})
@@ -532,7 +643,13 @@ class MarkAmphoraBootingInDB(BaseDatabaseTask):
                                  compute_id=compute_id)
 
     def revert(self, result, amphora_id, compute_id, *args, **kwargs):
-        """Mark the amphora as broken and ready to be cleaned up."""
+        """Mark the amphora as broken and ready to be cleaned up.
+
+        :param result: Execute task result
+        :param amphora_id: Id of the amphora that failed to update
+        :param compute_id: Id of a compute on which an amphora resides
+        :returns: None
+        """
 
         if isinstance(result, failure.Failure):
             return
@@ -552,7 +669,11 @@ class MarkAmphoraDeletedInDB(BaseDatabaseTask):
     """
 
     def execute(self, amphora):
-        """Mark the amphora as pending delete in DB."""
+        """Mark the amphora as deleted in DB.
+
+        :param amphora: Amphora to be updated.
+        :returns: None
+        """
 
         LOG.debug("Mark DELETED in DB for amphora: %(amp)s with "
                   "compute id %(comp)s",
@@ -561,7 +682,11 @@ class MarkAmphoraDeletedInDB(BaseDatabaseTask):
                                  status=constants.DELETED)
 
     def revert(self, amphora, *args, **kwargs):
-        """Mark the amphora as broken and ready to be cleaned up."""
+        """Mark the amphora as broken and ready to be cleaned up.
+
+        :param amphora: Amphora that was updated.
+        :returns: None
+        """
 
         LOG.warning(_LW("Reverting mark amphora deleted in DB "
                         "for amp id %(amp)s and compute id %(comp)s"),
@@ -577,7 +702,11 @@ class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
     """
 
     def execute(self, amphora):
-        """Mark the amphora as pending delete in DB."""
+        """Mark the amphora as pending delete in DB.
+
+        :param amphora: Amphora to be updated.
+        :returns: None
+        """
 
         LOG.debug("Mark PENDING DELETE in DB for amphora: %(amp)s "
                   "with compute id %(id)s",
@@ -586,7 +715,11 @@ class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
                                  status=constants.PENDING_DELETE)
 
     def revert(self, amphora, *args, **kwargs):
-        """Mark the amphora as broken and ready to be cleaned up."""
+        """Mark the amphora as broken and ready to be cleaned up.
+
+        :param amphora: Amphora that was updated.
+        :returns: None
+        """
 
         LOG.warning(_LW("Reverting mark amphora pending delete in DB "
                         "for amp id %(amp)s and compute id %(comp)s"),
@@ -602,7 +735,11 @@ class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
     """
 
     def execute(self, amphora):
-        """Mark the amphora as pending upate in DB."""
+        """Mark the amphora as pending update in DB.
+
+        :param amphora: Amphora to be updated.
+        :returns: None
+        """
 
         LOG.debug("Mark PENDING UPDATE in DB for amphora: %(amp)s "
                   "with compute id %(id)s",
@@ -611,7 +748,11 @@ class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
                                  status=constants.PENDING_UPDATE)
 
     def revert(self, amphora, *args, **kwargs):
-        """Mark the amphora as broken and ready to be cleaned up."""
+        """Mark the amphora as broken and ready to be cleaned up.
+
+        :param amphora: Amphora that was updated.
+        :returns: None
+        """
 
         LOG.warning(_LW("Reverting mark amphora pending update in DB "
                         "for amp id %(amp)s and compute id %(comp)s"),
@@ -628,7 +769,11 @@ class MarkAmphoraReadyInDB(BaseDatabaseTask):
     """
 
     def execute(self, amphora):
-        """Mark amphora as ready in DB."""
+        """Mark amphora as ready in DB.
+
+        :param amphora: Amphora to be updated.
+        :returns: None
+        """
 
         LOG.info(_LI("Mark READY in DB for amphora: %(amp)s with compute "
                      "id %(comp)s"),
@@ -639,7 +784,11 @@ class MarkAmphoraReadyInDB(BaseDatabaseTask):
                                  lb_network_ip=amphora.lb_network_ip)
 
     def revert(self, amphora, *args, **kwargs):
-        """Mark the amphora as broken and ready to be cleaned up."""
+        """Mark the amphora as broken and ready to be cleaned up.
+
+        :param amphora: Amphora that was updated.
+        :returns: None
+        """
 
         LOG.warning(_LW("Reverting mark amphora ready in DB for amp "
                         "id %(amp)s and compute id %(comp)s"),
@@ -651,15 +800,30 @@ class MarkAmphoraReadyInDB(BaseDatabaseTask):
 
 
 class UpdateAmphoraComputeId(BaseDatabaseTask):
+    """Associate amphora with a compute in DB."""
 
     def execute(self, amphora_id, compute_id):
+        """Associate amphora with a compute in DB.
+
+        :param amphora_id: Id of the amphora to update
+        :param compute_id: Id of a compute on which an amphora resides
+        :returns: None
+        """
+
         self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  compute_id=compute_id)
 
 
 class UpdateAmphoraInfo(BaseDatabaseTask):
+    """Update amphora with compute instance details."""
 
     def execute(self, amphora_id, compute_obj):
+        """Update amphora with compute instance details.
+
+        :param amphora_id: Id of the amphora to update
+        :param compute_obj: Compute on which an amphora resides
+        :returns: Updated amphora object
+        """
         self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  lb_network_ip=compute_obj.lb_network_ip)
         return self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
@@ -669,6 +833,13 @@ class UpdateAmphoraDBCertExpiration(BaseDatabaseTask):
     """Update the amphora expiration date with new cert file date."""
 
     def execute(self, amphora_id, server_pem):
+        """Update the amphora expiration date with new cert file date.
+
+        :param amphora_id: Id of the amphora to update
+        :param server_pem: Certificate in PEM format
+        :returns: None
+        """
+
         LOG.debug("Update DB cert expiry date of amphora id: %s", amphora_id)
         cert_expiration = cert_parser.get_cert_expiration(server_pem)
         LOG.debug("Certificate expiration date is %s ", cert_expiration)
@@ -678,7 +849,16 @@ class UpdateAmphoraDBCertExpiration(BaseDatabaseTask):
 
 class UpdateAmphoraCertBusyToFalse(BaseDatabaseTask):
     """Update the amphora cert_busy flag to be false."""
+
     def execute(self, amphora):
+        """Update the amphora cert_busy flag to be false.
+
+        :param amphora: Amphora to be updated.
+        :returns: None
+        """
+
+        LOG.debug("Update cert_busy flag of amphora id %s to False",
+                  amphora.id)
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  cert_busy=False)
 
@@ -694,7 +874,14 @@ class MarkLBActiveInDB(BaseDatabaseTask):
         self.mark_listeners = mark_listeners
 
     def execute(self, loadbalancer):
-        """Mark the load balancer as active in DB."""
+        """Mark the load balancer as active in DB.
+
+        This also marks ACTIVE all listeners of the load balancer if
+        self.mark_listeners is True.
+
+        :param loadbalancer: Load balancer object to be updated
+        :returns: None
+        """
 
         if self.mark_listeners:
             LOG.debug("Marking all listeners of loadbalancer %s ACTIVE",
@@ -711,7 +898,14 @@ class MarkLBActiveInDB(BaseDatabaseTask):
                                       provisioning_status=constants.ACTIVE)
 
     def revert(self, loadbalancer, *args, **kwargs):
-        """Mark the load balancer as broken and ready to be cleaned up."""
+        """Mark the load balancer as broken and ready to be cleaned up.
+
+        This also puts all listeners of the load balancer to ERROR state if
+        self.mark_listeners is True
+
+        :param loadbalancer: Load balancer object that failed to update
+        :returns: None
+        """
 
         if self.mark_listeners:
             LOG.debug("Marking all listeners of loadbalancer %s ERROR",
@@ -736,6 +930,14 @@ class UpdateLBServerGroupInDB(BaseDatabaseTask):
     """Update the server group id info for load balancer in DB."""
 
     def execute(self, loadbalancer_id, server_group_id):
+        """Update the server group id info for load balancer in DB.
+
+        :param loadbalancer_id: Id of a load balancer to update
+        :param server_group_id: Id of a server group to associate with
+               the load balancer
+        :returns: None
+        """
+
         LOG.debug("Server Group updated with id: %s for load balancer id: %s:",
                   server_group_id, loadbalancer_id)
         self.loadbalancer_repo.update(db_apis.get_session(),
@@ -743,6 +945,13 @@ class UpdateLBServerGroupInDB(BaseDatabaseTask):
                                       server_group_id=server_group_id)
 
     def revert(self, loadbalancer_id, server_group_id, *args, **kwargs):
+        """Remove server group information from a load balancer in DB.
+
+        :param loadbalancer_id: Id of a load balancer that failed to update
+        :param server_group_id: Id of a server group that couldn't be
+               associated with the load balancer
+        :returns: None
+        """
         LOG.warning(_LW('Reverting Server Group updated with id: %(s1)s for '
                         'load balancer id: %(s2)s '),
                     {'s1': server_group_id, 's2': loadbalancer_id})
@@ -758,7 +967,11 @@ class MarkLBDeletedInDB(BaseDatabaseTask):
     """
 
     def execute(self, loadbalancer):
-        """Mark the load balancer as deleted in DB."""
+        """Mark the load balancer as deleted in DB.
+
+        :param loadbalancer: Load balancer object to be updated
+        :returns: None
+        """
 
         LOG.debug("Mark DELETED in DB for load balancer id: %s",
                   loadbalancer.id)
@@ -767,7 +980,11 @@ class MarkLBDeletedInDB(BaseDatabaseTask):
                                       provisioning_status=constants.DELETED)
 
     def revert(self, loadbalancer, *args, **kwargs):
-        """Mark the load balancer as broken and ready to be cleaned up."""
+        """Mark the load balancer as broken and ready to be cleaned up.
+
+        :param loadbalancer: Load balancer object that failed to update
+        :returns: None
+        """
 
         LOG.warning(_LW("Reverting mark load balancer deleted in DB "
                         "for load balancer id %s"), loadbalancer.id)
@@ -783,7 +1000,11 @@ class MarkLBPendingDeleteInDB(BaseDatabaseTask):
     """
 
     def execute(self, loadbalancer):
-        """Mark the load balancer as pending delete in DB."""
+        """Mark the load balancer as pending delete in DB.
+
+        :param loadbalancer: Load balancer object to be updated
+        :returns: None
+        """
 
         LOG.debug("Mark PENDING DELETE in DB for load balancer id: %s",
                   loadbalancer.id)
@@ -793,7 +1014,11 @@ class MarkLBPendingDeleteInDB(BaseDatabaseTask):
                                                            PENDING_DELETE))
 
     def revert(self, loadbalancer, *args, **kwargs):
-        """Mark the load balancer as broken and ready to be cleaned up."""
+        """Mark the load balancer as broken and ready to be cleaned up.
+
+        :param loadbalancer: Load balancer object that failed to update
+        :returns: None
+        """
 
         LOG.warning(_LW("Reverting mark load balancer pending delete in DB "
                         "for load balancer id %s"), loadbalancer.id)
@@ -809,7 +1034,12 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
     """
 
     def execute(self, loadbalancer, listeners):
-        """Mark the load balancer and listeners as active in DB."""
+        """Mark the load balancer and listeners as active in DB.
+
+        :param loadbalancer: Load balancer object to be updated
+        :param listeners: Listener objects to be updated
+        :returns: None
+        """
 
         LOG.debug("Mark ACTIVE in DB for load balancer id: %s "
                   "and listener ids: %s", loadbalancer.id,
@@ -822,7 +1052,12 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
                                       provisioning_status=constants.ACTIVE)
 
     def revert(self, loadbalancer, listeners, *args, **kwargs):
-        """Mark the load balancer and listeners as broken."""
+        """Mark the load balancer and listeners as broken.
+
+        :param loadbalancer: Load balancer object that failed to update
+        :param listeners: Listener objects that failed to update
+        :returns: None
+        """
 
         LOG.warning(_LW("Reverting mark load balancer "
                         "and listeners active in DB "
@@ -851,7 +1086,7 @@ class MarkListenerActiveInDB(BaseDatabaseTask):
     def execute(self, listener):
         """Mark the listener as active in DB
 
-        :param listener: The listener to be marked deleted
+        :param listener: The listener to be marked active
         :returns: None
         """
 
@@ -862,10 +1097,11 @@ class MarkListenerActiveInDB(BaseDatabaseTask):
     def revert(self, listener, *args, **kwargs):
         """Mark the listener ERROR since the delete couldn't happen
 
+        :param listener: The listener that couldn't be updated
         :returns: None
         """
 
-        LOG.warning(_LW("Reverting mark listener deleted in DB "
+        LOG.warning(_LW("Reverting mark listener active in DB "
                         "for listener id %s"), listener.id)
         self.listener_repo.update(db_apis.get_session(), listener.id,
                                   provisioning_status=constants.ERROR)
@@ -891,6 +1127,7 @@ class MarkListenerDeletedInDB(BaseDatabaseTask):
     def revert(self, listener, *args, **kwargs):
         """Mark the listener ERROR since the delete couldn't happen
 
+        :param listener: The listener that couldn't be updated
         :returns: None
         """
 
@@ -907,7 +1144,11 @@ class MarkListenerPendingDeleteInDB(BaseDatabaseTask):
     """
 
     def execute(self, listener):
-        """Mark the listener as pending delete in DB."""
+        """Mark the listener as pending delete in DB.
+
+        :param listener: The listener to be updated
+        :returns: None
+        """
 
         LOG.debug("Mark PENDING DELETE in DB for listener id: %s",
                   listener.id)
@@ -915,7 +1156,11 @@ class MarkListenerPendingDeleteInDB(BaseDatabaseTask):
                                   provisioning_status=constants.PENDING_DELETE)
 
     def revert(self, listener, *args, **kwargs):
-        """Mark the listener as broken and ready to be cleaned up."""
+        """Mark the listener as broken and ready to be cleaned up.
+
+        :param listener: The listener that couldn't be updated
+        :returns: None
+        """
 
         LOG.warning(_LW("Reverting mark listener pending delete in DB "
                         "for listener id %s"), listener.id)
@@ -932,7 +1177,7 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
     def execute(self, loadbalancer, update_dict):
         """Update the loadbalancer in the DB
 
-        :param loadbalancer: The listener to be updated
+        :param loadbalancer: The load balancer to be updated
         :param update_dict: The dictionary of updates to apply
         :returns: None
         """
@@ -944,6 +1189,7 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
     def revert(self, loadbalancer, *args, **kwargs):
         """Mark the loadbalancer ERROR since the update couldn't happen
 
+        :param loadbalancer: The load balancer that couldn't be updated
         :returns: None
         """
 
@@ -976,6 +1222,7 @@ class UpdateHealthMonInDB(BaseDatabaseTask):
     def revert(self, health_mon, *args, **kwargs):
         """Mark the health monitor ERROR since the update couldn't happen
 
+        :param health_mon: The health monitor that couldn't be updated
         :returns: None
         """
 
@@ -1007,12 +1254,13 @@ class UpdateListenerInDB(BaseDatabaseTask):
     def revert(self, listener, *args, **kwargs):
         """Mark the listener ERROR since the update couldn't happen
 
+        :param listener: The listener that couldn't be updated
         :returns: None
         """
 
         LOG.warning(_LW("Reverting update listener in DB "
                         "for listener id %s"), listener.id)
-# TODO(johnsom) fix this to set the upper ojects to ERROR
+# TODO(johnsom) fix this to set the upper objects to ERROR
         self.listener_repo.update(db_apis.get_session(), listener.id,
                                   enabled=0)
 
@@ -1038,12 +1286,13 @@ class UpdateMemberInDB(BaseDatabaseTask):
     def revert(self, member, *args, **kwargs):
         """Mark the member ERROR since the update couldn't happen
 
+        :param member: The member that couldn't be updated
         :returns: None
         """
 
         LOG.warning(_LW("Reverting update member in DB "
                         "for member id %s"), member.id)
-# TODO(johnsom) fix this to set the upper ojects to ERROR
+# TODO(johnsom) fix this to set the upper objects to ERROR
         self.member_repo.update(db_apis.get_session(), member.id,
                                 enabled=0)
 
@@ -1069,12 +1318,13 @@ class UpdatePoolInDB(BaseDatabaseTask):
     def revert(self, pool, *args, **kwargs):
         """Mark the pool ERROR since the update couldn't happen
 
+        :param pool: The pool that couldn't be updated
         :returns: None
         """
 
         LOG.warning(_LW("Reverting update pool in DB "
                         "for pool id %s"), pool.id)
-# TODO(johnsom) fix this to set the upper ojects to ERROR
+# TODO(johnsom) fix this to set the upper objects to ERROR
         self.repos.update_pool_and_sp(db_apis.get_session(),
                                       pool.id, {'enabled': 0})
 
@@ -1100,6 +1350,7 @@ class UpdateL7PolicyInDB(BaseDatabaseTask):
     def revert(self, l7policy, *args, **kwargs):
         """Mark the l7policy ERROR since the update couldn't happen
 
+        :param l7policy: L7 policy that couldn't be updated
         :returns: None
         """
 
@@ -1131,6 +1382,7 @@ class UpdateL7RuleInDB(BaseDatabaseTask):
     def revert(self, l7rule, *args, **kwargs):
         """Mark the L7 rule ERROR since the update couldn't happen
 
+        :param l7rule: L7 rule that couldn't be updated
         :returns: None
         """
 
@@ -1145,6 +1397,11 @@ class GetAmphoraDetails(BaseDatabaseTask):
     """Task to retrieve amphora network details."""
 
     def execute(self, amphora):
+        """Retrieve amphora network details.
+
+        :param amphora: Amphora which network details are required
+        :returns: data_models.Amphora object
+        """
         return data_models.Amphora(id=amphora.id,
                                    vrrp_ip=amphora.vrrp_ip,
                                    ha_ip=amphora.ha_ip,
@@ -1156,9 +1413,14 @@ class GetAmphoraDetails(BaseDatabaseTask):
 
 
 class GetListenersFromLoadbalancer(BaseDatabaseTask):
-    """Task to pull the listener from a loadbalancer."""
+    """Task to pull the listeners from a loadbalancer."""
 
     def execute(self, loadbalancer):
+        """Pull the listeners from a loadbalancer.
+
+        :param loadbalancer: Load balancer which listeners are required
+        :returns: A list of Listener objects
+        """
         listeners = []
         for listener in loadbalancer.listeners:
             l = self.listener_repo.get(db_apis.get_session(), id=listener.id)
@@ -1170,12 +1432,24 @@ class GetVipFromLoadbalancer(BaseDatabaseTask):
     """Task to pull the vip from a loadbalancer."""
 
     def execute(self, loadbalancer):
+        """Pull the vip from a loadbalancer.
+
+        :param loadbalancer: Load balancer which VIP is required
+        :returns: VIP associated with a given load balancer
+        """
         return loadbalancer.vip
 
 
 class CreateVRRPGroupForLB(BaseDatabaseTask):
+    """Create a VRRP group for a load balancer."""
 
     def execute(self, loadbalancer):
+        """Create a VRRP group for a load balancer.
+
+        :param loadbalancer: Load balancer for which a VRRP group
+               should be created
+        :returns: Updated load balancer
+        """
         try:
             loadbalancer.vrrp_group = self.repos.vrrpgroup.create(
                 db_apis.get_session(),
@@ -1201,6 +1475,7 @@ class DisableAmphoraHealthMonitoring(BaseDatabaseTask):
         """Disable health monitoring for an amphora
 
         :param amphora: The amphora to disable health monitoring for
+        :returns: None
         """
         self._delete_from_amp_health(amphora.id)
 
@@ -1216,6 +1491,7 @@ class DisableLBAmphoraeHealthMonitoring(BaseDatabaseTask):
         """Disable health monitoring for amphora on a load balancer
 
         :param loadbalancer: The load balancer to disable health monitoring on
+        :returns: None
         """
         for amphora in loadbalancer.amphorae:
             self._delete_from_amp_health(amphora.id)
@@ -1232,21 +1508,23 @@ class MarkAmphoraHealthBusy(BaseDatabaseTask):
         """Mark amphora health monitoring busy
 
         :param amphora: The amphora to mark amphora health busy
+        :returns: None
         """
         self._mark_amp_health_busy(amphora.id)
 
 
 class MarkLBAmphoraeHealthBusy(BaseDatabaseTask):
-    """Mark amphora health monitoring busy for the LB.
+    """Mark amphorae health monitoring busy for the LB.
 
-    This prevents amphora failover by marking the amphora busy in
-    the amphora_health table for each load balancer.
+    This prevents amphorae failover by marking each amphora of a given
+    load balancer busy in the amphora_health table.
     """
 
     def execute(self, loadbalancer):
-        """Marks amphora health busy for amphora on a load balancer
+        """Marks amphorae health busy for each amphora on a load balancer
 
-        :param loadbalancer: The load balancer to mark amphora health busy
+        :param loadbalancer: The load balancer to mark amphorae health busy
+        :returns: None
         """
         for amphora in loadbalancer.amphorae:
             self._mark_amp_health_busy(amphora.id)
