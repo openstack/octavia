@@ -96,7 +96,7 @@ Command syntax:
             [-i **ubuntu** | fedora | centos ]
             [-o **amphora-x64-haproxy** | <filename> ]
             [-r <root password> ]
-            [-s **5** | <size in GB> ]
+            [-s **2** | <size in GB> ]
             [-t **qcow2** | tar ]
             [-v]
             [-w <working directory> ]
@@ -108,7 +108,7 @@ Command syntax:
         '-i' is the base OS (default: ubuntu)
         '-o' is the output image file name
         '-r' enable the root account in the generated image (default: disabled)
-        '-s' is the image size to produce in gigabytes (default: 5)
+        '-s' is the image size to produce in gigabytes (default: 2)
         '-t' is the image type (default: qcow2)
         '-v' display the script version
         '-w' working directory for image building (default: .)

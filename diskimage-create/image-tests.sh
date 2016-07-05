@@ -30,10 +30,10 @@ if ! [ -f $AMP_IMAGE_LOCATION ]; then
     exit 1
 fi
 
-# Check the image size
-virt-df -a $AMP_IMAGE_LOCATION | \
-    grep -q "amphora-x64-haproxy.qcow2:/dev/sda1[ \t]*5015940[ \t]*.*"
-if [ $? != 0 ]; then
+# Check the image size (rounded in GB)
+AMP_IMAGE_SIZE=$(virt-filesystems --long --csv --blkdevs -a $AMP_IMAGE_LOCATION | \
+    awk -F ',' '$1 == "/dev/sda" { print int($3/1024^3 + 0.5)}')
+if [ $AMP_IMAGE_SIZE != 2 ]; then
     echo "ERROR: Amphora image did not pass the default size test"
     echo "On Ubuntu you may need to run 'sudo chmod 0644 /boot/vmlinuz*' for libguestfs"
     exit 1
@@ -41,8 +41,10 @@ else
     echo "Amphora image size is correct"
 fi
 
+# Get image information
+AMP_IMAGE_INFO=$(virt-inspector $AMP_IMAGE_LOCATION)
 # Check the kernel
-virt-inspector $AMP_IMAGE_LOCATION | \
+echo $AMP_IMAGE_INFO | \
     virt-inspector --xpath \
     '/operatingsystems/operatingsystem/distro' \
     | grep -q '<distro>ubuntu</distro>'
@@ -53,7 +55,7 @@ else
     echo "Amphora image is using the correct distribution"
 fi
 
-virt-inspector $AMP_IMAGE_LOCATION | \
+echo $AMP_IMAGE_INFO | \
     virt-inspector --xpath \
     '/operatingsystems/operatingsystem/arch' \
     | grep -q '<arch>x86_64</arch>'
@@ -64,7 +66,7 @@ else
     echo "Amphora image is using the correct architecture"
 fi
 
-virt-inspector $AMP_IMAGE_LOCATION | \
+echo $AMP_IMAGE_INFO | \
     virt-inspector --xpath \
     '/operatingsystems/operatingsystem/format' \
     | grep -q '<format>installed</format>'
@@ -76,7 +78,7 @@ else
 fi
 
 # Check for HAProxy
-virt-inspector $AMP_IMAGE_LOCATION | \
+echo $AMP_IMAGE_INFO | \
     virt-inspector --xpath \
     '/operatingsystems/operatingsystem/applications/application/name[text()="haproxy"]' \
     | grep -q '<name>haproxy</name>'
@@ -88,7 +90,7 @@ else
 fi
 
 # Check for KeepAlived
-virt-inspector $AMP_IMAGE_LOCATION | \
+echo $AMP_IMAGE_INFO | \
     virt-inspector --xpath \
     '/operatingsystems/operatingsystem/applications/application/name[text()="keepalived"]' \
     | grep -q '<name>keepalived</name>'
