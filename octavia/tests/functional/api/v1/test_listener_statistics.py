@@ -36,9 +36,7 @@ class TestListenerStatistics(base.BaseAPITest):
     def test_get(self):
         ls = self.create_listener_stats(listener_id=self.listener.get('id'),
                                         amphora_id=self.amphora.id)
-        ls.pop('listener')
         ls.pop('listener_id')
-        ls.pop('amphora')
         ls.pop('amphora_id')
         response = self.get(self.ls_path)
         response_body = response.json

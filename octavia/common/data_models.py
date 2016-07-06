@@ -64,7 +64,7 @@ class BaseDataModel(object):
         elif obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
             return obj.__class__.__name__ + obj.pool_id
         elif obj.__class__.__name__ in ['ListenerStatistics']:
-            return obj.__class__.__name__ + obj.listener_id
+            return obj.__class__.__name__ + obj.listener_id + obj.amphora_id
         elif obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
             return obj.__class__.__name__ + obj.load_balancer_id
         elif obj.__class__.__name__ in ['AmphoraHealth']:
@@ -134,17 +134,13 @@ class ListenerStatistics(BaseDataModel):
 
     def __init__(self, listener_id=None, amphora_id=None, bytes_in=None,
                  bytes_out=None, active_connections=None,
-                 total_connections=None, listener=None):
+                 total_connections=None):
         self.listener_id = listener_id
         self.amphora_id = amphora_id
         self.bytes_in = bytes_in
         self.bytes_out = bytes_out
         self.active_connections = active_connections
         self.total_connections = total_connections
-        self.listener = listener
-
-    def delete(self):
-        self.listener.stats = None
 
 
 class HealthMonitor(BaseDataModel):

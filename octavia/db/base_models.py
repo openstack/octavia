@@ -42,7 +42,7 @@ class OctaviaBase(models.ModelBase):
         elif obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
             return obj.__class__.__name__ + obj.pool_id
         elif obj.__class__.__name__ in ['ListenerStatistics']:
-            return obj.__class__.__name__ + obj.listener_id
+            return obj.__class__.__name__ + obj.listener_id + obj.amphora_id
         elif obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
             return obj.__class__.__name__ + obj.load_balancer_id
         elif obj.__class__.__name__ in ['AmphoraHealth']:

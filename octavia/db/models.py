@@ -116,26 +116,16 @@ class ListenerStatistics(base_models.BASE):
 
     listener_id = sa.Column(
         sa.String(36),
-        sa.ForeignKey("listener.id",
-                      name="fk_listener_statistics_listener_id"),
         primary_key=True,
         nullable=False)
     amphora_id = sa.Column(
         sa.String(36),
-        sa.ForeignKey("amphora.id",
-                      name="fk_listener_statistics_amphora_id"),
         primary_key=True,
         nullable=False)
     bytes_in = sa.Column(sa.BigInteger, nullable=False)
     bytes_out = sa.Column(sa.BigInteger, nullable=False)
     active_connections = sa.Column(sa.Integer, nullable=False)
     total_connections = sa.Column(sa.BigInteger, nullable=False)
-    listener = orm.relationship("Listener", uselist=False,
-                                backref=orm.backref("stats", uselist=False,
-                                                    cascade="delete"))
-    amphora = orm.relationship("Amphora", uselist=False,
-                               backref=orm.backref("stats", uselist=False,
-                                                   cascade="delete"))
 
     @staticmethod
     @validates('bytes_in', 'bytes_out',

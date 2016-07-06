@@ -792,16 +792,18 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
         lb = self.create_loadbalancer(uuidutils.generate_uuid())
         amphora = self.create_amphora(uuidutils.generate_uuid(), lb.id)
-        stats = self.listener_stats_repo.create(
+        self.listener_stats_repo.create(
             self.session, listener_id=listener.id, amphora_id=amphora.id,
             bytes_in=1, bytes_out=1,
             active_connections=1, total_connections=1)
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIsNotNone(new_listener)
-        self.assertEqual(stats, new_listener.stats)
+        self.assertIsNotNone(self.listener_stats_repo.get(
+            self.session, listener_id=listener.id))
         self.listener_repo.delete(self.session, id=listener.id)
         self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
-        self.assertIsNone(self.listener_stats_repo.get(
+        # ListenerStatistics should stick around
+        self.assertIsNotNone(self.listener_stats_repo.get(
             self.session, listener_id=listener.id))
 
     def test_delete_with_pool(self):
@@ -836,7 +838,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
                                    tls_container_id=self.FAKE_UUID_3)
         lb = self.create_loadbalancer(uuidutils.generate_uuid())
         amphora = self.create_amphora(uuidutils.generate_uuid(), lb.id)
-        stats = self.listener_stats_repo.create(
+        self.listener_stats_repo.create(
             self.session, listener_id=listener.id,
             amphora_id=amphora.id,
             bytes_in=1, bytes_out=1,
@@ -845,12 +847,12 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         self.assertIsNotNone(new_listener)
         self.assertEqual(pool, new_listener.default_pool)
         self.assertEqual(sni, new_listener.sni_containers[0])
-        self.assertEqual(stats, new_listener.stats)
         self.listener_repo.delete(self.session, id=listener.id)
         self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
         self.assertIsNone(self.sni_repo.get(self.session,
                                             listener_id=listener.id))
-        self.assertIsNone(self.listener_stats_repo.get(
+        # ListenerStatistics should stick around
+        self.assertIsNotNone(self.listener_stats_repo.get(
             self.session, listener_id=sni.listener_id))
         # Pool should stick around
         self.assertIsNotNone(self.pool_repo.get(self.session, id=pool.id))

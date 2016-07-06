@@ -350,16 +350,6 @@ class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertIsNotNone(new_listener.load_balancer)
         self.assertIsInstance(new_listener.load_balancer, models.LoadBalancer)
 
-    def test_listener_statistics_relationship(self):
-        listener = self.create_listener(self.session)
-        amphora = self.create_amphora(self.session)
-        self.create_listener_statistics(self.session, listener_id=listener.id,
-                                        amphora_id=amphora.id)
-        new_listener = self.session.query(models.Listener).filter_by(
-            id=listener.id).first()
-        self.assertIsNotNone(new_listener.stats)
-        self.assertIsInstance(new_listener.stats, models.ListenerStatistics)
-
     def test_default_pool_relationship(self):
         pool = self.create_pool(self.session)
         listener = self.create_listener(self.session, default_pool_id=pool.id)
@@ -419,14 +409,6 @@ class ListenerStatisticsModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_stats = self.session.query(models.ListenerStatistics).filter_by(
             listener_id=self.listener.id).first()
         self.assertIsNone(new_stats)
-
-    def test_listener_relationship(self):
-        self.create_listener_statistics(self.session, self.listener.id,
-                                        self.amphora.id)
-        new_stats = self.session.query(models.ListenerStatistics).filter_by(
-            listener_id=self.listener.id).first()
-        self.assertIsNotNone(new_stats.listener)
-        self.assertIsInstance(new_stats.listener, models.Listener)
 
 
 class HealthMonitorModelTest(base.OctaviaDBTestBase, ModelTestMixin):
@@ -856,7 +838,7 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         elif obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
             return obj.__class__.__name__ + obj.pool_id
         elif obj.__class__.__name__ in ['ListenerStatistics']:
-            return obj.__class__.__name__ + obj.listener_id
+            return obj.__class__.__name__ + obj.listener_id + obj.amphora_id
         elif obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
             return obj.__class__.__name__ + obj.load_balancer_id
         elif obj.__class__.__name__ in ['AmphoraHealth']:
@@ -930,9 +912,6 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         lb_dm = self.session.query(models.LoadBalancer).filter_by(
             id=self.lb.id).first().to_data_model()
         lb_graph_count = self.count_graph_nodes(lb_dm)
-        ls_dm = self.session.query(models.ListenerStatistics).filter_by(
-            listener_id=self.listener.id).first().to_data_model()
-        ls_graph_count = self.count_graph_nodes(ls_dm)
         p_dm = self.session.query(models.Pool).filter_by(
             id=self.pool.id).first().to_data_model()
         p_graph_count = self.count_graph_nodes(p_dm)
@@ -941,7 +920,6 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         mem_graph_count = self.count_graph_nodes(mem_dm)
         self.assertNotEqual(0, lb_graph_count)
         self.assertNotEqual(1, lb_graph_count)
-        self.assertEqual(lb_graph_count, ls_graph_count)
         self.assertEqual(lb_graph_count, p_graph_count)
         self.assertEqual(lb_graph_count, mem_graph_count)
 
@@ -952,7 +930,7 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         # of parent an child relationship.
         lb_id = (lb_dm.listeners[0].default_pool.members[0].pool.
                  session_persistence.pool.health_monitor.pool.listeners[0].
-                 stats.listener.sni_containers[0].listener.load_balancer.
+                 sni_containers[0].listener.load_balancer.
                  listeners[0].load_balancer.pools[0].listeners[0].
                  load_balancer.listeners[0].pools[0].load_balancer.vip.
                  load_balancer.id)
@@ -963,7 +941,7 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         # arbitrary member.
         m_lb_id = (mem_dm.pool.listeners[0].load_balancer.vip.load_balancer.
                    pools[0].session_persistence.pool.health_monitor.pool.
-                   listeners[0].stats.listener.sni_containers[0].listener.
+                   listeners[0].sni_containers[0].listener.
                    load_balancer.pools[0].members[0].pool.load_balancer.id)
         self.assertEqual(lb_dm.id, m_lb_id)
 
@@ -1076,7 +1054,9 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertIsInstance(stats, data_models.ListenerStatistics)
         self.check_listener_statistics_data_model(stats)
         if check_listener:
-            self.check_listener(stats.listener, check_statistics=False)
+            listener_db = (self.session.query(models.Listener)
+                           .filter_by(id=stats.listener_id).first())
+            self.check_listener(listener_db.to_data_model())
 
     def check_amphora(self, amphora, check_load_balancer=True):
         self.assertIsInstance(amphora, data_models.Amphora)
@@ -1085,8 +1065,7 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
             self.check_load_balancer(amphora.load_balancer)
 
     def check_listener(self, listener, check_sni=True, check_pools=True,
-                       check_lb=True, check_statistics=True,
-                       check_l7policies=True):
+                       check_lb=True, check_l7policies=True):
         self.assertIsInstance(listener, data_models.Listener)
         self.check_listener_data_model(listener)
         if check_lb:
@@ -1101,9 +1080,6 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         if check_pools:
             for pool in listener.pools:
                 self.check_pool(pool, check_listeners=False, check_lb=check_lb)
-        if check_statistics:
-            self.check_listener_statistics(listener.stats,
-                                           check_listener=False)
         if check_l7policies:
             c_l7policies = listener.l7policies
             self.assertIsInstance(c_l7policies, list)
@@ -1330,12 +1306,6 @@ class TestDataModelManipulations(base.OctaviaDBTestBase, ModelTestMixin):
         pool = sp.pool
         sp.delete()
         self.assertIsNone(pool.session_persistence)
-
-    def test_dm_listener_statistics_delete(self):
-        stats = self.stats.to_data_model()
-        listener = stats.listener
-        stats.delete()
-        self.assertIsNone(listener.stats)
 
     def test_dm_health_monitor_delete(self):
         hm = self.hm.to_data_model()
