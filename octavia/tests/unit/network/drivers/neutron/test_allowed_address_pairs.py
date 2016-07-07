@@ -70,8 +70,9 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                     'octavia.common.keystone.get_session').start()
                 self.driver = allowed_address_pairs.AllowedAddressPairsDriver()
 
-    def test_check_aap_loaded(self):
-        self.driver._extensions = [{'alias': 'blah'}]
+    @mock.patch('octavia.network.drivers.neutron.base.BaseNeutronDriver.'
+                '_check_extension_enabled', return_value=False)
+    def test_check_aap_loaded(self, mock_check_ext):
         self.assertRaises(network_base.NetworkException,
                           self.driver._check_aap_loaded)
 
@@ -542,6 +543,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         delete_rule.assert_called_once_with('ssh-rule')
 
     def test_failover_preparation(self):
+        original_dns_integration_state = self.driver.dns_integration_enabled
+        self.driver.dns_integration_enabled = False
         ports = {"ports": [
             {"fixed_ips": [{"subnet_id": self.SUBNET_ID_1,
                             "ip_address": self.IP_ADDRESS_1}],
@@ -560,8 +563,33 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             ha_ip=self.HA_IP)
         self.driver.failover_preparation(amphora)
         port_update.assert_called_once_with(ports['ports'][1].get('id'),
+                                            {'port': {'device_id': ''}})
+        self.driver.dns_integration_enabled = original_dns_integration_state
+
+    def test_failover_preparation_dns_integration(self):
+        ports = {"ports": [
+            {"fixed_ips": [{"subnet_id": self.SUBNET_ID_1,
+                            "ip_address": self.IP_ADDRESS_1}],
+             "id": self.FIXED_IP_ID_1, "network_id": self.NETWORK_ID_1},
+            {"fixed_ips": [{"subnet_id": self.SUBNET_ID_2,
+                            "ip_address": self.IP_ADDRESS_2}],
+             "id": self.FIXED_IP_ID_2, "network_id": self.NETWORK_ID_2}]}
+        original_dns_integration_state = self.driver.dns_integration_enabled
+        self.driver.dns_integration_enabled = True
+        self.driver.neutron_client.list_ports.return_value = ports
+        self.driver.neutron_client.show_port = mock.Mock(
+            side_effect=self._failover_show_port_side_effect)
+        port_update = self.driver.neutron_client.update_port
+        amphora = data_models.Amphora(
+            id=self.AMPHORA_ID, load_balancer_id=self.LB_ID,
+            compute_id=self.COMPUTE_ID, status=self.ACTIVE,
+            lb_network_ip=self.LB_NET_IP, ha_port_id=self.HA_PORT_ID,
+            ha_ip=self.HA_IP)
+        self.driver.failover_preparation(amphora)
+        port_update.assert_called_once_with(ports['ports'][1].get('id'),
                                             {'port': {'dns_name': '',
-                                                      'device_id': ''}})
+                                             'device_id': ''}})
+        self.driver.dns_integration_enabled = original_dns_integration_state
 
     def _failover_show_port_side_effect(self, port_id):
         if port_id == self.LB_NET_PORT_ID:

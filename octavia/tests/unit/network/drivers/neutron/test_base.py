@@ -13,6 +13,7 @@
 #    under the License.
 
 import mock
+from neutronclient.common import exceptions as neutron_client_exceptions
 
 from octavia.common import clients
 from octavia.common import data_models
@@ -50,6 +51,13 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                 'octavia.common.keystone.get_session').start()
             self.driver = self._instantiate_partial_abc(
                 neutron_base.BaseNeutronDriver)
+
+    def test__check_extension_enabled(self):
+        show_extension = self.driver.neutron_client.show_extension
+        show_extension.side_effect = [None, neutron_client_exceptions.NotFound]
+
+        self.assertTrue(self.driver._check_extension_enabled('TEST'))
+        self.assertFalse(self.driver._check_extension_enabled('TEST'))
 
     def test__port_to_vip(self):
         lb = dmh.generate_load_balancer_tree()
@@ -98,13 +106,6 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                 self.assertIn(fixed_ip.ip_address,
                               [port1['fixed_ips'][0]['ip_address'],
                                port2['fixed_ips'][0]['ip_address']])
-
-    def test_sec_grps_extension_check(self):
-        self.driver._check_sec_grps()
-        self.assertTrue(self.driver.sec_grp_enabled)
-        self.driver._extensions = [{'alias': 'blah'}]
-        self.driver._check_sec_grps()
-        self.assertFalse(self.driver.sec_grp_enabled)
 
     def test_get_network(self):
         show_network = self.driver.neutron_client.show_network

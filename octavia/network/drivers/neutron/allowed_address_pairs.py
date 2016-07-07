@@ -56,8 +56,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         )
 
     def _check_aap_loaded(self):
-        aliases = [ext.get('alias') for ext in self._extensions]
-        if AAP_EXT_ALIAS not in aliases:
+        if not self._check_extension_enabled(AAP_EXT_ALIAS):
             raise base.NetworkException(
                 'The {alias} extension is not enabled in neutron.  This '
                 'driver cannot be used with the {alias} extension '
@@ -433,9 +432,16 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
         for port in ports:
             try:
-                self.neutron_client.update_port(port.id,
-                                                {'port': {'device_id': '',
-                                                          'dns_name': ''}})
+
+                if self.dns_integration_enabled:
+                    self.neutron_client.update_port(port.id,
+                                                    {'port': {'device_id': '',
+                                                              'dns_name': ''}})
+                else:
+                    self.neutron_client.update_port(port.id,
+                                                    {'port':
+                                                        {'device_id': ''}})
+
             except (neutron_client_exceptions.NotFound,
                     neutron_client_exceptions.PortNotFoundClient):
                 raise base.PortNotFound()

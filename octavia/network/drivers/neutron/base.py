@@ -25,6 +25,7 @@ from octavia.network.drivers.neutron import utils
 
 
 LOG = logging.getLogger(__name__)
+DNS_INT_EXT_ALIAS = 'dns-integration'
 SEC_GRP_EXT_ALIAS = 'security-group'
 
 CONF = cfg.CONF
@@ -34,7 +35,6 @@ CONF.import_group('neutron', 'octavia.common.config')
 class BaseNeutronDriver(base.AbstractNetworkDriver):
 
     def __init__(self):
-        self.sec_grp_enabled = True
         self.neutron_client = clients.NeutronAuth.get_neutron_client(
             endpoint=CONF.neutron.endpoint,
             region=CONF.neutron.region_name,
@@ -43,16 +43,20 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             insecure=CONF.neutron.insecure,
             ca_cert=CONF.neutron.ca_certificates_file
         )
-        extensions = self.neutron_client.list_extensions()
-        self._extensions = extensions.get('extensions')
-        self._check_sec_grps()
+        self.sec_grp_enabled = self._check_extension_enabled(SEC_GRP_EXT_ALIAS)
+        self.dns_integration_enabled = self._check_extension_enabled(
+            DNS_INT_EXT_ALIAS)
 
-    def _check_sec_grps(self):
-        aliases = [ext.get('alias') for ext in self._extensions]
-        if SEC_GRP_EXT_ALIAS not in aliases:
-            LOG.info(_LI('Neutron security groups are disabled.  This driver '
-                         'will not manage any security groups.'))
-            self.sec_grp_enabled = False
+    def _check_extension_enabled(self, extension_alias):
+        try:
+            self.neutron_client.show_extension(extension_alias)
+            LOG.info(_LI('Neutron extension {ext} found enabled').format(
+                ext=extension_alias))
+            return True
+        except neutron_client_exceptions.NotFound:
+            LOG.info(_LI('Neutron extension {ext} is not enabled').format(
+                ext=extension_alias))
+            return False
 
     def _port_to_vip(self, port, load_balancer):
         fixed_ip = None
