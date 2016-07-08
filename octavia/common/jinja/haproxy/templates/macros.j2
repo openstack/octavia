@@ -103,7 +103,7 @@ bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
     {% elif l7policy.action == constants.L7POLICY_ACTION_REDIRECT_TO_URL %}
     redirect location {{ l7policy.redirect_url }} if{{ l7rule_list_macro(
         l7policy) }}
-    {% elif l7policy.action == constants.L7POLICY_ACTION_REDIRECT_TO_POOL %}
+    {% elif l7policy.action == constants.L7POLICY_ACTION_REDIRECT_TO_POOL and l7policy.redirect_pool.enabled %}
     use_backend {{ l7policy.redirect_pool.id }} if{{ l7rule_list_macro(
         l7policy) }}
     {% endif %}
