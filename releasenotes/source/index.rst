@@ -1,6 +1,6 @@
-=============================
- Neutron LBaaS Release Notes
-=============================
+=====================
+Octavia Release Notes
+=====================
 
 .. toctree::
    :maxdepth: 1
