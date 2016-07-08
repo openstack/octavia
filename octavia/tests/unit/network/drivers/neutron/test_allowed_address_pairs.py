@@ -457,7 +457,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
     def test_update_vip(self):
         listeners = [data_models.Listener(protocol_port=80, peer_port=1024),
                      data_models.Listener(protocol_port=443, peer_port=1025)]
-        lb = data_models.LoadBalancer(id='1', listeners=listeners)
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(id='1', listeners=listeners, vip=vip)
         list_sec_grps = self.driver.neutron_client.list_security_groups
         list_sec_grps.return_value = {'security_groups': [{'id': 'secgrp-1'}]}
         fake_rules = {
@@ -478,7 +479,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 'direction': 'ingress',
                 'protocol': 'TCP',
                 'port_range_min': 1024,
-                'port_range_max': 1024
+                'port_range_max': 1024,
+                'ethertype': 'IPv4'
             }
         }
         expected_create_rule_2 = {
@@ -487,7 +489,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 'direction': 'ingress',
                 'protocol': 'TCP',
                 'port_range_min': 1025,
-                'port_range_max': 1025
+                'port_range_max': 1025,
+                'ethertype': 'IPv4'
             }
         }
         expected_create_rule_3 = {
@@ -496,7 +499,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 'direction': 'ingress',
                 'protocol': 'TCP',
                 'port_range_min': 443,
-                'port_range_max': 443
+                'port_range_max': 443,
+                'ethertype': 'IPv4'
             }
         }
         create_rule.assert_has_calls([mock.call(expected_create_rule_1),
@@ -508,7 +512,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                      data_models.Listener(
                          protocol_port=443,
                          provisioning_status=constants.PENDING_DELETE)]
-        lb = data_models.LoadBalancer(id='1', listeners=listeners)
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(id='1', listeners=listeners, vip=vip)
         list_sec_grps = self.driver.neutron_client.list_security_groups
         list_sec_grps.return_value = {'security_groups': [{'id': 'secgrp-1'}]}
         fake_rules = {
@@ -527,7 +532,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
 
     def test_update_vip_when_no_listeners(self):
         listeners = []
-        lb = data_models.LoadBalancer(id='1', listeners=listeners)
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(id='1', listeners=listeners, vip=vip)
         list_sec_grps = self.driver.neutron_client.list_security_groups
         list_sec_grps.return_value = {'security_groups': [{'id': 'secgrp-1'}]}
         fake_rules = {

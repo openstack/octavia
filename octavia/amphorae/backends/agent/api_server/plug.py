@@ -16,7 +16,6 @@
 import logging
 import os
 import shutil
-import socket
 import stat
 import subprocess
 
@@ -37,34 +36,42 @@ from octavia.i18n import _LE, _LI
 CONF = cfg.CONF
 CONF.import_group('amphora_agent', 'octavia.common.config')
 
-ETH_PORT_CONF = 'plug_vip_ethX.conf.j2'
-
-ETH_X_VIP_CONF = 'plug_port_ethX.conf.j2'
+ETH_X_VIP_CONF = 'plug_vip_ethX.conf.j2'
+ETH_X_PORT_CONF = 'plug_port_ethX.conf.j2'
 
 LOG = logging.getLogger(__name__)
 
 j2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(
     os.path.dirname(os.path.realpath(__file__)) + consts.AGENT_API_TEMPLATES))
-template_port = j2_env.get_template(ETH_X_VIP_CONF)
-template_vip = j2_env.get_template(ETH_PORT_CONF)
+template_port = j2_env.get_template(ETH_X_PORT_CONF)
+template_vip = j2_env.get_template(ETH_X_VIP_CONF)
 
 
-def plug_vip(vip, subnet_cidr, gateway, mac_address, vrrp_ip):
-    # validate vip
+def plug_vip(vip, subnet_cidr, gateway, mac_address, vrrp_ip=None):
+    # Validate vip and subnet_cidr, calculate broadcast address and netmask
     try:
-        socket.inet_aton(vip)
-    except socket.error:
+        ip = ipaddress.ip_address(
+            vip if six.text_type == type(vip) else six.u(vip))
+        network = ipaddress.ip_network(
+            subnet_cidr if six.text_type == type(subnet_cidr)
+            else six.u(subnet_cidr))
+        vip = ip.exploded
+        broadcast = network.broadcast_address.exploded
+        netmask = (network.prefixlen if ip.version is 6
+                   else network.netmask.exploded)
+        vrrp_version = None
+        if vrrp_ip:
+            vrrp_ip_obj = ipaddress.ip_address(
+                vrrp_ip if six.text_type == type(vrrp_ip) else six.u(vrrp_ip)
+            )
+            vrrp_version = vrrp_ip_obj.version
+    except ValueError:
         return flask.make_response(flask.jsonify(dict(
             message="Invalid VIP")), 400)
 
     interface = _interface_by_mac(mac_address)
     primary_interface = "{interface}".format(interface=interface)
     secondary_interface = "{interface}:0".format(interface=interface)
-
-    # assume for now only a fixed subnet size
-    sections = vip.split('.')[:3]
-    sections.append('255')
-    broadcast = '.'.join(sections)
 
     # We need to setup the netns network directory so that the ifup
     # commands used here and in the startup scripts "sees" the right
@@ -104,11 +111,13 @@ def plug_vip(vip, subnet_cidr, gateway, mac_address, vrrp_ip):
         text = template_vip.render(
             interface=interface,
             vip=vip,
+            vip_ipv6=ip.version is 6,
             broadcast=broadcast,
-            # assume for now only a fixed subnet size
-            netmask='255.255.255.0',
+            netmask=netmask,
             gateway=gateway,
-            vrrp_ip=vrrp_ip)
+            vrrp_ip=vrrp_ip,
+            vrrp_ipv6=vrrp_version is 6,
+        )
         text_file.write(text)
 
     # Update the list of interfaces to add to the namespace

@@ -29,6 +29,8 @@ from octavia.network import data_models as n_data_models
 from octavia.network.drivers.neutron import base as neutron_base
 from octavia.network.drivers.neutron import utils
 
+import ipaddress
+
 
 LOG = logging.getLogger(__name__)
 AAP_EXT_ALIAS = 'allowed-address-pairs'
@@ -111,6 +113,11 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         if sec_grps and sec_grps.get('security_groups'):
             return sec_grps.get('security_groups')[0]
 
+    def _get_ethertype_for_ip(self, ip):
+        address = ipaddress.ip_address(
+            ip if six.text_type == type(ip) else six.u(ip))
+        return 'IPv6' if address.version is 6 else 'IPv4'
+
     def _update_security_group_rules(self, load_balancer, sec_grp_id):
         rules = self.neutron_client.list_security_group_rules(
             security_group_id=sec_grp_id)
@@ -140,9 +147,11 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             if rule.get('port_range_max') in del_ports:
                 self.neutron_client.delete_security_group_rule(rule.get('id'))
 
+        ethertype = self._get_ethertype_for_ip(load_balancer.vip.ip_address)
         for port in add_ports:
             self._create_security_group_rule(sec_grp_id, 'TCP', port_min=port,
-                                             port_max=port)
+                                             port_max=port,
+                                             ethertype=ethertype)
 
         # Currently we are using the VIP network for VRRP
         # so we need to open up the protocols for it
@@ -152,7 +161,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 self._create_security_group_rule(
                     sec_grp_id,
                     constants.VRRP_PROTOCOL_NUM,
-                    direction='ingress')
+                    direction='ingress',
+                    ethertype=ethertype)
             except neutron_client_exceptions.Conflict:
                 # It's ok if this rule already exists
                 pass
@@ -162,7 +172,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             try:
                 self._create_security_group_rule(
                     sec_grp_id, constants.AUTH_HEADER_PROTOCOL_NUMBER,
-                    direction='ingress')
+                    direction='ingress', ethertype=ethertype)
             except neutron_client_exceptions.Conflict:
                 # It's ok if this rule already exists
                 pass

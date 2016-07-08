@@ -12,24 +12,109 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+
 import mock
 import netifaces
 
 from octavia.amphorae.backends.agent.api_server import plug
 import octavia.tests.unit.base as base
 
+FAKE_CIDR_IPV4 = '10.0.0.0/24'
+FAKE_GATEWAY_IPV4 = '10.0.0.1'
+FAKE_IP_IPV4 = '10.0.0.2'
+FAKE_CIDR_IPV6 = '2001:db8::/32'
+FAKE_GATEWAY_IPV6 = '2001:db8::1'
+FAKE_IP_IPV6 = '2001:db8::2'
+FAKE_IP_IPV6_EXPANDED = '2001:0db8:0000:0000:0000:0000:0000:0002'
+FAKE_MAC_ADDRESS = 'ab:cd:ef:00:ff:22'
+FAKE_INTERFACE = 'eth0'
 
-@mock.patch.object(plug, "netifaces")
+
 class TestPlug(base.TestCase):
+    def setUp(self):
+        super(TestPlug, self).setUp()
 
-    def test__interface_by_mac_case_insensitive(self, mock_netifaces):
-        mock_netifaces.AF_LINK = netifaces.AF_LINK
-        mock_interface = 'eth0'
-        mock_netifaces.interfaces.return_value = [mock_interface]
-        mock_netifaces.ifaddresses.return_value = {
+        self.mock_netifaces = mock.patch.object(plug, "netifaces").start()
+        self.addCleanup(self.mock_netifaces.stop)
+
+        # Set up our fake interface
+        self.mock_netifaces.AF_LINK = netifaces.AF_LINK
+        self.mock_netifaces.interfaces.return_value = [FAKE_INTERFACE]
+        self.mock_netifaces.ifaddresses.return_value = {
             netifaces.AF_LINK: [
-                {'addr': 'ab:cd:ef:00:ff:22'}
+                {'addr': FAKE_MAC_ADDRESS.lower()}
             ]
         }
-        interface = plug._interface_by_mac('AB:CD:EF:00:FF:22')
-        self.assertEqual('eth0', interface)
+
+    def test__interface_by_mac_case_insensitive(self):
+        interface = plug._interface_by_mac(FAKE_MAC_ADDRESS.upper())
+        self.assertEqual(FAKE_INTERFACE, interface)
+
+    @mock.patch.object(plug, "flask")
+    @mock.patch('pyroute2.IPRoute')
+    @mock.patch('pyroute2.netns.create')
+    @mock.patch('pyroute2.NetNS')
+    @mock.patch('subprocess.check_output')
+    @mock.patch('shutil.copytree')
+    @mock.patch('os.makedirs')
+    def test_plug_vip_ipv4(self, mock_makedirs, mock_copytree,
+                           mock_check_output, mock_netns, mock_netns_create,
+                           mock_pyroute2, mock_flask):
+        m = mock.mock_open()
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
+            plug.plug_vip(
+                vip=FAKE_IP_IPV4,
+                subnet_cidr=FAKE_CIDR_IPV4,
+                gateway=FAKE_GATEWAY_IPV4,
+                mac_address=FAKE_MAC_ADDRESS
+            )
+        mock_flask.jsonify.assert_any_call({
+            'message': 'OK',
+            'details': 'VIP {vip} plugged on interface {interface}'.format(
+                vip=FAKE_IP_IPV4, interface=FAKE_INTERFACE)
+        })
+
+    @mock.patch.object(plug, "flask")
+    @mock.patch('pyroute2.IPRoute')
+    @mock.patch('pyroute2.netns.create')
+    @mock.patch('pyroute2.NetNS')
+    @mock.patch('subprocess.check_output')
+    @mock.patch('shutil.copytree')
+    @mock.patch('os.makedirs')
+    def test_plug_vip_ipv6(self, mock_makedirs, mock_copytree,
+                           mock_check_output, mock_netns, mock_netns_create,
+                           mock_pyroute2, mock_flask):
+        m = mock.mock_open()
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
+            plug.plug_vip(
+                vip=FAKE_IP_IPV6,
+                subnet_cidr=FAKE_CIDR_IPV6,
+                gateway=FAKE_GATEWAY_IPV6,
+                mac_address=FAKE_MAC_ADDRESS
+            )
+        mock_flask.jsonify.assert_any_call({
+            'message': 'OK',
+            'details': 'VIP {vip} plugged on interface {interface}'.format(
+                vip=FAKE_IP_IPV6_EXPANDED, interface=FAKE_INTERFACE)
+        })
+
+    @mock.patch.object(plug, "flask")
+    @mock.patch('pyroute2.IPRoute')
+    @mock.patch('pyroute2.netns.create')
+    @mock.patch('pyroute2.NetNS')
+    @mock.patch('subprocess.check_output')
+    @mock.patch('shutil.copytree')
+    @mock.patch('os.makedirs')
+    def test_plug_vip_bad_ip(self, mock_makedirs, mock_copytree,
+                             mock_check_output, mock_netns, mock_netns_create,
+                             mock_pyroute2, mock_flask):
+        m = mock.mock_open()
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
+            plug.plug_vip(
+                vip="error",
+                subnet_cidr=FAKE_CIDR_IPV4,
+                gateway=FAKE_GATEWAY_IPV4,
+                mac_address=FAKE_MAC_ADDRESS
+            )
+        mock_flask.jsonify.assert_any_call({'message': 'Invalid VIP'})

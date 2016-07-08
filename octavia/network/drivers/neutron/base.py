@@ -120,14 +120,15 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
 
     def _create_security_group_rule(self, sec_grp_id, protocol,
                                     direction='ingress', port_min=None,
-                                    port_max=None):
+                                    port_max=None, ethertype='IPv6'):
         rule = {
             'security_group_rule': {
                 'security_group_id': sec_grp_id,
                 'direction': direction,
                 'protocol': protocol,
                 'port_range_min': port_min,
-                'port_range_max': port_max
+                'port_range_max': port_max,
+                'ethertype': ethertype,
             }
         }
         self.neutron_client.create_security_group_rule(rule)

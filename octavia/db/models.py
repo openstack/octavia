@@ -316,7 +316,7 @@ class Vip(base_models.BASE):
         sa.ForeignKey("load_balancer.id",
                       name="fk_vip_load_balancer_id"),
         nullable=False, primary_key=True)
-    ip_address = sa.Column(sa.String(36), nullable=True)
+    ip_address = sa.Column(sa.String(64), nullable=True)
     port_id = sa.Column(sa.String(36), nullable=True)
     subnet_id = sa.Column(sa.String(36), nullable=True)
     load_balancer = orm.relationship("LoadBalancer", uselist=False,
