@@ -51,6 +51,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     def setUp(self):
         super(BaseAPITest, self).setUp()
         cfg.CONF.set_override('api_handler', 'simulated_handler')
+        cfg.CONF.set_override('network_driver', 'network_noop_driver',
+                              group='controller_worker')
         self.lb_repo = repositories.LoadBalancerRepository()
         self.listener_repo = repositories.ListenerRepository()
         self.listener_stats_repo = repositories.ListenerStatisticsRepository()

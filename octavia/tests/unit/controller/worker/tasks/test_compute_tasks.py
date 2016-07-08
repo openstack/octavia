@@ -68,6 +68,8 @@ class TestComputeTasks(base.TestCase):
                     amp_ssh_key_name=AMP_SSH_KEY_NAME)
         conf.config(group="controller_worker", amp_boot_network_list=AMP_NET)
         conf.config(group="controller_worker", amp_active_wait_sec=AMP_WAIT)
+        conf.config(group="controller_worker",
+                    amp_secgroup_list=AMP_SEC_GROUPS)
         conf.config(group="keystone_authtoken", auth_version=AUTH_VERSION)
 
         _amphora_mock.id = AMPHORA_ID
