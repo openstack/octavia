@@ -227,7 +227,7 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
         """Execute post_vip_routine."""
         self.amphora_driver.post_vip_plug(
             loadbalancer, amphorae_network_config)
-        LOG.debug("Notfied amphora of vip plug")
+        LOG.debug("Notified amphora of vip plug")
 
     def revert(self, result, loadbalancer, *args, **kwargs):
         """Handle a failed amphora vip plug notification."""
