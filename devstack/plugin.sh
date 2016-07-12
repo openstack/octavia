@@ -111,6 +111,7 @@ function octavia_configure {
     if [[ "$(trueorfalse False OCTAVIA_USE_PREGENERATED_SSH_KEY)" == "True" ]]; then
         cp -fp ${OCTAVIA_PREGENERATED_SSH_KEY_PATH} ${OCTAVIA_AMP_SSH_KEY_PATH}
         cp -fp ${OCTAVIA_PREGENERATED_SSH_KEY_PATH}.pub ${OCTAVIA_AMP_SSH_KEY_PATH}.pub
+        chmod 0600 ${OCTAVIA_AMP_SSH_KEY_PATH}
     else
         ssh-keygen -b $OCTAVIA_AMP_SSH_KEY_BITS -t $OCTAVIA_AMP_SSH_KEY_TYPE -N "" -f ${OCTAVIA_AMP_SSH_KEY_PATH}
     fi
@@ -197,6 +198,25 @@ function create_amphora_flavor {
     nova flavor-create --is-public False m1.amphora ${OCTAVIA_AMP_FLAVOR_ID} 1024 2 1
 }
 
+function configure_octavia_api_haproxy {
+
+    cp ${OCTAVIA_DIR}/devstack/etc/octavia/haproxy.cfg ${OCTAVIA_CONF_DIR}/haproxy.cfg
+
+    sed -i.bak "s/OCTAVIA_PORT/${OCTAVIA_PORT}/" ${OCTAVIA_CONF_DIR}/haproxy.cfg
+
+    iniset $OCTAVIA_CONF DEFAULT bind_port ${OCTAVIA_HA_PORT}
+
+    NODES=(${OCTAVIA_NODES//,/ })
+
+    for NODE in ${NODES[@]}; do
+       DATA=(${NODE//:/ })
+       NAME=$(echo -e "${DATA[0]}" | tr -d '[[:space:]]')
+       IP=$(echo -e "${DATA[1]}" | tr -d '[[:space:]]')
+       echo "   server octavia-${NAME} ${IP}:${OCTAVIA_HA_PORT} weight 1" >> ${OCTAVIA_CONF_DIR}/haproxy.cfg
+    done
+
+}
+
 function octavia_start {
 
     # Several steps in this function would more logically be in the configure function, but
@@ -245,6 +265,10 @@ function octavia_start {
 
     iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
 
+    if [ $OCTAVIA_NODE == 'main' ]; then
+        configure_octavia_api_haproxy
+        run_process $OCTAVIA_API_HAPROXY "/usr/sbin/haproxy -db -V -f ${OCTAVIA_CONF_DIR}/haproxy.cfg"
+    fi
 
     run_process $OCTAVIA_API  "$OCTAVIA_API_BINARY $OCTAVIA_API_ARGS"
     run_process $OCTAVIA_CONSUMER  "$OCTAVIA_CONSUMER_BINARY $OCTAVIA_CONSUMER_ARGS"
