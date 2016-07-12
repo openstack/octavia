@@ -1,0 +1,50 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require '../providers.rb'
+
+Vagrant.configure(2) do |config|
+
+  config.vm.define 'main' do |main|
+      configure_providers(main.vm)
+      main.vm.network "private_network", ip:"192.168.42.10"
+      main.vm.hostname = "main"
+      main.vm.provision "shell", privileged: false, inline: <<-SHELL
+          #!/usr/bin/env bash
+          set -e
+
+          sudo apt-get update
+          sudo apt-get -y upgrade
+          sudo apt-get -y install git
+
+          git clone https://git.openstack.org/openstack-dev/devstack
+          cp /vagrant/local.conf ~/devstack
+          cp /vagrant/local.sh ~/devstack/local-manual.sh
+          cp /vagrant/webserver.sh ~/devstack
+          cd ~/devstack
+          ./stack.sh
+
+      SHELL
+  end
+
+  config.vm.define 'second' do |second|
+      configure_providers(second.vm)
+      second.vm.network "private_network", ip:"192.168.42.11"
+      second.vm.hostname = "second"
+      second.vm.provision "shell", privileged: false, inline: <<-SHELL
+          #!/usr/bin/env bash
+          set -e
+
+          sudo apt-get update
+          sudo apt-get -y upgrade
+          sudo apt-get -y install git
+
+          git clone https://git.openstack.org/openstack-dev/devstack
+          cp /vagrant/local-2.conf ~/devstack/local.conf
+
+          cd ~/devstack
+          ./stack.sh
+      SHELL
+  end
+
+end
