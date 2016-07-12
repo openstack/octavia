@@ -24,6 +24,9 @@ from octavia.controller.worker.flows import load_balancer_flows
 import octavia.tests.unit.base as base
 
 
+# NOTE: We patch the get_network_driver for all the calls so we don't
+# inadvertently make real calls.
+@mock.patch('octavia.common.utils.get_network_driver')
 class TestLoadBalancerFlows(base.TestCase):
 
     def setUp(self):
@@ -37,7 +40,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.addCleanup(cfg.CONF.set_override, 'amphora_driver',
                         old_amp_driver, group='controller_worker')
 
-    def test_get_create_load_balancer_flow(self):
+    def test_get_create_load_balancer_flow(self, mock_get_net_driver):
         amp_flow = self.LBFlow.get_create_load_balancer_flow(
             constants.TOPOLOGY_SINGLE)
         self.assertIsInstance(amp_flow, flow.Flow)
@@ -47,7 +50,8 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
 
-    def test_get_create_active_standby_load_balancer_flow(self):
+    def test_get_create_active_standby_load_balancer_flow(
+            self, mock_get_net_driver):
         amp_flow = self.LBFlow.get_create_load_balancer_flow(
             constants.TOPOLOGY_ACTIVE_STANDBY)
         self.assertIsInstance(amp_flow, flow.Flow)
@@ -57,7 +61,8 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
 
-    def test_get_create_anti_affinity_active_standby_load_balancer_flow(self):
+    def test_get_create_anti_affinity_active_standby_load_balancer_flow(
+            self, mock_get_net_driver):
         cfg.CONF.set_override('enable_anti_affinity', True,
                               group='nova')
         self._LBFlow = load_balancer_flows.LoadBalancerFlows()
@@ -71,12 +76,13 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
 
-    def test_get_create_bogus_topology_load_balancer_flow(self):
+    def test_get_create_bogus_topology_load_balancer_flow(
+            self, mock_get_net_driver):
         self.assertRaises(exceptions.InvalidTopology,
                           self.LBFlow.get_create_load_balancer_flow,
                           'BOGUS')
 
-    def test_get_delete_load_balancer_flow(self):
+    def test_get_delete_load_balancer_flow(self, mock_get_net_driver):
         lb_mock = mock.Mock()
         listener_mock = mock.Mock()
         listener_mock.id = '123'
@@ -93,7 +99,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(0, len(lb_flow.provides))
         self.assertEqual(3, len(lb_flow.requires))
 
-    def test_get_delete_load_balancer_flow_cascade(self):
+    def test_get_delete_load_balancer_flow_cascade(self, mock_get_net_driver):
         lb_mock = mock.Mock()
         listener_mock = mock.Mock()
         listener_mock.id = '123'
@@ -117,7 +123,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(0, len(lb_flow.provides))
         self.assertEqual(3, len(lb_flow.requires))
 
-    def test_get_new_LB_networking_subflow(self):
+    def test_get_new_LB_networking_subflow(self, mock_get_net_driver):
 
         lb_flow = self.LBFlow.get_new_LB_networking_subflow()
 
@@ -133,7 +139,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(4, len(lb_flow.provides))
         self.assertEqual(2, len(lb_flow.requires))
 
-    def test_get_update_load_balancer_flow(self):
+    def test_get_update_load_balancer_flow(self, mock_get_net_driver):
 
         lb_flow = self.LBFlow.get_update_load_balancer_flow()
 
@@ -144,7 +150,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(0, len(lb_flow.provides))
         self.assertEqual(3, len(lb_flow.requires))
 
-    def test_get_post_lb_amp_association_flow(self):
+    def test_get_post_lb_amp_association_flow(self, mock_get_net_driver):
         amp_flow = self.LBFlow.get_post_lb_amp_association_flow(
             '123', constants.TOPOLOGY_SINGLE)
 
@@ -183,7 +189,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(4, len(amp_flow.provides))
         self.assertEqual(2, len(amp_flow.requires))
 
-    def test_get_create_load_balancer_graph_flows(self):
+    def test_get_create_load_balancer_graph_flows(self, mock_get_net_driver):
         allocate_amp_flow, post_amp_flow = (
             self.LBFlow.get_create_load_balancer_graph_flows(
                 constants.TOPOLOGY_SINGLE, '123'

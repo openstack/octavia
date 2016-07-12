@@ -51,7 +51,7 @@ class TestException(Exception):
         return repr(self.value)
 
 
-@mock.patch('stevedore.driver.DriverManager.driver')
+@mock.patch('octavia.common.utils.get_network_driver')
 class TestNetworkTasks(base.TestCase):
     def setUp(self):
         network_tasks.LOG = mock.MagicMock()
@@ -69,8 +69,9 @@ class TestNetworkTasks(base.TestCase):
 
         super(TestNetworkTasks, self).setUp()
 
-    def test_calculate_delta(self,
-                             mock_driver):
+    def test_calculate_delta(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
         EMPTY = {}
         empty_deltas = {self.amphora_mock.id: data_models.Delta(
             amphora_id=self.amphora_mock.id,
@@ -138,8 +139,9 @@ class TestNetworkTasks(base.TestCase):
         self.assertEqual({self.amphora_mock.id: ndm},
                          net.execute(self.load_balancer_mock))
 
-    def test_get_plumbed_networks(self,
-                                  mock_driver):
+    def test_get_plumbed_networks(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
         mock_driver.get_plugged_networks.side_effect = [['blah']]
         net = network_tasks.GetPlumbedNetworks()
 
@@ -147,8 +149,9 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.get_plugged_networks.assert_called_once_with(
             COMPUTE_ID)
 
-    def test_plug_networks(self,
-                           mock_driver):
+    def test_plug_networks(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
 
         def _interface(network_id):
             return [data_models.Interface(network_id=network_id)]
@@ -203,7 +206,10 @@ class TestNetworkTasks(base.TestCase):
                           delta)
         mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
 
-    def test_unplug_networks(self, mock_driver):
+    def test_unplug_networks(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+
         def _interface(network_id):
             return [data_models.Interface(network_id=network_id)]
 
@@ -237,7 +243,10 @@ class TestNetworkTasks(base.TestCase):
         net.execute(self.amphora_mock, delta)  # No exception
         mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
 
-    def test_get_member_ports(self, mock_driver):
+    def test_get_member_ports(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+
         def _interface(port_id):
             return [data_models.Interface(port_id=port_id)]
 
@@ -269,7 +278,10 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.get_subnet.assert_called_once_with(1)
         self.assertEqual([port_mock], ports)
 
-    def test_handle_network_delta(self, mock_driver):
+    def test_handle_network_delta(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+
         def _interface(network_id):
             return [data_models.Interface(network_id=network_id)]
 
@@ -346,8 +358,9 @@ class TestNetworkTasks(base.TestCase):
         net.execute({self.amphora_mock.id: delta})
         mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
 
-    def test_plug_vip(self,
-                      mock_driver):
+    def test_plug_vip(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
         net = network_tasks.PlugVIP()
 
         mock_driver.plug_vip.return_value = ["vip"]
@@ -360,13 +373,17 @@ class TestNetworkTasks(base.TestCase):
         net.revert(["vip"], LB)
         mock_driver.unplug_vip.assert_called_once_with(LB, LB.vip)
 
-    def test_unplug_vip(self, mock_driver):
+    def test_unplug_vip(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
         net = network_tasks.UnplugVIP()
 
         net.execute(LB)
         mock_driver.unplug_vip.assert_called_once_with(LB, LB.vip)
 
-    def test_allocate_vip(self, mock_driver):
+    def test_allocate_vip(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
         net = network_tasks.AllocateVIP()
 
         mock_driver.allocate_vip.return_value = LB.vip
@@ -379,34 +396,46 @@ class TestNetworkTasks(base.TestCase):
         net.revert(vip_mock, LB)
         mock_driver.deallocate_vip.assert_called_once_with(vip_mock)
 
-    def test_deallocate_vip(self, mock_driver):
+    def test_deallocate_vip(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
         net = network_tasks.DeallocateVIP()
         vip = o_data_models.Vip()
         lb = o_data_models.LoadBalancer(vip=vip)
         net.execute(lb)
         mock_driver.deallocate_vip.assert_called_once_with(lb.vip)
 
-    def test_update_vip(self, mock_driver):
+    def test_update_vip(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
         vip = o_data_models.Vip()
         lb = o_data_models.LoadBalancer(vip=vip)
         net_task = network_tasks.UpdateVIP()
         net_task.execute(lb)
         mock_driver.update_vip.assert_called_once_with(lb)
 
-    def test_get_amphorae_network_configs(self, mock_driver):
+    def test_get_amphorae_network_configs(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
         lb = o_data_models.LoadBalancer()
         net_task = network_tasks.GetAmphoraeNetworkConfigs()
         net_task.execute(lb)
         mock_driver.get_network_configs.assert_called_once_with(lb)
 
-    def test_failover_preparation_for_amphora(self, mock_driver):
+    def test_failover_preparation_for_amphora(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
         failover = network_tasks.FailoverPreparationForAmphora()
         amphora = o_data_models.Amphora(id=AMPHORA_ID,
                                         lb_network_ip=IP_ADDRESS)
         failover.execute(amphora)
         mock_driver.failover_preparation.assert_called_once_with(amphora)
 
-    def test_retrieve_portids_on_amphora_except_lb_network(self, mock_driver):
+    def test_retrieve_portids_on_amphora_except_lb_network(
+            self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+
         def _interface(port_id):
             return [data_models.Interface(port_id=port_id)]
 
@@ -448,7 +477,10 @@ class TestNetworkTasks(base.TestCase):
         ports = net_task.execute(amphora)
         self.assertEqual(1, len(ports))
 
-    def test_plug_ports(self, mock_driver):
+    def test_plug_ports(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+
         amphora = mock.MagicMock()
         port1 = mock.MagicMock()
         port2 = mock.MagicMock()

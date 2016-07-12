@@ -25,6 +25,9 @@ import octavia.tests.unit.base as base
 AUTH_VERSION = '2'
 
 
+# NOTE: We patch the get_network_driver for all the calls so we don't
+# inadvertently make real calls.
+@mock.patch('octavia.common.utils.get_network_driver')
 class TestAmphoraFlows(base.TestCase):
 
     def setUp(self):
@@ -41,7 +44,7 @@ class TestAmphoraFlows(base.TestCase):
         self.addCleanup(cfg.CONF.set_override, 'amphora_driver',
                         old_amp_driver, group='controller_worker')
 
-    def test_get_create_amphora_flow(self):
+    def test_get_create_amphora_flow(self, mock_get_net_driver):
 
         amp_flow = self.AmpFlow.get_create_amphora_flow()
 
@@ -55,7 +58,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(5, len(amp_flow.provides))
         self.assertEqual(0, len(amp_flow.requires))
 
-    def test_get_create_amphora_flow_cert(self):
+    def test_get_create_amphora_flow_cert(self, mock_get_net_driver):
         self.AmpFlow = amphora_flows.AmphoraFlows()
 
         amp_flow = self.AmpFlow.get_create_amphora_flow()
@@ -69,7 +72,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(5, len(amp_flow.provides))
         self.assertEqual(0, len(amp_flow.requires))
 
-    def test_get_create_amphora_for_lb_flow(self):
+    def test_get_create_amphora_for_lb_flow(self, mock_get_net_driver):
 
         amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
             'SOMEPREFIX', constants.ROLE_STANDALONE)
@@ -87,7 +90,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(5, len(amp_flow.provides))
         self.assertEqual(1, len(amp_flow.requires))
 
-    def test_get_cert_create_amphora_for_lb_flow(self):
+    def test_get_cert_create_amphora_for_lb_flow(self, mock_get_net_driver):
         cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
                               group='controller_worker')
 
@@ -109,7 +112,8 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(5, len(amp_flow.provides))
         self.assertEqual(1, len(amp_flow.requires))
 
-    def test_get_cert_master_create_amphora_for_lb_flow(self):
+    def test_get_cert_master_create_amphora_for_lb_flow(
+            self, mock_get_net_driver):
         cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
                               group='controller_worker')
 
@@ -132,7 +136,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(1, len(amp_flow.requires))
 
     def test_get_cert_master_rest_anti_affinity_create_amphora_for_lb_flow(
-            self):
+            self, mock_get_net_driver):
         cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
                               group='controller_worker')
 
@@ -153,7 +157,8 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(5, len(amp_flow.provides))
         self.assertEqual(2, len(amp_flow.requires))
 
-    def test_get_cert_backup_create_amphora_for_lb_flow(self):
+    def test_get_cert_backup_create_amphora_for_lb_flow(
+            self, mock_get_net_driver):
         self.AmpFlow = amphora_flows.AmphoraFlows()
 
         amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
@@ -172,7 +177,8 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(5, len(amp_flow.provides))
         self.assertEqual(1, len(amp_flow.requires))
 
-    def test_get_cert_bogus_create_amphora_for_lb_flow(self):
+    def test_get_cert_bogus_create_amphora_for_lb_flow(
+            self, mock_get_net_driver):
         self.AmpFlow = amphora_flows.AmphoraFlows()
 
         amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
@@ -192,7 +198,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(1, len(amp_flow.requires))
 
     def test_get_cert_backup_rest_anti_affinity_create_amphora_for_lb_flow(
-            self):
+            self, mock_get_net_driver):
         cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
                               group='controller_worker')
         cfg.CONF.set_override('enable_anti_affinity', True,
@@ -212,7 +218,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(5, len(amp_flow.provides))
         self.assertEqual(2, len(amp_flow.requires))
 
-    def test_get_delete_amphora_flow(self):
+    def test_get_delete_amphora_flow(self, mock_get_net_driver):
 
         amp_flow = self.AmpFlow.get_delete_amphora_flow()
 
@@ -223,7 +229,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(0, len(amp_flow.provides))
         self.assertEqual(1, len(amp_flow.requires))
 
-    def test_allocate_amp_to_lb_decider(self):
+    def test_allocate_amp_to_lb_decider(self, mock_get_net_driver):
         history = mock.MagicMock()
         values = mock.MagicMock(side_effect=[['TEST'], [None]])
         history.values = values
@@ -232,7 +238,7 @@ class TestAmphoraFlows(base.TestCase):
         result = self.AmpFlow._allocate_amp_to_lb_decider(history)
         self.assertFalse(result)
 
-    def test_create_new_amp_for_lb_decider(self):
+    def test_create_new_amp_for_lb_decider(self, mock_get_net_driver):
         history = mock.MagicMock()
         values = mock.MagicMock(side_effect=[[None], ['TEST']])
         history.values = values
@@ -241,7 +247,7 @@ class TestAmphoraFlows(base.TestCase):
         result = self.AmpFlow._create_new_amp_for_lb_decider(history)
         self.assertFalse(result)
 
-    def test_get_failover_flow(self):
+    def test_get_failover_flow(self, mock_get_net_driver):
 
         amp_flow = self.AmpFlow.get_failover_flow()
 
@@ -331,7 +337,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(2, len(amp_flow.requires))
         self.assertEqual(12, len(amp_flow.provides))
 
-    def test_cert_rotate_amphora_flow(self):
+    def test_cert_rotate_amphora_flow(self, mock_get_net_driver):
         self.AmpFlow = amphora_flows.AmphoraFlows()
 
         amp_rotate_flow = self.AmpFlow.cert_rotate_amphora_flow()
@@ -343,7 +349,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(1, len(amp_rotate_flow.provides))
         self.assertEqual(2, len(amp_rotate_flow.requires))
 
-    def test_get_vrrp_subflow(self):
+    def test_get_vrrp_subflow(self, mock_get_net_driver):
         vrrp_subflow = self.AmpFlow.get_vrrp_subflow('123')
 
         self.assertIsInstance(vrrp_subflow, flow.Flow)
@@ -355,7 +361,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(1, len(vrrp_subflow.provides))
         self.assertEqual(1, len(vrrp_subflow.requires))
 
-    def test_get_post_map_lb_subflow(self):
+    def test_get_post_map_lb_subflow(self, mock_get_net_driver):
 
         self.AmpFlow = amphora_flows.AmphoraFlows()
 
