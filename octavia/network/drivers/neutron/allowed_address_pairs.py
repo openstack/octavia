@@ -181,8 +181,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         sec_grp = self._get_lb_security_group(load_balancer_id)
         try:
             self._add_security_group_to_port(sec_grp.get('id'), port_id)
-        except base.PortNotFound as e:
-            raise e
+        except base.PortNotFound:
+            raise
         except base.NetworkException as e:
             raise base.PlugVIPException(str(e))
 
