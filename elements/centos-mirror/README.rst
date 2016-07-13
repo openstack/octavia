@@ -6,4 +6,4 @@ variable.
 
 .. code:: bash
 
-    $ export UBUNTU_MIRROR=http://<local mirror hostname>/<path to mirror>
+    $ export CENTOS_MIRROR=http://<local mirror hostname>/<path to mirror>

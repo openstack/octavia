@@ -24,7 +24,7 @@ usage() {
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
     echo "            [-h]"
-    echo "            [-i **ubuntu** | fedora | centos ]"
+    echo "            [-i **ubuntu** | fedora | centos | rhel ]"
     echo "            [-o **amphora-x64-haproxy** | <filename> ]"
     echo "            [-r <root password> ]"
     echo "            [-s **5** | <size in GB> ]"
@@ -88,7 +88,8 @@ while getopts "a:b:c:hi:o:t:r:s:vw:" opt; do
             AMP_BASEOS=$OPTARG
             if [ $AMP_BASEOS != "ubuntu" ] && \
                 [ $AMP_BASEOS != "fedora" ] && \
-                [ $AMP_BASEOS != "centos" ]; then
+                [ $AMP_BASEOS != "centos" ] && \
+                [ $AMP_BASEOS != "rhel" ]; then
                 echo "Error: Unsupported base OS " $AMP_BASEOS " specified"
                 exit 3
             fi
@@ -194,6 +195,15 @@ fi
 
 export CLOUD_INIT_DATASOURCES=${CLOUD_INIT_DATASOURCES:-"ConfigDrive"}
 
+# Additional RHEL environment checks
+if [ "${AMP_BASEOS}" = "rhel" ]; then
+    if [ -z "${DIB_LOCAL_IMAGE}" ]; then
+        echo "DIB_LOCAL_IMAGE variable must be set and point to a RHEL 7 base cloud image. Exiting."
+        echo "For more information, see the README file in ${DIB_ELEMENTS_PATH}/elements/rhel7"
+        exit 1
+    fi
+fi
+
 # Find out what platform we are on
 if [ -e /etc/os-release ]; then
     platform=$(head -1 /etc/os-release)
@@ -206,7 +216,7 @@ else
 fi
 
 if [ "$AMP_ROOTPW" ] && [ "$platform" != 'NAME="Ubuntu"' ]; then
-    if [ "$(getenforce)" != "Disabled" ]; then
+    if [ "$(getenforce)" == "Enforcing" ]; then
         echo "A root password cannot be enabled for images built on this platform while SELinux is enabled."
         exit 1
     fi
@@ -321,6 +331,9 @@ elif [ "$AMP_BASEOS" = "centos" ]; then
         AMP_element_sequence="$AMP_element_sequence centos-mirror"
         export CENTOS_MIRROR="$BASE_OS_MIRROR"
     fi
+elif [ "$AMP_BASEOS" = "rhel" ]; then
+    AMP_element_sequence=${AMP_element_sequence:-"base vm rhel7"}
+    AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
 fi
 
 if [ "$AMP_ROOTPW" ]; then
