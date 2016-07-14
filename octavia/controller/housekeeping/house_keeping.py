@@ -121,7 +121,7 @@ class CertRotation(object):
                     LOG.debug("Cert expired amphora's id is: %s", amp.id)
                     executor.submit(self.cw.amphora_cert_rotation, amp.id)
                 if rotation_count > 0:
-                    LOG.info(_LI("Rotated certificates for %s ampohra") %
+                    LOG.info(_LI("Rotated certificates for %s amphora") %
                              rotation_count)
             finally:
                 executor.shutdown(wait=True)
