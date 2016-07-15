@@ -54,7 +54,7 @@ openssl genrsa -passout pass:foobar -des3 -out private/cakey.pem 2048
 echo "You will be asked to enter some information about the certificate."
 openssl req -x509 -passin pass:foobar -new -nodes -key private/cakey.pem -config $OPEN_SSL_CONF -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" -out ca_01.pem
 
-echo "Here is the certifcate"
+echo "Here is the certificate"
 openssl x509 -in ca_01.pem -text -noout
 
 
