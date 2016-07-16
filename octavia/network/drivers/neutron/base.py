@@ -143,53 +143,31 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
         return [self._port_to_octavia_interface(
                 compute_id, port) for port in ports['ports']]
 
-    def get_network(self, network_id):
+    def _get_resource(self, resource_type, resource_id):
         try:
-            network = self.neutron_client.show_network(network_id)
-            return utils.convert_network_dict_to_model(network)
+            resource = getattr(self.neutron_client, 'show_%s' %
+                               resource_type)(resource_id)
+            return getattr(utils, 'convert_%s_dict_to_model' %
+                           resource_type)(resource)
         except neutron_client_exceptions.NotFound:
-            message = _LE('Network not found '
-                          '(network id: {network_id}.').format(
-                network_id=network_id)
+            message = _LE('{resource_type} not found '
+                          '({resource_type} id: {resource_id}.').format(
+                resource_type=resource_type, resource_id=resource_id)
             LOG.exception(message)
-            raise base.NetworkNotFound(message)
+            raise getattr(base, '%sNotFound' %
+                          resource_type.capitalize())(message)
         except Exception:
-            message = _LE('Error retrieving network '
-                          '(network id: {network_id}.').format(
-                network_id=network_id)
+            message = _LE('Error retrieving {resource_type} '
+                          '({resource_type} id: {resource_id}.').format(
+                resource_type=resource_type, resource_id=resource_id)
             LOG.exception(message)
             raise base.NetworkException(message)
+
+    def get_network(self, network_id):
+        return self._get_resource('network', network_id)
 
     def get_subnet(self, subnet_id):
-        try:
-            subnet = self.neutron_client.show_subnet(subnet_id)
-            return utils.convert_subnet_dict_to_model(subnet)
-        except neutron_client_exceptions.NotFound:
-            message = _LE('Subnet not found '
-                          '(subnet id: {subnet_id}.').format(
-                subnet_id=subnet_id)
-            LOG.exception(message)
-            raise base.SubnetNotFound(message)
-        except Exception:
-            message = _LE('Error retrieving subnet '
-                          '(subnet id: {subnet_id}.').format(
-                subnet_id=subnet_id)
-            LOG.exception(message)
-            raise base.NetworkException(message)
+        return self._get_resource('subnet', subnet_id)
 
     def get_port(self, port_id):
-        try:
-            port = self.neutron_client.show_port(port_id)
-            return utils.convert_port_dict_to_model(port)
-        except neutron_client_exceptions.NotFound:
-            message = _LE('Port not found '
-                          '(port id: {port_id}.').format(
-                port_id=port_id)
-            LOG.exception(message)
-            raise base.PortNotFound(message)
-        except Exception:
-            message = _LE('Error retrieving port '
-                          '(port id: {port_id}.').format(
-                port_id=port_id)
-            LOG.exception(message)
-            raise base.NetworkException(message)
+        return self._get_resource('port', port_id)
