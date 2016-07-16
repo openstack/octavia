@@ -43,20 +43,28 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             insecure=CONF.neutron.insecure,
             ca_cert=CONF.neutron.ca_certificates_file
         )
+        self._check_extension_cache = {}
         self.sec_grp_enabled = self._check_extension_enabled(SEC_GRP_EXT_ALIAS)
         self.dns_integration_enabled = self._check_extension_enabled(
             DNS_INT_EXT_ALIAS)
 
     def _check_extension_enabled(self, extension_alias):
-        try:
-            self.neutron_client.show_extension(extension_alias)
-            LOG.info(_LI('Neutron extension {ext} found enabled').format(
-                ext=extension_alias))
-            return True
-        except neutron_client_exceptions.NotFound:
-            LOG.info(_LI('Neutron extension {ext} is not enabled').format(
-                ext=extension_alias))
-            return False
+        if extension_alias in self._check_extension_cache:
+            status = self._check_extension_cache[extension_alias]
+            LOG.info(_LI('Neutron extension {ext} cached as {status}').format(
+                ext=extension_alias,
+                status='enabled' if status else 'disabled'))
+        else:
+            try:
+                self.neutron_client.show_extension(extension_alias)
+                LOG.info(_LI('Neutron extension {ext} found enabled').format(
+                    ext=extension_alias))
+                self._check_extension_cache[extension_alias] = True
+            except neutron_client_exceptions.NotFound:
+                LOG.info(_LI('Neutron extension {ext} is not enabled').format(
+                    ext=extension_alias))
+                self._check_extension_cache[extension_alias] = False
+        return self._check_extension_cache[extension_alias]
 
     def _port_to_vip(self, port, load_balancer):
         fixed_ip = None

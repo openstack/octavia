@@ -56,8 +56,8 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         show_extension = self.driver.neutron_client.show_extension
         show_extension.side_effect = [None, neutron_client_exceptions.NotFound]
 
-        self.assertTrue(self.driver._check_extension_enabled('TEST'))
-        self.assertFalse(self.driver._check_extension_enabled('TEST'))
+        self.assertTrue(self.driver._check_extension_enabled('TEST1'))
+        self.assertFalse(self.driver._check_extension_enabled('TEST2'))
 
     def test__port_to_vip(self):
         lb = dmh.generate_load_balancer_tree()
