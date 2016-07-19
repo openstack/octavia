@@ -78,10 +78,10 @@ class UDPStatusGetter(object):
     def dorecv(self, *args, **kw):
         """Waits for a UDP heart beat to be sent.
 
-        :return: Returns the unwrapped payload and addr that sent the \
-                 heart beat. The format of the obj from the UDP sender is of
-                 the form. Not that listener_1 has not pools and listener_4
-                 has no nodes.
+        :return: Returns the unwrapped payload and addr that sent the
+                 heartbeat. The format of the obj from the UDP sender
+                 can be seen below. Note that listener_1 has no pools
+                 and listener_4 has no members.
 
         {"listeners": {
         "listener_uuid_1": {
@@ -170,7 +170,7 @@ class UDPStatusGetter(object):
 
     def check(self):
         try:
-            (obj, srcaddr) = self.dorecv()
+            (obj, _) = self.dorecv()
             if self.health_update:
                 self.executor.submit(self.health_update.update_health, obj)
             if self.stats_update:
