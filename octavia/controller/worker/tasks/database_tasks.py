@@ -265,7 +265,7 @@ class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
                                      load_balancer_id=loadbalancer_id,
                                      amphora_id=amphora_id)
 
-    def revert(self, amphora_id):
+    def revert(self, amphora_id, *args, **kwargs):
         self.repos.amphora.update(db_apis.get_session(), amphora_id,
                                   loadbalancer_id=None)
 
