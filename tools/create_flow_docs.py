@@ -57,15 +57,6 @@ def generate(flow_list, output_directory):
                     get_flow_method(
                         constants.TOPOLOGY_ACTIVE_STANDBY))
             elif (current_tuple[1] == 'LoadBalancerFlows' and
-                  current_tuple[2] == 'get_create_load_balancer_graph_flows'):
-                # This is lame until we refactor the create load balancer
-                # flow into one flow now that
-                # https://bugs.launchpad.net/taskflow/+bug/1479466
-                # is fixed.
-                allocate_amp_flow, lb_create_graph_flow = get_flow_method(
-                    constants.TOPOLOGY_ACTIVE_STANDBY, 'prefixname')
-                current_engine = engines.load(lb_create_graph_flow)
-            elif (current_tuple[1] == 'LoadBalancerFlows' and
                   current_tuple[2] == 'get_delete_load_balancer_flow'):
                 lb = dmh.generate_load_balancer()
                 delete_flow, store = get_flow_method(lb)
