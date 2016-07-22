@@ -198,23 +198,21 @@ class VirtualMachineManager(compute_base.ComputeBase):
         try:
             inf_list = nova_response.interface_list()
             for interface in inf_list:
-                net_id = getattr(interface, 'net_id')
+                net_id = interface.net_id
                 if net_id in CONF.controller_worker.amp_boot_network_list:
-                    lb_network_ip = getattr(
-                        interface, 'fixed_ips')[0]['ip_address']
+                    lb_network_ip = interface.fixed_ips[0]['ip_address']
                     break
                 elif net_id == CONF.controller_worker.amp_network:
                     # TODO(ptoohill) deprecated, remove this block when ready..
-                    lb_network_ip = getattr(
-                        interface, 'fixed_ips')[0]['ip_address']
+                    lb_network_ip = interface.fixed_ips[0]['ip_address']
                     break
         except Exception:
             LOG.debug('Extracting virtual interfaces through nova '
                       'os-interfaces extension failed.')
 
         response = models.Amphora(
-            compute_id=getattr(nova_response, 'id'),
-            status=getattr(nova_response, 'status'),
+            compute_id=nova_response.id,
+            status=nova_response.status,
             lb_network_ip=lb_network_ip
         )
         return response
