@@ -202,7 +202,7 @@ class AmphoraFlows(object):
         :return: True if a spare amphora exists in DB
         """
 
-        return history.values()[0] is not None
+        return list(history.values())[0] is not None
 
     def _create_new_amp_for_lb_decider(self, history):
         """decides if a new amphora must be created for the lb
@@ -210,7 +210,7 @@ class AmphoraFlows(object):
         :return: True
         """
 
-        return history.values()[0] is None
+        return list(history.values())[0] is None
 
     def get_amphora_for_lb_subflow(
             self, prefix, role=constants.ROLE_STANDALONE):
