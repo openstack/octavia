@@ -27,7 +27,7 @@ usage() {
     echo "            [-i **ubuntu** | fedora | centos | rhel ]"
     echo "            [-o **amphora-x64-haproxy** | <filename> ]"
     echo "            [-r <root password> ]"
-    echo "            [-s **5** | <size in GB> ]"
+    echo "            [-s **2** | <size in GB> ]"
     echo "            [-t **qcow2** | tar | vhd ]"
     echo "            [-v]"
     echo "            [-w <working directory> ]"
@@ -39,7 +39,7 @@ usage() {
     echo "        '-i' is the base OS (default: ubuntu)"
     echo "        '-o' is the output image file name"
     echo "        '-r' enable the root account in the generated image (default: disabled)"
-    echo "        '-s' is the image size to produce in gigabytes (default: 5)"
+    echo "        '-s' is the image size to produce in gigabytes (default: 2)"
     echo "        '-t' is the image type (default: qcow2)"
     echo "        '-v' display the script version"
     echo "        '-w' working directory for image building (default: .)"
@@ -146,7 +146,7 @@ AMP_OUTPUTFILENAME=${AMP_OUTPUTFILENAME:-"$AMP_DIR/amphora-x64-haproxy"}
 
 AMP_IMAGETYPE=${AMP_IMAGETYPE:-"qcow2"}
 
-AMP_IMAGESIZE=${AMP_IMAGESIZE:-5}
+AMP_IMAGESIZE=${AMP_IMAGESIZE:-2}
 
 OCTAVIA_ELEMENTS_PATH=$OCTAVIA_REPO_PATH/elements
 
