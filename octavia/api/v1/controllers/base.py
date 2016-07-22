@@ -21,7 +21,7 @@ from stevedore import driver as stevedore_driver
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import repositories
-from octavia.i18n import _LI
+from octavia.i18n import _LE
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -60,7 +60,8 @@ class BaseController(rest.RestController):
         """Gets an object from the database and returns it."""
         db_obj = repo.get(session, id=id)
         if not db_obj:
-            LOG.info(_LI("%s not found"), data_model._name() + id)
+            LOG.exception(_LE("{name} {id} not found").format(
+                name=data_model._name(), id=id))
             raise exceptions.NotFound(
                 resource=data_model._name(), id=id)
         return db_obj
