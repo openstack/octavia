@@ -352,9 +352,6 @@ class LoadBalancerRepository(BaseRepository):
         if lb:
             # If a load balancer was never updated use its creation timestamp
             last_update = lb.updated_at or lb.created_at
-            # Convert string to timestamp
-            last_update = datetime.datetime.strptime(last_update,
-                                                     "%Y-%m-%d %H:%M:%S.%f")
             return last_update < timestamp
         else:
             # Load balancer was just deleted.

@@ -36,8 +36,8 @@ class LoadBalancerResponse(base.BaseType):
     vip = wtypes.wsattr(VIP)
     project_id = wtypes.wsattr(wtypes.StringType())
     listeners = wtypes.wsattr([listener.ListenerResponse])
-    created_at = wtypes.wsattr(wtypes.StringType())
-    updated_at = wtypes.wsattr(wtypes.StringType())
+    created_at = wtypes.wsattr(wtypes.datetime.datetime)
+    updated_at = wtypes.wsattr(wtypes.datetime.datetime)
 
     @classmethod
     def from_data_model(cls, data_model, children=False):

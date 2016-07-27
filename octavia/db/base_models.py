@@ -14,16 +14,9 @@
 
 from oslo_db.sqlalchemy import models
 from oslo_utils import uuidutils
-import six
 import sqlalchemy as sa
 from sqlalchemy.ext import declarative
 from sqlalchemy.orm import collections
-
-
-def datetime_to_str(dct, attr_name):
-    if (dct.get(attr_name) is not None
-            and not isinstance(dct.get(attr_name), six.string_types)):
-        dct[attr_name] = dct[attr_name].isoformat(' ')
 
 
 class OctaviaBase(models.ModelBase):
@@ -71,8 +64,6 @@ class OctaviaBase(models.ModelBase):
         dm_kwargs = {}
         for column in self.__table__.columns:
             dm_kwargs[column.name] = getattr(self, column.name)
-            datetime_to_str(dm_kwargs, 'created_at')
-            datetime_to_str(dm_kwargs, 'updated_at')
 
         attr_names = [attr_name for attr_name in dir(self)
                       if not attr_name.startswith('_')]
