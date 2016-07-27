@@ -20,12 +20,5 @@ from octavia.common import context
 class ContextHook(hooks.PecanHook):
 
     def on_route(self, state):
-        user_id = state.request.headers.get('X-User-Id')
-        user_id = state.request.headers.get('X-User', user_id)
-        project = state.request.headers.get('X-Tenant-Id')
-        project = state.request.headers.get('X-Tenant', project)
-        project = state.request.headers.get('X-Project-Id', project)
-        project = state.request.headers.get('X-Project', project)
-        auth_token = state.request.headers.get('X-Auth-Token')
-        state.request.context['octavia_context'] = context.Context(
-            user_id=user_id, project_id=project, auth_token=auth_token)
+        context_obj = context.Context.from_environ(state.request.environ)
+        state.request.context['octavia_context'] = context_obj
