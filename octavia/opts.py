@@ -29,6 +29,6 @@ def list_opts():
         ('controller_worker', octavia.common.config.controller_worker_opts),
         ('task_flow', octavia.common.config.task_flow_opts),
         ('certificates', octavia.common.config.certificate_opts),
-        ('house_keeping', octavia.common.config.house_keeping_opts)
+        ('house_keeping', octavia.common.config.house_keeping_opts),
         ('keepalived_vrrp', octavia.common.config.keepalived_vrrp_opts)
     ]
