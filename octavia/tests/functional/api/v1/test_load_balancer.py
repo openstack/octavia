@@ -200,6 +200,12 @@ class TestLoadBalancer(base.BaseAPITest):
         self.put(self.LB_PATH.format(lb_id=lb.get('id')), lb_json)
         self.delete(self.LB_PATH.format(lb_id=lb.get('id')), status=409)
 
+    def test_delete_with_error_status(self):
+        lb = self.create_load_balancer({}, name='lb1', description='desc1',
+                                       enabled=False)
+        lb = self.set_lb_status(lb.get('id'), status=constants.ERROR)
+        self.delete(self.LB_PATH.format(lb_id=lb.get('id')), status=202)
+
     def test_update_pending_delete(self):
         lb = self.create_load_balancer({}, name='lb1', description='desc1',
                                        enabled=False)

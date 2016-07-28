@@ -322,7 +322,12 @@ class LoadBalancerRepository(BaseRepository):
         with session.begin(subtransactions=True):
             lb = session.query(self.model_class).with_for_update().filter_by(
                 id=id).one()
-            if lb.provisioning_status not in constants.MUTABLE_STATUSES:
+            is_delete = status == constants.PENDING_DELETE
+            acceptable_statuses = (
+                constants.DELETABLE_STATUSES
+                if is_delete else constants.MUTABLE_STATUSES
+            )
+            if lb.provisioning_status not in acceptable_statuses:
                 return False
             lb.provisioning_status = status
             session.add(lb)
