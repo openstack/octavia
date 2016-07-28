@@ -74,10 +74,9 @@ class JinjaTemplater(object):
         :param timeout_connect: Timeout connect
         """
 
-        self.base_amp_path = base_amp_path if base_amp_path else BASE_PATH
-        self.base_crt_dir = base_crt_dir if base_crt_dir else BASE_CRT_DIR
-        self.haproxy_template = (haproxy_template if haproxy_template
-                                 else HAPROXY_TEMPLATE)
+        self.base_amp_path = base_amp_path or BASE_PATH
+        self.base_crt_dir = base_crt_dir or BASE_CRT_DIR
+        self.haproxy_template = haproxy_template or HAPROXY_TEMPLATE
         self.log_http = log_http
         self.log_server = log_server
         self.timeout_client = timeout_client
