@@ -123,7 +123,7 @@ healthmanager_opts = [
                 default=[]),
     cfg.IntOpt('heartbeat_interval',
                default=10,
-               help=_('Sleep time between sending hearthbeats.')),
+               help=_('Sleep time between sending heartbeats.')),
     cfg.StrOpt('event_streamer_driver',
                help=_('Specifies which driver to use for the event_streamer '
                       'for syncing the octavia and neutron_lbaas dbs. If you '
