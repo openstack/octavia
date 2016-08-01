@@ -59,7 +59,8 @@ class Network(data_models.BaseDataModel):
 class Subnet(data_models.BaseDataModel):
 
     def __init__(self, id=None, name=None, network_id=None, project_id=None,
-                 gateway_ip=None, cidr=None, ip_version=None):
+                 gateway_ip=None, cidr=None, ip_version=None,
+                 host_routes=None):
         self.id = id
         self.name = name
         self.network_id = network_id
@@ -67,6 +68,7 @@ class Subnet(data_models.BaseDataModel):
         self.gateway_ip = gateway_ip
         self.cidr = cidr
         self.ip_version = ip_version
+        self.host_routes = host_routes
 
 
 class Port(data_models.BaseDataModel):
@@ -113,3 +115,10 @@ class AmphoraNetworkConfig(data_models.BaseDataModel):
         self.vrrp_port = vrrp_port
         self.ha_subnet = ha_subnet
         self.ha_port = ha_port
+
+
+class HostRoute(data_models.BaseDataModel):
+
+    def __init__(self, nexthop=None, destination=None):
+        self.nexthop = nexthop
+        self.destination = destination

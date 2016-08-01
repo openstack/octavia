@@ -123,7 +123,8 @@ def plug_vip(vip):
                          net_info['subnet_cidr'],
                          net_info['gateway'],
                          net_info['mac_address'],
-                         net_info.get('vrrp_ip'))
+                         net_info.get('vrrp_ip'),
+                         net_info.get('host_routes'))
 
 
 @app.route('/' + api_server.VERSION + '/plug/network', methods=['POST'])

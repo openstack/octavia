@@ -20,6 +20,10 @@ iface {{ interface }} inet{{ '6' if ipv6 }} static
 address {{ ip_address }}
 broadcast {{ broadcast }}
 netmask {{ netmask }}
+{%- for hr in host_routes %}
+up route add -net {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
+down route del -net {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
+{%- endfor %}
 {%- else %}
 iface {{ interface }} inet dhcp
 auto {{ interface }}:0
