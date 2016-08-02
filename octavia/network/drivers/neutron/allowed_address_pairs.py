@@ -213,14 +213,34 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         LOG.exception(message)
         raise base.DeallocateVIPException(message)
 
-    def deallocate_vip(self, vip):
-        # Delete the vrrp_port (instance port) in case nova didn't
-        # This can happen if a failover has occurred.
-        try:
-            for amphora in six.moves.filter(
-                lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
-                    vip.load_balancer.amphorae):
+    @staticmethod
+    def _filter_amphora(amp):
+        return amp.status == constants.AMPHORA_ALLOCATED
 
+    def _delete_security_group(self, vip, port):
+        if self.sec_grp_enabled:
+            sec_grp = self._get_lb_security_group(vip.load_balancer.id)
+            if sec_grp:
+                sec_grp = sec_grp.get('id')
+                LOG.info(
+                    _LI("Removing security group %(sg)s from port %(port)s"),
+                    {'sg': sec_grp, 'port': vip.port_id})
+                raw_port = self.neutron_client.show_port(port.id)
+                sec_grps = raw_port.get('port', {}).get('security_groups', [])
+                if sec_grp in sec_grps:
+                    sec_grps.remove(sec_grp)
+                port_update = {'port': {'security_groups': sec_grps}}
+                self.neutron_client.update_port(port.id, port_update)
+                self._delete_vip_security_group(sec_grp)
+
+    def deallocate_vip(self, vip):
+        """Delete the vrrp_port (instance port) in case nova didn't
+
+        This can happen if a failover has occurred.
+        """
+        try:
+            for amphora in six.moves.filter(self._filter_amphora,
+                                            vip.load_balancer.amphorae):
                 self.neutron_client.delete_port(amphora.vrrp_port_id)
         except (neutron_client_exceptions.NotFound,
                 neutron_client_exceptions.PortNotFoundClient):
@@ -233,34 +253,20 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             msg = ("Can't deallocate VIP because the vip port {0} cannot be "
                    "found in neutron".format(vip.port_id))
             raise base.VIPConfigurationNotFound(msg)
-        if port.device_owner != OCTAVIA_OWNER:
+
+        self._delete_security_group(vip, port)
+
+        if port.device_owner == OCTAVIA_OWNER:
+            try:
+                self.neutron_client.delete_port(vip.port_id)
+            except Exception:
+                message = _LE('Error deleting VIP port_id {port_id} from '
+                              'neutron').format(port_id=vip.port_id)
+                LOG.exception(message)
+                raise base.DeallocateVIPException(message)
+        else:
             LOG.info(_LI("Port %s will not be deleted by Octavia as it was "
                          "not created by Octavia."), vip.port_id)
-            if self.sec_grp_enabled:
-                sec_grp = self._get_lb_security_group(vip.load_balancer.id)
-                sec_grp = sec_grp.get('id')
-                LOG.info(
-                    _LI("Removing security group %(sg)s from port %(port)s"),
-                    {'sg': sec_grp, 'port': vip.port_id})
-                raw_port = self.neutron_client.show_port(port.id)
-                sec_grps = raw_port.get('port', {}).get('security_groups', [])
-                if sec_grp in sec_grps:
-                    sec_grps.remove(sec_grp)
-                port_update = {'port': {'security_groups': sec_grps}}
-                self.neutron_client.update_port(port.id, port_update)
-                self._delete_vip_security_group(sec_grp)
-            return
-        try:
-            self.neutron_client.delete_port(vip.port_id)
-        except Exception:
-            message = _LE('Error deleting VIP port_id {port_id} from '
-                          'neutron').format(port_id=vip.port_id)
-            LOG.exception(message)
-            raise base.DeallocateVIPException(message)
-        if self.sec_grp_enabled:
-            sec_grp = self._get_lb_security_group(vip.load_balancer.id)
-            sec_grp = sec_grp.get('id')
-            self._delete_vip_security_group(sec_grp)
 
     def plug_vip(self, load_balancer, vip):
         if self.sec_grp_enabled:
