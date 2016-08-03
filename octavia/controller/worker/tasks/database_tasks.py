@@ -60,7 +60,8 @@ class BaseDatabaseTask(task.Task):
         try:
             self.amp_health_repo.delete(db_apis.get_session(),
                                         amphora_id=amphora_id)
-        except sqlalchemy.orm.exc.NoResultFound:
+        except (sqlalchemy.orm.exc.NoResultFound,
+                sqlalchemy.orm.exc.UnmappedInstanceError):
             LOG.debug('No existing amphora health record to delete '
                       'for amphora: %s, skipping.', amphora_id)
 
@@ -74,7 +75,8 @@ class BaseDatabaseTask(task.Task):
             self.amp_health_repo.update(db_apis.get_session(),
                                         amphora_id=amphora_id,
                                         busy=True)
-        except sqlalchemy.orm.exc.NoResultFound:
+        except (sqlalchemy.orm.exc.NoResultFound,
+                sqlalchemy.orm.exc.UnmappedInstanceError):
             LOG.debug('No existing amphora health record to mark busy '
                       'for amphora: %s, skipping.', amphora_id)
 
