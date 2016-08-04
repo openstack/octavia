@@ -148,7 +148,11 @@ function octavia_configure {
 }
 
 function create_mgmt_network_interface {
-    id_and_mac=$(neutron port-create --name octavia-health-manager-$OCTAVIA_NODE-listen-port --security-group lb-mgmt-sec-grp --device-owner Octavia:health-mgr --binding:host_id=$(hostname) lb-mgmt-net | awk '/ id | mac_address / {print $4}')
+    # Create security group and rules
+    neutron security-group-create lb-health-mgr-sec-grp
+    neutron security-group-rule-create --protocol udp --port-range-min $OCTAVIA_HM_LISTEN_PORT --port-range-max $OCTAVIA_HM_LISTEN_PORT lb-health-mgr-sec-grp
+
+    id_and_mac=$(neutron port-create --name octavia-health-manager-$OCTAVIA_NODE-listen-port --security-group lb-health-mgr-sec-grp --device-owner Octavia:health-mgr --binding:host_id=$(hostname) lb-mgmt-net | awk '/ id | mac_address / {print $4}')
 
     id_and_mac=($id_and_mac)
     MGMT_PORT_ID=${id_and_mac[0]}
