@@ -32,11 +32,9 @@ FAKE_CIDR = '10.0.0.0/24'
 FAKE_GATEWAY = '10.0.0.1'
 FAKE_IP = 'fake'
 FAKE_PEM_FILENAME = "file_name"
-FAKE_SUBNET_INFO = {'subnet_cidr': FAKE_CIDR,
-                    'gateway': FAKE_GATEWAY,
-                    'mac_address': '123'}
 FAKE_UUID_1 = uuidutils.generate_uuid()
 FAKE_VRRP_IP = '10.1.0.1'
+FAKE_MAC_ADDRESS = '123'
 
 
 class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
@@ -55,7 +53,16 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.amp = self.sl.load_balancer.amphorae[0]
         self.sv = sample_configs.sample_vip_tuple()
         self.lb = self.sl.load_balancer
-        self.port = network_models.Port(mac_address='123')
+        self.fixed_ip = mock.MagicMock()
+        self.fixed_ip.ip_address = '10.0.0.5'
+        self.fixed_ip.subnet.cidr = '10.0.0.0/24'
+        self.port = network_models.Port(mac_address=FAKE_MAC_ADDRESS,
+                                        fixed_ips=[self.fixed_ip])
+
+        self.subnet_info = {'subnet_cidr': FAKE_CIDR,
+                            'gateway': FAKE_GATEWAY,
+                            'mac_address': FAKE_MAC_ADDRESS,
+                            'vrrp_ip': self.amp.vrrp_ip}
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.get_host_names')
@@ -154,12 +161,23 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         amphorae_network_config.get().vrrp_port = self.port
         self.driver.post_vip_plug(self.lb, amphorae_network_config)
         self.driver.client.plug_vip.assert_called_once_with(
-            self.amp, self.lb.vip.ip_address, FAKE_SUBNET_INFO)
+            self.amp, self.lb.vip.ip_address, self.subnet_info)
 
     def test_post_network_plug(self):
+        # Test dhcp path
+        port = network_models.Port(mac_address=FAKE_MAC_ADDRESS, fixed_ips=[])
+        self.driver.post_network_plug(self.amp, port)
+        self.driver.client.plug_network.assert_called_once_with(
+            self.amp, dict(mac_address=FAKE_MAC_ADDRESS, fixed_ips=[]))
+
+        self.driver.client.plug_network.reset_mock()
+
+        # Test fixed IP path
         self.driver.post_network_plug(self.amp, self.port)
         self.driver.client.plug_network.assert_called_once_with(
-            self.amp, dict(mac_address='123'))
+            self.amp, dict(mac_address=FAKE_MAC_ADDRESS,
+                           fixed_ips=[dict(ip_address='10.0.0.5',
+                                           subnet_cidr='10.0.0.0/24')]))
 
     def test_get_vrrp_interface(self):
         self.driver.get_vrrp_interface(self.amp)
@@ -174,10 +192,15 @@ class TestAmphoraAPIClientTest(base.TestCase):
         self.driver = driver.AmphoraAPIClient()
         self.base_url = "https://127.0.0.1:9443/0.5"
         self.amp = models.Amphora(lb_network_ip='127.0.0.1', compute_id='123')
-        self.port_info = dict(mac_address='123')
+        self.port_info = dict(mac_address=FAKE_MAC_ADDRESS)
         # Override with much lower values for testing purposes..
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="haproxy_amphora", connection_max_retries=2)
+
+        self.subnet_info = {'subnet_cidr': FAKE_CIDR,
+                            'gateway': FAKE_GATEWAY,
+                            'mac_address': FAKE_MAC_ADDRESS,
+                            'vrrp_ip': self.amp.vrrp_ip}
 
     def test_request(self):
         self.assertRaises(driver_except.TimeOutException,
@@ -691,7 +714,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
         m.post("{base}/plug/vip/{vip}".format(
             base=self.base_url, vip=FAKE_IP)
         )
-        self.driver.plug_vip(self.amp, FAKE_IP, FAKE_SUBNET_INFO)
+        self.driver.plug_vip(self.amp, FAKE_IP, self.subnet_info)
         self.assertTrue(m.called)
 
     @requests_mock.mock()

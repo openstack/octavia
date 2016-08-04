@@ -123,16 +123,26 @@ class HaproxyAmphoraLoadBalancerDriver(
                 # tight coupling between the network driver and amphora
                 # driver.  We will need to revisit this to try and remove
                 # this tight coupling.
+                # NOTE (johnsom): I am loading the vrrp_ip into the
+                # net_info structure here so that I don't break
+                # compatibility with old amphora agent versions.
                 port = amphorae_network_config.get(amp.id).vrrp_port
                 net_info = {'subnet_cidr': subnet.cidr,
                             'gateway': subnet.gateway_ip,
-                            'mac_address': port.mac_address}
+                            'mac_address': port.mac_address,
+                            'vrrp_ip': amp.vrrp_ip}
                 self.client.plug_vip(amp,
                                      load_balancer.vip.ip_address,
                                      net_info)
 
     def post_network_plug(self, amphora, port):
-        port_info = {'mac_address': port.mac_address}
+        fixed_ips = []
+        for fixed_ip in port.fixed_ips:
+            ip = {'ip_address': fixed_ip.ip_address,
+                  'subnet_cidr': fixed_ip.subnet.cidr}
+            fixed_ips.append(ip)
+        port_info = {'mac_address': port.mac_address,
+                     'fixed_ips': fixed_ips}
         self.client.plug_network(amphora, port_info)
 
     def get_vrrp_interface(self, amphora):

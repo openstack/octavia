@@ -1,4 +1,5 @@
 # Copyright 2015 Hewlett-Packard Development Company, L.P.
+# Copyright 2016 Rackspace
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -20,15 +21,21 @@ import stat
 import subprocess
 
 import flask
+import ipaddress
 import jinja2
 import netifaces
+from oslo_config import cfg
 import pyroute2
+import six
 from werkzeug import exceptions
 
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants as consts
 from octavia.i18n import _LE, _LI
 
+
+CONF = cfg.CONF
+CONF.import_group('amphora_agent', 'octavia.common.config')
 
 ETH_PORT_CONF = 'plug_vip_ethX.conf.j2'
 
@@ -42,7 +49,7 @@ template_port = j2_env.get_template(ETH_X_VIP_CONF)
 template_vip = j2_env.get_template(ETH_PORT_CONF)
 
 
-def plug_vip(vip, subnet_cidr, gateway, mac_address):
+def plug_vip(vip, subnet_cidr, gateway, mac_address, vrrp_ip):
     # validate vip
     try:
         socket.inet_aton(vip)
@@ -72,15 +79,25 @@ def plug_vip(vip, subnet_cidr, gateway, mac_address):
     flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
     # mode 00644
     mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-    with os.fdopen(os.open(name, flags, mode), 'w') as file:
-        file.write('auto lo\n')
-        file.write('iface lo inet loopback\n')
-        file.write('source /etc/netns/{}/network/interfaces.d/*.cfg\n'.format(
-            consts.AMPHORA_NAMESPACE))
+    with os.fdopen(os.open(name, flags, mode), 'w') as int_file:
+        int_file.write('auto lo\n')
+        int_file.write('iface lo inet loopback\n')
+        if not CONF.amphora_agent.agent_server_network_file:
+            int_file.write('source /etc/netns/{}/network/'
+                           'interfaces.d/*.cfg\n'.format(
+                               consts.AMPHORA_NAMESPACE))
 
     # write interface file
+
     mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+
+    # If we are using a consolidated interfaces file, just append
+    # otherwise clear the per interface file as we are rewriting it
+    # TODO(johnsom): We need a way to clean out old interfaces records
+    if CONF.amphora_agent.agent_server_network_file:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+    else:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
 
     with os.fdopen(os.open(interface_file_path, flags, mode),
                    'w') as text_file:
@@ -89,7 +106,9 @@ def plug_vip(vip, subnet_cidr, gateway, mac_address):
             vip=vip,
             broadcast=broadcast,
             # assume for now only a fixed subnet size
-            netmask='255.255.255.0')
+            netmask='255.255.255.0',
+            gateway=gateway,
+            vrrp_ip=vrrp_ip)
         text_file.write(text)
 
     # Update the list of interfaces to add to the namespace
@@ -117,7 +136,7 @@ def plug_vip(vip, subnet_cidr, gateway, mac_address):
             vip=vip, interface=interface))), 202)
 
 
-def plug_network(mac_address):
+def plug_network(mac_address, fixed_ips):
     # This is the interface as it was initially plugged into the
     # default network namespace, this will likely always be eth1
     default_netns_interface = _interface_by_mac(mac_address)
@@ -138,14 +157,54 @@ def plug_network(mac_address):
     interface_file_path = util.get_network_interface_file(netns_interface)
 
     # write interface file
-    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+
+    # If we are using a consolidated interfaces file, just append
+    # otherwise clear the per interface file as we are rewriting it
+    # TODO(johnsom): We need a way to clean out old interfaces records
+    if CONF.amphora_agent.agent_server_network_file:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+    else:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+
     # mode 00644
     mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 
     with os.fdopen(os.open(interface_file_path, flags, mode),
                    'w') as text_file:
-        text = template_port.render(interface=netns_interface)
-        text_file.write(text)
+        if fixed_ips is None:
+            text = template_port.render(interface=netns_interface)
+            text_file.write(text)
+        else:
+            ip_count = -1
+            for fixed_ip in fixed_ips:
+                if ip_count == -1:
+                    netns_ip_interface = netns_interface
+                    ip_count += 1
+                else:
+                    netns_ip_interface = "{int}:{ip}".format(
+                        int=netns_interface, ip=ip_count)
+                    ip_count += 1
+                try:
+                    ip_addr = fixed_ip['ip_address']
+                    cidr = fixed_ip['subnet_cidr']
+                    ip = ipaddress.ip_address(
+                        ip_addr if six.text_type == type(
+                            ip_addr) else six.u(ip_addr))
+                    network = ipaddress.ip_network(
+                        cidr if six.text_type == type(
+                            cidr) else six.u(cidr))
+                    broadcast = network.broadcast_address.exploded
+                    netmask = (network.prefixlen if ip.version is 6
+                               else network.netmask.exploded)
+                except ValueError:
+                    return flask.make_response(flask.jsonify(dict(
+                        message="Invalid network IP")), 400)
+                text = template_port.render(interface=netns_ip_interface,
+                                            ipv6=ip.version is 6,
+                                            ip_address=ip.exploded,
+                                            broadcast=broadcast,
+                                            netmask=netmask)
+                text_file.write(text)
 
     # Update the list of interfaces to add to the namespace
     _update_plugged_interfaces_file(netns_interface, mac_address)

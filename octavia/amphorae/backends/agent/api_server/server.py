@@ -122,7 +122,8 @@ def plug_vip(vip):
     return plug.plug_vip(vip,
                          net_info['subnet_cidr'],
                          net_info['gateway'],
-                         net_info['mac_address'])
+                         net_info['mac_address'],
+                         net_info.get('vrrp_ip'))
 
 
 @app.route('/' + api_server.VERSION + '/plug/network', methods=['POST'])
@@ -133,7 +134,8 @@ def plug_network():
         assert 'mac_address' in port_info
     except Exception:
         raise exceptions.BadRequest(description='Invalid port information')
-    return plug.plug_network(port_info['mac_address'])
+    return plug.plug_network(port_info['mac_address'],
+                             port_info.get('fixed_ips'))
 
 
 @app.route('/' + api_server.VERSION + '/certificate', methods=['PUT'])
