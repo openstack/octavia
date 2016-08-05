@@ -18,7 +18,7 @@ amphorae may use an HMAC-signed UDP protocol for communicating regular, less-
 vital information to the controller (ex. statistics updates and health checks).
 Information on this will also be covered in another document.
 
-If a given loadbalancer is being serviced by mutiple haproxy amphorae at the
+If a given loadbalancer is being serviced by multiple haproxy amphorae at the
 same time, configuration and control actions should be made on all these
 amphorae at approximately the same time. (Amphorae do not communicate directly
 with each other, except in an active-standby topology, and then this
@@ -164,7 +164,7 @@ topology change is initiated, and the amphora status changes from "OK" to
 "TOPOLOGY-CHANGE". The controller should not try to change any resources during
 this transition. (Any attempts will be met with an error.) Once the
 topology change is complete, amphora status should return to "OK". (When the
-UDP communcation from amphorae to controller is defined, a 'transition
+UDP communication from amphorae to controller is defined, a 'transition
 complete' message is probably one good candidate for this type of UDP
 communication.)
 
@@ -205,7 +205,7 @@ communication.)
   }
 
 Get amphora info
-------------------
+----------------
 * **URL:** /info
 * **Method:** GET
 * **URL params:** none
@@ -308,7 +308,7 @@ JSON Response attributes:
 
 **Notes:** The data in this request is meant to provide intelligence for an
 auto-scaling orchestration controller (heat) in order to determine whether
-additional (or fewer) virtual amphoras are necessary to handle load. As such,
+additional (or fewer) virtual amphorae are necessary to handle load. As such,
 we may add additional parameters to the JSON listing above if they prove to be
 useful for making these decisions.
 
@@ -775,7 +775,7 @@ Upload SSL certificate PEM file
 
   * Code: 400
 
-    * Content: No certififcate found
+    * Content: No certificate found
 
   * Code: 400
 
@@ -1153,7 +1153,7 @@ Get listener haproxy configuration
 
 
 Plug VIP
-------------------------
+--------
 
 * **URL:** /*:version*/plug/vip/*:ip*
 * **Method:** Post
@@ -1195,7 +1195,7 @@ Plug VIP
 * **Response:**
 
 | OK
-| VIP vip ip plugged on interface interface
+| VIP <vip> ip plugged on interface <interface>
 
 * **Implied actions:**
 
@@ -1249,7 +1249,7 @@ Plug VIP
 
 
 Plug Network
-------------------------
+------------
 
 * **URL:** /*:version*/plug/network/
 * **Method:** POST
@@ -1283,7 +1283,7 @@ Plug Network
 * **Response:**
 
 | OK
-| Plugged interface interface
+| Plugged interface <interface>
 
 **Examples:**
 
@@ -1334,7 +1334,7 @@ Upload SSL server certificate PEM file for Controller Communication
 
   * Code: 400
 
-    * Content: No certififcate found
+    * Content: No certificate found
 
   * Code: 400
 
