@@ -25,7 +25,6 @@ import six
 
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import certificate_update
-from octavia.amphorae.backends.agent.api_server import listener
 from octavia.amphorae.backends.agent.api_server import server
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants as consts
@@ -42,7 +41,8 @@ class TestServerTestCase(base.TestCase):
     app = None
 
     def setUp(self):
-        self.app = server.app.test_client()
+        self.test_server = server.Server()
+        self.app = self.test_server.app.test_client()
         super(TestServerTestCase, self).setUp()
 
     @mock.patch('os.path.exists')
@@ -140,7 +140,7 @@ class TestServerTestCase(base.TestCase):
             mock_remove.assert_called_once_with(file_name)
 
     @mock.patch('os.path.exists')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
+    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 'vrrp_check_script_update')
     @mock.patch('subprocess.check_output')
     def test_start(self, mock_subprocess, mock_vrrp, mock_exists):
@@ -185,9 +185,9 @@ class TestServerTestCase(base.TestCase):
             ['/usr/sbin/service', 'haproxy-123', 'start'], stderr=-2)
 
     @mock.patch('os.path.exists')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
+    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 'vrrp_check_script_update')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
+    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 '_check_haproxy_status')
     @mock.patch('subprocess.check_output')
     def test_reload(self, mock_subprocess, mock_haproxy_status,
@@ -320,9 +320,9 @@ class TestServerTestCase(base.TestCase):
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_listeners')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
+    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 '_check_listener_status')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
+    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 '_parse_haproxy_file')
     def test_get_all_listeners(self, mock_parse, mock_status, mock_listener):
         # no listeners
@@ -355,9 +355,9 @@ class TestServerTestCase(base.TestCase):
              {'status': consts.ERROR, 'type': '', 'uuid': '456'}],
             json.loads(rv.data.decode('utf-8')))
 
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
+    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 '_check_listener_status')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
+    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 '_parse_haproxy_file')
     @mock.patch('octavia.amphorae.backends.utils.haproxy_query.HAProxyQuery')
     @mock.patch('os.path.exists')
@@ -462,7 +462,7 @@ class TestServerTestCase(base.TestCase):
 
         mock_exists.return_value = True
         mock_exists.side_effect = None
-        path = listener._cert_file_path('123', 'test.pem')
+        path = self.test_server._listener._cert_file_path('123', 'test.pem')
         self.useFixture(test_utils.OpenFixture(path, CONTENT))
 
         rv = self.app.get('/' + api_server.VERSION +
@@ -482,7 +482,7 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual(400, rv.status_code)
 
         mock_exists.return_value = True
-        path = listener._cert_file_path('123', 'test.pem')
+        path = self.test_server._listener._cert_file_path('123', 'test.pem')
         m = self.useFixture(test_utils.OpenFixture(path)).mock_open
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
 
@@ -527,7 +527,7 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('pyroute2.NetNS')
     @mock.patch('subprocess.check_output')
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
-                'plug._netns_interface_exists')
+                'plug.Plug._netns_interface_exists')
     def test_plug_network(self, mock_int_exists, mock_check_output, mock_netns,
                           mock_pyroute2, mock_ifaddress, mock_interfaces):
         port_info = {'mac_address': '123'}
@@ -802,7 +802,7 @@ class TestServerTestCase(base.TestCase):
                  'ifup', consts.NETNS_PRIMARY_INTERFACE], stderr=-2)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
-                'plug._netns_interface_exists')
+                'plug.Plug._netns_interface_exists')
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
     @mock.patch('pyroute2.IPRoute')

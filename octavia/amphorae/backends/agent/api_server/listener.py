@@ -69,404 +69,386 @@ class Wrapped(object):
         return getattr(self.stream, attr)
 
 
-"""Gets the haproxy config
+class Listener(object):
 
-:param listenerid: the id of the listener
-"""
+    def get_haproxy_config(self, listener_id):
+        """Gets the haproxy config
 
+        :param listener_id: the id of the listener
+        """
+        self._check_listener_exists(listener_id)
+        with open(util.config_path(listener_id), 'r') as file:
+            cfg = file.read()
+            resp = flask.Response(cfg, mimetype='text/plain', )
+            resp.headers['ETag'] = hashlib.md5(six.b(cfg)).hexdigest()  # nosec
+            return resp
 
-def get_haproxy_config(listener_id):
-    _check_listener_exists(listener_id)
-    with open(util.config_path(listener_id), 'r') as file:
-        cfg = file.read()
-        resp = flask.Response(cfg, mimetype='text/plain', )
-        resp.headers['ETag'] = hashlib.md5(six.b(cfg)).hexdigest()  # nosec
-        return resp
+    def upload_haproxy_config(self, amphora_id, listener_id):
+        """Upload the haproxy config
 
+        :param amphora_id: The id of the amphora to update
+        :param listener_id: The id of the listener
+        """
+        stream = Wrapped(flask.request.stream)
+        # We have to hash here because HAProxy has a string length limitation
+        # in the configuration file "peer <peername>" lines
+        peer_name = octavia_utils.base64_sha1_string(amphora_id).rstrip('=')
+        if not os.path.exists(util.haproxy_dir(listener_id)):
+            os.makedirs(util.haproxy_dir(listener_id))
 
-"""Upload the haproxy config
-
-:param amphora_id: The id of the amphora to update
-:param listener_id: The id of the listener
-"""
-
-
-def upload_haproxy_config(amphora_id, listener_id):
-    stream = Wrapped(flask.request.stream)
-    # We have to hash here because HAProxy has a string length limitation
-    # in the configuration file "peer <peername>" lines
-    peer_name = octavia_utils.base64_sha1_string(amphora_id).rstrip('=')
-    if not os.path.exists(util.haproxy_dir(listener_id)):
-        os.makedirs(util.haproxy_dir(listener_id))
-
-    name = os.path.join(util.haproxy_dir(listener_id), 'haproxy.cfg.new')
-    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
-    # mode 00600
-    mode = stat.S_IRUSR | stat.S_IWUSR
-    with os.fdopen(os.open(name, flags, mode), 'w') as file:
-        b = stream.read(BUFFER)
-        while (b):
-            file.write(b)
+        name = os.path.join(util.haproxy_dir(listener_id), 'haproxy.cfg.new')
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        # mode 00600
+        mode = stat.S_IRUSR | stat.S_IWUSR
+        with os.fdopen(os.open(name, flags, mode), 'w') as file:
             b = stream.read(BUFFER)
+            while (b):
+                file.write(b)
+                b = stream.read(BUFFER)
 
-    # use haproxy to check the config
-    cmd = "haproxy -c -L {peer} -f {config_file}".format(config_file=name,
-                                                         peer=peer_name)
+        # use haproxy to check the config
+        cmd = "haproxy -c -L {peer} -f {config_file}".format(config_file=name,
+                                                             peer=peer_name)
 
-    try:
-        subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        LOG.debug("Failed to verify haproxy file: %s", e)
-        os.remove(name)  # delete file
-        return flask.make_response(flask.jsonify(dict(
-            message="Invalid request",
-            details=e.output)), 400)
-
-    # file ok - move it
-    os.rename(name, util.config_path(listener_id))
-
-    use_upstart = util.CONF.haproxy_amphora.use_upstart
-    file = util.init_path(listener_id)
-    # mode 00755
-    mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
-            stat.S_IROTH | stat.S_IXOTH)
-    if not os.path.exists(file):
-        with os.fdopen(os.open(file, flags, mode), 'w') as text_file:
-            template = UPSTART_TEMPLATE if use_upstart else SYSVINIT_TEMPLATE
-            text = template.render(
-                peer_name=peer_name,
-                haproxy_pid=util.pid_path(listener_id),
-                haproxy_cmd=util.CONF.haproxy_amphora.haproxy_cmd,
-                haproxy_cfg=util.config_path(listener_id),
-                respawn_count=util.CONF.haproxy_amphora.respawn_count,
-                respawn_interval=util.CONF.haproxy_amphora.respawn_interval,
-                amphora_nsname=consts.AMPHORA_NAMESPACE
-            )
-            text_file.write(text)
-
-    if not use_upstart:
-        insrvcmd = ("insserv {file}".format(file=file))
-
-        try:
-            subprocess.check_output(insrvcmd.split(), stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            LOG.debug("Failed to make %(file)s executable: %(err)s",
-                      {'file': file, 'err': e})
-            return flask.make_response(flask.jsonify(dict(
-                message="Error making file {0} executable".format(file),
-                details=e.output)), 500)
-
-    res = flask.make_response(flask.jsonify({
-        'message': 'OK'}), 202)
-    res.headers['ETag'] = stream.get_md5()
-    return res
-
-
-def start_stop_listener(listener_id, action):
-    action = action.lower()
-    if action not in [consts.AMP_ACTION_START,
-                      consts.AMP_ACTION_STOP,
-                      consts.AMP_ACTION_RELOAD]:
-        return flask.make_response(flask.jsonify(dict(
-            message='Invalid Request',
-            details="Unknown action: {0}".format(action))), 400)
-
-    _check_listener_exists(listener_id)
-
-    # Since this script should be created at LB create time
-    # we can check for this path to see if VRRP is enabled
-    # on this amphora and not write the file if VRRP is not in use
-    if os.path.exists(util.keepalived_check_script_path()):
-        vrrp_check_script_update(listener_id, action)
-
-    # HAProxy does not start the process when given a reload
-    # so start it if haproxy is not already running
-    if action == consts.AMP_ACTION_RELOAD:
-        if consts.OFFLINE == _check_haproxy_status(listener_id):
-            action = consts.AMP_ACTION_START
-
-    cmd = ("/usr/sbin/service haproxy-{listener_id} {action}".format(
-        listener_id=listener_id, action=action))
-
-    try:
-        subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        if 'Job is already running' not in e.output:
-            LOG.debug("Failed to %(action)s HAProxy service: %(err)s",
-                      {'action': action, 'err': e})
-            return flask.make_response(flask.jsonify(dict(
-                message="Error {0}ing haproxy".format(action),
-                details=e.output)), 500)
-    if action in [consts.AMP_ACTION_STOP,
-                  consts.AMP_ACTION_RELOAD]:
-        return flask.make_response(flask.jsonify(
-            dict(message='OK',
-                 details='Listener {listener_id} {action}ed'.format(
-                     listener_id=listener_id, action=action))), 202)
-
-    details = (
-        'Configuration file is valid\nhaproxy daemon for {0} '.format(
-            listener_id) + 'started')
-
-    return flask.make_response(flask.jsonify(
-        dict(message='OK',
-             details=details)), 202)
-
-
-def delete_listener(listener_id):
-    _check_listener_exists(listener_id)
-
-    # check if that haproxy is still running and if stop it
-    if os.path.exists(util.pid_path(listener_id)) and os.path.exists(
-            os.path.join('/proc', util.get_haproxy_pid(listener_id))):
-        cmd = "/usr/sbin/service haproxy-{0} stop".format(listener_id)
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            LOG.debug("Failed to stop HAProxy service: %s", e)
+            LOG.debug("Failed to verify haproxy file: %s", e)
+            os.remove(name)  # delete file
             return flask.make_response(flask.jsonify(dict(
-                message="Error stopping haproxy",
-                details=e.output)), 500)
+                message="Invalid request",
+                details=e.output)), 400)
 
-    # parse config and delete stats socket
-    try:
-        cfg = _parse_haproxy_file(listener_id)
-        os.remove(cfg['stats_socket'])
-    except Exception:
-        pass
+        # file ok - move it
+        os.rename(name, util.config_path(listener_id))
 
-    # delete the ssl files
-    try:
-        shutil.rmtree(_cert_dir(listener_id))
-    except Exception:
-        pass
+        use_upstart = util.CONF.haproxy_amphora.use_upstart
+        file = util.init_path(listener_id)
+        # mode 00755
+        mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
+                stat.S_IROTH | stat.S_IXOTH)
+        if not os.path.exists(file):
+            with os.fdopen(os.open(file, flags, mode), 'w') as text_file:
+                template = (UPSTART_TEMPLATE if use_upstart
+                            else SYSVINIT_TEMPLATE)
+                text = template.render(
+                    peer_name=peer_name,
+                    haproxy_pid=util.pid_path(listener_id),
+                    haproxy_cmd=util.CONF.haproxy_amphora.haproxy_cmd,
+                    haproxy_cfg=util.config_path(listener_id),
+                    respawn_count=util.CONF.haproxy_amphora.respawn_count,
+                    respawn_interval=(util.CONF.haproxy_amphora.
+                                      respawn_interval),
+                    amphora_nsname=consts.AMPHORA_NAMESPACE
+                )
+                text_file.write(text)
 
-    # delete the directory + init script for that listener
-    shutil.rmtree(util.haproxy_dir(listener_id))
-    if os.path.exists(util.init_path(listener_id)):
-        os.remove(util.init_path(listener_id))
+        if not use_upstart:
+            insrvcmd = ("insserv {file}".format(file=file))
 
-    return flask.jsonify({'message': 'OK'})
+            try:
+                subprocess.check_output(insrvcmd.split(),
+                                        stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                LOG.debug("Failed to make %(file)s executable: %(err)s",
+                          {'file': file, 'err': e})
+                return flask.make_response(flask.jsonify(dict(
+                    message="Error making file {0} executable".format(file),
+                    details=e.output)), 500)
 
+        res = flask.make_response(flask.jsonify({
+            'message': 'OK'}), 202)
+        res.headers['ETag'] = stream.get_md5()
+        return res
 
-"""Gets the status of all listeners
+    def start_stop_listener(self, listener_id, action):
+        action = action.lower()
+        if action not in [consts.AMP_ACTION_START,
+                          consts.AMP_ACTION_STOP,
+                          consts.AMP_ACTION_RELOAD]:
+            return flask.make_response(flask.jsonify(dict(
+                message='Invalid Request',
+                details="Unknown action: {0}".format(action))), 400)
 
-This method will not consult the stats socket
-so a listener might show as ACTIVE but still be
-in ERROR
+        self._check_listener_exists(listener_id)
 
-Currently type==SSL is also not detected
-"""
+        # Since this script should be created at LB create time
+        # we can check for this path to see if VRRP is enabled
+        # on this amphora and not write the file if VRRP is not in use
+        if os.path.exists(util.keepalived_check_script_path()):
+            self.vrrp_check_script_update(listener_id, action)
 
+        # HAProxy does not start the process when given a reload
+        # so start it if haproxy is not already running
+        if action == consts.AMP_ACTION_RELOAD:
+            if consts.OFFLINE == self._check_haproxy_status(listener_id):
+                action = consts.AMP_ACTION_START
 
-def get_all_listeners_status():
-    listeners = list()
+        cmd = ("/usr/sbin/service haproxy-{listener_id} {action}".format(
+            listener_id=listener_id, action=action))
 
-    for listener in util.get_listeners():
-        status = _check_listener_status(listener)
-        listener_type = ''
+        try:
+            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            if 'Job is already running' not in e.output:
+                LOG.debug("Failed to %(action)s HAProxy service: %(err)s",
+                          {'action': action, 'err': e})
+                return flask.make_response(flask.jsonify(dict(
+                    message="Error {0}ing haproxy".format(action),
+                    details=e.output)), 500)
+        if action in [consts.AMP_ACTION_STOP,
+                      consts.AMP_ACTION_RELOAD]:
+            return flask.make_response(flask.jsonify(
+                dict(message='OK',
+                     details='Listener {listener_id} {action}ed'.format(
+                         listener_id=listener_id, action=action))), 202)
 
-        if status == consts.ACTIVE:
-            listener_type = _parse_haproxy_file(listener)['mode']
+        details = (
+            'Configuration file is valid\nhaproxy daemon for {0} '.format(
+                listener_id) + 'started')
 
-        listeners.append({
-            'status': status,
-            'uuid': listener,
-            'type': listener_type,
-        })
+        return flask.make_response(flask.jsonify(
+            dict(message='OK',
+                 details=details)), 202)
 
-    # Can't use jsonify since lists are not supported
-    # for security reason: http://stackoverflow.com/
-    # questions/12435297/how-do-i-jsonify-a-list-in-flask
-    return flask.Response(json.dumps(listeners),
-                          mimetype='application/json')
+    def delete_listener(self, listener_id):
+        self._check_listener_exists(listener_id)
 
+        # check if that haproxy is still running and if stop it
+        if os.path.exists(util.pid_path(listener_id)) and os.path.exists(
+                os.path.join('/proc', util.get_haproxy_pid(listener_id))):
+            cmd = "/usr/sbin/service haproxy-{0} stop".format(listener_id)
+            try:
+                subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                LOG.debug("Failed to stop HAProxy service: %s", e)
+                return flask.make_response(flask.jsonify(dict(
+                    message="Error stopping haproxy",
+                    details=e.output)), 500)
 
-"""Gets the status of a listener
+        # parse config and delete stats socket
+        try:
+            cfg = self._parse_haproxy_file(listener_id)
+            os.remove(cfg['stats_socket'])
+        except Exception:
+            pass
 
-This method will consult the stats socket
-so calling this method will interfere with
-the health daemon with the risk of the amphora
-shut down
+        # delete the ssl files
+        try:
+            shutil.rmtree(self._cert_dir(listener_id))
+        except Exception:
+            pass
 
-Currently type==SSL is not detected
-"""
+        # delete the directory + init script for that listener
+        shutil.rmtree(util.haproxy_dir(listener_id))
+        if os.path.exists(util.init_path(listener_id)):
+            os.remove(util.init_path(listener_id))
 
+        return flask.jsonify({'message': 'OK'})
 
-def get_listener_status(listener_id):
-    _check_listener_exists(listener_id)
+    def get_all_listeners_status(self):
+        """Gets the status of all listeners
 
-    status = _check_listener_status(listener_id)
+        This method will not consult the stats socket
+        so a listener might show as ACTIVE but still be
+        in ERROR
 
-    if status != consts.ACTIVE:
+        Currently type==SSL is also not detected
+        """
+        listeners = list()
+
+        for listener in util.get_listeners():
+            status = self._check_listener_status(listener)
+            listener_type = ''
+
+            if status == consts.ACTIVE:
+                listener_type = self._parse_haproxy_file(listener)['mode']
+
+            listeners.append({
+                'status': status,
+                'uuid': listener,
+                'type': listener_type,
+            })
+
+        # Can't use jsonify since lists are not supported
+        # for security reason: http://stackoverflow.com/
+        # questions/12435297/how-do-i-jsonify-a-list-in-flask
+        return flask.Response(json.dumps(listeners),
+                              mimetype='application/json')
+
+    def get_listener_status(self, listener_id):
+        """Gets the status of a listener
+
+        This method will consult the stats socket
+        so calling this method will interfere with
+        the health daemon with the risk of the amphora
+        shut down
+
+        Currently type==SSL is not detected
+        :param listener_id: The id of the listener
+        """
+        self._check_listener_exists(listener_id)
+
+        status = self._check_listener_status(listener_id)
+
+        if status != consts.ACTIVE:
+            stats = dict(
+                status=status,
+                uuid=listener_id,
+                type=''
+            )
+            return flask.jsonify(stats)
+
+        cfg = self._parse_haproxy_file(listener_id)
         stats = dict(
             status=status,
             uuid=listener_id,
-            type=''
+            type=cfg['mode']
         )
+
+        # read stats socket
+        q = query.HAProxyQuery(cfg['stats_socket'])
+        servers = q.get_pool_status()
+        stats['pools'] = list(servers.values())
         return flask.jsonify(stats)
 
-    cfg = _parse_haproxy_file(listener_id)
-    stats = dict(
-        status=status,
-        uuid=listener_id,
-        type=cfg['mode']
-    )
+    def upload_certificate(self, listener_id, filename):
+        self._check_ssl_filename_format(filename)
 
-    # read stats socket
-    q = query.HAProxyQuery(cfg['stats_socket'])
-    servers = q.get_pool_status()
-    stats['pools'] = list(servers.values())
-    return flask.jsonify(stats)
+        # create directory if not already there
+        if not os.path.exists(self._cert_dir(listener_id)):
+            os.makedirs(self._cert_dir(listener_id))
 
-
-def upload_certificate(listener_id, filename):
-    _check_ssl_filename_format(filename)
-
-    # create directory if not already there
-    if not os.path.exists(_cert_dir(listener_id)):
-        os.makedirs(_cert_dir(listener_id))
-
-    stream = Wrapped(flask.request.stream)
-    file = _cert_file_path(listener_id, filename)
-    flags = os.O_WRONLY | os.O_CREAT
-    # mode 00600
-    mode = stat.S_IRUSR | stat.S_IWUSR
-    with os.fdopen(os.open(file, flags, mode), 'w') as crt_file:
-        b = stream.read(BUFFER)
-        while (b):
-            crt_file.write(b)
+        stream = Wrapped(flask.request.stream)
+        file = self._cert_file_path(listener_id, filename)
+        flags = os.O_WRONLY | os.O_CREAT
+        # mode 00600
+        mode = stat.S_IRUSR | stat.S_IWUSR
+        with os.fdopen(os.open(file, flags, mode), 'w') as crt_file:
             b = stream.read(BUFFER)
+            while (b):
+                crt_file.write(b)
+                b = stream.read(BUFFER)
 
-    resp = flask.jsonify(dict(message='OK'))
-    resp.headers['ETag'] = stream.get_md5()
-    return resp
-
-
-def get_certificate_md5(listener_id, filename):
-    _check_ssl_filename_format(filename)
-
-    cert_path = _cert_file_path(listener_id, filename)
-    path_exists = os.path.exists(cert_path)
-    if not path_exists:
-        return flask.make_response(flask.jsonify(dict(
-            message='Certificate Not Found',
-            details="No certificate with filename: {f}".format(
-                f=filename))), 404)
-
-    with open(cert_path, 'r') as crt_file:
-        cert = crt_file.read()
-        md5 = hashlib.md5(six.b(cert)).hexdigest()  # nosec
-        resp = flask.jsonify(dict(md5sum=md5))
-        resp.headers['ETag'] = md5
+        resp = flask.jsonify(dict(message='OK'))
+        resp.headers['ETag'] = stream.get_md5()
         return resp
 
+    def get_certificate_md5(self, listener_id, filename):
+        self._check_ssl_filename_format(filename)
 
-def delete_certificate(listener_id, filename):
-    _check_ssl_filename_format(filename)
-    if not os.path.exists(_cert_file_path(listener_id, filename)):
-        return flask.make_response(flask.jsonify(dict(
-            message='Certificate Not Found',
-            details="No certificate with filename: {f}".format(
-                f=filename))), 404)
+        cert_path = self._cert_file_path(listener_id, filename)
+        path_exists = os.path.exists(cert_path)
+        if not path_exists:
+            return flask.make_response(flask.jsonify(dict(
+                message='Certificate Not Found',
+                details="No certificate with filename: {f}".format(
+                    f=filename))), 404)
 
-    os.remove(_cert_file_path(listener_id, filename))
-    return flask.jsonify(dict(message='OK'))
+        with open(cert_path, 'r') as crt_file:
+            cert = crt_file.read()
+            md5 = hashlib.md5(six.b(cert)).hexdigest()  # nosec
+            resp = flask.jsonify(dict(md5sum=md5))
+            resp.headers['ETag'] = md5
+            return resp
 
+    def delete_certificate(self, listener_id, filename):
+        self._check_ssl_filename_format(filename)
+        if not os.path.exists(self._cert_file_path(listener_id, filename)):
+            return flask.make_response(flask.jsonify(dict(
+                message='Certificate Not Found',
+                details="No certificate with filename: {f}".format(
+                    f=filename))), 404)
 
-def _check_listener_status(listener_id):
-    if os.path.exists(util.pid_path(listener_id)):
-        if os.path.exists(
-                os.path.join('/proc', util.get_haproxy_pid(listener_id))):
-            # Check if the listener is disabled
-            with open(util.config_path(listener_id), 'r') as file:
-                cfg = file.read()
-                m = re.search('frontend {}'.format(listener_id), cfg)
-                if m:
-                    return consts.ACTIVE
-                else:
-                    return consts.OFFLINE
-        else:  # pid file but no process...
-            return consts.ERROR
-    else:
-        return consts.OFFLINE
+        os.remove(self._cert_file_path(listener_id, filename))
+        return flask.jsonify(dict(message='OK'))
 
-
-def _parse_haproxy_file(listener_id):
-    with open(util.config_path(listener_id), 'r') as file:
-        cfg = file.read()
-
-        m = re.search('mode\s+(http|tcp)', cfg)
-        if not m:
-            raise ParsingError()
-        mode = m.group(1).upper()
-
-        m = re.search('stats socket\s+(\S+)', cfg)
-        if not m:
-            raise ParsingError()
-        stats_socket = m.group(1)
-
-        m = re.search('ssl crt\s+(\S+)', cfg)
-        ssl_crt = None
-        if m:
-            ssl_crt = m.group(1)
-            mode = 'TERMINATED_HTTPS'
-
-        return dict(mode=mode,
-                    stats_socket=stats_socket,
-                    ssl_crt=ssl_crt)
-
-
-def _check_listener_exists(listener_id):
-    # check if we know about that listener
-    if not os.path.exists(util.config_path(listener_id)):
-        raise exceptions.HTTPException(
-            response=flask.make_response(flask.jsonify(dict(
-                message='Listener Not Found',
-                details="No listener with UUID: {0}".format(
-                    listener_id))), 404))
-
-
-def _check_ssl_filename_format(filename):
-    # check if the format is (xxx.)*xxx.pem
-    if not re.search('(\w.)+pem', filename):
-        raise exceptions.HTTPException(
-            response=flask.make_response(flask.jsonify(dict(
-                message='Filename has wrong format')), 400))
-
-
-def _cert_dir(listener_id):
-    return os.path.join(util.CONF.haproxy_amphora.base_cert_dir,
-                        listener_id)
-
-
-def _cert_file_path(listener_id, filename):
-    return os.path.join(_cert_dir(listener_id), filename)
-
-
-def vrrp_check_script_update(listener_id, action):
-    listener_ids = util.get_listeners()
-    if action == consts.AMP_ACTION_STOP:
-        listener_ids.remove(listener_id)
-    args = []
-    for listener_id in listener_ids:
-        args.append(util.haproxy_sock_path(listener_id))
-
-    if not os.path.exists(util.keepalived_dir()):
-        os.makedirs(util.keepalived_dir())
-        os.makedirs(util.keepalived_check_scripts_dir())
-
-    cmd = 'haproxy-vrrp-check {args}; exit $?'.format(args=' '.join(args))
-    with open(util.haproxy_check_script_path(), 'w') as text_file:
-        text_file.write(cmd)
-
-
-def _check_haproxy_status(listener_id):
-    if os.path.exists(util.pid_path(listener_id)):
-        if os.path.exists(
-                os.path.join('/proc', util.get_haproxy_pid(listener_id))):
-            return consts.ACTIVE
-        else:  # pid file but no process...
+    def _check_listener_status(self, listener_id):
+        if os.path.exists(util.pid_path(listener_id)):
+            if os.path.exists(
+                    os.path.join('/proc', util.get_haproxy_pid(listener_id))):
+                # Check if the listener is disabled
+                with open(util.config_path(listener_id), 'r') as file:
+                    cfg = file.read()
+                    m = re.search('frontend {}'.format(listener_id), cfg)
+                    if m:
+                        return consts.ACTIVE
+                    else:
+                        return consts.OFFLINE
+            else:  # pid file but no process...
+                return consts.ERROR
+        else:
             return consts.OFFLINE
-    else:
-        return consts.OFFLINE
+
+    def _parse_haproxy_file(self, listener_id):
+        with open(util.config_path(listener_id), 'r') as file:
+            cfg = file.read()
+
+            m = re.search('mode\s+(http|tcp)', cfg)
+            if not m:
+                raise ParsingError()
+            mode = m.group(1).upper()
+
+            m = re.search('stats socket\s+(\S+)', cfg)
+            if not m:
+                raise ParsingError()
+            stats_socket = m.group(1)
+
+            m = re.search('ssl crt\s+(\S+)', cfg)
+            ssl_crt = None
+            if m:
+                ssl_crt = m.group(1)
+                mode = 'TERMINATED_HTTPS'
+
+            return dict(mode=mode,
+                        stats_socket=stats_socket,
+                        ssl_crt=ssl_crt)
+
+    def _check_listener_exists(self, listener_id):
+        # check if we know about that listener
+        if not os.path.exists(util.config_path(listener_id)):
+            raise exceptions.HTTPException(
+                response=flask.make_response(flask.jsonify(dict(
+                    message='Listener Not Found',
+                    details="No listener with UUID: {0}".format(
+                        listener_id))), 404))
+
+    def _check_ssl_filename_format(self, filename):
+        # check if the format is (xxx.)*xxx.pem
+        if not re.search('(\w.)+pem', filename):
+            raise exceptions.HTTPException(
+                response=flask.make_response(flask.jsonify(dict(
+                    message='Filename has wrong format')), 400))
+
+    def _cert_dir(self, listener_id):
+        return os.path.join(util.CONF.haproxy_amphora.base_cert_dir,
+                            listener_id)
+
+    def _cert_file_path(self, listener_id, filename):
+        return os.path.join(self._cert_dir(listener_id), filename)
+
+    def vrrp_check_script_update(self, listener_id, action):
+        listener_ids = util.get_listeners()
+        if action == consts.AMP_ACTION_STOP:
+            listener_ids.remove(listener_id)
+        args = []
+        for listener_id in listener_ids:
+            args.append(util.haproxy_sock_path(listener_id))
+
+        if not os.path.exists(util.keepalived_dir()):
+            os.makedirs(util.keepalived_dir())
+            os.makedirs(util.keepalived_check_scripts_dir())
+
+        cmd = 'haproxy-vrrp-check {args}; exit $?'.format(args=' '.join(args))
+        with open(util.haproxy_check_script_path(), 'w') as text_file:
+            text_file.write(cmd)
+
+    def _check_haproxy_status(self, listener_id):
+        if os.path.exists(util.pid_path(listener_id)):
+            if os.path.exists(
+                    os.path.join('/proc', util.get_haproxy_pid(listener_id))):
+                return consts.ACTIVE
+            else:  # pid file but no process...
+                return consts.OFFLINE
+        else:
+            return consts.OFFLINE

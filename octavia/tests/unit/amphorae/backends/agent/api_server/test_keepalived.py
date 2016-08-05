@@ -28,21 +28,22 @@ class KeepalivedTestCase(base.TestCase):
         self.client = self.app.test_client()
         self._ctx = self.app.test_request_context()
         self._ctx.push()
+        self.test_keepalived = keepalived.Keepalived()
 
     @mock.patch('subprocess.check_output')
     def test_manager_keepalived_service(self, mock_check_output):
-        res = keepalived.manager_keepalived_service('start')
+        res = self.test_keepalived.manager_keepalived_service('start')
         cmd = ("/usr/sbin/service octavia-keepalived {action}".format(
             action='start'))
         mock_check_output.assert_called_once_with(cmd.split(),
                                                   stderr=subprocess.STDOUT)
         self.assertEqual(202, res.status_code)
 
-        res = keepalived.manager_keepalived_service('restart')
+        res = self.test_keepalived.manager_keepalived_service('restart')
         self.assertEqual(400, res.status_code)
 
         mock_check_output.side_effect = subprocess.CalledProcessError(1,
                                                                       'blah!')
 
-        res = keepalived.manager_keepalived_service('start')
+        res = self.test_keepalived.manager_keepalived_service('start')
         self.assertEqual(500, res.status_code)

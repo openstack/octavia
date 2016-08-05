@@ -34,6 +34,7 @@ class ListenerTestCase(base.TestCase):
         self.jinja_cfg = jinja_cfg.JinjaTemplater(
             base_amp_path=BASE_AMP_PATH,
             base_crt_dir=BASE_CRT_PATH)
+        self.test_listener = listener.Listener()
 
     def test_parse_haproxy_config(self):
         # template_tls
@@ -49,7 +50,7 @@ class ListenerTestCase(base.TestCase):
         path = agent_util.config_path(LISTENER_ID1)
         self.useFixture(test_utils.OpenFixture(path, rendered_obj))
 
-        res = listener._parse_haproxy_file(LISTENER_ID1)
+        res = self.test_listener._parse_haproxy_file(LISTENER_ID1)
         self.assertEqual('TERMINATED_HTTPS', res['mode'])
         self.assertEqual('/var/lib/octavia/sample_listener_id_1.sock',
                          res['stats_socket'])
@@ -69,7 +70,7 @@ class ListenerTestCase(base.TestCase):
 
         self.useFixture(test_utils.OpenFixture(path, rendered_obj))
 
-        res = listener._parse_haproxy_file(LISTENER_ID1)
+        res = self.test_listener._parse_haproxy_file(LISTENER_ID1)
         self.assertEqual('TERMINATED_HTTPS', res['mode'])
         self.assertEqual(BASE_AMP_PATH + '/sample_listener_id_1.sock',
                          res['stats_socket'])
@@ -84,7 +85,7 @@ class ListenerTestCase(base.TestCase):
 
         self.useFixture(test_utils.OpenFixture(path, rendered_obj))
 
-        res = listener._parse_haproxy_file(LISTENER_ID1)
+        res = self.test_listener._parse_haproxy_file(LISTENER_ID1)
         self.assertEqual('HTTP', res['mode'])
         self.assertEqual(BASE_AMP_PATH + '/sample_listener_id_1.sock',
                          res['stats_socket'])
@@ -96,7 +97,7 @@ class ListenerTestCase(base.TestCase):
             sample_configs.sample_listener_tuple(proto='HTTPS'))
         self.useFixture(test_utils.OpenFixture(path, rendered_obj))
 
-        res = listener._parse_haproxy_file(LISTENER_ID1)
+        res = self.test_listener._parse_haproxy_file(LISTENER_ID1)
         self.assertEqual('TCP', res['mode'])
         self.assertEqual(BASE_AMP_PATH + '/sample_listener_id_1.sock',
                          res['stats_socket'])
@@ -105,7 +106,7 @@ class ListenerTestCase(base.TestCase):
         # Bogus format
         self.useFixture(test_utils.OpenFixture(path, 'Bogus'))
         try:
-            res = listener._parse_haproxy_file(LISTENER_ID1)
+            res = self.test_listener._parse_haproxy_file(LISTENER_ID1)
             self.fail("No Exception?")
         except listener.ParsingError:
             pass
@@ -121,17 +122,17 @@ class ListenerTestCase(base.TestCase):
         self.useFixture(test_utils.OpenFixture(config_path, file_contents))
         self.assertEqual(
             consts.ACTIVE,
-            listener._check_listener_status(LISTENER_ID1))
+            self.test_listener._check_listener_status(LISTENER_ID1))
 
         mock_exists.side_effect = [True, False]
         self.assertEqual(
             consts.ERROR,
-            listener._check_listener_status(LISTENER_ID1))
+            self.test_listener._check_listener_status(LISTENER_ID1))
 
         mock_exists.side_effect = [False]
         self.assertEqual(
             consts.OFFLINE,
-            listener._check_listener_status(LISTENER_ID1))
+            self.test_listener._check_listener_status(LISTENER_ID1))
 
     @mock.patch('os.makedirs')
     @mock.patch('os.path.exists')
@@ -152,7 +153,7 @@ class ListenerTestCase(base.TestCase):
         path = agent_util.keepalived_dir()
         m = self.useFixture(test_utils.OpenFixture(path)).mock_open
 
-        listener.vrrp_check_script_update(LISTENER_ID1, 'stop')
+        self.test_listener.vrrp_check_script_update(LISTENER_ID1, 'stop')
         handle = m()
         handle.write.assert_called_once_with(cmd)
 
@@ -162,7 +163,7 @@ class ListenerTestCase(base.TestCase):
                                                                      '$?')
 
         m = self.useFixture(test_utils.OpenFixture(path)).mock_open
-        listener.vrrp_check_script_update(LISTENER_ID1, 'start')
+        self.test_listener.vrrp_check_script_update(LISTENER_ID1, 'start')
         handle = m()
         handle.write.assert_called_once_with(cmd)
 
@@ -174,14 +175,14 @@ class ListenerTestCase(base.TestCase):
         mock_exists.side_effect = [True, True]
         self.assertEqual(
             consts.ACTIVE,
-            listener._check_haproxy_status(LISTENER_ID1))
+            self.test_listener._check_haproxy_status(LISTENER_ID1))
 
         mock_exists.side_effect = [True, False]
         self.assertEqual(
             consts.OFFLINE,
-            listener._check_haproxy_status(LISTENER_ID1))
+            self.test_listener._check_haproxy_status(LISTENER_ID1))
 
         mock_exists.side_effect = [False]
         self.assertEqual(
             consts.OFFLINE,
-            listener._check_haproxy_status(LISTENER_ID1))
+            self.test_listener._check_haproxy_status(LISTENER_ID1))
