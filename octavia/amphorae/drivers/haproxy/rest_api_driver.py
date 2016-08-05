@@ -250,20 +250,17 @@ class AmphoraAPIClient(object):
                         message="A true SSLContext object is not available"
                     )
                     r = _request(**reqargs)
+                LOG.debug("Connected to amphora. Response: {resp}".format(
+                    resp=r))
+                return r
             except (requests.ConnectionError, requests.Timeout):
                 LOG.warning(_LW("Could not connect to instance. Retrying."))
                 time.sleep(CONF.haproxy_amphora.connection_retry_interval)
-                if a == CONF.haproxy_amphora.connection_max_retries - 1:
-                    LOG.error(_LE("Timed out connecting to the amphora."))
-                    raise driver_except.TimeOutException()
-            else:
-                LOG.debug(
-                    "Connected to amphora. Response: {resp}".format(resp=r))
-                return r
+
         LOG.error(_LE("Connection retries (currently set to %s) "
                       "exhausted.  The amphora is unavailable."),
                   CONF.haproxy_amphora.connection_max_retries)
-        raise driver_except.UnavailableException()
+        raise driver_except.TimeOutException()
 
     def upload_config(self, amp, listener_id, config):
         r = self.put(
