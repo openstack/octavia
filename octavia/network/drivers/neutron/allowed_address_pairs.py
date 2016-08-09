@@ -175,12 +175,15 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             sec_grp_name = VIP_SECURITY_GRP_PREFIX + load_balancer.id
             sec_grp = self._create_security_group(sec_grp_name)
         self._update_security_group_rules(load_balancer, sec_grp.get('id'))
-        self._add_vip_security_group_to_port(load_balancer.id, vip.port_id)
+        self._add_vip_security_group_to_port(load_balancer.id, vip.port_id,
+                                             sec_grp.get('id'))
 
-    def _add_vip_security_group_to_port(self, load_balancer_id, port_id):
-        sec_grp = self._get_lb_security_group(load_balancer_id)
+    def _add_vip_security_group_to_port(self, load_balancer_id, port_id,
+                                        sec_grp_id=None):
+        sec_grp_id = (sec_grp_id or
+                      self._get_lb_security_group(load_balancer_id).get('id'))
         try:
-            self._add_security_group_to_port(sec_grp.get('id'), port_id)
+            self._add_security_group_to_port(sec_grp_id, port_id)
         except base.PortNotFound:
             raise
         except base.NetworkException as e:
