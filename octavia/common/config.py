@@ -50,8 +50,8 @@ core_opts = [
                 help=_("Allow the usage of the sorting")),
     cfg.StrOpt('pagination_max_limit', default="-1",
                help=_("The maximum number of items returned in a single "
-                      "response, value was 'infinite' or negative integer "
-                      "means no limit")),
+                      "response. The string 'infinite' or a negative "
+                      "integer value means 'no limit'")),
     cfg.StrOpt('host', default=utils.get_hostname(),
                help=_("The hostname Octavia is running on")),
     cfg.StrOpt('octavia_plugins',
