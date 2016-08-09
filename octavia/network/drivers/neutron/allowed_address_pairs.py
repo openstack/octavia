@@ -338,8 +338,9 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         try:
             subnet = self.get_subnet(vip.subnet_id)
         except base.SubnetNotFound:
-            msg = ("Can't unplug vip because vip subnet {0} was not "
-                   "found").format(vip.subnet_id)
+            msg = _LE("Can't unplug vip because vip subnet {0} was not "
+                      "found").format(vip.subnet_id)
+            LOG.exception(msg)
             raise base.PluggedVIPNotFound(msg)
         for amphora in six.moves.filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
@@ -350,6 +351,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             if not interface:
                 # Thought about raising PluggedVIPNotFound exception but
                 # then that wouldn't evaluate all amphorae, so just continue
+                LOG.debug(_LI('Cannot get amphora %s interface, skipped'),
+                          amphora.compute_id)
                 continue
             try:
                 self.unplug_network(amphora.compute_id, subnet.network_id)
