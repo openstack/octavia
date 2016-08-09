@@ -18,14 +18,15 @@ from octavia.db import api as db_api
 
 
 class Context(common_context.RequestContext):
-    def __init__(self, user_id, project_id, is_admin=False, auth_token=None):
-        super(Context, self).__init__(tenant=project_id, auth_token=auth_token,
-                                      is_admin=is_admin, user=user_id)
-        self._session = None
-        self.project_id = project_id
+
+    _session = None
 
     @property
     def session(self):
         if self._session is None:
             self._session = db_api.get_session()
         return self._session
+
+    @property
+    def project_id(self):
+        return self.tenant
