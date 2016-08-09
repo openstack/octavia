@@ -53,6 +53,17 @@ version() {
     exit 1
 }
 
+find_system_elements() {
+    # List of possible system installation directories
+    local system_prefixes="/usr/share /usr/local/share"
+    for prefix in $system_prefixes; do
+        if [ -d $prefix/$1 ]; then
+            echo $prefix/$1
+            return
+        fi
+    done
+}
+
 # Figure out where our directory is located
 if [ -z $OCTAVIA_REPO_PATH ]; then
     AMP_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
@@ -150,41 +161,38 @@ AMP_IMAGESIZE=${AMP_IMAGESIZE:-2}
 
 OCTAVIA_ELEMENTS_PATH=$OCTAVIA_REPO_PATH/elements
 
-
-
 if ! [ -d $OCTAVIA_ELEMENTS_PATH ]; then
-    echo "ERROR: Octavia elements directory not found at: " $OCTAVIA_ELEMENTS_PATH " Exiting."
-    exit 1
+    SYSTEM_OCTAVIA_ELEMENTS_PATH=$(find_system_elements octavia-image-elements)
+    if [ -z ${SYSTEM_OCTAVIA_ELEMENTS_PATH} ]; then
+        echo "ERROR: Octavia elements directory not found at: " $OCTAVIA_ELEMENTS_PATH " Exiting."
+        exit 1
+    fi
+    OCTAVIA_ELEMENTS_PATH=${SYSTEM_OCTAVIA_ELEMENTS_PATH}
 fi
 
 DIB_REPO_PATH=${DIB_REPO_PATH:-${OCTAVIA_REPO_PATH%/*}/diskimage-builder}
 
-if ! [ -d $DIB_REPO_PATH ]; then
-    echo "ERROR: diskimage-builder repo directory not found at: " $DIB_REPO_PATH " Exiting."
-    exit 1
+if [ -d $DIB_REPO_PATH ]; then
+    export PATH=$PATH:$DIB_REPO_PATH/bin
+else
+    if ! disk-image-create --version > /dev/null 2>&1; then
+        echo "ERROR: diskimage-builder repo directory not found at: " $DIB_REPO_PATH " or in path. Exiting."
+        exit 1
+    fi
 fi
 
-export PATH=$PATH:$DIB_REPO_PATH/bin
-
+# For system-wide installs, DIB will automatically find the elements, so we only check local path
 DIB_ELEMENTS_PATH=${DIB_REPO_PATH:-${OCTAVIA_REPO_PATH%/*}/diskimage-builder/elements}
 
-if ! [ -d $DIB_ELEMENTS_PATH ]; then
-    echo "ERROR: diskimage-builder elements directory not found at: " $DIB_ELEMENTS_PATH " Exiting."
-    exit 1
-fi
-
-ELEMENTS_REPO_PATH=${ELEMENTS_REPO_PATH:-${OCTAVIA_REPO_PATH%/*}/tripleo-image-elements}
-
-if ! [ -d $ELEMENTS_REPO_PATH ]; then
-    echo "ERROR: tripleo-image-elements repo directory not found at: " $ELEMENTS_REPO_PATH " Exiting."
-    exit 1
-fi
-
-TRIPLEO_ELEMENTS_PATH=${ELEMENTS_PATH:-$ELEMENTS_REPO_PATH/elements}
+TRIPLEO_ELEMENTS_PATH=${TRIPLEO_ELEMENTS_PATH:-${OCTAVIA_REPO_PATH%/*}/tripleo-image-elements/elements}
 
 if ! [ -d $TRIPLEO_ELEMENTS_PATH ]; then
-    echo "ERROR: tripleo-image-elements elements directory not found at: " $TRIPLEO_ELEMENTS_PATH " Exiting."
-    exit 1
+    SYSTEM_TRIPLEO_ELEMENTS_PATH=$(find_system_elements tripleo-image-elements)
+    if [ -z ${SYSTEM_TRIPLEO_ELEMENTS_PATH} ]; then
+        echo "ERROR: tripleo-image-elements elements directory not found at: " $TRIPLEO_ELEMENTS_PATH " Exiting."
+        exit 1
+    fi
+    TRIPLEO_ELEMENTS_PATH=${SYSTEM_TRIPLEO_ELEMENTS_PATH}
 fi
 
 if [ "$DIB_LOCAL_ELEMENTS_PATH" ]; then
@@ -293,20 +301,6 @@ else
     TEMP=$(mktemp -d diskimage-create.XXXXXX)
 fi
 pushd $TEMP > /dev/null
-
-# Setup some environment variables with the commit IDs used to build the image
-pushd $DIB_REPO_PATH > /dev/null
-export DIB_COMMIT_ID=`git rev-parse HEAD`
-popd > /dev/null
-
-pushd $ELEMENTS_REPO_PATH > /dev/null
-export ELEMENTS_COMMIT_ID=`git rev-parse HEAD`
-popd > /dev/null
-
-pushd $OCTAVIA_REPO_PATH > /dev/null
-export OCTAVIA_COMMIT_ID=`git rev-parse HEAD`
-popd > /dev/null
-
 
 # Setup the elements list
 
