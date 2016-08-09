@@ -144,13 +144,15 @@ class TestHealthDaemon(base.TestCase):
                           LISTENER_ID2 + '.sock'}
         self.assertEqual(files, expected_files)
 
+    @mock.patch('octavia.amphorae.backends.health_daemon.'
+                'health_daemon.time.sleep')
     @mock.patch('oslo_config.cfg.CONF.reload_config_files')
     @mock.patch('octavia.amphorae.backends.health_daemon.'
                 'health_daemon.build_stats_message')
     @mock.patch('octavia.amphorae.backends.health_daemon.'
                 'health_sender.UDPStatusSender')
     def test_run_sender(self, mock_UDPStatusSender, mock_build_msg,
-                        mock_reload_cfg):
+                        mock_reload_cfg, mock_sleep):
         sender_mock = mock.MagicMock()
         dosend_mock = mock.MagicMock()
         sender_mock.dosend = dosend_mock

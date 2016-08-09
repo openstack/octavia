@@ -202,7 +202,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
                             'mac_address': FAKE_MAC_ADDRESS,
                             'vrrp_ip': self.amp.vrrp_ip}
 
-    def test_request(self):
+    @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.time.sleep')
+    def test_request(self, mock_sleep):
         self.assertRaises(driver_except.TimeOutException,
                           self.driver.request,
                           'get', self.amp, 'unavailableURL')
