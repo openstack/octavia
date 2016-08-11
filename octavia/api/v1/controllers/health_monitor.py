@@ -69,9 +69,7 @@ class HealthMonitorController(base.BaseController):
             listener_ids = [l.id for l in hm.pool.listeners]
         else:
             pool = self._get_db_pool(session, self.pool_id)
-            for listener in pool.listeners:
-                if listener.id not in listener_ids:
-                    listener_ids.append(listener.id)
+            listener_ids = [listener.id for listener in pool.listeners]
         if self.listener_id and self.listener_id not in listener_ids:
             listener_ids.append(self.listener_id)
         return listener_ids
