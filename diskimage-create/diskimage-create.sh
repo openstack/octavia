@@ -106,7 +106,7 @@ while getopts "a:b:c:hi:o:t:r:s:vw:" opt; do
             fi
         ;;
         o)
-            AMP_OUTPUTFILENAME=$OPTARG
+            AMP_OUTPUTFILENAME=$(readlink -f $OPTARG)
         ;;
         t)
             AMP_IMAGETYPE=$OPTARG
@@ -153,7 +153,7 @@ AMP_CACHEDIR=${AMP_CACHEDIR:-"$HOME/.cache/image-create"}
 
 AMP_BASEOS=${AMP_BASEOS:-"ubuntu"}
 
-AMP_OUTPUTFILENAME=${AMP_OUTPUTFILENAME:-"$AMP_DIR/amphora-x64-haproxy"}
+AMP_OUTPUTFILENAME=${AMP_OUTPUTFILENAME:-"$PWD/amphora-x64-haproxy"}
 
 AMP_IMAGETYPE=${AMP_IMAGETYPE:-"qcow2"}
 
@@ -254,18 +254,18 @@ if [ "$platform" = 'NAME="Ubuntu"' ]; then
     fi
 
 elif [ "$platform" = 'NAME=Fedora' ]; then
-    PKG_LIST="qemu kpartx git"
+    PKG_LIST="qemu kpartx git python-pip"
     for pkg in $PKG_LIST; do
-        if ! yum list $pkg &> /dev/null; then
+        if ! yum list installed $pkg &> /dev/null; then
             echo "Required package " $pkg " is not installed.  Exiting."
             exit 1
         fi
     done
 else
     # centos or rhel
-        PKG_LIST="qemu-kvm qemu-img kpartx git"
+        PKG_LIST="qemu-kvm qemu-img kpartx git python-pip"
         for pkg in $PKG_LIST; do
-            if ! yum list $pkg &> /dev/null; then
+            if ! yum list installed $pkg &> /dev/null; then
                 echo "Required package " $pkg " is not installed.  Exiting."
                 exit 1
             fi
@@ -273,7 +273,7 @@ else
         if [ ${platform:0:6} = "CentOS" ]; then
             # install EPEL repo, in order to install argparse
             PKG_LIST="python-argparse"
-            if ! yum list $pkg &> /dev/null; then
+            if ! yum list installed $pkg &> /dev/null; then
                 echo "CentOS requires the python-argparse package be "
                 echo "installed separately from the EPEL repo."
                 echo "Required package " $pkg " is not installed.  Exiting."

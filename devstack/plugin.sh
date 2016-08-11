@@ -21,13 +21,10 @@ function build_octavia_worker_image {
     TOKEN=$(openstack token issue | grep ' id ' | get_field 2)
     die_if_not_set $LINENO TOKEN "Keystone failed to get token."
 
-    # TODO(ptoohill): Tempfix..? -o option stopped working and it no longer saves image to working dir...
     if ! [ -f $OCTAVIA_AMP_IMAGE_FILE ]; then
-        $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -s 2
-        # $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -o $OCTAVIA_AMP_IMAGE_NAME
+        $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -s 2 -o $OCTAVIA_AMP_IMAGE_FILE
     fi
     upload_image file://${OCTAVIA_AMP_IMAGE_FILE} $TOKEN
-    # upload_image file://${OCTAVIA_AMP_IMAGE_NAME}.qcow2 $TOKEN
 }
 
 function create_octavia_accounts {
