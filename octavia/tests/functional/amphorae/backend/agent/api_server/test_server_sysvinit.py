@@ -593,15 +593,17 @@ class ServerTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
     @mock.patch('os.makedirs')
-    def test_plug_VIP(self, mock_makedirs, mock_copytree, mock_check_output,
-                      mock_netns, mock_netns_create, mock_pyroute2,
-                      mock_ifaddress, mock_interfaces):
+    def test_plug_vip4(self, mock_makedirs, mock_copytree, mock_check_output,
+                       mock_netns, mock_netns_create, mock_pyroute2,
+                       mock_ifaddress, mock_interfaces):
 
-        subnet_info = {'subnet_cidr': '10.0.0.0/24',
-                       'gateway': '10.0.0.1',
-                       'mac_address': '123'}
+        subnet_info = {
+            'subnet_cidr': '203.0.113.0/24',
+            'gateway': '203.0.113.1',
+            'mac_address': '123'
+        }
 
-        # malformated ip
+        # malformed ip
         rv = self.app.post('/' + api_server.VERSION + '/plug/vip/error',
                            data=json.dumps(subnet_info),
                            content_type='application/json')
@@ -630,7 +632,7 @@ class ServerTestCase(base.TestCase):
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
 
-        # One Interface down, Happy Path
+        # One Interface down, Happy Path IPv4
         mock_interfaces.side_effect = [['blah']]
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
                                       {netifaces.AF_LINK: [{'addr': '123'}]}]
@@ -684,6 +686,115 @@ class ServerTestCase(base.TestCase):
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             rv = self.app.post('/' + api_server.VERSION +
                                "/plug/vip/203.0.113.2",
+                               content_type='application/json',
+                               data=json.dumps(subnet_info))
+            self.assertEqual(500, rv.status_code)
+            self.assertEqual(
+                {'details': RANDOM_ERROR,
+                 'message': 'Error plugging VIP'},
+                json.loads(rv.data.decode('utf-8')))
+
+    @mock.patch('netifaces.interfaces')
+    @mock.patch('netifaces.ifaddresses')
+    @mock.patch('pyroute2.IPRoute')
+    @mock.patch('pyroute2.netns.create')
+    @mock.patch('pyroute2.NetNS')
+    @mock.patch('subprocess.check_output')
+    @mock.patch('shutil.copytree')
+    @mock.patch('os.makedirs')
+    def test_plug_vip6(self, mock_makedirs, mock_copytree, mock_check_output,
+                       mock_netns, mock_netns_create, mock_pyroute2,
+                       mock_ifaddress, mock_interfaces):
+
+        subnet_info = {
+            'subnet_cidr': '2001:db8::/32',
+            'gateway': '2001:db8::1',
+            'mac_address': '123'
+        }
+
+        # malformed ip
+        rv = self.app.post('/' + api_server.VERSION + '/plug/vip/error',
+                           data=json.dumps(subnet_info),
+                           content_type='application/json')
+        self.assertEqual(400, rv.status_code)
+
+        # No subnet info
+        rv = self.app.post('/' + api_server.VERSION + '/plug/vip/error')
+        self.assertEqual(400, rv.status_code)
+
+        # No interface at all
+        mock_interfaces.side_effect = [[]]
+        rv = self.app.post('/' + api_server.VERSION + "/plug/vip/2001:db8::2",
+                           content_type='application/json',
+                           data=json.dumps(subnet_info))
+        self.assertEqual(404, rv.status_code)
+        self.assertEqual(dict(details="No suitable network interface found"),
+                         json.loads(rv.data.decode('utf-8')))
+
+        # Two interfaces down
+        mock_interfaces.side_effect = [['blah', 'blah2']]
+        mock_ifaddress.side_effect = [['blabla'], ['blabla']]
+        rv = self.app.post('/' + api_server.VERSION + "/plug/vip/2001:db8::2",
+                           content_type='application/json',
+                           data=json.dumps(subnet_info))
+        self.assertEqual(404, rv.status_code)
+        self.assertEqual(dict(details="No suitable network interface found"),
+                         json.loads(rv.data.decode('utf-8')))
+
+        # One Interface down, Happy Path IPv6
+        mock_interfaces.side_effect = [['blah']]
+        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
+                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
+
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+        file_name = '/etc/netns/{0}/network/interfaces.d/blah.cfg'.format(
+            consts.AMPHORA_NAMESPACE)
+        m = mock.mock_open()
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
+            rv = self.app.post('/' + api_server.VERSION +
+                               "/plug/vip/2001:db8::2",
+                               content_type='application/json',
+                               data=json.dumps(subnet_info))
+            self.assertEqual(202, rv.status_code)
+
+            mock_open.assert_any_call(file_name, flags, mode)
+            mock_fdopen.assert_any_call(123, 'w')
+
+            plug_inf_file = '/var/lib/octavia/plugged_interfaces'
+            flags = os.O_RDWR | os.O_CREAT
+            mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+            mock_open.assert_any_call(plug_inf_file, flags, mode)
+            mock_fdopen.assert_any_call(123, 'r+')
+
+            handle = m()
+            handle.write.assert_any_call(
+                '\n# Generated by Octavia agent\n'
+                'auto blah blah:0\n'
+                'iface blah inet6 auto\n\n'
+                'iface blah:0 inet6 static\n'
+                'address 2001:0db8:0000:0000:0000:0000:0000:0002\n'
+                'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n'
+                'netmask 32')
+            mock_check_output.assert_called_with(
+                ['ip', 'netns', 'exec', 'amphora-haproxy', 'ifup',
+                 'blah:0'], stderr=-2)
+
+        mock_interfaces.side_effect = [['blah']]
+        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
+                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
+        mock_check_output.side_effect = [
+            'unplug1',
+            subprocess.CalledProcessError(
+                7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
+                7, 'test', RANDOM_ERROR)]
+
+        m = mock.mock_open()
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
+            rv = self.app.post('/' + api_server.VERSION +
+                               "/plug/vip/2001:db8::2",
                                content_type='application/json',
                                data=json.dumps(subnet_info))
             self.assertEqual(500, rv.status_code)
