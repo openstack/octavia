@@ -607,10 +607,13 @@ Retrieve the stats of a listener.
 **Response Example**::
 
     {
-        'bytes_in': 1000,
-        'bytes_out': 1000,
-        'active_connections': 1,
-        'total_connections': 1
+        'listener': {
+            'bytes_in': 1000,
+            'bytes_out': 1000,
+            'active_connections': 1,
+            'total_connections': 1,
+            'request_errors': 0
+        }
     }
 
 Create Listener

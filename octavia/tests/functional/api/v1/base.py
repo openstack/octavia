@@ -133,7 +133,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         db_ls = self.listener_stats_repo.create(
             db_api.get_session(), listener_id=listener_id,
             amphora_id=amphora_id, bytes_in=0,
-            bytes_out=0, active_connections=0, total_connections=0)
+            bytes_out=0, active_connections=0, total_connections=0,
+            request_errors=0)
         return db_ls.to_dict()
 
     def create_amphora(self, amphora_id, loadbalancer_id, **optionals):

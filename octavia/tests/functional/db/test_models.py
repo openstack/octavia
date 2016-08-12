@@ -57,7 +57,8 @@ class ModelTestMixin(object):
                   'bytes_in': 0,
                   'bytes_out': 0,
                   'active_connections': 0,
-                  'total_connections': 0}
+                  'total_connections': 0,
+                  'request_errors': 0}
         kwargs.update(overrides)
         return self._insert(session, models.ListenerStatistics, kwargs)
 
@@ -391,6 +392,13 @@ class ListenerStatisticsModelTest(base.OctaviaDBTestBase, ModelTestMixin):
     def test_create(self):
         self.create_listener_statistics(self.session, self.listener.id,
                                         self.amphora.id)
+
+    def test_create_with_negative_int(self):
+        overrides = {'bytes_in': -1}
+        self.assertRaises(ValueError,
+                          self.create_listener_statistics,
+                          self.session, self.listener.id,
+                          self.amphora.id, **overrides)
 
     def test_update(self):
         stats = self.create_listener_statistics(self.session, self.listener.id,

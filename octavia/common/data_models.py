@@ -135,15 +135,16 @@ class SessionPersistence(BaseDataModel):
 
 class ListenerStatistics(BaseDataModel):
 
-    def __init__(self, listener_id=None, amphora_id=None, bytes_in=None,
-                 bytes_out=None, active_connections=None,
-                 total_connections=None):
+    def __init__(self, listener_id=None, amphora_id=None, bytes_in=0,
+                 bytes_out=0, active_connections=0,
+                 total_connections=0, request_errors=0):
         self.listener_id = listener_id
         self.amphora_id = amphora_id
         self.bytes_in = bytes_in
         self.bytes_out = bytes_out
         self.active_connections = active_connections
         self.total_connections = total_connections
+        self.request_errors = request_errors
 
 
 class HealthMonitor(BaseDataModel):

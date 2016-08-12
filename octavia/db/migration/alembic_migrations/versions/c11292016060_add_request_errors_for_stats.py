@@ -1,4 +1,4 @@
-#    Copyright 2016 Blue Box, an IBM Company
+# Copyright 2016 IBM
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -12,14 +12,23 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from wsme import types as wtypes
+"""adding request error number to listener_statistics table
 
-from octavia.api.v1.types import base
+Revision ID: c11292016060
+Revises: 9b5473976d6d
+Create Date: 2016-08-12 03:37:38.656962
+
+"""
+
+# revision identifiers, used by Alembic.
+revision = 'c11292016060'
+down_revision = '9b5473976d6d'
+
+from alembic import op
+import sqlalchemy as sa
 
 
-class ListenerStatisticsResponse(base.BaseType):
-    bytes_in = wtypes.wsattr(wtypes.IntegerType())
-    bytes_out = wtypes.wsattr(wtypes.IntegerType())
-    active_connections = wtypes.wsattr(wtypes.IntegerType())
-    total_connections = wtypes.wsattr(wtypes.IntegerType())
-    request_errors = wtypes.wsattr(wtypes.IntegerType())
+def upgrade():
+    op.add_column('listener_statistics',
+                  sa.Column('request_errors', sa.BigInteger(),
+                            nullable=False, default=0))

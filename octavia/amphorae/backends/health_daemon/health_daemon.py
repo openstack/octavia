@@ -83,9 +83,14 @@ def build_stats_message():
     SEQ += 1
     stat_sock_files = list_sock_stat_files()
     for listener_id, stat_sock_file in six.iteritems(stat_sock_files):
-        listener_dict = {'pools': {}, 'status': 'DOWN',
-                                      'stats': {'tx': 0, 'rx': 0,
-                                                'conns': 0, 'totconns': 0}}
+        listener_dict = {'pools': {},
+                         'status': 'DOWN',
+                         'stats': {
+                             'tx': 0,
+                             'rx': 0,
+                             'conns': 0,
+                             'totconns': 0,
+                             'ereq': 0}}
         msg['listeners'][listener_id] = listener_dict
         if util.is_listener_running(listener_id):
             (stats, pool_status) = get_stats(stat_sock_file)
@@ -96,6 +101,7 @@ def build_stats_message():
                     listener_dict['stats']['rx'] = int(row['bin'])
                     listener_dict['stats']['conns'] = int(row['scur'])
                     listener_dict['stats']['totconns'] = int(row['stot'])
+                    listener_dict['stats']['ereq'] = int(row['ereq'])
                     listener_dict['status'] = row['status']
             for oid, pool in six.iteritems(pool_status):
                 if oid != listener_id:

@@ -799,7 +799,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         self.listener_stats_repo.create(
             self.session, listener_id=listener.id, amphora_id=amphora.id,
             bytes_in=1, bytes_out=1,
-            active_connections=1, total_connections=1)
+            active_connections=1, total_connections=1, request_errors=1)
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIsNotNone(new_listener)
         self.assertIsNotNone(self.listener_stats_repo.get(
@@ -846,7 +846,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             self.session, listener_id=listener.id,
             amphora_id=amphora.id,
             bytes_in=1, bytes_out=1,
-            active_connections=1, total_connections=1)
+            active_connections=1, total_connections=1, request_errors=1)
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIsNotNone(new_listener)
         self.assertEqual(pool, new_listener.default_pool)
@@ -909,7 +909,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         stats = self.listener_stats_repo.create(
             self.session, listener_id=listener_id, amphora_id=amphora_id,
             bytes_in=1, bytes_out=1,
-            active_connections=1, total_connections=1)
+            active_connections=1, total_connections=1, request_errors=1)
         return stats
 
     def test_get(self):
@@ -928,6 +928,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         self.assertEqual(1, new_stats.bytes_out)
         self.assertEqual(1, new_stats.active_connections)
         self.assertEqual(1, new_stats.total_connections)
+        self.assertEqual(1, new_stats.request_errors)
 
     def test_update(self):
         bytes_in_change = 2
@@ -956,6 +957,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         bytes_out = random.randrange(1000000000)
         active_conns = random.randrange(1000000000)
         total_conns = random.randrange(1000000000)
+        request_errors = random.randrange(1000000000)
         self.assertIsNone(self.listener_stats_repo.get(
             self.session, listener_id=self.listener.id))
         self.listener_stats_repo.replace(self.session, self.listener.id,
@@ -963,7 +965,8 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
                                          bytes_in=bytes_in,
                                          bytes_out=bytes_out,
                                          active_connections=active_conns,
-                                         total_connections=total_conns)
+                                         total_connections=total_conns,
+                                         request_errors=request_errors)
         obj = self.listener_stats_repo.get(self.session,
                                            listener_id=self.listener.id)
         self.assertIsNotNone(obj)
@@ -972,18 +975,21 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         self.assertEqual(bytes_out, obj.bytes_out)
         self.assertEqual(active_conns, obj.active_connections)
         self.assertEqual(total_conns, obj.total_connections)
+        self.assertEqual(request_errors, obj.request_errors)
 
         # Test the update path
         bytes_in_2 = random.randrange(1000000000)
         bytes_out_2 = random.randrange(1000000000)
         active_conns_2 = random.randrange(1000000000)
         total_conns_2 = random.randrange(1000000000)
+        request_errors_2 = random.randrange(1000000000)
         self.listener_stats_repo.replace(self.session, self.listener.id,
                                          self.amphora.id,
                                          bytes_in=bytes_in_2,
                                          bytes_out=bytes_out_2,
                                          active_connections=active_conns_2,
-                                         total_connections=total_conns_2)
+                                         total_connections=total_conns_2,
+                                         request_errors=request_errors_2)
         obj = self.listener_stats_repo.get(self.session,
                                            listener_id=self.listener.id)
         self.assertIsNotNone(obj)
@@ -992,6 +998,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         self.assertEqual(bytes_out_2, obj.bytes_out)
         self.assertEqual(active_conns_2, obj.active_connections)
         self.assertEqual(total_conns_2, obj.total_connections)
+        self.assertEqual(request_errors_2, obj.request_errors)
 
 
 class HealthMonitorRepositoryTest(BaseRepositoryTest):

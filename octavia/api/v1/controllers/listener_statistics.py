@@ -15,10 +15,12 @@
 import logging
 
 import pecan
+from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
 from octavia.api.v1.controllers import base
 from octavia.api.v1.types import listener_statistics as ls_types
+from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.i18n import _LI
@@ -45,7 +47,7 @@ class ListenerStatisticsController(base.BaseController):
                 id=self.listener_id)
         return db_ls
 
-    @wsme_pecan.wsexpose(ls_types.ListenerStatisticsResponse)
+    @wsme_pecan.wsexpose({wtypes.text: ls_types.ListenerStatisticsResponse})
     def get_all(self):
         """Gets a single listener's statistics details."""
         # NOTE(sbalukoff): since a listener can only have one set of
@@ -53,5 +55,5 @@ class ListenerStatisticsController(base.BaseController):
         # the single set of stats
         context = pecan.request.context.get('octavia_context')
         db_ls = self._get_db_ls(context.session)
-        return self._convert_db_to_type(db_ls,
-                                        ls_types.ListenerStatisticsResponse)
+        return {constants.LISTENER: self._convert_db_to_type(
+            db_ls, ls_types.ListenerStatisticsResponse)}

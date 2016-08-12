@@ -103,23 +103,32 @@ SAMPLE_STATS = ({'': '', 'status': 'OPEN', 'lastchg': '',
                  'hrsp_2xx': '0', 'act': '1', 'chkdown': '0',
                  'svname': 'BACKEND', 'hrsp_3xx': '0'})
 
-SAMPLE_STATS_MSG = {'listeners': {
-                    LISTENER_ID1: {
-                        'pools': {'432fc8b3-d446-48d4-bb64-13beb90e22bc': {
-                            'members': {
-                                '302e33d9-dee1-4de9-98d5-36329a06fb58':
-                                'DOWN'},
-                            'status': 'UP'}}, 'stats': {
-                            'totconns': 0, 'conns': 0, 'tx': 0, 'rx': 0},
-                        'status': 'OPEN'},
-                    LISTENER_ID2: {
-                        'pools': {'432fc8b3-d446-48d4-bb64-13beb90e22bc': {
-                            'members': {
-                                '302e33d9-dee1-4de9-98d5-36329a06fb58':
-                                'DOWN'},
-                            'status': 'UP'}}, 'stats': {
-                            'totconns': 0, 'conns': 0, 'tx': 0, 'rx': 0},
-                        'status': 'OPEN'}}, 'id': None, 'seq': 0}
+SAMPLE_STATS_MSG = {
+    'listeners': {
+        LISTENER_ID1: {
+            'pools': {
+                '432fc8b3-d446-48d4-bb64-13beb90e22bc': {
+                    'members': {
+                        '302e33d9-dee1-4de9-98d5-36329a06fb58': 'DOWN'},
+                    'status': 'UP'}},
+            'stats': {
+                'totconns': 0, 'conns': 0,
+                'tx': 0, 'rx': 0, 'ereq': 0},
+            'status': 'OPEN'},
+        LISTENER_ID2: {
+            'pools': {
+                '432fc8b3-d446-48d4-bb64-13beb90e22bc': {
+                    'members': {
+                        '302e33d9-dee1-4de9-98d5-36329a06fb58': 'DOWN'},
+                    'status': 'UP'}},
+            'stats': {
+                'totconns': 0, 'conns': 0,
+                'tx': 0, 'rx': 0, 'ereq': 0},
+            'status': 'OPEN'}
+    },
+    'id': None,
+    'seq': 0
+}
 
 
 class TestHealthDaemon(base.TestCase):

@@ -232,16 +232,21 @@ class UpdateStatsDb(object):
         health = {
             "id": self.FAKE_UUID_1,
             "listeners": {
-                "listener-id-1": {"status": constants.OPEN,
-                                  'stats': {'conns': 0,
-                                            'totconns': 0,
-                                            'rx': 0,
-                                            'tx': 0},
-                                  "pools": {
-                    "pool-id-1": {"status": constants.UP,
-                                  "members": {"member-id-1": constants.ONLINE}
-                                  }
-                }
+                "listener-id-1": {
+                    "status": constants.OPEN,
+                    "stats": {
+                        "ereq":0,
+                        "conns": 0,
+                        "totconns": 0,
+                        "rx": 0,
+                        "tx": 0,
+                    },
+                    "pools": {
+                        "pool-id-1": {
+                            "status": constants.UP,
+                            "members": {"member-id-1": constants.ONLINE}
+                        }
+                    }
                 }
             }
         }
@@ -256,7 +261,8 @@ class UpdateStatsDb(object):
             stats = listener.get('stats')
             stats = {'bytes_in': stats['rx'], 'bytes_out': stats['tx'],
                      'active_connections': stats['conns'],
-                     'total_connections': stats['totconns']}
+                     'total_connections': stats['totconns'],
+                     'request_errors': stats['ereq']}
             LOG.debug("Updating listener stats in db and sending event.")
             LOG.debug("Listener %s / Amphora %s stats: %s",
                       listener_id, amphora_id, stats)

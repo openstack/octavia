@@ -458,6 +458,7 @@ class TestUpdateStatsDb(base.TestCase):
 
         self.bytes_in = random.randrange(1000000000)
         self.bytes_out = random.randrange(1000000000)
+        self.request_errors = random.randrange(1000000000)
         self.active_conns = random.randrange(1000000000)
         self.total_conns = random.randrange(1000000000)
         self.loadbalancer_id = uuidutils.generate_uuid()
@@ -469,18 +470,24 @@ class TestUpdateStatsDb(base.TestCase):
         health = {
             "id": self.loadbalancer_id,
             "listeners": {
-                self.listener_id: {"status": constants.OPEN,
-                                   "stats": {"conns": self.active_conns,
-                                             "totconns": self.total_conns,
-                                             "rx": self.bytes_in,
-                                             "tx": self.bytes_out},
-                                   "pools": {"pool-id-1":
-                                             {"status": constants.UP,
-                                              "members":
-                                              {"member-id-1": constants.ONLINE}
-                                              }
-                                             }
-                                   }}}
+                self.listener_id: {
+                    "status": constants.OPEN,
+                    "stats": {
+                        "ereq": self.request_errors,
+                        "conns": self.active_conns,
+                        "totconns": self.total_conns,
+                        "rx": self.bytes_in,
+                        "tx": self.bytes_out,
+                    },
+                    "pools": {
+                        "pool-id-1": {
+                            "status": constants.UP,
+                            "members": {"member-id-1": constants.ONLINE}
+                        }
+                    }
+                }
+            }
+        }
 
         session.return_value = 'blah'
 
@@ -490,7 +497,8 @@ class TestUpdateStatsDb(base.TestCase):
             'blah', self.listener_id, self.loadbalancer_id,
             bytes_in=self.bytes_in, bytes_out=self.bytes_out,
             active_connections=self.active_conns,
-            total_connections=self.total_conns)
+            total_connections=self.total_conns,
+            request_errors=self.request_errors)
         self.event_client.cast.assert_called_once_with(
             {}, 'update_info', container={
                 'info_type': 'listener_stats',
@@ -499,4 +507,5 @@ class TestUpdateStatsDb(base.TestCase):
                     'bytes_in': self.bytes_in,
                     'total_connections': self.total_conns,
                     'active_connections': self.active_conns,
-                    'bytes_out': self.bytes_out}})
+                    'bytes_out': self.bytes_out,
+                    'request_errors': self.request_errors}})

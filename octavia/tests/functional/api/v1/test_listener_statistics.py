@@ -36,8 +36,15 @@ class TestListenerStatistics(base.BaseAPITest):
     def test_get(self):
         ls = self.create_listener_stats(listener_id=self.listener.get('id'),
                                         amphora_id=self.amphora.id)
-        ls.pop('listener_id')
-        ls.pop('amphora_id')
+        expected = {
+            'listener': {
+                'bytes_in': ls['bytes_in'],
+                'bytes_out': ls['bytes_out'],
+                'active_connections': ls['active_connections'],
+                'total_connections': ls['total_connections'],
+                'request_errors': ls['request_errors']
+            }
+        }
         response = self.get(self.ls_path)
         response_body = response.json
-        self.assertEqual(ls, response_body)
+        self.assertEqual(expected, response_body)

@@ -126,19 +126,17 @@ class ListenerStatistics(base_models.BASE):
     bytes_out = sa.Column(sa.BigInteger, nullable=False)
     active_connections = sa.Column(sa.Integer, nullable=False)
     total_connections = sa.Column(sa.BigInteger, nullable=False)
+    request_errors = sa.Column(sa.BigInteger, nullable=False)
 
-    @staticmethod
     @validates('bytes_in', 'bytes_out',
-               'active_connections', 'total_connections')
-    def validate_non_negative_int(key, value):
+               'active_connections', 'total_connections',
+               'request_errors')
+    def validate_non_negative_int(self, key, value):
         if value < 0:
             data = {'key': key, 'value': value}
-            raise ValueError(data)
-            # TODO(trevor-vardeman): Repair this functionality after OpenStack
-            # Common is in
-            # raise ValueError(_('The %(key)s field can not have '
-            #                   'negative value. '
-            #                   'Current value is %(value)d.') % data)
+            raise ValueError(_('The %(key)s field can not have '
+                               'negative value. '
+                               'Current value is %(value)d.') % data)
         return value
 
 
