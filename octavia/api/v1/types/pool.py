@@ -52,8 +52,8 @@ class PoolResponse(base.BaseType):
     project_id = wtypes.wsattr(wtypes.StringType())
     health_monitor = wtypes.wsattr(health_monitor.HealthMonitorResponse)
     members = wtypes.wsattr([member.MemberResponse])
-    created_at = wtypes.wsattr(wtypes.StringType())
-    updated_at = wtypes.wsattr(wtypes.StringType())
+    created_at = wtypes.wsattr(wtypes.datetime.datetime)
+    updated_at = wtypes.wsattr(wtypes.datetime.datetime)
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
