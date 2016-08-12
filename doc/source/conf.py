@@ -14,6 +14,11 @@
 import sys
 import subprocess
 import os
+from tools import create_flow_docs
+
+# Generate our flow diagrams
+create_flow_docs.generate(
+    'tools/flow-list.txt', 'doc/source/devref/flow_diagrams')
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
