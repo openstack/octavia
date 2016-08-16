@@ -216,6 +216,47 @@ class AbstractNetworkDriver(object):
         pass
 
     @abc.abstractmethod
+    def get_network_by_name(self, network_name):
+        """Retrieves network from network name.
+
+        :param network_name: name of a network to retrieve
+        :return: octavia.network.data_models.Network
+        :raises: NetworkException, NetworkNotFound
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_subnet_by_name(self, subnet_name):
+        """Retrieves subnet from subnet name.
+
+        :param subnet_name: name of a subnet to retrieve
+        :return: octavia.network.data_models.Subnet
+        :raises: NetworkException, SubnetNotFound
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_port_by_name(self, port_name):
+        """Retrieves port from port name.
+
+        :param port_name: name of a port to retrieve
+        :return: octavia.network.data_models.Port
+        :raises: NetworkException, PortNotFound
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_port_by_net_id_device_id(self, network_id, device_id):
+        """Retrieves port from network id and device id.
+
+        :param network_id: id of a network to filter by
+        :param device_id: id of a network device to filter by
+        :return: octavia.network.data_models.Port
+        :raises: NetworkException, PortNotFound
+        """
+        pass
+
+    @abc.abstractmethod
     def failover_preparation(self, amphora):
         """Prepare an amphora for failover.
 

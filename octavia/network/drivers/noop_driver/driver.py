@@ -121,6 +121,34 @@ class NoopManager(object):
         self.networkconfigconfig[port_id] = (port_id, 'get_port')
         return network_models.Port(id=uuidutils.generate_uuid())
 
+    def get_network_by_name(self, network_name):
+        LOG.debug("Network %s no-op, get_network_by_name network_name %s",
+                  self.__class__.__name__, network_name)
+        self.networkconfigconfig[network_name] = (network_name,
+                                                  'get_network_by_name')
+        return network_models.Network(id=uuidutils.generate_uuid())
+
+    def get_subnet_by_name(self, subnet_name):
+        LOG.debug("Subnet %s no-op, get_subnet_by_name subnet_name %s",
+                  self.__class__.__name__, subnet_name)
+        self.networkconfigconfig[subnet_name] = (subnet_name,
+                                                 'get_subnet_by_name')
+        return network_models.Subnet(id=uuidutils.generate_uuid())
+
+    def get_port_by_name(self, port_name):
+        LOG.debug("Port %s no-op, get_port_by_name port_name %s",
+                  self.__class__.__name__, port_name)
+        self.networkconfigconfig[port_name] = (port_name, 'get_port_by_name')
+        return network_models.Port(id=uuidutils.generate_uuid())
+
+    def get_port_by_net_id_device_id(self, network_id, device_id):
+        LOG.debug("Port %s no-op, get_port_by_net_id_device_id network_id %s"
+                  " device_id %s",
+                  self.__class__.__name__, network_id, device_id)
+        self.networkconfigconfig[(network_id, device_id)] = (
+            network_id, device_id, 'get_port_by_net_id_device_id')
+        return network_models.Port(id=uuidutils.generate_uuid())
+
     def failover_preparation(self, amphora):
         LOG.debug("failover %s no-op, failover_preparation, amphora id %s",
                   self.__class__.__name__, amphora.id)
@@ -176,6 +204,18 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def get_port(self, port_id):
         return self.driver.get_port(port_id)
+
+    def get_network_by_name(self, network_name):
+        return self.driver.get_network_by_name(network_name)
+
+    def get_subnet_by_name(self, subnet_name):
+        return self.driver.get_subnet_by_name(subnet_name)
+
+    def get_port_by_name(self, port_name):
+        return self.driver.get_port_by_name(port_name)
+
+    def get_port_by_net_id_device_id(self, network_id, device_id):
+        return self.driver.get_port_by_net_id_device_id(network_id, device_id)
 
     def failover_preparation(self, amphora):
         self.driver.failover_preparation(amphora)
