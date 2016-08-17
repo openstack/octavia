@@ -199,21 +199,10 @@ fi
 # For system-wide installs, DIB will automatically find the elements, so we only check local path
 DIB_ELEMENTS_PATH=${DIB_REPO_PATH:-${OCTAVIA_REPO_PATH%/*}/diskimage-builder/elements}
 
-TRIPLEO_ELEMENTS_PATH=${TRIPLEO_ELEMENTS_PATH:-${OCTAVIA_REPO_PATH%/*}/tripleo-image-elements/elements}
-
-if ! [ -d $TRIPLEO_ELEMENTS_PATH ]; then
-    SYSTEM_TRIPLEO_ELEMENTS_PATH=$(find_system_elements tripleo-image-elements)
-    if [ -z ${SYSTEM_TRIPLEO_ELEMENTS_PATH} ]; then
-        echo "ERROR: tripleo-image-elements elements directory not found at: " $TRIPLEO_ELEMENTS_PATH " Exiting."
-        exit 1
-    fi
-    TRIPLEO_ELEMENTS_PATH=${SYSTEM_TRIPLEO_ELEMENTS_PATH}
-fi
-
 if [ "$DIB_LOCAL_ELEMENTS_PATH" ]; then
-    export ELEMENTS_PATH=$DIB_ELEMENTS_PATH:$TRIPLEO_ELEMENTS_PATH:$OCTAVIA_ELEMENTS_PATH:$DIB_LOCAL_ELEMENTS_PATH
+    export ELEMENTS_PATH=$DIB_ELEMENTS_PATH:$OCTAVIA_ELEMENTS_PATH:$DIB_LOCAL_ELEMENTS_PATH
 else
-    export ELEMENTS_PATH=$DIB_ELEMENTS_PATH:$TRIPLEO_ELEMENTS_PATH:$OCTAVIA_ELEMENTS_PATH
+    export ELEMENTS_PATH=$DIB_ELEMENTS_PATH:$OCTAVIA_ELEMENTS_PATH
 fi
 
 export CLOUD_INIT_DATASOURCES=${CLOUD_INIT_DATASOURCES:-"ConfigDrive"}
