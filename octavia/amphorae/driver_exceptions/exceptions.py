@@ -70,11 +70,6 @@ class TimeOutException(AmphoraDriverError):
     message = _('contacting the amphora timed out')
 
 
-class UnavailableException(AmphoraDriverError):
-
-    message = _('the amphora is temporary unavailable')
-
-
 class DeleteFailed(AmphoraDriverError):
 
     message = _('this load balancer couldn\'t be deleted')
