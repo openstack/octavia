@@ -24,14 +24,18 @@ class TestNoopNetworkDriver(base.TestCase):
     FAKE_UUID_1 = uuidutils.generate_uuid()
     FAKE_UUID_2 = uuidutils.generate_uuid()
     FAKE_UUID_3 = uuidutils.generate_uuid()
+    FAKE_UUID_4 = uuidutils.generate_uuid()
 
     def setUp(self):
         super(TestNoopNetworkDriver, self).setUp()
         self.driver = driver.NoopNetworkDriver()
         self.port = mock.MagicMock()
         self.port_id = 88
+        self.port_name = 'port1'
         self.port.id = self.port_id
         self.network_id = self.FAKE_UUID_3
+        self.network_name = 'net1'
+        self.device_id = self.FAKE_UUID_4
         self.ip_address = "10.0.0.2"
         self.load_balancer = models.LoadBalancer()
         self.load_balancer.id = self.FAKE_UUID_2
@@ -41,6 +45,7 @@ class TestNoopNetworkDriver(base.TestCase):
         self.amphora_id = self.FAKE_UUID_1
         self.compute_id = self.FAKE_UUID_2
         self.subnet_id = self.FAKE_UUID_3
+        self.subnet_name = 'subnet1'
 
     def test_allocate_vip(self):
         self.driver.allocate_vip(self.load_balancer)
@@ -119,6 +124,37 @@ class TestNoopNetworkDriver(base.TestCase):
         self.assertEqual(
             (self.port_id, 'get_port'),
             self.driver.driver.networkconfigconfig[self.port_id]
+        )
+
+    def test_get_network_by_name(self):
+        self.driver.get_network_by_name(self.network_name)
+        self.assertEqual(
+            (self.network_name, 'get_network_by_name'),
+            self.driver.driver.networkconfigconfig[self.network_name]
+        )
+
+    def test_get_subnet_by_name(self):
+        self.driver.get_subnet_by_name(self.subnet_name)
+        self.assertEqual(
+            (self.subnet_name, 'get_subnet_by_name'),
+            self.driver.driver.networkconfigconfig[self.subnet_name]
+        )
+
+    def test_get_port_by_name(self):
+        self.driver.get_port_by_name(self.port_name)
+        self.assertEqual(
+            (self.port_name, 'get_port_by_name'),
+            self.driver.driver.networkconfigconfig[self.port_name]
+        )
+
+    def test_get_port_by_net_id_device_id(self):
+        self.driver.get_port_by_net_id_device_id(self.network_id,
+                                                 self.device_id)
+        self.assertEqual(
+            (self.network_id, self.device_id,
+             'get_port_by_net_id_device_id'),
+            self.driver.driver.networkconfigconfig[(self.network_id,
+                                                    self.device_id)]
         )
 
     def test_plug_port(self):

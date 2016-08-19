@@ -164,6 +164,28 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             LOG.exception(message)
             raise base.NetworkException(message)
 
+    def _get_resource_by_filters(self, resource_type, **filters):
+        # Filter items are unique, return the filtered item from the list.
+        try:
+            resource = getattr(self.neutron_client, 'list_%ss' %
+                               resource_type)(**filters)
+            resource = resource['%ss' % resource_type][0]
+            return getattr(utils, 'convert_%s_dict_to_model' %
+                           resource_type)(resource)
+        except neutron_client_exceptions.NotFound:
+            message = _LE('{resource_type} not found '
+                          '({resource_type} Filters: {filters}.').format(
+                resource_type=resource_type, filters=filters)
+            LOG.exception(message)
+            raise getattr(base, '%sNotFound' %
+                          resource_type.capitalize())(message)
+        except Exception:
+            message = _LE('Error retrieving {resource_type} '
+                          '({resource_type} Filters: {filters}.').format(
+                resource_type=resource_type, filters=filters)
+            LOG.exception(message)
+            raise base.NetworkException(message)
+
     def get_network(self, network_id):
         return self._get_resource('network', network_id)
 
@@ -172,3 +194,17 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
 
     def get_port(self, port_id):
         return self._get_resource('port', port_id)
+
+    def get_network_by_name(self, network_name):
+        return self._get_resource_by_filters('network', name=network_name)
+
+    def get_subnet_by_name(self, subnet_name):
+        return self._get_resource_by_filters('subnet', name=subnet_name)
+
+    def get_port_by_name(self, port_name):
+        return self._get_resource_by_filters('port', name=port_name)
+
+    def get_port_by_net_id_device_id(self, network_id, device_id):
+        return self._get_resource_by_filters('port',
+                                             network_id=network_id,
+                                             device_id=device_id)

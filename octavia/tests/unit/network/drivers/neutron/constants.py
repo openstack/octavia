@@ -19,8 +19,11 @@ class MockNovaInterface(object):
     fixed_ips = []
 
 MOCK_NETWORK_ID = '1'
+MOCK_NETWORK_NAME = 'TestNet1'
 MOCK_SUBNET_ID = '2'
+MOCK_SUBNET_NAME = 'TestSubnet1'
 MOCK_PORT_ID = '3'
+MOCK_PORT_NAME = 'TestPort1'
 MOCK_COMPUTE_ID = '4'
 MOCK_IP_ADDRESS = '10.0.0.1'
 MOCK_CIDR = '10.0.0.0/24'
@@ -31,6 +34,7 @@ MOCK_NOVA_INTERFACE.net_id = MOCK_NETWORK_ID
 MOCK_NOVA_INTERFACE.port_id = MOCK_PORT_ID
 MOCK_NOVA_INTERFACE.fixed_ips = [{'ip_address': MOCK_IP_ADDRESS}]
 MOCK_DEVICE_OWNER = 'Moctavia'
+MOCK_DEVICE_ID = 'Moctavia123'
 
 MOCK_NEUTRON_PORT = {'port': {'network_id': MOCK_NETWORK_ID,
                               'device_id': MOCK_COMPUTE_ID,
