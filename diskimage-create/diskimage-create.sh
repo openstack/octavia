@@ -254,7 +254,7 @@ if [ "$platform" = 'NAME="Ubuntu"' ]; then
     fi
 
 elif [ "$platform" = 'NAME=Fedora' ]; then
-    PKG_LIST="qemu kpartx git python-pip"
+    PKG_LIST="qemu kpartx git"
     for pkg in $PKG_LIST; do
         if ! yum list installed $pkg &> /dev/null; then
             echo "Required package " $pkg " is not installed.  Exiting."
@@ -263,7 +263,7 @@ elif [ "$platform" = 'NAME=Fedora' ]; then
     done
 else
     # centos or rhel
-        PKG_LIST="qemu-kvm qemu-img kpartx git python-pip"
+        PKG_LIST="qemu-kvm qemu-img kpartx git"
         for pkg in $PKG_LIST; do
             if ! yum list installed $pkg &> /dev/null; then
                 echo "Required package " $pkg " is not installed.  Exiting."
@@ -280,6 +280,13 @@ else
                 exit 1
             fi
         fi
+fi
+
+# pip may not be installed from package managers
+# only check that we find an executable
+if ! which pip &> /dev/null; then
+    echo "Required executable pip not found.  Exiting."
+    exit 1
 fi
 
 # "pip freeze" does not show argparse, even if it is explicitly installed,
