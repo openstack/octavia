@@ -490,3 +490,35 @@ class TestNetworkTasks(base.TestCase):
 
         mock_driver.plug_port.assert_any_call(amphora, port1)
         mock_driver.plug_port.assert_any_call(amphora, port2)
+
+    def test_plug_vip_port(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        vip_port = mock.MagicMock()
+        vrrp_port = mock.MagicMock()
+
+        amphorae_network_config = mock.MagicMock()
+        amphorae_network_config.get().vip_port = vip_port
+        amphorae_network_config.get().vrrp_port = vrrp_port
+
+        plugvipport = network_tasks.PlugVIPPort()
+        plugvipport.execute(self.amphora_mock, amphorae_network_config)
+        mock_driver.plug_port.assert_any_call(self.amphora_mock, vip_port)
+        mock_driver.plug_port.assert_any_call(self.amphora_mock, vrrp_port)
+
+        # test revert
+        plugvipport.revert(None, self.amphora_mock, amphorae_network_config)
+        mock_driver.unplug_port.assert_any_call(self.amphora_mock, vip_port)
+        mock_driver.unplug_port.assert_any_call(self.amphora_mock, vrrp_port)
+
+    def test_wait_for_port_detach(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+
+        amphora = o_data_models.Amphora(id=AMPHORA_ID,
+                                        lb_network_ip=IP_ADDRESS)
+
+        waitforportdetach = network_tasks.WaitForPortDetach()
+        waitforportdetach.execute(amphora)
+
+        mock_driver.wait_for_port_detach.assert_called_once_with(amphora)

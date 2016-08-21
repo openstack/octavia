@@ -59,7 +59,7 @@ class TestAmphoraDriverTasks(base.TestCase):
 
     def setUp(self):
 
-        _LB_mock.amphorae = _amphora_mock
+        _LB_mock.amphorae = [_amphora_mock]
         _LB_mock.id = LB_ID
         super(TestAmphoraDriverTasks, self).setUp()
 
@@ -307,10 +307,40 @@ class TestAmphoraDriverTasks(base.TestCase):
 
         amphorae_net_config_mock = mock.Mock()
         amphora_post_vip_plug_obj = amphora_driver_tasks.AmphoraPostVIPPlug()
-        amphora_post_vip_plug_obj.execute(_LB_mock, amphorae_net_config_mock)
+        amphora_post_vip_plug_obj.execute(_amphora_mock,
+                                          _LB_mock,
+                                          amphorae_net_config_mock)
 
         mock_driver.post_vip_plug.assert_called_once_with(
-            _LB_mock, amphorae_net_config_mock)
+            _amphora_mock, _LB_mock, amphorae_net_config_mock)
+
+        # Test revert
+        amp = amphora_post_vip_plug_obj.revert(None, _amphora_mock, _LB_mock)
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            _session_mock,
+            id=LB_ID,
+            provisioning_status=constants.ERROR)
+
+        self.assertIsNone(amp)
+
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    def test_amphorae_post_vip_plug(self,
+                                    mock_loadbalancer_repo_update,
+                                    mock_driver,
+                                    mock_generate_uuid,
+                                    mock_log,
+                                    mock_get_session,
+                                    mock_listener_repo_get,
+                                    mock_listener_repo_update,
+                                    mock_amphora_repo_update):
+
+        amphorae_net_config_mock = mock.Mock()
+        amphora_post_vip_plug_obj = amphora_driver_tasks.AmphoraePostVIPPlug()
+        amphora_post_vip_plug_obj.execute(_LB_mock,
+                                          amphorae_net_config_mock)
+
+        mock_driver.post_vip_plug.assert_called_once_with(
+            _amphora_mock, _LB_mock, amphorae_net_config_mock)
 
         # Test revert
         amp = amphora_post_vip_plug_obj.revert(None, _LB_mock)

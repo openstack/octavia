@@ -86,7 +86,10 @@ networking_opts = [
                       'networking service.')),
     cfg.IntOpt('retry_interval', default=1,
                help=_('Seconds to wait before retrying an action with the '
-                      'networking service.'))
+                      'networking service.')),
+    cfg.IntOpt('port_detach_timeout', default=300,
+               help=_('Seconds to wait for a port to detach from an '
+                      'amphora.'))
 ]
 
 healthmanager_opts = [

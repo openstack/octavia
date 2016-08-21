@@ -204,9 +204,13 @@ class GetMemberPorts(BaseNetworkTask):
                 continue
             port.network = self.network_driver.get_network(port.network_id)
             for fixed_ip in port.fixed_ips:
+                if amphora.lb_network_ip == fixed_ip.ip_address:
+                    break
                 fixed_ip.subnet = self.network_driver.get_subnet(
                     fixed_ip.subnet_id)
-            member_ports.append(port)
+            # Only add the port to the list if the IP wasn't the mgmt IP
+            else:
+                member_ports.append(port)
         return member_ports
 
 
@@ -399,3 +403,47 @@ class PlugPorts(BaseNetworkTask):
                       '{compute_id}.'.format(port_id=port.id,
                                              compute_id=amphora.compute_id))
             self.network_driver.plug_port(amphora, port)
+
+
+class PlugVIPPort(BaseNetworkTask):
+    """Task to plug a VIP into a compute instance."""
+
+    def execute(self, amphora, amphorae_network_config):
+        vip_port = amphorae_network_config.get(amphora.id).vip_port
+        vrrp_port = amphorae_network_config.get(amphora.id).vrrp_port
+        LOG.debug('Plugging VIP VRRP port ID: {port_id} into compute '
+                  'instance: {compute_id}.'.format(
+                      port_id=vrrp_port.id, compute_id=amphora.compute_id))
+        self.network_driver.plug_port(amphora, vrrp_port)
+        LOG.debug('Plugging VIP port ID: {port_id} into compute instance: '
+                  '{compute_id}.'.format(port_id=vip_port.id,
+                                         compute_id=amphora.compute_id))
+        self.network_driver.plug_port(amphora, vip_port)
+
+    def revert(self, result, amphora, amphorae_network_config,
+               *args, **kwargs):
+        vip_port = None
+        try:
+            vip_port = amphorae_network_config.get(amphora.id).vip_port
+            self.network_driver.unplug_port(amphora, vip_port)
+        except Exception:
+            LOG.warning(_LW('Failed to unplug vip port: {port} '
+                            'from amphora: {amp}').format(port=vip_port.id,
+                                                          amp=amphora.id))
+        vrrp_port = None
+        try:
+            vrrp_port = amphorae_network_config.get(amphora.id).vrrp_port
+            self.network_driver.unplug_port(amphora, vrrp_port)
+        except Exception:
+            LOG.warning(_LW('Failed to unplug vrrp port: {port} '
+                            'from amphora: {amp}').format(port=vrrp_port.id,
+                                                          amp=amphora.id))
+
+
+class WaitForPortDetach(BaseNetworkTask):
+    """Task to wait for the neutron ports to detach from an amphora."""
+
+    def execute(self, amphora):
+        LOG.debug('Waiting for ports to detach from amphora: '
+                  '{amp_id}.'.format(amp_id=amphora.id))
+        self.network_driver.wait_for_port_detach(amphora)

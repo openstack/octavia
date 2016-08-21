@@ -283,13 +283,6 @@ class AmphoraFlows(object):
 
         failover_amphora_flow = linear_flow.Flow(
             constants.FAILOVER_AMPHORA_FLOW)
-        failover_amphora_flow.add(
-            network_tasks.RetrievePortIDsOnAmphoraExceptLBNetwork(
-                rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
-                requires=constants.AMPHORA, provides=constants.PORTS))
-        failover_amphora_flow.add(network_tasks.FailoverPreparationForAmphora(
-            rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
-            requires=constants.AMPHORA))
 
         # Delete the old amphora
         failover_amphora_flow.add(
@@ -301,6 +294,9 @@ class AmphoraFlows(object):
                 rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
                 requires=constants.AMPHORA))
         failover_amphora_flow.add(compute_tasks.ComputeDelete(
+            rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
+            requires=constants.AMPHORA))
+        failover_amphora_flow.add(network_tasks.WaitForPortDetach(
             rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
             requires=constants.AMPHORA))
         failover_amphora_flow.add(
@@ -337,23 +333,25 @@ class AmphoraFlows(object):
             provides=constants.AMPHORAE_NETWORK_CONFIG))
         failover_amphora_flow.add(database_tasks.GetListenersFromLoadbalancer(
             requires=constants.LOADBALANCER, provides=constants.LISTENERS))
-        failover_amphora_flow.add(database_tasks.GetVipFromLoadbalancer(
-            requires=constants.LOADBALANCER, provides=constants.VIP))
+
         failover_amphora_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=(constants.LOADBALANCER, constants.LISTENERS)))
-        failover_amphora_flow.add(network_tasks.PlugPorts(
-            requires=(constants.AMPHORA, constants.PORTS)))
+
+        # Plug the VIP ports into the new amphora
+        failover_amphora_flow.add(network_tasks.PlugVIPPort(
+            requires=(constants.AMPHORA, constants.AMPHORAE_NETWORK_CONFIG)))
         failover_amphora_flow.add(amphora_driver_tasks.AmphoraPostVIPPlug(
-            requires=(constants.LOADBALANCER,
+            requires=(constants.AMPHORA, constants.LOADBALANCER,
                       constants.AMPHORAE_NETWORK_CONFIG)))
-        failover_amphora_flow.add(
-            network_tasks.GetMemberPorts(
-                requires=(constants.LOADBALANCER, constants.AMPHORA),
-                provides=constants.MEMBER_PORTS
-            ))
-        failover_amphora_flow.add(amphora_driver_tasks.AmphoraPostNetworkPlug(
-            rebind={constants.PORTS: constants.MEMBER_PORTS},
-            requires=(constants.AMPHORA, constants.PORTS)))
+
+        # Plug the member networks into the new amphora
+        failover_amphora_flow.add(network_tasks.CalculateDelta(
+            requires=(constants.LOADBALANCER),
+            provides=constants.DELTAS))
+        failover_amphora_flow.add(network_tasks.HandleNetworkDeltas(
+            requires=constants.DELTAS, provides=constants.ADDED_PORTS))
+        failover_amphora_flow.add(amphora_driver_tasks.AmphoraePostNetworkPlug(
+            requires=(constants.LOADBALANCER, constants.ADDED_PORTS)))
 
         # Handle the amphora role and VRRP if necessary
         if role == constants.ROLE_MASTER:

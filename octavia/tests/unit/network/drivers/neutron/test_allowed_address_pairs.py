@@ -17,6 +17,8 @@ import copy
 import mock
 from neutronclient.common import exceptions as neutron_exceptions
 from novaclient.client import exceptions as nova_exceptions
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.common import clients
@@ -52,6 +54,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
     HA_PORT_ID = "8"
     HA_IP = "12.0.0.2"
     PORT_ID = uuidutils.generate_uuid()
+    DEVICE_ID = uuidutils.generate_uuid()
 
     def setUp(self):
         super(TestAllowedAddressPairsDriver, self).setUp()
@@ -586,8 +589,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             lb_network_ip=self.LB_NET_IP, ha_port_id=self.HA_PORT_ID,
             ha_ip=self.HA_IP)
         self.driver.failover_preparation(amphora)
-        port_update.assert_called_once_with(ports['ports'][1].get('id'),
-                                            {'port': {'device_id': ''}})
+        self.assertFalse(port_update.called)
         self.driver.dns_integration_enabled = original_dns_integration_state
 
     def test_failover_preparation_dns_integration(self):
@@ -611,8 +613,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             ha_ip=self.HA_IP)
         self.driver.failover_preparation(amphora)
         port_update.assert_called_once_with(ports['ports'][1].get('id'),
-                                            {'port': {'dns_name': '',
-                                             'device_id': ''}})
+                                            {'port': {'dns_name': ''}})
         self.driver.dns_integration_enabled = original_dns_integration_state
 
     def _failover_show_port_side_effect(self, port_id):
@@ -712,3 +713,71 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         expected_subnet_id = fake_subnet['subnet']['id']
         self.assertEqual(expected_subnet_id, config.ha_subnet.id)
         self.assertEqual(expected_subnet_id, config.vrrp_subnet.id)
+
+    @mock.patch('time.sleep')
+    def test_wait_for_port_detach(self, mock_sleep):
+        amphora = data_models.Amphora(
+            id=self.AMPHORA_ID, load_balancer_id=self.LB_ID,
+            compute_id=self.COMPUTE_ID, status=self.ACTIVE,
+            lb_network_ip=self.LB_NET_IP, ha_port_id=self.HA_PORT_ID,
+            ha_ip=self.HA_IP)
+        ports = {"ports": [
+            {"fixed_ips": [{"subnet_id": self.SUBNET_ID_1,
+                            "ip_address": self.IP_ADDRESS_1}],
+             "id": self.FIXED_IP_ID_1, "network_id": self.NETWORK_ID_1},
+            {"fixed_ips": [{"subnet_id": self.SUBNET_ID_2,
+                            "ip_address": self.IP_ADDRESS_2}],
+             "id": self.FIXED_IP_ID_2, "network_id": self.NETWORK_ID_2}]}
+        show_port_1_without_device_id = {"fixed_ips": [
+            {"subnet_id": self.SUBNET_ID_1, "ip_address": self.IP_ADDRESS_1}],
+            "id": self.FIXED_IP_ID_1, "network_id": self.NETWORK_ID_1,
+            "device_id": ''}
+        show_port_2_with_device_id = {"fixed_ips": [
+            {"subnet_id": self.SUBNET_ID_2, "ip_address": self.IP_ADDRESS_2}],
+            "id": self.FIXED_IP_ID_2, "network_id": self.NETWORK_ID_2,
+            "device_id": self.DEVICE_ID}
+        show_port_2_without_device_id = {"fixed_ips": [
+            {"subnet_id": self.SUBNET_ID_2, "ip_address": self.IP_ADDRESS_2}],
+            "id": self.FIXED_IP_ID_2, "network_id": self.NETWORK_ID_2,
+            "device_id": None}
+        self.driver.neutron_client.list_ports.return_value = ports
+        port_mock = mock.MagicMock()
+        port_mock.get = mock.Mock(
+            side_effect=[show_port_1_without_device_id,
+                         show_port_2_with_device_id,
+                         show_port_2_with_device_id,
+                         show_port_2_without_device_id])
+        self.driver.neutron_client.show_port.return_value = port_mock
+        self.driver.wait_for_port_detach(amphora)
+        self.assertEqual(1, mock_sleep.call_count)
+
+    @mock.patch('time.time')
+    @mock.patch('time.sleep')
+    def test_wait_for_port_detach_timeout(self, mock_sleep, mock_time):
+        mock_time.side_effect = [1, 2, 6]
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group="networking", port_detach_timeout=5)
+        amphora = data_models.Amphora(
+            id=self.AMPHORA_ID, load_balancer_id=self.LB_ID,
+            compute_id=self.COMPUTE_ID, status=self.ACTIVE,
+            lb_network_ip=self.LB_NET_IP, ha_port_id=self.HA_PORT_ID,
+            ha_ip=self.HA_IP)
+        ports = {"ports": [
+            {"fixed_ips": [{"subnet_id": self.SUBNET_ID_1,
+                            "ip_address": self.IP_ADDRESS_1}],
+             "id": self.FIXED_IP_ID_1, "network_id": self.NETWORK_ID_1},
+            {"fixed_ips": [{"subnet_id": self.SUBNET_ID_2,
+                            "ip_address": self.IP_ADDRESS_2}],
+             "id": self.FIXED_IP_ID_2, "network_id": self.NETWORK_ID_2}]}
+        show_port_1_with_device_id = {"fixed_ips": [
+            {"subnet_id": self.SUBNET_ID_2, "ip_address": self.IP_ADDRESS_2}],
+            "id": self.FIXED_IP_ID_2, "network_id": self.NETWORK_ID_2,
+            "device_id": self.DEVICE_ID}
+        self.driver.neutron_client.list_ports.return_value = ports
+        port_mock = mock.MagicMock()
+        port_mock.get = mock.Mock(
+            return_value=show_port_1_with_device_id)
+        self.driver.neutron_client.show_port.return_value = port_mock
+        self.assertRaises(network_base.TimeoutException,
+                          self.driver.wait_for_port_detach,
+                          amphora)

@@ -300,7 +300,7 @@ class LoadBalancerFlows(object):
         new_LB_net_subflow.add(network_tasks.GetAmphoraeNetworkConfigs(
             requires=constants.LOADBALANCER,
             provides=constants.AMPHORAE_NETWORK_CONFIG))
-        new_LB_net_subflow.add(amphora_driver_tasks.AmphoraPostVIPPlug(
+        new_LB_net_subflow.add(amphora_driver_tasks.AmphoraePostVIPPlug(
             requires=(constants.LOADBALANCER,
                       constants.AMPHORAE_NETWORK_CONFIG)))
 

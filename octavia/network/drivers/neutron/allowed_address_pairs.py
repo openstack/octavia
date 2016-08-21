@@ -83,13 +83,24 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             if interface.network_id == network_id:
                 return interface
 
-    def _plug_amphora_vip(self, compute_id, network_id):
+    def _plug_amphora_vip(self, amphora, network_id):
+        # We need a vip port owned by Octavia for Act/Stby and failover
         try:
-            interface = self.plug_network(compute_id, network_id)
+            port = {'port': {'name': 'octavia-lb-vip-' + amphora.id,
+                             'network_id': network_id,
+                             'admin_state_up': True,
+                             'device_owner': OCTAVIA_OWNER}}
+            new_port = self.neutron_client.create_port(port)
+            new_port = utils.convert_port_dict_to_model(new_port)
+
+            LOG.debug('Created vip port: {port_id} for amphora: {amp}'.format(
+                port_id=new_port.id, amp=amphora.id))
+
+            interface = self.plug_port(amphora, new_port)
         except Exception:
             message = _LE('Error plugging amphora (compute_id: {compute_id}) '
                           'into vip network {network_id}.').format(
-                              compute_id=compute_id,
+                              compute_id=amphora.compute_id,
                               network_id=network_id)
             LOG.exception(message)
             raise base.PlugVIPException(message)
@@ -293,8 +304,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             interface = self._get_plugged_interface(amphora.compute_id,
                                                     subnet.network_id)
             if not interface:
-                interface = self._plug_amphora_vip(amphora.compute_id,
-                                                   subnet.network_id)
+                interface = self._plug_amphora_vip(amphora, subnet.network_id)
+
             self._add_vip_address_pair(interface.port_id, vip.ip_address)
             if self.sec_grp_enabled:
                 self._add_vip_security_group_to_port(load_balancer.id,
@@ -457,22 +468,20 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
                 if self.dns_integration_enabled:
                     self.neutron_client.update_port(port.id,
-                                                    {'port': {'device_id': '',
-                                                              'dns_name': ''}})
-                else:
-                    self.neutron_client.update_port(port.id,
-                                                    {'port':
-                                                        {'device_id': ''}})
+                                                    {'port': {'dns_name': ''}})
 
             except (neutron_client_exceptions.NotFound,
                     neutron_client_exceptions.PortNotFoundClient):
                 raise base.PortNotFound()
 
     def plug_port(self, amphora, port):
+        plugged_interface = None
         try:
-            self.nova_client.servers.interface_attach(
+            interface = self.nova_client.servers.interface_attach(
                 server=amphora.compute_id, net_id=None,
                 fixed_ip=None, port_id=port.id)
+            plugged_interface = self._nova_interface_to_octavia_interface(
+                amphora.compute_id, interface)
         except nova_client_exceptions.NotFound as e:
             if 'Instance' in e.message:
                 raise base.AmphoraNotFound(e.message)
@@ -483,6 +492,11 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         except nova_client_exceptions.Conflict:
             LOG.info(_LI('Port %(portid)s is already plugged, '
                      'skipping') % {'portid': port.id})
+            plugged_interface = n_data_models.Interface(
+                compute_id=amphora.compute_id,
+                network_id=port.network_id,
+                port_id=port.id,
+                fixed_ips=port.fixed_ips)
         except Exception:
             message = _LE('Error plugging amphora (compute_id: '
                           '{compute_id}) into port '
@@ -491,6 +505,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                               port_id=port.id)
             LOG.exception(message)
             raise base.PlugNetworkException(message)
+
+        return plugged_interface
 
     def get_network_configs(self, loadbalancer):
         vip_subnet = self.get_subnet(loadbalancer.vip.subnet_id)
@@ -516,3 +532,54 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                     ha_port=ha_port
                 )
         return amp_configs
+
+    def wait_for_port_detach(self, amphora):
+        """Waits for the amphora ports device_id to be unset.
+
+        This method waits for the ports on an amphora device_id
+        parameter to be '' or None which signifies that nova has
+        finished detaching the port from the instance.
+
+        :param amphora: Amphora to wait for ports to detach.
+        :returns: None
+        :raises TimeoutException: Port did not detach in interval.
+        :raises PortNotFound: Port was not found by neutron.
+        """
+        interfaces = self.get_plugged_networks(compute_id=amphora.compute_id)
+
+        ports = []
+        port_detach_timeout = CONF.networking.port_detach_timeout
+        for interface_ in interfaces:
+            port = self.get_port(port_id=interface_.port_id)
+            ips = port.fixed_ips
+            lb_network = False
+            for ip in ips:
+                if ip.ip_address == amphora.lb_network_ip:
+                    lb_network = True
+            if not lb_network:
+                ports.append(port)
+
+        for port in ports:
+            try:
+                neutron_port = self.neutron_client.show_port(
+                    port.id).get('port')
+                device_id = neutron_port['device_id']
+                start = int(time.time())
+
+                while device_id:
+                    time.sleep(CONF.networking.retry_interval)
+                    neutron_port = self.neutron_client.show_port(
+                        port.id).get('port')
+                    device_id = neutron_port['device_id']
+
+                    timed_out = int(time.time()) - start >= port_detach_timeout
+
+                    if device_id and timed_out:
+                        message = ('Port %s failed to detach (device_id %s) '
+                                   'within the required time (%s s).' %
+                                   (port.id, device_id, port_detach_timeout))
+                        raise base.TimeoutException(message)
+
+            except (neutron_client_exceptions.NotFound,
+                    neutron_client_exceptions.PortNotFoundClient):
+                    pass

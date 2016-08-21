@@ -280,6 +280,8 @@ Use the following options in the /etc/octavia/octavia.conf file.
      - (IntOpt) The maximum attempts to retry an action with the networking service.
    * - ``retry_interval`` = ``1``
      - (IntOpt) Seconds to wait before retrying an action with the networking service.
+   * - ``port_detach_timeout`` = ``300``
+     - (IntOpt) Seconds to wait for a port to detach from an amphora.
    * - **[neutron]**
      -
    * - ``ca_certificates_file`` = ``None``

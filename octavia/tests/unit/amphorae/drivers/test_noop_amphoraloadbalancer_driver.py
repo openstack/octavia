@@ -115,7 +115,7 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
                              self.amphora.id, self.port.id)])
 
     def test_post_vip_plug(self):
-        self.driver.post_vip_plug(self.load_balancer,
+        self.driver.post_vip_plug(self.amphora, self.load_balancer,
                                   self.amphorae_net_configs)
         expected_method_and_args = (self.load_balancer.id,
                                     self.amphorae_net_configs,

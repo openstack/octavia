@@ -72,7 +72,7 @@ class TestPlug(base.TestCase):
         mock_flask.jsonify.assert_any_call({
             'message': 'OK',
             'details': 'VIP {vip} plugged on interface {interface}'.format(
-                vip=FAKE_IP_IPV4, interface=FAKE_INTERFACE)
+                vip=FAKE_IP_IPV4, interface='eth1')
         })
 
     @mock.patch.object(plug, "flask")
@@ -96,7 +96,7 @@ class TestPlug(base.TestCase):
         mock_flask.jsonify.assert_any_call({
             'message': 'OK',
             'details': 'VIP {vip} plugged on interface {interface}'.format(
-                vip=FAKE_IP_IPV6_EXPANDED, interface=FAKE_INTERFACE)
+                vip=FAKE_IP_IPV6_EXPANDED, interface='eth1')
         })
 
     @mock.patch.object(plug, "flask")
@@ -118,3 +118,17 @@ class TestPlug(base.TestCase):
                 mac_address=FAKE_MAC_ADDRESS
             )
         mock_flask.jsonify.assert_any_call({'message': 'Invalid VIP'})
+
+    @mock.patch('pyroute2.NetNS')
+    def test__netns_interface_exists(self, mock_netns):
+
+        netns_handle = mock_netns.return_value.__enter__.return_value
+
+        netns_handle.get_links.return_value = [{
+            'attrs': [['IFLA_ADDRESS', '123']]}]
+
+        # Interface is found in netns
+        self.assertTrue(plug._netns_interface_exists('123'))
+
+        # Interface is not found in netns
+        self.assertFalse(plug._netns_interface_exists('321'))

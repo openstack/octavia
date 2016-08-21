@@ -113,27 +113,32 @@ class HaproxyAmphoraLoadBalancerDriver(
     def finalize_amphora(self, amphora):
         pass
 
-    def post_vip_plug(self, load_balancer, amphorae_network_config):
-        for amp in load_balancer.amphorae:
-            if amp.status != constants.DELETED:
-                subnet = amphorae_network_config.get(amp.id).vip_subnet
-                # NOTE(blogan): using the vrrp port here because that
-                # is what the allowed address pairs network driver sets
-                # this particular port to.  This does expose a bit of
-                # tight coupling between the network driver and amphora
-                # driver.  We will need to revisit this to try and remove
-                # this tight coupling.
-                # NOTE (johnsom): I am loading the vrrp_ip into the
-                # net_info structure here so that I don't break
-                # compatibility with old amphora agent versions.
-                port = amphorae_network_config.get(amp.id).vrrp_port
-                net_info = {'subnet_cidr': subnet.cidr,
-                            'gateway': subnet.gateway_ip,
-                            'mac_address': port.mac_address,
-                            'vrrp_ip': amp.vrrp_ip}
-                self.client.plug_vip(amp,
+    def post_vip_plug(self, amphora, load_balancer, amphorae_network_config):
+        if amphora.status != constants.DELETED:
+            subnet = amphorae_network_config.get(amphora.id).vip_subnet
+            # NOTE(blogan): using the vrrp port here because that
+            # is what the allowed address pairs network driver sets
+            # this particular port to.  This does expose a bit of
+            # tight coupling between the network driver and amphora
+            # driver.  We will need to revisit this to try and remove
+            # this tight coupling.
+            # NOTE (johnsom): I am loading the vrrp_ip into the
+            # net_info structure here so that I don't break
+            # compatibility with old amphora agent versions.
+
+            port = amphorae_network_config.get(amphora.id).vrrp_port
+            net_info = {'subnet_cidr': subnet.cidr,
+                        'gateway': subnet.gateway_ip,
+                        'mac_address': port.mac_address,
+                        'vrrp_ip': amphora.vrrp_ip}
+            try:
+                self.client.plug_vip(amphora,
                                      load_balancer.vip.ip_address,
                                      net_info)
+            except exc.Conflict:
+                LOG.warning(_LW('VIP with MAC {mac} already exists on '
+                                'amphora, skipping post_vip_plug').format(
+                    mac=port.mac_address))
 
     def post_network_plug(self, amphora, port):
         fixed_ips = []
@@ -143,7 +148,12 @@ class HaproxyAmphoraLoadBalancerDriver(
             fixed_ips.append(ip)
         port_info = {'mac_address': port.mac_address,
                      'fixed_ips': fixed_ips}
-        self.client.plug_network(amphora, port_info)
+        try:
+            self.client.plug_network(amphora, port_info)
+        except exc.Conflict:
+            LOG.warning(_LW('Network with MAC {mac} already exists on '
+                            'amphora, skipping post_network_plug').format(
+                mac=port.mac_address))
 
     def get_vrrp_interface(self, amphora):
         return self.client.get_interface(amphora, amphora.vrrp_ip)['interface']
