@@ -347,12 +347,10 @@ if [ "$AMP_BASEOS" = "ubuntu" ]; then
     AMP_element_sequence="$AMP_element_sequence rebind-sshd"
     AMP_element_sequence="$AMP_element_sequence no-resolvconf"
     AMP_element_sequence="$AMP_element_sequence amphora-agent-ubuntu"
-    AMP_element_sequence="$AMP_element_sequence pyroute2"
     AMP_element_sequence="$AMP_element_sequence keepalived-octavia-ubuntu"
 else
     AMP_element_sequence="$AMP_element_sequence no-resolvconf"
     AMP_element_sequence="$AMP_element_sequence amphora-agent"
-    AMP_element_sequence="$AMP_element_sequence pyroute2"
     AMP_element_sequence="$AMP_element_sequence keepalived-octavia"
 fi
 
