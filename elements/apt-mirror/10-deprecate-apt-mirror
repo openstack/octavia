@@ -1,0 +1,3 @@
+if [ -n "${UBUNTU_MIRROR:-}" ]; then
+    echo "DEPRECATED WARNING: Use of apt-mirror element is deprecated. See http://docs.openstack.org/developer/diskimage-builder/elements/ubuntu/README.html and http://docs.openstack.org/developer/diskimage-builder/elements/apt-sources/README.html for alternate methods of setting an ubuntu mirror."
+fi
