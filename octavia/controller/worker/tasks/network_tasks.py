@@ -409,27 +409,14 @@ class PlugVIPPort(BaseNetworkTask):
     """Task to plug a VIP into a compute instance."""
 
     def execute(self, amphora, amphorae_network_config):
-        vip_port = amphorae_network_config.get(amphora.id).vip_port
         vrrp_port = amphorae_network_config.get(amphora.id).vrrp_port
         LOG.debug('Plugging VIP VRRP port ID: {port_id} into compute '
                   'instance: {compute_id}.'.format(
                       port_id=vrrp_port.id, compute_id=amphora.compute_id))
         self.network_driver.plug_port(amphora, vrrp_port)
-        LOG.debug('Plugging VIP port ID: {port_id} into compute instance: '
-                  '{compute_id}.'.format(port_id=vip_port.id,
-                                         compute_id=amphora.compute_id))
-        self.network_driver.plug_port(amphora, vip_port)
 
     def revert(self, result, amphora, amphorae_network_config,
                *args, **kwargs):
-        vip_port = None
-        try:
-            vip_port = amphorae_network_config.get(amphora.id).vip_port
-            self.network_driver.unplug_port(amphora, vip_port)
-        except Exception:
-            LOG.warning(_LW('Failed to unplug vip port: {port} '
-                            'from amphora: {amp}').format(port=vip_port.id,
-                                                          amp=amphora.id))
         vrrp_port = None
         try:
             vrrp_port = amphorae_network_config.get(amphora.id).vrrp_port
