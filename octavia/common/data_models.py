@@ -146,6 +146,26 @@ class ListenerStatistics(BaseDataModel):
         self.total_connections = total_connections
         self.request_errors = request_errors
 
+    def get_stats(self):
+        stats = {
+            'bytes_in': self.bytes_in,
+            'bytes_out': self.bytes_out,
+            'active_connections': self.active_connections,
+            'total_connections': self.total_connections,
+            'request_errors': self.request_errors,
+        }
+        return stats
+
+    def __iadd__(self, other):
+
+        if isinstance(other, ListenerStatistics):
+            self.bytes_in += other.bytes_in
+            self.bytes_out += other.bytes_out
+            self.request_errors += other.request_errors
+            self.total_connections += other.total_connections
+
+        return self
+
 
 class HealthMonitor(BaseDataModel):
 

@@ -21,6 +21,7 @@ import sqlalchemy
 from stevedore import driver as stevedore_driver
 
 from octavia.common import constants
+from octavia.common import stats
 from octavia.controller.healthmanager import update_serializer
 from octavia.controller.queue import event_queue
 from octavia.db import api as db_api
@@ -211,11 +212,10 @@ class UpdateHealthDb(object):
                 LOG.error(_LE("Load balancer %s is not in DB"), lb_id)
 
 
-class UpdateStatsDb(object):
+class UpdateStatsDb(stats.StatsMixin):
 
     def __init__(self):
         super(UpdateStatsDb, self).__init__()
-        self.listener_stats_repo = repo.ListenerStatisticsRepository()
         self.event_streamer = event_queue.EventStreamerNeutron()
 
     def emit(self, info_type, info_id, info_obj):
@@ -268,4 +268,7 @@ class UpdateStatsDb(object):
                       listener_id, amphora_id, stats)
             self.listener_stats_repo.replace(
                 session, listener_id, amphora_id, **stats)
-            self.emit('listener_stats', listener_id, stats)
+
+            listener_stats = self.get_listener_stats(session, listener_id)
+            self.emit(
+                'listener_stats', listener_id, listener_stats.get_stats())

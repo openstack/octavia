@@ -30,6 +30,7 @@ LOG = logging.getLogger(__name__)
 class BaseController(rest.RestController):
 
     def __init__(self):
+        super(BaseController, self).__init__()
         self.repositories = repositories.Repositories()
         self.handler = stevedore_driver.DriverManager(
             namespace='octavia.api.handlers',

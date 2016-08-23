@@ -457,13 +457,19 @@ class TestUpdateStatsDb(base.TestCase):
         self.listener_stats_repo = mock.MagicMock()
         self.sm.listener_stats_repo = self.listener_stats_repo
 
-        self.bytes_in = random.randrange(1000000000)
-        self.bytes_out = random.randrange(1000000000)
-        self.request_errors = random.randrange(1000000000)
-        self.active_conns = random.randrange(1000000000)
-        self.total_conns = random.randrange(1000000000)
         self.loadbalancer_id = uuidutils.generate_uuid()
         self.listener_id = uuidutils.generate_uuid()
+
+        self.listener_stats = data_models.ListenerStatistics(
+            listener_id=self.listener_id,
+            bytes_in=random.randrange(1000000000),
+            bytes_out=random.randrange(1000000000),
+            active_connections=random.randrange(1000000000),
+            total_connections=random.randrange(1000000000),
+            request_errors=random.randrange(1000000000))
+
+        self.sm.get_listener_stats = mock.MagicMock(
+            return_value=self.listener_stats)
 
     @mock.patch('octavia.db.api.get_session')
     def test_update_stats(self, session):
@@ -474,11 +480,11 @@ class TestUpdateStatsDb(base.TestCase):
                 self.listener_id: {
                     "status": constants.OPEN,
                     "stats": {
-                        "ereq": self.request_errors,
-                        "conns": self.active_conns,
-                        "totconns": self.total_conns,
-                        "rx": self.bytes_in,
-                        "tx": self.bytes_out,
+                        "ereq": self.listener_stats.request_errors,
+                        "conns": self.listener_stats.active_connections,
+                        "totconns": self.listener_stats.total_connections,
+                        "rx": self.listener_stats.bytes_in,
+                        "tx": self.listener_stats.bytes_out,
                     },
                     "pools": {
                         "pool-id-1": {
@@ -496,17 +502,20 @@ class TestUpdateStatsDb(base.TestCase):
 
         self.listener_stats_repo.replace.assert_called_once_with(
             'blah', self.listener_id, self.loadbalancer_id,
-            bytes_in=self.bytes_in, bytes_out=self.bytes_out,
-            active_connections=self.active_conns,
-            total_connections=self.total_conns,
-            request_errors=self.request_errors)
+            bytes_in=self.listener_stats.bytes_in,
+            bytes_out=self.listener_stats.bytes_out,
+            active_connections=self.listener_stats.active_connections,
+            total_connections=self.listener_stats.total_connections,
+            request_errors=self.listener_stats.request_errors)
         self.event_client.cast.assert_called_once_with(
             {}, 'update_info', container={
                 'info_type': 'listener_stats',
                 'info_id': self.listener_id,
                 'info_payload': {
-                    'bytes_in': self.bytes_in,
-                    'total_connections': self.total_conns,
-                    'active_connections': self.active_conns,
-                    'bytes_out': self.bytes_out,
-                    'request_errors': self.request_errors}})
+                    'bytes_in': self.listener_stats.bytes_in,
+                    'total_connections':
+                        self.listener_stats.total_connections,
+                    'active_connections':
+                        self.listener_stats.active_connections,
+                    'bytes_out': self.listener_stats.bytes_out,
+                    'request_errors': self.listener_stats.request_errors}})
