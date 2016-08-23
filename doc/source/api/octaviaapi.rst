@@ -168,6 +168,42 @@ Retrieve details of a load balancer.
     }
 
 
+List Load Balancer Statistics
+*****************************
+
+Retrieve the stats of a load balancer.
+
++----------------+-----------------------------------------------------------+
+| Request Type   | ``GET``                                                   |
++----------------+-----------------------------------------------------------+
+| Endpoint       | ``URL/v1/loadbalancers/{lb_id}/stats``                    |
++----------------+---------+-------------------------------------------------+
+|                | Success | 200                                             |
+| Response Codes +---------+-------------------------------------------------+
+|                | Error   | 401, 404, 500                                   |
++----------------+---------+-------------------------------------------------+
+
+**Response Example**::
+
+    {
+        "loadbalancer": {
+            "bytes_in": 0,
+            "bytes_out": 0,
+            "active_connections": 0,
+            "total_connections": 0,
+            "request_errors": 0,
+            "listeners": [{
+                "id": "uuid"
+                "bytes_in": 0,
+                "bytes_out": 0,
+                "active_connections": 0,
+                "total_connections": 0,
+                "request_errors": 0,
+            }]
+        }
+    }
+
+
 Create Load Balancer
 ********************
 

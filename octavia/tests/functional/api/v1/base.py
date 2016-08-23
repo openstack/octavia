@@ -31,6 +31,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     BASE_PATH = '/v1'
     LBS_PATH = '/loadbalancers'
     LB_PATH = LBS_PATH + '/{lb_id}'
+    LB_STATS_PATH = LB_PATH + '/stats'
     LISTENERS_PATH = LB_PATH + '/listeners'
     LISTENER_PATH = LISTENERS_PATH + '/{listener_id}'
     LISTENER_STATS_PATH = LISTENER_PATH + '/stats'

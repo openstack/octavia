@@ -24,6 +24,7 @@ import sqlalchemy
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.controller.healthmanager import update_db
+from octavia.db import models as db_models
 from octavia.tests.unit import base
 
 
@@ -468,14 +469,33 @@ class TestUpdateStatsDb(base.TestCase):
             total_connections=random.randrange(1000000000),
             request_errors=random.randrange(1000000000))
 
-        self.sm.get_listener_stats = mock.MagicMock(
-            return_value=self.listener_stats)
+        self.sm.get_listener_stats = mock.MagicMock()
+        self.sm.get_listener_stats.return_value = self.listener_stats
+
+        self.loadbalancer_id = uuidutils.generate_uuid()
+        self.amphora_id = uuidutils.generate_uuid()
+        self.listener_id = uuidutils.generate_uuid()
+
+        self.listener = db_models.Listener(
+            load_balancer_id=self.loadbalancer_id)
+
+        self.listener_repo = mock.MagicMock()
+        self.sm.repo_listener = self.listener_repo
+        self.sm.repo_listener.get.return_value = self.listener
+
+        self.loadbalancer_repo = mock.MagicMock()
+        self.sm.repo_loadbalancer = self.loadbalancer_repo
+
+        self.loadbalancer = db_models.LoadBalancer(
+            id=self.loadbalancer_id,
+            listeners=[self.listener])
+        self.loadbalancer_repo.get.return_value = self.loadbalancer
 
     @mock.patch('octavia.db.api.get_session')
     def test_update_stats(self, session):
 
         health = {
-            "id": self.loadbalancer_id,
+            "id": self.amphora_id,
             "listeners": {
                 self.listener_id: {
                     "status": constants.OPEN,
@@ -501,16 +521,30 @@ class TestUpdateStatsDb(base.TestCase):
         self.sm.update_stats(health)
 
         self.listener_stats_repo.replace.assert_called_once_with(
-            'blah', self.listener_id, self.loadbalancer_id,
+            'blah', self.listener_id, self.amphora_id,
             bytes_in=self.listener_stats.bytes_in,
             bytes_out=self.listener_stats.bytes_out,
             active_connections=self.listener_stats.active_connections,
             total_connections=self.listener_stats.total_connections,
             request_errors=self.listener_stats.request_errors)
-        self.event_client.cast.assert_called_once_with(
+        self.event_client.cast.assert_any_call(
             {}, 'update_info', container={
                 'info_type': 'listener_stats',
                 'info_id': self.listener_id,
+                'info_payload': {
+                    'bytes_in': self.listener_stats.bytes_in,
+                    'total_connections':
+                        self.listener_stats.total_connections,
+                    'active_connections':
+                        self.listener_stats.active_connections,
+                    'bytes_out': self.listener_stats.bytes_out,
+                    'request_errors': self.listener_stats.request_errors}})
+
+        self.event_client.cast.assert_any_call(
+            {}, 'update_info',
+            container={
+                'info_type': 'loadbalancer_stats',
+                'info_id': self.loadbalancer_id,
                 'info_payload': {
                     'bytes_in': self.listener_stats.bytes_in,
                     'total_connections':

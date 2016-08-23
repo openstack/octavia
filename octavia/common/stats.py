@@ -29,6 +29,7 @@ class StatsMixin(object):
         super(StatsMixin, self).__init__()
         self.listener_stats_repo = repo.ListenerStatisticsRepository()
         self.repo_amphora = repo.AmphoraRepository()
+        self.repo_loadbalancer = repo.LoadBalancerRepository()
 
     def get_listener_stats(self, session, listener_id):
         """Gets the listener statistics data_models object."""
@@ -47,4 +48,18 @@ class StatsMixin(object):
             amp = self.repo_amphora.get(session, id=db_l.amphora_id)
             if amp and amp.status == constants.AMPHORA_ALLOCATED:
                 statistics.active_connections += db_l.active_connections
+        return statistics
+
+    def get_loadbalancer_stats(self, session, loadbalancer_id):
+        statistics = data_models.LoadBalancerStatistics()
+        lb_db = self.repo_loadbalancer.get(session, id=loadbalancer_id)
+
+        for listener in lb_db.listeners:
+            data = self.get_listener_stats(session, listener.id)
+            statistics.bytes_in += data.bytes_in
+            statistics.bytes_out += data.bytes_out
+            statistics.request_errors += data.request_errors
+            statistics.active_connections += data.active_connections
+            statistics.total_connections += data.total_connections
+            statistics.listeners.append(data)
         return statistics
