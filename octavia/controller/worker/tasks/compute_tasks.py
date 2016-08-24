@@ -55,7 +55,7 @@ class ComputeCreate(BaseComputeTask):
         :returns: an amphora
         """
         ports = ports or []
-        network_ids = CONF.controller_worker.amp_boot_network_list
+        network_ids = CONF.controller_worker.amp_boot_network_list[:]
         # TODO(ptoohill) amp_network is now deprecated, remove when ready...
         if CONF.controller_worker.amp_network:
             network_ids.append(CONF.controller_worker.amp_network)
