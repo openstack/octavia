@@ -40,7 +40,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinxcontrib.seqdiag',
               'sphinxcontrib.nwdiag',
               'sphinx.ext.graphviz',
-              'oslosphinx'
+              'oslosphinx',
+              'oslo_config.sphinxext'
              ]
 
 todo_include_todos = True
