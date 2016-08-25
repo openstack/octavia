@@ -52,7 +52,8 @@ APIs
    :glob:
    :maxdepth: 1
 
-   api/*
+   api/octaviaapi.rst
+   api/haproxy-amphora-api.rst
 
 ====================
 Design Documentation

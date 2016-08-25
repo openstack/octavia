@@ -29,6 +29,9 @@ from octavia.tests.functional.db import base as base_db_test
 class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     BASE_PATH = '/v1'
+    QUOTAS_PATH = '/quotas'
+    QUOTA_PATH = QUOTAS_PATH + '/{project_id}'
+    QUOTA_DEFAULT_PATH = QUOTAS_PATH + '/{project_id}/default'
     LBS_PATH = '/loadbalancers'
     LB_PATH = LBS_PATH + '/{lb_id}'
     LB_STATS_PATH = LB_PATH + '/stats'
@@ -66,7 +69,11 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         patcher = mock.patch('octavia.api.v1.handlers.controller_simulator.'
                              'handler.SimulatedControllerHandler')
         self.handler_mock = patcher.start()
+        self.check_quota_met_true_mock = mock.patch(
+            'octavia.db.repositories.Repositories.check_quota_met',
+            return_value=True)
         self.app = self._make_app()
+        self.project_id = uuidutils.generate_uuid()
 
         def reset_pecan():
             patcher.stop()
@@ -121,13 +128,14 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         return response
 
     def create_load_balancer(self, vip, **optionals):
-        req_dict = {'vip': vip}
+        req_dict = {'vip': vip, 'project_id': self.project_id}
         req_dict.update(optionals)
         response = self.post(self.LBS_PATH, req_dict)
         return response.json
 
     def create_listener(self, lb_id, protocol, protocol_port, **optionals):
-        req_dict = {'protocol': protocol, 'protocol_port': protocol_port}
+        req_dict = {'protocol': protocol, 'protocol_port': protocol_port,
+                    'project_id': self.project_id}
         req_dict.update(optionals)
         path = self.LISTENERS_PATH.format(lb_id=lb_id)
         response = self.post(path, req_dict)
@@ -159,7 +167,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     def create_pool_sans_listener(self, lb_id, protocol, lb_algorithm,
                                   **optionals):
-        req_dict = {'protocol': protocol, 'lb_algorithm': lb_algorithm}
+        req_dict = {'protocol': protocol, 'lb_algorithm': lb_algorithm,
+                    'project_id': self.project_id}
         req_dict.update(optionals)
         path = self.POOLS_PATH.format(lb_id=lb_id)
         response = self.post(path, req_dict)
@@ -167,7 +176,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     def create_pool(self, lb_id, listener_id, protocol, lb_algorithm,
                     **optionals):
-        req_dict = {'protocol': protocol, 'lb_algorithm': lb_algorithm}
+        req_dict = {'protocol': protocol, 'lb_algorithm': lb_algorithm,
+                    'project_id': self.project_id}
         req_dict.update(optionals)
         path = self.DEPRECATED_POOLS_PATH.format(lb_id=lb_id,
                                                  listener_id=listener_id)
@@ -176,7 +186,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     def create_member(self, lb_id, pool_id, ip_address,
                       protocol_port, expect_error=False, **optionals):
-        req_dict = {'ip_address': ip_address, 'protocol_port': protocol_port}
+        req_dict = {'ip_address': ip_address, 'protocol_port': protocol_port,
+                    'project_id': self.project_id}
         req_dict.update(optionals)
         path = self.MEMBERS_PATH.format(lb_id=lb_id, pool_id=pool_id)
         response = self.post(path, req_dict, expect_errors=expect_error)
@@ -184,7 +195,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     def create_member_with_listener(self, lb_id, listener_id, pool_id,
                                     ip_address, protocol_port, **optionals):
-        req_dict = {'ip_address': ip_address, 'protocol_port': protocol_port}
+        req_dict = {'ip_address': ip_address, 'protocol_port': protocol_port,
+                    'project_id': self.project_id}
         req_dict.update(optionals)
         path = self.DEPRECATED_MEMBERS_PATH.format(
             lb_id=lb_id, listener_id=listener_id, pool_id=pool_id)
@@ -198,7 +210,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                     'delay': delay,
                     'timeout': timeout,
                     'fall_threshold': fall_threshold,
-                    'rise_threshold': rise_threshold}
+                    'rise_threshold': rise_threshold,
+                    'project_id': self.project_id}
         req_dict.update(optionals)
         path = self.HM_PATH.format(lb_id=lb_id,
                                    pool_id=pool_id)
@@ -212,7 +225,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                     'delay': delay,
                     'timeout': timeout,
                     'fall_threshold': fall_threshold,
-                    'rise_threshold': rise_threshold}
+                    'rise_threshold': rise_threshold,
+                    'project_id': self.project_id}
         req_dict.update(optionals)
         path = self.DEPRECATED_HM_PATH.format(
             lb_id=lb_id, listener_id=listener_id, pool_id=pool_id)

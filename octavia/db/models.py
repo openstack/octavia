@@ -553,3 +553,22 @@ class L7Policy(base_models.BASE, base_models.IdMixin, base_models.NameMixin):
         sa.ForeignKey("provisioning_status.name",
                       name="fk_l7policy_provisioning_status_name"),
         nullable=True)
+
+
+class Quotas(base_models.BASE):
+
+    __data_model__ = data_models.Quotas
+
+    __tablename__ = "quotas"
+
+    project_id = sa.Column(sa.String(36), primary_key=True)
+    health_monitor = sa.Column(sa.Integer(), nullable=True)
+    listener = sa.Column(sa.Integer(), nullable=True)
+    load_balancer = sa.Column(sa.Integer(), nullable=True)
+    member = sa.Column(sa.Integer(), nullable=True)
+    pool = sa.Column(sa.Integer(), nullable=True)
+    in_use_health_monitor = sa.Column(sa.Integer(), nullable=True)
+    in_use_listener = sa.Column(sa.Integer(), nullable=True)
+    in_use_load_balancer = sa.Column(sa.Integer(), nullable=True)
+    in_use_member = sa.Column(sa.Integer(), nullable=True)
+    in_use_pool = sa.Column(sa.Integer(), nullable=True)

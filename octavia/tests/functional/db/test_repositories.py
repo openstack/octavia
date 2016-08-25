@@ -12,10 +12,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
 import datetime
 import random
 
+import mock
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
+from oslo_db import exception as db_exception
 from oslo_utils import uuidutils
 
 from octavia.common import constants
@@ -52,6 +56,7 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
         self.vrrp_group_repo = repo.VRRPGroupRepository()
         self.l7policy_repo = repo.L7PolicyRepository()
         self.l7rule_repo = repo.L7RuleRepository()
+        self.quota_repo = repo.QuotasRepository()
 
     def test_get_all_return_value(self):
         pool_list = self.pool_repo.get_all(self.session,
@@ -91,7 +96,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         repo_attr_names = ('load_balancer', 'vip', 'health_monitor',
                            'session_persistence', 'pool', 'member', 'listener',
                            'listener_stats', 'amphora', 'sni',
-                           'amphorahealth', 'vrrpgroup', 'l7rule', 'l7policy')
+                           'amphorahealth', 'vrrpgroup', 'l7rule', 'l7policy',
+                           'quotas')
         for repo_attr in repo_attr_names:
             single_repo = getattr(self.repos, repo_attr, None)
             message = ("Class Repositories should have %s instance"
@@ -383,6 +389,1356 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         db_lb = self.repos.create_load_balancer_tree(self.session, lb)
         self.assertIsNotNone(db_lb)
         self.assertIsInstance(db_lb, models.LoadBalancer)
+
+    def test_create_load_balancer_tree_quotas(self):
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(auth_strategy='testing')
+        project_id = uuidutils.generate_uuid()
+        member = {'project_id': project_id, 'ip_address': '11.0.0.1',
+                  'protocol_port': 80, 'enabled': True,
+                  'operating_status': constants.ONLINE,
+                  'id': uuidutils.generate_uuid()}
+        member2 = {'project_id': project_id, 'ip_address': '11.0.0.2',
+                   'protocol_port': 81, 'enabled': True,
+                   'operating_status': constants.ONLINE,
+                   'id': uuidutils.generate_uuid()}
+        member3 = {'project_id': project_id, 'ip_address': '11.0.0.3',
+                   'protocol_port': 81, 'enabled': True,
+                   'operating_status': constants.ONLINE,
+                   'id': uuidutils.generate_uuid()}
+        health_monitor = {'type': constants.HEALTH_MONITOR_HTTP, 'delay': 1,
+                          'timeout': 1, 'fall_threshold': 1,
+                          'rise_threshold': 1, 'enabled': True}
+        sp = {'type': constants.SESSION_PERSISTENCE_APP_COOKIE,
+              'cookie_name': 'cookie_name'}
+        pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
+                'description': 'desc1', 'listener_id': None,
+                'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                'enabled': True, 'operating_status': constants.ONLINE,
+                'project_id': project_id, 'members': [member],
+                'health_monitor': health_monitor, 'session_persistence': sp,
+                'id': uuidutils.generate_uuid()}
+        pool2 = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool2',
+                 'description': 'desc1', 'listener_id': None,
+                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                 'enabled': True, 'operating_status': constants.ONLINE,
+                 'project_id': project_id, 'members': [member2],
+                 'health_monitor': health_monitor,
+                 'id': uuidutils.generate_uuid()}
+        sp['pool_id'] = pool.get('id')
+        member['pool_id'] = pool.get('id')
+        health_monitor['pool_id'] = pool.get('id')
+        l7rule = {'type': constants.L7RULE_TYPE_HOST_NAME,
+                  'compare_type': constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+                  'value': 'localhost'}
+        r_health_monitor = {'type': constants.HEALTH_MONITOR_HTTP, 'delay': 1,
+                            'timeout': 1, 'fall_threshold': 1,
+                            'rise_threshold': 1, 'enabled': True}
+        redirect_pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
+                         'description': 'desc1', 'project_id': project_id,
+                         'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                         'enabled': True, 'operating_status': constants.ONLINE,
+                         'id': uuidutils.generate_uuid(),
+                         'health_monitor': r_health_monitor,
+                         'members': [member3]}
+        l7policy = {'name': 'l7policy1', 'enabled': True,
+                    'description': 'l7policy_description', 'position': 1,
+                    'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                    'redirect_pool': redirect_pool, 'l7rules': [l7rule],
+                    'redirect_pool_id': redirect_pool.get('id'),
+                    'id': uuidutils.generate_uuid()}
+        l7rule['l7policy_id'] = l7policy.get('id')
+        listener = {'project_id': project_id, 'name': 'listener1',
+                    'description': 'listener_description',
+                    'protocol': constants.PROTOCOL_HTTP, 'protocol_port': 80,
+                    'connection_limit': 1, 'enabled': True,
+                    'default_pool': pool, 'l7policies': [l7policy],
+                    'provisioning_status': constants.PENDING_CREATE,
+                    'operating_status': constants.ONLINE,
+                    'id': uuidutils.generate_uuid()}
+        listener2 = {'project_id': project_id, 'name': 'listener2',
+                     'description': 'listener_description',
+                     'protocol': constants.PROTOCOL_HTTP, 'protocol_port': 83,
+                     'connection_limit': 1, 'enabled': True,
+                     'default_pool': pool2,
+                     'provisioning_status': constants.PENDING_CREATE,
+                     'operating_status': constants.ONLINE,
+                     'id': uuidutils.generate_uuid()}
+        l7policy['listener_id'] = listener.get('id')
+        vip = {'ip_address': '10.0.0.1', 'port_id': uuidutils.generate_uuid(),
+               'subnet_id': uuidutils.generate_uuid()}
+        lb = {'name': 'lb1', 'description': 'desc1', 'enabled': True,
+              'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
+              'vrrp_group': None, 'server_group_id': uuidutils.generate_uuid(),
+              'project_id': project_id, 'vip': vip,
+              'provisioning_status': constants.PENDING_CREATE,
+              'operating_status': constants.ONLINE,
+              'id': uuidutils.generate_uuid(), 'listeners': [listener,
+                                                             listener2]}
+        listener['load_balancer_id'] = lb.get('id')
+        listener2['load_balancer_id'] = lb.get('id')
+        pool['load_balancer_id'] = lb.get('id')
+        redirect_pool['load_balancer_id'] = lb.get('id')
+
+        lb2_health_monitor = {'type': constants.HEALTH_MONITOR_HTTP,
+                              'delay': 1, 'timeout': 1, 'fall_threshold': 1,
+                              'rise_threshold': 1, 'enabled': True}
+        lb2_member = {'project_id': project_id, 'ip_address': '11.0.0.3',
+                      'protocol_port': 80, 'enabled': True,
+                      'operating_status': constants.ONLINE,
+                      'id': uuidutils.generate_uuid()}
+        lb2_pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'lb2_pool',
+                    'description': 'desc1', 'listener_id': None,
+                    'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                    'enabled': True, 'operating_status': constants.ONLINE,
+                    'project_id': project_id, 'members': [lb2_member],
+                    'health_monitor': lb2_health_monitor,
+                    'session_persistence': sp,
+                    'id': uuidutils.generate_uuid()}
+        lb2_listener = {'project_id': project_id, 'name': 'lb2_listener',
+                        'description': 'listener_description',
+                        'protocol': constants.PROTOCOL_HTTP,
+                        'protocol_port': 83, 'connection_limit': 1,
+                        'enabled': True,
+                        'default_pool': lb2_pool,
+                        'provisioning_status': constants.PENDING_CREATE,
+                        'operating_status': constants.ONLINE,
+                        'id': uuidutils.generate_uuid()}
+        lb2 = {'name': 'lb2', 'description': 'desc2', 'enabled': True,
+               'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
+               'vrrp_group': None,
+               'server_group_id': uuidutils.generate_uuid(),
+               'project_id': project_id, 'vip': vip,
+               'provisioning_status': constants.PENDING_CREATE,
+               'operating_status': constants.ONLINE,
+               'id': uuidutils.generate_uuid(), 'listeners': [lb2_listener]}
+        lb2_listener['load_balancer_id'] = lb2.get('id')
+        lb2_pool['load_balancer_id'] = lb2.get('id')
+
+        # Test zero quota
+        quota = {'load_balancer': 0,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 10,
+                 'member': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, copy.deepcopy(lb))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb1'))
+
+        quota = {'load_balancer': 10,
+                 'listener': 0,
+                 'pool': 10,
+                 'health_monitor': 10,
+                 'member': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, copy.deepcopy(lb))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb1'))
+
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 0,
+                 'health_monitor': 10,
+                 'member': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, copy.deepcopy(lb))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb1'))
+
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 0,
+                 'member': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, copy.deepcopy(lb))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb1'))
+
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 10,
+                 'member': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, copy.deepcopy(lb))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb1'))
+
+        # Test l7policy quota for pools
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 1,
+                 'health_monitor': 10,
+                 'member': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, copy.deepcopy(lb))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb1'))
+
+        # Test l7policy quota for health monitor
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 1,
+                 'member': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, copy.deepcopy(lb))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb1'))
+
+        # Test l7policy quota for member
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 10,
+                 'member': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, copy.deepcopy(lb))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb1'))
+
+        # ### Test load balancer quota
+        # Test one quota, attempt to create another
+        quota = {'load_balancer': 1,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 10,
+                 'member': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.create_load_balancer_tree(self.session, copy.deepcopy(lb))
+        # Check if first LB build passed quota checks
+        self.assertIsNotNone(self.repos.load_balancer.get(self.session,
+                                                          name='lb1'))
+        # Try building another LB, it should fail
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, copy.deepcopy(lb2))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb2'))
+
+        # ### Test listener quota
+        # Create with custom quotas and limit to two listener (lb has two),
+        # expect error of too many listeners/over quota
+        quota = {'load_balancer': 10,
+                 'listener': 2,
+                 'pool': 10,
+                 'health_monitor': 10,
+                 'member': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, copy.deepcopy(lb2))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb2'))
+
+        # ### Test pool quota
+        # Create with custom quotas and limit to two pools (lb has two),
+        # expect error of too many pool/over quota
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 2,
+                 'health_monitor': 10,
+                 'member': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, copy.deepcopy(lb2))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb2'))
+
+        # ### Test health monitor quota
+        # Create with custom quotas and limit to one health monitor,
+        # expect error of too many health monitor/over quota
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 1,
+                 'member': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, copy.deepcopy(lb2))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb2'))
+
+        # ### Test member quota
+        # Create with custom quotas and limit to two member (lb has two),
+        # expect error of too many member/over quota
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 10,
+                 'member': 2}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, copy.deepcopy(lb2))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb2'))
+
+    def test_check_quota_met(self):
+
+        project_id = uuidutils.generate_uuid()
+
+        # Test auth_strategy == NOAUTH
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(auth_strategy='noauth')
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.LoadBalancer,
+                                                    project_id))
+        conf.config(auth_strategy='testing')
+
+        # Test check for missing project_id
+        self.assertRaises(exceptions.MissingProjectID,
+                          self.repos.check_quota_met,
+                          self.session, self.session,
+                          models.LoadBalancer, None)
+
+        # Test non-quota object
+        project_id = uuidutils.generate_uuid()
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.SessionPersistence,
+                                                    project_id))
+        # Test DB deadlock case
+        project_id = uuidutils.generate_uuid()
+        mock_session = mock.MagicMock()
+        mock_session.query = mock.MagicMock(
+            side_effect=db_exception.DBDeadlock)
+        self.assertRaises(exceptions.ProjectBusyException,
+                          self.repos.check_quota_met,
+                          self.session, mock_session,
+                          models.LoadBalancer, project_id)
+
+        # ### Test load balancer quota
+        # Test with no pre-existing quota record default 0
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_load_balancer_quota=0)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.LoadBalancer,
+                                                   project_id))
+        self.assertIsNone(self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+
+        # Test with no pre-existing quota record default 1
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_load_balancer_quota=1)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.LoadBalancer,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.LoadBalancer,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+
+        # Test with no pre-existing quota record default unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas',
+                    default_load_balancer_quota=constants.QUOTA_UNLIMITED)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.LoadBalancer,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+        # Test above project adding another load balancer
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.LoadBalancer,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+
+        # Test upgrade case with pre-quota load balancers
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_load_balancer_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.LoadBalancer,
+                                                   project_id))
+
+        # Test upgrade case with pre-quota deleted load balancers
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_load_balancer_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.DELETED,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.LoadBalancer,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+
+        # Test pre-existing quota with quota of zero
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_load_balancer_quota=10)
+        quota = {'load_balancer': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.LoadBalancer,
+                                                   project_id))
+
+        # Test pre-existing quota with quota of one
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_load_balancer_quota=0)
+        quota = {'load_balancer': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.LoadBalancer,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.LoadBalancer,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+
+        # Test pre-existing quota with quota of unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_load_balancer_quota=0)
+        quota = {'load_balancer': constants.QUOTA_UNLIMITED}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.LoadBalancer,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+        # Test above project adding another load balancer
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.LoadBalancer,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+
+        # ### Test listener quota
+        # Test with no pre-existing quota record default 0
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_listener_quota=0)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Listener,
+                                                   project_id))
+        self.assertIsNone(self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+
+        # Test with no pre-existing quota record default 1
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_listener_quota=1)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Listener,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Listener,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+
+        # Test with no pre-existing quota record default unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas',
+                    default_listener_quota=constants.QUOTA_UNLIMITED)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Listener,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+        # Test above project adding another listener
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Listener,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+
+        # Test upgrade case with pre-quota listener
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_listener_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        self.repos.listener.create(
+            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            enabled=True, provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, project_id=project_id,
+            load_balancer_id=lb.id)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Listener,
+                                                   project_id))
+
+        # Test upgrade case with pre-quota deleted listener
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_listener_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        self.repos.listener.create(
+            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            enabled=True, provisioning_status=constants.DELETED,
+            operating_status=constants.ONLINE, project_id=project_id,
+            load_balancer_id=lb.id)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Listener,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+
+        # Test pre-existing quota with quota of zero
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_listener_quota=10)
+        quota = {'listener': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Listener,
+                                                   project_id))
+
+        # Test pre-existing quota with quota of one
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_listener_quota=0)
+        quota = {'listener': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Listener,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Listener,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+
+        # Test pre-existing quota with quota of unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_listener_quota=0)
+        quota = {'listener': constants.QUOTA_UNLIMITED}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Listener,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+        # Test above project adding another listener
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Listener,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+
+        # ### Test pool quota
+        # Test with no pre-existing quota record default 0
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_pool_quota=0)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Pool,
+                                                   project_id))
+        self.assertIsNone(self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+
+        # Test with no pre-existing quota record default 1
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_pool_quota=1)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Pool,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Pool,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+
+        # Test with no pre-existing quota record default unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas',
+                    default_pool_quota=constants.QUOTA_UNLIMITED)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Pool,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+        # Test above project adding another pool
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Pool,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+
+        # Test upgrade case with pre-quota pool
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_pool_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        pool = self.repos.pool.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="pool1",
+            protocol=constants.PROTOCOL_HTTP,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True, load_balancer_id=lb.id)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Pool,
+                                                   project_id))
+
+        # Test upgrade case with pre-quota deleted pool
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_pool_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        pool = self.repos.pool.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="pool1",
+            protocol=constants.PROTOCOL_HTTP,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.DELETED,
+            operating_status=constants.ONLINE,
+            enabled=True, load_balancer_id=lb.id)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Pool,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+
+        # Test pre-existing quota with quota of zero
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_pool_quota=10)
+        quota = {'pool': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Pool,
+                                                   project_id))
+
+        # Test pre-existing quota with quota of one
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_pool_quota=0)
+        quota = {'pool': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Pool,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Pool,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+
+        # Test pre-existing quota with quota of unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_pool_quota=0)
+        quota = {'pool': constants.QUOTA_UNLIMITED}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Pool,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+        # Test above project adding another pool
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Pool,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+
+        # ### Test health monitor quota
+        # Test with no pre-existing quota record default 0
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_health_monitor_quota=0)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.HealthMonitor,
+                                                   project_id))
+        self.assertIsNone(self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+
+        # Test with no pre-existing quota record default 1
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_health_monitor_quota=1)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.HealthMonitor,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.HealthMonitor,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+
+        # Test with no pre-existing quota record default unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas',
+                    default_health_monitor_quota=constants.QUOTA_UNLIMITED)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.HealthMonitor,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+        # Test above project adding another health monitor
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.HealthMonitor,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+
+        # Test upgrade case with pre-quota health monitor
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_health_monitor_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        pool = self.repos.pool.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="pool1",
+            protocol=constants.PROTOCOL_HTTP,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True, load_balancer_id=lb.id)
+        self.repos.health_monitor.create(
+            self.session, project_id=project_id, name="health_mon1",
+            type=constants.HEALTH_MONITOR_HTTP,
+            delay=1, timeout=1, fall_threshold=1, rise_threshold=1,
+            provisioning_status=constants.ACTIVE,
+            enabled=True, pool_id=pool.id)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.HealthMonitor,
+                                                   project_id))
+
+        # Test upgrade case with pre-quota deleted health monitor
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_health_monitor_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        pool = self.repos.pool.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="pool1",
+            protocol=constants.PROTOCOL_HTTP,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True, load_balancer_id=lb.id)
+        self.repos.health_monitor.create(
+            self.session, project_id=project_id, name="health_mon1",
+            type=constants.HEALTH_MONITOR_HTTP,
+            delay=1, timeout=1, fall_threshold=1, rise_threshold=1,
+            provisioning_status=constants.DELETED,
+            enabled=True, pool_id=pool.id)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.HealthMonitor,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+
+        # Test pre-existing quota with quota of zero
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_health_monitor_quota=10)
+        quota = {'health_monitor': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.HealthMonitor,
+                                                   project_id))
+
+        # Test pre-existing quota with quota of one
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_health_monitor_quota=0)
+        quota = {'health_monitor': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.HealthMonitor,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.HealthMonitor,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+
+        # Test pre-existing quota with quota of unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_health_monitor_quota=0)
+        quota = {'health_monitor': constants.QUOTA_UNLIMITED}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.HealthMonitor,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+        # Test above project adding another health monitor
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.HealthMonitor,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+
+        # ### Test member quota
+        # Test with no pre-existing quota record default 0
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_member_quota=0)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Member,
+                                                   project_id))
+        self.assertIsNone(self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+
+        # Test with no pre-existing quota record default 1
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_member_quota=1)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Member,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Member,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+
+        # Test with no pre-existing quota record default unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas',
+                    default_member_quota=constants.QUOTA_UNLIMITED)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Member,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+        # Test above project adding another member
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Member,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+
+        # Test upgrade case with pre-quota member
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_member_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        pool = self.repos.pool.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="pool1",
+            protocol=constants.PROTOCOL_HTTP,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True, load_balancer_id=lb.id)
+        self.repos.member.create(
+            self.session, project_id=project_id,
+            ip_address='192.0.2.1', protocol_port=80,
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True, pool_id=pool.id)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Member,
+                                                   project_id))
+
+        # Test upgrade case with pre-quota deleted member
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_member_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        pool = self.repos.pool.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="pool1",
+            protocol=constants.PROTOCOL_HTTP,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True, load_balancer_id=lb.id)
+        self.repos.member.create(
+            self.session, project_id=project_id,
+            ip_address='192.0.2.1', protocol_port=80,
+            provisioning_status=constants.DELETED,
+            operating_status=constants.ONLINE,
+            enabled=True, pool_id=pool.id)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Member,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+
+        # Test pre-existing quota with quota of zero
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_member_quota=10)
+        quota = {'member': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Member,
+                                                   project_id))
+
+        # Test pre-existing quota with quota of one
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_member_quota=0)
+        quota = {'member': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Member,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.Member,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+
+        # Test pre-existing quota with quota of unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_member_quota=0)
+        quota = {'member': constants.QUOTA_UNLIMITED}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Member,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+        # Test above project adding another member
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.Member,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+
+    def test_decrement_quota(self):
+
+        project_id = uuidutils.generate_uuid()
+
+        # Test check for missing project_id
+        self.assertRaises(exceptions.MissingProjectID,
+                          self.repos.decrement_quota,
+                          self.session, models.LoadBalancer, None)
+
+        # Test decrement on non-existent quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(auth_strategy='noauth')
+        self.repos.decrement_quota(self.session,
+                                   models.LoadBalancer,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.count(self.session,
+                                                    project_id=project_id))
+        conf.config(auth_strategy='testing')
+
+        # Test decrement on non-existent quota
+        project_id = uuidutils.generate_uuid()
+        self.repos.decrement_quota(self.session,
+                                   models.LoadBalancer,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.count(self.session,
+                                                    project_id=project_id))
+
+        # Test DB deadlock case
+        project_id = uuidutils.generate_uuid()
+        mock_session = mock.MagicMock()
+        mock_session.query = mock.MagicMock(
+            side_effect=db_exception.DBDeadlock)
+        self.assertRaises(exceptions.ProjectBusyException,
+                          self.repos.decrement_quota,
+                          mock_session,
+                          models.LoadBalancer, project_id)
+
+        # ### Test load balancer quota
+        # Test decrement on zero in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_load_balancer': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.LoadBalancer,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+
+        # Test decrement on zero in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(auth_strategy='noauth')
+        quota = {'in_use_load_balancer': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.LoadBalancer,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+        conf.config(auth_strategy='testing')
+
+        # Test decrement on in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_load_balancer': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.LoadBalancer,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+
+        # Test decrement on in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(auth_strategy='noauth')
+        quota = {'in_use_load_balancer': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.LoadBalancer,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_load_balancer)
+        conf.config(auth_strategy='testing')
+
+        # ### Test listner quota
+        # Test decrement on zero in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_listener': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.Listener,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+
+        # Test decrement on zero in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(auth_strategy='noauth')
+        quota = {'in_use_listener': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.Listener,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+        conf.config(auth_strategy='testing')
+
+        # Test decrement on in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_listener': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.Listener,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+
+        # Test decrement on in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(auth_strategy='noauth')
+        quota = {'in_use_listener': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.Listener,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_listener)
+        conf.config(auth_strategy='testing')
+
+        # ### Test pool quota
+        # Test decrement on zero in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_pool': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.Pool,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+
+        # Test decrement on zero in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(auth_strategy='noauth')
+        quota = {'in_use_pool': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.Pool,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+        conf.config(auth_strategy='testing')
+
+        # Test decrement on in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_pool': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.Pool,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+
+        # Test decrement on in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(auth_strategy='noauth')
+        quota = {'in_use_pool': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.Pool,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_pool)
+        conf.config(auth_strategy='testing')
+
+        # ### Test health monitor quota
+        # Test decrement on zero in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_health_monitor': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.HealthMonitor,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+
+        # Test decrement on zero in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(auth_strategy='noauth')
+        quota = {'in_use_health_monitor': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.HealthMonitor,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+        conf.config(auth_strategy='testing')
+
+        # Test decrement on in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_health_monitor': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.HealthMonitor,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+
+        # Test decrement on in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(auth_strategy='noauth')
+        quota = {'in_use_health_monitor': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.HealthMonitor,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_health_monitor)
+        conf.config(auth_strategy='testing')
+
+        # ### Test member quota
+        # Test decrement on zero in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_member': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.Member,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+
+        # Test decrement on zero in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(auth_strategy='noauth')
+        quota = {'in_use_member': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.Member,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+        conf.config(auth_strategy='testing')
+
+        # Test decrement on in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_member': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.Member,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+
+        # Test decrement on in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(auth_strategy='noauth')
+        quota = {'in_use_member': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.Member,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_member)
+        conf.config(auth_strategy='testing')
 
 
 class PoolRepositoryTest(BaseRepositoryTest):
@@ -2433,3 +3789,73 @@ class L7RuleRepositoryTest(BaseRepositoryTest):
             type=constants.L7RULE_TYPE_FILE_TYPE,
             compare_type=constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
             value='png|jpg')
+
+
+class TestQuotasRepository(BaseRepositoryTest):
+
+    def setUp(self):
+        super(TestQuotasRepository, self).setUp()
+
+    def update_quotas(self, project_id, load_balancer=20, listener=20, pool=20,
+                      health_monitor=20, member=20):
+        quota = {'load_balancer': load_balancer,
+                 'listener': listener,
+                 'pool': pool,
+                 'health_monitor': health_monitor,
+                 'member': member}
+        quotas = self.quota_repo.update(self.session, project_id, quota=quota)
+        return quotas
+
+    def _compare(self, expected, observed):
+        self.assertEqual(expected.project_id, observed.project_id)
+        self.assertEqual(expected.load_balancer,
+                         observed.load_balancer)
+        self.assertEqual(expected.listener,
+                         observed.listener)
+        self.assertEqual(expected.pool,
+                         observed.pool)
+        self.assertEqual(expected.health_monitor,
+                         observed.health_monitor)
+        self.assertEqual(expected.member,
+                         observed.member)
+
+    def test_get(self):
+        expected = self.update_quotas(self.FAKE_UUID_1)
+        observed = self.quota_repo.get(self.session,
+                                       project_id=self.FAKE_UUID_1)
+        self.assertIsInstance(observed, models.Quotas)
+        self._compare(expected, observed)
+
+    def test_update(self):
+        first_expected = self.update_quotas(self.FAKE_UUID_1)
+        first_observed = self.quota_repo.get(self.session,
+                                             project_id=self.FAKE_UUID_1)
+        second_expected = self.update_quotas(self.FAKE_UUID_1, load_balancer=1)
+        second_observed = self.quota_repo.get(self.session,
+                                              project_id=self.FAKE_UUID_1)
+        self.assertIsInstance(first_expected, models.Quotas)
+        self._compare(first_expected, first_observed)
+        self.assertIsInstance(second_expected, models.Quotas)
+        self._compare(second_expected, second_observed)
+        self.assertIsNot(first_expected.load_balancer,
+                         second_expected.load_balancer)
+
+    def test_delete(self):
+        expected = self.update_quotas(self.FAKE_UUID_1)
+        observed = self.quota_repo.get(self.session,
+                                       project_id=self.FAKE_UUID_1)
+        self.assertIsInstance(observed, models.Quotas)
+        self._compare(expected, observed)
+        self.quota_repo.delete(self.session, self.FAKE_UUID_1)
+        observed = self.quota_repo.get(self.session,
+                                       project_id=self.FAKE_UUID_1)
+        self.assertIsNone(observed.health_monitor)
+        self.assertIsNone(observed.load_balancer)
+        self.assertIsNone(observed.listener)
+        self.assertIsNone(observed.member)
+        self.assertIsNone(observed.pool)
+
+    def test_delete_non_existent(self):
+        self.assertRaises(exceptions.NotFound,
+                          self.quota_repo.delete,
+                          self.session, 'bogus')

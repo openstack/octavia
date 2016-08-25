@@ -29,6 +29,7 @@ from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
 import octavia.common.validate as validate
+from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
@@ -74,14 +75,17 @@ class LoadBalancersController(base.BaseController):
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=id)
 
-    def _create_load_balancer_graph(self, context, load_balancer):
+    def _create_load_balancer_graph_db(self, lock_session, load_balancer):
         prepped_lb = db_prepare.create_load_balancer_tree(
             load_balancer.to_dict(render_unsets=True))
         try:
             db_lb = self.repositories.create_load_balancer_tree(
-                context.session, prepped_lb)
+                lock_session, prepped_lb)
         except Exception:
             raise
+        return db_lb
+
+    def _load_balancer_graph_to_handler(self, context, db_lb):
         try:
             LOG.info(_LI("Sending full load balancer configuration %s to "
                          "the handler"), db_lb.id)
@@ -98,24 +102,49 @@ class LoadBalancersController(base.BaseController):
                          body=lb_types.LoadBalancerPOST, status_code=202)
     def post(self, load_balancer):
         """Creates a load balancer."""
+        context = pecan.request.context.get('octavia_context')
         # Validate the subnet id
         if load_balancer.vip.subnet_id:
             if not validate.subnet_exists(load_balancer.vip.subnet_id):
                 raise exceptions.NotFound(resource='Subnet',
                                           id=load_balancer.vip.subnet_id)
 
-        context = pecan.request.context.get('octavia_context')
+        lock_session = db_api.get_session(autocommit=False)
+        if self.repositories.check_quota_met(
+                context.session,
+                lock_session,
+                data_models.LoadBalancer,
+                load_balancer.project_id):
+            lock_session.rollback()
+            raise exceptions.QuotaException
+
         if load_balancer.listeners:
-            return self._create_load_balancer_graph(context, load_balancer)
-        lb_dict = db_prepare.create_load_balancer(load_balancer.to_dict(
-            render_unsets=True
-        ))
-        vip_dict = lb_dict.pop('vip', {})
+            try:
+                db_lb = self._create_load_balancer_graph_db(lock_session,
+                                                            load_balancer)
+                lock_session.commit()
+            except Exception:
+                with excutils.save_and_reraise_exception():
+                    lock_session.rollback()
+
+            return self._load_balancer_graph_to_handler(context, db_lb)
+
         try:
+            lb_dict = db_prepare.create_load_balancer(load_balancer.to_dict(
+                render_unsets=True
+            ))
+            vip_dict = lb_dict.pop('vip', {})
+
             db_lb = self.repositories.create_load_balancer_and_vip(
-                context.session, lb_dict, vip_dict)
+                lock_session, lb_dict, vip_dict)
+            lock_session.commit()
         except odb_exceptions.DBDuplicateEntry:
+            lock_session.rollback()
             raise exceptions.IDAlreadyExists()
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                lock_session.rollback()
+
         # Handler will be responsible for sending to controller
         try:
             LOG.info(_LI("Sending created Load Balancer %s to the handler"),

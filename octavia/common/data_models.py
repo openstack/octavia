@@ -607,3 +607,30 @@ class L7Policy(BaseDataModel):
             if p.id == self.id:
                 self.listener.l7policies.remove(p)
                 break
+
+
+class Quotas(BaseDataModel):
+
+    def __init__(self,
+                 project_id=None,
+                 load_balancer=None,
+                 listener=None,
+                 pool=None,
+                 health_monitor=None,
+                 member=None,
+                 in_use_health_monitor=None,
+                 in_use_listener=None,
+                 in_use_load_balancer=None,
+                 in_use_member=None,
+                 in_use_pool=None):
+        self.project_id = project_id
+        self.health_monitor = health_monitor
+        self.listener = listener
+        self.load_balancer = load_balancer
+        self.pool = pool
+        self.member = member
+        self.in_use_health_monitor = in_use_health_monitor
+        self.in_use_listener = in_use_listener
+        self.in_use_load_balancer = in_use_load_balancer
+        self.in_use_member = in_use_member
+        self.in_use_pool = in_use_pool

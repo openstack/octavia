@@ -149,7 +149,7 @@ class ImmutableObject(APIException):
 
 
 class TooManyL7RulesOnL7Policy(APIException):
-    message = _("Too many rules on L7 policy %(id)s")
+    msg = _("Too many rules on L7 policy %(id)s")
     code = 409
 
 
@@ -173,8 +173,8 @@ class ComputeGetInterfaceException(OctaviaException):
     message = _('Failed to retrieve compute virtual interfaces.')
 
 
-class IDAlreadyExists(OctaviaException):
-    message = _('Already an entity with that specified id.')
+class IDAlreadyExists(APIException):
+    msg = _('Already an entity with that specified id.')
     code = 409
 
 
@@ -204,12 +204,12 @@ class InvalidTopology(OctaviaException):
 
 # L7 policy and rule exceptions
 class InvalidL7PolicyAction(APIException):
-    message = _('Invalid L7 Policy action specified: %(action)s')
+    msg = _('Invalid L7 Policy action specified: %(action)s')
     code = 400
 
 
 class InvalidL7PolicyArgs(APIException):
-    message = _('Invalid L7 Policy arguments: %(msg)s')
+    msg = _('Invalid L7 Policy arguments: %(msg)s')
     code = 400
 
 
@@ -235,3 +235,17 @@ class ServerGroupObjectCreateException(OctaviaException):
 
 class ServerGroupObjectDeleteException(OctaviaException):
     message = _('Failed to delete server group object.')
+
+
+class QuotaException(APIException):
+    msg = _('Quota has been met.')
+    code = 403
+
+
+class ProjectBusyException(APIException):
+    msg = _('Project busy.  Unable to lock the project.  Please try again.')
+    code = 503
+
+
+class MissingProjectID(OctaviaException):
+    message = _('Missing project ID in request where one is required.')

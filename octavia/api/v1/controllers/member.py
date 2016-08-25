@@ -24,8 +24,10 @@ from wsmeext import pecan as wsme_pecan
 from octavia.api.v1.controllers import base
 from octavia.api.v1.types import member as member_types
 from octavia.common import constants
+from octavia.common import data_models
 from octavia.common import exceptions
 import octavia.common.validate as validate
+from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
@@ -96,31 +98,37 @@ class MembersController(base.BaseController):
         if member.subnet_id and not validate.subnet_exists(member.subnet_id):
             raise exceptions.NotFound(resource='Subnet',
                                       id=member.subnet_id)
-        member_dict = db_prepare.create_member(member.to_dict(
-            render_unsets=True), self.pool_id)
-        self._test_lb_and_listener_statuses(context.session)
+
+        lock_session = db_api.get_session(autocommit=False)
+        if self.repositories.check_quota_met(
+                context.session,
+                lock_session,
+                data_models.Member,
+                member.project_id):
+            lock_session.rollback()
+            raise exceptions.QuotaException
 
         try:
-            db_member = self.repositories.member.create(context.session,
+            member_dict = db_prepare.create_member(member.to_dict(
+                render_unsets=True), self.pool_id)
+            self._test_lb_and_listener_statuses(lock_session)
+
+            db_member = self.repositories.member.create(lock_session,
                                                         **member_dict)
+            db_new_member = self._get_db_member(lock_session, db_member.id)
+            lock_session.commit()
         except oslo_exc.DBDuplicateEntry as de:
-            # Setting LB and Listener back to active because this is just a
-            # validation failure
-            self.repositories.load_balancer.update(
-                context.session, self.load_balancer_id,
-                provisioning_status=constants.ACTIVE)
-            for listener_id in self._get_affected_listener_ids(
-                    context.session):
-                self.repositories.listener.update(
-                    context.session, listener_id,
-                    provisioning_status=constants.ACTIVE)
+            lock_session.rollback()
             if ['id'] == de.columns:
                 raise exceptions.IDAlreadyExists()
-            elif (set(['pool_id', 'ip_address', 'protocol_port']) ==
-                  set(de.columns)):
-                raise exceptions.DuplicateMemberEntry(
-                    ip_address=member_dict.get('ip_address'),
-                    port=member_dict.get('protocol_port'))
+
+            raise exceptions.DuplicateMemberEntry(
+                ip_address=member_dict.get('ip_address'),
+                port=member_dict.get('protocol_port'))
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                lock_session.rollback()
+
         try:
             LOG.info(_LI("Sending Creation of Member %s to handler"),
                      db_member.id)
@@ -132,8 +140,8 @@ class MembersController(base.BaseController):
                     self.repositories.listener.update(
                         context.session, listener_id,
                         operating_status=constants.ERROR)
-        db_member = self._get_db_member(context.session, db_member.id)
-        return self._convert_db_to_type(db_member, member_types.MemberResponse)
+        return self._convert_db_to_type(db_new_member,
+                                        member_types.MemberResponse)
 
     @wsme_pecan.wsexpose(member_types.MemberResponse,
                          wtypes.text, body=member_types.MemberPUT,

@@ -30,7 +30,7 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual([], api_list)
 
     def test_create(self, **optionals):
-        lb_json = {'name': 'test1', 'vip': {}}
+        lb_json = {'name': 'test1', 'vip': {}, 'project_id': self.project_id}
         lb_json.update(optionals)
         response = self.post(self.LBS_PATH, lb_json)
         api_lb = response.json
@@ -62,11 +62,17 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_create_with_project_id(self):
         self.test_create(project_id=uuidutils.generate_uuid())
 
+    def test_create_over_quota(self):
+        lb_json = {'name': 'test1', 'vip': {}, 'project_id': self.project_id}
+        self.check_quota_met_true_mock.start()
+        self.post(self.LBS_PATH, lb_json, status=403)
+
     def test_get_all(self):
         lb1 = self.create_load_balancer({}, name='lb1')
         lb2 = self.create_load_balancer({}, name='lb2')
         lb3 = self.create_load_balancer({}, name='lb3')
-        response = self.get(self.LBS_PATH)
+        response = self.get(self.LBS_PATH,
+                            params={'project_id': self.project_id})
         lbs = response.json
         lb_id_names = [(lb.get('id'), lb.get('name')) for lb in lbs]
         self.assertEqual(3, len(lbs))
@@ -116,7 +122,8 @@ class TestLoadBalancer(base.BaseAPITest):
                'subnet_id': uuidutils.generate_uuid(),
                'port_id': uuidutils.generate_uuid()}
         lb_json = {'name': 'test1', 'description': 'test1_desc',
-                   'vip': vip, 'enabled': False}
+                   'vip': vip, 'enabled': False,
+                   'project_id': self.project_id}
         response = self.post(self.LBS_PATH, lb_json)
         api_lb = response.json
         self.assertTrue(uuidutils.is_uuid_like(api_lb.get('id')))
@@ -247,8 +254,10 @@ class TestLoadBalancer(base.BaseAPITest):
             net_mock.return_value.get_subnet = mock.Mock(
                 side_effect=network_base.SubnetNotFound('Subnet not found'))
             subnet_id = uuidutils.generate_uuid()
-            lb_json = {'name': 'test1', 'vip': {'subnet_id': subnet_id,
-                                                'ip_address': '10.0.0.1'}}
+            lb_json = {'name': 'test1',
+                       'vip': {'subnet_id': subnet_id,
+                               'ip_address': '10.0.0.1'},
+                       'project_id': self.project_id}
             lb_json.update(optionals)
             response = self.post(self.LBS_PATH, lb_json, expect_errors=True)
             err_msg = 'Subnet ' + subnet_id + ' not found.'
@@ -259,8 +268,10 @@ class TestLoadBalancer(base.BaseAPITest):
         with mock.patch(
                 'octavia.common.utils.get_network_driver') as net_mock:
             net_mock.return_value.get_subnet.return_value = subnet_id
-            lb_json = {'name': 'test1', 'vip': {'subnet_id': subnet_id,
-                                                'ip_address': '10.0.0.1'}}
+            lb_json = {'name': 'test1',
+                       'vip': {'subnet_id': subnet_id,
+                               'ip_address': '10.0.0.1'},
+                       'project_id': self.project_id}
             lb_json.update(optionals)
             response = self.post(self.LBS_PATH, lb_json)
             api_lb = response.json

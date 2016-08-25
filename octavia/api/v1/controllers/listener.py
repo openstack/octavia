@@ -29,6 +29,7 @@ from octavia.api.v1.types import listener as listener_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
@@ -105,12 +106,11 @@ class ListenersController(base.BaseController):
             raise exceptions.NotFound(
                 resource=data_models.Pool._name(), id=pool_id)
 
-    def _validate_listener(self, session, listener_dict):
+    def _validate_listener(self, lock_session, listener_dict):
         """Validate listener for wrong protocol or duplicate listeners
 
         Update the load balancer db when provisioning status changes.
         """
-        lb_repo = self.repositories.load_balancer
         if (listener_dict
             and listener_dict.get('insert_headers')
             and list(set(listener_dict['insert_headers'].keys()) -
@@ -122,32 +122,27 @@ class ListenersController(base.BaseController):
         try:
             sni_containers = listener_dict.pop('sni_containers', [])
             db_listener = self.repositories.listener.create(
-                session, **listener_dict)
+                lock_session, **listener_dict)
             if sni_containers:
                 for container in sni_containers:
                     sni_dict = {'listener_id': db_listener.id,
                                 'tls_container_id': container.get(
                                     'tls_container_id')}
-                    self.repositories.sni.create(session, **sni_dict)
-                db_listener = self.repositories.listener.get(session,
+                    self.repositories.sni.create(lock_session, **sni_dict)
+                db_listener = self.repositories.listener.get(lock_session,
                                                              id=db_listener.id)
+            return db_listener
         except odb_exceptions.DBDuplicateEntry as de:
-            # Setting LB back to active because this is just a validation
-            # failure
-            lb_repo.update(session, self.load_balancer_id,
-                           provisioning_status=constants.ACTIVE)
             if ['id'] == de.columns:
                 raise exceptions.IDAlreadyExists()
             elif set(['load_balancer_id', 'protocol_port']) == set(de.columns):
                 raise exceptions.DuplicateListenerEntry(
                     port=listener_dict.get('protocol_port'))
         except odb_exceptions.DBError:
-            # Setting LB back to active because this is just a validation
-            # failure
-            lb_repo.update(session, self.load_balancer_id,
-                           provisioning_status=constants.ACTIVE)
             raise exceptions.InvalidOption(value=listener_dict.get('protocol'),
                                            option='protocol')
+
+    def _send_listener_to_handler(self, session, db_listener):
         try:
             LOG.info(_LI("Sending Creation of Listener %s to handler"),
                      db_listener.id)
@@ -165,21 +160,38 @@ class ListenersController(base.BaseController):
                          body=listener_types.ListenerPOST, status_code=202)
     def post(self, listener):
         """Creates a listener on a load balancer."""
-        self._secure_data(listener)
         context = pecan.request.context.get('octavia_context')
-        listener_dict = db_prepare.create_listener(
-            listener.to_dict(render_unsets=True), self.load_balancer_id)
-        if listener_dict['default_pool_id']:
-            self._validate_pool(context.session,
-                                listener_dict['default_pool_id'])
-        self._test_lb_and_listener_statuses(context.session)
-        # NOTE(blogan): Throwing away because we should not store secure data
-        # in the database nor should we send it to a handler.
-        if 'tls_termination' in listener_dict:
-            del listener_dict['tls_termination']
-        # This is the extra validation layer for wrong protocol or duplicate
-        # listeners on the same load balancer.
-        return self._validate_listener(context.session, listener_dict)
+
+        lock_session = db_api.get_session(autocommit=False)
+        if self.repositories.check_quota_met(
+                context.session,
+                lock_session,
+                data_models.Listener,
+                listener.project_id):
+            lock_session.rollback()
+            raise exceptions.QuotaException
+
+        try:
+            self._secure_data(listener)
+            listener_dict = db_prepare.create_listener(
+                listener.to_dict(render_unsets=True), self.load_balancer_id)
+            if listener_dict['default_pool_id']:
+                self._validate_pool(lock_session,
+                                    listener_dict['default_pool_id'])
+            self._test_lb_and_listener_statuses(lock_session)
+            # NOTE(blogan): Throwing away because we should not store
+            # secure data in the database nor should we send it to a handler.
+            if 'tls_termination' in listener_dict:
+                del listener_dict['tls_termination']
+            # This is the extra validation layer for wrong protocol or
+            # duplicate listeners on the same load balancer.
+            db_listener = self._validate_listener(lock_session, listener_dict)
+            lock_session.commit()
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                lock_session.rollback()
+
+        return self._send_listener_to_handler(context.session, db_listener)
 
     @wsme_pecan.wsexpose(listener_types.ListenerResponse, wtypes.text,
                          body=listener_types.ListenerPUT, status_code=202)

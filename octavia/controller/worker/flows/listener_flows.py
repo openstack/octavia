@@ -77,6 +77,8 @@ class ListenerFlows(object):
             requires=constants.LOADBALANCER))
         delete_listener_flow.add(database_tasks.DeleteListenerInDB(
             requires=constants.LISTENER))
+        delete_listener_flow.add(database_tasks.DecrementListenerQuota(
+            requires=constants.LISTENER))
         delete_listener_flow.add(database_tasks.MarkLBActiveInDB(
             requires=constants.LOADBALANCER))
 
@@ -96,8 +98,11 @@ class ListenerFlows(object):
         delete_listener_flow.add(database_tasks.DeleteListenerInDB(
             name='delete_listener_in_db_' + listener_name,
             requires=constants.LISTENER,
-            rebind={constants.LISTENER: listener_name}
-        ))
+            rebind={constants.LISTENER: listener_name}))
+        delete_listener_flow.add(database_tasks.DecrementListenerQuota(
+            name='decrement_listener_quota_' + listener_name,
+            requires=constants.LISTENER,
+            rebind={constants.LISTENER: listener_name}))
 
         return delete_listener_flow
 
