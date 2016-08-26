@@ -12,14 +12,6 @@ Getting started
 
    main/glossary.rst
 
-Configuration reference
------------------------
-
-.. toctree::
-   :maxdepth: 1
-
-   config-reference/octavia-config-table.rst
-
 For developers
 --------------
 
@@ -29,6 +21,15 @@ For developers
    main/CONSTITUTION.rst
    main/HACKING.rst
    devref/flows.rst
+   main/gmr.rst
+
+For operators
+-------------
+
+.. toctree::
+   :maxdepth: 1
+
+   main/configref.rst
 
 ====
 APIs
@@ -44,8 +45,8 @@ APIs
 Design Documentation
 ====================
 
-Version 0.5
------------
+Version 0.5 (liberty)
+---------------------
 
 .. toctree::
    :glob:
@@ -57,8 +58,8 @@ Version 0.5
 Project Specifications
 ======================
 
-Version 0.5
------------
+Version 0.5 (liberty)
+---------------------
 
 .. toctree::
    :glob:
@@ -66,14 +67,23 @@ Version 0.5
 
    specs/version0.5/*
 
-Version 1
----------
+Version 0.8 (mitaka)
+--------------------
 
 .. toctree::
    :glob:
    :maxdepth: 1
 
-   specs/version1/*
+   specs/version0.8/*
+
+Version 0.9 (newton)
+--------------------
+
+.. toctree::
+   :glob:
+   :maxdepth: 1
+
+   specs/version0.9/*
 
 ==================
 Indices and tables
