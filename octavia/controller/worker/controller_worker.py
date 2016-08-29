@@ -247,29 +247,6 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         with tf_logging.DynamicLoggingListener(update_listener_tf, log=LOG):
             update_listener_tf.run()
 
-    def _get_create_load_balancer_flows(self, load_balancer, topology):
-        # if listeners exist then this was a request to create many resources
-        # at once, so different logic will be needed.
-        post_amp_prefix = 'post-amphora-association'
-        if load_balancer.listeners:
-            allocate_amphorae_flow, post_lb_amp_assoc_flow = (
-                self._lb_flows.get_create_load_balancer_graph_flows(
-                    topology, post_amp_prefix
-                )
-            )
-        else:
-            allocate_amphorae_flow = (
-                self._lb_flows.get_create_load_balancer_flow(
-                    topology=topology
-                )
-            )
-            post_lb_amp_assoc_flow = (
-                self._lb_flows.get_post_lb_amp_association_flow(
-                    prefix=post_amp_prefix, topology=topology
-                )
-            )
-        return allocate_amphorae_flow, post_lb_amp_assoc_flow
-
     def create_load_balancer(self, load_balancer_id):
         """Creates a load balancer by allocating Amphorae.
 
@@ -286,29 +263,19 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         topology = CONF.controller_worker.loadbalancer_topology
 
-        store[constants.UPDATE_DICT] = {constants.LOADBALANCER_TOPOLOGY:
-                                        topology}
+        store[constants.UPDATE_DICT] = {
+            constants.LOADBALANCER_TOPOLOGY: topology
+        }
 
         lb = self._lb_repo.get(db_apis.get_session(), id=load_balancer_id)
-        allocate_amphorae_flow, post_lb_amp_assoc_flow = (
-            self._get_create_load_balancer_flows(lb, topology)
-        )
+        create_lb_flow = self._lb_flows.get_create_load_balancer_flow(
+            topology=topology, listeners=lb.listeners)
 
-        create_lb_tf = self._taskflow_load(allocate_amphorae_flow, store=store)
+        create_lb_tf = self._taskflow_load(create_lb_flow, store=store)
         with tf_logging.DynamicLoggingListener(
                 create_lb_tf, log=LOG,
                 hide_inputs_outputs_of=self._exclude_result_logging_tasks):
             create_lb_tf.run()
-
-            # Ideally the following flow should be integrated with the
-            # create_active_standby flow. This is not possible with the
-            # current version of taskflow as it flatten out the flows.
-            # Bug report: https://bugs.launchpad.net/taskflow/+bug/1479466
-            post_lb_amp_assoc = self._taskflow_load(
-                post_lb_amp_assoc_flow, store=store)
-            with tf_logging.DynamicLoggingListener(post_lb_amp_assoc,
-                                                   log=LOG):
-                post_lb_amp_assoc.run()
 
     def delete_load_balancer(self, load_balancer_id, cascade=False):
         """Deletes a load balancer by de-allocating Amphorae.

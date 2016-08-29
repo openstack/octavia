@@ -371,24 +371,22 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
-                'LoadBalancerFlows.get_post_lb_amp_association_flow')
-    @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
                 'LoadBalancerFlows.get_create_load_balancer_flow',
                 return_value=_flow_mock)
-    def test_create_load_balancer(self,
-                                  mock_get_create_load_balancer_flow,
-                                  mock_get_get_post_lb_amp_association_flow,
-                                  mock_api_get_session,
-                                  mock_dyn_log_listener,
-                                  mock_taskflow_load,
-                                  mock_pool_repo_get,
-                                  mock_member_repo_get,
-                                  mock_l7rule_repo_get,
-                                  mock_l7policy_repo_get,
-                                  mock_listener_repo_get,
-                                  mock_lb_repo_get,
-                                  mock_health_mon_repo_get,
-                                  mock_amp_repo_get):
+    def test_create_load_balancer_single(
+            self,
+            mock_get_create_load_balancer_flow,
+            mock_api_get_session,
+            mock_dyn_log_listener,
+            mock_taskflow_load,
+            mock_pool_repo_get,
+            mock_member_repo_get,
+            mock_l7rule_repo_get,
+            mock_l7policy_repo_get,
+            mock_listener_repo_get,
+            mock_lb_repo_get,
+            mock_health_mon_repo_get,
+            mock_amp_repo_get):
 
         # Test the code path with an SINGLE topology
         CONF.set_override(group='controller_worker',
@@ -398,61 +396,68 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
         mock_taskflow_load.reset_mock()
         mock_eng = mock.Mock()
-        mock_eng_post = mock.Mock()
-        mock_taskflow_load.side_effect = [mock_eng, mock_eng_post]
-        _post_flow = mock.MagicMock()
-        mock_get_get_post_lb_amp_association_flow.return_value = _post_flow
-        store = {constants.LOADBALANCER_ID: LB_ID,
-                 'update_dict': {'topology': 'SINGLE'}}
+        mock_taskflow_load.return_value = mock_eng
+        store = {
+            constants.LOADBALANCER_ID: LB_ID,
+            'update_dict': {'topology': constants.TOPOLOGY_SINGLE}
+        }
         setattr(mock_lb_repo_get.return_value, 'listeners', [])
 
         cw = controller_worker.ControllerWorker()
         cw.create_load_balancer(LB_ID)
 
-        calls = [mock.call(_flow_mock, store=store),
-                 mock.call(_post_flow, store=store)]
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_has_calls(calls, any_order=True))
+        mock_get_create_load_balancer_flow.assert_called_with(
+            topology=constants.TOPOLOGY_SINGLE, listeners=[])
+        mock_taskflow_load.assert_called_with(
+            mock_get_create_load_balancer_flow.return_value, store=store)
         mock_eng.run.assert_any_call()
-        mock_eng_post.run.assert_any_call()
 
-        # Test the code path with an ACTIVE_STANDBY topology
+    @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
+                'LoadBalancerFlows.get_create_load_balancer_flow',
+                return_value=_flow_mock)
+    def test_create_load_balancer_active_standby(
+            self,
+            mock_get_create_load_balancer_flow,
+            mock_api_get_session,
+            mock_dyn_log_listener,
+            mock_taskflow_load,
+            mock_pool_repo_get,
+            mock_member_repo_get,
+            mock_l7rule_repo_get,
+            mock_l7policy_repo_get,
+            mock_listener_repo_get,
+            mock_lb_repo_get,
+            mock_health_mon_repo_get,
+            mock_amp_repo_get):
+
         CONF.set_override(group='controller_worker',
                           name='loadbalancer_topology',
                           override=constants.TOPOLOGY_ACTIVE_STANDBY,
                           enforce_type=True)
-
         _flow_mock.reset_mock()
         mock_taskflow_load.reset_mock()
         mock_eng = mock.Mock()
-        mock_eng_post = mock.Mock()
-        mock_taskflow_load.side_effect = [mock_eng, mock_eng_post]
-        _post_flow = mock.MagicMock()
-        mock_get_get_post_lb_amp_association_flow.return_value = _post_flow
-        store = {constants.LOADBALANCER_ID: LB_ID,
-                 'update_dict': {'topology': 'ACTIVE_STANDBY'}}
+        mock_taskflow_load.return_value = mock_eng
+        store = {
+            constants.LOADBALANCER_ID: LB_ID,
+            'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY}
+        }
+        setattr(mock_lb_repo_get.return_value, 'listeners', [])
 
         cw = controller_worker.ControllerWorker()
         cw.create_load_balancer(LB_ID)
 
-        calls = [mock.call(_flow_mock, store=store),
-                 mock.call(_post_flow, store=store)]
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_has_calls(calls, any_order=True))
+        mock_get_create_load_balancer_flow.assert_called_with(
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY, listeners=[])
+        mock_taskflow_load.assert_called_with(
+            mock_get_create_load_balancer_flow.return_value, store=store)
         mock_eng.run.assert_any_call()
-        mock_eng_post.run.assert_any_call()
 
     @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
-                'LoadBalancerFlows.get_post_lb_amp_association_flow')
-    @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
                 'LoadBalancerFlows.get_create_load_balancer_flow')
-    @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
-                'LoadBalancerFlows.get_create_load_balancer_graph_flows')
-    def test_create_load_balancer_full_graph(
+    def test_create_load_balancer_full_graph_single(
             self,
-            mock_get_create_load_balancer_graph_flows,
             mock_get_create_load_balancer_flow,
-            mock_get_post_lb_amp_association_flow,
             mock_api_get_session,
             mock_dyn_log_listener,
             mock_taskflow_load,
@@ -473,59 +478,70 @@ class TestControllerWorker(base.TestCase):
         lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners)
         mock_lb_repo_get.return_value = lb
         mock_eng = mock.Mock()
-        mock_eng_post = mock.Mock()
-        mock_taskflow_load.side_effect = [mock_eng, mock_eng_post]
-        _post_flow = mock.MagicMock()
-        mock_get_create_load_balancer_graph_flows.return_value = (
-            _flow_mock, _post_flow
-        )
-        store = {constants.LOADBALANCER_ID: LB_ID,
-                 'update_dict': {'topology': 'SINGLE'}}
+        mock_taskflow_load.return_value = mock_eng
+        store = {
+            constants.LOADBALANCER_ID: LB_ID,
+            'update_dict': {'topology': constants.TOPOLOGY_SINGLE}
+        }
 
         cw = controller_worker.ControllerWorker()
         cw.create_load_balancer(LB_ID)
 
-        calls = [mock.call(_flow_mock, store=store),
-                 mock.call(_post_flow, store=store)]
-        mock_taskflow_load.assert_has_calls(calls, any_order=True)
+        # mock_create_single_topology.assert_called_once()
+        # mock_create_active_standby_topology.assert_not_called()
+        mock_get_create_load_balancer_flow.assert_called_with(
+            topology=constants.TOPOLOGY_SINGLE, listeners=lb.listeners)
+        mock_taskflow_load.assert_called_with(
+            mock_get_create_load_balancer_flow.return_value, store=store)
         mock_eng.run.assert_any_call()
-        mock_eng_post.run.assert_any_call()
-        mock_get_create_load_balancer_graph_flows.assert_called_once_with(
-            'SINGLE', 'post-amphora-association'
-        )
-        self.assertFalse(mock_get_create_load_balancer_flow.called)
-        self.assertFalse(mock_get_post_lb_amp_association_flow.called)
 
-        # Test code path for active standby full lb graph creation
+    @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
+                'LoadBalancerFlows.get_create_load_balancer_flow')
+    @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
+                'LoadBalancerFlows._create_single_topology')
+    @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
+                'LoadBalancerFlows._create_active_standby_topology')
+    def test_create_load_balancer_full_graph_active_standby(
+            self,
+            mock_create_active_standby_topology,
+            mock_create_single_topology,
+            mock_get_create_load_balancer_flow,
+            mock_api_get_session,
+            mock_dyn_log_listener,
+            mock_taskflow_load,
+            mock_pool_repo_get,
+            mock_member_repo_get,
+            mock_l7rule_repo_get,
+            mock_l7policy_repo_get,
+            mock_listener_repo_get,
+            mock_lb_repo_get,
+            mock_health_mon_repo_get,
+            mock_amp_repo_get):
         CONF.set_override(group='controller_worker',
                           name='loadbalancer_topology',
-                          override=constants.TOPOLOGY_ACTIVE_STANDBY)
-        _flow_mock.reset_mock()
-        mock_get_create_load_balancer_graph_flows.reset_mock()
-        mock_taskflow_load.reset_mock()
+                          override=constants.TOPOLOGY_ACTIVE_STANDBY,
+                          enforce_type=True)
+        listeners = [data_models.Listener(id='listener1'),
+                     data_models.Listener(id='listener2')]
+        lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners)
+        mock_lb_repo_get.return_value = lb
         mock_eng = mock.Mock()
-        mock_eng_post = mock.Mock()
-        mock_taskflow_load.side_effect = [mock_eng, mock_eng_post]
-        _post_flow = mock.MagicMock()
-        mock_get_create_load_balancer_graph_flows.return_value = (
-            _flow_mock, _post_flow
-        )
-        store = {constants.LOADBALANCER_ID: LB_ID,
-                 'update_dict': {'topology': 'ACTIVE_STANDBY'}}
+        mock_taskflow_load.return_value = mock_eng
+        store = {
+            constants.LOADBALANCER_ID: LB_ID,
+            'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY}
+        }
 
         cw = controller_worker.ControllerWorker()
         cw.create_load_balancer(LB_ID)
 
-        calls = [mock.call(_flow_mock, store=store),
-                 mock.call(_post_flow, store=store)]
-        mock_taskflow_load.assert_has_calls(calls, any_order=True)
+        # mock_create_single_topology.assert_not_called()
+        # mock_create_active_standby_topology.assert_called_once()
+        mock_get_create_load_balancer_flow.assert_called_with(
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY, listeners=lb.listeners)
+        mock_taskflow_load.assert_called_with(
+            mock_get_create_load_balancer_flow.return_value, store=store)
         mock_eng.run.assert_any_call()
-        mock_eng_post.run.assert_any_call()
-        mock_get_create_load_balancer_graph_flows.assert_called_once_with(
-            'ACTIVE_STANDBY', 'post-amphora-association'
-        )
-        self.assertFalse(mock_get_create_load_balancer_flow.called)
-        self.assertFalse(mock_get_post_lb_amp_association_flow.called)
 
     @mock.patch('octavia.controller.worker.flows.load_balancer_flows.'
                 'LoadBalancerFlows.get_delete_load_balancer_flow',
