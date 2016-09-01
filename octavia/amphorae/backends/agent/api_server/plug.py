@@ -16,6 +16,7 @@
 import logging
 import os
 import shutil
+import socket
 import stat
 import subprocess
 
@@ -47,9 +48,11 @@ template_port = j2_env.get_template(ETH_X_PORT_CONF)
 template_vip = j2_env.get_template(ETH_X_VIP_CONF)
 
 
-def plug_vip(vip, subnet_cidr, gateway, mac_address, vrrp_ip=None):
+def plug_vip(vip, subnet_cidr, gateway,
+             mac_address, vrrp_ip=None, host_routes=None):
     # Validate vip and subnet_cidr, calculate broadcast address and netmask
     try:
+        render_host_routes = []
         ip = ipaddress.ip_address(
             vip if six.text_type == type(vip) else six.u(vip))
         network = ipaddress.ip_network(
@@ -65,6 +68,14 @@ def plug_vip(vip, subnet_cidr, gateway, mac_address, vrrp_ip=None):
                 vrrp_ip if six.text_type == type(vrrp_ip) else six.u(vrrp_ip)
             )
             vrrp_version = vrrp_ip_obj.version
+        if host_routes:
+            for hr in host_routes:
+                network = ipaddress.ip_network(
+                    hr['destination'] if isinstance(
+                        hr['destination'], six.text_type) else
+                    six.u(hr['destination']))
+                render_host_routes.append({'network': network,
+                                           'gw': hr['nexthop']})
     except ValueError:
         return flask.make_response(flask.jsonify(dict(
             message="Invalid VIP")), 400)
@@ -127,6 +138,7 @@ def plug_vip(vip, subnet_cidr, gateway, mac_address, vrrp_ip=None):
             gateway=gateway,
             vrrp_ip=vrrp_ip,
             vrrp_ipv6=vrrp_version is 6,
+            host_routes=render_host_routes,
         )
         text_file.write(text)
 
@@ -156,6 +168,59 @@ def plug_vip(vip, subnet_cidr, gateway, mac_address, vrrp_ip=None):
             vip=vip, interface=primary_interface))), 202)
 
 
+def _generate_network_file_text(netns_interface, fixed_ips):
+    text = ''
+    if fixed_ips is None:
+        text = template_port.render(interface=netns_interface)
+    else:
+        for index, fixed_ip in enumerate(fixed_ips, -1):
+            if index == -1:
+                netns_ip_interface = netns_interface
+            else:
+                netns_ip_interface = "{int}:{ip}".format(
+                    int=netns_interface, ip=index)
+            try:
+                ip_addr = fixed_ip['ip_address']
+                cidr = fixed_ip['subnet_cidr']
+                ip = ipaddress.ip_address(
+                    ip_addr if six.text_type == type(
+                        ip_addr) else six.u(ip_addr))
+                network = ipaddress.ip_network(
+                    cidr if six.text_type == type(
+                        cidr) else six.u(cidr))
+                broadcast = network.broadcast_address.exploded
+                netmask = (network.prefixlen if ip.version is 6
+                           else network.netmask.exploded)
+                host_routes = []
+                for hr in fixed_ip.get('host_routes', []):
+                    network = ipaddress.ip_network(
+                        hr['destination'] if isinstance(
+                            hr['destination'], six.text_type) else
+                        six.u(hr['destination']))
+                    host_routes.append({'network': network,
+                                        'gw': hr['nexthop']})
+            except ValueError:
+                return flask.make_response(flask.jsonify(dict(
+                    message="Invalid network IP")), 400)
+            new_text = template_port.render(interface=netns_ip_interface,
+                                            ipv6=ip.version is 6,
+                                            ip_address=ip.exploded,
+                                            broadcast=broadcast,
+                                            netmask=netmask,
+                                            host_routes=host_routes)
+            text = '\n'.join([text, new_text])
+    return text
+
+
+def _check_ip_addresses(fixed_ips):
+    if fixed_ips:
+        for ip in fixed_ips:
+            try:
+                socket.inet_pton(socket.AF_INET, ip.get('ip_address'))
+            except socket.error:
+                socket.inet_pton(socket.AF_INET6, ip.get('ip_address'))
+
+
 def plug_network(mac_address, fixed_ips):
 
     # Check if the interface is already in the network namespace
@@ -167,6 +232,13 @@ def plug_network(mac_address, fixed_ips):
 
     # This is the interface as it was initially plugged into the
     # default network namespace, this will likely always be eth1
+
+    try:
+        _check_ip_addresses(fixed_ips=fixed_ips)
+    except socket.error:
+        return flask.make_response(flask.jsonify(dict(
+            message="Invalid network port")), 400)
+
     default_netns_interface = _interface_by_mac(mac_address)
 
     # We need to determine the interface name when inside the namespace
@@ -199,40 +271,8 @@ def plug_network(mac_address, fixed_ips):
 
     with os.fdopen(os.open(interface_file_path, flags, mode),
                    'w') as text_file:
-        if fixed_ips is None:
-            text = template_port.render(interface=netns_interface)
-            text_file.write(text)
-        else:
-            ip_count = -1
-            for fixed_ip in fixed_ips:
-                if ip_count == -1:
-                    netns_ip_interface = netns_interface
-                    ip_count += 1
-                else:
-                    netns_ip_interface = "{int}:{ip}".format(
-                        int=netns_interface, ip=ip_count)
-                    ip_count += 1
-                try:
-                    ip_addr = fixed_ip['ip_address']
-                    cidr = fixed_ip['subnet_cidr']
-                    ip = ipaddress.ip_address(
-                        ip_addr if six.text_type == type(
-                            ip_addr) else six.u(ip_addr))
-                    network = ipaddress.ip_network(
-                        cidr if six.text_type == type(
-                            cidr) else six.u(cidr))
-                    broadcast = network.broadcast_address.exploded
-                    netmask = (network.prefixlen if ip.version is 6
-                               else network.netmask.exploded)
-                except ValueError:
-                    return flask.make_response(flask.jsonify(dict(
-                        message="Invalid network IP")), 400)
-                text = template_port.render(interface=netns_ip_interface,
-                                            ipv6=ip.version is 6,
-                                            ip_address=ip.exploded,
-                                            broadcast=broadcast,
-                                            netmask=netmask)
-                text_file.write(text)
+        text = _generate_network_file_text(netns_interface, fixed_ips)
+        text_file.write(text)
 
     # Update the list of interfaces to add to the namespace
     _update_plugged_interfaces_file(netns_interface, mac_address)

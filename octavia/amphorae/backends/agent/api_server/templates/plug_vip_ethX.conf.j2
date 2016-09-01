@@ -23,6 +23,10 @@ address {{ vrrp_ip }}
 broadcast {{ broadcast }}
 netmask {{ netmask }}
 gateway {{ gateway }}
+{%- for hr in host_routes %}
+up route add -net {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
+down route del -net {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
+{%- endfor %}
 {%- else %}
 iface {{ interface }} inet{{ '6' if vip_ipv6 }} {{ 'auto' if vip_ipv6 else 'dhcp' }}
 {%- endif %}

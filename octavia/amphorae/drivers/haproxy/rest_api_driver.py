@@ -127,10 +127,14 @@ class HaproxyAmphoraLoadBalancerDriver(
             # compatibility with old amphora agent versions.
 
             port = amphorae_network_config.get(amphora.id).vrrp_port
+            host_routes = [{'nexthop': hr.nexthop,
+                            'destination': hr.destination}
+                           for hr in subnet.host_routes]
             net_info = {'subnet_cidr': subnet.cidr,
                         'gateway': subnet.gateway_ip,
                         'mac_address': port.mac_address,
-                        'vrrp_ip': amphora.vrrp_ip}
+                        'vrrp_ip': amphora.vrrp_ip,
+                        'host_routes': host_routes}
             try:
                 self.client.plug_vip(amphora,
                                      load_balancer.vip.ip_address,
@@ -143,8 +147,12 @@ class HaproxyAmphoraLoadBalancerDriver(
     def post_network_plug(self, amphora, port):
         fixed_ips = []
         for fixed_ip in port.fixed_ips:
+            host_routes = [{'nexthop': hr.nexthop,
+                            'destination': hr.destination}
+                           for hr in fixed_ip.subnet.host_routes]
             ip = {'ip_address': fixed_ip.ip_address,
-                  'subnet_cidr': fixed_ip.subnet.cidr}
+                  'subnet_cidr': fixed_ip.subnet.cidr,
+                  'host_routes': host_routes}
             fixed_ips.append(ip)
         port_info = {'mac_address': port.mac_address,
                      'fixed_ips': fixed_ips}

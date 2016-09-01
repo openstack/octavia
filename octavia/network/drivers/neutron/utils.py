@@ -18,12 +18,17 @@ from octavia.network import data_models as network_models
 
 def convert_subnet_dict_to_model(subnet_dict):
     subnet = subnet_dict.get('subnet', subnet_dict)
+    subnet_hrs = subnet.get('host_routes', [])
+    host_routes = [network_models.HostRoute(nexthop=hr.get('nexthop'),
+                                            destination=hr.get('destination'))
+                   for hr in subnet_hrs]
     return network_models.Subnet(id=subnet.get('id'), name=subnet.get('name'),
                                  network_id=subnet.get('network_id'),
                                  project_id=subnet.get('tenant_id'),
                                  gateway_ip=subnet.get('gateway_ip'),
                                  cidr=subnet.get('cidr'),
-                                 ip_version=subnet.get('ip_version')
+                                 ip_version=subnet.get('ip_version'),
+                                 host_routes=host_routes
                                  )
 
 

@@ -28,8 +28,8 @@ from octavia.network import data_models as network_models
 from octavia.tests.unit import base as base
 from octavia.tests.unit.common.sample_configs import sample_configs
 
-FAKE_CIDR = '10.0.0.0/24'
-FAKE_GATEWAY = '10.0.0.1'
+FAKE_CIDR = '198.51.100.0/24'
+FAKE_GATEWAY = '192.51.100.1'
 FAKE_IP = 'fake'
 FAKE_PEM_FILENAME = "file_name"
 FAKE_UUID_1 = uuidutils.generate_uuid()
@@ -41,6 +41,11 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
 
     def setUp(self):
         super(TestHaproxyAmphoraLoadBalancerDriverTest, self).setUp()
+
+        DEST1 = '198.51.100.0/24'
+        DEST2 = '203.0.113.0/24'
+        NEXTHOP = '192.0.2.1'
+
         self.driver = driver.HaproxyAmphoraLoadBalancerDriver()
 
         self.driver.cert_manager = mock.MagicMock()
@@ -54,15 +59,22 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.sv = sample_configs.sample_vip_tuple()
         self.lb = self.sl.load_balancer
         self.fixed_ip = mock.MagicMock()
-        self.fixed_ip.ip_address = '10.0.0.5'
-        self.fixed_ip.subnet.cidr = '10.0.0.0/24'
+        self.fixed_ip.ip_address = '198.51.100.5'
+        self.fixed_ip.subnet.cidr = '198.51.100.0/24'
         self.port = network_models.Port(mac_address=FAKE_MAC_ADDRESS,
                                         fixed_ips=[self.fixed_ip])
 
+        self.host_routes = [network_models.HostRoute(destination=DEST1,
+                                                     nexthop=NEXTHOP),
+                            network_models.HostRoute(destination=DEST2,
+                                                     nexthop=NEXTHOP)]
+        host_routes_data = [{'destination': DEST1, 'nexthop': NEXTHOP},
+                            {'destination': DEST2, 'nexthop': NEXTHOP}]
         self.subnet_info = {'subnet_cidr': FAKE_CIDR,
                             'gateway': FAKE_GATEWAY,
                             'mac_address': FAKE_MAC_ADDRESS,
-                            'vrrp_ip': self.amp.vrrp_ip}
+                            'vrrp_ip': self.amp.vrrp_ip,
+                            'host_routes': host_routes_data}
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.get_host_names')
@@ -158,6 +170,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         amphorae_network_config = mock.MagicMock()
         amphorae_network_config.get().vip_subnet.cidr = FAKE_CIDR
         amphorae_network_config.get().vip_subnet.gateway_ip = FAKE_GATEWAY
+        amphorae_network_config.get().vip_subnet.host_routes = self.host_routes
         amphorae_network_config.get().vrrp_port = self.port
         self.driver.post_vip_plug(self.amp, self.lb, amphorae_network_config)
         self.driver.client.plug_vip.assert_called_once_with(
@@ -176,8 +189,44 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.post_network_plug(self.amp, self.port)
         self.driver.client.plug_network.assert_called_once_with(
             self.amp, dict(mac_address=FAKE_MAC_ADDRESS,
-                           fixed_ips=[dict(ip_address='10.0.0.5',
-                                           subnet_cidr='10.0.0.0/24')]))
+                           fixed_ips=[dict(ip_address='198.51.100.5',
+                                           subnet_cidr='198.51.100.0/24',
+                                           host_routes=[])]))
+
+    def test_post_network_plug_with_host_routes(self):
+        SUBNET_ID = 'SUBNET_ID'
+        FIXED_IP1 = '192.0.2.2'
+        FIXED_IP2 = '192.0.2.3'
+        SUBNET_CIDR = '192.0.2.0/24'
+        DEST1 = '198.51.100.0/24'
+        DEST2 = '203.0.113.0/24'
+        NEXTHOP = '192.0.2.1'
+        host_routes = [network_models.HostRoute(destination=DEST1,
+                                                nexthop=NEXTHOP),
+                       network_models.HostRoute(destination=DEST2,
+                                                nexthop=NEXTHOP)]
+        subnet = network_models.Subnet(id=SUBNET_ID, cidr=SUBNET_CIDR,
+                                       ip_version=4, host_routes=host_routes)
+        fixed_ips = [
+            network_models.FixedIP(subnet_id=subnet.id, ip_address=FIXED_IP1,
+                                   subnet=subnet),
+            network_models.FixedIP(subnet_id=subnet.id, ip_address=FIXED_IP2,
+                                   subnet=subnet)
+        ]
+        port = network_models.Port(mac_address=FAKE_MAC_ADDRESS,
+                                   fixed_ips=fixed_ips)
+        self.driver.post_network_plug(self.amp, port)
+        expected_fixed_ips = [
+            {'ip_address': FIXED_IP1, 'subnet_cidr': SUBNET_CIDR,
+             'host_routes': [{'destination': DEST1, 'nexthop': NEXTHOP},
+                             {'destination': DEST2, 'nexthop': NEXTHOP}]},
+            {'ip_address': FIXED_IP2, 'subnet_cidr': SUBNET_CIDR,
+             'host_routes': [{'destination': DEST1, 'nexthop': NEXTHOP},
+                             {'destination': DEST2, 'nexthop': NEXTHOP}]}
+        ]
+        self.driver.client.plug_network.assert_called_once_with(
+            self.amp, dict(mac_address=FAKE_MAC_ADDRESS,
+                           fixed_ips=expected_fixed_ips))
 
     def test_get_vrrp_interface(self):
         self.driver.get_vrrp_interface(self.amp)
@@ -745,7 +794,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
     @requests_mock.mock()
     def test_get_interface(self, m):
         interface = [{"interface": "eth1"}]
-        ip_addr = '10.0.0.1'
+        ip_addr = '192.51.100.1'
         m.get("{base}/interface/{ip_addr}".format(base=self.base_url,
                                                   ip_addr=ip_addr),
               json=interface)
