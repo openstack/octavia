@@ -16,17 +16,18 @@
 
 import os
 
-from octavia.tests.tempest import config as octavia_config
-
 from tempest.test_discover import plugins
+
+import octavia
+from octavia.tests.tempest import config as octavia_config
 
 
 class OctaviaTempestPlugin(plugins.TempestPlugin):
 
     def load_tests(self):
         base_path = os.path.split(os.path.dirname(
-            os.path.abspath(__file__)))[0]
-        test_dir = "octavia/tests/tempest/v1"
+            os.path.abspath(octavia.__file__)))[0]
+        test_dir = "octavia/tests/tempest"
         full_test_dir = os.path.join(base_path, test_dir)
         return full_test_dir, base_path
 
