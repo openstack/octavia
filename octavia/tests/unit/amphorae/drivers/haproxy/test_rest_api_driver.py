@@ -122,18 +122,6 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.client.reload_listener.assert_called_once_with(
             self.amp, self.sl.id)
 
-        # listener down
-        self.driver.client.get_cert_md5sum.side_effect = [
-            'd41d8cd98f00b204e9800998ecf8427e'] * 3
-        self.driver.jinja.build_config.side_effect = ['fake_config']
-        self.driver.client.get_listener_status.side_effect = [
-            dict(status='BLAH')]
-
-        self.driver.update(self.sl, self.sv)
-
-        self.driver.client.start_listener.assert_called_once_with(
-            self.amp, self.sl.id)
-
     def test_upload_cert_amp(self):
         self.driver.upload_cert_amp(self.amp, six.b('test'))
         self.driver.client.update_cert_for_rotation.assert_called_once_with(

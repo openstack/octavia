@@ -164,7 +164,9 @@ def upload_haproxy_config(amphora_id, listener_id):
 
 def start_stop_listener(listener_id, action):
     action = action.lower()
-    if action not in ['start', 'stop', 'reload']:
+    if action not in [consts.AMP_ACTION_START,
+                      consts.AMP_ACTION_STOP,
+                      consts.AMP_ACTION_RELOAD]:
         return flask.make_response(flask.jsonify(dict(
             message='Invalid Request',
             details="Unknown action: {0}".format(action))), 400)
@@ -176,6 +178,12 @@ def start_stop_listener(listener_id, action):
     # on this amphora and not write the file if VRRP is not in use
     if os.path.exists(util.keepalived_check_script_path()):
         vrrp_check_script_update(listener_id, action)
+
+    # HAProxy does not start the process when given a reload
+    # so start it if haproxy is not already running
+    if action == consts.AMP_ACTION_RELOAD:
+        if consts.OFFLINE == _check_haproxy_status(listener_id):
+            action = consts.AMP_ACTION_START
 
     cmd = ("/usr/sbin/service haproxy-{listener_id} {action}".format(
         listener_id=listener_id, action=action))
@@ -189,7 +197,8 @@ def start_stop_listener(listener_id, action):
             return flask.make_response(flask.jsonify(dict(
                 message="Error {0}ing haproxy".format(action),
                 details=e.output)), 500)
-    if action in ['stop', 'reload']:
+    if action in [consts.AMP_ACTION_STOP,
+                  consts.AMP_ACTION_RELOAD]:
         return flask.make_response(flask.jsonify(
             dict(message='OK',
                  details='Listener {listener_id} {action}ed'.format(
@@ -437,7 +446,7 @@ def _cert_file_path(listener_id, filename):
 
 def vrrp_check_script_update(listener_id, action):
     listener_ids = util.get_listeners()
-    if action == 'stop':
+    if action == consts.AMP_ACTION_STOP:
         listener_ids.remove(listener_id)
     args = []
     for listener_id in listener_ids:
@@ -450,3 +459,14 @@ def vrrp_check_script_update(listener_id, action):
     cmd = 'haproxy-vrrp-check {args}; exit $?'.format(args=' '.join(args))
     with open(util.haproxy_check_script_path(), 'w') as text_file:
         text_file.write(cmd)
+
+
+def _check_haproxy_status(listener_id):
+    if os.path.exists(util.pid_path(listener_id)):
+        if os.path.exists(
+                os.path.join('/proc', util.get_haproxy_pid(listener_id))):
+            return consts.ACTIVE
+        else:  # pid file but no process...
+            return consts.OFFLINE
+    else:
+        return consts.OFFLINE

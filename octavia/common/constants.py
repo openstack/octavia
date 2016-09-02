@@ -327,3 +327,7 @@ FLOW_DOC_TITLES = {'AmphoraFlows': 'Amphora Flows',
                    'L7RuleFlows': 'Layer 7 Rule Flows'}
 
 NETNS_PRIMARY_INTERFACE = 'eth1'
+
+AMP_ACTION_START = 'start'
+AMP_ACTION_STOP = 'stop'
+AMP_ACTION_RELOAD = 'reload'

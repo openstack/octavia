@@ -85,7 +85,9 @@ def upload_keepalived_config():
 
 def manager_keepalived_service(action):
     action = action.lower()
-    if action not in ['start', 'stop', 'reload']:
+    if action not in [consts.AMP_ACTION_START,
+                      consts.AMP_ACTION_STOP,
+                      consts.AMP_ACTION_RELOAD]:
         return flask.make_response(flask.jsonify(dict(
             message='Invalid Request',
             details="Unknown action: {0}".format(action))), 400)

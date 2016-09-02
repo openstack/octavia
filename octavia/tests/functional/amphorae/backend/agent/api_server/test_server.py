@@ -184,6 +184,40 @@ class TestServerTestCase(base.TestCase):
         mock_subprocess.assert_called_with(
             ['/usr/sbin/service', 'haproxy-123', 'start'], stderr=-2)
 
+    @mock.patch('os.path.exists')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
+                'vrrp_check_script_update')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.'
+                '_check_haproxy_status')
+    @mock.patch('subprocess.check_output')
+    def test_reload(self, mock_subprocess, mock_haproxy_status,
+                    mock_vrrp, mock_exists):
+
+        # Process running so reload
+        mock_exists.return_value = True
+        mock_haproxy_status.return_value = consts.ACTIVE
+        rv = self.app.put('/' + api_server.VERSION + '/listeners/123/reload')
+        self.assertEqual(202, rv.status_code)
+        self.assertEqual(
+            {'message': 'OK',
+             'details': 'Listener 123 reloaded'},
+            json.loads(rv.data.decode('utf-8')))
+        mock_subprocess.assert_called_with(
+            ['/usr/sbin/service', 'haproxy-123', 'reload'], stderr=-2)
+
+        # Process not running so start
+        mock_exists.return_value = True
+        mock_haproxy_status.return_value = consts.OFFLINE
+        rv = self.app.put('/' + api_server.VERSION + '/listeners/123/reload')
+        self.assertEqual(202, rv.status_code)
+        self.assertEqual(
+            {'message': 'OK',
+             'details': 'Configuration file is valid\nhaproxy daemon for'
+                        ' 123 started'},
+            json.loads(rv.data.decode('utf-8')))
+        mock_subprocess.assert_called_with(
+            ['/usr/sbin/service', 'haproxy-123', 'start'], stderr=-2)
+
     @mock.patch('socket.gethostname')
     @mock.patch('subprocess.check_output')
     def test_info(self, mock_subbprocess, mock_hostname):

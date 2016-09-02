@@ -28,13 +28,13 @@ from octavia.amphorae.drivers import driver_base as driver_base
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.keepalived import vrrp_rest_driver
 from octavia.common.config import cfg
-from octavia.common import constants
+from octavia.common import constants as consts
 from octavia.common.jinja.haproxy import jinja_cfg
 from octavia.common.tls_utils import cert_parser
 from octavia.i18n import _LE, _LW
 
 LOG = logging.getLogger(__name__)
-API_VERSION = constants.API_VERSION
+API_VERSION = consts.API_VERSION
 OCTAVIA_API_CLIENT = (
     "Octavia HaProxy Rest Client/{version} "
     "(https://wiki.openstack.org/wiki/Octavia)").format(version=API_VERSION)
@@ -68,21 +68,13 @@ class HaproxyAmphoraLoadBalancerDriver(
         certs = self._process_tls_certificates(listener)
 
         for amp in listener.load_balancer.amphorae:
-            if amp.status != constants.DELETED:
+            if amp.status != consts.DELETED:
                 # Generate HaProxy configuration from listener object
                 config = self.jinja.build_config(amp,
                                                  listener,
                                                  certs['tls_cert'])
                 self.client.upload_config(amp, listener.id, config)
-                # todo (german): add a method to REST interface to reload or
-                #                start without having to check
-                # Is that listener running?
-                r = self.client.get_listener_status(amp,
-                                                    listener.id)
-                if r['status'] == 'ACTIVE':
-                    self.client.reload_listener(amp, listener.id)
-                else:
-                    self.client.start_listener(amp, listener.id)
+                self.client.reload_listener(amp, listener.id)
 
     def upload_cert_amp(self, amp, pem):
         LOG.debug("Amphora %s updating cert in REST driver "
@@ -92,7 +84,7 @@ class HaproxyAmphoraLoadBalancerDriver(
 
     def _apply(self, func, listener=None, *args):
         for amp in listener.load_balancer.amphorae:
-            if amp.status != constants.DELETED:
+            if amp.status != consts.DELETED:
                 func(amp, listener.id, *args)
 
     def stop(self, listener, vip):
@@ -114,7 +106,7 @@ class HaproxyAmphoraLoadBalancerDriver(
         pass
 
     def post_vip_plug(self, amphora, load_balancer, amphorae_network_config):
-        if amphora.status != constants.DELETED:
+        if amphora.status != consts.DELETED:
             subnet = amphorae_network_config.get(amphora.id).vip_subnet
             # NOTE(blogan): using the vrrp port here because that
             # is what the allowed address pairs network driver sets
@@ -224,13 +216,19 @@ class AmphoraAPIClient(object):
         self.delete = functools.partial(self.request, 'delete')
         self.head = functools.partial(self.request, 'head')
 
-        self.start_listener = functools.partial(self._action, 'start')
-        self.stop_listener = functools.partial(self._action, 'stop')
-        self.reload_listener = functools.partial(self._action, 'reload')
+        self.start_listener = functools.partial(self._action,
+                                                consts.AMP_ACTION_START)
+        self.stop_listener = functools.partial(self._action,
+                                               consts.AMP_ACTION_STOP)
+        self.reload_listener = functools.partial(self._action,
+                                                 consts.AMP_ACTION_RELOAD)
 
-        self.start_vrrp = functools.partial(self._vrrp_action, 'start')
-        self.stop_vrrp = functools.partial(self._vrrp_action, 'stop')
-        self.reload_vrrp = functools.partial(self._vrrp_action, 'reload')
+        self.start_vrrp = functools.partial(self._vrrp_action,
+                                            consts.AMP_ACTION_START)
+        self.stop_vrrp = functools.partial(self._vrrp_action,
+                                           consts.AMP_ACTION_STOP)
+        self.reload_vrrp = functools.partial(self._vrrp_action,
+                                             consts.AMP_ACTION_RELOAD)
 
         self.session = requests.Session()
         self.session.cert = CONF.haproxy_amphora.client_cert
