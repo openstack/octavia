@@ -14,6 +14,7 @@ from glanceclient import client as glance_client
 from neutronclient.neutron import client as neutron_client
 from novaclient import api_versions
 from novaclient import client as nova_client
+from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
 
@@ -21,6 +22,8 @@ from octavia.common import keystone
 from octavia.i18n import _LE
 
 LOG = logging.getLogger(__name__)
+CONF = cfg.CONF
+
 GLANCE_VERSION = '2'
 NEUTRON_VERSION = '2.0'
 NOVA_VERSION = '2.1'
@@ -44,9 +47,10 @@ class NovaAuth(object):
         :return: a Nova Client object.
         :raises Exception: if the client cannot be created
         """
+        ksession = keystone.KeystoneSession()
         if not cls.nova_client:
             kwargs = {'region_name': region,
-                      'session': keystone.get_session(),
+                      'session': ksession.get_session(),
                       'endpoint_type': endpoint_type,
                       'insecure': insecure}
             if service_name:
@@ -82,9 +86,10 @@ class NeutronAuth(object):
         :return: a Neutron Client object.
         :raises Exception: if the client cannot be created
         """
+        ksession = keystone.KeystoneSession()
         if not cls.neutron_client:
             kwargs = {'region_name': region,
-                      'session': keystone.get_session(),
+                      'session': ksession.get_session(),
                       'endpoint_type': endpoint_type,
                       'insecure': insecure}
             if service_name:
@@ -120,9 +125,10 @@ class GlanceAuth(object):
         :return: a Glance Client object.
         :raises Exception: if the client cannot be created
         """
+        ksession = keystone.KeystoneSession()
         if not cls.glance_client:
             kwargs = {'region_name': region,
-                      'session': keystone.get_session(),
+                      'session': ksession.get_session(),
                       'interface': endpoint_type}
             if service_name:
                 kwargs['service_name'] = service_name

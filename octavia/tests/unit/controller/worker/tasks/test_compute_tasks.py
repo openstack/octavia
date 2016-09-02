@@ -36,7 +36,6 @@ AMPHORA_ID = uuidutils.generate_uuid()
 COMPUTE_ID = uuidutils.generate_uuid()
 LB_NET_IP = '192.0.2.1'
 PORT_ID = uuidutils.generate_uuid()
-AUTH_VERSION = '2'
 SERVER_GRPOUP_ID = uuidutils.generate_uuid()
 
 
@@ -70,7 +69,6 @@ class TestComputeTasks(base.TestCase):
         conf.config(group="controller_worker", amp_active_wait_sec=AMP_WAIT)
         conf.config(group="controller_worker",
                     amp_secgroup_list=AMP_SEC_GROUPS)
-        conf.config(group="keystone_authtoken", auth_version=AUTH_VERSION)
         conf.config(group="controller_worker", amp_image_owner_id='')
 
         _amphora_mock.id = AMPHORA_ID

@@ -91,7 +91,6 @@ class TestNovaClient(base.TestCase):
 
     def setUp(self):
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(group="keystone_authtoken", auth_version='2')
         self.net_name = "lb-mgmt-net"
         conf.config(group="networking", lb_network_name=self.net_name)
         conf.config(group="controller_worker", amp_boot_network_list=[1, 2])

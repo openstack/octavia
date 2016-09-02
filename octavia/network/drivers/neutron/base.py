@@ -29,7 +29,6 @@ DNS_INT_EXT_ALIAS = 'dns-integration'
 SEC_GRP_EXT_ALIAS = 'security-group'
 
 CONF = cfg.CONF
-CONF.import_group('neutron', 'octavia.common.config')
 
 
 class BaseNeutronDriver(base.AbstractNetworkDriver):

@@ -1,0 +1,11 @@
+---
+prelude: >
+    Extended support for Keystone API v3.
+features:
+  - Octavia supports different Keystone APIs and choose authentication
+    mechanism based on configuration specified in "keystone_authtoken" section
+    of octavia.conf file.
+upgrade:
+  - From configuration file section "keystone_authtoken_v3" was removed and all
+    parameters are stored in "keystone_authtoken" section of configuration
+    file.

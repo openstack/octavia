@@ -70,7 +70,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                     ]
                 }
                 self.k_session = mock.patch(
-                    'octavia.common.keystone.get_session').start()
+                    'keystoneauth1.session.Session').start()
                 self.driver = allowed_address_pairs.AllowedAddressPairsDriver()
 
     @mock.patch('octavia.network.drivers.neutron.base.BaseNeutronDriver.'

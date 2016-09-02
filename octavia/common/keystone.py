@@ -12,59 +12,32 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from keystoneauth1.identity import v2 as v2_client
-from keystoneauth1.identity import v3 as v3_client
-from keystoneauth1 import session
+from keystoneauth1 import loading as ks_loading
 from oslo_config import cfg
 from oslo_log import log as logging
-from oslo_utils import excutils
 
-from octavia.i18n import _LE
-
+from octavia.common import constants
 
 LOG = logging.getLogger(__name__)
 
-cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
-cfg.CONF.import_group('keystone_authtoken_v3', 'octavia.common.config')
 
-_SESSION = None
+class KeystoneSession:
 
+    def __init__(self, section=constants.SERVICE_AUTH):
+        self._session = None
+        self.section = section
+        ks_loading.register_auth_conf_options(cfg.CONF, self.section)
+        ks_loading.register_session_conf_options(cfg.CONF, self.section)
 
-def get_session():
-    """Initializes a Keystone session.
+    def get_session(self):
+        """Initializes a Keystone session.
 
-    :return: a Keystone Session object
-    :raises Exception: if the session cannot be established
-    """
-    global _SESSION
-    if not _SESSION:
+        :return: a Keystone Session object
+        """
+        if not self._session:
+            self._auth = ks_loading.load_auth_from_conf_options(
+                cfg.CONF, self.section)
+            self._session = ks_loading.load_session_from_conf_options(
+                cfg.CONF, self.section, auth=self._auth)
 
-        kwargs = {'auth_url': cfg.CONF.keystone_authtoken.auth_uri,
-                  'username': cfg.CONF.keystone_authtoken.admin_user,
-                  'password': cfg.CONF.keystone_authtoken.admin_password}
-
-        if cfg.CONF.keystone_authtoken.auth_version == '2':
-            client = v2_client
-            kwargs['tenant_name'] = (cfg.CONF.keystone_authtoken.
-                                     admin_tenant_name)
-        elif cfg.CONF.keystone_authtoken.auth_version == '3':
-            client = v3_client
-            kwargs['project_name'] = (cfg.CONF.keystone_authtoken.
-                                      admin_tenant_name)
-            kwargs['user_domain_name'] = (cfg.CONF.keystone_authtoken_v3.
-                                          admin_user_domain)
-            kwargs['project_domain_name'] = (cfg.CONF.keystone_authtoken_v3.
-                                             admin_project_domain)
-        else:
-            raise Exception('Unknown keystone version!')
-
-        try:
-            kc = client.Password(**kwargs)
-            _SESSION = session.Session(
-                auth=kc, verify=(cfg.CONF.keystone_authtoken.cafile or
-                                 not cfg.CONF.keystone_authtoken.insecure))
-        except Exception:
-            with excutils.save_and_reraise_exception():
-                LOG.exception(_LE("Error creating Keystone session."))
-
-    return _SESSION
+        return self._session

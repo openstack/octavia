@@ -33,7 +33,6 @@ class TestAmphoraFlows(base.TestCase):
     def setUp(self):
         super(TestAmphoraFlows, self).setUp()
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        self.conf.config(group="keystone_authtoken", auth_version=AUTH_VERSION)
         self.conf.config(
             group="controller_worker",
             amphora_driver='amphora_haproxy_rest_driver')
