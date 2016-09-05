@@ -42,6 +42,9 @@ class BaseDataModel(object):
             return self.to_dict() == other.to_dict()
         return False
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     @classmethod
     def from_dict(cls, dict):
         return cls(**dict)
