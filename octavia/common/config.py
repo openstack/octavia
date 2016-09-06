@@ -445,10 +445,8 @@ messaging.set_transport_defaults(control_exchange='octavia')
 _SQL_CONNECTION_DEFAULT = 'sqlite://'
 # Update the default QueuePool parameters. These can be tweaked by the
 # configuration variables - max_pool_size, max_overflow and pool_timeout
-db_options.set_defaults(cfg.CONF,
-                        connection=_SQL_CONNECTION_DEFAULT,
-                        sqlite_db='', max_pool_size=10,
-                        max_overflow=20, pool_timeout=10)
+db_options.set_defaults(cfg.CONF, connection=_SQL_CONNECTION_DEFAULT,
+                        max_pool_size=10, max_overflow=20, pool_timeout=10)
 
 logging.register_options(cfg.CONF)
 
