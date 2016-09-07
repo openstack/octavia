@@ -31,9 +31,15 @@ class TestUpdateHealthDb(base.TestCase):
 
     def setUp(self):
         super(TestUpdateHealthDb, self).setUp()
+
         cfg.CONF.set_override(group='health_manager',
                               name='event_streamer_driver',
                               override='queue_event_streamer')
+
+        session_patch = mock.patch('octavia.db.api.get_session')
+        self.addCleanup(session_patch.stop)
+        self.mock_session = session_patch.start()
+
         self.hm = update_db.UpdateHealthDb()
         self.event_client = mock.MagicMock()
         self.hm.event_streamer.client = self.event_client
@@ -54,8 +60,7 @@ class TestUpdateHealthDb(base.TestCase):
         self.hm.member_repo = self.member_repo
         self.hm.pool_repo = self.pool_repo
 
-    @mock.patch('octavia.db.api.get_session')
-    def test_update_health_event_stream(self, session):
+    def test_update_health_event_stream(self):
         health = {
             "id": self.FAKE_UUID_1,
             "listeners": {
@@ -81,14 +86,12 @@ class TestUpdateHealthDb(base.TestCase):
                 'info_type': 'pool', 'info_id': 'pool-id-1',
                 'info_payload': {'operating_status': 'ONLINE'}})
 
-    @mock.patch('octavia.db.api.get_session')
-    def test_update_health_no_listener(self, session):
+    def test_update_health_no_listener(self):
 
         health = {
             "id": self.FAKE_UUID_1,
             "listeners": {}}
 
-        session.return_value = 'blah'
         lb = mock.MagicMock()
         lb.operating_status.lower.return_value = 'blah'
         self.amphora_repo.get.load_balancer_id.return_value = self.FAKE_UUID_1
@@ -99,8 +102,7 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(lb.operating_status.lower.called)
         self.assertTrue(self.loadbalancer_repo.update.called)
 
-    @mock.patch('octavia.db.api.get_session')
-    def test_update_health_Online(self, session):
+    def test_update_health_Online(self):
 
         health = {
             "id": self.FAKE_UUID_1,
@@ -114,7 +116,8 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session.return_value = 'blah'
+        self.mock_session.return_value = 'blah'
+
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
 
@@ -140,8 +143,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         self.hm.update_health(health)
 
-    @mock.patch('octavia.db.api.get_session')
-    def test_update_health_member_down(self, session):
+    def test_update_health_member_down(self):
 
         health = {
             "id": self.FAKE_UUID_1,
@@ -155,7 +157,7 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session.return_value = 'blah'
+        self.mock_session.return_value = 'blah'
 
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
@@ -183,8 +185,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         self.hm.update_health(health)
 
-    @mock.patch('octavia.db.api.get_session')
-    def test_update_health_member_no_check(self, session):
+    def test_update_health_member_no_check(self):
 
         health = {
             "id": self.FAKE_UUID_1,
@@ -199,7 +200,7 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session.return_value = 'blah'
+        self.mock_session.return_value = 'blah'
 
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
@@ -227,8 +228,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         self.hm.update_health(health)
 
-    @mock.patch('octavia.db.api.get_session')
-    def test_update_health_list_full_member_down(self, session):
+    def test_update_health_list_full_member_down(self):
 
         health = {
             "id": self.FAKE_UUID_1,
@@ -242,7 +242,7 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session.return_value = 'blah'
+        self.mock_session.return_value = 'blah'
 
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
@@ -270,8 +270,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         self.hm.update_health(health)
 
-    @mock.patch('octavia.db.api.get_session')
-    def test_update_health_Error(self, session):
+    def test_update_health_Error(self):
 
         health = {
             "id": self.FAKE_UUID_1,
@@ -285,7 +284,7 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session.return_value = 'blah'
+        self.mock_session.return_value = 'blah'
 
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
@@ -309,8 +308,7 @@ class TestUpdateHealthDb(base.TestCase):
                         'blah', member_id, operating_status=constants.ERROR)
 
     # Test the logic code paths
-    @mock.patch('octavia.db.api.get_session')
-    def test_update_health_Full(self, session):
+    def test_update_health_Full(self):
 
         health = {
             "id": self.FAKE_UUID_1,
@@ -343,7 +341,7 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session.return_value = 'blah'
+        self.mock_session.return_value = 'blah'
 
         self.hm.update_health(health)
 
@@ -360,8 +358,7 @@ class TestUpdateHealthDb(base.TestCase):
             'blah', "pool-id-3", operating_status=constants.DEGRADED)
 
     # Test code paths where objects are not found in the database
-    @mock.patch('octavia.db.api.get_session')
-    def test_update_health_Not_Found(self, session):
+    def test_update_health_Not_Found(self):
 
         health = {
             "id": self.FAKE_UUID_1,
@@ -375,8 +372,6 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session.return_value = 'blah'
-
         self.hm.listener_repo.update.side_effect = (
             [sqlalchemy.orm.exc.NoResultFound])
         self.hm.member_repo.update.side_effect = (
@@ -385,6 +380,8 @@ class TestUpdateHealthDb(base.TestCase):
             [sqlalchemy.orm.exc.NoResultFound])
         self.hm.loadbalancer_repo.update.side_effect = (
             [sqlalchemy.orm.exc.NoResultFound])
+
+        self.mock_session.return_value = 'blah'
 
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
