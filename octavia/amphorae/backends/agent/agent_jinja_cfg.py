@@ -33,7 +33,7 @@ class AgentJinjaTemplater(object):
     def __init__(self):
         template_loader = jinja2.FileSystemLoader(searchpath=os.path.dirname(
             TEMPLATES_DIR))
-        jinja_env = jinja2.Environment(loader=template_loader)
+        jinja_env = jinja2.Environment(loader=template_loader, autoescape=True)
         self.agent_template = jinja_env.get_template(
             constants.AGENT_CONF_TEMPLATE)
 

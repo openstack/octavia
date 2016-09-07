@@ -38,6 +38,7 @@ UPSTART_CONF = 'upstart.conf.j2'
 SYSVINIT_CONF = 'sysvinit.conf.j2'
 
 JINJA_ENV = jinja2.Environment(
+    autoescape=True,
     loader=jinja2.FileSystemLoader(os.path.dirname(
         os.path.realpath(__file__)
     ) + consts.AGENT_API_TEMPLATES))
@@ -53,7 +54,7 @@ class ParsingError(Exception):
 class Wrapped(object):
     def __init__(self, stream_):
         self.stream = stream_
-        self.hash = hashlib.md5()
+        self.hash = hashlib.md5()  # nosec
 
     def read(self, l):
         block = self.stream.read(l)
@@ -79,7 +80,7 @@ def get_haproxy_config(listener_id):
     with open(util.config_path(listener_id), 'r') as file:
         cfg = file.read()
         resp = flask.Response(cfg, mimetype='text/plain', )
-        resp.headers['ETag'] = hashlib.md5(six.b(cfg)).hexdigest()
+        resp.headers['ETag'] = hashlib.md5(six.b(cfg)).hexdigest()  # nosec
         return resp
 
 
@@ -346,7 +347,7 @@ def get_certificate_md5(listener_id, filename):
 
     with open(cert_path, 'r') as crt_file:
         cert = crt_file.read()
-        md5 = hashlib.md5(six.b(cert)).hexdigest()
+        md5 = hashlib.md5(six.b(cert)).hexdigest()  # nosec
         resp = flask.jsonify(dict(md5sum=md5))
         resp.headers['ETag'] = md5
         return resp

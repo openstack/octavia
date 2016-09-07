@@ -30,7 +30,7 @@ from octavia import version
 LOG = logging.getLogger(__name__)
 
 core_opts = [
-    cfg.IPOpt('bind_host', default='0.0.0.0',
+    cfg.IPOpt('bind_host', default='127.0.0.1',
               help=_("The host IP to bind to")),
     cfg.PortOpt('bind_port', default=9876,
                 help=_("The port to bind to")),
@@ -93,7 +93,7 @@ networking_opts = [
 ]
 
 healthmanager_opts = [
-    cfg.IPOpt('bind_ip', default='0.0.0.0',
+    cfg.IPOpt('bind_ip', default='127.0.0.1',
               help=_('IP address the controller will listen on for '
                      'heart beats')),
     cfg.PortOpt('bind_port', default=5555,
@@ -169,7 +169,7 @@ haproxy_amphora_opts = [
                       'suffixes.  Example: 10k')),
 
     # REST server
-    cfg.IPOpt('bind_host', default='0.0.0.0',
+    cfg.IPOpt('bind_host', default='0.0.0.0',  # nosec
               help=_("The host IP to bind to")),
     cfg.PortOpt('bind_port', default=9443,
                 help=_("The port to bind to")),
