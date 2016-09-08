@@ -15,6 +15,7 @@ import glob
 import docutils.core
 from docutils.parsers import rst
 from docutils.parsers.rst import directives
+from docutils.parsers.rst import roles
 import testtools
 
 
@@ -25,11 +26,17 @@ class FakeDirective(rst.Directive):
         return []
 
 
+def fake_role(name, rawtext, text, lineno, inliner,
+              options=None, content=None):
+    return [], []
+
+
 directives.register_directive('seqdiag', FakeDirective)
 directives.register_directive('blockdiag', FakeDirective)
 directives.register_directive('nwdiag', FakeDirective)
 directives.register_directive('actdiag', FakeDirective)
 directives.register_directive('graphviz', FakeDirective)
+roles.register_local_role('doc', fake_role)
 
 
 class TestTitles(testtools.TestCase):
