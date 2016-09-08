@@ -11,6 +11,9 @@ Active-Active, N+1 Amphorae Setup
 
 https://blueprints.launchpad.net/octavia/+spec/active-active-topology
 
+Problem description
+===================
+
 This blueprint describes how Octavia implements an *active-active*
 loadbalancer (LB) solution that is highly-available through redundant
 Amphorae. It presents the high-level service topology and suggests
@@ -34,8 +37,8 @@ and defines new terms to describe new components and features as necessary.
   designed / implemented only after initial release.
 
 
-Problem description
-===================
+Proposed change
+===============
 
 A tenant should be able to start a highly-available, loadbalancer for the
 tenant's backend services as follows:
@@ -232,7 +235,7 @@ Problem Details
   to its support for different Amphora types. The operator should be able
   to configure different types of algorithms for the Distributor. All
   algorithms should provide flow-affinity to allow TLS termination at the
-  amphora. See Distributor spec. for details.
+  amphora. See :doc:`active-active-distributor` for details.
 
 * Octavia controller shall seamlessly configure any newly created Amphora
   ([P2]_ including peer state synchronization, such as sticky-tables, if
@@ -245,10 +248,6 @@ Problem Details
   part of a single load balancer configuration need to be divided into smaller
   peer groups (consisting of 2 or 3 Amphorae) with which they should
   synchronize state information.
-
-
-Proposed change
-===============
 
 
 Required changes
@@ -491,7 +490,7 @@ Data model impact
   - new value: ``IN_CLUSTER``
 
 * Distributor table (*new*): Distributor information, similar to Amphora.
-  See Distributor spec.
+  See :doc:`active-active-distributor`
 
 * Cluster table (*new*): an extension to loadbalancer (i.e., one-to-one
   mapping to load-balancer)
@@ -524,11 +523,12 @@ Data model impact
   - `cluster_type`: type of Amphora Cluster implementation
 
 
-REST API Impact
+REST API impact
 ---------------
 
 * Distributor REST API -- This is a new internal API that will be secured
-  via two-way SSL certificate authentication. See Distributor spec.
+  via two-way SSL certificate authentication. See
+  :doc:`active-active-distributor`
 
 * Amphora REST API -- support configuration of disabling ``arp`` on VIP.
 
@@ -548,7 +548,7 @@ REST API Impact
 Security impact
 ---------------
 
-* See the Distributor spec. for Distributor related security impact.
+* See :doc:`active-active-distributor` for Distributor related security impact.
 
 
 Notifications impact
@@ -631,5 +631,5 @@ References
 .. [3] https://blueprints.launchpad.net/octavia/+spec/amphora-driver-interface
 .. [4] https://blueprints.launchpad.net/octavia/+spec/controller
 .. [5] https://blueprints.launchpad.net/octavia/+spec/operator-api
-.. [6] doc/main/api/haproxy-amphora-api.rst
+.. [6] :doc:`../../api/haproxy-amphora-api`
 .. [7] https://blueprints.launchpad.net/octavia/+spec/active-active-topology

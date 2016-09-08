@@ -4,16 +4,18 @@
 
  http://creativecommons.org/licenses/by/3.0/legalcode
 
-.. attention::
-  Please review the active-active topology blueprint first ("Active-Active,
-  N+1 Amphorae Setup",
-  https://review.openstack.org/#/c/234639/7/specs/version1/active-active-topology.rst).
-
 =================================================
 Distributor for Active-Active, N+1 Amphorae Setup
 =================================================
 
+.. attention::
+  Please review the active-active topology blueprint first (
+  :doc:`active-active-topology` )
+
 https://blueprints.launchpad.net/octavia/+spec/active-active-topology
+
+Problem description
+===================
 
 This blueprint describes how Octavia implements a *Distributor* to support the
 *active-active* loadbalancer (LB) solution, as described in the blueprint
@@ -38,8 +40,9 @@ and defines new terms to describe new components and features as necessary.
   **Note:** Items marked with [P2]_ refer to lower priority features to be
   designed / implemented only after initial release.
 
-Problem description
-===================
+
+Proposed change
+===============
 
 * Octavia shall implement a Distributor to support the active-active
   topology.
@@ -60,11 +63,12 @@ Problem description
 * The operator shall be able to configure the distribution policies,
   including affinity and availability (see below for details).
 
+
 Architecture
-============
+------------
 
 High-level Topology Description
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * The following diagram illustrates the Distributor's role in an active-active
   topology:
@@ -150,7 +154,7 @@ High-level Topology Description
      to the GW router (that is, it does not pass through the Distributor).
 
 Affinity of Flows to Amphorae
------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - Affinity is required to make sure related packets are forwarded to the
   same Amphora. At minimum, since TCP connections are terminated at the
@@ -225,7 +229,7 @@ Affinity of Flows to Amphorae
   abstraction will be used to allow other implementations at a later time.
 
 Forwarding with OVS and OpenFlow Rules
---------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * The reference implementation of the Distributor shall use OVS for
   forwarding and configure the Distributor through OpenFlow rules.
@@ -308,8 +312,8 @@ Forwarding with OVS and OpenFlow Rules
     return the complete list of Amphorae MAC addresses with positional
     information each time an Amphora is registered or unregistered.
 
-Proposed change
-===============
+Specific proposed changes
+-------------------------
 
 **Note:** These are changes on top of the changes described in the
 "Active-Active, N+1 Amphorae Setup" blueprint, (see
@@ -436,7 +440,7 @@ which Amphorae are registered with which Distributors and in which order:
 * position ``(sa.Integer, nullable=True)``
     Order in which Amphorae are registered with the Distributor.
 
-REST API Impact
+REST API impact
 ---------------
 Distributor will be running its own rest API server. This API will be secured
 using two-way SSL authentication, and use certificate rotation in the same
@@ -555,31 +559,8 @@ Other deployer impact
 Developer impact
 ----------------
 
-Implementation
-==============
-
-Assignee(s)
------------
-
-Work Items
-----------
-
-Dependencies
-============
-
-
-Testing
-=======
-
-* Unit tests with tox.
-* Function tests with tox.
-
-
-Documentation Impact
-====================
-
 Further Discussion
-==================
+------------------
 
 .. Note::
   This section captures some background, ideas, concerns, and remarks that
@@ -588,7 +569,7 @@ Further Discussion
   to be written, related blueprints (e.g., auto-scaled topology).
 
 [P2]_ Handling changes in Cluster size (manual or auto-scaled)
-----------------------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - The Distributor shall support different mechanism for preserving affinity
   of flows to Amphorae following a *change in the size* of the Amphorae
@@ -722,7 +703,7 @@ Further Discussion
     sense for Octavia as well.
 
 Forwarding Data-path Implementation Alternatives
-------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The current design uses L2 forwarding based only on L3 parameters and uses
 Direct Return routing (one-legged). The rational behind this approach is
@@ -732,7 +713,7 @@ serve all traffic even for very large workloads. Other approaches are
 possible.
 
 2-legged Router
-^^^^^^^^^^^^^^^
+_______________
 
 - Distributor acts as router, being in-path on both directions.
 
@@ -742,12 +723,12 @@ possible.
 - No need to use MAC forwarding -- use routing rules
 
 LVS
-^^^
+___
 
 Use LVS for Distributor.
 
 DNS
-^^^
+___
 
 Use DNS for the Distributor.
 
@@ -760,7 +741,7 @@ Use DNS for the Distributor.
 - Need a different public IP for each Amphora (no VIP)
 
 Pure SDN
-^^^^^^^^
+________
 
 - Implement the OpenFlow rules directly in the network, without a
   Distributor instance.
@@ -771,7 +752,7 @@ Pure SDN
   network and SDN controller are shared resources)
 
 Distributor Sharing
--------------------
+^^^^^^^^^^^^^^^^^^^
 
 - The initial implementation of the Distributor will not be shared between
   tenants until tests can be written to verify the security of this solution.
@@ -787,7 +768,7 @@ Distributor Sharing
   bottleneck.
 
 Distributor High-Availability
------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - The Distributor should be highly-available (as this is one of the
   motivations for the active-active topology). Once the initial active-active
@@ -818,6 +799,31 @@ Distributor High-Availability
   will be explored and decided when an HA Distributor specification is
   written and approved.
 
+
+Implementation
+==============
+
+Assignee(s)
+-----------
+
+Work Items
+----------
+
+Dependencies
+============
+
+
+Testing
+=======
+
+* Unit tests with tox.
+* Function tests with tox.
+
+
+Documentation Impact
+====================
+
+
 References
 ==========
 
@@ -826,5 +832,5 @@ References
 .. [3] https://blueprints.launchpad.net/octavia/+spec/amphora-driver-interface
 .. [4] https://blueprints.launchpad.net/octavia/+spec/controller
 .. [5] https://blueprints.launchpad.net/octavia/+spec/operator-api
-.. [6] doc/main/api/haproxy-amphora-api.rst
+.. [6] :doc:`../../api/haproxy-amphora-api`
 .. [7] https://blueprints.launchpad.net/octavia/+spec/active-active-topology
