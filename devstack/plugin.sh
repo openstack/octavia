@@ -25,6 +25,11 @@ function build_octavia_worker_image {
         $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -s 2 -o $OCTAVIA_AMP_IMAGE_FILE
     fi
     upload_image file://${OCTAVIA_AMP_IMAGE_FILE} $TOKEN
+
+    image_id=$(glance image-list --property-filter name=${OCTAVIA_AMP_IMAGE_NAME} | awk '/ amphora-x64-haproxy / {print $2}')
+    owner_id=$(glance image-show ${image_id} | awk '/ owner / {print $4}')
+    iniset $OCTAVIA_CONF controller_worker amp_image_owner_id ${owner_id}
+
 }
 
 function create_octavia_accounts {

@@ -35,18 +35,19 @@ class Test_GetImageUuid(base.TestCase):
         with mock.patch.object(nova_common,
                                '_extract_amp_image_id_by_tag',
                                return_value='fakeid') as extract:
-            image_id = nova_common._get_image_uuid(client, '', 'faketag')
+            image_id = nova_common._get_image_uuid(client, '', 'faketag', None)
         self.assertEqual('fakeid', image_id)
-        extract.assert_called_with(client, 'faketag')
+        extract.assert_called_with(client, 'faketag', None)
 
     def test__get_image_uuid_notag(self):
         client = mock.Mock()
-        image_id = nova_common._get_image_uuid(client, 'fakeid', '')
+        image_id = nova_common._get_image_uuid(client, 'fakeid', '', None)
         self.assertEqual('fakeid', image_id)
 
     def test__get_image_uuid_id_beats_tag(self):
         client = mock.Mock()
-        image_id = nova_common._get_image_uuid(client, 'fakeid', 'faketag')
+        image_id = nova_common._get_image_uuid(client, 'fakeid',
+                                               'faketag', None)
         self.assertEqual('fakeid', image_id)
 
 
@@ -62,7 +63,8 @@ class Test_ExtractAmpImageIdByTag(base.TestCase):
         self.client.images.list.return_value = []
         self.assertRaises(
             exceptions.GlanceNoTaggedImages,
-            nova_common._extract_amp_image_id_by_tag, self.client, 'faketag')
+            nova_common._extract_amp_image_id_by_tag, self.client,
+            'faketag', None)
 
     def test_single_image(self):
         images = [
@@ -70,7 +72,7 @@ class Test_ExtractAmpImageIdByTag(base.TestCase):
         ]
         self.client.images.list.return_value = images
         image_id = nova_common._extract_amp_image_id_by_tag(self.client,
-                                                            'faketag')
+                                                            'faketag', None)
         self.assertIn(image_id, images[0]['id'])
 
     def test_multiple_images_returns_one_of_images(self):
@@ -80,7 +82,7 @@ class Test_ExtractAmpImageIdByTag(base.TestCase):
         ]
         self.client.images.list.return_value = images
         image_id = nova_common._extract_amp_image_id_by_tag(self.client,
-                                                            'faketag')
+                                                            'faketag', None)
         self.assertIn(image_id, [image['id'] for image in images])
 
 

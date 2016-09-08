@@ -1,0 +1,6 @@
+---
+security:
+  - Allows the operator to optionally restrict the amphora
+    glance image selection to a specific owner id.
+    This is a recommended security setting for clouds that
+    allow user uploadable images.

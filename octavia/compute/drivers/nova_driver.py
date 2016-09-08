@@ -32,11 +32,21 @@ CONF.import_group('networking', 'octavia.common.config')
 CONF.import_group('nova', 'octavia.common.config')
 
 
-def _extract_amp_image_id_by_tag(client, image_tag):
-    images = list(client.images.list(
-        filters={'tag': [image_tag]},
-        sort='created_at:desc',
-        limit=2))
+def _extract_amp_image_id_by_tag(client, image_tag, image_owner):
+    if image_owner:
+        images = list(client.images.list(
+            filters={'tag': [image_tag],
+                     'owner': image_owner,
+                     'status': constants.GLANCE_IMAGE_ACTIVE},
+            sort='created_at:desc',
+            limit=2))
+    else:
+        images = list(client.images.list(
+            filters={'tag': [image_tag],
+                     'status': constants.GLANCE_IMAGE_ACTIVE},
+            sort='created_at:desc',
+            limit=2))
+
     if not images:
         raise exceptions.GlanceNoTaggedImages(tag=image_tag)
     image_id = images[0]['id']
@@ -50,15 +60,15 @@ def _extract_amp_image_id_by_tag(client, image_tag):
     return image_id
 
 
-def _get_image_uuid(client, image_id, image_tag):
+def _get_image_uuid(client, image_id, image_tag, image_owner):
     if image_id:
         if image_tag:
             LOG.warning(
                 _LW("Both amp_image_id and amp_image_tag options defined. "
-                    "Using the former."))
+                    "Using the amp_image_id."))
         return image_id
 
-    return _extract_amp_image_id_by_tag(client, image_tag)
+    return _extract_amp_image_id_by_tag(client, image_tag, image_owner)
 
 
 class VirtualMachineManager(compute_base.ComputeBase):
@@ -84,7 +94,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
         self.server_groups = self._nova_client.server_groups
 
     def build(self, name="amphora_name", amphora_flavor=None,
-              image_id=None, image_tag=None,
+              image_id=None, image_tag=None, image_owner=None,
               key_name=None, sec_groups=None, network_ids=None,
               port_ids=None, config_drive_files=None, user_data=None,
               server_group_id=None):
@@ -126,7 +136,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
                 "group": server_group_id}
 
             image_id = _get_image_uuid(
-                self._glance_client, image_id, image_tag)
+                self._glance_client, image_id, image_tag, image_owner)
             amphora = self.manager.create(
                 name=name, image=image_id, flavor=amphora_flavor,
                 key_name=key_name, security_groups=sec_groups,

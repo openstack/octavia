@@ -28,22 +28,22 @@ class NoopManager(object):
         self.computeconfig = {}
 
     def build(self, name="amphora_name", amphora_flavor=None,
-              image_id=None, image_tag=None,
+              image_id=None, image_tag=None, image_owner=None,
               key_name=None, sec_groups=None, network_ids=None,
               config_drive_files=None, user_data=None, port_ids=None,
               server_group_id=None):
         LOG.debug("Compute %s no-op, build name %s, amphora_flavor %s, "
-                  "image_id %s, image_tag %s, key_name %s, sec_groups %s, "
-                  "network_ids %s, config_drive_files %s, user_data %s, "
-                  "port_ids %s, server_group_id %s",
+                  "image_id %s, image_tag %s, image_owner %s, key_name %s, "
+                  "sec_groups %s, network_ids %s, config_drive_files %s, "
+                  "user_data %s, port_ids %s, server_group_id %s",
                   self.__class__.__name__,
-                  name, amphora_flavor, image_id, image_tag,
+                  name, amphora_flavor, image_id, image_tag, image_owner,
                   key_name, sec_groups, network_ids, config_drive_files,
                   user_data, port_ids, server_group_id)
         self.computeconfig[(name, amphora_flavor, image_id, image_tag,
-                            key_name, user_data)] = (
+                            image_owner, key_name, user_data)] = (
             name, amphora_flavor,
-            image_id, image_tag, key_name, sec_groups,
+            image_id, image_tag, image_owner, key_name, sec_groups,
             network_ids, config_drive_files,
             user_data, port_ids, 'build')
         compute_id = uuidutils.generate_uuid()
@@ -87,13 +87,13 @@ class NoopComputeDriver(driver_base.ComputeBase):
         self.driver = NoopManager()
 
     def build(self, name="amphora_name", amphora_flavor=None,
-              image_id=None, image_tag=None,
+              image_id=None, image_tag=None, image_owner=None,
               key_name=None, sec_groups=None, network_ids=None,
               config_drive_files=None, user_data=None, port_ids=None,
               server_group_id=None):
 
         compute_id = self.driver.build(name, amphora_flavor,
-                                       image_id, image_tag,
+                                       image_id, image_tag, image_owner,
                                        key_name, sec_groups, network_ids,
                                        config_drive_files, user_data, port_ids,
                                        server_group_id)

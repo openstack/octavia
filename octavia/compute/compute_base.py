@@ -22,7 +22,7 @@ class ComputeBase(object):
 
     @abc.abstractmethod
     def build(self, name="amphora_name", amphora_flavor=None,
-              image_id=None, image_tag=None,
+              image_id=None, image_tag=None, image_owner=None,
               key_name=None, sec_groups=None, network_ids=None,
               config_drive_files=None, user_data=None, server_group_id=None):
         """Build a new amphora.

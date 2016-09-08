@@ -87,6 +87,11 @@ class TestComputeTasks(base.TestCase):
     @mock.patch('stevedore.driver.DriverManager.driver')
     def test_compute_create(self, mock_driver, mock_conf, mock_jinja):
 
+        image_owner_id = uuidutils.generate_uuid()
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group="controller_worker",
+                    amp_image_owner_id=image_owner_id)
+
         createcompute = compute_tasks.ComputeCreate()
 
         mock_driver.build.return_value = COMPUTE_ID
@@ -100,6 +105,7 @@ class TestComputeTasks(base.TestCase):
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
+            image_owner=image_owner_id,
             key_name=AMP_SSH_KEY_NAME,
             sec_groups=AMP_SEC_GROUPS,
             network_ids=AMP_NET,
@@ -134,6 +140,9 @@ class TestComputeTasks(base.TestCase):
 
         createcompute.revert(COMPUTE_ID, _amphora_mock.id)
 
+        conf.config(group="controller_worker",
+                    amp_image_owner_id='')
+
     @mock.patch('jinja2.Environment.get_template')
     @mock.patch('octavia.amphorae.backends.agent.'
                 'agent_jinja_cfg.AgentJinjaTemplater.'
@@ -160,6 +169,7 @@ class TestComputeTasks(base.TestCase):
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
+            image_owner='',
             key_name=AMP_SSH_KEY_NAME,
             sec_groups=AMP_SEC_GROUPS,
             network_ids=AMP_NET,
@@ -219,6 +229,7 @@ class TestComputeTasks(base.TestCase):
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
+            image_owner='',
             key_name=None,
             sec_groups=AMP_SEC_GROUPS,
             network_ids=AMP_NET,
@@ -276,6 +287,7 @@ class TestComputeTasks(base.TestCase):
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
+            image_owner='',
             key_name=AMP_SSH_KEY_NAME,
             sec_groups=AMP_SEC_GROUPS,
             network_ids=AMP_NET,

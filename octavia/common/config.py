@@ -216,6 +216,10 @@ controller_worker_opts = [
                deprecated_for_removal=True,
                deprecated_reason='Superseded by amp_image_tag option.',
                help=_('Glance image id for the Amphora image to boot')),
+    cfg.StrOpt('amp_image_owner_id',
+               default='',
+               help=_('Restrict glance image selection to a specific '
+                      'owner ID.  This is a recommended security setting.')),
     cfg.StrOpt('amp_ssh_key_name',
                default='',
                help=_('SSH key name used to boot the Amphora')),
