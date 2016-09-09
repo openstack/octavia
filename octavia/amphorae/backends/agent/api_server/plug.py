@@ -42,7 +42,7 @@ ETH_X_PORT_CONF = 'plug_port_ethX.conf.j2'
 
 LOG = logging.getLogger(__name__)
 
-j2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(
+j2_env = jinja2.Environment(autoescape=True, loader=jinja2.FileSystemLoader(
     os.path.dirname(os.path.realpath(__file__)) + consts.AGENT_API_TEMPLATES))
 template_port = j2_env.get_template(ETH_X_PORT_CONF)
 template_vip = j2_env.get_template(ETH_X_VIP_CONF)

@@ -107,6 +107,7 @@ class JinjaTemplater(object):
             template_loader = jinja2.FileSystemLoader(
                 searchpath=os.path.dirname(self.haproxy_template))
             JINJA_ENV = jinja2.Environment(
+                autoescape=True,
                 loader=template_loader,
                 trim_blocks=True,
                 lstrip_blocks=True)
