@@ -494,21 +494,17 @@ class TestNetworkTasks(base.TestCase):
     def test_plug_vip_port(self, mock_get_net_driver):
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
-        vip_port = mock.MagicMock()
         vrrp_port = mock.MagicMock()
 
         amphorae_network_config = mock.MagicMock()
-        amphorae_network_config.get().vip_port = vip_port
         amphorae_network_config.get().vrrp_port = vrrp_port
 
         plugvipport = network_tasks.PlugVIPPort()
         plugvipport.execute(self.amphora_mock, amphorae_network_config)
-        mock_driver.plug_port.assert_any_call(self.amphora_mock, vip_port)
         mock_driver.plug_port.assert_any_call(self.amphora_mock, vrrp_port)
 
         # test revert
         plugvipport.revert(None, self.amphora_mock, amphorae_network_config)
-        mock_driver.unplug_port.assert_any_call(self.amphora_mock, vip_port)
         mock_driver.unplug_port.assert_any_call(self.amphora_mock, vrrp_port)
 
     def test_wait_for_port_detach(self, mock_get_net_driver):
