@@ -647,6 +647,7 @@ def sample_base_expected_config(frontend=None, backend=None, peers=None):
                    "    timeout check 31\n"
                    "    option httpchk GET /index.html\n"
                    "    http-check expect rstatus 418\n"
+                   "    fullconn 98\n"
                    "    server sample_member_id_1 10.0.0.99:82 weight 13 "
                    "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
                    "    server sample_member_id_2 10.0.0.98:82 weight 13 "
