@@ -731,3 +731,14 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         response = self.post(self.LBS_PATH, create_lb)
         api_lb = response.json
         self._assert_graphs_equal(expected_lb, api_lb)
+
+    def test_db_create_failure(self):
+        create_listener, expected_listener = self._get_listener_bodies()
+        create_lb, _ = self._get_lb_bodies([create_listener],
+                                           [expected_listener])
+        # with mock.patch('octavia.db.repositories.Repositories') as repo_mock:
+        with mock.patch('octavia.db.repositories.Repositories.'
+                        'create_load_balancer_tree') as repo_mock:
+            repo_mock.side_effect = Exception('I am a DB Error')
+            response = self.post(self.LBS_PATH, create_lb, expect_errors=True)
+            self.assertEqual(500, response.status_code)

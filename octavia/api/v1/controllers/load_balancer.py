@@ -80,7 +80,6 @@ class LoadBalancersController(base.BaseController):
             db_lb = self.repositories.create_load_balancer_tree(
                 context.session, prepped_lb)
         except Exception:
-            # TODO(blogan): handle exceptions
             raise
         try:
             LOG.info(_LI("Sending full load balancer configuration %s to "
