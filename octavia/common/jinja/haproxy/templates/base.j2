@@ -21,6 +21,9 @@ global
     log {{ log_http | default('/dev/log', true)}} local0
     log {{ log_server | default('/dev/log', true)}} local1 notice
     stats socket {{ sock_path }} mode 0666 level user
+    {% if loadbalancer.global_connection_limit is defined %}
+    maxconn {{ loadbalancer.global_connection_limit }}
+    {% endif %}
 
 defaults
     log global
