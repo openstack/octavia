@@ -205,6 +205,9 @@ backend {{ pool.id }}
     http-request set-header X-Forwarded-Port %[dst_port]
         {% endif %}
     {% endif %}
+    {% if listener.connection_limit is defined %}
+    fullconn {{ listener.connection_limit }}
+    {% endif %}
     {% for member in pool.members if member.enabled %}
         {{- member_macro(constants, pool, member) -}}
     {% endfor %}
