@@ -24,7 +24,7 @@ from taskflow.types import failure
 from octavia.common import constants
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
-from octavia.i18n import _LW
+from octavia.i18n import _LE, _LW
 
 CONF = cfg.CONF
 CONF.import_group('controller_worker', 'octavia.common.config')
@@ -45,6 +45,57 @@ class BaseAmphoraTask(task.Task):
         self.listener_repo = repo.ListenerRepository()
         self.loadbalancer_repo = repo.LoadBalancerRepository()
 
+    def _mark_amphora_status_error(self, amphora_id):
+        """Sets an amphora status to ERROR.
+
+        NOTE: This should only be called from revert methods.
+
+        :param amphora_id: Amphora ID to set the status to ERROR
+        """
+        try:
+            self.amphora_repo.update(db_apis.get_session(), id=amphora_id,
+                                     status=constants.ERROR)
+        except Exception as e:
+            LOG.error(_LE("Failed to update amphora %(amp)s "
+                          "status to ERROR due to: "
+                          "%(except)s"), {'amp': amphora_id,
+                                          'except': e})
+
+    def _mark_listener_prov_status_error(self, listener_id):
+        """Sets a listener provisioning status to ERROR.
+
+        NOTE: This should only be called from revert methods.
+
+        :param listener_id: Listener ID to set provisioning status to ERROR
+        """
+        try:
+            self.listener_repo.update(db_apis.get_session(),
+                                      id=listener_id,
+                                      provisioning_status=constants.ERROR)
+        except Exception as e:
+            LOG.error(_LE("Failed to update listener %(list)s "
+                          "provisioning status to ERROR due to: "
+                          "%(except)s"), {'list': listener_id,
+                                          'except': e})
+
+    def _mark_loadbalancer_prov_status_error(self, loadbalancer_id):
+        """Sets a load balancer provisioning status to ERROR.
+
+        NOTE: This should only be called from revert methods.
+
+        :param loadbalancer_id: Load balancer ID to set provisioning
+                                status to ERROR
+        """
+        try:
+            self.loadbalancer_repo.update(db_apis.get_session(),
+                                          id=loadbalancer_id,
+                                          provisioning_status=constants.ERROR)
+        except Exception as e:
+            LOG.error(_LE("Failed to update load balancer %(lb)s "
+                          "provisioning status to ERROR due to: "
+                          "%(except)s"), {'lb': loadbalancer_id,
+                                          'except': e})
+
 
 class ListenersUpdate(BaseAmphoraTask):
     """Task to update amphora with all specified listeners' configurations."""
@@ -59,14 +110,10 @@ class ListenersUpdate(BaseAmphoraTask):
         """Handle failed listeners updates."""
 
         LOG.warning(_LW("Reverting listeners updates."))
+
         for listener in loadbalancer.listeners:
-            try:
-                self.listener_repo.update(db_apis.get_session(),
-                                          id=listener.id,
-                                          provisioning_status=constants.ERROR)
-            except Exception:
-                LOG.warning(_LW("Failed to update listener %s provisioning "
-                                "status..."), listener.id)
+            self._mark_listener_prov_status_error(listener.id)
+
         return None
 
 
@@ -82,8 +129,9 @@ class ListenerStop(BaseAmphoraTask):
         """Handle a failed listener stop."""
 
         LOG.warning(_LW("Reverting listener stop."))
-        self.listener_repo.update(db_apis.get_session(), id=listener.id,
-                                  provisioning_status=constants.ERROR)
+
+        self._mark_listener_prov_status_error(listener.id)
+
         return None
 
 
@@ -99,8 +147,9 @@ class ListenerStart(BaseAmphoraTask):
         """Handle a failed listener start."""
 
         LOG.warning(_LW("Reverting listener start."))
-        self.listener_repo.update(db_apis.get_session(), id=listener.id,
-                                  provisioning_status=constants.ERROR)
+
+        self._mark_listener_prov_status_error(listener.id)
+
         return None
 
 
@@ -118,13 +167,8 @@ class ListenersStart(BaseAmphoraTask):
 
         LOG.warning(_LW("Reverting listeners starts."))
         for listener in listeners:
-            try:
-                self.listener_repo.update(db_apis.get_session(),
-                                          id=listener.id,
-                                          provisioning_status=constants.ERROR)
-            except Exception:
-                LOG.warning(_LW("Failed to update listener %s provisioning "
-                                "status..."), listener.id)
+            self._mark_listener_prov_status_error(listener.id)
+
         return None
 
 
@@ -140,8 +184,8 @@ class ListenerDelete(BaseAmphoraTask):
         """Handle a failed listener delete."""
 
         LOG.warning(_LW("Reverting listener delete."))
-        self.listener_repo.update(db_apis.get_session(), id=listener.id,
-                                  provisioning_status=constants.ERROR)
+
+        self._mark_listener_prov_status_error(listener.id)
 
 
 class AmphoraGetInfo(BaseAmphoraTask):
@@ -173,8 +217,7 @@ class AmphoraFinalize(BaseAmphoraTask):
         if isinstance(result, failure.Failure):
             return
         LOG.warning(_LW("Reverting amphora finalize."))
-        self.amphora_repo.update(db_apis.get_session(), id=amphora.id,
-                                 status=constants.ERROR)
+        self._mark_amphora_status_error(amphora.id)
 
 
 class AmphoraPostNetworkPlug(BaseAmphoraTask):
@@ -193,8 +236,7 @@ class AmphoraPostNetworkPlug(BaseAmphoraTask):
         if isinstance(result, failure.Failure):
             return
         LOG.warning(_LW("Reverting post network plug."))
-        self.amphora_repo.update(db_apis.get_session(), id=amphora.id,
-                                 status=constants.ERROR)
+        self._mark_amphora_status_error(amphora.id)
 
 
 class AmphoraePostNetworkPlug(BaseAmphoraTask):
@@ -216,8 +258,7 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
 
-            self.amphora_repo.update(db_apis.get_session(), id=amphora.id,
-                                     status=constants.ERROR)
+            self._mark_amphora_status_error(amphora.id)
 
 
 class AmphoraPostVIPPlug(BaseAmphoraTask):
@@ -234,11 +275,8 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
         if isinstance(result, failure.Failure):
             return
         LOG.warning(_LW("Reverting post vip plug."))
-        self.amphora_repo.update(db_apis.get_session(), id=amphora.id,
-                                 status=constants.ERROR)
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      id=loadbalancer.id,
-                                      provisioning_status=constants.ERROR)
+        self._mark_amphora_status_error(amphora.id)
+        self._mark_loadbalancer_prov_status_error(loadbalancer.id)
 
 
 class AmphoraePostVIPPlug(BaseAmphoraTask):
@@ -257,9 +295,7 @@ class AmphoraePostVIPPlug(BaseAmphoraTask):
         if isinstance(result, failure.Failure):
             return
         LOG.warning(_LW("Reverting amphorae post vip plug."))
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      id=loadbalancer.id,
-                                      provisioning_status=constants.ERROR)
+        self._mark_loadbalancer_prov_status_error(loadbalancer.id)
 
 
 class AmphoraCertUpload(BaseAmphoraTask):
@@ -298,8 +334,14 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
 
-            self.amphora_repo.update(db_apis.get_session(), amp.id,
-                                     vrrp_interface=None)
+            try:
+                self.amphora_repo.update(db_apis.get_session(), amp.id,
+                                         vrrp_interface=None)
+            except Exception as e:
+                LOG.error(_LE("Failed to update amphora %(amp)s "
+                              "VRRP interface to None due to: "
+                              "%(except)s"), {'amp': amp.id,
+                                              'except': e})
 
 
 class AmphoraVRRPUpdate(BaseAmphoraTask):
