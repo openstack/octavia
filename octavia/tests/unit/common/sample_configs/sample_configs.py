@@ -282,19 +282,22 @@ RET_LB = {
     'vip_address': '10.0.0.2',
     'listener': RET_LISTENER,
     'topology': 'SINGLE',
-    'enabled': True}
+    'enabled': True,
+    'global_connection_limit': 98}
 
 RET_LB_TLS = {
     'name': 'test-lb',
     'vip_address': '10.0.0.2',
     'listener': RET_LISTENER_TLS,
-    'enabled': True}
+    'enabled': True,
+    'global_connection_limit': 98}
 
 RET_LB_TLS_SNI = {
     'name': 'test-lb',
     'vip_address': '10.0.0.2',
     'listener': RET_LISTENER_TLS_SNI,
-    'enabled': True}
+    'enabled': True,
+    'global_connection_limit': 98}
 
 RET_LB_L7 = {
     'host_amphora': RET_AMPHORA,
@@ -302,7 +305,8 @@ RET_LB_L7 = {
     'vip_address': '10.0.0.2',
     'listener': RET_LISTENER_L7,
     'topology': 'SINGLE',
-    'enabled': True}
+    'enabled': True,
+    'global_connection_limit': 98}
 
 
 def sample_loadbalancer_tuple(proto=None, monitor=True, persistence=True,
@@ -657,7 +661,8 @@ def sample_base_expected_config(frontend=None, backend=None, peers=None):
             "    log /dev/log local0\n"
             "    log /dev/log local1 notice\n"
             "    stats socket /var/lib/octavia/sample_listener_id_1.sock"
-            " mode 0666 level user\n\n"
+            " mode 0666 level user\n"
+            "    maxconn 98\n\n"
             "defaults\n"
             "    log global\n"
             "    retries 3\n"

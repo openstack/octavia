@@ -151,15 +151,22 @@ class JinjaTemplater(object):
 
            be processed by the templating system
         """
-        listener = self._transform_listener(listener, tls_cert)
-        return {
+        t_listener = self._transform_listener(listener, tls_cert)
+        ret_value = {
             'name': loadbalancer.name,
             'vip_address': loadbalancer.vip.ip_address,
-            'listener': listener,
+            'listener': t_listener,
             'topology': loadbalancer.topology,
             'enabled': loadbalancer.enabled,
             'host_amphora': self._transform_amphora(host_amphora)
         }
+        # NOTE(sbalukoff): Global connection limit should be a sum of all
+        # listeners' connection limits. Since Octavia presently supports
+        # just one listener per haproxy process, this makes determining
+        # the global value trivial.
+        if listener.connection_limit and listener.connection_limit > -1:
+            ret_value['global_connection_limit'] = listener.connection_limit
+        return ret_value
 
     def _transform_amphora(self, amphora):
         """Transform an amphora into an object that will
