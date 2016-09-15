@@ -365,6 +365,12 @@ class TestNetworkTasks(base.TestCase):
         net.revert(["vip"], LB)
         mock_driver.unplug_vip.assert_called_once_with(LB, LB.vip)
 
+        # revert with exception
+        mock_driver.reset_mock()
+        mock_driver.unplug_vip.side_effect = Exception('UnplugVipException')
+        net.revert(["vip"], LB)
+        mock_driver.unplug_vip.assert_called_once_with(LB, LB.vip)
+
     def test_unplug_vip(self, mock_driver):
         net = network_tasks.UnplugVIP()
 
@@ -379,7 +385,15 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.reset_mock()
         self.assertEqual(LB.vip, net.execute(LB))
         mock_driver.allocate_vip.assert_called_once_with(LB)
+
         # revert
+        vip_mock = mock.MagicMock()
+        net.revert(vip_mock, LB)
+        mock_driver.deallocate_vip.assert_called_once_with(vip_mock)
+
+        # revert exception
+        mock_driver.reset_mock()
+        mock_driver.deallocate_vip.side_effect = Exception('DeallVipException')
         vip_mock = mock.MagicMock()
         net.revert(vip_mock, LB)
         mock_driver.deallocate_vip.assert_called_once_with(vip_mock)

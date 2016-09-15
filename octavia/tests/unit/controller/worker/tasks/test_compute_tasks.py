@@ -396,7 +396,12 @@ class TestComputeTasks(base.TestCase):
 
         # Validate that the delete_server_group method was called properly
         mock_driver.delete_server_group.assert_called_once_with(sg_id)
+
+        # Test revert with exception
+        mock_driver.reset_mock()
+        mock_driver.delete_server_group.side_effect = Exception('DelSGExcept')
         nova_sever_group_obj.revert(sg_id)
+        mock_driver.delete_server_group.assert_called_once_with(sg_id)
 
     @mock.patch('stevedore.driver.DriverManager.driver')
     def test_nova_server_group_delete_with_sever_group_id(self, mock_driver):
