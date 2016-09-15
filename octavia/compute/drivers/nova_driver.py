@@ -35,16 +35,17 @@ CONF.import_group('nova', 'octavia.common.config')
 def _extract_amp_image_id_by_tag(client, image_tag):
     images = list(client.images.list(
         filters={'tag': [image_tag]},
-        sort='created_at'))
+        sort='created_at:desc',
+        limit=2))
     if not images:
         raise exceptions.GlanceNoTaggedImages(tag=image_tag)
-    image_id = images[-1]['id']
+    image_id = images[0]['id']
     num_images = len(images)
     if num_images > 1:
         LOG.warning(
             _LW("A single Glance image should be tagged with %(tag)s tag, "
-                "but %(num)d found. Using %(image_id)s."),
-            {'tag': image_tag, 'num': num_images, 'image_id': image_id}
+                "but at least two were found. Using %(image_id)s."),
+            {'tag': image_tag, 'image_id': image_id}
         )
     return image_id
 
