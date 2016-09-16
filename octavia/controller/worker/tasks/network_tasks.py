@@ -284,7 +284,13 @@ class PlugVIP(BaseNetworkTask):
         LOG.warning(_LW("Unable to plug VIP for loadbalancer id %s"),
                     loadbalancer.id)
 
-        self.network_driver.unplug_vip(loadbalancer, loadbalancer.vip)
+        try:
+            self.network_driver.unplug_vip(loadbalancer, loadbalancer.vip)
+        except Exception as e:
+            LOG.error(_LE("Failed to unplug VIP.  Resources may still "
+                          "be in use from vip: %(vip)s due to "
+                          "error: %(except)s"),
+                      {'vip': loadbalancer.vip.ip_address, 'except': e})
 
 
 class UnplugVIP(BaseNetworkTask):
@@ -322,7 +328,13 @@ class AllocateVIP(BaseNetworkTask):
             return
         vip = result
         LOG.warning(_LW("Deallocating vip %s"), vip.ip_address)
-        self.network_driver.deallocate_vip(vip)
+        try:
+            self.network_driver.deallocate_vip(vip)
+        except Exception as e:
+            LOG.error(_LE("Failed to deallocate VIP.  Resources may still "
+                          "be in use from vip: %(vip)s due to "
+                          "error: %(except)s"),
+                      {'vip': vip.ip_address, 'except': e})
 
 
 class DeallocateVIP(BaseNetworkTask):

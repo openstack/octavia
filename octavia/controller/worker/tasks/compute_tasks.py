@@ -213,7 +213,13 @@ class NovaServerGroupCreate(BaseComputeTask):
         server_group_id = result
         LOG.warning(_LW("Reverting server group create with id:%s"),
                     server_group_id)
-        self.compute.delete_server_group(server_group_id)
+        try:
+            self.compute.delete_server_group(server_group_id)
+        except Exception as e:
+            LOG.error(_LE("Failed to delete server group.  Resources may "
+                          "still be in use for server group: %(sg)s due to "
+                          "error: %(except)s"),
+                      {'sg': server_group_id, 'except': e})
 
 
 class NovaServerGroupDelete(BaseComputeTask):
