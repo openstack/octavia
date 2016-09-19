@@ -12,6 +12,15 @@ Getting started
 
    main/glossary.rst
 
+For users
+---------
+
+.. toctree::
+   :maxdepth: 1
+
+   guides/l7.rst
+   guides/l7-cookbook.rst
+
 For developers
 --------------
 

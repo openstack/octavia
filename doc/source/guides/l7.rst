@@ -1,0 +1,185 @@
+..
+      Copyright (c) 2016 IBM
+
+      Licensed under the Apache License, Version 2.0 (the "License"); you may
+      not use this file except in compliance with the License. You may obtain
+      a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+      WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+      License for the specific language governing permissions and limitations
+      under the License.
+
+======================
+Layer 7 Load Balancing
+======================
+
+What is L7 load balancing?
+==========================
+Layer 7 load balancing takes its name from the OSI model, indicating that the
+load balancer distributes requests to back-end pools based on layer 7
+(application) data. Layer 7 load balancing is also known as "request
+switching," "application load balancing," "content based routing," "content
+based switching," and "content based balancing."
+
+A layer 7 load balancer consists of a listener that accepts requests on behalf
+of a number of back-end pools and distributes those requests based on policies
+that use application data to determine which pools should service any given
+request. This allows for the application infrastructure to be specifically
+tuned/optimized to serve specific types of content. For example, one group of
+back-end servers (pool) can be tuned to serve only images, another for
+execution of server-side scripting languages like PHP and ASP, and another for
+static content such as HTML, CSS, and JavaScript.
+
+Unlike lower-level load balancing, layer 7 load balancing does not require that
+all pools behind the load balancing service have the same content. In fact, it
+is generally expected that a layer 7 load balancer expects the back-end servers
+from different pools will have different content. Layer 7 load balancers are
+capable of directing requests based on URI, host, HTTP headers, and other data
+in the application message.
+
+
+L7 load balancing in Octavia
+----------------------------
+The layer 7 load balancing capabilities described in this document were added
+to Neutron LBaaS and Octavia in the Mitaka release cycle (Octavia 0.8).
+
+While layer 7 load balancing in general can theoretically be done for any
+well-defined layer 7 application interface, for the purposes of Octavia, L7
+functionality refers only to the HTTP protocol and its semantics.
+
+
+How does it work?
+=================
+Neutron LBaaS and Octavia accomplish the logic of layer 7 load balancing
+through the use of L7 Rules and L7 Policies. An L7 Rule is a single, simple
+logical test which evaluates to true or false. An L7 Policy is a collection of
+L7 rules, as well as a defined action that should be taken if all the rules
+associated with the policy match.
+
+These concepts and their specific details are expanded upon below.
+
+
+L7 Rules
+--------
+An L7 Rule is a single, simple logical test which returns either true or false.
+It consists of a rule type, a comparison type, a value, and an optional key
+that gets used depending on the rule type. An L7 rule must always be associated
+with an L7 policy.
+
+See also: :doc:`../api/octaviaapi`
+
+Rule types
+__________
+L7 rules have the following types:
+
+* ``HOST_NAME``: The rule does a comparison between the HTTP/1.1 hostname in
+  the request against the value parameter in the rule.
+* ``PATH``: The rule compares the path portion of the HTTP URI against the
+  value parameter in the rule.
+* ``FILE_TYPE``: The rule compares the last portion of the URI against the
+  value parameter in the rule. (eg. "txt", "jpg", etc.)
+* ``HEADER``: The rule looks for a header defined in the key parameter and
+  compares it against the value parameter in the rule.
+* ``COOKIE``: The rule looks for a cookie named by the key parameter and
+  compares it against the value parameter in the rule.
+
+Comparison types
+________________
+L7 rules of a given type always do comparisons. The types of comparisons we
+support are listed below. Note that not all rule types support all comparison
+types:
+
+* ``REGEX``: Perl type regular expression matching
+* ``STARTS_WITH``: String starts with
+* ``ENDS_WITH``: String ends with
+* ``CONTAINS``: String contains
+* ``EQUAL_TO``: String is equal to
+
+Invert
+______
+In order to more fully express the logic required by some policies, rules may
+have their result inverted. That is to say, if the invert parameter of a given
+rule is true, the result of its comparison will be inverted. (For example, an
+inverted "equal to" rule effectively becomes a "not equal to", and an inverted
+"regex" rule returns true only if the given regex does not match.)
+
+
+L7 Policies
+-----------
+An L7 Policy is a collection of L7 rules associated with a Listener, and which
+may also have an association to a back-end pool. Policies describe actions that
+should be taken by the load balancing software if all of the rules in the
+policy return true.
+
+See also: :doc:`../api/octaviaapi`
+
+Policy Logic
+____________
+Policy logic is very simple: All the rules associated with a given policy are
+logically ANDed together. A request must match all the policy's rules to match
+the policy.
+
+If you need to express a logical OR operation between rules, then do this by
+creating multiple policies with the same action (or, possibly, by making a more
+elaborate regular expression).
+
+Policy Actions
+______________
+If an L7 policy matches a given request, then that policy's action is executed.
+The following are the actions an L7 Policy may take:
+
+* ``REJECT``: The request is denied with an appropriate response code, and not
+  forwarded on to any back-end pool.
+* ``REDIRECT_TO_URL``: The request is sent an HTTP redirect to the URL defined
+  in the ``redirect_url`` parameter.
+* ``REDIRECT_TO_POOL``: The request is forwarded to the back-end pool
+  associated with the L7 policy.
+
+Policy Position
+_______________
+When multiple L7 Policies are associated with a listener, then the policies'
+``position`` parameter becomes important. The ``position`` parameter is used
+when determining the order in which L7 policies are evaluated. Here are a few
+notes about how policy position affects listener behavior:
+
+* In the reference implementation (haproxy amphorae) of Octavia, haproxy
+  enforces the following ordering regarding policy actions:
+
+  * ``REJECT`` policies take precedence over all other policies.
+  * ``REDIRECT_TO_URL`` policies take precedence over ``REDIRECT_TO_POOL``
+    policies.
+  * ``REDIRECT_TO_POOL`` policies are only evaluated after all of the above,
+    and in the order specified by the ``position`` of the policy.
+
+* L7 Policies are evaluated in a specific order (as defined by the ``position``
+  attribute), and the first policy that matches a given request will be the one
+  whose action is followed.
+* If no policy matches a given request, then the request is routed to the
+  listener's default pool ,if it exists. If the listener has no default pool,
+  then an error 503 is returned.
+* Policy position numbering starts with 1.
+* If a new policy is created with a position that matches that of an existing
+  policy, then the new policy is inserted at the given position.
+* If a new policy is created without specifying a position, or specifying a
+  position that is greater than the number of policies already in the list, the
+  new policy will just be appended to the list.
+* When policies are inserted, deleted, or appended to the list, the policy
+  position values are re-ordered from 1 without skipping numbers. For example,
+  if policy A, B, and C have position values of 1, 2 and 3 respectively, if you
+  delete policy B from the list, policy C's position becomes 2.
+
+
+L7 usage examples
+=================
+For a cookbook of common L7 usage examples, please see the :doc:`l7-cookbook`
+
+
+Useful links
+============
+* :doc:`../api/octaviaapi`
+* https://github.com/openstack/neutron-specs/blob/master/specs/mitaka/lbaas-l7-rules.rst
+* http://cbonte.github.io/haproxy-dconv/1.6/configuration.html#7
