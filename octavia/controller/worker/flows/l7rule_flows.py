@@ -18,6 +18,7 @@ from taskflow.patterns import linear_flow
 from octavia.common import constants
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import database_tasks
+from octavia.controller.worker.tasks import lifecycle_tasks
 from octavia.controller.worker.tasks import model_tasks
 
 
@@ -29,8 +30,16 @@ class L7RuleFlows(object):
         :returns: The flow for creating an L7 rule
         """
         create_l7rule_flow = linear_flow.Flow(constants.CREATE_L7RULE_FLOW)
+        create_l7rule_flow.add(lifecycle_tasks.L7RuleToErrorOnRevertTask(
+            requires=[constants.L7RULE,
+                      constants.LISTENERS,
+                      constants.LOADBALANCER]))
+        create_l7rule_flow.add(database_tasks.MarkL7RulePendingCreateInDB(
+            requires=constants.L7RULE))
         create_l7rule_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
+        create_l7rule_flow.add(database_tasks.MarkL7RuleActiveInDB(
+            requires=constants.L7RULE))
         create_l7rule_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
 
@@ -42,11 +51,19 @@ class L7RuleFlows(object):
         :returns: The flow for deleting an L7 rule
         """
         delete_l7rule_flow = linear_flow.Flow(constants.DELETE_L7RULE_FLOW)
+        delete_l7rule_flow.add(lifecycle_tasks.L7RuleToErrorOnRevertTask(
+            requires=[constants.L7RULE,
+                      constants.LISTENERS,
+                      constants.LOADBALANCER]))
+        delete_l7rule_flow.add(database_tasks.MarkL7RulePendingDeleteInDB(
+            requires=constants.L7RULE))
         delete_l7rule_flow.add(model_tasks.DeleteModelObject(
             rebind={constants.OBJECT: constants.L7RULE}))
         delete_l7rule_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         delete_l7rule_flow.add(database_tasks.DeleteL7RuleInDB(
+            requires=constants.L7RULE))
+        delete_l7rule_flow.add(database_tasks.MarkL7RuleActiveInDB(
             requires=constants.L7RULE))
         delete_l7rule_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
@@ -59,6 +76,12 @@ class L7RuleFlows(object):
         :returns: The flow for updating an L7 rule
         """
         update_l7rule_flow = linear_flow.Flow(constants.UPDATE_L7RULE_FLOW)
+        update_l7rule_flow.add(lifecycle_tasks.L7RuleToErrorOnRevertTask(
+            requires=[constants.L7RULE,
+                      constants.LISTENERS,
+                      constants.LOADBALANCER]))
+        update_l7rule_flow.add(database_tasks.MarkL7RulePendingUpdateInDB(
+            requires=constants.L7RULE))
         update_l7rule_flow.add(
             model_tasks.UpdateAttributes(
                 rebind={constants.OBJECT: constants.L7RULE},
@@ -67,6 +90,8 @@ class L7RuleFlows(object):
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_l7rule_flow.add(database_tasks.UpdateL7RuleInDB(
             requires=[constants.L7RULE, constants.UPDATE_DICT]))
+        update_l7rule_flow.add(database_tasks.MarkL7RuleActiveInDB(
+            requires=constants.L7RULE))
         update_l7rule_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
 

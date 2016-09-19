@@ -18,6 +18,7 @@ from taskflow.patterns import linear_flow
 from octavia.common import constants
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import database_tasks
+from octavia.controller.worker.tasks import lifecycle_tasks
 from octavia.controller.worker.tasks import model_tasks
 
 
@@ -29,8 +30,16 @@ class PoolFlows(object):
         :returns: The flow for creating a pool
         """
         create_pool_flow = linear_flow.Flow(constants.CREATE_POOL_FLOW)
+        create_pool_flow.add(lifecycle_tasks.PoolToErrorOnRevertTask(
+            requires=[constants.POOL,
+                      constants.LISTENERS,
+                      constants.LOADBALANCER]))
+        create_pool_flow.add(database_tasks.MarkPoolPendingCreateInDB(
+            requires=constants.POOL))
         create_pool_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
+        create_pool_flow.add(database_tasks.MarkPoolActiveInDB(
+            requires=constants.POOL))
         create_pool_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
 
@@ -42,6 +51,12 @@ class PoolFlows(object):
         :returns: The flow for deleting a pool
         """
         delete_pool_flow = linear_flow.Flow(constants.DELETE_POOL_FLOW)
+        delete_pool_flow.add(lifecycle_tasks.PoolToErrorOnRevertTask(
+            requires=[constants.POOL,
+                      constants.LISTENERS,
+                      constants.LOADBALANCER]))
+        delete_pool_flow.add(database_tasks.MarkPoolPendingDeleteInDB(
+            requires=constants.POOL))
         delete_pool_flow.add(model_tasks.DeleteModelObject(
             rebind={constants.OBJECT: constants.POOL}))
         delete_pool_flow.add(amphora_driver_tasks.ListenersUpdate(
@@ -74,6 +89,12 @@ class PoolFlows(object):
         :returns: The flow for updating a pool
         """
         update_pool_flow = linear_flow.Flow(constants.UPDATE_POOL_FLOW)
+        update_pool_flow.add(lifecycle_tasks.PoolToErrorOnRevertTask(
+            requires=[constants.POOL,
+                      constants.LISTENERS,
+                      constants.LOADBALANCER]))
+        update_pool_flow.add(database_tasks.MarkPoolPendingUpdateInDB(
+            requires=constants.POOL))
         update_pool_flow.add(model_tasks.
                              UpdateAttributes(
                                  rebind={constants.OBJECT: constants.POOL},
@@ -82,6 +103,8 @@ class PoolFlows(object):
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_pool_flow.add(database_tasks.UpdatePoolInDB(
             requires=[constants.POOL, constants.UPDATE_DICT]))
+        update_pool_flow.add(database_tasks.MarkPoolActiveInDB(
+            requires=constants.POOL))
         update_pool_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
 

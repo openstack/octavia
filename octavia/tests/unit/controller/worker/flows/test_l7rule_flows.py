@@ -36,7 +36,7 @@ class TestL7RuleFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, l7rule_flow.requires)
         self.assertIn(constants.LOADBALANCER, l7rule_flow.requires)
 
-        self.assertEqual(2, len(l7rule_flow.requires))
+        self.assertEqual(3, len(l7rule_flow.requires))
         self.assertEqual(0, len(l7rule_flow.provides))
 
     def test_get_delete_l7rule_flow(self):

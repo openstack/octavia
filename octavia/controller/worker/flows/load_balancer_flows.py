@@ -27,6 +27,7 @@ from octavia.controller.worker.flows import pool_flows
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import compute_tasks
 from octavia.controller.worker.tasks import database_tasks
+from octavia.controller.worker.tasks import lifecycle_tasks
 from octavia.controller.worker.tasks import model_tasks
 from octavia.controller.worker.tasks import network_tasks
 from octavia.i18n import _LE
@@ -55,6 +56,9 @@ class LoadBalancerFlows(object):
         """
         f_name = constants.CREATE_LOADBALANCER_FLOW
         lb_create_flow = linear_flow.Flow(f_name)
+
+        lb_create_flow.add(lifecycle_tasks.LoadBalancerIDToErrorOnRevertTask(
+            requires=constants.LOADBALANCER_ID))
 
         if topology == constants.TOPOLOGY_ACTIVE_STANDBY:
             lb_create_flow.add(*self._create_active_standby_topology())
@@ -211,6 +215,8 @@ class LoadBalancerFlows(object):
         (listeners_delete, store) = self._get_delete_listeners_flow(lb)
 
         delete_LB_flow = linear_flow.Flow(constants.DELETE_LOADBALANCER_FLOW)
+        delete_LB_flow.add(lifecycle_tasks.LoadBalancerToErrorOnRevertTask(
+            requires=constants.LOADBALANCER))
         delete_LB_flow.add(compute_tasks.NovaServerGroupDelete(
             requires=constants.SERVER_GROUP_ID))
         delete_LB_flow.add(database_tasks.MarkLBAmphoraeHealthBusy(
@@ -261,6 +267,8 @@ class LoadBalancerFlows(object):
         store.update(pool_store)
 
         delete_LB_flow = linear_flow.Flow(constants.DELETE_LOADBALANCER_FLOW)
+        delete_LB_flow.add(lifecycle_tasks.LoadBalancerToErrorOnRevertTask(
+            requires=constants.LOADBALANCER))
         delete_LB_flow.add(database_tasks.MarkLBAmphoraeHealthBusy(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(pools_delete)
@@ -318,6 +326,8 @@ class LoadBalancerFlows(object):
         :returns: The flow for update a load balancer
         """
         update_LB_flow = linear_flow.Flow(constants.UPDATE_LOADBALANCER_FLOW)
+        update_LB_flow.add(lifecycle_tasks.LoadBalancerToErrorOnRevertTask(
+            requires=constants.LOADBALANCER))
         update_LB_flow.add(model_tasks.
                            UpdateAttributes(
                                rebind={constants.OBJECT:

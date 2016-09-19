@@ -18,6 +18,7 @@ from taskflow.patterns import linear_flow
 from octavia.common import constants
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import database_tasks
+from octavia.controller.worker.tasks import lifecycle_tasks
 from octavia.controller.worker.tasks import model_tasks
 
 
@@ -29,8 +30,16 @@ class L7PolicyFlows(object):
         :returns: The flow for creating an L7 policy
         """
         create_l7policy_flow = linear_flow.Flow(constants.CREATE_L7POLICY_FLOW)
+        create_l7policy_flow.add(lifecycle_tasks.L7PolicyToErrorOnRevertTask(
+            requires=[constants.L7POLICY,
+                      constants.LISTENERS,
+                      constants.LOADBALANCER]))
+        create_l7policy_flow.add(database_tasks.MarkL7PolicyPendingCreateInDB(
+            requires=constants.L7POLICY))
         create_l7policy_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
+        create_l7policy_flow.add(database_tasks.MarkL7PolicyActiveInDB(
+            requires=constants.L7POLICY))
         create_l7policy_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
 
@@ -42,11 +51,19 @@ class L7PolicyFlows(object):
         :returns: The flow for deleting an L7 policy
         """
         delete_l7policy_flow = linear_flow.Flow(constants.DELETE_L7POLICY_FLOW)
+        delete_l7policy_flow.add(lifecycle_tasks.L7PolicyToErrorOnRevertTask(
+            requires=[constants.L7POLICY,
+                      constants.LISTENERS,
+                      constants.LOADBALANCER]))
+        delete_l7policy_flow.add(database_tasks.MarkL7PolicyPendingDeleteInDB(
+            requires=constants.L7POLICY))
         delete_l7policy_flow.add(model_tasks.DeleteModelObject(
             rebind={constants.OBJECT: constants.L7POLICY}))
         delete_l7policy_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         delete_l7policy_flow.add(database_tasks.DeleteL7PolicyInDB(
+            requires=constants.L7POLICY))
+        delete_l7policy_flow.add(database_tasks.MarkL7PolicyActiveInDB(
             requires=constants.L7POLICY))
         delete_l7policy_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
@@ -59,6 +76,12 @@ class L7PolicyFlows(object):
         :returns: The flow for updating an L7 policy
         """
         update_l7policy_flow = linear_flow.Flow(constants.UPDATE_L7POLICY_FLOW)
+        update_l7policy_flow.add(lifecycle_tasks.L7PolicyToErrorOnRevertTask(
+            requires=[constants.L7POLICY,
+                      constants.LISTENERS,
+                      constants.LOADBALANCER]))
+        update_l7policy_flow.add(database_tasks.MarkL7PolicyPendingUpdateInDB(
+            requires=constants.L7POLICY))
         update_l7policy_flow.add(
             model_tasks.UpdateAttributes(
                 rebind={constants.OBJECT: constants.L7POLICY},
@@ -67,6 +90,8 @@ class L7PolicyFlows(object):
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_l7policy_flow.add(database_tasks.UpdateL7PolicyInDB(
             requires=[constants.L7POLICY, constants.UPDATE_DICT]))
+        update_l7policy_flow.add(database_tasks.MarkL7PolicyActiveInDB(
+            requires=constants.L7POLICY))
         update_l7policy_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
 

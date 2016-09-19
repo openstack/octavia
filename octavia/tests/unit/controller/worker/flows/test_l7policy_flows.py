@@ -36,7 +36,7 @@ class TestL7PolicyFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, l7policy_flow.requires)
         self.assertIn(constants.LOADBALANCER, l7policy_flow.requires)
 
-        self.assertEqual(2, len(l7policy_flow.requires))
+        self.assertEqual(3, len(l7policy_flow.requires))
         self.assertEqual(0, len(l7policy_flow.provides))
 
     def test_get_delete_l7policy_flow(self):

@@ -18,6 +18,7 @@ from taskflow.patterns import linear_flow
 from octavia.common import constants
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import database_tasks
+from octavia.controller.worker.tasks import lifecycle_tasks
 from octavia.controller.worker.tasks import model_tasks
 from octavia.controller.worker.tasks import network_tasks
 
@@ -30,6 +31,8 @@ class ListenerFlows(object):
         :returns: The flow for creating a listener
         """
         create_listener_flow = linear_flow.Flow(constants.CREATE_LISTENER_FLOW)
+        create_listener_flow.add(lifecycle_tasks.ListenersToErrorOnRevertTask(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
         create_listener_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         create_listener_flow.add(network_tasks.UpdateVIP(
@@ -66,6 +69,8 @@ class ListenerFlows(object):
         :returns: The flow for deleting a listener
         """
         delete_listener_flow = linear_flow.Flow(constants.DELETE_LISTENER_FLOW)
+        delete_listener_flow.add(lifecycle_tasks.ListenerToErrorOnRevertTask(
+            requires=constants.LISTENER))
         delete_listener_flow.add(amphora_driver_tasks.ListenerDelete(
             requires=[constants.LOADBALANCER, constants.LISTENER]))
         delete_listener_flow.add(network_tasks.UpdateVIP(
@@ -78,7 +83,7 @@ class ListenerFlows(object):
         return delete_listener_flow
 
     def get_delete_listener_internal_flow(self, listener_name):
-        """Create a flow to delete a listener and associated l7policies internally
+        """Create a flow to delete a listener and l7policies internally
 
            (will skip deletion on the amp and marking LB active)
         :returns: The flow for deleting a listener
@@ -102,6 +107,8 @@ class ListenerFlows(object):
         :returns: The flow for updating a listener
         """
         update_listener_flow = linear_flow.Flow(constants.UPDATE_LISTENER_FLOW)
+        update_listener_flow.add(lifecycle_tasks.ListenersToErrorOnRevertTask(
+            requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_listener_flow.add(model_tasks.
                                  UpdateAttributes(
                                      rebind={constants.OBJECT:
