@@ -28,7 +28,7 @@ from octavia.common import data_models
 import octavia.common.tls_utils.cert_parser as cert_parser
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
-from octavia.i18n import _LI, _LW
+from octavia.i18n import _LE, _LI, _LW
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -80,6 +80,57 @@ class BaseDatabaseTask(task.Task):
             LOG.debug('No existing amphora health record to mark busy '
                       'for amphora: %s, skipping.', amphora_id)
 
+    def _mark_amphora_status_error(self, amphora_id):
+        """Sets an amphora status to ERROR.
+
+        NOTE: This should only be called from revert methods.
+
+        :param amphora_id: Amphora ID to set the status to ERROR
+        """
+        try:
+            self.amphora_repo.update(db_apis.get_session(), id=amphora_id,
+                                     status=constants.ERROR)
+        except Exception as e:
+            LOG.error(_LE("Failed to update amphora %(amp)s "
+                          "status to ERROR due to: "
+                          "%(except)s"), {'amp': amphora_id,
+                                          'except': e})
+
+    def _mark_listener_prov_status_error(self, listener_id):
+        """Sets a listener provisioning status to ERROR.
+
+        NOTE: This should only be called from revert methods.
+
+        :param listener_id: Listener ID to set provisioning status to ERROR
+        """
+        try:
+            self.listener_repo.update(db_apis.get_session(),
+                                      id=listener_id,
+                                      provisioning_status=constants.ERROR)
+        except Exception as e:
+            LOG.error(_LE("Failed to update listener %(list)s "
+                          "provisioning status to ERROR due to: "
+                          "%(except)s"), {'list': listener_id,
+                                          'except': e})
+
+    def _mark_loadbalancer_prov_status_error(self, loadbalancer_id):
+        """Sets a load balancer provisioning status to ERROR.
+
+        NOTE: This should only be called from revert methods.
+
+        :param loadbalancer_id: Load balancer ID to set provisioning
+                                status to ERROR
+        """
+        try:
+            self.loadbalancer_repo.update(db_apis.get_session(),
+                                          id=loadbalancer_id,
+                                          provisioning_status=constants.ERROR)
+        except Exception as e:
+            LOG.error(_LE("Failed to update load balancer %(lb)s "
+                          "provisioning status to ERROR due to: "
+                          "%(except)s"), {'lb': loadbalancer_id,
+                                          'except': e})
+
 
 class CreateAmphoraInDB(BaseDatabaseTask):
     """Task to create an initial amphora in the Database."""
@@ -121,7 +172,13 @@ class CreateAmphoraInDB(BaseDatabaseTask):
                     result)
 
         # Delete the amphora for now. May want to just update status later
-        self.amphora_repo.delete(db_apis.get_session(), id=result)
+        try:
+            self.amphora_repo.delete(db_apis.get_session(), id=result)
+        except Exception as e:
+            LOG.error(_LE("Failed to delete amphora %(amp)s "
+                          "in the database due to: "
+                          "%(except)s"), {'amp': result,
+                                          'except': e})
 
 
 class MarkLBAmphoraeDeletedInDB(BaseDatabaseTask):
@@ -449,8 +506,14 @@ class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
                with a load balancer.
         :returns: None
         """
-        self.repos.amphora.update(db_apis.get_session(), amphora_id,
-                                  loadbalancer_id=None)
+        try:
+            self.repos.amphora.update(db_apis.get_session(), amphora_id,
+                                      loadbalancer_id=None)
+        except Exception as e:
+            LOG.error(_LE("Failed to update amphora %(amp)s "
+                          "load balancer id to None due to: "
+                          "%(except)s"), {'amp': amphora_id,
+                                          'except': e})
 
 
 class MapLoadbalancerToAmphora(BaseDatabaseTask):
@@ -483,10 +546,7 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
     def revert(self, result, loadbalancer_id, *args, **kwargs):
         LOG.warning(_LW("Reverting Amphora allocation for the load "
                         "balancer %s in the database."), loadbalancer_id)
-
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer_id,
-                                      provisioning_status=constants.ERROR)
+        self._mark_loadbalancer_prov_status_error(loadbalancer_id)
 
 
 class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
@@ -521,9 +581,15 @@ class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting amphora role in DB for amp "
                         "id %(amp)s"),
                     {'amp': amphora.id})
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
-                                 role=None,
-                                 vrrp_priority=None)
+        try:
+            self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                                     role=None,
+                                     vrrp_priority=None)
+        except Exception as e:
+            LOG.error(_LE("Failed to update amphora %(amp)s "
+                          "role and vrrp_priority to None due to: "
+                          "%(except)s"), {'amp': amphora.id,
+                                          'except': e})
 
 
 class MarkAmphoraMasterInDB(_MarkAmphoraRoleAndPriorityInDB):
@@ -631,8 +697,7 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting mark amphora ready in DB for amp "
                         "id %(amp)s and compute id %(comp)s"),
                     {'amp': amphora.id, 'comp': amphora.compute_id})
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
-                                 status=constants.ERROR)
+        self._mark_amphora_status_error(amphora.id)
 
 
 class MarkAmphoraBootingInDB(BaseDatabaseTask):
@@ -667,9 +732,15 @@ class MarkAmphoraBootingInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting mark amphora booting in DB for amp "
                         "id %(amp)s and compute id %(comp)s"),
                     {'amp': amphora_id, 'comp': compute_id})
-        self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                 status=constants.ERROR,
-                                 compute_id=compute_id)
+        try:
+            self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                     status=constants.ERROR,
+                                     compute_id=compute_id)
+        except Exception as e:
+            LOG.error(_LE("Failed to update amphora %(amp)s "
+                          "status to ERROR due to: "
+                          "%(except)s"), {'amp': amphora_id,
+                                          'except': e})
 
 
 class MarkAmphoraDeletedInDB(BaseDatabaseTask):
@@ -701,8 +772,7 @@ class MarkAmphoraDeletedInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting mark amphora deleted in DB "
                         "for amp id %(amp)s and compute id %(comp)s"),
                     {'amp': amphora.id, 'comp': amphora.compute_id})
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
-                                 status=constants.ERROR)
+        self._mark_amphora_status_error(amphora.id)
 
 
 class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
@@ -734,8 +804,7 @@ class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting mark amphora pending delete in DB "
                         "for amp id %(amp)s and compute id %(comp)s"),
                     {'amp': amphora.id, 'comp': amphora.compute_id})
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
-                                 status=constants.ERROR)
+        self._mark_amphora_status_error(amphora.id)
 
 
 class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
@@ -767,8 +836,7 @@ class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting mark amphora pending update in DB "
                         "for amp id %(amp)s and compute id %(comp)s"),
                     {'amp': amphora.id, 'comp': amphora.compute_id})
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
-                                 status=constants.ERROR)
+        self._mark_amphora_status_error(amphora.id)
 
 
 class MarkAmphoraReadyInDB(BaseDatabaseTask):
@@ -803,10 +871,16 @@ class MarkAmphoraReadyInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting mark amphora ready in DB for amp "
                         "id %(amp)s and compute id %(comp)s"),
                     {'amp': amphora.id, 'comp': amphora.compute_id})
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
-                                 status=constants.ERROR,
-                                 compute_id=amphora.compute_id,
-                                 lb_network_ip=amphora.lb_network_ip)
+        try:
+            self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                                     status=constants.ERROR,
+                                     compute_id=amphora.compute_id,
+                                     lb_network_ip=amphora.lb_network_ip)
+        except Exception as e:
+            LOG.error(_LE("Failed to update amphora %(amp)s "
+                          "status to ERROR due to: "
+                          "%(except)s"), {'amp': amphora.id,
+                                          'except': e})
 
 
 class UpdateAmphoraComputeId(BaseDatabaseTask):
@@ -931,9 +1005,7 @@ class MarkLBActiveInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting mark load balancer deleted in DB "
                         "for load balancer id %s"), loadbalancer.id)
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer.id,
-                                      provisioning_status=constants.ERROR)
+        self._mark_loadbalancer_prov_status_error(loadbalancer.id)
 
 
 class UpdateLBServerGroupInDB(BaseDatabaseTask):
@@ -965,9 +1037,15 @@ class UpdateLBServerGroupInDB(BaseDatabaseTask):
         LOG.warning(_LW('Reverting Server Group updated with id: %(s1)s for '
                         'load balancer id: %(s2)s '),
                     {'s1': server_group_id, 's2': loadbalancer_id})
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      id=loadbalancer_id,
-                                      server_group_id=None)
+        try:
+            self.loadbalancer_repo.update(db_apis.get_session(),
+                                          id=loadbalancer_id,
+                                          server_group_id=None)
+        except Exception as e:
+            LOG.error(_LE("Failed to update load balancer %(lb)s "
+                          "server_group_id to None due to: "
+                          "%(except)s"), {'lb': loadbalancer_id,
+                                          'except': e})
 
 
 class MarkLBDeletedInDB(BaseDatabaseTask):
@@ -998,9 +1076,7 @@ class MarkLBDeletedInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting mark load balancer deleted in DB "
                         "for load balancer id %s"), loadbalancer.id)
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer.id,
-                                      provisioning_status=constants.ERROR)
+        self._mark_loadbalancer_prov_status_error(loadbalancer.id)
 
 
 class MarkLBPendingDeleteInDB(BaseDatabaseTask):
@@ -1032,9 +1108,7 @@ class MarkLBPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting mark load balancer pending delete in DB "
                         "for load balancer id %s"), loadbalancer.id)
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer.id,
-                                      provisioning_status=constants.ERROR)
+        self._mark_loadbalancer_prov_status_error(loadbalancer.id)
 
 
 class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
@@ -1075,16 +1149,9 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
                         "listener ids: %(list)s"),
                     {'LB': loadbalancer.id,
                      'list': ', '.join([l.id for l in listeners])})
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer.id,
-                                      provisioning_status=constants.ERROR)
+        self._mark_loadbalancer_prov_status_error(loadbalancer.id)
         for listener in listeners:
-            try:
-                self.listener_repo.update(db_apis.get_session(), listener.id,
-                                          provisioning_status=constants.ERROR)
-            except Exception:
-                LOG.warning(_LW("Failed to update listener %s provisioning "
-                                "status..."), listener.id)
+            self._mark_listener_prov_status_error(listener.id)
 
 
 class MarkListenerActiveInDB(BaseDatabaseTask):
@@ -1113,8 +1180,7 @@ class MarkListenerActiveInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting mark listener active in DB "
                         "for listener id %s"), listener.id)
-        self.listener_repo.update(db_apis.get_session(), listener.id,
-                                  provisioning_status=constants.ERROR)
+        self._mark_listener_prov_status_error(listener.id)
 
 
 class MarkListenerDeletedInDB(BaseDatabaseTask):
@@ -1143,8 +1209,7 @@ class MarkListenerDeletedInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting mark listener deleted in DB "
                         "for listener id %s"), listener.id)
-        self.listener_repo.update(db_apis.get_session(), listener.id,
-                                  provisioning_status=constants.ERROR)
+        self._mark_listener_prov_status_error(listener.id)
 
 
 class MarkListenerPendingDeleteInDB(BaseDatabaseTask):
@@ -1174,8 +1239,7 @@ class MarkListenerPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting mark listener pending delete in DB "
                         "for listener id %s"), listener.id)
-        self.listener_repo.update(db_apis.get_session(), listener.id,
-                                  provisioning_status=constants.ERROR)
+        self._mark_listener_prov_status_error(listener.id)
 
 
 class UpdateLoadbalancerInDB(BaseDatabaseTask):
@@ -1206,9 +1270,7 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting update loadbalancer in DB "
                         "for loadbalancer id %s"), loadbalancer.id)
 
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer.id,
-                                      provisioning_status=constants.ERROR)
+        self._mark_loadbalancer_prov_status_error(loadbalancer.id)
 
 
 class UpdateHealthMonInDB(BaseDatabaseTask):
@@ -1239,8 +1301,15 @@ class UpdateHealthMonInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting update health monitor in DB "
                         "for health monitor id %s"), health_mon.pool_id)
 # TODO(johnsom) fix this to set the upper ojects to ERROR
-        self.health_mon_repo.update(db_apis.get_session(), health_mon.pool_id,
-                                    enabled=0)
+        try:
+            self.health_mon_repo.update(db_apis.get_session(),
+                                        health_mon.pool_id,
+                                        enabled=0)
+        except Exception as e:
+            LOG.error(_LE("Failed to update health monitor %(hm)s "
+                          "enabled to 0 due to: "
+                          "%(except)s"), {'hm': health_mon.pool_id,
+                                          'except': e})
 
 
 class UpdateListenerInDB(BaseDatabaseTask):
@@ -1270,9 +1339,7 @@ class UpdateListenerInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting update listener in DB "
                         "for listener id %s"), listener.id)
-# TODO(johnsom) fix this to set the upper objects to ERROR
-        self.listener_repo.update(db_apis.get_session(), listener.id,
-                                  enabled=0)
+        self._mark_listener_prov_status_error(listener.id)
 
 
 class UpdateMemberInDB(BaseDatabaseTask):
@@ -1303,8 +1370,14 @@ class UpdateMemberInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting update member in DB "
                         "for member id %s"), member.id)
 # TODO(johnsom) fix this to set the upper objects to ERROR
-        self.member_repo.update(db_apis.get_session(), member.id,
-                                enabled=0)
+        try:
+            self.member_repo.update(db_apis.get_session(), member.id,
+                                    enabled=0)
+        except Exception as e:
+            LOG.error(_LE("Failed to update member %(member)s "
+                          "enabled to 0 due to: "
+                          "%(except)s"), {'member': member.id,
+                                          'except': e})
 
 
 class UpdatePoolInDB(BaseDatabaseTask):
@@ -1335,8 +1408,14 @@ class UpdatePoolInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting update pool in DB "
                         "for pool id %s"), pool.id)
 # TODO(johnsom) fix this to set the upper objects to ERROR
-        self.repos.update_pool_and_sp(db_apis.get_session(),
-                                      pool.id, {'enabled': 0})
+        try:
+            self.repos.update_pool_and_sp(db_apis.get_session(),
+                                          pool.id, enabled=0)
+        except Exception as e:
+            LOG.error(_LE("Failed to update pool %(pool)s "
+                          "enabled 0 due to: "
+                          "%(except)s"), {'pool': pool.id,
+                                          'except': e})
 
 
 class UpdateL7PolicyInDB(BaseDatabaseTask):
@@ -1367,8 +1446,14 @@ class UpdateL7PolicyInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting update l7policy in DB "
                         "for l7policy id %s"), l7policy.id)
 # TODO(sbalukoff) fix this to set the upper objects to ERROR
-        self.l7policy_repo.update(db_apis.get_session(), l7policy.id,
-                                  enabled=0)
+        try:
+            self.l7policy_repo.update(db_apis.get_session(), l7policy.id,
+                                      enabled=0)
+        except Exception as e:
+            LOG.error(_LE("Failed to update l7policy %(l7p)s "
+                          "enabled to 0 due to: "
+                          "%(except)s"), {'l7p': l7policy.id,
+                                          'except': e})
 
 
 class UpdateL7RuleInDB(BaseDatabaseTask):
@@ -1399,8 +1484,15 @@ class UpdateL7RuleInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting update l7rule in DB "
                         "for l7rule id %s"), l7rule.id)
 # TODO(sbalukoff) fix this to set appropriate upper objects to ERROR
-        self.l7policy_repo.update(db_apis.get_session(), l7rule.l7policy.id,
-                                  enabled=0)
+        try:
+            self.l7policy_repo.update(db_apis.get_session(),
+                                      l7rule.l7policy.id,
+                                      enabled=0)
+        except Exception as e:
+            LOG.error(_LE("Failed to update L7rule %(l7r)s "
+                          "enabled to 0 due to: "
+                          "%(except)s"), {'l7r': l7rule.l7policy.id,
+                                          'except': e})
 
 
 class GetAmphoraDetails(BaseDatabaseTask):
