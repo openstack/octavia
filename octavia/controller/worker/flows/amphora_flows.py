@@ -207,7 +207,7 @@ class AmphoraFlows(object):
     def _create_new_amp_for_lb_decider(self, history):
         """decides if a new amphora must be created for the lb
 
-        :return: True
+        :return: True if there is no spare amphora
         """
 
         return list(history.values())[0] is None
@@ -230,7 +230,7 @@ class AmphoraFlows(object):
             requires=constants.LOADBALANCER_ID,
             provides=constants.AMPHORA_ID)
 
-        # Define a subflow for if we successfuly map an amphora
+        # Define a subflow for if we successfully map an amphora
         map_lb_to_amp = self._get_post_map_lb_subflow(prefix, role)
         # Define a subflow for if we can't map an amphora
         create_amp = self._get_create_amp_for_lb_subflow(prefix, role)
