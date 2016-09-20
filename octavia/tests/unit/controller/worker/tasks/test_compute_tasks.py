@@ -71,6 +71,7 @@ class TestComputeTasks(base.TestCase):
         conf.config(group="controller_worker",
                     amp_secgroup_list=AMP_SEC_GROUPS)
         conf.config(group="keystone_authtoken", auth_version=AUTH_VERSION)
+        conf.config(group="controller_worker", amp_image_owner_id='')
 
         _amphora_mock.id = AMPHORA_ID
         _amphora_mock.status = constants.AMPHORA_ALLOCATED
