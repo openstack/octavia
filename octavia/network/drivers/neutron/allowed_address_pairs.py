@@ -86,7 +86,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
     def _plug_amphora_vip(self, amphora, network_id):
         # We need a vip port owned by Octavia for Act/Stby and failover
         try:
-            port = {'port': {'name': 'octavia-lb-vip-' + amphora.id,
+            port = {'port': {'name': 'octavia-lb-vrrp-' + amphora.id,
                              'network_id': network_id,
                              'admin_state_up': True,
                              'device_owner': OCTAVIA_OWNER}}
@@ -391,6 +391,19 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                               '{port_id}.').format(port_id=vip.port_id)
                 LOG.exception(message)
                 raise base.UnplugVIPException(message)
+
+            # Delete the VRRP port if we created it
+            try:
+                port = self.get_port(amphora.vrrp_port_id)
+                if port.name.startswith('octavia-lb-vrrp-'):
+                    self.neutron_client.delete_port(amphora.vrrp_port_id)
+            except base.PortNotFound:
+                pass
+            except Exception as e:
+                LOG.error(_LE('Failed to delete port.  Resources may still '
+                              'be in use for port: %(port)s due to '
+                              'error: %s(except)s'),
+                          {'port': amphora.vrrp_port_id, 'except': e})
 
     def plug_network(self, compute_id, network_id, ip_address=None):
         try:

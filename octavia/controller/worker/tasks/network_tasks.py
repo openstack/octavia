@@ -285,6 +285,14 @@ class PlugVIP(BaseNetworkTask):
                     loadbalancer.id)
 
         try:
+            # Make sure we have the current port IDs for cleanup
+            for amp_data in result:
+                for amphora in six.moves.filter(
+                        lambda amp: amp.id == amp_data.id,
+                        loadbalancer.amphorae):
+                    amphora.vrrp_port_id = amp_data.vrrp_port_id
+                    amphora.ha_port_id = amp_data.ha_port_id
+
             self.network_driver.unplug_vip(loadbalancer, loadbalancer.vip)
         except Exception as e:
             LOG.error(_LE("Failed to unplug VIP.  Resources may still "

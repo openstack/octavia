@@ -154,7 +154,6 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             message = _LE('{resource_type} not found '
                           '({resource_type} id: {resource_id}.').format(
                 resource_type=resource_type, resource_id=resource_id)
-            LOG.exception(message)
             raise getattr(base, '%sNotFound' %
                           resource_type.capitalize())(message)
         except Exception:
