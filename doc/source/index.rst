@@ -19,6 +19,7 @@ For users
 .. toctree::
    :maxdepth: 1
 
+   guides/basic-cookbook.rst
    guides/l7.rst
    guides/l7-cookbook.rst
 

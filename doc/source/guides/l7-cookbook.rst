@@ -33,6 +33,8 @@ of the starting conditions is given in each example below.
 Examples
 ========
 
+.. _redirect-http-to-https:
+
 Redirect http://www.example.com/ to https://www.example.com/
 ------------------------------------------------------------
 **Scenario description**:
