@@ -18,7 +18,7 @@ from oslo_log import log as logging
 
 from octavia.common import clients
 from octavia.common import data_models
-from octavia.i18n import _LE, _LI
+from octavia.i18n import _LE
 from octavia.network import base
 from octavia.network import data_models as network_models
 from octavia.network.drivers.neutron import utils
@@ -51,17 +51,17 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
     def _check_extension_enabled(self, extension_alias):
         if extension_alias in self._check_extension_cache:
             status = self._check_extension_cache[extension_alias]
-            LOG.info(_LI('Neutron extension {ext} cached as {status}').format(
+            LOG.debug('Neutron extension {ext} cached as {status}'.format(
                 ext=extension_alias,
                 status='enabled' if status else 'disabled'))
         else:
             try:
                 self.neutron_client.show_extension(extension_alias)
-                LOG.info(_LI('Neutron extension {ext} found enabled').format(
+                LOG.debug('Neutron extension {ext} found enabled'.format(
                     ext=extension_alias))
                 self._check_extension_cache[extension_alias] = True
             except neutron_client_exceptions.NotFound:
-                LOG.info(_LI('Neutron extension {ext} is not enabled').format(
+                LOG.debug('Neutron extension {ext} is not enabled'.format(
                     ext=extension_alias))
                 self._check_extension_cache[extension_alias] = False
         return self._check_extension_cache[extension_alias]
