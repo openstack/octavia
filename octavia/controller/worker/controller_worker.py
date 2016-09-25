@@ -76,6 +76,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
     def create_amphora(self):
         """Creates an Amphora.
 
+        This is used to create spare amphora.
+
         :returns: amphora_id
         """
         create_amp_tf = self._taskflow_load(self._amphora_flows.

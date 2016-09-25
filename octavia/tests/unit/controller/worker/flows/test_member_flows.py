@@ -40,7 +40,7 @@ class TestMemberFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, member_flow.requires)
         self.assertIn(constants.LOADBALANCER, member_flow.requires)
 
-        self.assertEqual(2, len(member_flow.requires))
+        self.assertEqual(3, len(member_flow.requires))
         self.assertEqual(2, len(member_flow.provides))
 
     def test_get_delete_member_flow(self, mock_get_net_driver):

@@ -18,6 +18,7 @@ from taskflow.patterns import linear_flow
 from octavia.common import constants
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import database_tasks
+from octavia.controller.worker.tasks import lifecycle_tasks
 from octavia.controller.worker.tasks import model_tasks
 from octavia.controller.worker.tasks import network_tasks
 
@@ -30,6 +31,12 @@ class MemberFlows(object):
         :returns: The flow for creating a member
         """
         create_member_flow = linear_flow.Flow(constants.CREATE_MEMBER_FLOW)
+        create_member_flow.add(lifecycle_tasks.MemberToErrorOnRevertTask(
+            requires=[constants.MEMBER,
+                      constants.LISTENERS,
+                      constants.LOADBALANCER]))
+        create_member_flow.add(database_tasks.MarkMemberPendingCreateInDB(
+            requires=constants.MEMBER))
         create_member_flow.add(network_tasks.CalculateDelta(
             requires=constants.LOADBALANCER,
             provides=constants.DELTAS))
@@ -40,6 +47,8 @@ class MemberFlows(object):
         ))
         create_member_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=(constants.LOADBALANCER, constants.LISTENERS)))
+        create_member_flow.add(database_tasks.MarkMemberActiveInDB(
+            requires=constants.MEMBER))
         create_member_flow.add(database_tasks.
                                MarkLBAndListenersActiveInDB(
                                    requires=(constants.LOADBALANCER,
@@ -53,6 +62,12 @@ class MemberFlows(object):
         :returns: The flow for deleting a member
         """
         delete_member_flow = linear_flow.Flow(constants.DELETE_MEMBER_FLOW)
+        delete_member_flow.add(lifecycle_tasks.MemberToErrorOnRevertTask(
+            requires=[constants.MEMBER,
+                      constants.LISTENERS,
+                      constants.LOADBALANCER]))
+        delete_member_flow.add(database_tasks.MarkMemberPendingDeleteInDB(
+            requires=constants.MEMBER))
         delete_member_flow.add(model_tasks.
                                DeleteModelObject(rebind={constants.OBJECT:
                                                          constants.MEMBER}))
@@ -60,6 +75,8 @@ class MemberFlows(object):
             requires=constants.MEMBER))
         delete_member_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
+        delete_member_flow.add(database_tasks.MarkMemberActiveInDB(
+            requires=constants.MEMBER))
         delete_member_flow.add(database_tasks.
                                MarkLBAndListenersActiveInDB(
                                    requires=[constants.LOADBALANCER,
@@ -73,6 +90,12 @@ class MemberFlows(object):
         :returns: The flow for updating a member
         """
         update_member_flow = linear_flow.Flow(constants.UPDATE_MEMBER_FLOW)
+        update_member_flow.add(lifecycle_tasks.MemberToErrorOnRevertTask(
+            requires=[constants.MEMBER,
+                      constants.LISTENERS,
+                      constants.LOADBALANCER]))
+        update_member_flow.add(database_tasks.MarkMemberPendingUpdateInDB(
+            requires=constants.MEMBER))
         update_member_flow.add(model_tasks.
                                UpdateAttributes(
                                    rebind={constants.OBJECT: constants.MEMBER},
@@ -81,6 +104,8 @@ class MemberFlows(object):
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_member_flow.add(database_tasks.UpdateMemberInDB(
             requires=[constants.MEMBER, constants.UPDATE_DICT]))
+        update_member_flow.add(database_tasks.MarkMemberActiveInDB(
+            requires=constants.MEMBER))
         update_member_flow.add(database_tasks.
                                MarkLBAndListenersActiveInDB(
                                    requires=[constants.LOADBALANCER,

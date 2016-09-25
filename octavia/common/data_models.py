@@ -151,7 +151,8 @@ class HealthMonitor(BaseDataModel):
     def __init__(self, id=None, project_id=None, pool_id=None, type=None,
                  delay=None, timeout=None, fall_threshold=None,
                  rise_threshold=None, http_method=None, url_path=None,
-                 expected_codes=None, enabled=None, pool=None):
+                 expected_codes=None, enabled=None, pool=None,
+                 provisioning_status=None):
         self.id = id
         self.project_id = project_id
         self.pool_id = pool_id
@@ -165,6 +166,7 @@ class HealthMonitor(BaseDataModel):
         self.expected_codes = expected_codes
         self.enabled = enabled
         self.pool = pool
+        self.provisioning_status = provisioning_status
 
     def delete(self):
         self.pool.health_monitor = None
@@ -176,7 +178,7 @@ class Pool(BaseDataModel):
                  operating_status=None, members=None, health_monitor=None,
                  session_persistence=None, load_balancer_id=None,
                  load_balancer=None, listeners=None, l7policies=None,
-                 created_at=None, updated_at=None):
+                 created_at=None, updated_at=None, provisioning_status=None):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -194,6 +196,7 @@ class Pool(BaseDataModel):
         self.l7policies = l7policies or []
         self.created_at = created_at
         self.updated_at = updated_at
+        self.provisioning_status = provisioning_status
 
     def update(self, update_dict):
         for key, value in update_dict.items():
@@ -238,7 +241,7 @@ class Member(BaseDataModel):
     def __init__(self, id=None, project_id=None, pool_id=None, ip_address=None,
                  protocol_port=None, weight=None, enabled=None,
                  subnet_id=None, operating_status=None, pool=None,
-                 created_at=None, updated_at=None):
+                 created_at=None, updated_at=None, provisioning_status=None):
         self.id = id
         self.project_id = project_id
         self.pool_id = pool_id
@@ -251,6 +254,7 @@ class Member(BaseDataModel):
         self.pool = pool
         self.created_at = created_at
         self.updated_at = updated_at
+        self.provisioning_status = provisioning_status
 
     def delete(self):
         for mem in self.pool.members:
@@ -441,7 +445,7 @@ class L7Rule(BaseDataModel):
 
     def __init__(self, id=None, l7policy_id=None, type=None,
                  compare_type=None, key=None, value=None, l7policy=None,
-                 invert=False):
+                 invert=False, provisioning_status=None):
         self.id = id
         self.l7policy_id = l7policy_id
         self.type = type
@@ -450,6 +454,7 @@ class L7Rule(BaseDataModel):
         self.value = value
         self.l7policy = l7policy
         self.invert = invert
+        self.provisioning_status = provisioning_status
 
     def delete(self):
         if len(self.l7policy.l7rules) == 1:
@@ -468,7 +473,7 @@ class L7Policy(BaseDataModel):
     def __init__(self, id=None, name=None, description=None, listener_id=None,
                  action=None, redirect_pool_id=None, redirect_url=None,
                  position=None, listener=None, redirect_pool=None,
-                 enabled=None, l7rules=None):
+                 enabled=None, l7rules=None, provisioning_status=None):
         self.id = id
         self.name = name
         self.description = description
@@ -481,6 +486,7 @@ class L7Policy(BaseDataModel):
         self.redirect_pool = redirect_pool
         self.enabled = enabled
         self.l7rules = l7rules or []
+        self.provisioning_status = provisioning_status
 
     def _conditionally_remove_pool_links(self, pool):
         """Removes links to the given pool from parent objects.

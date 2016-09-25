@@ -36,7 +36,7 @@ class TestPoolFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, pool_flow.requires)
         self.assertIn(constants.LOADBALANCER, pool_flow.requires)
 
-        self.assertEqual(2, len(pool_flow.requires))
+        self.assertEqual(3, len(pool_flow.requires))
         self.assertEqual(0, len(pool_flow.provides))
 
     def test_get_delete_pool_flow(self):

@@ -22,6 +22,7 @@ from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import cert_task
 from octavia.controller.worker.tasks import compute_tasks
 from octavia.controller.worker.tasks import database_tasks
+from octavia.controller.worker.tasks import lifecycle_tasks
 from octavia.controller.worker.tasks import network_tasks
 
 CONF = cfg.CONF
@@ -38,15 +39,13 @@ class AmphoraFlows(object):
     def get_create_amphora_flow(self):
         """Creates a flow to create an amphora.
 
-        Ideally that should be configurable in the
-        config file - a db session needs to be placed
-        into the flow
-
         :returns: The flow for creating the amphora
         """
         create_amphora_flow = linear_flow.Flow(constants.CREATE_AMPHORA_FLOW)
         create_amphora_flow.add(database_tasks.CreateAmphoraInDB(
                                 provides=constants.AMPHORA_ID))
+        create_amphora_flow.add(lifecycle_tasks.AmphoraIDToErrorOnRevertTask(
+            requires=constants.AMPHORA_ID))
         if self.REST_AMPHORA_DRIVER:
             create_amphora_flow.add(cert_task.GenerateServerPEMTask(
                                     provides=constants.SERVER_PEM))
@@ -259,6 +258,8 @@ class AmphoraFlows(object):
         """
 
         delete_amphora_flow = linear_flow.Flow(constants.DELETE_AMPHORA_FLOW)
+        delete_amphora_flow.add(lifecycle_tasks.AmphoraToErrorOnRevertTask(
+            requires=constants.AMPHORA))
         delete_amphora_flow.add(database_tasks.
                                 MarkAmphoraPendingDeleteInDB(
                                     requires=constants.AMPHORA))
@@ -283,6 +284,10 @@ class AmphoraFlows(object):
 
         failover_amphora_flow = linear_flow.Flow(
             constants.FAILOVER_AMPHORA_FLOW)
+
+        failover_amphora_flow.add(lifecycle_tasks.AmphoraToErrorOnRevertTask(
+            rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
+            requires=constants.AMPHORA))
 
         # Delete the old amphora
         failover_amphora_flow.add(
@@ -408,6 +413,9 @@ class AmphoraFlows(object):
         """
         rotated_amphora_flow = linear_flow.Flow(
             constants.CERT_ROTATE_AMPHORA_FLOW)
+
+        rotated_amphora_flow.add(lifecycle_tasks.AmphoraToErrorOnRevertTask(
+            requires=constants.AMPHORA))
 
         # create a new certificate, the returned value is the newly created
         # certificate

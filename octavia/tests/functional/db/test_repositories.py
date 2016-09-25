@@ -146,7 +146,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'project_id': uuidutils.generate_uuid(),
-                'id': uuidutils.generate_uuid()}
+                'id': uuidutils.generate_uuid(),
+                'provisioning_status': None}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         pool_dm_dict = pool_dm.to_dict()
@@ -170,7 +171,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'project_id': uuidutils.generate_uuid(),
-                'id': uuidutils.generate_uuid()}
+                'id': uuidutils.generate_uuid(),
+                'provisioning_status': None}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id']}
@@ -205,7 +207,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'project_id': uuidutils.generate_uuid(),
-                'id': uuidutils.generate_uuid()}
+                'id': uuidutils.generate_uuid(),
+                'provisioning_status': None}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
@@ -231,7 +234,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'project_id': uuidutils.generate_uuid(),
-                'id': uuidutils.generate_uuid()}
+                'id': uuidutils.generate_uuid(),
+                'provisioning_status': None}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id']}

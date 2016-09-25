@@ -26,6 +26,7 @@ from taskflow.types import failure
 from octavia.common import constants
 from octavia.common import data_models
 import octavia.common.tls_utils.cert_parser as cert_parser
+from octavia.controller.worker import task_utils as task_utilities
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
 from octavia.i18n import _LE, _LI, _LW
@@ -49,6 +50,7 @@ class BaseDatabaseTask(task.Task):
         self.amp_health_repo = repo.AmphoraHealthRepository()
         self.l7policy_repo = repo.L7PolicyRepository()
         self.l7rule_repo = repo.L7RuleRepository()
+        self.task_utils = task_utilities.TaskUtils()
         super(BaseDatabaseTask, self).__init__(**kwargs)
 
     def _delete_from_amp_health(self, amphora_id):
@@ -79,57 +81,6 @@ class BaseDatabaseTask(task.Task):
                 sqlalchemy.orm.exc.UnmappedInstanceError):
             LOG.debug('No existing amphora health record to mark busy '
                       'for amphora: %s, skipping.', amphora_id)
-
-    def _mark_amphora_status_error(self, amphora_id):
-        """Sets an amphora status to ERROR.
-
-        NOTE: This should only be called from revert methods.
-
-        :param amphora_id: Amphora ID to set the status to ERROR
-        """
-        try:
-            self.amphora_repo.update(db_apis.get_session(), id=amphora_id,
-                                     status=constants.ERROR)
-        except Exception as e:
-            LOG.error(_LE("Failed to update amphora %(amp)s "
-                          "status to ERROR due to: "
-                          "%(except)s"), {'amp': amphora_id,
-                                          'except': e})
-
-    def _mark_listener_prov_status_error(self, listener_id):
-        """Sets a listener provisioning status to ERROR.
-
-        NOTE: This should only be called from revert methods.
-
-        :param listener_id: Listener ID to set provisioning status to ERROR
-        """
-        try:
-            self.listener_repo.update(db_apis.get_session(),
-                                      id=listener_id,
-                                      provisioning_status=constants.ERROR)
-        except Exception as e:
-            LOG.error(_LE("Failed to update listener %(list)s "
-                          "provisioning status to ERROR due to: "
-                          "%(except)s"), {'list': listener_id,
-                                          'except': e})
-
-    def _mark_loadbalancer_prov_status_error(self, loadbalancer_id):
-        """Sets a load balancer provisioning status to ERROR.
-
-        NOTE: This should only be called from revert methods.
-
-        :param loadbalancer_id: Load balancer ID to set provisioning
-                                status to ERROR
-        """
-        try:
-            self.loadbalancer_repo.update(db_apis.get_session(),
-                                          id=loadbalancer_id,
-                                          provisioning_status=constants.ERROR)
-        except Exception as e:
-            LOG.error(_LE("Failed to update load balancer %(lb)s "
-                          "provisioning status to ERROR due to: "
-                          "%(except)s"), {'lb': loadbalancer_id,
-                                          'except': e})
 
 
 class CreateAmphoraInDB(BaseDatabaseTask):
@@ -546,7 +497,7 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
     def revert(self, result, loadbalancer_id, *args, **kwargs):
         LOG.warning(_LW("Reverting Amphora allocation for the load "
                         "balancer %s in the database."), loadbalancer_id)
-        self._mark_loadbalancer_prov_status_error(loadbalancer_id)
+        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer_id)
 
 
 class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
@@ -697,7 +648,7 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting mark amphora ready in DB for amp "
                         "id %(amp)s and compute id %(comp)s"),
                     {'amp': amphora.id, 'comp': amphora.compute_id})
-        self._mark_amphora_status_error(amphora.id)
+        self.task_utils.mark_amphora_status_error(amphora.id)
 
 
 class MarkAmphoraBootingInDB(BaseDatabaseTask):
@@ -772,7 +723,7 @@ class MarkAmphoraDeletedInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting mark amphora deleted in DB "
                         "for amp id %(amp)s and compute id %(comp)s"),
                     {'amp': amphora.id, 'comp': amphora.compute_id})
-        self._mark_amphora_status_error(amphora.id)
+        self.task_utils.mark_amphora_status_error(amphora.id)
 
 
 class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
@@ -804,7 +755,7 @@ class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting mark amphora pending delete in DB "
                         "for amp id %(amp)s and compute id %(comp)s"),
                     {'amp': amphora.id, 'comp': amphora.compute_id})
-        self._mark_amphora_status_error(amphora.id)
+        self.task_utils.mark_amphora_status_error(amphora.id)
 
 
 class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
@@ -836,7 +787,7 @@ class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting mark amphora pending update in DB "
                         "for amp id %(amp)s and compute id %(comp)s"),
                     {'amp': amphora.id, 'comp': amphora.compute_id})
-        self._mark_amphora_status_error(amphora.id)
+        self.task_utils.mark_amphora_status_error(amphora.id)
 
 
 class MarkAmphoraReadyInDB(BaseDatabaseTask):
@@ -1005,7 +956,7 @@ class MarkLBActiveInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting mark load balancer deleted in DB "
                         "for load balancer id %s"), loadbalancer.id)
-        self._mark_loadbalancer_prov_status_error(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
 
 
 class UpdateLBServerGroupInDB(BaseDatabaseTask):
@@ -1076,7 +1027,7 @@ class MarkLBDeletedInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting mark load balancer deleted in DB "
                         "for load balancer id %s"), loadbalancer.id)
-        self._mark_loadbalancer_prov_status_error(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
 
 
 class MarkLBPendingDeleteInDB(BaseDatabaseTask):
@@ -1108,7 +1059,7 @@ class MarkLBPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting mark load balancer pending delete in DB "
                         "for load balancer id %s"), loadbalancer.id)
-        self._mark_loadbalancer_prov_status_error(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
 
 
 class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
@@ -1149,9 +1100,9 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
                         "listener ids: %(list)s"),
                     {'LB': loadbalancer.id,
                      'list': ', '.join([l.id for l in listeners])})
-        self._mark_loadbalancer_prov_status_error(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
         for listener in listeners:
-            self._mark_listener_prov_status_error(listener.id)
+            self.task_utils.mark_listener_prov_status_error(listener.id)
 
 
 class MarkListenerActiveInDB(BaseDatabaseTask):
@@ -1180,7 +1131,7 @@ class MarkListenerActiveInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting mark listener active in DB "
                         "for listener id %s"), listener.id)
-        self._mark_listener_prov_status_error(listener.id)
+        self.task_utils.mark_listener_prov_status_error(listener.id)
 
 
 class MarkListenerDeletedInDB(BaseDatabaseTask):
@@ -1209,7 +1160,7 @@ class MarkListenerDeletedInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting mark listener deleted in DB "
                         "for listener id %s"), listener.id)
-        self._mark_listener_prov_status_error(listener.id)
+        self.task_utils.mark_listener_prov_status_error(listener.id)
 
 
 class MarkListenerPendingDeleteInDB(BaseDatabaseTask):
@@ -1239,7 +1190,7 @@ class MarkListenerPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting mark listener pending delete in DB "
                         "for listener id %s"), listener.id)
-        self._mark_listener_prov_status_error(listener.id)
+        self.task_utils.mark_listener_prov_status_error(listener.id)
 
 
 class UpdateLoadbalancerInDB(BaseDatabaseTask):
@@ -1270,7 +1221,7 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting update loadbalancer in DB "
                         "for loadbalancer id %s"), loadbalancer.id)
 
-        self._mark_loadbalancer_prov_status_error(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
 
 
 class UpdateHealthMonInDB(BaseDatabaseTask):
@@ -1339,7 +1290,7 @@ class UpdateListenerInDB(BaseDatabaseTask):
 
         LOG.warning(_LW("Reverting update listener in DB "
                         "for listener id %s"), listener.id)
-        self._mark_listener_prov_status_error(listener.id)
+        self.task_utils.mark_listener_prov_status_error(listener.id)
 
 
 class UpdateMemberInDB(BaseDatabaseTask):
@@ -1630,3 +1581,624 @@ class MarkLBAmphoraeHealthBusy(BaseDatabaseTask):
         """
         for amphora in loadbalancer.amphorae:
             self._mark_amp_health_busy(amphora.id)
+
+
+class MarkHealthMonitorActiveInDB(BaseDatabaseTask):
+    """Mark the health monitor ACTIVE in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, health_mon):
+        """Mark the health monitor ACTIVE in DB.
+
+        :param health_mon: Health Monitor object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark ACTIVE in DB for health monitor id: %s",
+                  health_mon.pool_id)
+        self.health_mon_repo.update(db_apis.get_session(),
+                                    health_mon.pool_id,
+                                    provisioning_status=constants.ACTIVE)
+
+    def revert(self, health_mon, *args, **kwargs):
+        """Mark the health monitor as broken
+
+        :param health_mon: Health Monitor object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark health montor ACTIVE in DB "
+                        "for health monitor id %s"), health_mon.pool_id)
+        self.task_utils.mark_health_mon_prov_status_error(health_mon.pool_id)
+
+
+class MarkHealthMonitorPendingCreateInDB(BaseDatabaseTask):
+    """Mark the health monitor pending create in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, health_mon):
+        """Mark the health monitor as pending create in DB.
+
+        :param health_mon: Health Monitor object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING CREATE in DB for health monitor id: %s",
+                  health_mon.pool_id)
+        self.health_mon_repo.update(db_apis.get_session(),
+                                    health_mon.pool_id,
+                                    provisioning_status=(constants.
+                                                         PENDING_CREATE))
+
+    def revert(self, health_mon, *args, **kwargs):
+        """Mark the health monitor as broken
+
+        :param health_mon: Health Monitor object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark health monitor pending create in DB "
+                        "for health monitor id %s"), health_mon.pool_id)
+        self.task_utils.mark_health_mon_prov_status_error(health_mon.pool_id)
+
+
+class MarkHealthMonitorPendingDeleteInDB(BaseDatabaseTask):
+    """Mark the health monitor pending delete in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, health_mon):
+        """Mark the health monitor as pending delete in DB.
+
+        :param health_mon: Health Monitor object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING DELETE in DB for health monitor id: %s",
+                  health_mon.pool_id)
+        self.health_mon_repo.update(db_apis.get_session(),
+                                    health_mon.pool_id,
+                                    provisioning_status=(constants.
+                                                         PENDING_DELETE))
+
+    def revert(self, health_mon, *args, **kwargs):
+        """Mark the health monitor as broken
+
+        :param health_mon: Health Monitor object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark health monitor pending delete in DB "
+                        "for health monitor id %s"), health_mon.pool_id)
+        self.task_utils.mark_health_mon_prov_status_error(health_mon.pool_id)
+
+
+class MarkHealthMonitorPendingUpdateInDB(BaseDatabaseTask):
+    """Mark the health monitor pending update in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, health_mon):
+        """Mark the health monitor as pending update in DB.
+
+        :param health_mon: Health Monitor object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING UPDATE in DB for health monitor id: %s",
+                  health_mon.pool_id)
+        self.health_mon_repo.update(db_apis.get_session(),
+                                    health_mon.pool_id,
+                                    provisioning_status=(constants.
+                                                         PENDING_UPDATE))
+
+    def revert(self, health_mon, *args, **kwargs):
+        """Mark the health monitor as broken
+
+        :param health_mon: Health Monitor object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark health monitor pending update in DB "
+                        "for health monitor id %s"), health_mon.pool_id)
+        self.task_utils.mark_health_mon_prov_status_error(health_mon.pool_id)
+
+
+class MarkL7PolicyActiveInDB(BaseDatabaseTask):
+    """Mark the l7policy ACTIVE in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7policy):
+        """Mark the l7policy ACTIVE in DB.
+
+        :param l7policy: L7Policy object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark ACTIVE in DB for l7policy id: %s",
+                  l7policy.id)
+        self.l7policy_repo.update(db_apis.get_session(),
+                                  l7policy.id,
+                                  provisioning_status=constants.ACTIVE)
+
+    def revert(self, l7policy, *args, **kwargs):
+        """Mark the l7policy as broken
+
+        :param l7policy: L7Policy object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark l7policy ACTIVE in DB "
+                        "for l7policy id %s"), l7policy.id)
+        self.task_utils.mark_l7policy_prov_status_error(l7policy.id)
+
+
+class MarkL7PolicyPendingCreateInDB(BaseDatabaseTask):
+    """Mark the l7policy pending create in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7policy):
+        """Mark the l7policy as pending create in DB.
+
+        :param l7policy: L7Policy object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING CREATE in DB for l7policy id: %s",
+                  l7policy.id)
+        self.l7policy_repo.update(db_apis.get_session(),
+                                  l7policy.id,
+                                  provisioning_status=constants.PENDING_CREATE)
+
+    def revert(self, l7policy, *args, **kwargs):
+        """Mark the l7policy as broken
+
+        :param l7policy: L7Policy object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark l7policy pending create in DB "
+                        "for l7policy id %s"), l7policy.id)
+        self.task_utils.mark_l7policy_prov_status_error(l7policy.id)
+
+
+class MarkL7PolicyPendingDeleteInDB(BaseDatabaseTask):
+    """Mark the l7policy pending delete in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7policy):
+        """Mark the l7policy as pending delete in DB.
+
+        :param l7policy: L7Policy object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING DELETE in DB for l7policy id: %s",
+                  l7policy.id)
+        self.l7policy_repo.update(db_apis.get_session(),
+                                  l7policy.id,
+                                  provisioning_status=constants.PENDING_DELETE)
+
+    def revert(self, l7policy, *args, **kwargs):
+        """Mark the l7policy as broken
+
+        :param l7policy: L7Policy object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark l7policy pending delete in DB "
+                        "for l7policy id %s"), l7policy.id)
+        self.task_utils.mark_l7policy_prov_status_error(l7policy.id)
+
+
+class MarkL7PolicyPendingUpdateInDB(BaseDatabaseTask):
+    """Mark the l7policy pending update in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7policy):
+        """Mark the l7policy as pending update in DB.
+
+        :param l7policy: L7Policy object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING UPDATE in DB for l7policy id: %s",
+                  l7policy.id)
+        self.l7policy_repo.update(db_apis.get_session(),
+                                  l7policy.id,
+                                  provisioning_status=(constants.
+                                                       PENDING_UPDATE))
+
+    def revert(self, l7policy, *args, **kwargs):
+        """Mark the l7policy as broken
+
+        :param l7policy: L7Policy object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark l7policy pending update in DB "
+                        "for l7policy id %s"), l7policy.id)
+        self.task_utils.mark_l7policy_prov_status_error(l7policy.id)
+
+
+class MarkL7RuleActiveInDB(BaseDatabaseTask):
+    """Mark the l7rule ACTIVE in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7rule):
+        """Mark the l7rule ACTIVE in DB.
+
+        :param l7rule: L7Rule object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark ACTIVE in DB for l7rule id: %s",
+                  l7rule.id)
+        self.l7rule_repo.update(db_apis.get_session(),
+                                l7rule.id,
+                                provisioning_status=constants.ACTIVE)
+
+    def revert(self, l7rule, *args, **kwargs):
+        """Mark the l7rule as broken
+
+        :param l7rule: L7Rule object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark l7rule ACTIVE in DB "
+                        "for l7rule id %s"), l7rule.id)
+        self.task_utils.mark_l7rule_prov_status_error(l7rule.id)
+
+
+class MarkL7RulePendingCreateInDB(BaseDatabaseTask):
+    """Mark the l7rule pending create in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7rule):
+        """Mark the l7rule as pending create in DB.
+
+        :param l7rule: L7Rule object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING CREATE in DB for l7rule id: %s",
+                  l7rule.id)
+        self.l7rule_repo.update(db_apis.get_session(),
+                                l7rule.id,
+                                provisioning_status=constants.PENDING_CREATE)
+
+    def revert(self, l7rule, *args, **kwargs):
+        """Mark the l7rule as broken
+
+        :param l7rule: L7Rule object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark l7rule pending create in DB "
+                        "for l7rule id %s"), l7rule.id)
+        self.task_utils.mark_l7rule_prov_status_error(l7rule.id)
+
+
+class MarkL7RulePendingDeleteInDB(BaseDatabaseTask):
+    """Mark the l7rule pending delete in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7rule):
+        """Mark the l7rule as pending delete in DB.
+
+        :param l7rule: L7Rule object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING DELETE in DB for l7rule id: %s",
+                  l7rule.id)
+        self.l7rule_repo.update(db_apis.get_session(),
+                                l7rule.id,
+                                provisioning_status=constants.PENDING_DELETE)
+
+    def revert(self, l7rule, *args, **kwargs):
+        """Mark the l7rule as broken
+
+        :param l7rule: L7Rule object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark l7rule pending delete in DB "
+                        "for l7rule id %s"), l7rule.id)
+        self.task_utils.mark_l7rule_prov_status_error(l7rule.id)
+
+
+class MarkL7RulePendingUpdateInDB(BaseDatabaseTask):
+    """Mark the l7rule pending update in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7rule):
+        """Mark the l7rule as pending update in DB.
+
+        :param l7rule: L7Rule object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING UPDATE in DB for l7rule id: %s",
+                  l7rule.id)
+        self.l7rule_repo.update(db_apis.get_session(),
+                                l7rule.id,
+                                provisioning_status=constants.PENDING_UPDATE)
+
+    def revert(self, l7rule, *args, **kwargs):
+        """Mark the l7rule as broken
+
+        :param l7rule: L7Rule object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark l7rule pending update in DB "
+                        "for l7rule id %s"), l7rule.id)
+        self.task_utils.mark_l7rule_prov_status_error(l7rule.id)
+
+
+class MarkMemberActiveInDB(BaseDatabaseTask):
+    """Mark the member ACTIVE in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, member):
+        """Mark the member ACTIVE in DB.
+
+        :param member: Member object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark ACTIVE in DB for member id: %s", member.id)
+        self.member_repo.update(db_apis.get_session(),
+                                member.id,
+                                provisioning_status=constants.ACTIVE)
+
+    def revert(self, member, *args, **kwargs):
+        """Mark the member as broken
+
+        :param member: Member object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark member ACTIVE in DB "
+                        "for member id %s"), member.id)
+        self.task_utils.mark_member_prov_status_error(member.id)
+
+
+class MarkMemberPendingCreateInDB(BaseDatabaseTask):
+    """Mark the member pending create in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, member):
+        """Mark the member as pending create in DB.
+
+        :param member: Member object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING CREATE in DB for member id: %s", member.id)
+        self.member_repo.update(db_apis.get_session(),
+                                member.id,
+                                provisioning_status=constants.PENDING_CREATE)
+
+    def revert(self, member, *args, **kwargs):
+        """Mark the member as broken
+
+        :param member: Member object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark member pending create in DB "
+                        "for member id %s"), member.id)
+        self.task_utils.mark_member_prov_status_error(member.id)
+
+
+class MarkMemberPendingDeleteInDB(BaseDatabaseTask):
+    """Mark the member pending delete in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, member):
+        """Mark the member as pending delete in DB.
+
+        :param member: Member object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING DELETE in DB for member id: %s", member.id)
+        self.member_repo.update(db_apis.get_session(),
+                                member.id,
+                                provisioning_status=constants.PENDING_DELETE)
+
+    def revert(self, member, *args, **kwargs):
+        """Mark the member as broken
+
+        :param member: Member object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark member pending delete in DB "
+                        "for member id %s"), member.id)
+        self.task_utils.mark_member_prov_status_error(member.id)
+
+
+class MarkMemberPendingUpdateInDB(BaseDatabaseTask):
+    """Mark the member pending update in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, member):
+        """Mark the member as pending update in DB.
+
+        :param member: Member object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING UPDATE in DB for member id: %s",
+                  member.id)
+        self.member_repo.update(db_apis.get_session(),
+                                member.id,
+                                provisioning_status=constants.PENDING_UPDATE)
+
+    def revert(self, member, *args, **kwargs):
+        """Mark the member as broken
+
+        :param member: Member object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark member pending update in DB "
+                        "for member id %s"), member.id)
+        self.task_utils.mark_member_prov_status_error(member.id)
+
+
+class MarkPoolActiveInDB(BaseDatabaseTask):
+    """Mark the pool ACTIVE in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, pool):
+        """Mark the pool ACTIVE in DB.
+
+        :param pool: Pool object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark ACTIVE in DB for pool id: %s",
+                  pool.id)
+        self.pool_repo.update(db_apis.get_session(),
+                              pool.id,
+                              provisioning_status=constants.ACTIVE)
+
+    def revert(self, pool, *args, **kwargs):
+        """Mark the pool as broken
+
+        :param pool: Pool object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark pool ACTIVE in DB "
+                        "for pool id %s"), pool.id)
+        self.task_utils.mark_pool_prov_status_error(pool.id)
+
+
+class MarkPoolPendingCreateInDB(BaseDatabaseTask):
+    """Mark the pool pending create in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, pool):
+        """Mark the pool as pending create in DB.
+
+        :param pool: Pool object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING CREATE in DB for pool id: %s",
+                  pool.id)
+        self.pool_repo.update(db_apis.get_session(),
+                              pool.id,
+                              provisioning_status=constants.PENDING_CREATE)
+
+    def revert(self, pool, *args, **kwargs):
+        """Mark the pool as broken
+
+        :param pool: Pool object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark pool pending create in DB "
+                        "for pool id %s"), pool.id)
+        self.task_utils.mark_pool_prov_status_error(pool.id)
+
+
+class MarkPoolPendingDeleteInDB(BaseDatabaseTask):
+    """Mark the pool pending delete in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, pool):
+        """Mark the pool as pending delete in DB.
+
+        :param pool: Pool object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING DELETE in DB for pool id: %s",
+                  pool.id)
+        self.pool_repo.update(db_apis.get_session(),
+                              pool.id,
+                              provisioning_status=constants.PENDING_DELETE)
+
+    def revert(self, pool, *args, **kwargs):
+        """Mark the pool as broken
+
+        :param pool: Pool object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark pool pending delete in DB "
+                        "for pool id %s"), pool.id)
+        self.task_utils.mark_pool_prov_status_error(pool.id)
+
+
+class MarkPoolPendingUpdateInDB(BaseDatabaseTask):
+    """Mark the pool pending update in the DB.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, pool):
+        """Mark the pool as pending update in DB.
+
+        :param pool: Pool object to be updated
+        :returns: None
+        """
+
+        LOG.debug("Mark PENDING UPDATE in DB for pool id: %s",
+                  pool.id)
+        self.pool_repo.update(db_apis.get_session(),
+                              pool.id,
+                              provisioning_status=constants.PENDING_UPDATE)
+
+    def revert(self, pool, *args, **kwargs):
+        """Mark the pool as broken
+
+        :param pool: Pool object that failed to update
+        :returns: None
+        """
+
+        LOG.warning(_LW("Reverting mark pool pending update in DB "
+                        "for pool id %s"), pool.id)
+        self.task_utils.mark_pool_prov_status_error(pool.id)

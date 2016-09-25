@@ -170,6 +170,11 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
     pool = orm.relationship("Pool", backref=orm.backref("members",
                                                         uselist=True,
                                                         cascade="delete"))
+    provisioning_status = sa.Column(
+        sa.String(16),
+        sa.ForeignKey("provisioning_status.name",
+                      name="fk_member_provisioning_status_name"),
+        nullable=True)
 
 
 class HealthMonitor(base_models.BASE, base_models.ProjectMixin):
@@ -199,6 +204,11 @@ class HealthMonitor(base_models.BASE, base_models.ProjectMixin):
                             backref=orm.backref("health_monitor",
                                                 uselist=False,
                                                 cascade="delete"))
+    provisioning_status = sa.Column(
+        sa.String(16),
+        sa.ForeignKey("provisioning_status.name",
+                      name="fk_health_monitor_provisioning_status_name"),
+        nullable=True)
 
 
 class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
@@ -232,6 +242,11 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
                                      backref=orm.backref("pools",
                                                          uselist=True,
                                                          cascade="delete"))
+    provisioning_status = sa.Column(
+        sa.String(16),
+        sa.ForeignKey("provisioning_status.name",
+                      name="fk_pool_provisioning_status_name"),
+        nullable=True)
 
     # This property should be a unique list of any listeners that reference
     # this pool as its default_pool and any listeners referenced by enabled
@@ -490,6 +505,11 @@ class L7Rule(base_models.BASE, base_models.IdMixin):
                                 backref=orm.backref("l7rules",
                                                     uselist=True,
                                                     cascade="delete"))
+    provisioning_status = sa.Column(
+        sa.String(16),
+        sa.ForeignKey("provisioning_status.name",
+                      name="fk_l7rule_provisioning_status_name"),
+        nullable=True)
 
 
 class L7Policy(base_models.BASE, base_models.IdMixin):
@@ -531,3 +551,8 @@ class L7Policy(base_models.BASE, base_models.IdMixin):
     redirect_pool = orm.relationship("Pool", uselist=False,
                                      backref=orm.backref("l7policies",
                                                          uselist=True))
+    provisioning_status = sa.Column(
+        sa.String(16),
+        sa.ForeignKey("provisioning_status.name",
+                      name="fk_l7policy_provisioning_status_name"),
+        nullable=True)
