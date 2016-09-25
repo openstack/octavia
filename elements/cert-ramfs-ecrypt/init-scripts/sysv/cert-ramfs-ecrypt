@@ -1,0 +1,45 @@
+### BEGIN INIT INFO
+# Provides:          cert-ramfs-ecrypt
+# Required-Start:    $remote_fs $syslog $network cloud-config
+# Required-Stop:     $remote_fs $syslog $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Creates an encrypted ramfs for Octavia certs
+# Description:       Creates an encrypted ramfs for Octavia TLS
+#                    certificates and key storage.
+### END INIT INFO
+
+# Using the lsb functions to perform the operations.
+. /lib/lsb/init-functions
+# Process name ( For display )
+NAME=cert-ramfs-ecrypt
+
+case $1 in
+ start)
+  log_daemon_msg "Starting the process" "$NAME"
+  passphrase=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+  token=$(echo $passphrase | ecryptfs-add-passphrase | awk -F'[][]' '{printf $2}')
+
+  certs_path=$(awk '/base_cert_dir / {printf $3}' /etc/octavia/amphora-agent.conf)
+  mkdir -p $certs_path
+  mount -t ramfs -o size=1m ramfs $certs_path
+  mount -t ecryptfs -o key=passphrase:passphrase_passwd=$passphrase,no_sig_cache=yes,verbose=no,ecryptfs_sig=$token,ecryptfs_cipher=aes,ecryptfs_key_bytes=16,ecryptfs_passthrough=no,ecryptfs_enable_filename_crypto=no $certs_path $certs_path
+  log_end_msg 0
+  ;;
+ stop)
+  log_daemon_msg "Stopping the process" "$NAME"
+  certs_path=$(awk '/base_cert_dir / {printf $3}' /etc/octavia/amphora-agent.conf)
+  umount $certs_path
+  umount $certs_path
+  log_end_msg 0
+  ;;
+ restart)
+  # Restart the daemon.
+  $0 stop && sleep 2 && $0 start
+  ;;
+ *)
+  # For invalid arguments, print the usage message.
+  echo "Usage: $0 {start|stop|restart|reload|status}"
+  exit 2
+  ;;
+esac

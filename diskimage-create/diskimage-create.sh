@@ -357,6 +357,9 @@ fi
 # Add pip-cache element
 AMP_element_sequence="$AMP_element_sequence pip-cache"
 
+# Add certificate ramfs ecrypt element
+AMP_element_sequence="$AMP_element_sequence cert-ramfs-ecrypt"
+
 # Allow full elements override
 if [ "$DIB_ELEMENTS" ]; then
     AMP_element_sequence="$DIB_ELEMENTS"
