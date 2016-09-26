@@ -163,6 +163,7 @@ function create_mgmt_network_interface {
     sudo ovs-vsctl -- --may-exist add-port ${OVS_BRIDGE:-br-int} o-hm0 -- set Interface o-hm0 type=internal -- set Interface o-hm0 external-ids:iface-status=active -- set Interface o-hm0 external-ids:attached-mac=$MGMT_PORT_MAC -- set Interface o-hm0 external-ids:iface-id=$MGMT_PORT_ID
     sudo ip link set dev o-hm0 address $MGMT_PORT_MAC
     sudo dhclient -v o-hm0 -cf $OCTAVIA_DHCLIENT_CONF
+    sudo iptables -I INPUT -i o-hm0 -p udp --dport 5555 -j ACCEPT
 
     if [ $OCTAVIA_CONTROLLER_IP_PORT_LIST == 'auto' ] ; then
         iniset $OCTAVIA_CONF health_manager controller_ip_port_list $MGMT_PORT_IP:$OCTAVIA_HM_LISTEN_PORT
@@ -323,8 +324,8 @@ function octavia_cleanup {
 # check for service enabled
 if is_service_enabled $OCTAVIA; then
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then # main-ha node stuff only
-        if ! is_service_enabled $Q_SVC || ! is_service_enabled $LBAAS_V2; then
-            die "The neutron $Q_SVC and $LBAAS_V2 services must be enabled to use $OCTAVIA"
+        if ! is_service_enabled $Q_SVC; then
+            die "The neutron $Q_SVC service must be enabled to use $OCTAVIA"
         fi
 
         # Check if an amphora image is already loaded
@@ -353,7 +354,7 @@ if is_service_enabled $OCTAVIA; then
         # Configure after the other layer 1 and 2 services have been configured
         # TODO: need to make sure this runs after LBaaS V2 configuration
         echo_summary "Configuring octavia"
-        octavia_configure_common
+        # octavia_configure_common
         octavia_configure
 
     elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
