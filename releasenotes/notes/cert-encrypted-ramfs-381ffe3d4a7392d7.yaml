@@ -1,0 +1,12 @@
+---
+upgrade:
+  - To enabled encrypted ramfs storage for certificates
+    and keys, you must upgrade your amphora image.
+deprecations:
+  - Amphora with a terminated HTTPS load balancer can
+    no longer be rebooted.  If they reboot, they will
+    trigger a failover of the amphora.
+security:
+  - Certificate and key storage for terminated HTTPS
+    load balancers is now in an encrypted ramfs path
+    inside the amphora.
