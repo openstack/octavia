@@ -36,6 +36,7 @@ FAKE_PEM_FILENAME = "file_name"
 FAKE_UUID_1 = uuidutils.generate_uuid()
 FAKE_VRRP_IP = '10.1.0.1'
 FAKE_MAC_ADDRESS = '123'
+FAKE_MTU = 1450
 
 
 class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
@@ -62,8 +63,10 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.fixed_ip = mock.MagicMock()
         self.fixed_ip.ip_address = '198.51.100.5'
         self.fixed_ip.subnet.cidr = '198.51.100.0/24'
+        self.network = network_models.Network(mtu=FAKE_MTU)
         self.port = network_models.Port(mac_address=FAKE_MAC_ADDRESS,
-                                        fixed_ips=[self.fixed_ip])
+                                        fixed_ips=[self.fixed_ip],
+                                        network=self.network)
 
         self.host_routes = [network_models.HostRoute(destination=DEST1,
                                                      nexthop=NEXTHOP),
@@ -75,6 +78,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                             'gateway': FAKE_GATEWAY,
                             'mac_address': FAKE_MAC_ADDRESS,
                             'vrrp_ip': self.amp.vrrp_ip,
+                            'mtu': FAKE_MTU,
                             'host_routes': host_routes_data}
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
@@ -173,10 +177,14 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
 
     def test_post_network_plug(self):
         # Test dhcp path
-        port = network_models.Port(mac_address=FAKE_MAC_ADDRESS, fixed_ips=[])
+        port = network_models.Port(mac_address=FAKE_MAC_ADDRESS,
+                                   fixed_ips=[],
+                                   network=self.network)
         self.driver.post_network_plug(self.amp, port)
         self.driver.client.plug_network.assert_called_once_with(
-            self.amp, dict(mac_address=FAKE_MAC_ADDRESS, fixed_ips=[]))
+            self.amp, dict(mac_address=FAKE_MAC_ADDRESS,
+                           fixed_ips=[],
+                           mtu=FAKE_MTU))
 
         self.driver.client.plug_network.reset_mock()
 
@@ -186,7 +194,8 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             self.amp, dict(mac_address=FAKE_MAC_ADDRESS,
                            fixed_ips=[dict(ip_address='198.51.100.5',
                                            subnet_cidr='198.51.100.0/24',
-                                           host_routes=[])]))
+                                           host_routes=[])],
+                           mtu=FAKE_MTU))
 
     def test_post_network_plug_with_host_routes(self):
         SUBNET_ID = 'SUBNET_ID'
@@ -209,7 +218,8 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                                    subnet=subnet)
         ]
         port = network_models.Port(mac_address=FAKE_MAC_ADDRESS,
-                                   fixed_ips=fixed_ips)
+                                   fixed_ips=fixed_ips,
+                                   network=self.network)
         self.driver.post_network_plug(self.amp, port)
         expected_fixed_ips = [
             {'ip_address': FIXED_IP1, 'subnet_cidr': SUBNET_CIDR,
@@ -221,7 +231,8 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         ]
         self.driver.client.plug_network.assert_called_once_with(
             self.amp, dict(mac_address=FAKE_MAC_ADDRESS,
-                           fixed_ips=expected_fixed_ips))
+                           fixed_ips=expected_fixed_ips,
+                           mtu=FAKE_MTU))
 
     def test_get_vrrp_interface(self):
         self.driver.get_vrrp_interface(self.amp)

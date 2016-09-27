@@ -51,7 +51,7 @@ template_vip = j2_env.get_template(ETH_X_VIP_CONF)
 class Plug(object):
 
     def plug_vip(self, vip, subnet_cidr, gateway,
-                 mac_address, vrrp_ip=None, host_routes=None):
+                 mac_address, mtu=None, vrrp_ip=None, host_routes=None):
         # Validate vip and subnet_cidr, calculate broadcast address and netmask
         try:
             render_host_routes = []
@@ -143,6 +143,7 @@ class Plug(object):
                 broadcast=broadcast,
                 netmask=netmask,
                 gateway=gateway,
+                mtu=mtu,
                 vrrp_ip=vrrp_ip,
                 vrrp_ipv6=vrrp_version is 6,
                 host_routes=render_host_routes,
@@ -174,7 +175,7 @@ class Plug(object):
             details="VIP {vip} plugged on interface {interface}".format(
                 vip=vip, interface=primary_interface))), 202)
 
-    def _generate_network_file_text(self, netns_interface, fixed_ips):
+    def _generate_network_file_text(self, netns_interface, fixed_ips, mtu):
         text = ''
         if fixed_ips is None:
             text = template_port.render(interface=netns_interface)
@@ -213,6 +214,7 @@ class Plug(object):
                                                 ip_address=ip.exploded,
                                                 broadcast=broadcast,
                                                 netmask=netmask,
+                                                mtu=mtu,
                                                 host_routes=host_routes)
                 text = '\n'.join([text, new_text])
         return text
@@ -225,7 +227,7 @@ class Plug(object):
                 except socket.error:
                     socket.inet_pton(socket.AF_INET6, ip.get('ip_address'))
 
-    def plug_network(self, mac_address, fixed_ips):
+    def plug_network(self, mac_address, fixed_ips, mtu=None):
         # Check if the interface is already in the network namespace
         # Do not attempt to re-plug the network if it is already in the
         # network namespace
@@ -275,7 +277,9 @@ class Plug(object):
 
         with os.fdopen(os.open(interface_file_path, flags, mode),
                        'w') as text_file:
-            text = self._generate_network_file_text(netns_interface, fixed_ips)
+            text = self._generate_network_file_text(netns_interface,
+                                                    fixed_ips,
+                                                    mtu)
             text_file.write(text)
 
         # Update the list of interfaces to add to the namespace

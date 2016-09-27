@@ -608,7 +608,7 @@ class TestServerTestCase(base.TestCase):
                  'ifup', 'eth' + test_int_num], stderr=-2)
 
         # fixed IPs happy path
-        port_info = {'mac_address': '123', 'fixed_ips': [
+        port_info = {'mac_address': '123', 'mtu': 1450, 'fixed_ips': [
             {'ip_address': '10.0.0.5', 'subnet_cidr': '10.0.0.0/24'}]}
         mock_interfaces.side_effect = [['blah']]
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
@@ -642,13 +642,13 @@ class TestServerTestCase(base.TestCase):
                 'auto eth' + test_int_num +
                 '\niface eth' + test_int_num + ' inet static\n' +
                 'address 10.0.0.5\nbroadcast 10.0.0.255\n' +
-                'netmask 255.255.255.0\n')
+                'netmask 255.255.255.0\nmtu 1450\n')
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                  'ifup', 'eth' + test_int_num], stderr=-2)
 
         # fixed IPs happy path IPv6
-        port_info = {'mac_address': '123', 'fixed_ips': [
+        port_info = {'mac_address': '123', 'mtu': 1450, 'fixed_ips': [
             {'ip_address': '2001:db8::2', 'subnet_cidr': '2001:db8::/32'}]}
         mock_interfaces.side_effect = [['blah']]
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
@@ -683,7 +683,7 @@ class TestServerTestCase(base.TestCase):
                 '\niface eth' + test_int_num + ' inet6 static\n' +
                 'address 2001:0db8:0000:0000:0000:0000:0000:0002\n'
                 'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n' +
-                'netmask 32\n')
+                'netmask 32\nmtu 1450\n')
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                  'ifup', 'eth' + test_int_num], stderr=-2)
@@ -750,7 +750,7 @@ class TestServerTestCase(base.TestCase):
         netns_handle.get_links.return_value = [{
             'attrs': [['IFLA_IFNAME', consts.NETNS_PRIMARY_INTERFACE]]}]
 
-        port_info = {'mac_address': MAC, 'fixed_ips': [
+        port_info = {'mac_address': MAC, 'mtu': 1450, 'fixed_ips': [
             {'ip_address': IP, 'subnet_cidr': SUBNET_CIDR,
              'host_routes': [{'destination': DEST1, 'nexthop': NEXTHOP},
                              {'destination': DEST2, 'nexthop': NEXTHOP}]}]}
@@ -787,7 +787,7 @@ class TestServerTestCase(base.TestCase):
                 '\niface ' + consts.NETNS_PRIMARY_INTERFACE +
                 ' inet static\n' +
                 'address ' + IP + '\nbroadcast ' + BROADCAST + '\n' +
-                'netmask ' + NETMASK + '\n' +
+                'netmask ' + NETMASK + '\n' + 'mtu 1450\n' +
                 'up route add -net ' + DEST1 + ' gw ' + NEXTHOP +
                 ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
                 'down route del -net ' + DEST1 + ' gw ' + NEXTHOP +
@@ -866,6 +866,7 @@ class TestServerTestCase(base.TestCase):
             'gateway': '203.0.113.1',
             'mac_address': '123',
             'vrrp_ip': '203.0.113.4',
+            'mtu': 1450,
             'host_routes': [{'destination': '203.0.114.0/24',
                              'nexthop': '203.0.113.5'},
                             {'destination': '203.0.115.0/24',
@@ -910,6 +911,7 @@ class TestServerTestCase(base.TestCase):
                 'broadcast 203.0.113.255\n'
                 'netmask 255.255.255.0\n'
                 'gateway 203.0.113.1\n'
+                'mtu 1450\n'
                 'up route add -net 203.0.114.0/24 gw 203.0.113.5 '
                 'dev {netns_int}\n'
                 'down route del -net 203.0.114.0/24 gw 203.0.113.5 '
@@ -1048,6 +1050,7 @@ class TestServerTestCase(base.TestCase):
             'gateway': '2001:db8::1',
             'mac_address': '123',
             'vrrp_ip': '2001:db8::4',
+            'mtu': 1450,
             'host_routes': [{'destination': '2001:db9::/32',
                              'nexthop': '2001:db8::5'},
                             {'destination': '2001:db9::/32',
@@ -1091,6 +1094,7 @@ class TestServerTestCase(base.TestCase):
                 'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n'
                 'netmask 32\n'
                 'gateway 2001:db8::1\n'
+                'mtu 1450\n'
                 'up route add -net 2001:db9::/32 gw 2001:db8::5 '
                 'dev {netns_int}\n'
                 'down route del -net 2001:db9::/32 gw 2001:db8::5 '
