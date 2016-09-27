@@ -36,7 +36,7 @@ git repositories one directory above the Octavia git repository.
  | git clone https://git.openstack.org/openstack/diskimage-builder.git
  | git clone https://git.openstack.org/openstack/tripleo-image-elements.git
 
-These paths can be overriden with the following environment variables:
+These paths can be overridden with the following environment variables:
 
  | OCTAVIA_REPO_PATH = /<some directory>/octavia
  | DIB_REPO_PATH = /<some directory>/diskimage-builder
