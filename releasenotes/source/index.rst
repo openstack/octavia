@@ -7,4 +7,5 @@ Octavia Release Notes
 
    liberty
    mitaka
+   newton
    unreleased
