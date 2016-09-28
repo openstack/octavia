@@ -90,13 +90,13 @@ func reset_handler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	portPtr := flag.Int("port", 8080, "TCP port to listen on")
-	idPtr := flag.Int("id", 1, "Server ID")
+	idPtr := flag.String("id", "1", "Server ID")
 
 	flag.Parse()
 
-	resp = fmt.Sprintf("server%d", *idPtr)
+	resp = fmt.Sprintf("%s", *idPtr)
 	sess_cookie.Name = "JESSIONID"
-	sess_cookie.Value = fmt.Sprintf("%d", *idPtr)
+	sess_cookie.Value = *idPtr
 
 	http.HandleFunc("/", root_handler)
 	http.HandleFunc("/slow", slow_handler)
