@@ -6,10 +6,6 @@ Octavia
     :target: https://pypi.python.org/pypi/octavia/
     :alt: Latest Version
 
-.. image:: https://img.shields.io/pypi/dm/octavia.svg
-    :target: https://pypi.python.org/pypi/octavia/
-    :alt: Downloads
-
 Octavia is an operator-grade open source scalable load balancer for use in
 large OpenStack deployments. It delivers load balancing services on `amphorae
 <http://docs.openstack.org/developer/octavia/main/glossary.html>`_ and
