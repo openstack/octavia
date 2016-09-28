@@ -16,6 +16,9 @@ function octavia_install {
 function build_octavia_worker_image {
 
     # pull the agent code from the current code zuul has a reference to
+    if [ -n "$DIB_REPOLOCATION_pip_and_virtualenv" ]; then
+        export DIB_REPOLOCATION_pip_and_virtualenv=$DIB_REPOLOCATION_pip_and_virtualenv
+    fi
     export DIB_REPOLOCATION_amphora_agent=$OCTAVIA_DIR
     export DIB_REPOREF_amphora_agent=$(git -C "$OCTAVIA_DIR" log -1 --pretty="format:%H")
     TOKEN=$(openstack token issue | grep ' id ' | get_field 2)

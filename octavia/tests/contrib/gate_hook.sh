@@ -21,6 +21,12 @@ function _setup_octavia {
     export DEVSTACK_LOCAL_CONFIG+="
         enable_plugin octavia https://git.openstack.org/openstack/octavia
         "
+    # Use infra's cached version of the file
+    if [ -f /opt/stack/new/devstack/files/get-pip.py ]; then
+            export DEVSTACK_LOCAL_CONFIG+="
+        DIB_REPOLOCATION_pip_and_virtualenv=file:///opt/stack/new/devstack/files/get-pip.py
+        "
+    fi
     if [ "$testenv" != "apiv1" ]; then
         ENABLED_SERVICES+="octavia,o-cw,o-hk,o-hm,o-api,"
     fi
