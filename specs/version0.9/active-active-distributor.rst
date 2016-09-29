@@ -142,7 +142,7 @@ High-level Topology Description
   4. The GW router forwards the client request to the Distributor.
 
   5. The Distributor forwards the packet to one of the Amphorae on the
-     tenant's front-end network (distributed according some policy,
+     tenant's front-end network (distributed according to some policy,
      as described below), without changing the destination IP (i.e., still
      using the VIP).
 
