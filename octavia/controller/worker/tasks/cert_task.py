@@ -29,7 +29,7 @@ class BaseCertTask(task.Task):
         super(BaseCertTask, self).__init__(**kwargs)
         self.cert_generator = stevedore_driver.DriverManager(
             namespace='octavia.cert_generator',
-            name=CONF.controller_worker.cert_generator,
+            name=CONF.certificates.cert_generator,
             invoke_on_load=True,
         ).driver
 

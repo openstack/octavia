@@ -1,0 +1,5 @@
+---
+upgrade:
+  - Remove dumplicated config option 'cert_generator'
+    in [controller_worker]. Operators now should set it
+    under [certificates].
