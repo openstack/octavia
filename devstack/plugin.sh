@@ -2,6 +2,8 @@
 
 # devstack plugin for octavia
 
+GET_PIP_CACHE_LOCATION=/opt/stack/cache/files/get-pip.py
+
 function octavia_install {
 
     setup_develop $OCTAVIA_DIR
@@ -18,6 +20,8 @@ function build_octavia_worker_image {
     # pull the agent code from the current code zuul has a reference to
     if [ -n "$DIB_REPOLOCATION_pip_and_virtualenv" ]; then
         export DIB_REPOLOCATION_pip_and_virtualenv=$DIB_REPOLOCATION_pip_and_virtualenv
+    elif [ -f $GET_PIP_CACHE_LOCATION ] ; then
+        export DIB_REPOLOCATION_pip_and_virtualenv=file://$GET_PIP_CACHE_LOCATION
     fi
     export DIB_REPOLOCATION_amphora_agent=$OCTAVIA_DIR
     export DIB_REPOREF_amphora_agent=$(git -C "$OCTAVIA_DIR" log -1 --pretty="format:%H")
