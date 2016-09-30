@@ -13,10 +13,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import base64
+
 from cryptography.hazmat import backends
 from cryptography.hazmat.primitives import serialization
 from cryptography import x509
 from oslo_log import log as logging
+from pyasn1.codec.der import decoder as der_decoder
+from pyasn1.codec.der import encoder as der_encoder
+from pyasn1_modules import rfc2315
 import six
 
 from octavia.common import data_models as data_models
@@ -24,8 +29,10 @@ import octavia.common.exceptions as exceptions
 from octavia.i18n import _LE
 
 
-X509_BEG = "-----BEGIN CERTIFICATE-----"
-X509_END = "-----END CERTIFICATE-----"
+X509_BEG = '-----BEGIN CERTIFICATE-----'
+X509_END = '-----END CERTIFICATE-----'
+PKCS7_BEG = '-----BEGIN PKCS7-----'
+PKCS7_END = '-----END PKCS7-----'
 
 LOG = logging.getLogger(__name__)
 
@@ -40,15 +47,17 @@ def validate_cert(certificate, private_key=None,
     :param certificate: A PEM encoded certificate
     :param private_key: The private key for the certificate
     :param private_key_passphrase: Passphrase for accessing the private key
-    :param intermediates: PEM encoded intermediate certificates
+    :param intermediates: PEM or PKCS7 encoded intermediate certificates
     :returns: boolean
     """
     cert = _get_x509_from_pem_bytes(certificate)
     if intermediates:
-        for x509Pem in _split_x509s(intermediates):
-            _get_x509_from_pem_bytes(x509Pem)
+        for imd in get_intermediates_pems(intermediates):
+            # Loading the certificates validates them
+            pass
     if private_key:
-        pkey = _read_privatekey(private_key, passphrase=private_key_passphrase)
+        pkey = _read_private_key(private_key,
+                                 passphrase=private_key_passphrase)
         pknum = pkey.public_key().public_numbers()
         certnum = cert.public_key().public_numbers()
         if pknum != certnum:
@@ -56,7 +65,13 @@ def validate_cert(certificate, private_key=None,
     return True
 
 
-def _read_privatekey(privatekey_pem, passphrase=None):
+def _read_private_key(private_key_pem, passphrase=None):
+    """Reads a private key PEM block and returns a RSAPrivatekey
+
+    :param private_key_pem: The private key PEM block
+    :param passphrase: Optional passphrase needed to decrypt the private key
+    :returns: a RSAPrivatekey object
+    """
     if passphrase:
         if six.PY2:
             passphrase = passphrase.encode("utf-8")
@@ -64,11 +79,52 @@ def _read_privatekey(privatekey_pem, passphrase=None):
             passphrase = six.b(passphrase)
 
     try:
-        pkey = privatekey_pem.encode('ascii')
+        pkey = private_key_pem.encode('ascii')
         return serialization.load_pem_private_key(pkey, passphrase,
                                                   backends.default_backend())
     except Exception:
+        LOG.exception(_LE("Passphrase required."))
         raise exceptions.NeedsPassphrase
+
+
+def prepare_private_key(private_key, passphrase=None):
+    """Prepares an unencrypted PEM-encoded private key for printing
+
+    :param private_key: The private key in PEM format (encrypted or not)
+    :returns: The unencrypted private key in PEM format
+    """
+    pk = _read_private_key(private_key, passphrase)
+    return pk.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption()).decode(
+            'unicode_escape').strip()
+
+
+def get_intermediates_pems(intermediates=None):
+    """Split the input string into individual x509 text blocks
+
+    :param intermediates: PEM or PKCS7 encoded intermediate certificates
+    :returns: A list of strings where each string represents an
+    X509 pem block surrounded by BEGIN CERTIFICATE,
+    END CERTIFICATE block tags
+    """
+    if X509_BEG in str(intermediates):
+        for x509Pem in _split_x509s(intermediates):
+            yield _prepare_x509_cert(_get_x509_from_pem_bytes(x509Pem))
+    else:
+        for x509Pem in _parse_pkcs7_bundle(intermediates):
+            yield _prepare_x509_cert(_get_x509_from_der_bytes(x509Pem))
+
+
+def _prepare_x509_cert(cert=None):
+    """Prepares a PEM-encoded X509 certificate for printing
+
+    :param intermediates: X509Certificate object
+    :returns: A PEM-encoded X509 certificate
+    """
+    return cert.public_bytes(encoding=serialization.Encoding.PEM).decode(
+        'unicode_escape').strip()
 
 
 def _split_x509s(xstr):
@@ -93,6 +149,104 @@ def _split_x509s(xstr):
             if line == X509_BEG:
                 curr_pem_block.append(line)
                 inside_x509 = True
+
+
+def _parse_pkcs7_bundle(pkcs7):
+    """Parse a PKCS7 certificate bundle in DER or PEM format
+
+    :param pkcs7: A pkcs7 bundle in DER or PEM format
+    :returns: A list of individual DER-encoded certificates
+    """
+    # Look for PEM encoding
+    if PKCS7_BEG in str(pkcs7):
+        try:
+            for substrate in _read_pem_blocks(pkcs7, (PKCS7_BEG, PKCS7_END)):
+                for cert in _get_certs_from_pkcs7_substrate(substrate):
+                    yield cert
+        except Exception:
+            LOG.exception(_LE('Unreadable Certificate.'))
+            raise exceptions.UnreadableCert
+
+    # If no PEM encoding, assume this is DER encoded and try to decode
+    else:
+        for cert in _get_certs_from_pkcs7_substrate(pkcs7):
+            yield cert
+
+
+def _read_pem_blocks(data, *markers):
+    """Parse a series of PEM-encoded blocks
+
+    This method is based on pyasn1-modules.pem.readPemBlocksFromFile, but
+    eliminates the need to operate on a file handle and is a generator.
+
+    :param data: A long text string containing one or more PEM-encoded blocks
+    :param markers: A tuple containing the test strings that indicate the
+                    start and end of the the PEM-encoded blocks
+    :returns: An ASN1 substrate suitable for DER decoding.
+
+    """
+    stSpam, stHam, stDump = 0, 1, 2
+
+    startMarkers = dict(map(lambda x: (x[1], x[0]),
+                            enumerate(map(lambda x: x[0], markers))))
+    stopMarkers = dict(map(lambda x: (x[1], x[0]),
+                           enumerate(map(lambda x: x[1], markers))))
+    idx = -1
+    state = stSpam
+    if six.PY3:
+        data = str(data)
+    for certLine in data.replace('\r', '').split('\n'):
+        if not certLine:
+            continue
+        certLine = certLine.strip()
+        if state == stSpam:
+            if certLine in startMarkers:
+                certLines = []
+                idx = startMarkers[certLine]
+                state = stHam
+                continue
+        if state == stHam:
+            if certLine in stopMarkers and stopMarkers[certLine] == idx:
+                state = stDump
+            else:
+                certLines.append(certLine)
+        if state == stDump:
+            if six.PY2:
+                yield ''.join([
+                    base64.b64decode(x) for x in certLines])
+            elif six.PY3:
+                yield ''.encode().join([
+                    base64.b64decode(x) for x in certLines])
+            state = stSpam
+
+
+def _get_certs_from_pkcs7_substrate(substrate):
+    """Extracts DER-encoded X509 certificates from a PKCS7 ASN1 DER substrate
+
+    :param substrate: The substrate to be processed
+    :returns: A list of DER-encoded X509 certificates
+    """
+    try:
+        contentInfo, _ = der_decoder.decode(substrate,
+                                            asn1Spec=rfc2315.ContentInfo())
+        contentType = contentInfo.getComponentByName('contentType')
+    except Exception:
+        LOG.exception(_LE('Unreadable Certificate.'))
+        raise exceptions.UnreadableCert
+    if contentType != rfc2315.signedData:
+        LOG.exception(_LE('Unreadable Certificate.'))
+        raise exceptions.UnreadableCert
+
+    try:
+        content, _ = der_decoder.decode(
+            contentInfo.getComponentByName('content'),
+            asn1Spec=rfc2315.SignedData())
+    except Exception:
+        LOG.exception(_LE('Unreadable Certificate.'))
+        raise exceptions.UnreadableCert
+
+    for cert in content.getComponentByName('certificates'):
+        yield der_encoder.encode(cert)
 
 
 def get_host_names(certificate):
@@ -127,7 +281,7 @@ def get_host_names(certificate):
 
         return host_names
     except Exception:
-        LOG.exception(_LE("Unreadable certificate."))
+        LOG.exception(_LE('Unreadable Certificate.'))
         raise exceptions.UnreadableCert
 
 
@@ -143,8 +297,8 @@ def get_cert_expiration(certificate_pem):
         cert = x509.load_pem_x509_certificate(certificate,
                                               backends.default_backend())
         return cert.not_valid_after
-    except Exception as e:
-        LOG.exception(e)
+    except Exception:
+        LOG.exception(_LE('Unreadable Certificate.'))
         raise exceptions.UnreadableCert
 
 
@@ -160,6 +314,22 @@ def _get_x509_from_pem_bytes(certificate_pem):
         x509cert = x509.load_pem_x509_certificate(certificate,
                                                   backends.default_backend())
     except Exception:
+        LOG.exception(_LE('Unreadable Certificate.'))
+        raise exceptions.UnreadableCert
+    return x509cert
+
+
+def _get_x509_from_der_bytes(certificate_der):
+    """Parse X509 data from a DER encoded certificate
+
+    :param certificate_der: Certificate in DER format
+    :returns: crypto high-level x509 data from the DER-encoded certificate
+    """
+    try:
+        x509cert = x509.load_der_x509_certificate(certificate_der,
+                                                  backends.default_backend())
+    except Exception:
+        LOG.exception(_LE('Unreadable Certificate.'))
         raise exceptions.UnreadableCert
     return x509cert
 
@@ -175,7 +345,7 @@ def build_pem(tls_container):
         pem = [tls_container.certificate, tls_container.private_key]
         if tls_container.intermediates:
             pem.extend(tls_container.intermediates[:])
-        return '\n'.join(pem)
+        return '\n'.join(pem) + '\n'
 
 
 def load_certificates_data(cert_mngr, listener):
@@ -204,7 +374,9 @@ def load_certificates_data(cert_mngr, listener):
 def _map_cert_tls_container(cert):
         return data_models.TLSContainer(
             primary_cn=get_primary_cn(cert),
-            private_key=cert.get_private_key(),
+            private_key=prepare_private_key(
+                cert.get_private_key(),
+                cert.get_private_key_passphrase()),
             certificate=cert.get_certificate(),
             intermediates=cert.get_intermediates())
 

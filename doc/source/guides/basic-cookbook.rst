@@ -385,10 +385,11 @@ listener using Server Name Indication (SNI) technology.
 * TLS certificates, keys, and intermediate certificate chains for
   www.example.com and www2.example.com have been obtained from an external
   certificate authority. These now exist in the files server.crt, server.key,
-  ca-chain.p7b, server2.crt, server2.key, and ca-chain2.p7b in the current
-  directory. The keys and certificates are PEM-encoded, and the
-  intermediate certificate chains are PKCS7 PEM encoded. The keys are not
-  encrypted with a passphrase.
+  ca-chain.p7b, server2.crt, server2-encrypted.key, and ca-chain2.p7b in the
+  current directory. The keys and certificates are PEM-encoded, and the
+  intermediate certificate chains are PKCS7 PEM encoded.
+* The key for www.example.com is not encrypted with a passphrase.
+* The key for www2.example.com is encrypted with the passphrase "abc123".
 * The *admin* user on this cloud installation has keystone ID *admin_id*
 * We want to configure a TLS-terminated HTTPS load balancer that is accessible
   from the internet using the keys and certificates mentioned above, which
@@ -402,16 +403,18 @@ listener using Server Name Indication (SNI) technology.
 1. Create barbican *secret* resources for the certificates, keys, and
    intermediate certificate chains. We will call these *cert1*, *key1*,
    *intermediates1*, *cert2*, *key2* and *intermediates2* respectively.
-2. Create *secret container* resources combining the above appropriately. We
+2. Create a barbican *secret* resource *passphrase2* for the passphrase for
+   *key2*
+3. Create *secret container* resources combining the above appropriately. We
    will call these *tls_container1* and *tls_container2*.
-3. Grant the *admin* user access to all the *secret* and *secret container*
+4. Grant the *admin* user access to all the *secret* and *secret container*
    barbican resources above.
-4. Create load balancer *lb1* on subnet *public-subnet*.
-5. Create listener *listener1* as a TERMINATED_HTTPS listener referencing
+5. Create load balancer *lb1* on subnet *public-subnet*.
+6. Create listener *listener1* as a TERMINATED_HTTPS listener referencing
    *tls_container1* as its default TLS container, and referencing both
    *tls_container1* and *tls_container2* using SNI.
-6. Create pool *pool1* as *listener1*'s default pool.
-7. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
+7. Create pool *pool1* as *listener1*'s default pool.
+8. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
 
 **CLI commands**:
 
@@ -422,9 +425,10 @@ listener using Server Name Indication (SNI) technology.
     openstack secret store --name='intermediates1' --payload-content-type='text/plain' --payload="$(cat ca-chain.p7b)"
     openstack secret container create --name='tls_container1' --type='certificate' --secret="certificate=$(openstack secret list | awk '/ cert1 / {print $2}')" --secret="private_key=$(openstack secret list | awk '/ key1 / {print $2}')" --secret="intermediates=$(openstack secret list | awk '/ intermediates1 / {print $2}')"
     openstack secret store --name='cert2' --payload-content-type='text/plain' --payload="$(cat server2.crt)"
-    openstack secret store --name='key2' --payload-content-type='text/plain' --payload="$(cat server2.key)"
+    openstack secret store --name='key2' --payload-content-type='text/plain' --payload="$(cat server2-encrypted.key)"
     openstack secret store --name='intermediates2' --payload-content-type='text/plain' --payload="$(cat ca-chain2.p7b)"
-    openstack secret container create --name='tls_container2' --type='certificate' --secret="certificate=$(openstack secret list | awk '/ cert2 / {print $2}')" --secret="private_key=$(openstack secret list | awk '/ key2 / {print $2}')" --secret="intermediates=$(openstack secret list | awk '/ intermediates2 / {print $2}')"
+    openstack secret store --name='passphrase2' --payload-content-type='text/plain' --payload="abc123"
+    openstack secret container create --name='tls_container2' --type='certificate' --secret="certificate=$(openstack secret list | awk '/ cert2 / {print $2}')" --secret="private_key=$(openstack secret list | awk '/ key2 / {print $2}')" --secret="intermediates=$(openstack secret list | awk '/ intermediates2 / {print $2}')" --secret="private_key_passphrase=$(openstack secret list | awk '/ passphrase2 / {print $2}')"
     openstack acl user add -u admin_id $(openstack secret list | awk '/ cert1 / {print $2}')
     openstack acl user add -u admin_id $(openstack secret list | awk '/ key1 / {print $2}')
     openstack acl user add -u admin_id $(openstack secret list | awk '/ intermediates1 / {print $2}')
@@ -613,6 +617,58 @@ TCP handshake without sending any data.
 that they also ensure the back-end server responds to SSLv3 client hello
 messages.
 
+
+Intermediate certificate chains
+===============================
+Some TLS certificates require you to install an intermediate certificate chain
+in order for web client browsers to trust the certificate. This chain can take
+several forms, and is a file provided by the organization from whom you
+obtained your TLS certificate.
+
+PEM-encoded chains
+------------------
+The simplest form of the intermediate chain is a PEM-encoded text file that
+either contains a sequence of individually-encoded PEM certificates, or a PEM
+encoded PKCS7 block(s). If this is the type of intermediate chain you have been
+provided, the file will contain either ``-----BEGIN PKCS7-----`` or
+``-----BEGIN CERTIFICATE-----`` near the top of the file, and one or more
+blocks of 64-character lines of ASCII text (that will look like gobbedlygook to
+a human). These files are also typically named with a ``.crt`` or ``.pem``
+extension.
+
+To upload this type of intermediates chain to barbican, run a command similar
+to the following (assuming "intermediates-chain.pem" is the name of the file):
+
+::
+
+    openstack secret store --name='intermediates1' --payload-content-type='text/plain' --payload="$(cat intermediates-chain.pem)"
+
+DER-encoded chains
+------------------
+If the intermediates chain provided to you is a file that contains what appears
+to be random binary data, it is likely that it is a PKCS7 chain in DER format.
+These files also may be named with a ``.p7b`` extension. In order to use this
+intermediates chain, you can either convert it to a series of PEM-encoded
+certificates with the following command:
+
+::
+
+    openssl pkcs7 -in intermediates-chain.p7b -inform DER -print_certs -out intermediates-chain.pem
+
+...or convert it into a PEM-encoded PKCS7 bundle with the following command:
+
+::
+
+    openssl pkcs7 -in intermediates-chain.p7b -inform DER -outform PEM -out intermediates-chain.pem
+
+...or simply upload the binary DER file to barbican without conversion:
+
+::
+
+    openstack secret store --name='intermediates1' --payload-content-type='application/octet-stream' --payload-content-encoding='base64' --payload="$(cat intermediates-chain.p7b | base64)"
+
+In any case, if the file is not a PKCS7 DER bundle, then either of the above
+two openssl commands will fail.
 
 Further reading
 ===============

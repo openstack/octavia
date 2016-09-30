@@ -44,7 +44,8 @@ class BarbicanCert(cert.Cert):
     def get_intermediates(self):
         if self._cert_container.intermediates:
             intermediates = self._cert_container.intermediates.payload
-            return [imd for imd in cert_parser._split_x509s(intermediates)]
+            return [imd for imd in cert_parser.get_intermediates_pems(
+                intermediates)]
 
     def get_private_key(self):
         if self._cert_container.private_key:

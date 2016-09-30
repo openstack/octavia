@@ -26,6 +26,7 @@ from octavia.amphorae.drivers.haproxy import rest_api_driver as driver
 from octavia.db import models
 from octavia.network import data_models as network_models
 from octavia.tests.unit import base as base
+from octavia.tests.unit.common.sample_configs import sample_certs
 from octavia.tests.unit.common.sample_configs import sample_configs
 
 FAKE_CIDR = '198.51.100.0/24'
@@ -79,7 +80,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.get_host_names')
     def test_update(self, mock_cert, mock_load_crt):
-        mock_cert.return_value = {'cn': 'aFakeCN'}
+        mock_cert.return_value = {'cn': sample_certs.X509_CERT_CN}
         sconts = []
         for sni_container in self.sl.sni_containers:
             sconts.append(sni_container.tls_container)
@@ -88,7 +89,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             'sni_certs': sconts
         }
         self.driver.client.get_cert_md5sum.side_effect = [
-            exc.NotFound, 'Fake_MD5', 'd41d8cd98f00b204e9800998ecf8427e']
+            exc.NotFound, 'Fake_MD5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']
         self.driver.jinja.build_config.side_effect = ['fake_config']
         self.driver.client.get_listener_status.side_effect = [
             dict(status='ACTIVE')]
@@ -99,18 +100,24 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         # verify result
         # this is called 3 times
         self.driver.client.get_cert_md5sum.assert_called_with(
-            self.amp, self.sl.id, 'aFakeCN.pem')
+            self.amp, self.sl.id, sample_certs.X509_CERT_CN_3 + '.pem')
         # this is called three times (last MD5 matches)
-        fp1 = ('--imapem1--\n\n--imakey1--\n'
-               '\n--imainter1--\n\n--imainter1too--\n')
-        fp2 = ('--imapem2--\n\n--imakey2--\n'
-               '\n--imainter2--\n\n--imainter2too--\n')
-        fp3 = ('--imapem3--\n\n--imakey3--\n'
-               '\n--imainter3--\n\n--imainter3too--\n')
+        fp1 = '\n'.join([sample_certs.X509_CERT,
+                         sample_certs.X509_CERT_KEY,
+                         sample_certs.X509_IMDS]) + '\n'
+        fp2 = '\n'.join([sample_certs.X509_CERT_2,
+                         sample_certs.X509_CERT_KEY_2,
+                         sample_certs.X509_IMDS]) + '\n'
+        fp3 = '\n'.join([sample_certs.X509_CERT_3,
+                         sample_certs.X509_CERT_KEY_3,
+                         sample_certs.X509_IMDS]) + '\n'
         ucp_calls = [
-            mock.call(self.amp, self.sl.id, 'aFakeCN.pem', fp1),
-            mock.call(self.amp, self.sl.id, 'aFakeCN.pem', fp2),
-            mock.call(self.amp, self.sl.id, 'aFakeCN.pem', fp3)
+            mock.call(self.amp, self.sl.id,
+                      sample_certs.X509_CERT_CN + '.pem', fp1),
+            mock.call(self.amp, self.sl.id,
+                      sample_certs.X509_CERT_CN_2 + '.pem', fp2),
+            mock.call(self.amp, self.sl.id,
+                      sample_certs.X509_CERT_CN_3 + '.pem', fp3)
         ]
         self.driver.client.upload_cert_pem.assert_has_calls(ucp_calls,
                                                             any_order=True)
