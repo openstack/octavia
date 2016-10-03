@@ -15,6 +15,7 @@
 
 import mock
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 
 from octavia.amphorae.drivers.keepalived.jinja import jinja_cfg
 from octavia.common import constants
@@ -25,6 +26,14 @@ class TestVRRPRestDriver(base.TestCase):
 
     def setUp(self):
         super(TestVRRPRestDriver, self).setUp()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="haproxy_amphora", base_path='/tmp/test')
+        conf.config(group="keepalived_vrrp", vrrp_garp_refresh_interval=5)
+        conf.config(group="keepalived_vrrp", vrrp_garp_refresh_count=2)
+        conf.config(group="keepalived_vrrp", vrrp_check_interval=5)
+        conf.config(group="keepalived_vrrp", vrrp_fail_count=2)
+        conf.config(group="keepalived_vrrp", vrrp_success_count=2)
+
         self.templater = jinja_cfg.KeepalivedJinjaTemplater()
 
         self.amphora1 = mock.MagicMock()
@@ -89,17 +98,5 @@ class TestVRRPRestDriver(base.TestCase):
                          "}\n")
 
     def test_build_keepalived_config(self):
-        cfg.CONF.set_override('vrrp_garp_refresh_interval', 5,
-                              group='keepalived_vrrp')
-        cfg.CONF.set_override('vrrp_garp_refresh_count', 2,
-                              group='keepalived_vrrp')
-        cfg.CONF.set_override('vrrp_check_interval', 5,
-                              group='keepalived_vrrp')
-        cfg.CONF.set_override('vrrp_fail_count', 2,
-                              group='keepalived_vrrp')
-        cfg.CONF.set_override('vrrp_success_count', 2,
-                              group='keepalived_vrrp')
-        cfg.CONF.set_override('base_path', '/tmp/test/',
-                              group='haproxy_amphora')
         config = self.templater.build_keepalived_config(self.lb, self.amphora1)
         self.assertEqual(self.ref_conf, config)

@@ -14,6 +14,7 @@
 
 import mock
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 import oslo_messaging as messaging
 
 from octavia.controller.queue import consumer
@@ -29,9 +30,9 @@ class TestConsumer(base.TestCase):
 
     def setUp(self):
         super(TestConsumer, self).setUp()
-        cfg.CONF.import_group('oslo_messaging', 'octavia.common.config')
-        cfg.CONF.set_override('topic', 'foo_topic', group='oslo_messaging')
-        cfg.CONF.set_override('host', 'foo_host')
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="oslo_messaging", topic='foo_topic')
+        conf.config(host='foo_host')
 
     def test_consumer_start(self, mock_rpc_server, mock_endpoint, mock_target,
                             mock_get_transport):

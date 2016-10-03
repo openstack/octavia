@@ -31,14 +31,12 @@ class TestLoadBalancerFlows(base.TestCase):
 
     def setUp(self):
         super(TestLoadBalancerFlows, self).setUp()
-        old_amp_driver = cfg.CONF.controller_worker.amphora_driver
-        cfg.CONF.set_override('amphora_driver', 'amphora_haproxy_rest_driver',
-                              group='controller_worker')
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(
+            group="controller_worker",
+            amphora_driver='amphora_haproxy_rest_driver')
+        self.conf.config(group="nova", enable_anti_affinity=False)
         self.LBFlow = load_balancer_flows.LoadBalancerFlows()
-        conf = oslo_fixture.Config(cfg.CONF)
-        conf.config(group="nova", enable_anti_affinity=False)
-        self.addCleanup(cfg.CONF.set_override, 'amphora_driver',
-                        old_amp_driver, group='controller_worker')
 
     def test_get_create_load_balancer_flow(self, mock_get_net_driver):
         amp_flow = self.LBFlow.get_create_load_balancer_flow(
@@ -63,8 +61,8 @@ class TestLoadBalancerFlows(base.TestCase):
 
     def test_get_create_anti_affinity_active_standby_load_balancer_flow(
             self, mock_get_net_driver):
-        cfg.CONF.set_override('enable_anti_affinity', True,
-                              group='nova')
+        self.conf.config(group="nova", enable_anti_affinity=True)
+
         self._LBFlow = load_balancer_flows.LoadBalancerFlows()
         amp_flow = self._LBFlow.get_create_load_balancer_flow(
             constants.TOPOLOGY_ACTIVE_STANDBY)
@@ -75,6 +73,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.conf.config(group="nova", enable_anti_affinity=False)
 
     def test_get_create_bogus_topology_load_balancer_flow(
             self, mock_get_net_driver):
@@ -200,7 +199,6 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.LOADBALANCER_ID, create_flow.requires)
         self.assertIn(constants.UPDATE_DICT, create_flow.requires)
 
-        self.assertIn(constants.LOADBALANCER, create_flow.provides)
         self.assertIn(constants.LISTENERS, create_flow.provides)
         self.assertIn(constants.AMPHORA, create_flow.provides)
         self.assertIn(constants.AMPHORA_ID, create_flow.provides)
@@ -229,7 +227,6 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.LOADBALANCER_ID, create_flow.requires)
         self.assertIn(constants.UPDATE_DICT, create_flow.requires)
 
-        self.assertIn(constants.LOADBALANCER, create_flow.provides)
         self.assertIn(constants.LISTENERS, create_flow.provides)
         self.assertIn(constants.AMPHORA, create_flow.provides)
         self.assertIn(constants.AMPHORA_ID, create_flow.provides)

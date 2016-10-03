@@ -15,6 +15,7 @@
 
 import mock
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.common import base_taskflow
@@ -82,6 +83,8 @@ CONF = cfg.CONF
 class TestControllerWorker(base.TestCase):
 
     def setUp(self):
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
         _health_mon_mock.pool.load_balancer.amphorae = _amphora_mock
         _health_mon_mock.pool.listeners = [_listener_mock]
@@ -389,10 +392,8 @@ class TestControllerWorker(base.TestCase):
             mock_amp_repo_get):
 
         # Test the code path with an SINGLE topology
-        CONF.set_override(group='controller_worker',
-                          name='loadbalancer_topology',
-                          override=constants.TOPOLOGY_SINGLE,
-                          enforce_type=True)
+        self.conf.config(group="controller_worker",
+                         loadbalancer_topology=constants.TOPOLOGY_SINGLE)
         _flow_mock.reset_mock()
         mock_taskflow_load.reset_mock()
         mock_eng = mock.Mock()
@@ -430,10 +431,10 @@ class TestControllerWorker(base.TestCase):
             mock_health_mon_repo_get,
             mock_amp_repo_get):
 
-        CONF.set_override(group='controller_worker',
-                          name='loadbalancer_topology',
-                          override=constants.TOPOLOGY_ACTIVE_STANDBY,
-                          enforce_type=True)
+        self.conf.config(
+            group="controller_worker",
+            loadbalancer_topology=constants.TOPOLOGY_ACTIVE_STANDBY)
+
         _flow_mock.reset_mock()
         mock_taskflow_load.reset_mock()
         mock_eng = mock.Mock()
@@ -469,10 +470,11 @@ class TestControllerWorker(base.TestCase):
             mock_lb_repo_get,
             mock_health_mon_repo_get,
             mock_amp_repo_get):
-        CONF.set_override(group='controller_worker',
-                          name='loadbalancer_topology',
-                          override=constants.TOPOLOGY_SINGLE,
-                          enforce_type=True)
+
+        self.conf.config(
+            group="controller_worker",
+            loadbalancer_topology=constants.TOPOLOGY_SINGLE)
+
         listeners = [data_models.Listener(id='listener1'),
                      data_models.Listener(id='listener2')]
         lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners)
@@ -517,10 +519,11 @@ class TestControllerWorker(base.TestCase):
             mock_lb_repo_get,
             mock_health_mon_repo_get,
             mock_amp_repo_get):
-        CONF.set_override(group='controller_worker',
-                          name='loadbalancer_topology',
-                          override=constants.TOPOLOGY_ACTIVE_STANDBY,
-                          enforce_type=True)
+
+        self.conf.config(
+            group="controller_worker",
+            loadbalancer_topology=constants.TOPOLOGY_ACTIVE_STANDBY)
+
         listeners = [data_models.Listener(id='listener1'),
                      data_models.Listener(id='listener2')]
         lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners)

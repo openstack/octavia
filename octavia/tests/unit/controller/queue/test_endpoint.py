@@ -14,6 +14,7 @@
 
 import mock
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 
 from octavia.controller.queue import endpoint
 from octavia.controller.worker import controller_worker
@@ -25,8 +26,8 @@ class TestEndpoint(base.TestCase):
     def setUp(self):
         super(TestEndpoint, self).setUp()
 
-        cfg.CONF.import_group('controller_worker', 'octavia.common.config')
-        cfg.CONF.set_override('octavia_plugins', 'hot_plug_plugin')
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(octavia_plugins='hot_plug_plugin')
 
         mock_class = mock.create_autospec(controller_worker.ControllerWorker)
         self.worker_patcher = mock.patch('octavia.controller.queue.endpoint.'

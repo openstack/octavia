@@ -15,6 +15,7 @@
 from barbicanclient import client as barbican_client
 import mock
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 
 import octavia.certificates.common.auth.barbican_acl as barbican_acl
 import octavia.certificates.manager.barbican as barbican_cert_mgr
@@ -30,10 +31,9 @@ class TestBarbicanACLAuth(base.TestCase):
     def setUp(self):
         # Reset the client
         keystone._SESSION = None
-        CONF.set_override(name='region_name', override=None,
-                          group='certificates')
-        CONF.set_override(name='endpoint_type', override='publicURL',
-                          group='certificates')
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="certificates", region_name=None)
+        conf.config(group="certificates", endpoint_type='publicURL')
         super(TestBarbicanACLAuth, self).setUp()
 
     def test_get_barbican_client(self):

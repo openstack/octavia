@@ -25,7 +25,8 @@
 #    under the License.
 
 import mock
-from oslo_config import fixture
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 import oslo_messaging as messaging
 
 from octavia.api.v1.handlers.queue import producer
@@ -36,7 +37,6 @@ from octavia.api.v1.types import listener
 from octavia.api.v1.types import load_balancer
 from octavia.api.v1.types import member
 from octavia.api.v1.types import pool
-from octavia.common import config
 from octavia.common import data_models
 from octavia.tests.unit import base
 
@@ -44,11 +44,10 @@ from octavia.tests.unit import base
 class TestProducer(base.TestCase):
     def setUp(self):
         super(TestProducer, self).setUp()
-        self.config = fixture.Config()
         self.mck_model = mock.Mock()
         self.mck_model.id = '10'
-        config.cfg.CONF.set_override('topic', 'OCTAVIA_PROV',
-                                     group='oslo_messaging')
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="oslo_messaging", topic='OCTAVIA_PROV')
         mck_target = mock.patch(
             'octavia.api.v1.handlers.queue.producer.messaging.Target')
         mck_transport = mock.patch(

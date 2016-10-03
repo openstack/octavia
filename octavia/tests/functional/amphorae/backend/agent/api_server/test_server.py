@@ -21,6 +21,8 @@ import subprocess
 
 import mock
 import netifaces
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 import six
 
 from octavia.amphorae.backends.agent import api_server
@@ -41,9 +43,13 @@ class TestServerTestCase(base.TestCase):
     app = None
 
     def setUp(self):
+        super(TestServerTestCase, self).setUp()
+
         self.test_server = server.Server()
         self.app = self.test_server.app.test_client()
-        super(TestServerTestCase, self).setUp()
+
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="haproxy_amphora", base_path='/var/lib/octavia')
 
     @mock.patch('os.path.exists')
     @mock.patch('os.makedirs')
