@@ -99,6 +99,11 @@ class TestHealthMonitor(base.BaseAPITest):
         self.assertEqual(1, api_hm.get('timeout'))
         self.assertEqual(1, api_hm.get('fall_threshold'))
         self.assertEqual(1, api_hm.get('rise_threshold'))
+        # Verify optional field defaults
+        self.assertEqual('GET', api_hm.get('http_method'))
+        self.assertEqual('/', api_hm.get('url_path'))
+        self.assertEqual('200', api_hm.get('expected_codes'))
+
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.ACTIVE,
                                       constants.ONLINE)

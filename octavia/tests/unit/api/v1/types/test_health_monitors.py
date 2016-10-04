@@ -109,6 +109,18 @@ class TestHealthMonitorPOST(base.BaseTypesTest, TestHealthMonitor):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
+    def test_default_health_monitor_values(self):
+        # http_method = 'GET'
+        # url_path = '/'
+        # expected_codes = '200'
+        # The above are not required but should have the above example defaults
+        body = {"type": constants.HEALTH_MONITOR_HTTP, "delay": 1,
+                "timeout": 1, "fall_threshold": 1, "rise_threshold": 1}
+        hmpost = wsme_json.fromjson(self._type, body)
+        self.assertEqual('GET', hmpost.http_method)
+        self.assertEqual('/', hmpost.url_path)
+        self.assertEqual('200', hmpost.expected_codes)
+
     def test_non_uuid_project_id(self):
         body = {"type": constants.HEALTH_MONITOR_HTTP, "delay": 1,
                 "timeout": 1, "fall_threshold": 1, "rise_threshold": 1,
