@@ -17,7 +17,9 @@ try:
     from http import cookiejar as cookielib
 except ImportError:
     import cookielib
+import os
 import shlex
+import shutil
 import socket
 import subprocess
 import tempfile
@@ -47,6 +49,9 @@ from octavia.tests.tempest.v1.clients import pools_client
 config = config.CONF
 
 LOG = logging.getLogger(__name__)
+HTTPD_SRC = os.path.abspath(
+    os.path.join(os.path.dirname(__file__),
+                 '../../../contrib/httpd.go'))
 
 
 class BaseTestCase(manager.NetworkScenarioTest):
@@ -221,6 +226,18 @@ class BaseTestCase(manager.NetworkScenarioTest):
                 waiters.wait_for_server_status(self.servers_client,
                                                value, 'ACTIVE')
 
+    def _build_static_httpd(self):
+        """Compile test httpd as a static binary
+
+        returns file path of resulting binary file
+        """
+        builddir = tempfile.mkdtemp()
+        shutil.copyfile(HTTPD_SRC, os.path.join(builddir, 'httpd.go'))
+        self.execute('go build -ldflags '
+                     '"-linkmode external -extldflags -static" '
+                     'httpd.go', cwd=builddir)
+        return os.path.join(builddir, 'httpd')
+
     def _start_servers(self):
         """Start one or more backends
 
@@ -236,46 +253,30 @@ class BaseTestCase(manager.NetworkScenarioTest):
                 ip_address=ip,
                 private_key=private_key)
 
-            # Write a backend's response into a file
-            resp = ('echo -ne "HTTP/1.1 200 OK\r\nContent-Length: 7\r\n'
-                    'Set-Cookie:JSESSIONID=%(s_id)s\r\nConnection: close\r\n'
-                    'Content-Type: text/html; '
-                    'charset=UTF-8\r\n\r\n%(server)s"; cat >/dev/null')
+            httpd = self._build_static_httpd()
 
-            with tempfile.NamedTemporaryFile() as script:
-                script.write(resp % {'s_id': server_name[-1],
-                                     'server': server_name})
-                script.flush()
-                with tempfile.NamedTemporaryFile() as key:
-                    key.write(private_key)
-                    key.flush()
-                    self.copy_file_to_host(script.name,
-                                           "/tmp/script1",
-                                           ip,
-                                           username, key.name)
+            with tempfile.NamedTemporaryFile() as key:
+                key.write(private_key)
+                key.flush()
+                self.copy_file_to_host(httpd,
+                                       "/dev/shm/httpd",
+                                       ip,
+                                       username, key.name)
 
-            # Start netcat
-            start_server = ('while true; do '
-                            'sudo nc -ll -p %(port)s -e sh /tmp/%(script)s; '
-                            'done > /dev/null &')
-            cmd = start_server % {'port': self.port1,
-                                  'script': 'script1'}
+            # Start httpd
+            start_server = ('sudo sh -c "ulimit -n 100000; nohup '
+                            '/dev/shm/httpd -id %(id)s '
+                            '-port %(port)s &"')
+            cmd = start_server % {'id': server_name[-1],
+                                  'port': self.port1}
             ssh_client.exec_command(cmd)
 
+            # In single server case run a second server on an alternate port
             if len(self.server_ips) == 1:
-                with tempfile.NamedTemporaryFile() as script:
-                    script.write(resp % {'s_id': 2,
-                                         'server': 'server2'})
-                    script.flush()
-                    with tempfile.NamedTemporaryFile() as key:
-                        key.write(private_key)
-                        key.flush()
-                        self.copy_file_to_host(script.name,
-                                               "/tmp/script2", ip,
-                                               username, key.name)
-                cmd = start_server % {'port': self.port2,
-                                      'script': 'script2'}
+                cmd = start_server % {'id': '2',
+                                      'port': self.port2}
                 ssh_client.exec_command(cmd)
+            # Allow ssh_client connection to fall out of scope
 
     def _create_listener(self, load_balancer_id, default_pool_id=None):
         """Create a listener with HTTP protocol listening on port 80."""
@@ -754,9 +755,13 @@ class BaseTestCase(manager.NetworkScenarioTest):
                "-i %(pkey)s %(file1)s %(dest)s" % {'pkey': pkey,
                                                    'file1': file_from,
                                                    'dest': dest})
+        return self.execute(cmd)
+
+    def execute(self, cmd, cwd=None):
         args = shlex.split(cmd.encode('utf-8'))
         subprocess_args = {'stdout': subprocess.PIPE,
-                           'stderr': subprocess.STDOUT}
+                           'stderr': subprocess.STDOUT,
+                           'cwd': cwd}
         proc = subprocess.Popen(args, **subprocess_args)
         stdout, stderr = proc.communicate()
         if proc.returncode != 0:
