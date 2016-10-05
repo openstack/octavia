@@ -42,7 +42,7 @@ class QuotasController(base.BaseController):
     def get_all(self):
         """List all non-default quotas."""
         context = pecan.request.context.get('octavia_context')
-        db_quotas = self.repositories.quotas.get_all(context.session)
+        db_quotas, _ = self.repositories.quotas.get_all(context.session)
         quotas = quota_types.QuotaAllResponse.from_data_model(db_quotas)
         return quotas
 

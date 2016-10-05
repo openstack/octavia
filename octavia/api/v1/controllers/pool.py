@@ -49,18 +49,23 @@ class PoolsController(base.BaseController):
         db_pool = self._get_db_pool(context.session, id)
         return self._convert_db_to_type(db_pool, pool_types.PoolResponse)
 
-    @wsme_pecan.wsexpose([pool_types.PoolResponse], wtypes.text)
+    @wsme_pecan.wsexpose([pool_types.PoolResponse], wtypes.text,
+                         ignore_extra_args=True)
     def get_all(self, listener_id=None):
         """Lists all pools on a listener or loadbalancer."""
-        context = pecan.request.context.get('octavia_context')
+        pcontext = pecan.request.context
+        context = pcontext.get('octavia_context')
+
         if listener_id is not None:
             self.listener_id = listener_id
         if self.listener_id:
             pools = self._get_db_listener(context.session,
                                           self.listener_id).pools
         else:
-            pools = self.repositories.pool.get_all(
-                context.session, load_balancer_id=self.load_balancer_id)
+            pools, _ = self.repositories.pool.get_all(
+                context.session,
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+                load_balancer_id=self.load_balancer_id)
         return self._convert_db_to_type(pools, [pool_types.PoolResponse])
 
     def _get_affected_listener_ids(self, session, pool=None):

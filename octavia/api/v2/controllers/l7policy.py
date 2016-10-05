@@ -51,10 +51,12 @@ class L7PolicyController(base.BaseController):
                                           l7policy_types.L7PolicyResponse)
         return l7policy_types.L7PolicyRootResponse(l7policy=result)
 
-    @wsme_pecan.wsexpose(l7policy_types.L7PoliciesRootResponse, wtypes.text)
+    @wsme_pecan.wsexpose(l7policy_types.L7PoliciesRootResponse, wtypes.text,
+                         ignore_extra_args=True)
     def get_all(self, project_id=None):
         """Lists all l7policies of a listener."""
-        context = pecan.request.context.get('octavia_context')
+        pcontext = pecan.request.context
+        context = pcontext.get('octavia_context')
         if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
             if project_id:
                 project_id = {'project_id': project_id}
@@ -62,11 +64,14 @@ class L7PolicyController(base.BaseController):
                 project_id = {}
         else:
             project_id = {'project_id': context.project_id}
-        db_l7policies = self.repositories.l7policy.get_all(
-            context.session, show_deleted=False, **project_id)
-        result = self._convert_db_to_type(db_l7policies,
-                                          [l7policy_types.L7PolicyResponse])
-        return l7policy_types.L7PoliciesRootResponse(l7policies=result)
+        db_l7policies, links = self.repositories.l7policy.get_all(
+            context.session, show_deleted=False,
+            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+            **project_id)
+        result = self._convert_db_to_type(
+            db_l7policies, [l7policy_types.L7PolicyResponse])
+        return l7policy_types.L7PoliciesRootResponse(
+            l7policies=result, l7policies_links=links)
 
     def _test_lb_and_listener_statuses(self, session, lb_id, listener_ids):
         """Verify load balancer is in a mutable state."""

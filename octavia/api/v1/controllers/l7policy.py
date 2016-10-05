@@ -52,7 +52,7 @@ class L7PolicyController(base.BaseController):
     def get_all(self):
         """Lists all l7policies of a listener."""
         context = pecan.request.context.get('octavia_context')
-        db_l7policies = self.repositories.l7policy.get_all(
+        db_l7policies, _ = self.repositories.l7policy.get_all(
             context.session, listener_id=self.listener_id)
         return self._convert_db_to_type(db_l7policies,
                                         [l7policy_types.L7PolicyResponse])

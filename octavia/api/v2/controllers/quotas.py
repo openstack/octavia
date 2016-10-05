@@ -38,12 +38,26 @@ class QuotasController(base.BaseController):
         db_quotas = self._get_db_quotas(context.session, project_id)
         return self._convert_db_to_type(db_quotas, quota_types.QuotaResponse)
 
-    @wsme_pecan.wsexpose(quota_types.QuotaAllResponse)
-    def get_all(self):
+    @wsme_pecan.wsexpose(quota_types.QuotaAllResponse,
+                         ignore_extra_args=True)
+    def get_all(self, tenant_id=None, project_id=None):
         """List all non-default quotas."""
-        context = pecan.request.context.get('octavia_context')
-        db_quotas = self.repositories.quotas.get_all(context.session)
+        pcontext = pecan.request.context
+        context = pcontext.get('octavia_context')
+        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
+            if project_id or tenant_id:
+                project_id = {'project_id': project_id or tenant_id}
+            else:
+                project_id = {}
+        else:
+            project_id = {'project_id': context.project_id}
+
+        db_quotas, links = self.repositories.quotas.get_all(
+            context.session,
+            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+            **project_id)
         quotas = quota_types.QuotaAllResponse.from_data_model(db_quotas)
+        quotas.quotas_links = links
         return quotas
 
     @wsme_pecan.wsexpose(quota_types.QuotaResponse, wtypes.text,

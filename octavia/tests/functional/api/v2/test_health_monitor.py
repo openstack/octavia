@@ -12,9 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
+
 from oslo_utils import uuidutils
 
 from octavia.common import constants
+import octavia.common.context
 from octavia.common import data_models
 from octavia.tests.functional.api.v2 import base
 
@@ -88,6 +91,240 @@ class TestHealthMonitor(base.BaseAPITest):
         self.assertIsInstance(hms, list)
         self.assertEqual(1, len(hms))
         self.assertEqual(api_hm.get('id'), hms[0].get('id'))
+
+    def test_get_all_admin(self):
+        project_id = uuidutils.generate_uuid()
+        lb1 = self.create_load_balancer(uuidutils.generate_uuid(), name='lb1',
+                                        project_id=project_id)
+        lb1_id = lb1.get('loadbalancer').get('id')
+        self.set_lb_status(lb1_id)
+        pool1 = self.create_pool(
+            lb1_id, constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+        self.set_lb_status(lb1_id)
+        pool2 = self.create_pool(
+            lb1_id, constants.PROTOCOL_HTTPS,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+        self.set_lb_status(lb1_id)
+        pool3 = self.create_pool(
+            lb1_id, constants.PROTOCOL_TCP,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+        self.set_lb_status(lb1_id)
+        hm1 = self.create_health_monitor(
+            pool1.get('id'), constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        hm2 = self.create_health_monitor(
+            pool2.get('id'), constants.HEALTH_MONITOR_PING,
+            1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        hm3 = self.create_health_monitor(
+            pool3.get('id'), constants.HEALTH_MONITOR_TCP,
+            1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        hms = self.get(self.HMS_PATH).json.get(self.root_tag_list)
+        self.assertEqual(3, len(hms))
+        hm_id_protocols = [(hm.get('id'), hm.get('type')) for hm in hms]
+        self.assertIn((hm1.get('id'), hm1.get('type')), hm_id_protocols)
+        self.assertIn((hm2.get('id'), hm2.get('type')), hm_id_protocols)
+        self.assertIn((hm3.get('id'), hm3.get('type')), hm_id_protocols)
+
+    def test_get_all_non_admin(self):
+        project_id = uuidutils.generate_uuid()
+        lb1 = self.create_load_balancer(uuidutils.generate_uuid(), name='lb1',
+                                        project_id=project_id)
+        lb1_id = lb1.get('loadbalancer').get('id')
+        self.set_lb_status(lb1_id)
+        pool1 = self.create_pool(
+            lb1_id, constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+        self.set_lb_status(lb1_id)
+        pool2 = self.create_pool(
+            lb1_id, constants.PROTOCOL_HTTPS,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+        self.set_lb_status(lb1_id)
+        self.create_health_monitor(
+            pool1.get('id'), constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        self.create_health_monitor(
+            pool2.get('id'), constants.HEALTH_MONITOR_PING,
+            1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        hm3 = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_TCP,
+            1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.KEYSTONE)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               hm3['project_id']):
+            hms = self.get(self.HMS_PATH).json.get(self.root_tag_list)
+        self.conf.config(auth_strategy=auth_strategy)
+
+        self.assertEqual(1, len(hms))
+        hm_id_protocols = [(hm.get('id'), hm.get('type')) for hm in hms]
+        self.assertIn((hm3.get('id'), hm3.get('type')), hm_id_protocols)
+
+    def test_get_by_project_id(self):
+        project1_id = uuidutils.generate_uuid()
+        project2_id = uuidutils.generate_uuid()
+        lb1 = self.create_load_balancer(uuidutils.generate_uuid(), name='lb1',
+                                        project_id=project1_id)
+        lb1_id = lb1.get('loadbalancer').get('id')
+        self.set_lb_status(lb1_id)
+        lb2 = self.create_load_balancer(uuidutils.generate_uuid(), name='lb2',
+                                        project_id=project2_id)
+        lb2_id = lb2.get('loadbalancer').get('id')
+        self.set_lb_status(lb2_id)
+        pool1 = self.create_pool(
+            lb1_id, constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+        self.set_lb_status(lb1_id)
+        pool2 = self.create_pool(
+            lb1_id, constants.PROTOCOL_HTTPS,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+        self.set_lb_status(lb1_id)
+        pool3 = self.create_pool(
+            lb2_id, constants.PROTOCOL_TCP,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+        self.set_lb_status(lb2_id)
+        hm1 = self.create_health_monitor(
+            pool1.get('id'), constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        hm2 = self.create_health_monitor(
+            pool2.get('id'), constants.HEALTH_MONITOR_PING,
+            1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        hm3 = self.create_health_monitor(
+            pool3.get('id'), constants.HEALTH_MONITOR_TCP,
+            1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(lb2_id)
+        hms = self.get(
+            self.HMS_PATH,
+            params={'project_id': project1_id}).json.get(self.root_tag_list)
+
+        self.assertEqual(2, len(hms))
+        hm_id_protocols = [(hm.get('id'), hm.get('type')) for hm in hms]
+        self.assertIn((hm1.get('id'), hm1.get('type')), hm_id_protocols)
+        self.assertIn((hm2.get('id'), hm2.get('type')), hm_id_protocols)
+        hms = self.get(
+            self.HMS_PATH,
+            params={'project_id': project2_id}).json.get(self.root_tag_list)
+        self.assertEqual(1, len(hms))
+        hm_id_protocols = [(hm.get('id'), hm.get('type')) for hm in hms]
+        self.assertIn((hm3.get('id'), hm3.get('type')), hm_id_protocols)
+
+    def test_get_all_sorted(self):
+        pool1 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool1').get('pool')
+        self.set_lb_status(self.lb_id)
+        pool2 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool2').get('pool')
+        self.set_lb_status(self.lb_id)
+        pool3 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool3').get('pool')
+        self.set_lb_status(self.lb_id)
+        self.create_health_monitor(
+            pool1.get('id'), constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1, name='hm1').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_health_monitor(
+            pool2.get('id'), constants.HEALTH_MONITOR_PING,
+            1, 1, 1, 1, name='hm2').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_health_monitor(
+            pool3.get('id'), constants.HEALTH_MONITOR_TCP,
+            1, 1, 1, 1, name='hm3').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        response = self.get(self.HMS_PATH, params={'sort': 'name:desc'})
+        hms_desc = response.json.get(self.root_tag_list)
+        response = self.get(self.HMS_PATH, params={'sort': 'name:asc'})
+        hms_asc = response.json.get(self.root_tag_list)
+
+        self.assertEqual(3, len(hms_desc))
+        self.assertEqual(3, len(hms_asc))
+
+        hm_id_names_desc = [(hm.get('id'), hm.get('name')) for hm in hms_desc]
+        hm_id_names_asc = [(hm.get('id'), hm.get('name')) for hm in hms_asc]
+        self.assertEqual(hm_id_names_asc, list(reversed(hm_id_names_desc)))
+
+    def test_get_all_limited(self):
+        pool1 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool1').get('pool')
+        self.set_lb_status(self.lb_id)
+        pool2 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool2').get('pool')
+        self.set_lb_status(self.lb_id)
+        pool3 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool3').get('pool')
+        self.set_lb_status(self.lb_id)
+        self.create_health_monitor(
+            pool1.get('id'), constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1, name='hm1').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_health_monitor(
+            pool2.get('id'), constants.HEALTH_MONITOR_PING,
+            1, 1, 1, 1, name='hm2').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_health_monitor(
+            pool3.get('id'), constants.HEALTH_MONITOR_TCP,
+            1, 1, 1, 1, name='hm3').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        # First two -- should have 'next' link
+        first_two = self.get(self.HMS_PATH, params={'limit': 2}).json
+        objs = first_two[self.root_tag_list]
+        links = first_two[self.root_tag_links]
+        self.assertEqual(2, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('next', links[0]['rel'])
+
+        # Third + off the end -- should have previous link
+        third = self.get(self.HMS_PATH, params={
+            'limit': 2,
+            'marker': first_two[self.root_tag_list][1]['id']}).json
+        objs = third[self.root_tag_list]
+        links = third[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('previous', links[0]['rel'])
+
+        # Middle -- should have both links
+        middle = self.get(self.HMS_PATH, params={
+            'limit': 1,
+            'marker': first_two[self.root_tag_list][0]['id']}).json
+        objs = middle[self.root_tag_list]
+        links = middle[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(2, len(links))
+        self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
+
+    def test_empty_get_all(self):
+        response = self.get(self.HMS_PATH).json.get(self.root_tag_list)
+        self.assertIsInstance(response, list)
+        self.assertEqual(0, len(response))
 
     def test_create_http_monitor_with_relative_path(self):
         api_hm = self.create_health_monitor(

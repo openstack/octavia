@@ -96,6 +96,85 @@ class TestL7Rule(base.BaseAPITest):
         self.assertIn((api_l7r_b.get('id'), api_l7r_b.get('type')),
                       rule_id_types)
 
+    def test_get_all_sorted(self):
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_COOKIE,
+            constants.L7RULE_COMPARE_TYPE_CONTAINS, 'some-value',
+            key='some-cookie').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_HOST_NAME,
+            constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            'www.example.com').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        response = self.get(self.l7rules_path,
+                            params={'sort': 'type:desc'})
+        rules_desc = response.json.get(self.root_tag_list)
+        response = self.get(self.l7rules_path,
+                            params={'sort': 'type:asc'})
+        rules_asc = response.json.get(self.root_tag_list)
+
+        self.assertEqual(3, len(rules_desc))
+        self.assertEqual(3, len(rules_asc))
+
+        rule_id_types_desc = [(rule.get('id'), rule.get('type'))
+                              for rule in rules_desc]
+        rule_id_types_asc = [(rule.get('id'), rule.get('type'))
+                             for rule in rules_asc]
+        self.assertEqual(rule_id_types_asc,
+                         list(reversed(rule_id_types_desc)))
+
+    def test_get_all_limited(self):
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_COOKIE,
+            constants.L7RULE_COMPARE_TYPE_CONTAINS, 'some-value',
+            key='some-cookie').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_HOST_NAME,
+            constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            'www.example.com').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        # First two -- should have 'next' link
+        first_two = self.get(self.l7rules_path, params={'limit': 2}).json
+        objs = first_two[self.root_tag_list]
+        links = first_two[self.root_tag_links]
+        self.assertEqual(2, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('next', links[0]['rel'])
+
+        # Third + off the end -- should have previous link
+        third = self.get(self.l7rules_path, params={
+            'limit': 2,
+            'marker': first_two[self.root_tag_list][1]['id']}).json
+        objs = third[self.root_tag_list]
+        links = third[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('previous', links[0]['rel'])
+
+        # Middle -- should have both links
+        middle = self.get(self.l7rules_path, params={
+            'limit': 1,
+            'marker': first_two[self.root_tag_list][0]['id']}).json
+        objs = middle[self.root_tag_list]
+        links = middle[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(2, len(links))
+        self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
+
     def test_empty_get_all(self):
         response = self.get(self.l7rules_path).json.get(self.root_tag_list)
         self.assertIsInstance(response, list)

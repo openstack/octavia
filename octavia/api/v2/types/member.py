@@ -60,6 +60,7 @@ class MemberRootResponse(types.BaseType):
 
 class MembersRootResponse(types.BaseType):
     members = wtypes.wsattr([MemberResponse])
+    members_links = wtypes.wsattr([types.PageType])
 
 
 class MemberPOST(BaseMemberType):

@@ -62,6 +62,7 @@ class QuotaAllBase(base.BaseType):
 
 class QuotaAllResponse(base.BaseType):
     quotas = wtypes.wsattr([QuotaAllBase])
+    quotas_links = wtypes.wsattr([base.PageType])
 
     @classmethod
     def from_data_model(cls, data_model, children=False):

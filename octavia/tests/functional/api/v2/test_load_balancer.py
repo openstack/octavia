@@ -28,6 +28,7 @@ from octavia.tests.functional.api.v2 import base
 class TestLoadBalancer(base.BaseAPITest):
     root_tag = 'loadbalancer'
     root_tag_list = 'loadbalancers'
+    root_tag_links = 'loadbalancers_links'
 
     def _assert_request_matches_response(self, req, resp, **optionals):
         self.assertTrue(uuidutils.is_uuid_like(resp.get('id')))
@@ -308,6 +309,69 @@ class TestLoadBalancer(base.BaseAPITest):
         lb_id_names = [(lb.get('id'), lb.get('name')) for lb in lbs]
         self.assertEqual(1, len(lbs))
         self.assertIn((lb3.get('id'), lb3.get('name')), lb_id_names)
+
+    def test_get_all_sorted(self):
+        self.create_load_balancer(uuidutils.generate_uuid(),
+                                  name='lb1',
+                                  project_id=self.project_id)
+        self.create_load_balancer(uuidutils.generate_uuid(),
+                                  name='lb2',
+                                  project_id=self.project_id)
+        self.create_load_balancer(uuidutils.generate_uuid(),
+                                  name='lb3',
+                                  project_id=self.project_id)
+        response = self.get(self.LBS_PATH,
+                            params={'sort': 'name:desc'})
+        lbs_desc = response.json.get(self.root_tag_list)
+        response = self.get(self.LBS_PATH,
+                            params={'sort': 'name:asc'})
+        lbs_asc = response.json.get(self.root_tag_list)
+
+        self.assertEqual(3, len(lbs_desc))
+        self.assertEqual(3, len(lbs_asc))
+
+        lb_id_names_desc = [(lb.get('id'), lb.get('name')) for lb in lbs_desc]
+        lb_id_names_asc = [(lb.get('id'), lb.get('name')) for lb in lbs_asc]
+        self.assertEqual(lb_id_names_asc, list(reversed(lb_id_names_desc)))
+
+    def test_get_all_limited(self):
+        self.create_load_balancer(uuidutils.generate_uuid(),
+                                  name='lb1',
+                                  project_id=self.project_id)
+        self.create_load_balancer(uuidutils.generate_uuid(),
+                                  name='lb2',
+                                  project_id=self.project_id)
+        self.create_load_balancer(uuidutils.generate_uuid(),
+                                  name='lb3',
+                                  project_id=self.project_id)
+
+        # First two -- should have 'next' link
+        first_two = self.get(self.LBS_PATH, params={'limit': 2}).json
+        objs = first_two[self.root_tag_list]
+        links = first_two[self.root_tag_links]
+        self.assertEqual(2, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('next', links[0]['rel'])
+
+        # Third + off the end -- should have previous link
+        third = self.get(self.LBS_PATH, params={
+            'limit': 2,
+            'marker': first_two[self.root_tag_list][1]['id']}).json
+        objs = third[self.root_tag_list]
+        links = third[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('previous', links[0]['rel'])
+
+        # Middle -- should have both links
+        middle = self.get(self.LBS_PATH, params={
+            'limit': 1,
+            'marker': first_two[self.root_tag_list][0]['id']}).json
+        objs = middle[self.root_tag_list]
+        links = middle[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(2, len(links))
+        self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
 
     def test_get(self):
         project_id = uuidutils.generate_uuid()

@@ -50,15 +50,20 @@ class MembersController(base.BaseController):
                                           member_types.MemberResponse)
         return member_types.MemberRootResponse(member=result)
 
-    @wsme_pecan.wsexpose(member_types.MembersRootResponse, wtypes.text)
+    @wsme_pecan.wsexpose(member_types.MembersRootResponse, wtypes.text,
+                         ignore_extra_args=True)
     def get_all(self):
         """Lists all pool members of a pool."""
-        context = pecan.request.context.get('octavia_context')
-        db_members = self.repositories.member.get_all(
-            context.session, show_deleted=False, pool_id=self.pool_id)
+        pcontext = pecan.request.context
+        context = pcontext.get('octavia_context')
+        db_members, links = self.repositories.member.get_all(
+            context.session, show_deleted=False,
+            pool_id=self.pool_id,
+            pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
         result = self._convert_db_to_type(
             db_members, [member_types.MemberResponse])
-        return member_types.MembersRootResponse(members=result)
+        return member_types.MembersRootResponse(
+            members=result, members_links=links)
 
     def _get_affected_listener_ids(self, session, member=None):
         """Gets a list of all listeners this request potentially affects."""

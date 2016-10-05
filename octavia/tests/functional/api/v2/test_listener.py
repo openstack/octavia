@@ -27,6 +27,7 @@ class TestListener(base.BaseAPITest):
 
     root_tag = 'listener'
     root_tag_list = 'listeners'
+    root_tag_links = 'listeners_links'
 
     def setUp(self):
         super(TestListener, self).setUp()
@@ -136,6 +137,78 @@ class TestListener(base.BaseAPITest):
         self.assertEqual(1, len(listeners))
         self.assertIn((listener3.get('id'), listener3.get('protocol_port')),
                       listener_id_ports)
+
+    def test_get_all_sorted(self):
+        self.create_listener(constants.PROTOCOL_HTTP, 80,
+                             self.lb_id,
+                             name='listener1')
+        self.set_lb_status(self.lb_id)
+        self.create_listener(constants.PROTOCOL_HTTP, 81,
+                             self.lb_id,
+                             name='listener2')
+        self.set_lb_status(self.lb_id)
+        self.create_listener(constants.PROTOCOL_HTTP, 82,
+                             self.lb_id,
+                             name='listener3')
+        self.set_lb_status(self.lb_id)
+        response = self.get(self.LISTENERS_PATH,
+                            params={'sort': 'name:desc'})
+        listeners_desc = response.json.get(self.root_tag_list)
+        response = self.get(self.LISTENERS_PATH,
+                            params={'sort': 'name:asc'})
+        listeners_asc = response.json.get(self.root_tag_list)
+
+        self.assertEqual(3, len(listeners_desc))
+        self.assertEqual(3, len(listeners_asc))
+
+        listener_id_names_desc = [(listener.get('id'), listener.get('name'))
+                                  for listener in listeners_desc]
+        listener_id_names_asc = [(listener.get('id'), listener.get('name'))
+                                 for listener in listeners_asc]
+        self.assertEqual(listener_id_names_asc,
+                         list(reversed(listener_id_names_desc)))
+
+    def test_get_all_limited(self):
+        self.create_listener(constants.PROTOCOL_HTTP, 80,
+                             self.lb_id,
+                             name='listener1')
+        self.set_lb_status(self.lb_id)
+        self.create_listener(constants.PROTOCOL_HTTP, 81,
+                             self.lb_id,
+                             name='listener2')
+        self.set_lb_status(self.lb_id)
+        self.create_listener(constants.PROTOCOL_HTTP, 82,
+                             self.lb_id,
+                             name='listener3')
+        self.set_lb_status(self.lb_id)
+
+        # First two -- should have 'next' link
+        first_two = self.get(self.LISTENERS_PATH, params={'limit': 2}).json
+        objs = first_two[self.root_tag_list]
+        links = first_two[self.root_tag_links]
+        self.assertEqual(2, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('next', links[0]['rel'])
+
+        # Third + off the end -- should have previous link
+        third = self.get(self.LISTENERS_PATH, params={
+            'limit': 2,
+            'marker': first_two[self.root_tag_list][1]['id']}).json
+        objs = third[self.root_tag_list]
+        links = third[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('previous', links[0]['rel'])
+
+        # Middle -- should have both links
+        middle = self.get(self.LISTENERS_PATH, params={
+            'limit': 1,
+            'marker': first_two[self.root_tag_list][0]['id']}).json
+        objs = middle[self.root_tag_list]
+        links = middle[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(2, len(links))
+        self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
 
     def test_get(self):
         listener = self.create_listener(

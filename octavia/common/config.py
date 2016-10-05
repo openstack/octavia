@@ -41,22 +41,21 @@ core_opts = [
                help=_("The auth strategy for API requests.")),
     cfg.StrOpt('api_handler', default='queue_producer',
                help=_("The handler that the API communicates with")),
-    cfg.StrOpt('api_paste_config', default="api-paste.ini",
-               help=_("The API paste config file to use")),
-    cfg.StrOpt('api_extensions_path', default="",
-               help=_("The path for API extensions")),
-    cfg.BoolOpt('allow_bulk', default=True,
-                help=_("Allow the usage of the bulk API")),
-    cfg.BoolOpt('allow_pagination', default=False,
+    cfg.BoolOpt('allow_pagination', default=True,
                 help=_("Allow the usage of the pagination")),
-    cfg.BoolOpt('allow_sorting', default=False,
+    cfg.BoolOpt('allow_sorting', default=True,
                 help=_("Allow the usage of the sorting")),
-    cfg.StrOpt('pagination_max_limit', default="-1",
+    cfg.StrOpt('pagination_max_limit',
+               default=str(constants.DEFAULT_PAGE_SIZE),
                help=_("The maximum number of items returned in a single "
                       "response. The string 'infinite' or a negative "
                       "integer value means 'no limit'")),
     cfg.HostnameOpt('host', default=utils.get_hostname(),
                     help=_("The hostname Octavia is running on")),
+    cfg.StrOpt('api_base_uri',
+               help=_("Base URI for the API for use in pagination links. "
+                      "This will be autodetected from the request if not "
+                      "overridden here.")),
     cfg.StrOpt('octavia_plugins',
                default='hot_plug_plugin',
                help=_('Name of the controller plugin to use'))

@@ -87,6 +87,7 @@ class ListenerRootResponse(types.BaseType):
 
 class ListenersRootResponse(types.BaseType):
     listeners = wtypes.wsattr([ListenerResponse])
+    listeners_links = wtypes.wsattr([types.PageType])
 
 
 class ListenerPOST(BaseListenerType):

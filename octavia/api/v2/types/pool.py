@@ -109,6 +109,7 @@ class PoolRootResponse(types.BaseType):
 
 class PoolsRootResponse(types.BaseType):
     pools = wtypes.wsattr([PoolResponse])
+    pools_links = wtypes.wsattr([types.PageType])
 
 
 class PoolPOST(BasePoolType):

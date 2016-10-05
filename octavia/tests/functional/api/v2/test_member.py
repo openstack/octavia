@@ -103,6 +103,67 @@ class TestMember(base.BaseAPITest):
         for m in [api_m_1, api_m_2]:
             self.assertIn(m, response)
 
+    def test_get_all_sorted(self):
+        self.create_member(self.pool_id, '10.0.0.1', 80, name='member1')
+        self.set_lb_status(self.lb_id)
+        self.create_member(self.pool_id, '10.0.0.2', 80, name='member2')
+        self.set_lb_status(self.lb_id)
+        self.create_member(self.pool_id, '10.0.0.3', 80, name='member3')
+        self.set_lb_status(self.lb_id)
+
+        response = self.get(self.members_path,
+                            params={'sort': 'name:desc'})
+        members_desc = response.json.get(self.root_tag_list)
+        response = self.get(self.members_path,
+                            params={'sort': 'name:asc'})
+        members_asc = response.json.get(self.root_tag_list)
+
+        self.assertEqual(3, len(members_desc))
+        self.assertEqual(3, len(members_asc))
+
+        member_id_names_desc = [(member.get('id'), member.get('name'))
+                                for member in members_desc]
+        member_id_names_asc = [(member.get('id'), member.get('name'))
+                               for member in members_asc]
+        self.assertEqual(member_id_names_asc,
+                         list(reversed(member_id_names_desc)))
+
+    def test_get_all_limited(self):
+        self.create_member(self.pool_id, '10.0.0.1', 80, name='member1')
+        self.set_lb_status(self.lb_id)
+        self.create_member(self.pool_id, '10.0.0.2', 80, name='member2')
+        self.set_lb_status(self.lb_id)
+        self.create_member(self.pool_id, '10.0.0.3', 80, name='member3')
+        self.set_lb_status(self.lb_id)
+
+        # First two -- should have 'next' link
+        first_two = self.get(self.members_path, params={'limit': 2}).json
+        objs = first_two[self.root_tag_list]
+        links = first_two[self.root_tag_links]
+        self.assertEqual(2, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('next', links[0]['rel'])
+
+        # Third + off the end -- should have previous link
+        third = self.get(self.members_path, params={
+            'limit': 2,
+            'marker': first_two[self.root_tag_list][1]['id']}).json
+        objs = third[self.root_tag_list]
+        links = third[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('previous', links[0]['rel'])
+
+        # Middle -- should have both links
+        middle = self.get(self.members_path, params={
+            'limit': 1,
+            'marker': first_two[self.root_tag_list][0]['id']}).json
+        objs = middle[self.root_tag_list]
+        links = middle[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(2, len(links))
+        self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
+
     def test_empty_get_all(self):
         response = self.get(self.members_path).json.get(self.root_tag_list)
         self.assertIsInstance(response, list)

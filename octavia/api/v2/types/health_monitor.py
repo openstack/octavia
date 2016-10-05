@@ -69,6 +69,7 @@ class HealthMonitorRootResponse(types.BaseType):
 
 class HealthMonitorsRootResponse(types.BaseType):
     healthmonitors = wtypes.wsattr([HealthMonitorResponse])
+    healthmonitors_links = wtypes.wsattr([types.PageType])
 
 
 class HealthMonitorPOST(BaseHealthMonitorType):

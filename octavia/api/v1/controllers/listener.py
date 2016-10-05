@@ -66,12 +66,16 @@ class ListenersController(base.BaseController):
         return self._convert_db_to_type(db_listener,
                                         listener_types.ListenerResponse)
 
-    @wsme_pecan.wsexpose([listener_types.ListenerResponse])
+    @wsme_pecan.wsexpose([listener_types.ListenerResponse],
+                         ignore_extra_args=True)
     def get_all(self):
         """Lists all listeners on a load balancer."""
         context = pecan.request.context.get('octavia_context')
-        db_listeners = self.repositories.listener.get_all(
-            context.session, load_balancer_id=self.load_balancer_id)
+        pcontext = pecan.request.context
+        db_listeners, _ = self.repositories.listener.get_all(
+            context.session,
+            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+            load_balancer_id=self.load_balancer_id)
         return self._convert_db_to_type(db_listeners,
                                         [listener_types.ListenerResponse])
 

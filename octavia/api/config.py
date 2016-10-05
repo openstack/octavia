@@ -19,7 +19,9 @@ from octavia.api.common import hooks
 app = {
     'root': 'octavia.api.root_controller.RootController',
     'modules': ['octavia.api'],
-    'hooks': [hooks.ContextHook()],
+    'hooks': [
+        hooks.ContextHook(),
+        hooks.QueryParametersHook()],
     'debug': False
 }
 

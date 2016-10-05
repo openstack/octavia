@@ -147,3 +147,8 @@ class IdOnlyType(BaseType):
 
 class NameOnlyType(BaseType):
     name = wtypes.wsattr(wtypes.StringType(max_length=255), mandatory=True)
+
+
+class PageType(BaseType):
+    href = wtypes.StringType()
+    rel = wtypes.StringType()

@@ -56,6 +56,7 @@ class L7RuleRootResponse(types.BaseType):
 
 class L7RulesRootResponse(types.BaseType):
     rules = wtypes.wsattr([L7RuleResponse])
+    rules_links = wtypes.wsattr([types.PageType])
 
 
 class L7RulePOST(BaseL7Type):

@@ -257,13 +257,28 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         response = self.post(path, body)
         return response.json
 
+    def create_quota(self, project_id=-1, lb_quota=None, listener_quota=None,
+                     pool_quota=None, hm_quota=None, member_quota=None):
+        if project_id == -1:
+            project_id = self.project_id
+        req_dict = {'load_balancer': lb_quota,
+                    'listener': listener_quota,
+                    'pool': pool_quota,
+                    'health_monitor': hm_quota,
+                    'member': member_quota}
+        req_dict = {k: v for k, v in req_dict.items() if v is not None}
+        body = {'quota': req_dict}
+        path = self.QUOTA_PATH.format(project_id=project_id)
+        response = self.put(path, body, status=202)
+        return response.json
+
     def _set_lb_and_children_statuses(self, lb_id, prov_status, op_status,
                                       autodetect=True):
         self.set_object_status(self.lb_repo, lb_id,
                                provisioning_status=prov_status,
                                operating_status=op_status)
-        lb_listeners = self.listener_repo.get_all(db_api.get_session(),
-                                                  load_balancer_id=lb_id)
+        lb_listeners, _ = self.listener_repo.get_all(
+            db_api.get_session(), load_balancer_id=lb_id)
         for listener in lb_listeners:
             if autodetect and (listener.provisioning_status ==
                                constants.PENDING_DELETE):
@@ -273,8 +288,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
             self.set_object_status(self.listener_repo, listener.id,
                                    provisioning_status=listener_prov,
                                    operating_status=op_status)
-            lb_l7policies = self.l7policy_repo.get_all(db_api.get_session(),
-                                                       listener_id=listener.id)
+            lb_l7policies, _ = self.l7policy_repo.get_all(
+                db_api.get_session(), listener_id=listener.id)
             for l7policy in lb_l7policies:
                 if autodetect and (l7policy.provisioning_status ==
                                    constants.PENDING_DELETE):
@@ -284,8 +299,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                 self.set_object_status(self.l7policy_repo, l7policy.id,
                                        provisioning_status=l7policy_prov,
                                        operating_status=op_status)
-                l7rules = self.l7rule_repo.get_all(db_api.get_session(),
-                                                   l7policy_id=l7policy.id)
+                l7rules, _ = self.l7rule_repo.get_all(
+                    db_api.get_session(), l7policy_id=l7policy.id)
                 for l7rule in l7rules:
                     if autodetect and (l7rule.provisioning_status ==
                                        constants.PENDING_DELETE):
@@ -295,8 +310,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                     self.set_object_status(self.l7rule_repo, l7rule.id,
                                            provisioning_status=l7rule_prov,
                                            operating_status=op_status)
-        lb_pools = self.pool_repo.get_all(db_api.get_session(),
-                                          load_balancer_id=lb_id)
+        lb_pools, _ = self.pool_repo.get_all(db_api.get_session(),
+                                             load_balancer_id=lb_id)
         for pool in lb_pools:
             if autodetect and (pool.provisioning_status ==
                                constants.PENDING_DELETE):

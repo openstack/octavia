@@ -52,7 +52,7 @@ class L7RuleController(base.BaseController):
     def get_all(self):
         """Lists all l7rules of a l7policy."""
         context = pecan.request.context.get('octavia_context')
-        db_l7rules = self.repositories.l7rule.get_all(
+        db_l7rules, _ = self.repositories.l7rule.get_all(
             context.session, l7policy_id=self.l7policy_id)
         return self._convert_db_to_type(db_l7rules,
                                         [l7rule_types.L7RuleResponse])

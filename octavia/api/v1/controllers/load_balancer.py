@@ -54,16 +54,22 @@ class LoadBalancersController(base.BaseController):
                                         lb_types.LoadBalancerResponse)
 
     @wsme_pecan.wsexpose([lb_types.LoadBalancerResponse], wtypes.text,
-                         wtypes.text)
+                         wtypes.text, ignore_extra_args=True)
     def get_all(self, tenant_id=None, project_id=None):
         """Lists all load balancers."""
         # NOTE(blogan): tenant_id and project_id are optional query parameters
         # tenant_id and project_id are the same thing.  tenant_id will be kept
         # around for a short amount of time.
-        context = pecan.request.context.get('octavia_context')
+
+        pcontext = pecan.request.context
+        context = pcontext.get('octavia_context')
         project_id = context.project_id or project_id or tenant_id
-        load_balancers = self.repositories.load_balancer.get_all(
-            context.session, project_id=project_id)
+
+        load_balancers, _ = self.repositories.load_balancer.get_all(
+            context.session,
+            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+            project_id=project_id)
+
         return self._convert_db_to_type(load_balancers,
                                         [lb_types.LoadBalancerResponse])
 

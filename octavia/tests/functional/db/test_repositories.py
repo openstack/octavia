@@ -61,17 +61,17 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
         self.quota_repo = repo.QuotasRepository()
 
     def test_get_all_return_value(self):
-        pool_list = self.pool_repo.get_all(self.session,
-                                           project_id=self.FAKE_UUID_2)
+        pool_list, _ = self.pool_repo.get_all(self.session,
+                                              project_id=self.FAKE_UUID_2)
         self.assertIsInstance(pool_list, list)
-        lb_list = self.lb_repo.get_all(self.session,
-                                       project_id=self.FAKE_UUID_2)
+        lb_list, _ = self.lb_repo.get_all(self.session,
+                                          project_id=self.FAKE_UUID_2)
         self.assertIsInstance(lb_list, list)
-        listener_list = self.listener_repo.get_all(self.session,
-                                                   project_id=self.FAKE_UUID_2)
+        listener_list, _ = self.listener_repo.get_all(
+            self.session, project_id=self.FAKE_UUID_2)
         self.assertIsInstance(listener_list, list)
-        member_list = self.member_repo.get_all(self.session,
-                                               project_id=self.FAKE_UUID_2)
+        member_list, _ = self.member_repo.get_all(self.session,
+                                                  project_id=self.FAKE_UUID_2)
         self.assertIsInstance(member_list, list)
 
 
@@ -1845,8 +1845,8 @@ class PoolRepositoryTest(BaseRepositoryTest):
                                     project_id=self.FAKE_UUID_2)
         pool_two = self.create_pool(pool_id=self.FAKE_UUID_3,
                                     project_id=self.FAKE_UUID_2)
-        pool_list = self.pool_repo.get_all(self.session,
-                                           project_id=self.FAKE_UUID_2)
+        pool_list, _ = self.pool_repo.get_all(self.session,
+                                              project_id=self.FAKE_UUID_2)
         self.assertIsInstance(pool_list, list)
         self.assertEqual(2, len(pool_list))
         self.assertEqual(pool_one, pool_list[0])
@@ -1994,8 +1994,8 @@ class MemberRepositoryTest(BaseRepositoryTest):
                                         self.pool.id, "10.0.0.1")
         member_two = self.create_member(self.FAKE_UUID_3, self.FAKE_UUID_2,
                                         self.pool.id, "10.0.0.2")
-        member_list = self.member_repo.get_all(self.session,
-                                               project_id=self.FAKE_UUID_2)
+        member_list, _ = self.member_repo.get_all(self.session,
+                                                  project_id=self.FAKE_UUID_2)
         self.assertIsInstance(member_list, list)
         self.assertEqual(2, len(member_list))
         self.assertEqual(member_one, member_list[0])
@@ -2131,8 +2131,8 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
     def test_get_all(self):
         listener_one = self.create_listener(self.FAKE_UUID_1, 80)
         listener_two = self.create_listener(self.FAKE_UUID_3, 88)
-        listener_list = self.listener_repo.get_all(self.session,
-                                                   project_id=self.FAKE_UUID_2)
+        listener_list, _ = self.listener_repo.get_all(
+            self.session, project_id=self.FAKE_UUID_2)
         self.assertIsInstance(listener_list, list)
         self.assertEqual(2, len(listener_list))
         self.assertEqual(listener_one, listener_list[0])
@@ -2530,8 +2530,8 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
     def test_get_all(self):
         lb_one = self.create_loadbalancer(self.FAKE_UUID_1)
         lb_two = self.create_loadbalancer(self.FAKE_UUID_3)
-        lb_list = self.lb_repo.get_all(self.session,
-                                       project_id=self.FAKE_UUID_2)
+        lb_list, _ = self.lb_repo.get_all(self.session,
+                                          project_id=self.FAKE_UUID_2)
         self.assertEqual(2, len(lb_list))
         self.assertEqual(lb_one, lb_list[0])
         self.assertEqual(lb_two, lb_list[1])
@@ -3234,7 +3234,7 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
         self.assertEqual(1, new_l7policy_a.position)
         self.assertEqual(2, new_l7policy_b.position)
         self.assertEqual(3, new_l7policy_c.position)
-        l7policy_list = self.l7policy_repo.get_all(
+        l7policy_list, _ = self.l7policy_repo.get_all(
             self.session, listener_id=listener.id)
         self.assertIsInstance(l7policy_list, list)
         self.assertEqual(3, len(l7policy_list))
@@ -3385,7 +3385,7 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
         self.assertEqual(2, new_l7policy_b.position)
         self.assertEqual(3, new_l7policy_c.position)
         self.l7policy_repo.delete(self.session, id=l7policy_b.id)
-        l7policy_list = self.l7policy_repo.get_all(
+        l7policy_list, _ = self.l7policy_repo.get_all(
             self.session, listener_id=listener.id)
         self.assertIsInstance(l7policy_list, list)
         self.assertEqual(2, len(l7policy_list))
@@ -3601,7 +3601,7 @@ class L7RuleRepositoryTest(BaseRepositoryTest):
                                             id=l7rule_a.id)
         new_l7rule_b = self.l7rule_repo.get(self.session,
                                             id=l7rule_b.id)
-        l7rule_list = self.l7rule_repo.get_all(
+        l7rule_list, _ = self.l7rule_repo.get_all(
             self.session, l7policy_id=l7policy.id)
         self.assertIsInstance(l7rule_list, list)
         self.assertEqual(2, len(l7rule_list))
