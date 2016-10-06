@@ -33,8 +33,8 @@ function build_octavia_worker_image {
     fi
     upload_image file://${OCTAVIA_AMP_IMAGE_FILE} $TOKEN
 
-    image_id=$(glance image-list --property-filter name=${OCTAVIA_AMP_IMAGE_NAME} | awk '/ amphora-x64-haproxy / {print $2}')
-    owner_id=$(glance image-show ${image_id} | awk '/ owner / {print $4}')
+    image_id=$(openstack image list --property name=${OCTAVIA_AMP_IMAGE_NAME} -f value -c ID)
+    owner_id=$(openstack image show ${image_id} -c owner -f value)
     iniset $OCTAVIA_CONF controller_worker amp_image_owner_id ${owner_id}
 
 }
@@ -75,8 +75,6 @@ function octavia_configure {
     iniset $OCTAVIA_CONF keystone_authtoken admin_tenant_name ${OCTAVIA_ADMIN_TENANT_NAME}
     iniset $OCTAVIA_CONF keystone_authtoken admin_password ${OCTAVIA_ADMIN_PASSWORD}
     iniset $OCTAVIA_CONF keystone_authtoken auth_version ${OCTAVIA_AUTH_VERSION}
-
-    iniset $OCTAVIA_CONF controller_worker amp_flavor_id ${OCTAVIA_AMP_FLAVOR_ID}
 
     # Setting other required default options
     iniset $OCTAVIA_CONF controller_worker amphora_driver ${OCTAVIA_AMPHORA_DRIVER}
@@ -158,15 +156,17 @@ function octavia_configure {
 
 function create_mgmt_network_interface {
     # Create security group and rules
-    neutron security-group-create lb-health-mgr-sec-grp
-    neutron security-group-rule-create --protocol udp --port-range-min $OCTAVIA_HM_LISTEN_PORT --port-range-max $OCTAVIA_HM_LISTEN_PORT lb-health-mgr-sec-grp
+    openstack security group create lb-health-mgr-sec-grp
+    openstack security group rule create --protocol udp --dst-port $OCTAVIA_HM_LISTEN_PORT lb-health-mgr-sec-grp
 
+    # TODO(johnsom) Change this to OSC when security group is working
     id_and_mac=$(neutron port-create --name octavia-health-manager-$OCTAVIA_NODE-listen-port --security-group lb-health-mgr-sec-grp --device-owner Octavia:health-mgr --binding:host_id=$(hostname) lb-mgmt-net | awk '/ id | mac_address / {print $4}')
 
     id_and_mac=($id_and_mac)
     MGMT_PORT_ID=${id_and_mac[0]}
     MGMT_PORT_MAC=${id_and_mac[1]}
-    MGMT_PORT_IP=$(neutron port-show $MGMT_PORT_ID | awk '/ "ip_address": / {print $7; exit}' | sed -e 's/"//g' -e 's/,//g' -e 's/}//g')
+    # TODO(johnsom) This gets the IPv4 address, should be updated for IPv6
+    MGMT_PORT_IP=$(openstack port show -f value -c fixed_ips $MGMT_PORT_ID | awk '{FS=",| "; gsub(",",""); gsub("'\''",""); for(i = 1; i <= NF; ++i) {if ($i ~ /^ip_address/) {n=index($i, "="); if (substr($i, n+1) ~ "\\.") print substr($i, n+1)}}}')
     sudo ovs-vsctl -- --may-exist add-port ${OVS_BRIDGE:-br-int} o-hm0 -- set Interface o-hm0 type=internal -- set Interface o-hm0 external-ids:iface-status=active -- set Interface o-hm0 external-ids:attached-mac=$MGMT_PORT_MAC -- set Interface o-hm0 external-ids:iface-id=$MGMT_PORT_ID
     sudo ip link set dev o-hm0 address $MGMT_PORT_MAC
     sudo dhclient -v o-hm0 -cf $OCTAVIA_DHCLIENT_CONF
@@ -184,16 +184,16 @@ function create_mgmt_network_interface {
 
 function build_mgmt_network {
     # Create network and attach a subnet
-    OCTAVIA_AMP_NETWORK_ID=$(neutron net-create lb-mgmt-net | awk '/ id / {print $4}')
-    OCTAVIA_AMP_SUBNET_ID=$(neutron subnet-create --name lb-mgmt-subnet --allocation-pool start=$OCTAVIA_MGMT_SUBNET_START,end=$OCTAVIA_MGMT_SUBNET_END lb-mgmt-net $OCTAVIA_MGMT_SUBNET | awk '/ id / {print $4}')
+    OCTAVIA_AMP_NETWORK_ID=$(openstack network create lb-mgmt-net | awk '/ id / {print $4}')
+    OCTAVIA_AMP_SUBNET_ID=$(openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET --allocation-pool start=$OCTAVIA_MGMT_SUBNET_START,end=$OCTAVIA_MGMT_SUBNET_END --network lb-mgmt-net lb-mgmt-subnet | awk '/ id / {print $4}')
 
     # Create security group and rules
-    neutron security-group-create lb-mgmt-sec-grp
-    neutron security-group-rule-create --protocol icmp lb-mgmt-sec-grp
-    neutron security-group-rule-create --protocol tcp --port-range-min 22 --port-range-max 22 lb-mgmt-sec-grp
-    neutron security-group-rule-create --protocol tcp --port-range-min 9443 --port-range-max 9443 lb-mgmt-sec-grp
+    openstack security group create lb-mgmt-sec-grp
+    openstack security group rule create --protocol icmp lb-mgmt-sec-grp
+    openstack security group rule create --protocol tcp --dst-port 22 lb-mgmt-sec-grp
+    openstack security group rule create --protocol tcp --dst-port 9443 lb-mgmt-sec-grp
 
-    OCTAVIA_MGMT_SEC_GRP_ID=$(nova secgroup-list | awk ' / lb-mgmt-sec-grp / {print $2}')
+    OCTAVIA_MGMT_SEC_GRP_ID=$(openstack security group list | awk ' / lb-mgmt-sec-grp / {print $2}')
     iniset ${OCTAVIA_CONF} controller_worker amp_secgroup_list ${OCTAVIA_MGMT_SEC_GRP_ID}
 
 }
@@ -209,7 +209,8 @@ function configure_octavia_tempest {
 }
 
 function create_amphora_flavor {
-    nova flavor-create --is-public False m1.amphora ${OCTAVIA_AMP_FLAVOR_ID} 1024 2 1
+    amp_flavor_id=$(openstack flavor create --id auto --ram 1024 --disk 2 --vcpus 1 --private m1.amphora -f value -c id)
+    iniset $OCTAVIA_CONF controller_worker amp_flavor_id $amp_flavor_id
 }
 
 function configure_octavia_api_haproxy {
@@ -245,16 +246,26 @@ function octavia_start {
 
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
         # things that should only happen on the ha main node / or once
-        nova keypair-add --pub-key ${OCTAVIA_AMP_SSH_KEY_PATH}.pub ${OCTAVIA_AMP_SSH_KEY_NAME}
+        openstack keypair create --public-key ${OCTAVIA_AMP_SSH_KEY_PATH}.pub ${OCTAVIA_AMP_SSH_KEY_NAME}
+
+        # Check if an amphora image is already loaded
+        AMPHORA_IMAGE_NAME=$(openstack image list --property name=${OCTAVIA_AMP_IMAGE_NAME} -f value -c Name)
+        export AMPHORA_IMAGE_NAME
+
+        if [ "$AMPHORA_IMAGE_NAME" == ${OCTAVIA_AMP_IMAGE_NAME} ]; then
+            echo "Found existing amphora image: $AMPHORA_IMAGE_NAME"
+            echo "Skipping amphora image build"
+            export DISABLE_AMP_IMAGE_BUILD=True
+        fi
 
         if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
             build_octavia_worker_image
         fi
 
-        OCTAVIA_AMP_IMAGE_ID=$(glance image-list | grep ${OCTAVIA_AMP_IMAGE_NAME} | awk '{print $2}')
+        OCTAVIA_AMP_IMAGE_ID=$(openstack image list -f value --property name=${OCTAVIA_AMP_IMAGE_NAME} -c ID)
 
         if [ -n "$OCTAVIA_AMP_IMAGE_ID" ]; then
-            glance image-tag-update ${OCTAVIA_AMP_IMAGE_ID} ${OCTAVIA_AMP_IMAGE_TAG}
+            openstack image set --tag ${OCTAVIA_AMP_IMAGE_TAG} ${OCTAVIA_AMP_IMAGE_ID}
         fi
         create_amphora_flavor
 
@@ -268,14 +279,14 @@ function octavia_start {
             configure_octavia_tempest ${OCTAVIA_AMP_NETWORK_ID}
         fi
     else
-        OCTAVIA_AMP_IMAGE_ID=$(glance image-list | grep ${OCTAVIA_AMP_IMAGE_NAME} | awk '{print $2}')
+        OCTAVIA_AMP_IMAGE_ID=$(openstack image list -f value --property name=${OCTAVIA_AMP_IMAGE_NAME} -c ID)
     fi
 
     create_mgmt_network_interface
 
     iniset $OCTAVIA_CONF controller_worker amp_image_tag ${OCTAVIA_AMP_IMAGE_TAG}
 
-    OCTAVIA_AMP_NETWORK_ID=$(neutron net-list | awk '/ lb-mgmt-net / {print $2}')
+    OCTAVIA_AMP_NETWORK_ID=$(openstack network list | awk '/ lb-mgmt-net / {print $2}')
 
     iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
 
@@ -323,7 +334,7 @@ function octavia_cleanup {
     fi
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
         if [ ${OCTAVIA_AMP_SSH_KEY_NAME}x != x ] ; then
-            nova keypair-delete ${OCTAVIA_AMP_SSH_KEY_NAME}
+            openstack keypair delete ${OCTAVIA_AMP_SSH_KEY_NAME}
         fi
     fi
 }
@@ -335,21 +346,11 @@ if is_service_enabled $OCTAVIA; then
             die "The neutron $Q_SVC service must be enabled to use $OCTAVIA"
         fi
 
-        # Check if an amphora image is already loaded
-        AMPHORA_IMAGE_NAME=$(glance image-list | awk '/ amphora-x64-haproxy / {print $4}')
-        export AMPHORA_IMAGE_NAME
-
         if [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
             echo "Found DISABLE_AMP_IMAGE_BUILD == True"
             echo "Skipping amphora image build"
         fi
 
-        if [ "$AMPHORA_IMAGE_NAME" == 'amphora-x64-haproxy' ]; then
-            echo "Found existing amphora image: $AMPHORA_IMAGE_NAME"
-            echo "Skipping amphora image build"
-            DISABLE_AMP_IMAGE_BUILD=True
-            export DISABLE_AMP_IMAGE_BUILD
-        fi
     fi
 
     if [[ "$1" == "stack" && "$2" == "install" ]]; then
