@@ -1,0 +1,6 @@
+---
+features:
+  - Adds support for PKCS7 PEM or DER encoded intermediate certificate bundles
+    for TERMINATED_HTTPS listeners.
+fixes:
+  - Resolves an issue with using encrypted TLS private keys.

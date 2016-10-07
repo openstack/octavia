@@ -17,6 +17,7 @@ import collections
 
 
 from octavia.common import constants
+from octavia.tests.unit.common.sample_configs import sample_certs
 
 
 def sample_amphora_tuple():
@@ -427,26 +428,26 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
         tls_certificate_id='cont_id_1' if tls else '',
         sni_container_ids=['cont_id_2', 'cont_id_3'] if sni else [],
         default_tls_container=sample_tls_container_tuple(
-            id='cont_id_1', certificate='--imapem1--\n',
-            private_key='--imakey1--\n', intermediates=[
-                '--imainter1--\n', '--imainter1too--\n'],
-            primary_cn='aFakeCN'
+            id='cont_id_1', certificate=sample_certs.X509_CERT,
+            private_key=sample_certs.X509_CERT_KEY,
+            intermediates=sample_certs.X509_IMDS_LIST,
+            primary_cn=sample_certs.X509_CERT_CN
         ) if tls else '',
         sni_containers=[
             sample_tls_sni_container_tuple(
                 tls_container_id='cont_id_2',
                 tls_container=sample_tls_container_tuple(
-                    id='cont_id_2', certificate='--imapem2--\n',
-                    private_key='--imakey2--\n', intermediates=[
-                        '--imainter2--\n', '--imainter2too--\n'
-                    ], primary_cn='aFakeCN')),
+                    id='cont_id_2', certificate=sample_certs.X509_CERT_2,
+                    private_key=sample_certs.X509_CERT_KEY_2,
+                    intermediates=sample_certs.X509_IMDS_LIST,
+                    primary_cn=sample_certs.X509_CERT_CN_2)),
             sample_tls_sni_container_tuple(
                 tls_container_id='cont_id_3',
                 tls_container=sample_tls_container_tuple(
-                    id='cont_id_3', certificate='--imapem3--\n',
-                    private_key='--imakey3--\n', intermediates=[
-                        '--imainter3--\n', '--imainter3too--\n'
-                    ], primary_cn='aFakeCN'))]
+                    id='cont_id_3', certificate=sample_certs.X509_CERT_3,
+                    private_key=sample_certs.X509_CERT_KEY_3,
+                    intermediates=sample_certs.X509_IMDS_LIST,
+                    primary_cn=sample_certs.X509_CERT_CN_3))]
         if sni else [],
         pools=pools,
         l7policies=l7policies,
