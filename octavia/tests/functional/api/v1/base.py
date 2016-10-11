@@ -14,6 +14,7 @@
 
 import mock
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 import pecan
 import pecan.testing
@@ -50,9 +51,10 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     def setUp(self):
         super(BaseAPITest, self).setUp()
-        cfg.CONF.set_override('api_handler', 'simulated_handler')
-        cfg.CONF.set_override('network_driver', 'network_noop_driver',
-                              group='controller_worker')
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(api_handler='simulated_handler')
+        conf.config(group="controller_worker",
+                    network_driver='network_noop_driver')
         self.lb_repo = repositories.LoadBalancerRepository()
         self.listener_repo = repositories.ListenerRepository()
         self.listener_stats_repo = repositories.ListenerStatisticsRepository()

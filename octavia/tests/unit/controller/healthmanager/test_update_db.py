@@ -16,6 +16,7 @@ import random
 
 import mock
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 import six
 import sqlalchemy
@@ -32,9 +33,9 @@ class TestUpdateHealthDb(base.TestCase):
     def setUp(self):
         super(TestUpdateHealthDb, self).setUp()
 
-        cfg.CONF.set_override(group='health_manager',
-                              name='event_streamer_driver',
-                              override='queue_event_streamer')
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="health_manager",
+                    event_streamer_driver='queue_event_streamer')
 
         session_patch = mock.patch('octavia.db.api.get_session')
         self.addCleanup(session_patch.stop)

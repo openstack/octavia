@@ -15,6 +15,7 @@
 import mock
 from novaclient import exceptions as nova_exceptions
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.common import clients
@@ -89,14 +90,11 @@ class Test_ExtractAmpImageIdByTag(base.TestCase):
 class TestNovaClient(base.TestCase):
 
     def setUp(self):
-        CONF.set_override(group='keystone_authtoken', name='auth_version',
-                          override='2', enforce_type=True)
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="keystone_authtoken", auth_version='2')
         self.net_name = "lb-mgmt-net"
-        CONF.set_override(group='networking', name='lb_network_name',
-                          override=self.net_name, enforce_type=True)
-        CONF.set_override(group='controller_worker',
-                          name='amp_boot_network_list',
-                          override=[1, 2], enforce_type=True)
+        conf.config(group="networking", lb_network_name=self.net_name)
+        conf.config(group="controller_worker", amp_boot_network_list=[1, 2])
 
         self.amphora = models.Amphora(
             compute_id=uuidutils.generate_uuid(),

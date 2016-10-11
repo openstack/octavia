@@ -15,6 +15,7 @@ import mock
 import neutronclient.v2_0
 import novaclient.v2
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 
 from octavia.common import clients
 from octavia.common import keystone
@@ -26,8 +27,9 @@ CONF = cfg.CONF
 class TestNovaAuth(base.TestCase):
 
     def setUp(self):
-        CONF.set_override(group='keystone_authtoken', name='auth_version',
-                          override='2', enforce_type=True)
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="keystone_authtoken", auth_version='2')
+
         # Reset the session and client
         clients.NovaAuth.nova_client = None
         keystone._SESSION = None
@@ -65,8 +67,9 @@ class TestNovaAuth(base.TestCase):
 class TestNeutronAuth(base.TestCase):
 
     def setUp(self):
-        CONF.set_override(group='keystone_authtoken', name='auth_version',
-                          override='2', enforce_type=True)
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="keystone_authtoken", auth_version='2')
+
         # Reset the session and client
         clients.NeutronAuth.neutron_client = None
         keystone._SESSION = None
@@ -104,8 +107,9 @@ class TestNeutronAuth(base.TestCase):
 class TestGlanceAuth(base.TestCase):
 
     def setUp(self):
-        CONF.set_override(group='keystone_authtoken', name='auth_version',
-                          override='2', enforce_type=True)
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="keystone_authtoken", auth_version='2')
+
         # Reset the session and client
         clients.GlanceAuth.glance_client = None
         keystone._SESSION = None
