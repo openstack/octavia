@@ -451,9 +451,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'project_id': self._project_id
         }
         expected_hm = {
-            'http_method': None,
-            'url_path': None,
-            'expected_codes': None,
+            'http_method': 'GET',
+            'url_path': '/',
+            'expected_codes': '200',
             'enabled': True
         }
         expected_hm.update(create_hm)
