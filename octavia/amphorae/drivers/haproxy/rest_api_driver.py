@@ -257,6 +257,7 @@ class AmphoraAPIClient(object):
 
         headers['User-Agent'] = OCTAVIA_API_CLIENT
         self.ssl_adapter.uuid = amp.id
+        retry_attempt = False
         # Keep retrying
         for a in six.moves.xrange(CONF.haproxy_amphora.connection_max_retries):
             try:
@@ -268,6 +269,11 @@ class AmphoraAPIClient(object):
                     r = _request(**reqargs)
                 LOG.debug("Connected to amphora. Response: {resp}".format(
                     resp=r))
+                # Give a 404 response one retry.  Flask/werkzeug is
+                # returning 404 on startup.
+                if r.status_code == 404 and retry_attempt is False:
+                    retry_attempt = True
+                    raise requests.ConnectionError
                 return r
             except (requests.ConnectionError, requests.Timeout):
                 LOG.warning(_LW("Could not connect to instance. Retrying."))
