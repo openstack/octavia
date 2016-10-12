@@ -23,6 +23,9 @@ address {{ vrrp_ip }}
 broadcast {{ broadcast }}
 netmask {{ netmask }}
 gateway {{ gateway }}
+{%- if mtu %}
+mtu {{ mtu }}
+{%- endif %}
 {%- for hr in host_routes %}
 up route add -net {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
 down route del -net {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}

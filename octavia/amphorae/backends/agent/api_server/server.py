@@ -155,6 +155,7 @@ class Server(object):
                                    net_info['subnet_cidr'],
                                    net_info['gateway'],
                                    net_info['mac_address'],
+                                   net_info.get('mtu'),
                                    net_info.get('vrrp_ip'),
                                    net_info.get('host_routes'))
 
@@ -166,7 +167,8 @@ class Server(object):
         except Exception:
             raise exceptions.BadRequest(description='Invalid port information')
         return self._plug.plug_network(port_info['mac_address'],
-                                       port_info.get('fixed_ips'))
+                                       port_info.get('fixed_ips'),
+                                       port_info.get('mtu'))
 
     def upload_cert(self):
         return certificate_update.upload_server_cert()

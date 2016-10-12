@@ -126,6 +126,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                         'gateway': subnet.gateway_ip,
                         'mac_address': port.mac_address,
                         'vrrp_ip': amphora.vrrp_ip,
+                        'mtu': port.network.mtu,
                         'host_routes': host_routes}
             try:
                 self.client.plug_vip(amphora,
@@ -147,7 +148,8 @@ class HaproxyAmphoraLoadBalancerDriver(
                   'host_routes': host_routes}
             fixed_ips.append(ip)
         port_info = {'mac_address': port.mac_address,
-                     'fixed_ips': fixed_ips}
+                     'fixed_ips': fixed_ips,
+                     'mtu': port.network.mtu}
         try:
             self.client.plug_network(amphora, port_info)
         except exc.Conflict:

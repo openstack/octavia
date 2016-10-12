@@ -531,6 +531,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 vrrp_port = self.get_port(amp.vrrp_port_id)
                 vrrp_subnet = self.get_subnet(
                     vrrp_port.get_subnet_id(amp.vrrp_ip))
+                vrrp_port.network = self.get_network(vrrp_port.network_id)
                 ha_port = self.get_port(amp.ha_port_id)
                 ha_subnet = self.get_subnet(
                     ha_port.get_subnet_id(amp.ha_ip))
