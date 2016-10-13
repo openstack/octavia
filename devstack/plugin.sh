@@ -167,7 +167,17 @@ function create_mgmt_network_interface {
     MGMT_PORT_MAC=${id_and_mac[1]}
     # TODO(johnsom) This gets the IPv4 address, should be updated for IPv6
     MGMT_PORT_IP=$(openstack port show -f value -c fixed_ips $MGMT_PORT_ID | awk '{FS=",| "; gsub(",",""); gsub("'\''",""); for(i = 1; i <= NF; ++i) {if ($i ~ /^ip_address/) {n=index($i, "="); if (substr($i, n+1) ~ "\\.") print substr($i, n+1)}}}')
-    sudo ovs-vsctl -- --may-exist add-port ${OVS_BRIDGE:-br-int} o-hm0 -- set Interface o-hm0 type=internal -- set Interface o-hm0 external-ids:iface-status=active -- set Interface o-hm0 external-ids:attached-mac=$MGMT_PORT_MAC -- set Interface o-hm0 external-ids:iface-id=$MGMT_PORT_ID
+    if [[ $Q_AGENT == "openvswitch" ]]; then
+        sudo ovs-vsctl -- --may-exist add-port ${OVS_BRIDGE:-br-int} o-hm0 -- set Interface o-hm0 type=internal -- set Interface o-hm0 external-ids:iface-status=active -- set Interface o-hm0 external-ids:attached-mac=$MGMT_PORT_MAC -- set Interface o-hm0 external-ids:iface-id=$MGMT_PORT_ID
+    elif [[ $Q_AGENT == "linuxbridge" ]]; then
+        if ! ip link show o-hm0 ; then
+            sudo ip link add o-hm0 type veth peer name o-bhm0
+            NETID=$(openstack network show lb-mgmt-net -c id -f value)
+            BRNAME=brq$(echo $NETID|cut -c 1-11)
+            sudo brctl addif $BRNAME o-bhm0
+            sudo ip link set o-bhm0 up
+        fi
+    fi
     sudo ip link set dev o-hm0 address $MGMT_PORT_MAC
     sudo dhclient -v o-hm0 -cf $OCTAVIA_DHCLIENT_CONF
     sudo iptables -I INPUT -i o-hm0 -p udp --dport 5555 -j ACCEPT
@@ -308,13 +318,20 @@ function octavia_stop {
     # Kill dhclient process started for o-hm0 interface
     pids=$(ps aux | awk '/o-hm0/ { print $2 }')
     [ ! -z "$pids" ] && sudo kill $pids
+    if [[ $Q_AGENT == "linuxbridge" ]]; then
+        if ip link show o-hm0 ; then
+            sudo ip link del o-hm0
+        fi
+    fi
 }
+
 function octavia_configure_common {
     if is_service_enabled $OCTAVIA_SERVICE && [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE = 'standalone' ] ; then
         inicomment $NEUTRON_LBAAS_CONF service_providers service_provider
         iniadd $NEUTRON_LBAAS_CONF service_providers service_provider $OCTAVIA_SERVICE_PROVIDER
     fi
 }
+
 function octavia_cleanup {
 
     if [ ${OCTAVIA_AMP_IMAGE_NAME}x != x ] ; then
