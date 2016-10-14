@@ -663,6 +663,7 @@ class ServerTestCase(base.TestCase):
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                  'ifup', consts.NETNS_PRIMARY_INTERFACE], stderr=-2)
 
+    @mock.patch('pyroute2.NSPopen')
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
     @mock.patch('pyroute2.IPRoute')
@@ -673,7 +674,7 @@ class ServerTestCase(base.TestCase):
     @mock.patch('os.makedirs')
     def test_plug_vip4(self, mock_makedirs, mock_copytree, mock_check_output,
                        mock_netns, mock_netns_create, mock_pyroute2,
-                       mock_ifaddress, mock_interfaces):
+                       mock_ifaddress, mock_interfaces, mock_nspopen):
 
         subnet_info = {
             'subnet_cidr': '203.0.113.0/24',
@@ -779,6 +780,11 @@ class ServerTestCase(base.TestCase):
                  'ifup', '{netns_int}:0'.format(
                      netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
 
+        # Verify sysctl was loaded
+        mock_nspopen.assert_called_once_with(
+            'amphora-haproxy', ['/sbin/sysctl', '--system'],
+            stdout=subprocess.PIPE)
+
         # One Interface down, Happy Path IPv4
         mock_interfaces.side_effect = [['blah']]
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
@@ -845,6 +851,7 @@ class ServerTestCase(base.TestCase):
                  'message': 'Error plugging VIP'},
                 json.loads(rv.data.decode('utf-8')))
 
+    @mock.patch('pyroute2.NSPopen')
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
     @mock.patch('pyroute2.IPRoute')
@@ -855,7 +862,7 @@ class ServerTestCase(base.TestCase):
     @mock.patch('os.makedirs')
     def test_plug_vip6(self, mock_makedirs, mock_copytree, mock_check_output,
                        mock_netns, mock_netns_create, mock_pyroute2,
-                       mock_ifaddress, mock_interfaces):
+                       mock_ifaddress, mock_interfaces, mock_nspopen):
 
         subnet_info = {
             'subnet_cidr': '2001:db8::/32',
@@ -958,6 +965,11 @@ class ServerTestCase(base.TestCase):
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                  'ifup', '{netns_int}:0'.format(
                      netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
+
+        # Verify sysctl was loaded
+        mock_nspopen.assert_called_once_with(
+            'amphora-haproxy', ['/sbin/sysctl', '--system'],
+            stdout=subprocess.PIPE)
 
         # One Interface down, Happy Path IPv6
         mock_interfaces.side_effect = [['blah']]
