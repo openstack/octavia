@@ -260,6 +260,7 @@ class AmphoraAPIClient(object):
         headers['User-Agent'] = OCTAVIA_API_CLIENT
         self.ssl_adapter.uuid = amp.id
         retry_attempt = False
+        exception = None
         # Keep retrying
         for a in six.moves.xrange(CONF.haproxy_amphora.connection_max_retries):
             try:
@@ -277,13 +278,16 @@ class AmphoraAPIClient(object):
                     retry_attempt = True
                     raise requests.ConnectionError
                 return r
-            except (requests.ConnectionError, requests.Timeout):
+            except (requests.ConnectionError, requests.Timeout) as e:
+                exception = e
                 LOG.warning(_LW("Could not connect to instance. Retrying."))
                 time.sleep(CONF.haproxy_amphora.connection_retry_interval)
 
-        LOG.error(_LE("Connection retries (currently set to %s) "
-                      "exhausted.  The amphora is unavailable."),
-                  CONF.haproxy_amphora.connection_max_retries)
+        LOG.error(_LE("Connection retries (currently set to %(max_retries)s) "
+                      "exhausted.  The amphora is unavailable. Reason: "
+                      "%(exception)s"),
+                  {'max_retries': CONF.haproxy_amphora.connection_max_retries,
+                   'exception': exception})
         raise driver_except.TimeOutException()
 
     def upload_config(self, amp, listener_id, config):
