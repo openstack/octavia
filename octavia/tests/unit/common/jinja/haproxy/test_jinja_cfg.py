@@ -31,7 +31,7 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_tls(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option tcplog\n"
+              "    option httplog\n"
               "    maxconn 98\n"
               "    redirect scheme https if !{ ssl_fc }\n"
               "    bind 10.0.0.2:443 "
@@ -69,7 +69,7 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_tls_no_sni(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option tcplog\n"
+              "    option httplog\n"
               "    maxconn 98\n"
               "    redirect scheme https if !{ ssl_fc }\n"
               "    bind 10.0.0.2:443 "
@@ -274,7 +274,7 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_l7policies(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option tcplog\n"
+              "    option httplog\n"
               "    maxconn 98\n"
               "    bind 10.0.0.2:80\n"
               "    mode http\n"
