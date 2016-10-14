@@ -33,6 +33,8 @@ pre-start script
     [ -r $CONF_PATH ]
     # Re-add the namespace
     ip netns add {{ amphora_nsname }} || true
+    # Load the system sysctl into the new namespace
+    ip netns exec {{ amphora_nsname }} sysctl --system || true
     # We need the plugged_interfaces file sorted to join with the host
     # interfaces
     sort -k 1 /var/lib/octavia/plugged_interfaces > /var/lib/octavia/plugged_interfaces.sorted || true

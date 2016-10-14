@@ -13,6 +13,7 @@
 #    under the License.
 
 import os
+import subprocess
 
 import mock
 import netifaces
@@ -51,6 +52,7 @@ class TestPlug(base.TestCase):
         interface = self.test_plug._interface_by_mac(FAKE_MAC_ADDRESS.upper())
         self.assertEqual(FAKE_INTERFACE, interface)
 
+    @mock.patch('pyroute2.NSPopen')
     @mock.patch.object(plug, "flask")
     @mock.patch('pyroute2.IPRoute')
     @mock.patch('pyroute2.netns.create')
@@ -60,7 +62,7 @@ class TestPlug(base.TestCase):
     @mock.patch('os.makedirs')
     def test_plug_vip_ipv4(self, mock_makedirs, mock_copytree,
                            mock_check_output, mock_netns, mock_netns_create,
-                           mock_pyroute2, mock_flask):
+                           mock_pyroute2, mock_flask, mock_nspopen):
         m = mock.mock_open()
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             self.test_plug.plug_vip(
@@ -74,7 +76,11 @@ class TestPlug(base.TestCase):
             'details': 'VIP {vip} plugged on interface {interface}'.format(
                 vip=FAKE_IP_IPV4, interface='eth1')
         })
+        mock_nspopen.assert_called_once_with(
+            'amphora-haproxy', ['/sbin/sysctl', '--system'],
+            stdout=subprocess.PIPE)
 
+    @mock.patch('pyroute2.NSPopen')
     @mock.patch.object(plug, "flask")
     @mock.patch('pyroute2.IPRoute')
     @mock.patch('pyroute2.netns.create')
@@ -84,7 +90,7 @@ class TestPlug(base.TestCase):
     @mock.patch('os.makedirs')
     def test_plug_vip_ipv6(self, mock_makedirs, mock_copytree,
                            mock_check_output, mock_netns, mock_netns_create,
-                           mock_pyroute2, mock_flask):
+                           mock_pyroute2, mock_flask, mock_nspopen):
         m = mock.mock_open()
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             self.test_plug.plug_vip(
@@ -98,6 +104,9 @@ class TestPlug(base.TestCase):
             'details': 'VIP {vip} plugged on interface {interface}'.format(
                 vip=FAKE_IP_IPV6_EXPANDED, interface='eth1')
         })
+        mock_nspopen.assert_called_once_with(
+            'amphora-haproxy', ['/sbin/sysctl', '--system'],
+            stdout=subprocess.PIPE)
 
     @mock.patch.object(plug, "flask")
     @mock.patch('pyroute2.IPRoute')

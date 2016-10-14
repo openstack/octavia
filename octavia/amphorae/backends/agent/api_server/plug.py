@@ -158,6 +158,14 @@ class Plug(object):
         netns = pyroute2.NetNS(consts.AMPHORA_NAMESPACE, flags=os.O_CREAT)
         netns.close()
 
+        # Load sysctl in new namespace
+        sysctl = pyroute2.NSPopen(consts.AMPHORA_NAMESPACE,
+                                  [consts.SYSCTL_CMD, '--system'],
+                                  stdout=subprocess.PIPE)
+        sysctl.communicate()
+        sysctl.wait()
+        sysctl.release()
+
         with pyroute2.IPRoute() as ipr:
             # Move the interfaces into the namespace
             idx = ipr.link_lookup(ifname=default_netns_interface)[0]
