@@ -45,6 +45,8 @@ class AgentJinjaTemplater(object):
                  CONF.amphora_agent.agent_server_network_dir,
              'agent_server_network_file':
                  CONF.amphora_agent.agent_server_network_file,
+             'agent_request_read_timeout':
+                 CONF.amphora_agent.agent_request_read_timeout,
              'amphora_id': amphora_id,
              'base_cert_dir': CONF.haproxy_amphora.base_cert_dir,
              'base_path': CONF.haproxy_amphora.base_path,

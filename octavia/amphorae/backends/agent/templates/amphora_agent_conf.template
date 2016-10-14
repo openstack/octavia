@@ -37,4 +37,5 @@ agent_server_network_dir = {{ agent_server_network_dir }}
 {% if agent_server_network_file -%}
 agent_server_network_file = {{ agent_server_network_file }}
 {% endif -%}
+agent_request_read_timeout = {{ agent_request_read_timeout }}
 amphora_id = {{ amphora_id }}
