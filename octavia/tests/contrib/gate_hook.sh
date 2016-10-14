@@ -16,6 +16,36 @@ if egrep --quiet '(vmx|svm)' /proc/cpuinfo; then
     export DEVSTACK_GATE_LIBVIRT_TYPE=kvm
 fi
 
+function _setup_octavia_multinode {
+
+    PRIMARY_NODE_IP=$(cat /etc/nodepool/primary_node_private)
+    SUBNODE_IP=$(head -n1 /etc/nodepool/sub_nodes_private)
+
+    # OCTAVIA_CONTROLLER_IP_PORT_LIST are the ips inside the
+    # lb-mgmt network that the amphoras reach via heartbeats
+    COMMON_MULTINODE_CONFIG="
+        OCTAVIA_USE_PREGENERATED_CERTS=True
+        OCTAVIA_USE_PREGENERATED_SSH_KEY=True
+        OCTAVIA_CONTROLLER_IP_PORT_LIST=192.168.0.3:5555,192.168.0.4:5555
+
+        # Embedded fix for devstack bug/1629133 , this line can be removed once
+        # that bug is fixed
+        SUBNETPOOL_PREFIX_V4=10.0.0.0/16
+    "
+
+    export DEVSTACK_LOCAL_CONFIG+="$COMMON_MULTINODE_CONFIG
+        OCTAVIA_NODE=main
+        OCTAVIA_NODES=main:$PRIMARY_NODE_IP,second:$SUBNODE_IP
+        enable_service o-api-ha
+        OCTAVIA_MGMT_PORT_IP=192.168.0.3
+    "
+
+    export DEVSTACK_SUBNODE_CONFIG+="$COMMON_MULTINODE_CONFIG
+        OCTAVIA_NODE=second
+        enable_plugin octavia https://git.openstack.org/openstack/octavia
+        OCTAVIA_MGMT_PORT_IP=192.168.0.4
+    "
+}
 
 function _setup_octavia {
     export DEVSTACK_LOCAL_CONFIG+="
@@ -29,6 +59,9 @@ function _setup_octavia {
     fi
     if [ "$testenv" != "apiv1" ]; then
         ENABLED_SERVICES+="octavia,o-cw,o-hk,o-hm,o-api,"
+        if [ "$DEVSTACK_GATE_TOPOLOGY" == "multinode" ]; then
+            _setup_octavia_multinode
+        fi
     fi
     if [ "$testenv" = "apiv1" ]; then
        cat > "$DEVSTACK_PATH/local.conf" <<EOF
