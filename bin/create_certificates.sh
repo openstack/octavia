@@ -34,6 +34,7 @@
 # Create directories
 CERT_DIR=$1
 OPEN_SSL_CONF=$2 # etc/certificates/openssl.cnf
+VALIDITY_DAYS=${3:-18250} # defaults to 50 years
 
 echo $CERT_DIR
 
@@ -52,7 +53,12 @@ echo "Create the CA's private and public keypair (2k long)"
 openssl genrsa -passout pass:foobar -des3 -out private/cakey.pem 2048
 
 echo "You will be asked to enter some information about the certificate."
-openssl req -x509 -passin pass:foobar -new -nodes -key private/cakey.pem -config $OPEN_SSL_CONF -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" -out ca_01.pem
+openssl req -x509 -passin pass:foobar -new -nodes -key private/cakey.pem \
+        -config $OPEN_SSL_CONF \
+        -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" \
+        -days $VALIDITY_DAYS \
+        -out ca_01.pem
+
 
 echo "Here is the certificate"
 openssl x509 -in ca_01.pem -text -noout
@@ -66,7 +72,8 @@ openssl req \
        -out client.csr
 
 echo "Sign request"
-openssl ca -passin pass:foobar -config $OPEN_SSL_CONF -in client.csr -out client-.pem -batch
+openssl ca -passin pass:foobar -config $OPEN_SSL_CONF -in client.csr \
+           -days $VALIDITY_DAYS -out client-.pem -batch
 
 echo "Generate single pem client.pem"
 cat client-.pem client.key > client.pem
