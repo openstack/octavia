@@ -635,7 +635,7 @@ def sample_l7rule_tuple(id,
 def sample_base_expected_config(frontend=None, backend=None, peers=None):
     if frontend is None:
         frontend = ("frontend sample_listener_id_1\n"
-                    "    option tcplog\n"
+                    "    option httplog\n"
                     "    maxconn 98\n"
                     "    bind 10.0.0.2:80\n"
                     "    mode http\n"
