@@ -15,6 +15,12 @@ function octavia_install {
     fi
 }
 
+function set_octavia_worker_image_owner_id {
+    image_id=$(openstack image list --property name=${OCTAVIA_AMP_IMAGE_NAME} -f value -c ID)
+    owner_id=$(openstack image show ${image_id} -c owner -f value)
+    iniset $OCTAVIA_CONF controller_worker amp_image_owner_id ${owner_id}
+}
+
 function build_octavia_worker_image {
 
     # pull the agent code from the current code zuul has a reference to
@@ -32,10 +38,6 @@ function build_octavia_worker_image {
         $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -s 2 -o $OCTAVIA_AMP_IMAGE_FILE
     fi
     upload_image file://${OCTAVIA_AMP_IMAGE_FILE} $TOKEN
-
-    image_id=$(openstack image list --property name=${OCTAVIA_AMP_IMAGE_NAME} -f value -c ID)
-    owner_id=$(openstack image show ${image_id} -c owner -f value)
-    iniset $OCTAVIA_CONF controller_worker amp_image_owner_id ${owner_id}
 
 }
 
@@ -155,12 +157,13 @@ function octavia_configure {
 }
 
 function create_mgmt_network_interface {
-    # Create security group and rules
-    openstack security group create lb-health-mgr-sec-grp
-    openstack security group rule create --protocol udp --dst-port $OCTAVIA_HM_LISTEN_PORT lb-health-mgr-sec-grp
+    if [ $OCTAVIA_MGMT_PORT_IP != 'auto' ]; then
+        SUBNET_ID=$(neutron subnet-show lb-mgmt-subnet | awk '/ id / {print $4}')
+        PORT_FIXED_IP="--fixed-ip subnet_id=$SUBNET_ID,ip_address=$OCTAVIA_MGMT_PORT_IP"
+    fi
 
     # TODO(johnsom) Change this to OSC when security group is working
-    id_and_mac=$(neutron port-create --name octavia-health-manager-$OCTAVIA_NODE-listen-port --security-group lb-health-mgr-sec-grp --device-owner Octavia:health-mgr --binding:host_id=$(hostname) lb-mgmt-net | awk '/ id | mac_address / {print $4}')
+    id_and_mac=$(neutron port-create --name octavia-health-manager-$OCTAVIA_NODE-listen-port --security-group lb-health-mgr-sec-grp --device-owner Octavia:health-mgr --binding:host_id=$(hostname) lb-mgmt-net $PORT_FIXED_IP | awk '/ id | mac_address / {print $4}')
 
     id_and_mac=($id_and_mac)
     MGMT_PORT_ID=${id_and_mac[0]}
@@ -190,6 +193,7 @@ function create_mgmt_network_interface {
 
     iniset $OCTAVIA_CONF health_manager bind_ip $MGMT_PORT_IP
     iniset $OCTAVIA_CONF health_manager bind_port $OCTAVIA_HM_LISTEN_PORT
+
 }
 
 function build_mgmt_network {
@@ -203,9 +207,14 @@ function build_mgmt_network {
     openstack security group rule create --protocol tcp --dst-port 22 lb-mgmt-sec-grp
     openstack security group rule create --protocol tcp --dst-port 9443 lb-mgmt-sec-grp
 
+    # Create security group and rules
+    openstack security group create lb-health-mgr-sec-grp
+    openstack security group rule create --protocol udp --dst-port $OCTAVIA_HM_LISTEN_PORT lb-health-mgr-sec-grp
+}
+
+function configure_lb_mgmt_sec_grp {
     OCTAVIA_MGMT_SEC_GRP_ID=$(openstack security group list | awk ' / lb-mgmt-sec-grp / {print $2}')
     iniset ${OCTAVIA_CONF} controller_worker amp_secgroup_list ${OCTAVIA_MGMT_SEC_GRP_ID}
-
 }
 
 function configure_octavia_tempest {
@@ -225,11 +234,11 @@ function create_amphora_flavor {
 
 function configure_octavia_api_haproxy {
 
+    install_package haproxy
+
     cp ${OCTAVIA_DIR}/devstack/etc/octavia/haproxy.cfg ${OCTAVIA_CONF_DIR}/haproxy.cfg
 
     sed -i.bak "s/OCTAVIA_PORT/${OCTAVIA_PORT}/" ${OCTAVIA_CONF_DIR}/haproxy.cfg
-
-    iniset $OCTAVIA_CONF DEFAULT bind_port ${OCTAVIA_HA_PORT}
 
     NODES=(${OCTAVIA_NODES//,/ })
 
@@ -270,6 +279,7 @@ function octavia_start {
 
         if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
             build_octavia_worker_image
+            set_octavia_worker_image_owner_id
         fi
 
         OCTAVIA_AMP_IMAGE_ID=$(openstack image list -f value --property name=${OCTAVIA_AMP_IMAGE_NAME} -c ID)
@@ -289,10 +299,11 @@ function octavia_start {
             configure_octavia_tempest ${OCTAVIA_AMP_NETWORK_ID}
         fi
     else
-        OCTAVIA_AMP_IMAGE_ID=$(openstack image list -f value --property name=${OCTAVIA_AMP_IMAGE_NAME} -c ID)
+        set_octavia_worker_image_owner_id
     fi
 
     create_mgmt_network_interface
+    configure_lb_mgmt_sec_grp
 
     iniset $OCTAVIA_CONF controller_worker amp_image_tag ${OCTAVIA_AMP_IMAGE_TAG}
 
@@ -303,6 +314,14 @@ function octavia_start {
     if [ $OCTAVIA_NODE == 'main' ]; then
         configure_octavia_api_haproxy
         run_process $OCTAVIA_API_HAPROXY "/usr/sbin/haproxy -db -V -f ${OCTAVIA_CONF_DIR}/haproxy.cfg"
+        # make sure octavia is reachable from haproxy
+        iniset $OCTAVIA_CONF DEFAULT bind_port ${OCTAVIA_HA_PORT}
+        iniset $OCTAVIA_CONF DEFAULT bind_host 0.0.0.0
+    fi
+    if [ $OCTAVIA_NODE != 'main' ] && [ $OCTAVIA_NODE != 'standalone' ] ; then
+        # make sure octavia is reachable from haproxy from main node
+        iniset $OCTAVIA_CONF DEFAULT bind_port ${OCTAVIA_HA_PORT}
+        iniset $OCTAVIA_CONF DEFAULT bind_host 0.0.0.0
     fi
 
     run_process $OCTAVIA_API  "$OCTAVIA_API_BINARY $OCTAVIA_API_ARGS"
