@@ -25,7 +25,7 @@ from octavia.tests.unit import base
 
 
 IP = '192.0.2.15'
-IP_PORT = '192.0.2.10:5555', '192.0.2.10:5555'
+IP_PORT = ['192.0.2.10:5555', '192.0.2.10:5555']
 KEY = 'TEST'
 PORT = random.randrange(1, 9000)
 SAMPLE_MSG = {'testkey': 'TEST'}
