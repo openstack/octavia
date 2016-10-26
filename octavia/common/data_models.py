@@ -167,6 +167,28 @@ class ListenerStatistics(BaseDataModel):
         return self
 
 
+class LoadBalancerStatistics(BaseDataModel):
+
+    def __init__(self, bytes_in=0, bytes_out=0, active_connections=0,
+                 total_connections=0, request_errors=0, listeners=None):
+        self.bytes_in = bytes_in
+        self.bytes_out = bytes_out
+        self.active_connections = active_connections
+        self.total_connections = total_connections
+        self.request_errors = request_errors
+        self.listeners = listeners or []
+
+    def get_stats(self):
+        stats = {
+            'bytes_in': self.bytes_in,
+            'bytes_out': self.bytes_out,
+            'active_connections': self.active_connections,
+            'total_connections': self.total_connections,
+            'request_errors': self.request_errors,
+        }
+        return stats
+
+
 class HealthMonitor(BaseDataModel):
 
     def __init__(self, id=None, project_id=None, pool_id=None, type=None,

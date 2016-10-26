@@ -217,6 +217,7 @@ class UpdateStatsDb(stats.StatsMixin):
     def __init__(self):
         super(UpdateStatsDb, self).__init__()
         self.event_streamer = event_queue.EventStreamerNeutron()
+        self.repo_listener = repo.ListenerRepository()
 
     def emit(self, info_type, info_id, info_obj):
         cnt = update_serializer.InfoContainer(info_type, info_id, info_obj)
@@ -272,3 +273,9 @@ class UpdateStatsDb(stats.StatsMixin):
             listener_stats = self.get_listener_stats(session, listener_id)
             self.emit(
                 'listener_stats', listener_id, listener_stats.get_stats())
+
+            listener_db = self.repo_listener.get(session, id=listener_id)
+            lb_stats = self.get_loadbalancer_stats(
+                session, listener_db.load_balancer_id)
+            self.emit('loadbalancer_stats',
+                      listener_db.load_balancer_id, lb_stats.get_stats())

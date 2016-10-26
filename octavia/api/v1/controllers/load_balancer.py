@@ -22,6 +22,7 @@ from wsmeext import pecan as wsme_pecan
 
 from octavia.api.v1.controllers import base
 from octavia.api.v1.controllers import listener
+from octavia.api.v1.controllers import load_balancer_statistics as lb_stats
 from octavia.api.v1.controllers import pool
 from octavia.api.v1.types import load_balancer as lb_types
 from octavia.common import constants
@@ -178,9 +179,9 @@ class LoadBalancersController(base.BaseController):
         decides which controller, if any, should control be passed.
         """
         context = pecan.request.context.get('octavia_context')
-        if lb_id and len(remainder) and (remainder[0] == 'listeners' or
-                                         remainder[0] == 'pools' or
-                                         remainder[0] == 'delete_cascade'):
+
+        possible_remainder = ('listeners', 'pools', 'delete_cascade', 'stats')
+        if lb_id and len(remainder) and (remainder[0] in possible_remainder):
             controller = remainder[0]
             remainder = remainder[1:]
             db_lb = self.repositories.load_balancer.get(context.session,
@@ -197,6 +198,9 @@ class LoadBalancersController(base.BaseController):
                     load_balancer_id=db_lb.id), remainder
             elif (controller == 'delete_cascade'):
                 return LBCascadeDeleteController(db_lb.id), ''
+            elif (controller == 'stats'):
+                return lb_stats.LoadBalancerStatisticsController(
+                    loadbalancer_id=db_lb.id), remainder
 
 
 class LBCascadeDeleteController(LoadBalancersController):
