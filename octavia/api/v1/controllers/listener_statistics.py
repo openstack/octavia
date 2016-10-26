@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
-
 import pecan
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
@@ -21,31 +19,15 @@ from wsmeext import pecan as wsme_pecan
 from octavia.api.v1.controllers import base
 from octavia.api.v1.types import listener_statistics as ls_types
 from octavia.common import constants
-from octavia.common import data_models
-from octavia.common import exceptions
-from octavia.i18n import _LI
+from octavia.common import stats
 
 
-LOG = logging.getLogger(__name__)
-
-
-class ListenerStatisticsController(base.BaseController):
+class ListenerStatisticsController(base.BaseController,
+                                   stats.StatsMixin):
 
     def __init__(self, listener_id):
         super(ListenerStatisticsController, self).__init__()
         self.listener_id = listener_id
-
-    def _get_db_ls(self, session):
-        """Gets the current listener statistics object from the database."""
-        db_ls = self.repositories.listener_stats.get(
-            session, listener_id=self.listener_id)
-        if not db_ls:
-            LOG.info(_LI("Listener Statistics for Listener %s was not found"),
-                     self.listener_id)
-            raise exceptions.NotFound(
-                resource=data_models.ListenerStatistics._name(),
-                id=self.listener_id)
-        return db_ls
 
     @wsme_pecan.wsexpose({wtypes.text: ls_types.ListenerStatisticsResponse})
     def get_all(self):
@@ -54,6 +36,7 @@ class ListenerStatisticsController(base.BaseController):
         # listener statistics we are using the get_all method to only get
         # the single set of stats
         context = pecan.request.context.get('octavia_context')
-        db_ls = self._get_db_ls(context.session)
+        data_stats = self.get_listener_stats(
+            context.session, self.listener_id)
         return {constants.LISTENER: self._convert_db_to_type(
-            db_ls, ls_types.ListenerStatisticsResponse)}
+            data_stats, ls_types.ListenerStatisticsResponse)}
