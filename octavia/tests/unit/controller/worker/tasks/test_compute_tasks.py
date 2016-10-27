@@ -116,8 +116,7 @@ class TestComputeTasks(base.TestCase):
             user_data=None,
             server_group_id=SERVER_GRPOUP_ID)
 
-        # Make sure it returns the expected compute_id
-        assert(compute_id == COMPUTE_ID)
+        self.assertEqual(COMPUTE_ID, compute_id)
 
         # Test that a build exception is raised
         createcompute = compute_tasks.ComputeCreate()
@@ -179,8 +178,7 @@ class TestComputeTasks(base.TestCase):
             user_data='test_ud_conf',
             server_group_id=None)
 
-        # Make sure it returns the expected compute_id
-        assert(compute_id == COMPUTE_ID)
+        self.assertEqual(COMPUTE_ID, compute_id)
 
         # Test that a build exception is raised
         createcompute = compute_tasks.ComputeCreate()
@@ -240,7 +238,6 @@ class TestComputeTasks(base.TestCase):
             user_data=None,
             server_group_id=SERVER_GRPOUP_ID)
 
-        # Make sure it returns the expected compute_id
         self.assertEqual(COMPUTE_ID, compute_id)
 
         # Test that a build exception is raised
@@ -300,8 +297,7 @@ class TestComputeTasks(base.TestCase):
                 '/etc/octavia/amphora-agent.conf': 'test_conf'},
             server_group_id=SERVER_GRPOUP_ID)
 
-        # Make sure it returns the expected compute_id
-        assert (compute_id == COMPUTE_ID)
+        self.assertEqual(COMPUTE_ID, compute_id)
 
         # Test that a build exception is raised
         self.useFixture(test_utils.OpenFixture(path, 'test'))
@@ -403,8 +399,7 @@ class TestComputeTasks(base.TestCase):
         mock_driver.create_server_group.assert_called_once_with(
             'octavia-lb-123', 'anti-affinity')
 
-        # Make sure it returns the expected server group_id
-        assert(sg_id == server_group_test_id)
+        self.assertEqual(server_group_test_id, sg_id)
 
         # Test revert()
         nova_sever_group_obj.revert(sg_id)
