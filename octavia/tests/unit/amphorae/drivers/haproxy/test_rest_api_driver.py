@@ -31,7 +31,9 @@ from octavia.tests.unit.common.sample_configs import sample_configs
 
 FAKE_CIDR = '198.51.100.0/24'
 FAKE_GATEWAY = '192.51.100.1'
-FAKE_IP = 'fake'
+FAKE_IP = '192.0.2.10'
+FAKE_IPV6 = '2001:db8::cafe'
+FAKE_IPV6_LLA = 'fe80::00ff:fe00:cafe'
 FAKE_PEM_FILENAME = "file_name"
 FAKE_UUID_1 = uuidutils.generate_uuid()
 FAKE_VRRP_IP = '10.1.0.1'
@@ -256,6 +258,14 @@ class TestAmphoraAPIClientTest(base.TestCase):
                             'gateway': FAKE_GATEWAY,
                             'mac_address': FAKE_MAC_ADDRESS,
                             'vrrp_ip': self.amp.vrrp_ip}
+
+    def test_base_url(self):
+        url = self.driver._base_url(FAKE_IP)
+        self.assertEqual('https://192.0.2.10:9443/0.5/', url)
+        url = self.driver._base_url(FAKE_IPV6)
+        self.assertEqual('https://[2001:db8::cafe]:9443/0.5/', url)
+        url = self.driver._base_url(FAKE_IPV6_LLA)
+        self.assertEqual('https://[fe80::00ff:fe00:cafe%o-hm0]:9443/0.5/', url)
 
     @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.time.sleep')
     def test_request(self, mock_sleep):

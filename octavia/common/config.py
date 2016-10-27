@@ -167,10 +167,14 @@ haproxy_amphora_opts = [
                       'suffixes.  Example: 10k')),
 
     # REST server
-    cfg.IPOpt('bind_host', default='0.0.0.0',  # nosec
+    cfg.IPOpt('bind_host', default='::',  # nosec
               help=_("The host IP to bind to")),
     cfg.PortOpt('bind_port', default=9443,
                 help=_("The port to bind to")),
+    cfg.StrOpt('lb_network_interface',
+               default='o-hm0',
+               help=_('Network interface through which to reach amphora, only '
+                      'required if using IPv6 link local addresses.')),
     cfg.StrOpt('haproxy_cmd', default='/usr/sbin/haproxy',
                help=_("The full path to haproxy")),
     cfg.IntOpt('respawn_count', default=2,

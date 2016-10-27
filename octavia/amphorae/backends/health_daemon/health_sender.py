@@ -37,8 +37,14 @@ class UDPStatusSender(object):
     def __init__(self):
         self.dests = []
         for ipport in CONF.health_manager.controller_ip_port_list:
-            parts = ipport.split(':')
-            self.update(parts[0], parts[1])
+            try:
+                ip, port = ipport.rsplit(':', 1)
+            except ValueError:
+                LOG.error(_LE("Invalid ip and port '%s' in "
+                              "health_manager controller_ip_port_list"),
+                          ipport)
+                break
+            self.update(ip, port)
         self.v4sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.v6sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
         self.key = str(CONF.health_manager.heartbeat_key)

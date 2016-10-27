@@ -24,6 +24,7 @@ import hashlib
 import random
 import socket
 
+import netaddr
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
@@ -68,6 +69,18 @@ def get_network_driver():
         invoke_on_load=True
     ).driver
     return network_driver
+
+
+def is_ipv6(ip_address):
+    """Check if ip address is IPv6 address."""
+    ip = netaddr.IPAddress(ip_address)
+    return ip.version == 6
+
+
+def is_ipv6_lla(ip_address):
+    """Check if ip address is IPv6 link local address."""
+    ip = netaddr.IPAddress(ip_address)
+    return ip.version == 6 and ip.is_link_local()
 
 
 class exception_logger(object):

@@ -23,3 +23,19 @@ class TestConfig(base.TestCase):
 
     def test_random_string(self):
         self.assertNotEqual(utils.get_random_string(10), '')
+
+    def test_is_ipv6(self):
+        self.assertFalse(utils.is_ipv6('192.0.2.10'))
+        self.assertFalse(utils.is_ipv6('169.254.0.10'))
+        self.assertFalse(utils.is_ipv6('0.0.0.0'))
+        self.assertTrue(utils.is_ipv6('::'))
+        self.assertTrue(utils.is_ipv6('2001:db8::1'))
+        self.assertTrue(utils.is_ipv6('fe80::225:90ff:fefb:53ad'))
+
+    def test_is_ipv6_lla(self):
+        self.assertFalse(utils.is_ipv6_lla('192.0.2.10'))
+        self.assertFalse(utils.is_ipv6_lla('169.254.0.10'))
+        self.assertFalse(utils.is_ipv6_lla('0.0.0.0'))
+        self.assertFalse(utils.is_ipv6_lla('::'))
+        self.assertFalse(utils.is_ipv6_lla('2001:db8::1'))
+        self.assertTrue(utils.is_ipv6_lla('fe80::225:90ff:fefb:53ad'))

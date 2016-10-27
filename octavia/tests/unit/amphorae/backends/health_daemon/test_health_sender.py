@@ -24,7 +24,6 @@ from octavia.amphorae.backends.health_daemon import health_sender
 from octavia.tests.unit import base
 
 
-IP = '192.0.2.15'
 IP_PORT = ['192.0.2.10:5555', '192.0.2.10:5555']
 KEY = 'TEST'
 PORT = random.randrange(1, 9000)
@@ -38,7 +37,7 @@ class TestHealthSender(base.TestCase):
 
     def setUp(self):
         super(TestHealthSender, self).setUp()
-        self.conf = oslo_fixture.Config(cfg.CONF)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.conf.config(group="health_manager",
                          controller_ip_port_list=IP_PORT)
         self.conf.config(group="health_manager",
@@ -53,66 +52,74 @@ class TestHealthSender(base.TestCase):
         socket_mock.sendto = sendto_mock
 
         # Test when no addresses are returned
-        mock_getaddrinfo.return_value = []
+        self.conf.config(group="health_manager",
+                         controller_ip_port_list='')
         sender = health_sender.UDPStatusSender()
         sender.dosend(SAMPLE_MSG)
+        sendto_mock.reset_mock()
 
         # Test IPv4 path
+        self.conf.config(group="health_manager",
+                         controller_ip_port_list=['192.0.2.20:80'])
         mock_getaddrinfo.return_value = [(socket.AF_INET,
                                           socket.SOCK_DGRAM,
                                           socket.IPPROTO_UDP,
                                           '',
                                           ('192.0.2.20', 80))]
-        sendto_mock.reset_mock()
 
         sender = health_sender.UDPStatusSender()
         sender.dosend(SAMPLE_MSG)
 
         sendto_mock.assert_called_once_with(SAMPLE_MSG_BIN,
                                             ('192.0.2.20', 80))
-
         sendto_mock.reset_mock()
 
         # Test IPv6 path
+        self.conf.config(group="health_manager",
+                         controller_ip_port_list=['2001:0db8::f00d:80'])
         mock_getaddrinfo.return_value = [(socket.AF_INET6,
                                           socket.SOCK_DGRAM,
                                           socket.IPPROTO_UDP,
                                           '',
-                                          ('2001:0DB8::F00D', 80))]
+                                          ('2001:db8::f00d', 80, 0, 0))]
 
         sender = health_sender.UDPStatusSender()
 
         sender.dosend(SAMPLE_MSG)
 
         sendto_mock.assert_called_once_with(SAMPLE_MSG_BIN,
-                                            ('2001:0DB8::F00D', 80))
+                                            ('2001:db8::f00d', 80, 0, 0))
 
         sendto_mock.reset_mock()
 
-        # Test invalid address family
-
-        mock_getaddrinfo.return_value = [(socket.AF_UNIX,
+        # Test IPv6 link-local address path
+        self.conf.config(
+            group="health_manager",
+            controller_ip_port_list=['fe80::00ff:fe00:cafe%eth0:80'])
+        mock_getaddrinfo.return_value = [(socket.AF_INET6,
                                           socket.SOCK_DGRAM,
                                           socket.IPPROTO_UDP,
                                           '',
-                                          ('2001:0DB8::F00D', 80))]
+                                          ('fe80::ff:fe00:cafe', 80, 0, 2))]
 
         sender = health_sender.UDPStatusSender()
 
         sender.dosend(SAMPLE_MSG)
 
-        self.assertFalse(sendto_mock.called)
+        sendto_mock.assert_called_once_with(SAMPLE_MSG_BIN,
+                                            ('fe80::ff:fe00:cafe', 80, 0, 2))
 
         sendto_mock.reset_mock()
 
         # Test socket error
-        socket_mock.sendto.side_effect = socket.error
-
+        self.conf.config(group="health_manager",
+                         controller_ip_port_list=['2001:0db8::f00d:80'])
         mock_getaddrinfo.return_value = [(socket.AF_INET6,
                                           socket.SOCK_DGRAM,
                                           socket.IPPROTO_UDP,
                                           '',
-                                          ('2001:0DB8::F00D', 80))]
+                                          ('2001:db8::f00d', 80, 0, 0))]
+        socket_mock.sendto.side_effect = socket.error
 
         sender = health_sender.UDPStatusSender()
 

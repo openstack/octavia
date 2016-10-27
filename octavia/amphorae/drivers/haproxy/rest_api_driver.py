@@ -31,6 +31,7 @@ from octavia.common.config import cfg
 from octavia.common import constants as consts
 from octavia.common.jinja.haproxy import jinja_cfg
 from octavia.common.tls_utils import cert_parser
+from octavia.common import utils
 from octavia.i18n import _LE, _LW
 
 LOG = logging.getLogger(__name__)
@@ -238,6 +239,12 @@ class AmphoraAPIClient(object):
         self.session.mount('https://', self.ssl_adapter)
 
     def _base_url(self, ip):
+        if utils.is_ipv6_lla(ip):
+            ip = '[{ip}%{interface}]'.format(
+                ip=ip,
+                interface=CONF.haproxy_amphora.lb_network_interface)
+        elif utils.is_ipv6(ip):
+            ip = '[{ip}]'.format(ip=ip)
         return "https://{ip}:{port}/{version}/".format(
             ip=ip,
             port=CONF.haproxy_amphora.bind_port,
