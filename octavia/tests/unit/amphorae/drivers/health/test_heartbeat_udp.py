@@ -31,6 +31,13 @@ KEY = 'TEST'
 IP = '192.0.2.10'
 PORT = random.randrange(1, 9000)
 RLIMIT = random.randrange(1, 100)
+FAKE_ADDRINFO = (
+    socket.AF_INET,
+    socket.SOCK_DGRAM,
+    socket.IPPROTO_UDP,
+    '',
+    (IP, PORT)
+)
 
 
 class TestHeartbeatUDP(base.TestCase):
@@ -51,20 +58,19 @@ class TestHeartbeatUDP(base.TestCase):
     def test_update(self, mock_socket, mock_getaddrinfo):
         socket_mock = mock.MagicMock()
         mock_socket.return_value = socket_mock
-        mock_getaddrinfo.return_value = [range(1, 6)]
+        mock_getaddrinfo.return_value = [FAKE_ADDRINFO]
         bind_mock = mock.MagicMock()
         socket_mock.bind = bind_mock
 
-        getter = heartbeat_udp.UDPStatusGetter(
-            None, None)
+        getter = heartbeat_udp.UDPStatusGetter(None, None)
 
-        mock_getaddrinfo.assert_called_with(IP, PORT, 0, 2)
-        self.assertEqual(5, getter.sockaddr)
-        mock_socket.assert_called_with(1, socket.SOCK_DGRAM)
+        mock_getaddrinfo.assert_called_with(IP, PORT, 0, socket.SOCK_DGRAM)
+        self.assertEqual((IP, PORT), getter.sockaddr)
+        mock_socket.assert_called_with(socket.AF_INET, socket.SOCK_DGRAM)
         bind_mock.assert_called_once_with((IP, PORT))
 
         self.conf.config(group="health_manager", sock_rlimit=RLIMIT)
-        mock_getaddrinfo.return_value = [range(1, 6), range(1, 6)]
+        mock_getaddrinfo.return_value = [FAKE_ADDRINFO, FAKE_ADDRINFO]
         getter.update(KEY, IP, PORT)
 
     @mock.patch('socket.getaddrinfo')
@@ -76,8 +82,7 @@ class TestHeartbeatUDP(base.TestCase):
         recvfrom = mock.MagicMock()
         socket_mock.recvfrom = recvfrom
 
-        getter = heartbeat_udp.UDPStatusGetter(
-            None, None)
+        getter = heartbeat_udp.UDPStatusGetter(None, None)
 
         # key = 'TEST' msg = {"testkey": "TEST"}
         sample_msg = ('78daab562a492d2ec94ead54b252500a710d0e5'

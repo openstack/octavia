@@ -65,7 +65,7 @@ class UDPStatusGetter(object):
             if self.sock is not None:
                 self.sock.close()
             self.sock = socket.socket(ai_family, socket.SOCK_DGRAM)
-            self.sock.bind((ip, port))
+            self.sock.bind(self.sockaddr)
             if cfg.CONF.health_manager.sock_rlimit > 0:
                 rlimit = cfg.CONF.health_manager.sock_rlimit
                 LOG.info(_LI("setting sock rlimit to %s"), rlimit)
