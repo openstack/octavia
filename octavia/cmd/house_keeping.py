@@ -73,7 +73,7 @@ def cert_rotation():
     """Perform certificate rotation."""
     interval = CONF.house_keeping.cert_interval
     LOG.info(
-        _LI("Expiring certificate check interval is set to %d sec") % interval)
+        _LI("Expiring certificate check interval is set to %d sec"), interval)
     cert_rotate = house_keeping.CertRotation()
     while cert_rotate_thread_event.is_set():
         LOG.debug("Initiating certification rotation ...")
