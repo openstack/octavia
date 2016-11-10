@@ -30,12 +30,14 @@ from octavia.amphorae.backends.agent.api_server import util
 from octavia.amphorae.backends.utils import haproxy_query as query
 from octavia.common import constants as consts
 from octavia.common import utils as octavia_utils
+from octavia.i18n import _LE
 
 LOG = logging.getLogger(__name__)
 BUFFER = 100
 
 UPSTART_CONF = 'upstart.conf.j2'
 SYSVINIT_CONF = 'sysvinit.conf.j2'
+SYSTEMD_CONF = 'systemd.conf.j2'
 
 JINJA_ENV = jinja2.Environment(
     autoescape=True,
@@ -44,6 +46,7 @@ JINJA_ENV = jinja2.Environment(
     ) + consts.AGENT_API_TEMPLATES))
 UPSTART_TEMPLATE = JINJA_ENV.get_template(UPSTART_CONF)
 SYSVINIT_TEMPLATE = JINJA_ENV.get_template(SYSVINIT_CONF)
+SYSTEMD_TEMPLATE = JINJA_ENV.get_template(SYSTEMD_CONF)
 
 
 class ParsingError(Exception):
@@ -113,7 +116,7 @@ class Listener(object):
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            LOG.debug("Failed to verify haproxy file: %s", e)
+            LOG.error(_LE("Failed to verify haproxy file: %s"), e)
             os.remove(name)  # delete file
             return flask.make_response(flask.jsonify(dict(
                 message="Invalid request",
@@ -122,15 +125,44 @@ class Listener(object):
         # file ok - move it
         os.rename(name, util.config_path(listener_id))
 
-        use_upstart = util.CONF.haproxy_amphora.use_upstart
-        file = util.init_path(listener_id)
-        # mode 00755
-        mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
-                stat.S_IROTH | stat.S_IXOTH)
-        if not os.path.exists(file):
-            with os.fdopen(os.open(file, flags, mode), 'w') as text_file:
-                template = (UPSTART_TEMPLATE if use_upstart
-                            else SYSVINIT_TEMPLATE)
+        try:
+
+            init_system = util.get_os_init_system()
+
+            LOG.debug('Found init system: {0}'.format(init_system))
+
+            init_path = util.init_path(listener_id, init_system)
+
+            if init_system == consts.INIT_SYSTEMD:
+                template = SYSTEMD_TEMPLATE
+                init_enable_cmd = "systemctl enable haproxy-{list}".format(
+                                  list=listener_id)
+            elif init_system == consts.INIT_UPSTART:
+                template = UPSTART_TEMPLATE
+            elif init_system == consts.INIT_SYSVINIT:
+                template = SYSVINIT_TEMPLATE
+                init_enable_cmd = "insserv {file}".format(file=init_path)
+            else:
+                raise util.UnknownInitError()
+
+        except util.UnknownInitError:
+            LOG.error(_LE("Unknown init system found."))
+            return flask.make_response(flask.jsonify(dict(
+                message="Unknown init system in amphora",
+                details="The amphora image is running an unknown init "
+                        "system.  We can't create the init configuration "
+                        "file for the load balancing process.")), 500)
+
+        if init_system == consts.INIT_SYSTEMD:
+            # mode 00644
+            mode = (stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        else:
+            # mode 00755
+            mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
+                    stat.S_IROTH | stat.S_IXOTH)
+        if not os.path.exists(init_path):
+            with os.fdopen(os.open(init_path, flags, mode), 'w') as text_file:
+
                 text = template.render(
                     peer_name=peer_name,
                     haproxy_pid=util.pid_path(listener_id),
@@ -143,18 +175,18 @@ class Listener(object):
                 )
                 text_file.write(text)
 
-        if not use_upstart:
-            insrvcmd = ("insserv {file}".format(file=file))
-
+        # Make sure the new service is enabled on boot
+        if init_system != consts.INIT_UPSTART:
             try:
-                subprocess.check_output(insrvcmd.split(),
+                subprocess.check_output(init_enable_cmd.split(),
                                         stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                LOG.debug("Failed to make %(file)s executable: %(err)s",
-                          {'file': file, 'err': e})
+                LOG.error(_LE("Failed to enable haproxy-%(list)s "
+                              "service: %(err)s"),
+                          {'list': listener_id, 'err': e})
                 return flask.make_response(flask.jsonify(dict(
-                    message="Error making file {0} executable".format(file),
-                    details=e.output)), 500)
+                    message="Error enabling haproxy-{0} service".format(
+                            listener_id), details=e.output)), 500)
 
         res = flask.make_response(flask.jsonify({
             'message': 'OK'}), 202)
@@ -221,7 +253,7 @@ class Listener(object):
             try:
                 subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                LOG.debug("Failed to stop HAProxy service: %s", e)
+                LOG.error(_LE("Failed to stop HAProxy service: %s"), e)
                 return flask.make_response(flask.jsonify(dict(
                     message="Error stopping haproxy",
                     details=e.output)), 500)
@@ -239,10 +271,34 @@ class Listener(object):
         except Exception:
             pass
 
+        # disable the service
+        init_system = util.get_os_init_system()
+        init_path = util.init_path(listener_id, init_system)
+
+        if init_system == consts.INIT_SYSTEMD:
+            init_disable_cmd = "systemctl disable haproxy-{list}".format(
+                               list=listener_id)
+        elif init_system == consts.INIT_SYSVINIT:
+            init_disable_cmd = "insserv -r {file}".format(file=init_path)
+        elif init_system != consts.INIT_UPSTART:
+            raise util.UnknownInitError()
+
+        if init_system != consts.INIT_UPSTART:
+            try:
+                subprocess.check_output(init_disable_cmd.split(),
+                                        stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                LOG.error(_LE("Failed to disable haproxy-%(list)s "
+                              "service: %(err)s"),
+                          {'list': listener_id, 'err': e})
+                return flask.make_response(flask.jsonify(dict(
+                    message="Error disabling haproxy-{0} service".format(
+                            listener_id), details=e.output)), 500)
+
         # delete the directory + init script for that listener
         shutil.rmtree(util.haproxy_dir(listener_id))
-        if os.path.exists(util.init_path(listener_id)):
-            os.remove(util.init_path(listener_id))
+        if os.path.exists(init_path):
+            os.remove(init_path)
 
         return flask.jsonify({'message': 'OK'})
 

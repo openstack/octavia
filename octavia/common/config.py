@@ -191,6 +191,9 @@ haproxy_amphora_opts = [
     cfg.StrOpt('server_ca', default='/etc/octavia/certs/server_ca.pem',
                help=_("The ca which signed the server certificates")),
     cfg.BoolOpt('use_upstart', default=True,
+                deprecated_for_removal=True,
+                deprecated_reason='This is now automatically discovered '
+                                  ' and configured.',
                 help=_("If False, use sysvinit.")),
 ]
 

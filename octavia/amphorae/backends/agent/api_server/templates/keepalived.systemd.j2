@@ -1,0 +1,13 @@
+[Unit]
+Description=Keepalive Daemon (LVS and VRRP)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+KillMode=process
+ExecStart=/sbin/ip netns exec {{ amphora_nsname }} {{ keepalived_cmd }} -D -d -f {{ keepalived_cfg }}
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target

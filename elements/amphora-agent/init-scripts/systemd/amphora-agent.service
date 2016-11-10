@@ -1,0 +1,12 @@
+[Unit]
+Description=OpenStack Octavia Amphora Agent
+After=network.target syslog.service
+Wants=syslog.service
+
+[Service]
+ExecStart=/usr/local/bin/amphora-agent --config-file /etc/octavia/amphora-agent.conf
+KillMode=mixed
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

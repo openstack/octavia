@@ -1,0 +1,23 @@
+{
+    "release": {
+        "ubuntu": {
+            "trusty": {
+                "keepalived": "keepalived/trusty-backports"
+            }
+        }
+    },
+    "distro": {
+        "ubuntu": {
+            "keepalived": "keepalived"
+        }
+    },
+    "family": {
+        "debian": {
+            "keepalived": "keepalived"
+        }
+    },
+    "default": {
+        "keepalived": "keepalived"
+    }
+
+}
