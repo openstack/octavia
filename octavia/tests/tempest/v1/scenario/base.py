@@ -65,8 +65,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
         self.floating_ips = {}
         self.servers_floating_ips = {}
         self.server_ips = {}
-        self.port1 = 80
-        self.port2 = 88
+        self.start_port = 80
         self.num = 50
         self.server_fixed_ips = {}
 
@@ -137,8 +136,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
     def _create_security_group_for_test(self):
         self.security_group = self._create_security_group(
             tenant_id=self.tenant_id)
-        self._create_security_group_rules_for_port(self.port1)
-        self._create_security_group_rules_for_port(self.port2)
+        self._create_security_group_rules_for_port(self.start_port)
+        self._create_security_group_rules_for_port(self.start_port + 1)
 
     def _create_security_group_rules_for_port(self, port):
         rule = {
@@ -199,29 +198,27 @@ class BaseTestCase(manager.NetworkScenarioTest):
         self.server_fixed_ips[server['id']] = (
             server['addresses'][net_name][0]['addr'])
         self.assertTrue(self.servers_keypairs)
+        self.servers[name] = server['id']
         return server
 
-    def _create_servers(self):
-        for count in range(2):
-            self.server = self._create_server(name=("server%s" % (count + 1)))
-            if count == 0:
-                self.servers['primary'] = self.server['id']
-            else:
-                self.servers['secondary'] = self.server['id']
-        self.assertEqual(len(self.servers_keypairs), 2)
+    def _create_servers(self, num=2):
+        for count in range(num):
+            name = "server%s" % (count + 1)
+            self.server = self._create_server(name=name)
+        self.assertEqual(len(self.servers_keypairs), num)
 
-    def _stop_server(self):
-        for name, value in six.iteritems(self.servers):
-            if name == 'primary':
-                LOG.info(('STOPPING SERVER: {0}'.format(name)))
+    def _stop_server(self, name):
+        for sname, value in six.iteritems(self.servers):
+            if sname == name:
+                LOG.info(('STOPPING SERVER: {0}'.format(sname)))
                 self.servers_client.stop_server(value)
                 waiters.wait_for_server_status(self.servers_client,
                                                value, 'SHUTOFF')
         LOG.info(('STOPPING SERVER COMPLETED!'))
 
-    def _start_server(self):
-        for name, value in six.iteritems(self.servers):
-            if name == 'primary':
+    def _start_server(self, name):
+        for sname, value in six.iteritems(self.servers):
+            if sname == name:
                 self.servers_client.start(value)
                 waiters.wait_for_server_status(self.servers_client,
                                                value, 'ACTIVE')
@@ -238,22 +235,23 @@ class BaseTestCase(manager.NetworkScenarioTest):
                      'httpd.go', cwd=builddir)
         return os.path.join(builddir, 'httpd')
 
-    def _start_servers(self):
-        """Start one or more backends
+    def _start_backend_httpd_processes(self, backend, ports=None):
+        """Start one or more webservers on a given backend server
 
-        1. SSH to the instance
-        2. Start two http backends listening on ports 80 and 88 respectively
+        1. SSH to the backend
+        2. Start http backends listening on the given ports
         """
+        ports = ports or [80, 81]
+        httpd = self._build_static_httpd()
+        backend_id = self.servers[backend]
         for server_id, ip in six.iteritems(self.server_ips):
+            if server_id != backend_id:
+                continue
             private_key = self.servers_keypairs[server_id]['private_key']
-            server = self.servers_client.show_server(server_id)['server']
-            server_name = server['name']
             username = config.validation.image_ssh_user
             ssh_client = self.get_remote_client(
                 ip_address=ip,
                 private_key=private_key)
-
-            httpd = self._build_static_httpd()
 
             with tempfile.NamedTemporaryFile() as key:
                 key.write(private_key)
@@ -266,14 +264,9 @@ class BaseTestCase(manager.NetworkScenarioTest):
             # Start httpd
             start_server = ('sudo sh -c "ulimit -n 100000; screen -d -m '
                             '/dev/shm/httpd -id %(id)s -port %(port)s"')
-            cmd = start_server % {'id': server_name[-1],
-                                  'port': self.port1}
-            ssh_client.exec_command(cmd)
-
-            # In single server case run a second server on an alternate port
-            if len(self.server_ips) == 1:
-                cmd = start_server % {'id': '2',
-                                      'port': self.port2}
+            for i in range(len(ports)):
+                cmd = start_server % {'id': backend + "_" + str(i),
+                                      'port': ports[i]}
                 ssh_client.exec_command(cmd)
             # Allow ssh_client connection to fall out of scope
 
@@ -286,8 +279,12 @@ class BaseTestCase(manager.NetworkScenarioTest):
             lb_id=load_balancer_id,
             **self.create_listener_kwargs)
         self.assertTrue(self.listener)
-        self.addCleanup(self._cleanup_listener, load_balancer_id,
-                        self.listener.get('id'))
+        self.addCleanup(self._cleanup_listener, self.listener['id'],
+                        load_balancer_id)
+        LOG.info(('Waiting for lb status on create listener id: {0}'.format(
+            self.listener['id'])))
+        self._wait_for_load_balancer_status(load_balancer_id)
+
         return self.listener
 
     def _create_health_monitor(self):
@@ -299,8 +296,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
             pool_id=self.pool['id'])
         self.assertTrue(self.hm)
         self.addCleanup(self._cleanup_health_monitor,
-                        load_balancer_id=self.load_balancer['id'],
-                        pool_id=self.pool['id'])
+                        pool_id=self.pool['id'],
+                        load_balancer_id=self.load_balancer['id'])
         self._wait_for_load_balancer_status(self.load_balancer['id'])
 
         # add clean up members prior to clean up of health monitor
@@ -330,8 +327,10 @@ class BaseTestCase(manager.NetworkScenarioTest):
         self.pool = self.pools_client.create_pool(lb_id=load_balancer_id,
                                                   **create_pool_kwargs)
         self.assertTrue(self.pool)
-        self.addCleanup(self._cleanup_pool, load_balancer_id,
-                        self.pool['id'])
+        self.addCleanup(self._cleanup_pool, self.pool['id'], load_balancer_id)
+        LOG.info(('Waiting for lb status on create pool id: {0}'.format(
+            self.pool['id'])))
+        self._wait_for_load_balancer_status(load_balancer_id)
         return self.pool
 
     def _cleanup_load_balancer(self, load_balancer_id):
@@ -358,41 +357,22 @@ class BaseTestCase(manager.NetworkScenarioTest):
         if load_balancer_id:
             self._wait_for_load_balancer_status(load_balancer_id, delete=True)
 
-    def _create_members(self, load_balancer_id, pool_id, subnet_id=None):
-        """Create one or more Members
+    def _create_members(self, load_balancer_id, pool_id, backend, ports=None,
+                        subnet_id=None):
+        """Create one or more Members based on the given backend
 
-        In case there is only one server, create both members with the same ip
-        but with different ports to listen on.
+        :backend: The backend server the members will be on
+        :param ports: List of listening ports on the backend server
         """
+        ports = ports or [80, 81]
+        backend_id = self.servers[backend]
         for server_id, ip in six.iteritems(self.server_fixed_ips):
-            if len(self.server_fixed_ips) == 1:
+            if server_id != backend_id:
+                continue
+            for port in ports:
                 create_member_kwargs = {
                     'ip_address': ip,
-                    'protocol_port': self.port1,
-                    'weight': 50,
-                    'subnet_id': subnet_id
-                }
-                member1 = self.members_client.create_member(
-                    lb_id=load_balancer_id,
-                    pool_id=pool_id,
-                    **create_member_kwargs)
-                self._wait_for_load_balancer_status(load_balancer_id)
-                create_member_kwargs = {
-                    'ip_address': ip,
-                    'protocol_port': self.port2,
-                    'weight': 50,
-                    'subnet_id': subnet_id
-                }
-                member2 = self.members_client.create_member(
-                    lb_id=load_balancer_id,
-                    pool_id=pool_id,
-                    **create_member_kwargs)
-                self._wait_for_load_balancer_status(load_balancer_id)
-                self.members.extend([member1, member2])
-            else:
-                create_member_kwargs = {
-                    'ip_address': ip,
-                    'protocol_port': self.port1,
+                    'protocol_port': port,
                     'weight': 50,
                     'subnet_id': subnet_id
                 }
@@ -400,9 +380,10 @@ class BaseTestCase(manager.NetworkScenarioTest):
                     lb_id=load_balancer_id,
                     pool_id=pool_id,
                     **create_member_kwargs)
+                LOG.info(('Waiting for lb status on create member...'))
                 self._wait_for_load_balancer_status(load_balancer_id)
                 self.members.append(member)
-        self.assertTrue(self.members)
+            self.assertTrue(self.members)
 
     def _assign_floating_ip_to_lb_vip(self, lb):
         public_network_id = config.network.public_network_id
@@ -456,37 +437,24 @@ class BaseTestCase(manager.NetworkScenarioTest):
                  .format(fp=floating_ip, st=status))
 
     def _create_load_balancer(self, ip_version=4, persistence_type=None):
+        """Create a load balancer.
+
+        Also assigns a floating IP to the created load balancer.
+
+        :param ip_version: IP version to be used for the VIP IP
+        :returns: ID of the created load balancer
+        """
         self.create_lb_kwargs = {'vip': {'subnet_id': self.subnet['id']}}
         self.load_balancer = self.load_balancers_client.create_load_balancer(
             **self.create_lb_kwargs)
-        load_balancer_id = self.load_balancer['id']
-        self.addCleanup(self._cleanup_load_balancer, load_balancer_id)
+        lb_id = self.load_balancer['id']
+        self.addCleanup(self._cleanup_load_balancer, lb_id)
         LOG.info(('Waiting for lb status on create load balancer id: {0}'
-                  .format(load_balancer_id)))
-        self._wait_for_load_balancer_status(load_balancer_id=load_balancer_id,
-                                            provisioning_status='ACTIVE',
-                                            operating_status='ONLINE')
-
-        self.pool = self._create_pool(load_balancer_id=load_balancer_id,
-                                      persistence_type=persistence_type)
-        self._wait_for_load_balancer_status(load_balancer_id)
-        LOG.info(('Waiting for lb status on create pool id: {0}'.format(
-            self.pool['id'])))
-
-        self.listener = self._create_listener(
-            load_balancer_id=load_balancer_id,
-            default_pool_id=self.pool['id']
-        )
-        self._wait_for_load_balancer_status(load_balancer_id)
-        LOG.info(('Waiting for lb status on create listener id: {0}'.format(
-            self.listener['id'])))
-
-        self._create_members(load_balancer_id=load_balancer_id,
-                             pool_id=self.pool['id'],
-                             subnet_id=self.subnet['id'])
+                  .format(lb_id)))
         self.load_balancer = self._wait_for_load_balancer_status(
-            load_balancer_id)
-        LOG.info(('Waiting for lb status on create members...'))
+            load_balancer_id=lb_id,
+            provisioning_status='ACTIVE',
+            operating_status='ONLINE')
 
         self.vip_ip = self.load_balancer['vip'].get('ip_address')
 
@@ -507,13 +475,14 @@ class BaseTestCase(manager.NetworkScenarioTest):
         self.ports_client_admin.update_port(
             self.load_balancer['vip']['port_id'],
             security_groups=[self.security_group['id']])
+        return lb_id
 
     def _wait_for_load_balancer_status(self, load_balancer_id,
                                        provisioning_status='ACTIVE',
                                        operating_status='ONLINE',
                                        delete=False):
-        interval_time = 1
-        timeout = 600
+        interval_time = config.octavia.lb_build_interval
+        timeout = config.octavia.lb_build_timeout
         end_time = time.time() + timeout
         while time.time() < end_time:
             try:
@@ -559,8 +528,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
         return lb
 
     def _wait_for_pool_session_persistence(self, pool_id, sp_type=None):
-        interval_time = 1
-        timeout = 10
+        interval_time = config.octavia.build_interval
+        timeout = config.octavia.build_timeout
         end_time = time.time() + timeout
         while time.time() < end_time:
             pool = self.pools_client.get_pool(self.load_balancer['id'],
@@ -578,21 +547,34 @@ class BaseTestCase(manager.NetworkScenarioTest):
                   pool_id=pool_id,
                   type=sp_type))
 
-    def _check_load_balancing(self):
-        """Check Load Balancing
+    def _check_members_balanced(self, members=None):
+        """Check that back-end members are load balanced.
 
-        1. Send NUM requests on the floating ip associated with the VIP
-        2. Check that the requests are shared between the two servers
+        1. Send requests on the floating ip associated with the VIP
+        2. Check that the requests are shared between the members given
+        3. Check that no unexpected members were balanced.
         """
-        LOG.info(_('Checking load balancing...'))
+        members = members or ['server1_0', 'server1_1']
+        LOG.info(_('Checking all members are balanced...'))
         self._wait_for_http_service(self.vip_ip)
         LOG.info(_('Connection to {vip} is valid').format(vip=self.vip_ip))
-        counters = self._send_concurrent_requests(self.vip_ip,
-                                                  ["server1", "server2"])
+        counters = self._send_concurrent_requests(self.vip_ip)
         for member, counter in six.iteritems(counters):
+            LOG.info(_('Member {member} saw {counter} requests.').format(
+                member=member, counter=counter))
             self.assertGreater(counter, 0,
                                'Member %s never balanced' % member)
-        LOG.info(_('Done checking load balancing...'))
+        for member in members:
+            if member not in list(counters):
+                raise Exception(
+                    _("Member {member} was never balanced.").format(
+                        member=member))
+        for member in list(counters):
+            if member not in members:
+                raise Exception(
+                    _("Member {member} was balanced when it should not "
+                      "have been.").format(member=member))
+        LOG.info(_('Done checking all members are balanced...'))
 
     def _wait_for_http_service(self, check_ip, port=80):
         def try_connect(check_ip, port):
@@ -618,43 +600,39 @@ class BaseTestCase(manager.NetworkScenarioTest):
                 message = "Timed out trying to connect to %s" % check_ip
                 raise exceptions.TimeoutException(message)
 
-    def _send_requests(self, vip_ip, servers, path=''):
-        counters = dict.fromkeys(servers, 0)
+    def _send_requests(self, vip_ip, path=''):
+        counters = dict()
         for i in range(self.num):
             try:
                 server = urllib2.urlopen("http://{0}/{1}".format(vip_ip, path),
                                          None, 2).read()
-                counters[server] += 1
+                if server not in counters:
+                    counters[server] = 1
+                else:
+                    counters[server] += 1
             # HTTP exception means fail of server, so don't increase counter
             # of success and continue connection tries
             except (error.HTTPError, error.URLError, socket.timeout) as e:
                 LOG.info(('Got Error in sending request: {0}'.format(e)))
                 continue
-        # Check that we had at least sent more than 1 request
-        counted = 0
-        for server, counter in counters.items():
-            counted += counter
-        self.assertGreater(counted, 1)
         return counters
 
-    def _send_concurrent_requests(self, vip_ip, servers, path='', clients=5,
+    def _send_concurrent_requests(self, vip_ip, path='', clients=5,
                                   timeout=None):
         class ClientThread(threading.Thread):
-            def __init__(self, test_case, cid, vip_ip, servers, path=''):
+            def __init__(self, test_case, cid, vip_ip, path=''):
                 super(ClientThread, self).__init__(
                     name='ClientThread-{0}'.format(cid))
                 self.vip_ip = vip_ip
-                self.servers = servers
                 self.path = path
                 self.test_case = test_case
-                self.counters = dict.fromkeys(servers, 0)
+                self.counters = dict()
 
             def run(self):
                 # NOTE(dlundquist): _send_requests() does not mutate
                 # BaseTestCase so concurrent uses of _send_requests does not
                 # require a mutex.
                 self.counters = self.test_case._send_requests(self.vip_ip,
-                                                              self.servers,
                                                               path=self.path)
 
             def join(self, timeout=None):
@@ -662,22 +640,23 @@ class BaseTestCase(manager.NetworkScenarioTest):
                 super(ClientThread, self).join(timeout)
                 return time.time() - start
 
-        client_threads = [ClientThread(self, i, vip_ip, servers, path=path)
+        client_threads = [ClientThread(self, i, vip_ip, path=path)
                           for i in range(clients)]
         for ct in client_threads:
             ct.start()
         if timeout is None:
             # timeout for all client threads defaults to 400ms per request
             timeout = self.num * 0.4
-        total_counters = dict.fromkeys(servers, 0)
+        total_counters = dict()
         for ct in client_threads:
             timeout -= ct.join(timeout)
             if timeout <= 0:
                 LOG.error("Client thread {0} timed out".format(ct.name))
-                return dict.fromkeys(servers, 0)
-            for server in servers:
+                return dict()
+            for server in list(ct.counters):
+                if server not in total_counters:
+                    total_counters[server] = 0
                 total_counters[server] += ct.counters[server]
-
         return total_counters
 
     def _traffic_validation_after_stopping_server(self):
@@ -696,12 +675,14 @@ class BaseTestCase(manager.NetworkScenarioTest):
     def _check_load_balancing_after_deleting_resources(self):
         """Check load balancer after deleting resources
 
-        Check that the requests are not sent to any servers
-        Assert that no traffic is sent to any servers
+        Assert that no traffic is sent to any backend servers
         """
-        counters = self._send_requests(self.vip_ip, ["server1", "server2"])
-        for member, counter in six.iteritems(counters):
-            self.assertEqual(counter, 0, 'Member %s is balanced' % member)
+        counters = self._send_requests(self.vip_ip)
+        if counters:
+            for server, counter in six.iteritems(counters):
+                self.assertEqual(
+                    counter, 0,
+                    'Server %s saw requests when it should not have' % server)
 
     def _check_source_ip_persistence(self):
         """Check source ip session persistence.
