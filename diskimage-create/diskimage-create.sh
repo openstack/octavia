@@ -326,7 +326,7 @@ elif [ "$AMP_BASEOS" = "fedora" ]; then
         export FEDORA_MIRROR="$BASE_OS_MIRROR"
     fi
 elif [ "$AMP_BASEOS" = "centos" ]; then
-    AMP_element_sequence=${AMP_element_sequence:-"base vm centos7"}
+    AMP_element_sequence=${AMP_element_sequence:-"base vm centos7 epel"}
     AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
     if [ "$BASE_OS_MIRROR" ]; then
         AMP_element_sequence="$AMP_element_sequence centos-mirror"
