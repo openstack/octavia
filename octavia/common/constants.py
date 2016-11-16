@@ -310,7 +310,9 @@ HAPROXY_MEMBER_STATUSES = (UP, DOWN, NO_CHECK)
 API_VERSION = '0.5'
 
 HAPROXY_BASE_PEER_PORT = 1025
-KEEPALIVED_CONF = 'keepalived.conf.j2'
+KEEPALIVED_JINJA2_UPSTART = 'keepalived.upstart.j2'
+KEEPALIVED_JINJA2_SYSTEMD = 'keepalived.systemd.j2'
+KEEPALIVED_JINJA2_SYSVINIT = 'keepalived.sysvinit.j2'
 CHECK_SCRIPT_CONF = 'keepalived_check_script.conf.j2'
 
 PLUGGED_INTERFACES = '/var/lib/octavia/plugged_interfaces'
@@ -336,3 +338,20 @@ AMP_ACTION_START = 'start'
 AMP_ACTION_STOP = 'stop'
 AMP_ACTION_RELOAD = 'reload'
 GLANCE_IMAGE_ACTIVE = 'active'
+
+INIT_SYSTEMD = 'systemd'
+INIT_UPSTART = 'upstart'
+INIT_SYSVINIT = 'sysvinit'
+INIT_UNKOWN = 'unknown'
+VALID_INIT_SYSTEMS = (INIT_SYSTEMD, INIT_SYSVINIT, INIT_UPSTART)
+INIT_PATH = '/sbin/init'
+
+SYSTEMD_DIR = '/usr/lib/systemd/system'
+SYSVINIT_DIR = '/etc/init.d'
+UPSTART_DIR = '/etc/init'
+
+INIT_PROC_COMM_PATH = '/proc/1/comm'
+
+KEEPALIVED_SYSTEMD = 'octavia-keepalived.service'
+KEEPALIVED_SYSVINIT = 'octavia-keepalived'
+KEEPALIVED_UPSTART = 'octavia-keepalived.conf'

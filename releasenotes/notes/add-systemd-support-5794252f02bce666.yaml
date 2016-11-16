@@ -1,0 +1,8 @@
+---
+features:
+  - Adds support for amphora images that use systemd.
+  - Add support for Ubuntu Xenial amphora images.
+deprecations:
+  - The "use_upstart" configuration option is now deprecated
+    because the amphora agent can now automatically discover
+    the init system in use in the amphora image.

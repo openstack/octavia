@@ -51,13 +51,48 @@ class TestServerTestCase(base.TestCase):
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="haproxy_amphora", base_path='/var/lib/octavia')
 
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     @mock.patch('os.path.exists')
     @mock.patch('os.makedirs')
     @mock.patch('os.rename')
     @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
-    def test_haproxy(self, mock_remove, mock_subprocess, mock_rename,
-                     mock_makedirs, mock_exists):
+    def test_haproxy_systemd(self, mock_remove, mock_subprocess, mock_rename,
+                             mock_makedirs, mock_exists, mock_init_system):
+        self._test_haproxy(mock_remove, mock_subprocess, mock_rename,
+                           mock_makedirs, mock_exists, mock_init_system,
+                           consts.INIT_SYSTEMD)
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_os_init_system', return_value=consts.INIT_SYSVINIT)
+    @mock.patch('os.path.exists')
+    @mock.patch('os.makedirs')
+    @mock.patch('os.rename')
+    @mock.patch('subprocess.check_output')
+    @mock.patch('os.remove')
+    def test_haproxy_sysvinit(self, mock_remove, mock_subprocess, mock_rename,
+                              mock_makedirs, mock_exists, mock_init_system):
+        self._test_haproxy(mock_remove, mock_subprocess, mock_rename,
+                           mock_makedirs, mock_exists, mock_init_system,
+                           consts.INIT_SYSVINIT)
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_os_init_system', return_value=consts.INIT_UPSTART)
+    @mock.patch('os.path.exists')
+    @mock.patch('os.makedirs')
+    @mock.patch('os.rename')
+    @mock.patch('subprocess.check_output')
+    @mock.patch('os.remove')
+    def test_haproxy_upstart(self, mock_remove, mock_subprocess, mock_rename,
+                             mock_makedirs, mock_exists, mock_init_system):
+        self._test_haproxy(mock_remove, mock_subprocess, mock_rename,
+                           mock_makedirs, mock_exists, mock_init_system,
+                           consts.INIT_UPSTART)
+
+    def _test_haproxy(self, mock_remove, mock_subprocess, mock_rename,
+                      mock_makedirs, mock_exists, mock_init_system,
+                      init_system):
 
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mock_exists.return_value = True
@@ -77,7 +112,7 @@ class TestServerTestCase(base.TestCase):
             self.assertEqual(202, rv.status_code)
             handle = m()
             handle.write.assert_called_once_with(six.b('test'))
-            mock_subprocess.assert_called_once_with(
+            mock_subprocess.assert_any_call(
                 "haproxy -c -L {peer} -f {config_file}".format(
                     config_file=file_name,
                     peer=(octavia_utils.
@@ -86,6 +121,17 @@ class TestServerTestCase(base.TestCase):
             mock_rename.assert_called_once_with(
                 '/var/lib/octavia/123/haproxy.cfg.new',
                 '/var/lib/octavia/123/haproxy.cfg')
+
+        if init_system == consts.INIT_SYSTEMD:
+            mock_subprocess.assert_any_call(
+                "systemctl enable haproxy-123".split(),
+                stderr=subprocess.STDOUT)
+        elif init_system == consts.INIT_SYSVINIT:
+            mock_subprocess.assert_any_call(
+                "insserv /etc/init.d/haproxy-123".split(),
+                stderr=subprocess.STDOUT)
+        else:
+            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
 
         # exception writing
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
@@ -98,7 +144,15 @@ class TestServerTestCase(base.TestCase):
 
         # check if files get created
         mock_exists.return_value = False
-        init_path = '/etc/init/haproxy-123.conf'
+        if init_system == consts.INIT_SYSTEMD:
+            init_path = consts.SYSTEMD_DIR + '/haproxy-123.service'
+        elif init_system == consts.INIT_UPSTART:
+            init_path = consts.UPSTART_DIR + '/haproxy-123.conf'
+        elif init_system == consts.INIT_SYSVINIT:
+            init_path = consts.SYSVINIT_DIR + '/haproxy-123'
+        else:
+            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
+
         m = self.useFixture(test_utils.OpenFixture(init_path)).mock_open
         # happy case upstart file exists
         with mock.patch('os.open') as mock_open, mock.patch.object(
@@ -109,8 +163,12 @@ class TestServerTestCase(base.TestCase):
                               data='test')
 
             self.assertEqual(202, rv.status_code)
-            mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
-                    stat.S_IROTH | stat.S_IXOTH)
+            if init_system == consts.INIT_SYSTEMD:
+                mode = (stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP |
+                        stat.S_IROTH)
+            else:
+                mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
+                        stat.S_IROTH | stat.S_IXOTH)
             mock_open.assert_called_with(init_path, flags, mode)
             mock_fdopen.assert_called_with(123, 'w')
             handle = mock_fdopen()
@@ -144,6 +202,16 @@ class TestServerTestCase(base.TestCase):
                           base64_sha1_string('amp_123').rstrip('='))).split(),
                 stderr=-2)
             mock_remove.assert_called_once_with(file_name)
+
+        # unhappy path with bogus init system
+        mock_init_system.return_value = 'bogus'
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
+            rv = self.app.put('/' + api_server.VERSION +
+                              '/listeners/amp_123/123/haproxy',
+                              data='test')
+            self.assertEqual(500, rv.status_code)
 
     @mock.patch('os.path.exists')
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
@@ -247,14 +315,53 @@ class TestServerTestCase(base.TestCase):
             hostname='test-host'),
             json.loads(rv.data.decode('utf-8')))
 
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     @mock.patch('os.path.exists')
     @mock.patch('subprocess.check_output')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.' +
                 'get_haproxy_pid')
     @mock.patch('shutil.rmtree')
     @mock.patch('os.remove')
-    def test_delete_listener(self, mock_remove, mock_rmtree, mock_pid,
-                             mock_check_output, mock_exists):
+    def test_delete_listener_systemd(self, mock_remove, mock_rmtree, mock_pid,
+                                     mock_check_output, mock_exists,
+                                     mock_init_system):
+        self._test_delete_listener(mock_remove, mock_rmtree, mock_pid,
+                                   mock_check_output, mock_exists,
+                                   consts.INIT_SYSTEMD)
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_os_init_system', return_value=consts.INIT_SYSVINIT)
+    @mock.patch('os.path.exists')
+    @mock.patch('subprocess.check_output')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.' +
+                'get_haproxy_pid')
+    @mock.patch('shutil.rmtree')
+    @mock.patch('os.remove')
+    def test_delete_listener_sysvinit(self, mock_remove, mock_rmtree, mock_pid,
+                                      mock_check_output, mock_exists,
+                                      mock_init_system):
+        self._test_delete_listener(mock_remove, mock_rmtree, mock_pid,
+                                   mock_check_output, mock_exists,
+                                   consts.INIT_SYSVINIT)
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_os_init_system', return_value=consts.INIT_UPSTART)
+    @mock.patch('os.path.exists')
+    @mock.patch('subprocess.check_output')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.' +
+                'get_haproxy_pid')
+    @mock.patch('shutil.rmtree')
+    @mock.patch('os.remove')
+    def test_delete_listener_upstart(self, mock_remove, mock_rmtree, mock_pid,
+                                     mock_check_output, mock_exists,
+                                     mock_init_system):
+        self._test_delete_listener(mock_remove, mock_rmtree, mock_pid,
+                                   mock_check_output, mock_exists,
+                                   consts.INIT_UPSTART)
+
+    def _test_delete_listener(self, mock_remove, mock_rmtree, mock_pid,
+                              mock_check_output, mock_exists, init_system):
         mock_exists.return_value = False
         rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
         self.assertEqual(404, rv.status_code)
@@ -271,7 +378,19 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual({u'message': u'OK'},
                          json.loads(rv.data.decode('utf-8')))
         mock_rmtree.assert_called_with('/var/lib/octavia/123')
-        mock_exists.assert_called_with('/etc/init/haproxy-123.conf')
+
+        if init_system == consts.INIT_SYSTEMD:
+            mock_exists.assert_called_with(consts.SYSTEMD_DIR +
+                                           '/haproxy-123.service')
+        elif init_system == consts.INIT_UPSTART:
+            mock_exists.assert_called_with(consts.UPSTART_DIR +
+                                           '/haproxy-123.conf')
+        elif init_system == consts.INIT_SYSVINIT:
+            mock_exists.assert_called_with(consts.SYSVINIT_DIR +
+                                           '/haproxy-123')
+        else:
+            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
+
         mock_exists.assert_any_call('/var/lib/octavia/123/123.pid')
 
         # service is stopped + upstart script
@@ -280,7 +399,18 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual(200, rv.status_code)
         self.assertEqual({u'message': u'OK'},
                          json.loads(rv.data.decode('utf-8')))
-        mock_remove.assert_called_once_with('/etc/init/haproxy-123.conf')
+
+        if init_system == consts.INIT_SYSTEMD:
+            mock_remove.assert_called_with(consts.SYSTEMD_DIR +
+                                           '/haproxy-123.service')
+        elif init_system == consts.INIT_UPSTART:
+            mock_remove.assert_called_with(consts.UPSTART_DIR +
+                                           '/haproxy-123.conf')
+        elif init_system == consts.INIT_SYSVINIT:
+            mock_remove.assert_called_with(consts.SYSVINIT_DIR +
+                                           '/haproxy-123')
+        else:
+            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
 
         # service is running + upstart script
         mock_exists.side_effect = [True, True, True, True]
@@ -290,8 +420,22 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual({u'message': u'OK'},
                          json.loads(rv.data.decode('utf-8')))
         mock_pid.assert_called_once_with('123')
-        mock_check_output.assert_called_once_with(
+        mock_check_output.assert_any_call(
             ['/usr/sbin/service', 'haproxy-123', 'stop'], stderr=-2)
+
+        if init_system == consts.INIT_SYSTEMD:
+            mock_check_output.assert_any_call(
+                "systemctl disable haproxy-123".split(),
+                stderr=subprocess.STDOUT)
+        elif init_system == consts.INIT_UPSTART:
+            mock_remove.assert_any_call(consts.UPSTART_DIR +
+                                        '/haproxy-123.conf')
+        elif init_system == consts.INIT_SYSVINIT:
+            mock_check_output.assert_any_call(
+                "insserv -r /etc/init.d/haproxy-123".split(),
+                stderr=subprocess.STDOUT)
+        else:
+            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
 
         # service is running + stopping fails
         mock_exists.side_effect = [True, True, True]
@@ -1239,12 +1383,58 @@ class TestServerTestCase(base.TestCase):
                           content_type='application/json')
         self.assertEqual(400, rv.status_code)
 
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     @mock.patch('os.path.exists')
     @mock.patch('os.makedirs')
     @mock.patch('os.rename')
+    @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
-    def test_upload_keepalived_config(self, mock_remove,
-                                      mock_rename, mock_makedirs, mock_exists):
+    def test_upload_keepalived_config_systemd(self, mock_remove,
+                                              mock_subprocess, mock_rename,
+                                              mock_makedirs, mock_exists,
+                                              mock_init_system):
+        self._test_upload_keepalived_config(mock_remove, mock_subprocess,
+                                            mock_rename, mock_makedirs,
+                                            mock_exists, mock_init_system,
+                                            consts.INIT_SYSTEMD)
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_os_init_system', return_value=consts.INIT_UPSTART)
+    @mock.patch('os.path.exists')
+    @mock.patch('os.makedirs')
+    @mock.patch('os.rename')
+    @mock.patch('subprocess.check_output')
+    @mock.patch('os.remove')
+    def test_upload_keepalived_config_upstart(self, mock_remove,
+                                              mock_subprocess, mock_rename,
+                                              mock_makedirs, mock_exists,
+                                              mock_init_system):
+        self._test_upload_keepalived_config(mock_remove, mock_subprocess,
+                                            mock_rename, mock_makedirs,
+                                            mock_exists, mock_init_system,
+                                            consts.INIT_UPSTART)
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_os_init_system', return_value=consts.INIT_SYSVINIT)
+    @mock.patch('os.path.exists')
+    @mock.patch('os.makedirs')
+    @mock.patch('os.rename')
+    @mock.patch('subprocess.check_output')
+    @mock.patch('os.remove')
+    def test_upload_keepalived_config_sysvinit(self, mock_remove,
+                                               mock_subprocess, mock_rename,
+                                               mock_makedirs, mock_exists,
+                                               mock_init_system):
+        self._test_upload_keepalived_config(mock_remove, mock_subprocess,
+                                            mock_rename, mock_makedirs,
+                                            mock_exists, mock_init_system,
+                                            consts.INIT_SYSVINIT)
+
+    def _test_upload_keepalived_config(self, mock_remove, mock_subprocess,
+                                       mock_rename, mock_makedirs,
+                                       mock_exists, mock_init_system,
+                                       init_system):
 
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
 

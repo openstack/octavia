@@ -14,23 +14,33 @@
 
 
 import os
+import subprocess
 
 from oslo_config import cfg
+
+from octavia.common import constants as consts
 
 CONF = cfg.CONF
 CONF.import_group('amphora_agent', 'octavia.common.config')
 CONF.import_group('haproxy_amphora', 'octavia.common.config')
 
-UPSTART_DIR = '/etc/init'
-KEEPALIVED_INIT_DIR = '/etc/init.d'
-SYSVINIT_DIR = '/etc/init.d'
+
+class UnknownInitError(Exception):
+    pass
 
 
-def init_path(listener_id):
-    use_upstart = CONF.haproxy_amphora.use_upstart
-    hconf = 'haproxy-{0}.conf' if use_upstart else 'haproxy-{0}'
-    idir = UPSTART_DIR if use_upstart else SYSVINIT_DIR
-    return os.path.join(idir, hconf.format(listener_id))
+def init_path(listener_id, init_system):
+    if init_system == consts.INIT_SYSTEMD:
+        return os.path.join(consts.SYSTEMD_DIR,
+                            'haproxy-{0}.service'.format(listener_id))
+    elif init_system == consts.INIT_UPSTART:
+        return os.path.join(consts.UPSTART_DIR,
+                            'haproxy-{0}.conf'.format(listener_id))
+    elif init_system == consts.INIT_SYSVINIT:
+        return os.path.join(consts.SYSVINIT_DIR,
+                            'haproxy-{0}'.format(listener_id))
+    else:
+        raise UnknownInitError()
 
 
 def haproxy_dir(listener_id):
@@ -63,8 +73,15 @@ def keepalived_dir():
     return os.path.join(CONF.haproxy_amphora.base_path, 'vrrp')
 
 
-def keepalived_init_path():
-    return os.path.join(KEEPALIVED_INIT_DIR, 'octavia-keepalived')
+def keepalived_init_path(init_system):
+    if init_system == consts.INIT_SYSTEMD:
+        return os.path.join(consts.SYSTEMD_DIR, consts.KEEPALIVED_SYSTEMD)
+    elif init_system == consts.INIT_UPSTART:
+        return os.path.join(consts.UPSTART_DIR, consts.KEEPALIVED_UPSTART)
+    elif init_system == consts.INIT_SYSVINIT:
+        return os.path.join(consts.SYSVINIT_DIR, consts.KEEPALIVED_SYSVINIT)
+    else:
+        raise UnknownInitError()
 
 
 def keepalived_pid_path():
@@ -115,3 +132,21 @@ def get_network_interface_file(interface):
         return CONF.amphora_agent.agent_server_network_file
     return os.path.join(CONF.amphora_agent.agent_server_network_dir,
                         interface + '.cfg')
+
+
+def get_os_init_system():
+    if os.path.exists(consts.INIT_PROC_COMM_PATH):
+        with open(consts.INIT_PROC_COMM_PATH, 'r') as init_comm:
+            init_proc_name = init_comm.read().rstrip('\n')
+            if init_proc_name == consts.INIT_SYSTEMD:
+                return consts.INIT_SYSTEMD
+            if init_proc_name == 'init':
+                init_path = consts.INIT_PATH
+                if os.path.exists(init_path):
+                    args = [init_path, '--version']
+                    init_version = subprocess.check_output(args, shell=False)
+                    if consts.INIT_UPSTART in init_version:
+                        return consts.INIT_UPSTART
+                    else:
+                        return consts.INIT_SYSVINIT
+    return consts.INIT_UNKOWN

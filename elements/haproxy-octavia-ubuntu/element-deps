@@ -1,3 +1,4 @@
 os-svc-install
 package-installs
+pkg-map
 sysctl
