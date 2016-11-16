@@ -139,7 +139,7 @@ class TestControllerWorker(base.TestCase):
 
         _flow_mock.storage.fetch.assert_called_once_with('amphora')
 
-        assert (amp == AMP_ID)
+        self.assertEqual(AMP_ID, amp)
 
     @mock.patch('octavia.controller.worker.flows.'
                 'amphora_flows.AmphoraFlows.get_delete_amphora_flow',

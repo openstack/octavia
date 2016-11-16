@@ -173,7 +173,7 @@ class TestDatabaseTasks(base.TestCase):
             status=constants.PENDING_CREATE,
             cert_busy=False)
 
-        assert(amp_id == _amphora_mock.id)
+        self.assertEqual(_amphora_mock.id, amp_id)
 
         # Test the revert
         create_amp_in_db.revert(_tf_failure_mock)
