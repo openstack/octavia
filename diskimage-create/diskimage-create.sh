@@ -263,13 +263,23 @@ elif [ "$platform" = 'NAME=Fedora' ]; then
     done
 else
     # centos or rhel
-        PKG_LIST="qemu-kvm qemu-img kpartx git"
+        PKG_LIST="qemu-kvm qemu-img"
+        for pkg in $PKG_LIST; do
+            if ! yum list installed $pkg &> /dev/null; then
+                if ! yum list installed $pkg"-ev" &> /dev/null; then
+                    echo "Required package " $pkg " or " $pkg"-ev" " is not installed.  Exiting."
+                    exit 1
+                fi
+            fi
+        done
+        PKG_LIST="kpartx git"
         for pkg in $PKG_LIST; do
             if ! yum list installed $pkg &> /dev/null; then
                 echo "Required package " $pkg " is not installed.  Exiting."
                 exit 1
             fi
         done
+
         if [ ${platform:0:6} = "CentOS" ]; then
             # install EPEL repo, in order to install argparse
             PKG_LIST="python-argparse"
