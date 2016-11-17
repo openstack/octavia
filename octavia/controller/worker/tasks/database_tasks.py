@@ -33,7 +33,6 @@ from octavia.i18n import _LE, _LI, _LW
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
-CONF.import_group('keepalived_vrrp', 'octavia.common.config')
 
 
 class BaseDatabaseTask(task.Task):

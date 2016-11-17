@@ -23,7 +23,6 @@ from octavia.common import keystone
 import octavia.tests.unit.base as base
 
 CONF = cfg.CONF
-CONF.import_group('certificates', 'octavia.common.config')
 
 
 class TestBarbicanACLAuth(base.TestCase):

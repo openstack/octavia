@@ -21,8 +21,6 @@ from oslo_config import cfg
 from octavia.common import constants as consts
 
 CONF = cfg.CONF
-CONF.import_group('amphora_agent', 'octavia.common.config')
-CONF.import_group('haproxy_amphora', 'octavia.common.config')
 
 
 class UnknownInitError(Exception):

@@ -26,8 +26,6 @@ from octavia.controller.worker.tasks import lifecycle_tasks
 from octavia.controller.worker.tasks import network_tasks
 
 CONF = cfg.CONF
-CONF.import_group('controller_worker', 'octavia.common.config')
-CONF.import_group('nova', 'octavia.common.config')
 
 
 class AmphoraFlows(object):

@@ -25,7 +25,6 @@ from octavia.i18n import _LE
 LOG = logging.getLogger(__name__)
 
 CONF = cfg.CONF
-CONF.import_group('anchor', 'octavia.common.config')
 
 
 class AnchorException(exceptions.CertificateGenerationException):

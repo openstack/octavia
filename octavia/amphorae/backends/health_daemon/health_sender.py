@@ -21,7 +21,6 @@ from octavia.amphorae.backends.health_daemon import status_message
 from octavia.i18n import _LE
 
 CONF = cfg.CONF
-CONF.import_group('health_manager', 'octavia.common.config')
 LOG = logging.getLogger(__name__)
 
 

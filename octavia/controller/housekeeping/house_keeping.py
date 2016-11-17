@@ -26,7 +26,6 @@ from octavia.i18n import _LI
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
-CONF.import_group('house_keeping', 'octavia.common.config')
 
 
 class SpareAmphora(object):

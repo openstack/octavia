@@ -34,8 +34,6 @@ from octavia.i18n import _LE
 
 
 CONF = cfg.CONF
-CONF.import_group('controller_worker', 'octavia.common.config')
-CONF.import_group('nova', 'octavia.common.config')
 LOG = logging.getLogger(__name__)
 
 

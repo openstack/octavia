@@ -21,7 +21,6 @@ import subprocess
 
 import mock
 import netifaces
-from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 import six
 
@@ -29,6 +28,7 @@ from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import certificate_update
 from octavia.amphorae.backends.agent.api_server import server
 from octavia.amphorae.backends.agent.api_server import util
+from octavia.common import config
 from octavia.common import constants as consts
 from octavia.common import utils as octavia_utils
 from octavia.tests.common import utils as test_utils
@@ -48,7 +48,7 @@ class TestServerTestCase(base.TestCase):
         self.test_server = server.Server()
         self.app = self.test_server.app.test_client()
 
-        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))
         conf.config(group="haproxy_amphora", base_path='/var/lib/octavia')
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'

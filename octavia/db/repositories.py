@@ -31,8 +31,6 @@ from octavia.db import models
 
 
 CONF = cfg.CONF
-CONF.import_group('health_manager', 'octavia.common.config')
-CONF.import_group('house_keeping', 'octavia.common.config')
 
 
 class BaseRepository(object):

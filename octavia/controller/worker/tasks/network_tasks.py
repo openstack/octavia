@@ -28,7 +28,6 @@ from octavia.network import data_models as n_data_models
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
-CONF.import_group('controller_worker', 'octavia.common.config')
 
 
 class BaseNetworkTask(task.Task):

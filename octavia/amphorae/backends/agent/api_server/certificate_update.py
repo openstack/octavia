@@ -21,7 +21,6 @@ from oslo_config import cfg
 BUFFER = 1024
 
 CONF = cfg.CONF
-CONF.import_group('amphora_agent', 'octavia.common.config')
 
 
 def upload_server_cert():

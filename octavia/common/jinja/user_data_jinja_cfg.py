@@ -20,9 +20,6 @@ from octavia.common.config import cfg
 from octavia.common import constants
 
 CONF = cfg.CONF
-CONF.import_group('amphora_agent', 'octavia.common.config')
-CONF.import_group('haproxy_amphora', 'octavia.common.config')
-CONF.import_group('health_manager', 'octavia.common.config')
 
 TEMPLATES_DIR = (os.path.dirname(os.path.realpath(__file__)) +
                  constants.TEMPLATES + '/')

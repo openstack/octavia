@@ -35,7 +35,6 @@ from octavia.i18n import _LE, _LI
 
 
 CONF = cfg.CONF
-CONF.import_group('amphora_agent', 'octavia.common.config')
 
 ETH_X_VIP_CONF = 'plug_vip_ethX.conf.j2'
 ETH_X_PORT_CONF = 'plug_port_ethX.conf.j2'
