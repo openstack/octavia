@@ -23,6 +23,7 @@ usage() {
     echo "            [-a i386 | **amd64** | armhf ]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
+    echo "            [-d **trusty** | xenial | <other release id> ]"
     echo "            [-h]"
     echo "            [-i **ubuntu** | fedora | centos | rhel ]"
     echo "            [-o **amphora-x64-haproxy** | <filename> ]"
@@ -35,6 +36,7 @@ usage() {
     echo "        '-a' is the architecture type for the image (default: amd64)"
     echo "        '-b' is the backend type (default: haproxy)"
     echo "        '-c' is the path to the cache directory (default: ~/.cache/image-create)"
+    echo "        '-d' distribution release id (default: trusty)"
     echo "        '-h' display this help message"
     echo "        '-i' is the base OS (default: ubuntu)"
     echo "        '-o' is the output image file name"
@@ -70,7 +72,7 @@ if [ -z $OCTAVIA_REPO_PATH ]; then
     OCTAVIA_REPO_PATH=${OCTAVIA_REPO_PATH:-${AMP_DIR%/*}}
 fi
 
-while getopts "a:b:c:hi:o:t:r:s:vw:" opt; do
+while getopts "a:b:c:d:hi:o:t:r:s:vw:" opt; do
     case $opt in
         a)
             AMP_ARCH=$OPTARG
@@ -91,6 +93,9 @@ while getopts "a:b:c:hi:o:t:r:s:vw:" opt; do
         ;;
         c)
             AMP_CACHEDIR=$OPTARG
+        ;;
+        d)
+            AMP_DIB_RELEASE=$OPTARG
         ;;
         h)
             usage
@@ -152,6 +157,8 @@ AMP_BACKEND=${AMP_BACKEND:-"haproxy-octavia"}
 AMP_CACHEDIR=${AMP_CACHEDIR:-"$HOME/.cache/image-create"}
 
 AMP_BASEOS=${AMP_BASEOS:-"ubuntu"}
+
+export DIB_RELEASE=${AMP_DIB_RELEASE:-"trusty"}
 
 AMP_OUTPUTFILENAME=${AMP_OUTPUTFILENAME:-"$PWD/amphora-x64-haproxy"}
 
