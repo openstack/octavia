@@ -17,6 +17,7 @@
 Routines for configuring Octavia
 """
 
+from keystoneauth1 import loading as ks_loading
 from oslo_config import cfg
 from oslo_db import options as db_options
 from oslo_log import log as logging
@@ -41,6 +42,7 @@ core_opts = [
     cfg.StrOpt('api_extensions_path', default="",
                help=_("The path for API extensions")),
     cfg.StrOpt('auth_strategy', default='keystone',
+               choices=('noauth', 'keystone'),
                help=_("The type of authentication to use")),
     cfg.BoolOpt('allow_bulk', default=True,
                 help=_("Allow the usage of the bulk API")),
@@ -140,13 +142,6 @@ oslo_messaging_opts = [
     cfg.StrOpt('event_stream_topic',
                default='neutron_lbaas_event',
                help=_('topic name for communicating events through a queue')),
-]
-
-keystone_authtoken_v3_opts = [
-    cfg.StrOpt('admin_user_domain', default='default',
-               help=_('Admin user keystone authentication domain')),
-    cfg.StrOpt('admin_project_domain', default='default',
-               help=_('Admin project keystone authentication domain'))
 ]
 
 haproxy_amphora_opts = [
@@ -292,12 +287,22 @@ certificate_opts = [
     cfg.StrOpt('barbican_auth',
                default='barbican_acl_auth',
                help='Name of the Barbican authentication method to use'),
+    cfg.StrOpt('service_name',
+               help=_('The name of the certificate service in the keystone'
+                      'catalog')),
+    cfg.StrOpt('endpoint', help=_('A new endpoint to override the endpoint '
+                                  'in the keystone catalog.')),
     cfg.StrOpt('region_name',
                help='Region in Identity service catalog to use for '
                     'communication with the barbican service.'),
     cfg.StrOpt('endpoint_type',
                default='publicURL',
-               help='The endpoint_type to be used for barbican service.')
+               help='The endpoint_type to be used for barbican service.'),
+    cfg.StrOpt('ca_certificates_file',
+               help=_('CA certificates file path')),
+    cfg.BoolOpt('insecure',
+                default=False,
+                help=_('Disable certificate validation on SSL connections ')),
 ]
 
 house_keeping_opts = [
@@ -439,9 +444,6 @@ cfg.CONF.register_opts(anchor_opts, group='anchor')
 cfg.CONF.register_cli_opts(core_cli_opts)
 cfg.CONF.register_opts(certificate_opts, group='certificates')
 cfg.CONF.register_cli_opts(healthmanager_opts, group='health_manager')
-cfg.CONF.import_group('keystone_authtoken', 'keystonemiddleware.auth_token')
-cfg.CONF.register_opts(keystone_authtoken_v3_opts,
-                       group='keystone_authtoken_v3')
 cfg.CONF.register_opts(nova_opts, group='nova')
 cfg.CONF.register_opts(glance_opts, group='glance')
 cfg.CONF.register_opts(neutron_opts, group='neutron')
@@ -456,6 +458,9 @@ db_options.set_defaults(cfg.CONF, connection=_SQL_CONNECTION_DEFAULT,
                         max_pool_size=10, max_overflow=20, pool_timeout=10)
 
 logging.register_options(cfg.CONF)
+
+ks_loading.register_auth_conf_options(cfg.CONF, constants.SERVICE_AUTH)
+ks_loading.register_session_conf_options(cfg.CONF, constants.SERVICE_AUTH)
 
 
 def init(args, **kwargs):
@@ -472,30 +477,3 @@ def setup_logging(conf):
     product_name = "octavia"
     logging.setup(conf, product_name)
     LOG.info(_LI("Logging enabled!"))
-
-
-# def load_paste_app(app_name):
-#     """Builds and returns a WSGI app from a paste config file.
-
-#     :param app_name: Name of the application to load
-#     :raises ConfigFilesNotFoundError when config file cannot be located
-#     :raises RuntimeError when application cannot be loaded from config file
-#     """
-
-#     config_path = cfg.CONF.find_file(cfg.CONF.api_paste_config)
-#     if not config_path:
-#         raise cfg.ConfigFilesNotFoundError(
-#             config_files=[cfg.CONF.api_paste_config])
-#     config_path = os.path.abspath(config_path)
-#     LOG.info(_LI("Config paste file: %s"), config_path)
-
-#     try:
-#         app = deploy.loadapp("config:%s" % config_path, name=app_name)
-#     except (LookupError, ImportError):
-#         msg = (_("Unable to load %(app_name)s from "
-#                  "configuration file %(config_path)s.") %
-#                {'app_name': app_name,
-#                 'config_path': config_path})
-#         LOG.exception(msg)
-#         raise RuntimeError(msg)
-#     return app

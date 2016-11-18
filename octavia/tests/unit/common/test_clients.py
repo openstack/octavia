@@ -15,7 +15,6 @@ import mock
 import neutronclient.v2_0
 import novaclient.v2
 from oslo_config import cfg
-from oslo_config import fixture as oslo_fixture
 
 from octavia.common import clients
 from octavia.common import keystone
@@ -27,15 +26,13 @@ CONF = cfg.CONF
 class TestNovaAuth(base.TestCase):
 
     def setUp(self):
-        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(group="keystone_authtoken", auth_version='2')
-
         # Reset the session and client
         clients.NovaAuth.nova_client = None
         keystone._SESSION = None
 
         super(TestNovaAuth, self).setUp()
 
+    @mock.patch('keystoneauth1.session.Session', mock.Mock())
     def test_get_nova_client(self):
         # There should be no existing client
         self.assertIsNone(
@@ -67,15 +64,13 @@ class TestNovaAuth(base.TestCase):
 class TestNeutronAuth(base.TestCase):
 
     def setUp(self):
-        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(group="keystone_authtoken", auth_version='2')
-
         # Reset the session and client
         clients.NeutronAuth.neutron_client = None
         keystone._SESSION = None
 
         super(TestNeutronAuth, self).setUp()
 
+    @mock.patch('keystoneauth1.session.Session', mock.Mock())
     def test_get_neutron_client(self):
         # There should be no existing client
         self.assertIsNone(
@@ -107,15 +102,13 @@ class TestNeutronAuth(base.TestCase):
 class TestGlanceAuth(base.TestCase):
 
     def setUp(self):
-        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(group="keystone_authtoken", auth_version='2')
-
         # Reset the session and client
         clients.GlanceAuth.glance_client = None
         keystone._SESSION = None
 
         super(TestGlanceAuth, self).setUp()
 
+    @mock.patch('keystoneauth1.session.Session', mock.Mock())
     def test_get_glance_client(self):
         # There should be no existing client
         self.assertIsNone(

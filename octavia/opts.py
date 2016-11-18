@@ -10,9 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import itertools
+import operator
+
+from keystoneauth1 import loading as ks_loading
+from oslo_config import cfg
 
 import octavia.common.config
+from octavia.common import constants
 
 
 def list_opts():
@@ -22,13 +28,31 @@ def list_opts():
         ('amphora_agent', octavia.common.config.amphora_agent_opts),
         ('networking', octavia.common.config.networking_opts),
         ('oslo_messaging', octavia.common.config.oslo_messaging_opts),
-        ('keystone_authtoken_v3',
-         octavia.common.config.keystone_authtoken_v3_opts),
         ('haproxy_amphora', octavia.common.config.haproxy_amphora_opts),
         ('health_manager', octavia.common.config.healthmanager_opts),
         ('controller_worker', octavia.common.config.controller_worker_opts),
         ('task_flow', octavia.common.config.task_flow_opts),
         ('certificates', octavia.common.config.certificate_opts),
         ('house_keeping', octavia.common.config.house_keeping_opts),
-        ('keepalived_vrrp', octavia.common.config.keepalived_vrrp_opts)
+        ('keepalived_vrrp', octavia.common.config.keepalived_vrrp_opts),
+        ('nova', octavia.common.config.nova_opts),
+        ('neutron', octavia.common.config.neutron_opts),
+        ('glance', octavia.common.config.glance_opts),
+        add_auth_opts(),
     ]
+
+
+def add_auth_opts():
+    opts = ks_loading.register_session_conf_options(
+        cfg.CONF, constants.SERVICE_AUTH)
+    opt_list = copy.deepcopy(opts)
+    opt_list.insert(0, ks_loading.get_auth_common_conf_options()[0])
+    # NOTE(mhickey): There are a lot of auth plugins, we just generate
+    # the config options for a few common ones
+    plugins = ['password', 'v2password', 'v3password']
+    for name in plugins:
+        for plugin_option in ks_loading.get_auth_plugin_conf_options(name):
+            if all(option.name != plugin_option.name for option in opt_list):
+                opt_list.append(plugin_option)
+    opt_list.sort(key=operator.attrgetter('name'))
+    return (constants.SERVICE_AUTH, opt_list)

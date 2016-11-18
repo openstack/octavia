@@ -42,21 +42,23 @@ function build_octavia_worker_image {
 }
 
 function create_octavia_accounts {
-        create_service_user "neutron"
+    create_service_user "octavia"
 
-        if [[ "$KEYSTONE_CATALOG_BACKEND" = 'sql' ]]; then
+    if [[ "$KEYSTONE_CATALOG_BACKEND" = 'sql' ]]; then
 
-            local neutron_service=$(get_or_create_service "octavia" \
-                "octavia" "Octavia Service")
-            get_or_create_endpoint $neutron_service \
-                "$REGION_NAME" \
-                "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/" \
-                "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/" \
-                "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/"
-        fi
+        local octavia_service=$(get_or_create_service "octavia" \
+            "octavia" "Octavia Service")
+        get_or_create_endpoint $octavia_service \
+            "$REGION_NAME" \
+            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/" \
+            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/" \
+            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/"
+    fi
 }
 
 function octavia_configure {
+
+    create_octavia_cache_dir
 
     sudo mkdir -m 755 -p $OCTAVIA_CONF_DIR
     safe_chown $STACK_USER $OCTAVIA_CONF_DIR
@@ -67,16 +69,20 @@ function octavia_configure {
 
     iniset $OCTAVIA_CONF database connection "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia"
 
-    if [ "$OCTAVIA_AUTH_VERSION" == "2" ] ; then
-        AUTH_URI=${KEYSTONE_AUTH_URI%/v3}/v2.0
-    else
-        AUTH_URI=${KEYSTONE_AUTH_URI}
-    fi
-    iniset $OCTAVIA_CONF keystone_authtoken auth_uri ${AUTH_URI}
-    iniset $OCTAVIA_CONF keystone_authtoken admin_user ${OCTAVIA_ADMIN_USER}
-    iniset $OCTAVIA_CONF keystone_authtoken admin_tenant_name ${OCTAVIA_ADMIN_TENANT_NAME}
-    iniset $OCTAVIA_CONF keystone_authtoken admin_password ${OCTAVIA_ADMIN_PASSWORD}
-    iniset $OCTAVIA_CONF keystone_authtoken auth_version ${OCTAVIA_AUTH_VERSION}
+    # Configure keystone auth_token for all users
+    configure_auth_token_middleware $OCTAVIA_CONF octavia $OCTAVIA_AUTH_CACHE_DIR
+
+    # Ensure config is set up properly for authentication as admin
+    iniset $OCTAVIA_CONF service_auth auth_url $KEYSTONE_AUTH_URI
+    iniset $OCTAVIA_CONF service_auth auth_type password
+    iniset $OCTAVIA_CONF service_auth username $OCTAVIA_USERNAME
+    iniset $OCTAVIA_CONF service_auth password $OCTAVIA_PASSWORD
+    iniset $OCTAVIA_CONF service_auth user_domain_name $OCTAVIA_USER_DOMAIN_NAME
+    iniset $OCTAVIA_CONF service_auth project_name $OCTAVIA_PROJECT_NAME
+    iniset $OCTAVIA_CONF service_auth project_domain_name $OCTAVIA_PROJECT_DOMAIN_NAME
+    iniset $OCTAVIA_CONF service_auth cafile $SSL_BUNDLE_FILE
+    iniset $OCTAVIA_CONF service_auth signing_dir $signing_dir
+    iniset $OCTAVIA_CONF service_auth memcached_servers $SERVICE_HOST:11211
 
     # Setting other required default options
     iniset $OCTAVIA_CONF controller_worker amphora_driver ${OCTAVIA_AMPHORA_DRIVER}
@@ -373,6 +379,15 @@ function octavia_cleanup {
             openstack keypair delete ${OCTAVIA_AMP_SSH_KEY_NAME}
         fi
     fi
+
+    sudo rm -rf $NOVA_STATE_PATH $NOVA_AUTH_CACHE_DIR
+}
+
+# create_octavia_cache_dir() - Part of the configure_octavia() process
+function create_octavia_cache_dir {
+    # Create cache dir
+    sudo install -d -o $STACK_USER $OCTAVIA_AUTH_CACHE_DIR
+    rm -f $OCTAVIA_AUTH_CACHE_DIR/*
 }
 
 # check for service enabled

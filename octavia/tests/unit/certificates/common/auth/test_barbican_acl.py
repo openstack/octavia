@@ -36,12 +36,9 @@ class TestBarbicanACLAuth(base.TestCase):
         conf.config(group="certificates", endpoint_type='publicURL')
         super(TestBarbicanACLAuth, self).setUp()
 
+    @mock.patch('keystoneauth1.session.Session', mock.Mock())
     def test_get_barbican_client(self):
-        # There should be no existing client
-        self.assertIsNone(keystone._SESSION)
-
         # Mock out the keystone session and get the client
-        keystone._SESSION = mock.MagicMock()
         acl_auth_object = barbican_acl.BarbicanACLAuth()
         bc1 = acl_auth_object.get_barbican_client()
 

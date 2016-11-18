@@ -27,9 +27,7 @@ from octavia.i18n import _LE
 
 
 LOG = logging.getLogger(__name__)
-
 CONF = cfg.CONF
-CONF.import_group('certificates', 'octavia.common.config')
 
 
 class BarbicanACLAuth(barbican_common.BarbicanAuth):
@@ -39,8 +37,9 @@ class BarbicanACLAuth(barbican_common.BarbicanAuth):
     def get_barbican_client(cls, project_id=None):
         if not cls._barbican_client:
             try:
+                session = keystone.KeystoneSession().get_session()
                 cls._barbican_client = barbican_client.Client(
-                    session=keystone.get_session(),
+                    session=session,
                     region_name=CONF.certificates.region_name,
                     interface=CONF.certificates.endpoint_type
                 )

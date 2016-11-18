@@ -252,6 +252,9 @@ NOVA_21 = '2.1'
 NOVA_3 = '3'
 NOVA_VERSIONS = (NOVA_1, NOVA_21, NOVA_3)
 
+# Auth sections
+SERVICE_AUTH = 'service_auth'
+
 RPC_NAMESPACE_CONTROLLER_AGENT = 'controller'
 
 

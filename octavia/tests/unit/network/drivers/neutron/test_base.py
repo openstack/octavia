@@ -49,7 +49,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                 ]
             }
             self.k_session = mock.patch(
-                'octavia.common.keystone.get_session').start()
+                'keystoneauth1.session.Session').start()
             self.driver = self._instantiate_partial_abc(
                 neutron_base.BaseNeutronDriver)
 
