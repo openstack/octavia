@@ -42,3 +42,4 @@ netifaces>=0.10.4 # MIT
 ipaddress>=1.0.7;python_version<'3.3' # PSF
 cryptography!=1.3.0,>=1.0 # BSD/Apache-2.0
 pyroute2>=0.4.3 # Apache-2.0 (+ dual licensed GPL2)
+gunicorn>=19.0 # MIT

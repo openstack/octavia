@@ -76,6 +76,7 @@ class AgentJinjaTestCase(base.TestCase):
                            '/etc/octavia/certs/server.pem\n'
                            'agent_server_network_dir = '
                            '/etc/network/interfaces.d/\n'
+                           'agent_request_read_timeout = 120\n'
                            'amphora_id = ' + AMP_ID)
         agent_cfg = ajc.build_agent_config(AMP_ID)
         self.assertEqual(expected_config, agent_cfg)
@@ -109,6 +110,7 @@ class AgentJinjaTestCase(base.TestCase):
                            '/etc/network/interfaces.d/\n'
                            'agent_server_network_file = '
                            '/etc/network/interfaces\n'
+                           'agent_request_read_timeout = 120\n'
                            'amphora_id = ' + AMP_ID)
         agent_cfg = ajc.build_agent_config(AMP_ID)
         self.assertEqual(expected_config, agent_cfg)
