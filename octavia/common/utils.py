@@ -19,9 +19,7 @@
 """Utilities and helper functions."""
 
 import base64
-import datetime
 import hashlib
-import random
 import socket
 
 import netaddr
@@ -37,22 +35,6 @@ LOG = logging.getLogger(__name__)
 
 def get_hostname():
     return socket.gethostname()
-
-
-def get_random_string(length):
-    """Get a random hex string of the specified length.
-
-    based on Cinder library
-      cinder/transfer/api.py
-    """
-    rndstr = ""
-    random.seed(datetime.datetime.now().microsecond)
-    while len(rndstr) < length:
-        rndstr += hashlib.sha224(
-            str(random.random()).encode('ascii')
-        ).hexdigest()
-
-    return rndstr[0:length]
 
 
 def base64_sha1_string(string_to_hash):

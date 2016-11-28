@@ -21,9 +21,6 @@ class TestConfig(base.TestCase):
     def test_get_hostname(self):
         self.assertNotEqual(utils.get_hostname(), '')
 
-    def test_random_string(self):
-        self.assertNotEqual(utils.get_random_string(10), '')
-
     def test_is_ipv6(self):
         self.assertFalse(utils.is_ipv6('192.0.2.10'))
         self.assertFalse(utils.is_ipv6('169.254.0.10'))
