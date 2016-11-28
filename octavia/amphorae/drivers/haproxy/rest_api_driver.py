@@ -40,7 +40,6 @@ OCTAVIA_API_CLIENT = (
     "Octavia HaProxy Rest Client/{version} "
     "(https://wiki.openstack.org/wiki/Octavia)").format(version=API_VERSION)
 CONF = cfg.CONF
-CONF.import_group('haproxy_amphora', 'octavia.common.config')
 
 
 class HaproxyAmphoraLoadBalancerDriver(

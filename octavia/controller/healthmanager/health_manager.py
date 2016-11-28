@@ -25,7 +25,6 @@ from octavia.i18n import _LI
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
-CONF.import_group('health_manager', 'octavia.common.config')
 
 
 class HealthManager(object):

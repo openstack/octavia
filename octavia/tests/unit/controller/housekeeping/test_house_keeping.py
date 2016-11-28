@@ -23,7 +23,6 @@ import octavia.tests.unit.base as base
 
 
 CONF = cfg.CONF
-CONF.import_group('house_keeping', 'octavia.common.config')
 AMPHORA_ID = uuidutils.generate_uuid()
 
 

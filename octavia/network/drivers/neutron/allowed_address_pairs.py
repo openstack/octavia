@@ -38,9 +38,6 @@ VIP_SECURITY_GRP_PREFIX = 'lb-'
 OCTAVIA_OWNER = 'Octavia'
 
 CONF = cfg.CONF
-CONF.import_group('nova', 'octavia.common.config')
-CONF.import_group('controller_worker', 'octavia.common.config')
-CONF.import_group('networking', 'octavia.common.config')
 
 
 class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):

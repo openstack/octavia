@@ -29,8 +29,6 @@ from octavia import version
 
 
 CONF = cfg.CONF
-CONF.import_group('amphora_agent', 'octavia.common.config')
-CONF.import_group('haproxy_amphora', 'octavia.common.config')
 HM_SENDER_CMD_QUEUE = multiproc.Queue()
 
 

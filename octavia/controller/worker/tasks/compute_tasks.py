@@ -29,7 +29,6 @@ from octavia.common.jinja import user_data_jinja_cfg
 from octavia.i18n import _LE, _LW
 
 CONF = cfg.CONF
-CONF.import_group('controller_worker', 'octavia.common.config')
 LOG = logging.getLogger(__name__)
 
 

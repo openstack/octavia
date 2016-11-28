@@ -29,7 +29,6 @@ from octavia import version
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
-CONF.import_group('health_manager', 'octavia.common.config')
 
 
 def hm_listener():

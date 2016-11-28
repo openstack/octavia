@@ -19,7 +19,6 @@ from taskflow import engines as tf_engines
 
 
 CONF = cfg.CONF
-CONF.import_group('task_flow', 'octavia.common.config')
 
 
 class BaseTaskFlowEngine(object):

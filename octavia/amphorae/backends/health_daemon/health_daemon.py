@@ -32,9 +32,6 @@ else:
     import queue
 
 CONF = cfg.CONF
-CONF.import_group('amphora_agent', 'octavia.common.config')
-CONF.import_group('haproxy_amphora', 'octavia.common.config')
-CONF.import_group('health_manager', 'octavia.common.config')
 LOG = logging.getLogger(__name__)
 SEQ = 0
 

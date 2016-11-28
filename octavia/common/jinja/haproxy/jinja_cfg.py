@@ -46,7 +46,6 @@ HAPROXY_TEMPLATE = os.path.abspath(
                  'templates/haproxy.cfg.j2'))
 
 CONF = cfg.CONF
-CONF.import_group('haproxy_amphora', 'octavia.common.config')
 
 JINJA_ENV = None
 

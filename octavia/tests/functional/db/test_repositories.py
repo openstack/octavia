@@ -25,7 +25,6 @@ from octavia.db import repositories as repo
 from octavia.tests.functional.db import base
 
 CONF = cfg.CONF
-CONF.import_group('house_keeping', 'octavia.common.config')
 
 
 class BaseRepositoryTest(base.OctaviaDBTestBase):

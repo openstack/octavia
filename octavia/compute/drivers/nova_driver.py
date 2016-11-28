@@ -26,7 +26,6 @@ from octavia.i18n import _LE, _LW
 LOG = logging.getLogger(__name__)
 
 CONF = cfg.CONF
-CONF.import_group('networking', 'octavia.common.config')
 
 
 def _extract_amp_image_id_by_tag(client, image_tag, image_owner):

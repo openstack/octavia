@@ -19,7 +19,6 @@ from taskflow import task
 
 
 CONF = cfg.CONF
-CONF.import_group('controller_worker', 'octavia.common.config')
 CERT_VALIDITY = 2 * 365 * 24 * 60 * 60
 
 

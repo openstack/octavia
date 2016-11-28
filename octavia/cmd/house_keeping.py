@@ -30,7 +30,6 @@ from octavia import version
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
-CONF.import_group('house_keeping', 'octavia.common.config')
 
 spare_amp_thread_event = threading.Event()
 db_cleanup_thread_event = threading.Event()

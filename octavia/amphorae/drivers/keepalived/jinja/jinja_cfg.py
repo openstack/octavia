@@ -26,7 +26,6 @@ KEEPALIVED_TEMPLATE = os.path.abspath(
     os.path.join(os.path.dirname(__file__),
                  'templates/keepalived_base.template'))
 CONF = cfg.CONF
-CONF.import_group('keepalived_vrrp', 'octavia.common.config')
 
 
 class KeepalivedJinjaTemplater(object):
