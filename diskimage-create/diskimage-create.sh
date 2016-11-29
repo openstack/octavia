@@ -36,7 +36,7 @@ usage() {
     echo "        '-a' is the architecture type for the image (default: amd64)"
     echo "        '-b' is the backend type (default: haproxy)"
     echo "        '-c' is the path to the cache directory (default: ~/.cache/image-create)"
-    echo "        '-d' distribution release id (default: xenial)"
+    echo "        '-d' distribution release id (default on ubuntu: xenial)"
     echo "        '-h' display this help message"
     echo "        '-i' is the base OS (default: ubuntu)"
     echo "        '-o' is the output image file name"
@@ -158,7 +158,11 @@ AMP_CACHEDIR=${AMP_CACHEDIR:-"$HOME/.cache/image-create"}
 
 AMP_BASEOS=${AMP_BASEOS:-"ubuntu"}
 
-export DIB_RELEASE=${AMP_DIB_RELEASE:-"xenial"}
+if [ "$AMP_BASEOS" = "ubuntu" ]; then
+    export DIB_RELEASE=${AMP_DIB_RELEASE:-"xenial"}
+else
+    export DIB_RELEASE=${AMP_DIB_RELEASE}
+fi
 
 AMP_OUTPUTFILENAME=${AMP_OUTPUTFILENAME:-"$PWD/amphora-x64-haproxy"}
 
