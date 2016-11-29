@@ -25,6 +25,7 @@ import six
 from octavia.amphorae.backends.agent.api_server import server
 from octavia.amphorae.backends.health_daemon import health_daemon
 from octavia.common import service
+from octavia.common import utils
 from octavia import version
 
 
@@ -66,11 +67,10 @@ def main():
     # Initiate server class
     server_instance = server.Server()
 
+    bind_ip_port = utils.ip_port_str(CONF.haproxy_amphora.bind_host,
+                                     CONF.haproxy_amphora.bind_port)
     options = {
-        'bind': '{host}:{port}'.format(
-            host=CONF.haproxy_amphora.bind_host,
-            port=CONF.haproxy_amphora.bind_port
-        ),
+        'bind': bind_ip_port,
         'workers': 1,
         'timeout': CONF.amphora_agent.agent_request_read_timeout,
         'certfile': CONF.amphora_agent.agent_server_cert,

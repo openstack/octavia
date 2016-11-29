@@ -65,6 +65,15 @@ def is_ipv6_lla(ip_address):
     return ip.version == 6 and ip.is_link_local()
 
 
+def ip_port_str(ip_address, port):
+    """Return IP port as string representation depending on address family."""
+    ip = netaddr.IPAddress(ip_address)
+    if ip.version == 4:
+        return "{ip}:{port}".format(ip=ip, port=port)
+    elif ip.version == 6:
+        return "[{ip}]:{port}".format(ip=ip, port=port)
+
+
 class exception_logger(object):
     """Wrap a function and log raised exception
 

@@ -36,3 +36,9 @@ class TestConfig(base.TestCase):
         self.assertFalse(utils.is_ipv6_lla('::'))
         self.assertFalse(utils.is_ipv6_lla('2001:db8::1'))
         self.assertTrue(utils.is_ipv6_lla('fe80::225:90ff:fefb:53ad'))
+
+    def test_ip_port_str(self):
+        self.assertEqual("127.0.0.1:8080",
+                         utils.ip_port_str('127.0.0.1', 8080))
+        self.assertEqual("[::1]:8080",
+                         utils.ip_port_str('::1', 8080))
