@@ -96,3 +96,9 @@ class BaseController(rest.RestController):
         """Get a L7 Rule from the database."""
         return self._get_db_obj(session, self.repositories.l7rule,
                                 data_models.L7Rule, id)
+
+    def _get_lb_project_id(self, session, id):
+        """Get the project_id of the load balancer from the database."""
+        lb = self._get_db_obj(session, self.repositories.load_balancer,
+                              data_models.LoadBalancer, id)
+        return lb.project_id

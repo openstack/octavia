@@ -61,10 +61,10 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     def setUp(self):
         super(BaseAPITest, self).setUp()
-        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(api_handler='simulated_handler')
-        conf.config(group="controller_worker",
-                    network_driver='network_noop_driver')
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(api_handler='simulated_handler')
+        self.conf.config(group="controller_worker",
+                         network_driver='network_noop_driver')
         self.lb_repo = repositories.LoadBalancerRepository()
         self.listener_repo = repositories.ListenerRepository()
         self.listener_stats_repo = repositories.ListenerStatisticsRepository()
@@ -74,6 +74,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         patcher = mock.patch('octavia.api.handlers.controller_simulator.'
                              'handler.SimulatedControllerHandler')
         self.handler_mock = patcher.start()
+        self.addCleanup(self.handler_mock.stop)
         self.app = self._make_app()
         self.project_id = uuidutils.generate_uuid()
 
@@ -131,20 +132,22 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     def create_load_balancer(self, vip_subnet_id,
                              **optionals):
-        req_dict = {'vip_subnet_id': vip_subnet_id}
+        req_dict = {'vip_subnet_id': vip_subnet_id,
+                    'project_id': self.project_id}
         req_dict.update(optionals)
         body = {'loadbalancer': req_dict}
         response = self.post(self.LBS_PATH, body)
         return response.json
 
     def create_listener(self, protocol, protocol_port, lb_id,
-                        **optionals):
+                        status=None, **optionals):
         req_dict = {'protocol': protocol, 'protocol_port': protocol_port,
-                    'load_balancer_id': lb_id}
+                    'loadbalancer_id': lb_id}
         req_dict.update(optionals)
         path = self.LISTENERS_PATH
         body = {'listener': req_dict}
-        response = self.post(path, body)
+        status = {'status': status} if status else {}
+        response = self.post(path, body, **status)
         return response.json
 
     def create_listener_stats(self, listener_id, amphora_id):

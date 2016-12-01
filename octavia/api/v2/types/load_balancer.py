@@ -15,6 +15,7 @@
 from wsme import types as wtypes
 
 from octavia.api.common import types
+from octavia.api.v2.types import listener
 
 
 class BaseLoadBalancerType(types.BaseType):
@@ -23,6 +24,10 @@ class BaseLoadBalancerType(types.BaseType):
                           'vip_port_id': 'vip.port_id',
                           'vip_network_id': 'vip.network_id',
                           'admin_state_up': 'enabled'}
+
+
+class MinimalListener(types.BaseType):
+    id = wtypes.wsattr(wtypes.UuidType())
 
 
 class LoadBalancerResponse(BaseLoadBalancerType):
@@ -41,7 +46,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
     vip_port_id = wtypes.wsattr(wtypes.UuidType())
     vip_subnet_id = wtypes.wsattr(wtypes.UuidType())
     vip_network_id = wtypes.wsattr(wtypes.UuidType())
-    # TODO(blogan): add listeners once that has been merged
+    listeners = wtypes.wsattr([MinimalListener])
     # TODO(ankur-gupta-f): add pools once that has been merged
 
     @classmethod
@@ -53,6 +58,8 @@ class LoadBalancerResponse(BaseLoadBalancerType):
             result.vip_port_id = data_model.vip.port_id
             result.vip_address = data_model.vip.ip_address
             result.vip_network_id = data_model.vip.network_id
+        result.listeners = [
+            MinimalListener.from_data_model(i) for i in data_model.listeners]
         result.tenant_id = data_model.project_id
         if not result.description:
             result.description = ""
@@ -82,6 +89,7 @@ class LoadBalancerPOST(BaseLoadBalancerType):
     vip_network_id = wtypes.wsattr(wtypes.UuidType())
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     tenant_id = wtypes.wsattr(wtypes.StringType(max_length=36))
+    listeners = wtypes.wsattr([listener.ListenerPOST], default=[])
 
 
 class LoadBalancerRootPOST(types.BaseType):

@@ -70,14 +70,29 @@ def create_load_balancer(lb_dict):
 def create_listener(listener_dict, lb_id):
     if not listener_dict.get('id'):
         listener_dict['id'] = uuidutils.generate_uuid()
-    listener_dict['load_balancer_id'] = lb_id
+    if 'loadbalancer_id' in listener_dict.keys():
+        listener_dict['load_balancer_id'] = listener_dict.pop(
+            'loadbalancer_id')
+    else:
+        listener_dict['load_balancer_id'] = lb_id
+
     listener_dict['provisioning_status'] = constants.PENDING_CREATE
     listener_dict['operating_status'] = constants.OFFLINE
     # NOTE(blogan): Throwing away because we should not store secure data
     # in the database nor should we send it to a handler.
     if 'tls_termination' in listener_dict:
         del listener_dict['tls_termination']
-    sni_container_ids = listener_dict.pop('sni_containers') or []
+
+    if 'default_tls_container_ref' in listener_dict:
+        listener_dict['tls_certificate_id'] = (
+            listener_dict.pop('default_tls_container_ref'))
+
+    if 'sni_containers' in listener_dict:
+        sni_container_ids = listener_dict.pop('sni_containers') or []
+    elif 'sni_container_refs' in listener_dict:
+        sni_container_ids = listener_dict.pop('sni_container_refs') or []
+    else:
+        sni_container_ids = []
     sni_containers = [{'listener_id': listener_dict.get('id'),
                        'tls_container_id': sni_container_id}
                       for sni_container_id in sni_container_ids]

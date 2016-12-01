@@ -16,11 +16,13 @@ from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
 from octavia.api.v2.controllers import base
+from octavia.api.v2.controllers import listener
 from octavia.api.v2.controllers import load_balancer
 
 
 class BaseV2Controller(base.BaseController):
     loadbalancers = load_balancer.LoadBalancersController()
+    listeners = listener.ListenersController()
 
     @wsme_pecan.wsexpose(wtypes.text)
     def get(self):

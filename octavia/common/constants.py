@@ -46,6 +46,12 @@ PROTOCOL_TERMINATED_HTTPS = 'TERMINATED_HTTPS'
 SUPPORTED_PROTOCOLS = (PROTOCOL_TCP, PROTOCOL_HTTPS, PROTOCOL_HTTP,
                        PROTOCOL_TERMINATED_HTTPS)
 
+# API Integer Ranges
+MIN_PORT_NUMBER = 1
+MAX_PORT_NUMBER = 65535
+
+MIN_CONNECTION_LIMIT = -1
+
 # Note: The database Amphora table has a foreign key constraint against
 #       the provisioning_status table
 # Amphora has been allocated to a load balancer

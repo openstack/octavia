@@ -555,19 +555,19 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         create_lb = {
             'name': 'lb1',
             'project_id': self._project_id,
-            'vip': {},
+            'vip_subnet_id': None,
             'listeners': create_listeners
         }
         expected_lb = {
             'description': None,
             'enabled': True,
             'provisioning_status': constants.PENDING_CREATE,
-            'operating_status': constants.OFFLINE
+            'operating_status': constants.OFFLINE,
+            'vip_subnet_id': None,
+            'vip_address': None,
         }
         expected_lb.update(create_lb)
         expected_lb['listeners'] = expected_listeners
-        expected_lb['vip'] = {'ip_address': None, 'port_id': None,
-                              'subnet_id': None}
         return create_lb, expected_lb
 
     def _get_listener_bodies(self, name='listener1', protocol_port=80,
