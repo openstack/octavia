@@ -195,32 +195,25 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         response = self.post(path, body)
         return response.json
 
-    def create_pool(self, lb_id, protocol, lb_algorithm, **optionals):
+    def create_pool(self, lb_id, protocol, lb_algorithm,
+                    status=None, **optionals):
         req_dict = {'loadbalancer_id': lb_id, 'protocol': protocol,
                     'lb_algorithm': lb_algorithm}
         req_dict.update(optionals)
         body = {'pool': req_dict}
         path = self.POOLS_PATH
-        response = self.post(path, body)
+        status = {'status': status} if status else {}
+        response = self.post(path, body, **status)
         return response.json
 
-    def create_member(self, pool_id, ip_address, protocol_port,
-                      expect_error=False, **optionals):
-        req_dict = {'ip_address': ip_address, 'protocol_port': protocol_port}
+    def create_member(self, pool_id, address, protocol_port,
+                      status=None, **optionals):
+        req_dict = {'address': address, 'protocol_port': protocol_port}
         req_dict.update(optionals)
         body = {'member': req_dict}
         path = self.MEMBERS_PATH.format(pool_id=pool_id)
-        response = self.post(path, body, expect_errors=expect_error)
-        return response.json
-
-    def create_member_with_listener(self, pool_id, listener_id, ip_address,
-                                    protocol_port, **optionals):
-        req_dict = {'listener_id': listener_id, 'ip_address': ip_address,
-                    'protocol_port': protocol_port}
-        req_dict.update(optionals)
-        body = {'member': req_dict}
-        path = self.MEMBERS_PATH.format(pool_id=pool_id)
-        response = self.post(path, body)
+        status = {'status': status} if status else {}
+        response = self.post(path, body, **status)
         return response.json
 
     # TODO(sindhu): Will be modified later in the Health_Monitor review
@@ -271,27 +264,47 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         response = self.post(path, body)
         return response.json
 
-    def _set_lb_and_children_statuses(self, lb_id, prov_status, op_status):
+    def _set_lb_and_children_statuses(self, lb_id, prov_status, op_status,
+                                      autodetect=True):
         self.lb_repo.update(db_api.get_session(), lb_id,
                             provisioning_status=prov_status,
                             operating_status=op_status)
         lb_listeners = self.listener_repo.get_all(db_api.get_session(),
                                                   load_balancer_id=lb_id)
         for listener in lb_listeners:
+            if autodetect and (listener.provisioning_status ==
+                               constants.PENDING_DELETE):
+                listener_prov = constants.DELETED
+            else:
+                listener_prov = prov_status
             self.listener_repo.update(db_api.get_session(), listener.id,
-                                      provisioning_status=prov_status,
+                                      provisioning_status=listener_prov,
                                       operating_status=op_status)
         lb_pools = self.pool_repo.get_all(db_api.get_session(),
                                           load_balancer_id=lb_id)
         for pool in lb_pools:
+            if autodetect and (pool.provisioning_status ==
+                               constants.PENDING_DELETE):
+                pool_prov = constants.DELETED
+            else:
+                pool_prov = prov_status
             self.pool_repo.update(db_api.get_session(), pool.id,
-                                  provisioning_status=prov_status,
+                                  provisioning_status=pool_prov,
                                   operating_status=op_status)
             for member in pool.members:
+                if autodetect and (member.provisioning_status ==
+                                   constants.PENDING_DELETE):
+                    member_prov = constants.DELETED
+                else:
+                    member_prov = prov_status
                 self.member_repo.update(db_api.get_session(), member.id,
+                                        provisioning_status=member_prov,
                                         operating_status=op_status)
 
-    def set_lb_status(self, lb_id, status=constants.ACTIVE):
+    def set_lb_status(self, lb_id, status=None):
+        explicit_status = True if status is not None else False
+        if not explicit_status:
+            status = constants.ACTIVE
         if status == constants.DELETED:
             op_status = constants.OFFLINE
         elif status == constants.ACTIVE:
@@ -299,7 +312,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         else:
             db_lb = self.lb_repo.get(db_api.get_session(), id=lb_id)
             op_status = db_lb.operating_status
-        self._set_lb_and_children_statuses(lb_id, status, op_status)
+        self._set_lb_and_children_statuses(lb_id, status, op_status,
+                                           autodetect=not explicit_status)
         return self.get(self.LB_PATH.format(lb_id=lb_id)).json
 
     def assert_final_lb_statuses(self, lb_id, delete=False):
@@ -309,8 +323,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
             expected_prov_status = constants.DELETED
             expected_op_status = constants.OFFLINE
         self.set_lb_status(lb_id, status=expected_prov_status)
-        self.assert_correct_lb_status(lb_id, expected_prov_status,
-                                      expected_op_status)
+        self.assert_correct_lb_status(expected_prov_status, expected_op_status,
+                                      lb_id)
 
     def assert_final_listener_statuses(self, lb_id, listener_id, delete=False):
         expected_prov_status = constants.ACTIVE
@@ -323,8 +337,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                                             expected_op_status,
                                             listener_id)
 
-    def assert_correct_lb_status(self, lb_id, provisioning_status,
-                                 operating_status):
+    def assert_correct_lb_status(self, provisioning_status, operating_status,
+                                 lb_id):
         api_lb = self.get(
             self.LB_PATH.format(lb_id=lb_id)).json.get('loadbalancer')
         self.assertEqual(provisioning_status,
@@ -341,11 +355,42 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.assertEqual(operating_status,
                          api_listener.get('operating_status'))
 
-    def assert_correct_pool_status(self, provisioning_status,
-                                   operating_status, pool_id):
+    def assert_correct_pool_status(self, provisioning_status, operating_status,
+                                   pool_id):
         api_pool = self.get(self.POOL_PATH.format(
             pool_id=pool_id)).json.get('pool')
         self.assertEqual(provisioning_status,
                          api_pool.get('provisioning_status'))
         self.assertEqual(operating_status,
                          api_pool.get('operating_status'))
+
+    def assert_correct_member_status(self, provisioning_status,
+                                     operating_status, pool_id, member_id):
+        api_member = self.get(self.MEMBER_PATH.format(
+            pool_id=pool_id, member_id=member_id)).json.get('member')
+        self.assertEqual(provisioning_status,
+                         api_member.get('provisioning_status'))
+        self.assertEqual(operating_status,
+                         api_member.get('operating_status'))
+
+    def assert_correct_status(self, lb_id=None, listener_id=None, pool_id=None,
+                              member_id=None,
+                              lb_prov_status=constants.ACTIVE,
+                              listener_prov_status=constants.ACTIVE,
+                              pool_prov_status=constants.ACTIVE,
+                              member_prov_status=constants.ACTIVE,
+                              lb_op_status=constants.ONLINE,
+                              listener_op_status=constants.ONLINE,
+                              pool_op_status=constants.ONLINE,
+                              member_op_status=constants.ONLINE):
+        if lb_id:
+            self.assert_correct_lb_status(lb_prov_status, lb_op_status, lb_id)
+        if listener_id:
+            self.assert_correct_listener_status(
+                listener_prov_status, listener_op_status, listener_id)
+        if pool_id:
+            self.assert_correct_pool_status(
+                pool_prov_status, pool_op_status, pool_id)
+        if member_id:
+            self.assert_correct_member_status(
+                member_prov_status, member_op_status, pool_id, member_id)

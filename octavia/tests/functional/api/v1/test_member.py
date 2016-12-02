@@ -74,8 +74,8 @@ class TestMember(base.BaseAPITest):
         self.set_lb_status(self.lb.get('id'))
         # Original objects didn't have the updated operating status that exists
         # in the DB.
-        api_m_1['operating_status'] = constants.OFFLINE
-        api_m_2['operating_status'] = constants.OFFLINE
+        api_m_1['operating_status'] = constants.NO_MONITOR
+        api_m_2['operating_status'] = constants.NO_MONITOR
         response = self.get(self.members_path)
         response_body = response.json
         self.assertIsInstance(response_body, list)

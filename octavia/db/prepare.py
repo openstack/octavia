@@ -153,9 +153,13 @@ def create_pool(pool_dict, lb_id=None):
     return pool_dict
 
 
-def create_member(member_dict, pool_id):
+def create_member(member_dict, pool_id, has_health_monitor=False):
     member_dict['pool_id'] = pool_id
-    member_dict['operating_status'] = constants.OFFLINE
+    member_dict['provisioning_status'] = constants.PENDING_CREATE
+    if has_health_monitor:
+        member_dict['operating_status'] = constants.OFFLINE
+    else:
+        member_dict['operating_status'] = constants.NO_MONITOR
     return member_dict
 
 

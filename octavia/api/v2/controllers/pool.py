@@ -15,16 +15,16 @@
 
 import logging
 
+from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_utils import excutils
 import pecan
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
-
 from octavia.api.v1.controllers import health_monitor
-from octavia.api.v1.controllers import member
 from octavia.api.v2.controllers import base
+from octavia.api.v2.controllers import member
 from octavia.api.v2.types import pool as pool_types
 from octavia.common import constants
 from octavia.common import data_models
@@ -34,6 +34,7 @@ from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -51,12 +52,21 @@ class PoolsController(base.BaseController):
         result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
         return pool_types.PoolRootResponse(pool=result)
 
-    @wsme_pecan.wsexpose(pool_types.PoolsRootResponse, wtypes.text)
-    def get_all(self):
+    @wsme_pecan.wsexpose(pool_types.PoolsRootResponse, wtypes.text,
+                         wtypes.text)
+    def get_all(self, tenant_id=None, project_id=None):
         """Lists all pools."""
         context = pecan.request.context.get('octavia_context')
-        pools = self.repositories.pool.get_all(context.session)
-        result = self._convert_db_to_type(pools, [pool_types.PoolResponse])
+        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
+            if project_id or tenant_id:
+                project_id = {'project_id': project_id or tenant_id}
+            else:
+                project_id = {}
+        else:
+            project_id = {'project_id': context.project_id}
+        db_pools = self.repositories.pool.get_all(
+            context.session, **project_id)
+        result = self._convert_db_to_type(db_pools, [pool_types.PoolResponse])
         return pool_types.PoolsRootResponse(pools=result)
 
     def _get_affected_listener_ids(self, pool):
@@ -113,14 +123,14 @@ class PoolsController(base.BaseController):
                      db_pool.id)
             self.handler.create(db_pool)
         except Exception:
-            with (excutils.save_and_reraise_exception(reraise=False) and
-                  db_api.get_lock_session()):
+            with excutils.save_and_reraise_exception(
+                    reraise=False), db_api.get_lock_session() as lock_session:
                 self._reset_lb_and_listener_statuses(
-                    session, lb_id=db_pool.load_balancer_id,
+                    lock_session, lb_id=db_pool.load_balancer_id,
                     listener_ids=[listener_id] if listener_id else [])
                 # Pool now goes to ERROR
                 self.repositories.pool.update(
-                    session, db_pool.id,
+                    lock_session, db_pool.id,
                     provisioning_status=constants.ERROR)
         db_pool = self._get_db_pool(session, db_pool.id)
         result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
@@ -205,14 +215,14 @@ class PoolsController(base.BaseController):
             LOG.info(_LI("Sending Update of Pool %s to handler"), id)
             self.handler.update(db_pool, pool)
         except Exception:
-            with (excutils.save_and_reraise_exception(reraise=False) and
-                  db_api.get_lock_session()):
+            with excutils.save_and_reraise_exception(
+                    reraise=False), db_api.get_lock_session() as lock_session:
                 self._reset_lb_and_listener_statuses(
-                    context.session, lb_id=db_pool.load_balancer_id,
+                    lock_session, lb_id=db_pool.load_balancer_id,
                     listener_ids=self._get_affected_listener_ids(db_pool))
                 # Pool now goes to ERROR
                 self.repositories.pool.update(
-                    context.session, db_pool.id,
+                    lock_session, db_pool.id,
                     provisioning_status=constants.ERROR)
         db_pool = self._get_db_pool(context.session, id)
         result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
@@ -238,14 +248,14 @@ class PoolsController(base.BaseController):
                      db_pool.id)
             self.handler.delete(db_pool)
         except Exception:
-            with (excutils.save_and_reraise_exception(reraise=False) and
-                  db_api.get_lock_session()):
+            with excutils.save_and_reraise_exception(
+                    reraise=False), db_api.get_lock_session() as lock_session:
                 self._reset_lb_and_listener_statuses(
-                    context.session, lb_id=db_pool.load_balancer_id,
+                    lock_session, lb_id=db_pool.load_balancer_id,
                     listener_ids=self._get_affected_listener_ids(db_pool))
                 # Pool now goes to ERROR
                 self.repositories.pool.update(
-                    context.session, db_pool.id,
+                    lock_session, db_pool.id,
                     provisioning_status=constants.ERROR)
         db_pool = self.repositories.pool.get(context.session, id=db_pool.id)
         result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
@@ -270,7 +280,6 @@ class PoolsController(base.BaseController):
                                           id=pool_id)
             if controller == 'members':
                 return member.MembersController(
-                    load_balancer_id=db_pool.load_balancer_id,
                     pool_id=db_pool.id), remainder
             elif controller == 'healthmonitor':
                 return health_monitor.HealthMonitorController(

@@ -52,6 +52,9 @@ MAX_PORT_NUMBER = 65535
 
 MIN_CONNECTION_LIMIT = -1
 
+MIN_WEIGHT = 0
+MAX_WEIGHT = 256
+
 # Note: The database Amphora table has a foreign key constraint against
 #       the provisioning_status table
 # Amphora has been allocated to a load balancer

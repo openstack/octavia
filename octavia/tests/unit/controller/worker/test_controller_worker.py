@@ -93,12 +93,10 @@ class TestControllerWorker(base.TestCase):
         _listener_mock.load_balancer = _load_balancer_mock
         _listener_mock.load_balancer.amphorae = _amphora_mock
         _listener_mock.load_balancer.vip = _vip_mock
-        _member_mock.pool.listeners = [_listener_mock]
-        _member_mock.pool.load_balancer = _load_balancer_mock
-        _member_mock.pool.load_balancer.vip = _vip_mock
         _pool_mock.listeners = [_listener_mock]
         _pool_mock.load_balancer = _load_balancer_mock
         _pool_mock.load_balancer.vip = _vip_mock
+        _member_mock.pool = _pool_mock
         _l7policy_mock.listener = _listener_mock
         _l7rule_mock.l7policy = _l7policy_mock
 
@@ -697,7 +695,9 @@ class TestControllerWorker(base.TestCase):
                                            constants.LISTENERS:
                                                [_listener_mock],
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock}))
+                                               _load_balancer_mock,
+                                           constants.POOL:
+                                               _pool_mock}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -729,7 +729,9 @@ class TestControllerWorker(base.TestCase):
                                    constants.LISTENERS:
                                        [_listener_mock],
                                    constants.LOADBALANCER:
-                                       _load_balancer_mock}))
+                                       _load_balancer_mock,
+                                   constants.POOL:
+                                       _pool_mock}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -762,6 +764,8 @@ class TestControllerWorker(base.TestCase):
                                                [_listener_mock],
                                            constants.LOADBALANCER:
                                                _load_balancer_mock,
+                                           constants.POOL:
+                                               _pool_mock,
                                            constants.UPDATE_DICT:
                                                MEMBER_UPDATE_DICT}))
 

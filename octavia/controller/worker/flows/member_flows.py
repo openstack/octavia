@@ -34,7 +34,8 @@ class MemberFlows(object):
         create_member_flow.add(lifecycle_tasks.MemberToErrorOnRevertTask(
             requires=[constants.MEMBER,
                       constants.LISTENERS,
-                      constants.LOADBALANCER]))
+                      constants.LOADBALANCER,
+                      constants.POOL]))
         create_member_flow.add(database_tasks.MarkMemberPendingCreateInDB(
             requires=constants.MEMBER))
         create_member_flow.add(network_tasks.CalculateDelta(
@@ -53,6 +54,8 @@ class MemberFlows(object):
                                MarkLBAndListenersActiveInDB(
                                    requires=(constants.LOADBALANCER,
                                              constants.LISTENERS)))
+        create_member_flow.add(database_tasks.MarkPoolActiveInDB(
+            requires=constants.POOL))
 
         return create_member_flow
 
@@ -65,7 +68,8 @@ class MemberFlows(object):
         delete_member_flow.add(lifecycle_tasks.MemberToErrorOnRevertTask(
             requires=[constants.MEMBER,
                       constants.LISTENERS,
-                      constants.LOADBALANCER]))
+                      constants.LOADBALANCER,
+                      constants.POOL]))
         delete_member_flow.add(database_tasks.MarkMemberPendingDeleteInDB(
             requires=constants.MEMBER))
         delete_member_flow.add(model_tasks.
@@ -81,6 +85,8 @@ class MemberFlows(object):
                                MarkLBAndListenersActiveInDB(
                                    requires=[constants.LOADBALANCER,
                                              constants.LISTENERS]))
+        delete_member_flow.add(database_tasks.MarkPoolActiveInDB(
+            requires=constants.POOL))
 
         return delete_member_flow
 
@@ -93,7 +99,8 @@ class MemberFlows(object):
         update_member_flow.add(lifecycle_tasks.MemberToErrorOnRevertTask(
             requires=[constants.MEMBER,
                       constants.LISTENERS,
-                      constants.LOADBALANCER]))
+                      constants.LOADBALANCER,
+                      constants.POOL]))
         update_member_flow.add(database_tasks.MarkMemberPendingUpdateInDB(
             requires=constants.MEMBER))
         update_member_flow.add(model_tasks.
@@ -110,5 +117,7 @@ class MemberFlows(object):
                                MarkLBAndListenersActiveInDB(
                                    requires=[constants.LOADBALANCER,
                                              constants.LISTENERS]))
+        update_member_flow.add(database_tasks.MarkPoolActiveInDB(
+            requires=constants.POOL))
 
         return update_member_flow
