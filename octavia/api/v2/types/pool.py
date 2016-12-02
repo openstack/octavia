@@ -51,6 +51,14 @@ class MinimalListener(types.BaseType):
     id = wtypes.wsattr(wtypes.UuidType())
 
 
+class MinimalMember(types.BaseType):
+    id = wtypes.wsattr(wtypes.UuidType())
+
+
+class MinimalHealthmonitor(types.BaseType):
+    id = wtypes.wsattr(wtypes.UuidType())
+
+
 class PoolResponse(BasePoolType):
     """Defines which attributes are to be shown on any response."""
     id = wtypes.wsattr(wtypes.UuidType())
@@ -70,9 +78,8 @@ class PoolResponse(BasePoolType):
     listeners = wtypes.wsattr([MinimalListener])
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
-    health_monitor = wtypes.wsattr(health_monitor.HealthMonitorResponse)
     health_monitor_id = wtypes.wsattr(wtypes.UuidType())
-    members = wtypes.wsattr([member.MemberResponse])
+    members = wtypes.wsattr([MinimalMember])
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -84,32 +91,15 @@ class PoolResponse(BasePoolType):
                 SessionPersistenceResponse.from_data_model(
                     data_model.session_persistence))
         if data_model.load_balancer:
-            pool.loadbalancers = (
-                [MinimalLoadBalancer.from_data_model(
-                    data_model.load_balancer)])
-        if data_model.listeners:
-            pool.listeners = (
-                [MinimalListener.from_data_model(i)
-                 for i in data_model.listeners])
+            pool.loadbalancers = [
+                MinimalLoadBalancer.from_data_model(data_model.load_balancer)]
         else:
-            pool.listeners = []
-        if not children:
-            # NOTE(blogan): do not show members or health_monitor if the
-            # request does not want to see children
-            del pool.members
-            del pool.health_monitor
-            return pool
+            pool.loadbalancers = []
+        pool.listeners = [
+            MinimalListener.from_data_model(i) for i in data_model.listeners]
         pool.members = [
-            member.MemberResponse.from_data_model(member_dm, children=children)
-            for member_dm in data_model.members
-        ]
-        if data_model.health_monitor:
-            pool.health_monitor = (
-                health_monitor.HealthMonitorResponse.from_data_model(
-                    data_model.health_monitor, children=children))
-            pool.health_monitor_id = pool.health_monitor.id
-        if not pool.health_monitor:
-            del pool.health_monitor
+            MinimalMember.from_data_model(i) for i in data_model.members]
+
         return pool
 
 

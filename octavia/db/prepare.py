@@ -103,6 +103,8 @@ def create_listener(listener_dict, lb_id):
 def create_l7policy(l7policy_dict, lb_id, listener_id):
     l7policy_dict = validate.sanitize_l7policy_api_args(l7policy_dict,
                                                         create=True)
+    l7policy_dict['provisioning_status'] = constants.PENDING_CREATE
+    l7policy_dict['operating_status'] = constants.OFFLINE
     if not l7policy_dict.get('id'):
         l7policy_dict['id'] = uuidutils.generate_uuid()
     l7policy_dict['listener_id'] = listener_id

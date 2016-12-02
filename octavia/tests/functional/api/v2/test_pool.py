@@ -172,8 +172,8 @@ class TestPool(base.BaseAPITest):
         pools = self.get(
             self.POOLS_PATH,
             params={'project_id': project2_id}).json.get(self.root_tag_list)
-        pool_id_protocols = [(p.get('id'), p.get('protocol')) for p in pools]
         self.assertEqual(1, len(pools))
+        pool_id_protocols = [(p.get('id'), p.get('protocol')) for p in pools]
         self.assertIn((pool3.get('id'), pool3.get('protocol')),
                       pool_id_protocols)
 
@@ -427,7 +427,6 @@ class TestPool(base.BaseAPITest):
         self.delete(self.POOL_PATH.format(
             pool_id=uuidutils.generate_uuid()), status=404)
 
-    @testtools.skip('Skip until complete v2 merge.')
     def test_delete_with_l7policy(self):
         api_pool = self.create_pool(
             self.lb_id,

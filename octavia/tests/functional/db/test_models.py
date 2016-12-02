@@ -150,6 +150,8 @@ class ModelTestMixin(object):
                   'listener_id': listener_id,
                   'action': constants.L7POLICY_ACTION_REJECT,
                   'position': 1,
+                  'provisioning_status': constants.PENDING_CREATE,
+                  'operating_status': constants.OFFLINE,
                   'enabled': True}
         kwargs.update(overrides)
         return self._insert(session, models.L7Policy, kwargs)

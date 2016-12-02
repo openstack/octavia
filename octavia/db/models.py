@@ -530,7 +530,8 @@ class L7Rule(base_models.BASE, base_models.IdMixin):
         nullable=True)
 
 
-class L7Policy(base_models.BASE, base_models.IdMixin, base_models.NameMixin):
+class L7Policy(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
+               models.TimestampMixin, base_models.NameMixin):
 
     __data_model__ = data_models.L7Policy
 
@@ -572,7 +573,12 @@ class L7Policy(base_models.BASE, base_models.IdMixin, base_models.NameMixin):
         sa.String(16),
         sa.ForeignKey("provisioning_status.name",
                       name="fk_l7policy_provisioning_status_name"),
-        nullable=True)
+        nullable=False)
+    operating_status = sa.Column(
+        sa.String(16),
+        sa.ForeignKey("operating_status.name",
+                      name="fk_l7policy_operating_status_name"),
+        nullable=False)
 
 
 class Quotas(base_models.BASE):

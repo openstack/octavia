@@ -1194,8 +1194,9 @@ class L7PolicyRepository(BaseRepository):
                 l7policy_db = listener.l7policies.pop(l7policy_db.position - 1)
                 listener.l7policies.insert(position - 1, l7policy_db)
             listener.l7policies.reorder()
+            session.flush()
 
-        return self.get(session, id=l7policy.id)
+        return self.get(session, id=id)
 
     def create(self, session, **model_kwargs):
         with session.begin(subtransactions=True):
@@ -1233,6 +1234,8 @@ class L7PolicyRepository(BaseRepository):
                 listener.l7policies.insert(position - 1, l7policy_db)
 
         listener.l7policies.reorder()
+        session.flush()
+        l7policy.updated_at = None
         return self.get(session, id=l7policy.id)
 
     def delete(self, session, id, **filters):
