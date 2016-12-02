@@ -102,3 +102,42 @@ class BaseController(rest.RestController):
         lb = self._get_db_obj(session, self.repositories.load_balancer,
                               data_models.LoadBalancer, id)
         return lb.project_id
+
+    def _get_default_quotas(self, project_id):
+        """Gets the project's default quotas."""
+        quotas = data_models.Quotas(
+            project_id=project_id,
+            load_balancer=CONF.quotas.default_load_balancer_quota,
+            listener=CONF.quotas.default_listener_quota,
+            pool=CONF.quotas.default_pool_quota,
+            health_monitor=CONF.quotas.default_health_monitor_quota,
+            member=CONF.quotas.default_member_quota)
+        return quotas
+
+    def _get_db_quotas(self, session, project_id):
+        """Gets the project's quotas from the database, or responds with the
+
+        default quotas.
+        """
+        # At this point project_id should not ever be None or Unset
+        db_quotas = self.repositories.quotas.get(
+            session, project_id=project_id)
+        if not db_quotas:
+            LOG.debug("No custom quotas for project %s. Returning "
+                      "defaults...", project_id)
+            db_quotas = self._get_default_quotas(project_id=project_id)
+        else:
+            # Fill in any that are using the configured defaults
+            if db_quotas.load_balancer is None:
+                db_quotas.load_balancer = (CONF.quotas.
+                                           default_load_balancer_quota)
+            if db_quotas.listener is None:
+                db_quotas.listener = CONF.quotas.default_listener_quota
+            if db_quotas.pool is None:
+                db_quotas.pool = CONF.quotas.default_pool_quota
+            if db_quotas.health_monitor is None:
+                db_quotas.health_monitor = (CONF.quotas.
+                                            default_health_monitor_quota)
+            if db_quotas.member is None:
+                db_quotas.member = CONF.quotas.default_member_quota
+        return db_quotas

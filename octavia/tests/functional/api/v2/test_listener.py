@@ -21,8 +21,6 @@ from octavia.common import constants
 import octavia.common.context
 from octavia.tests.functional.api.v2 import base
 
-import testtools
-
 
 class TestListener(base.BaseAPITest):
 
@@ -35,13 +33,10 @@ class TestListener(base.BaseAPITest):
         self.set_lb_status(self.lb['loadbalancer']['id'])
         self.listeners_path = self.LISTENERS_PATH
         self.listener_path = self.LISTENERS_PATH + '/{listener_id}'
-        # self.pool = self.create_pool(
-        #     self.lb['loadbalancer']['id'], constants.PROTOCOL_HTTP,
-        #     constants.LB_ALGORITHM_ROUND_ROBIN, 'pool')
-        # self.set_lb_status(self.lb['loadbalancer']['id'])
-
-    def _build_body(self, json):
-        return {self.root_tag: json}
+        self.pool = self.create_pool(
+            self.lb['loadbalancer']['id'], constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.set_lb_status(self.lb['loadbalancer']['id'])
 
     def test_get_all_admin(self):
         project_id = uuidutils.generate_uuid()
@@ -211,18 +206,19 @@ class TestListener(base.BaseAPITest):
                              self.lb['loadbalancer']['id'],
                              status=409)
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_create_with_default_pool_id(self):
         lb_listener = {'name': 'listener1',
-                       'default_pool_id': self.pool.get('id'),
+                       'default_pool_id': self.pool['pool']['id'],
                        'description': 'desc1',
                        'admin_state_up': False,
                        'protocol': constants.PROTOCOL_HTTP,
-                       'protocol_port': 80}
-        response = self.post(self.listeners_path, lb_listener)
-        api_listener = response.json
+                       'protocol_port': 80,
+                       'loadbalancer_id': self.lb['loadbalancer']['id']}
+        body = self._build_body(lb_listener)
+        response = self.post(self.listeners_path, body)
+        api_listener = response.json['listener']
         self.assertEqual(api_listener.get('default_pool_id'),
-                         self.pool.get('id'))
+                         self.pool['pool']['id'])
 
     def test_create_with_bad_default_pool_id(self):
         lb_listener = {'name': 'listener1',
@@ -235,26 +231,27 @@ class TestListener(base.BaseAPITest):
         body = self._build_body(lb_listener)
         self.post(self.listeners_path, body, status=404)
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_create_with_shared_default_pool_id(self):
         lb_listener1 = {'name': 'listener1',
-                        'default_pool_id': self.pool.get('id'),
+                        'default_pool_id': self.pool['pool']['id'],
                         'description': 'desc1',
                         'admin_state_up': False,
                         'protocol': constants.PROTOCOL_HTTP,
-                        'protocol_port': 80}
+                        'protocol_port': 80,
+                        'loadbalancer_id': self.lb['loadbalancer']['id']}
         lb_listener2 = {'name': 'listener2',
-                        'default_pool_id': self.pool.get('id'),
+                        'default_pool_id': self.pool['pool']['id'],
                         'description': 'desc2',
                         'admin_state_up': False,
                         'protocol': constants.PROTOCOL_HTTP,
-                        'protocol_port': 81}
+                        'protocol_port': 81,
+                        'loadbalancer_id': self.lb['loadbalancer']['id']}
         body1 = self._build_body(lb_listener1)
         body2 = self._build_body(lb_listener2)
-        listener1 = self.post(self.listeners_path, body1).json
-        self.set_lb_status(self.lb.get('id'), constants.ACTIVE)
-        listener2 = self.post(self.listeners_path, body2).json
-        self.assertEqual(listener1['default_pool_id'], self.pool.get('id'))
+        listener1 = self.post(self.listeners_path, body1).json['listener']
+        self.set_lb_status(self.lb['loadbalancer']['id'], constants.ACTIVE)
+        listener2 = self.post(self.listeners_path, body2).json['listener']
+        self.assertEqual(listener1['default_pool_id'], self.pool['pool']['id'])
         self.assertEqual(listener1['default_pool_id'],
                          listener2['default_pool_id'])
 
@@ -290,59 +287,60 @@ class TestListener(base.BaseAPITest):
         self.assert_final_listener_statuses(self.lb['loadbalancer']['id'],
                                             listener_api['id'])
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_update(self):
         tls_uuid = uuidutils.generate_uuid()
-        listener = self.create_listener(self.lb['loadbalancer']['id'],
-                                        constants.PROTOCOL_TCP, 80,
-                                        name='listener1', description='desc1',
-                                        enabled=False, connection_limit=10,
-                                        default_tls_container_ref=tls_uuid,
-                                        default_pool_id=None)
+        listener = self.create_listener(
+            constants.PROTOCOL_TCP, 80, self.lb['loadbalancer']['id'],
+            name='listener1', description='desc1',
+            admin_state_up=False, connection_limit=10,
+            default_tls_container_ref=tls_uuid,
+            default_pool_id=None)
         self.set_lb_status(self.lb['loadbalancer']['id'])
         new_listener = {'name': 'listener2', 'admin_state_up': True,
-                        'default_pool_id': self.pool.get('id')}
-        listener_path = self.LISTENER_PATH.format(listener_id=listener['id'])
-        api_listener = self.put(listener_path, new_listener).json
+                        'default_pool_id': self.pool['pool']['id']}
+        body = self._build_body(new_listener)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener']['id'])
+        api_listener = self.put(listener_path, body).json
         update_expect = {'name': 'listener2', 'admin_state_up': True,
-                         'default_pool_id': self.pool.get('id'),
+                         'default_pool_id': self.pool['pool']['id'],
                          'provisioning_status': constants.PENDING_UPDATE,
                          'operating_status': constants.ONLINE}
         listener.update(update_expect)
-        self.assertEqual(listener.pop('created_at'),
-                         api_listener.pop('created_at'))
-        self.assertNotEqual(listener.pop('updated_at'),
-                            api_listener.pop('updated_at'))
+        self.assertEqual(listener['listener']['created_at'],
+                         api_listener['listener']['created_at'])
+        self.assertNotEqual(listener['listener']['updated_at'],
+                            api_listener['listener']['updated_at'])
         self.assertNotEqual(listener, api_listener)
-        self.assert_correct_lb_status(self.lb.get('id'),
+        self.assert_correct_lb_status(self.lb['loadbalancer']['id'],
                                       constants.PENDING_UPDATE,
                                       constants.ONLINE)
-        self.assert_final_listener_statuses(self.lb.get('id'),
-                                            api_listener.get('id'))
+        self.assert_final_listener_statuses(self.lb['loadbalancer']['id'],
+                                            api_listener['listener']['id'])
 
     def test_update_bad_listener_id(self):
         self.put(self.listener_path.format(listener_id='SEAN-CONNERY'),
                  body={}, status=404)
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_update_with_bad_default_pool_id(self):
         bad_pool_uuid = uuidutils.generate_uuid()
-        listener = self.create_listener(self.lb.get('id'),
-                                        constants.PROTOCOL_TCP, 80,
-                                        name='listener1', description='desc1',
-                                        enabled=False, connection_limit=10,
-                                        default_pool_id=self.pool.get('id'))
-        self.set_lb_status(self.lb.get('id'))
+        listener = self.create_listener(
+            constants.PROTOCOL_TCP, 80, self.lb['loadbalancer']['id'],
+            name='listener1', description='desc1',
+            admin_state_up=False, connection_limit=10,
+            default_pool_id=self.pool['pool']['id'])
+        self.set_lb_status(self.lb['loadbalancer']['id'])
         new_listener = {'name': 'listener2', 'admin_state_up': True,
                         'default_pool_id': bad_pool_uuid}
+        body = self._build_body(new_listener)
         listener_path = self.LISTENER_PATH.format(
-            lb_id=self.lb.get('id'), listener_id=listener.get('id'))
-        self.put(listener_path, new_listener, status=404)
-        self.assert_correct_lb_status(self.lb.get('id'),
+            listener_id=listener['listener']['id'])
+        self.put(listener_path, body, status=404)
+        self.assert_correct_lb_status(self.lb['loadbalancer']['id'],
                                       constants.ACTIVE,
                                       constants.ONLINE)
-        self.assert_final_listener_statuses(self.lb.get('id'),
-                                            listener.get('id'))
+        self.assert_final_listener_statuses(self.lb['loadbalancer']['id'],
+                                            listener['listener']['id'])
 
     def test_create_listeners_same_port(self):
         listener1 = self.create_listener(constants.PROTOCOL_TCP, 80,

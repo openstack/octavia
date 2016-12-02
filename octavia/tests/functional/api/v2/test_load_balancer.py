@@ -52,9 +52,6 @@ class TestLoadBalancer(base.BaseAPITest):
             self.assertEqual(value, req.get(key))
         self.assert_final_lb_statuses(resp.get('id'))
 
-    def _build_body(self, json):
-        return {self.root_tag: json}
-
     def test_empty_list(self):
         response = self.get(self.LBS_PATH)
         api_list = response.json.get(self.root_tag_list)
@@ -415,8 +412,7 @@ class TestLoadBalancer(base.BaseAPITest):
         lb_json = self._build_body({'name': 'Steve'})
         lb_dict = lb.get(self.root_tag)
         lb = self.set_lb_status(lb_dict.get('id'))
-        self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')), lb_json,
-                 status=200)
+        self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')), lb_json)
         self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')), status=409)
 
     def test_delete_with_error_status(self):

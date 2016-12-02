@@ -74,8 +74,16 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         patcher = mock.patch('octavia.api.handlers.controller_simulator.'
                              'handler.SimulatedControllerHandler')
         self.handler_mock = patcher.start()
-        self.addCleanup(self.handler_mock.stop)
+        self.check_quota_met_true_mock = mock.patch(
+            'octavia.db.repositories.Repositories.check_quota_met',
+            return_value=True)
         self.app = self._make_app()
+        # For no apparent reason, the controller code for v2 uses a static
+        # handler mock (the one generated on the initial run) so we need to
+        # retrieve it so we use the "correct" mock instead of the one above
+        self.handler_mock_bug_workaround = getattr(
+            self.app.app.application.application.application.root,
+            'v2.0').handler
         self.project_id = uuidutils.generate_uuid()
 
         def reset_pecan():
@@ -90,6 +98,9 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     def _get_full_path(self, path):
         return ''.join([self.BASE_PATH, path])
+
+    def _build_body(self, json):
+        return {self.root_tag: json}
 
     def delete(self, path, headers=None, status=204, expect_errors=False):
         headers = headers or {}
@@ -176,7 +187,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     def create_pool_with_listener(self, lb_id, listener_id, protocol,
                                   lb_algorithm, **optionals):
-        req_dict = {'load_balancer_id': lb_id, 'listener_id': listener_id,
+        req_dict = {'loadbalancer_id': lb_id, 'listener_id': listener_id,
                     'protocol': protocol, 'lb_algorithm': lb_algorithm}
         req_dict.update(optionals)
         body = {'pool': req_dict}
@@ -185,7 +196,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         return response.json
 
     def create_pool(self, lb_id, protocol, lb_algorithm, **optionals):
-        req_dict = {'load_balancer_id': lb_id, 'protocol': protocol,
+        req_dict = {'loadbalancer_id': lb_id, 'protocol': protocol,
                     'lb_algorithm': lb_algorithm}
         req_dict.update(optionals)
         body = {'pool': req_dict}
@@ -267,15 +278,18 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         lb_listeners = self.listener_repo.get_all(db_api.get_session(),
                                                   load_balancer_id=lb_id)
         for listener in lb_listeners:
-            for pool in listener.pools:
-                self.pool_repo.update(db_api.get_session(), pool.id,
-                                      operating_status=op_status)
-                for member in pool.members:
-                    self.member_repo.update(db_api.get_session(), member.id,
-                                            operating_status=op_status)
             self.listener_repo.update(db_api.get_session(), listener.id,
                                       provisioning_status=prov_status,
                                       operating_status=op_status)
+        lb_pools = self.pool_repo.get_all(db_api.get_session(),
+                                          load_balancer_id=lb_id)
+        for pool in lb_pools:
+            self.pool_repo.update(db_api.get_session(), pool.id,
+                                  provisioning_status=prov_status,
+                                  operating_status=op_status)
+            for member in pool.members:
+                self.member_repo.update(db_api.get_session(), member.id,
+                                        operating_status=op_status)
 
     def set_lb_status(self, lb_id, status=constants.ACTIVE):
         if status == constants.DELETED:
@@ -326,3 +340,12 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                          api_listener.get('provisioning_status'))
         self.assertEqual(operating_status,
                          api_listener.get('operating_status'))
+
+    def assert_correct_pool_status(self, provisioning_status,
+                                   operating_status, pool_id):
+        api_pool = self.get(self.POOL_PATH.format(
+            pool_id=pool_id)).json.get('pool')
+        self.assertEqual(provisioning_status,
+                         api_pool.get('provisioning_status'))
+        self.assertEqual(operating_status,
+                         api_pool.get('operating_status'))
