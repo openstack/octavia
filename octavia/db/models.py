@@ -177,6 +177,11 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
     ip_address = sa.Column('ip_address', sa.String(64), nullable=False)
     protocol_port = sa.Column(sa.Integer, nullable=False)
     weight = sa.Column(sa.Integer, nullable=True)
+    provisioning_status = sa.Column(
+        sa.String(16),
+        sa.ForeignKey("provisioning_status.name",
+                      name="fk_member_provisioning_status_name"),
+        nullable=False)
     operating_status = sa.Column(
         sa.String(16),
         sa.ForeignKey("operating_status.name",
@@ -186,11 +191,6 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
     pool = orm.relationship("Pool", backref=orm.backref("members",
                                                         uselist=True,
                                                         cascade="delete"))
-    provisioning_status = sa.Column(
-        sa.String(16),
-        sa.ForeignKey("provisioning_status.name",
-                      name="fk_member_provisioning_status_name"),
-        nullable=True)
 
 
 class HealthMonitor(base_models.BASE, base_models.IdMixin,
@@ -245,6 +245,11 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         sa.String(255),
         sa.ForeignKey("algorithm.name", name="fk_pool_algorithm_name"),
         nullable=False)
+    provisioning_status = sa.Column(
+        sa.String(16),
+        sa.ForeignKey("provisioning_status.name",
+                      name="fk_pool_provisioning_status_name"),
+        nullable=False)
     operating_status = sa.Column(
         sa.String(16),
         sa.ForeignKey("operating_status.name",
@@ -259,11 +264,6 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
                                      backref=orm.backref("pools",
                                                          uselist=True,
                                                          cascade="delete"))
-    provisioning_status = sa.Column(
-        sa.String(16),
-        sa.ForeignKey("provisioning_status.name",
-                      name="fk_pool_provisioning_status_name"),
-        nullable=True)
 
     # This property should be a unique list of any listeners that reference
     # this pool as its default_pool and any listeners referenced by enabled
@@ -494,7 +494,8 @@ class AmphoraHealth(base_models.BASE):
     busy = sa.Column(sa.Boolean(), default=False, nullable=False)
 
 
-class L7Rule(base_models.BASE, base_models.IdMixin):
+class L7Rule(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
+             models.TimestampMixin):
 
     __data_model__ = data_models.L7Rule
 
@@ -519,6 +520,7 @@ class L7Rule(base_models.BASE, base_models.IdMixin):
     key = sa.Column(sa.String(255), nullable=True)
     value = sa.Column(sa.String(255), nullable=False)
     invert = sa.Column(sa.Boolean(), default=False, nullable=False)
+    enabled = sa.Column(sa.Boolean(), nullable=False)
     l7policy = orm.relationship("L7Policy", uselist=False,
                                 backref=orm.backref("l7rules",
                                                     uselist=True,
@@ -527,7 +529,12 @@ class L7Rule(base_models.BASE, base_models.IdMixin):
         sa.String(16),
         sa.ForeignKey("provisioning_status.name",
                       name="fk_l7rule_provisioning_status_name"),
-        nullable=True)
+        nullable=False)
+    operating_status = sa.Column(
+        sa.String(16),
+        sa.ForeignKey("operating_status.name",
+                      name="fk_l7rule_operating_status_name"),
+        nullable=False)
 
 
 class L7Policy(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,

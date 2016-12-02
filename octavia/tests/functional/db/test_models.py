@@ -67,6 +67,7 @@ class ModelTestMixin(object):
                   'id': self.FAKE_UUID_1,
                   'protocol': constants.PROTOCOL_HTTP,
                   'lb_algorithm': constants.LB_ALGORITHM_LEAST_CONNECTIONS,
+                  'provisioning_status': constants.ACTIVE,
                   'operating_status': constants.ONLINE,
                   'enabled': True}
         kwargs.update(overrides)
@@ -98,6 +99,7 @@ class ModelTestMixin(object):
                   'pool_id': pool_id,
                   'ip_address': '10.0.0.1',
                   'protocol_port': 80,
+                  'provisioning_status': constants.ACTIVE,
                   'operating_status': constants.ONLINE,
                   'enabled': True}
         kwargs.update(overrides)
@@ -150,8 +152,8 @@ class ModelTestMixin(object):
                   'listener_id': listener_id,
                   'action': constants.L7POLICY_ACTION_REJECT,
                   'position': 1,
-                  'provisioning_status': constants.PENDING_CREATE,
-                  'operating_status': constants.OFFLINE,
+                  'provisioning_status': constants.ACTIVE,
+                  'operating_status': constants.ONLINE,
                   'enabled': True}
         kwargs.update(overrides)
         return self._insert(session, models.L7Policy, kwargs)
@@ -161,7 +163,10 @@ class ModelTestMixin(object):
                   'l7policy_id': l7policy_id,
                   'type': constants.L7RULE_TYPE_PATH,
                   'compare_type': constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
-                  'value': '/api'}
+                  'value': '/api',
+                  'provisioning_status': constants.ACTIVE,
+                  'operating_status': constants.ONLINE,
+                  'enabled': True}
         kwargs.update(overrides)
         return self._insert(session, models.L7Rule, kwargs)
 

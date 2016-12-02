@@ -2027,7 +2027,8 @@ class TestDatabaseTasks(base.TestCase):
         mock_l7rule_repo_update.assert_called_once_with(
             'TEST',
             L7RULE_ID,
-            provisioning_status=constants.ACTIVE)
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE)
 
         # Test the revert
         mock_l7rule_repo_update.reset_mock()

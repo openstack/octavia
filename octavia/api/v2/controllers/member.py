@@ -168,8 +168,7 @@ class MembersController(base.BaseController):
         try:
             self._test_lb_and_listener_and_pool_statuses(lock_session)
 
-            db_member = self._validate_create_member(
-                lock_session, member_dict)
+            db_member = self._validate_create_member(lock_session, member_dict)
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():

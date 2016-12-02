@@ -155,7 +155,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'project_id': uuidutils.generate_uuid(),
                 'id': uuidutils.generate_uuid(),
-                'provisioning_status': None}
+                'provisioning_status': constants.ACTIVE}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         pool_dm_dict = pool_dm.to_dict()
@@ -180,7 +180,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'project_id': uuidutils.generate_uuid(),
                 'id': uuidutils.generate_uuid(),
-                'provisioning_status': None}
+                'provisioning_status': constants.ACTIVE}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id']}
@@ -216,7 +216,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'project_id': uuidutils.generate_uuid(),
                 'id': uuidutils.generate_uuid(),
-                'provisioning_status': None}
+                'provisioning_status': constants.ACTIVE}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
@@ -243,7 +243,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'project_id': uuidutils.generate_uuid(),
                 'id': uuidutils.generate_uuid(),
-                'provisioning_status': None}
+                'provisioning_status': constants.ACTIVE}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id']}
@@ -278,6 +278,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
+                'provisioning_status': constants.ACTIVE,
                 'project_id': uuidutils.generate_uuid(),
                 'id': uuidutils.generate_uuid()}
         pool_dm = self.repos.create_pool_on_load_balancer(
@@ -299,6 +300,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
+                'provisioning_status': constants.ACTIVE,
                 'project_id': uuidutils.generate_uuid(),
                 'id': uuidutils.generate_uuid()}
         pool_dm = self.repos.create_pool_on_load_balancer(
@@ -314,6 +316,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'description': 'desc1',
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
+                'provisioning_status': constants.PENDING_CREATE,
                 'project_id': uuidutils.generate_uuid(),
                 'id': uuidutils.generate_uuid()}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
@@ -333,6 +336,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         member = {'project_id': project_id, 'ip_address': '11.0.0.1',
                   'protocol_port': 80, 'enabled': True,
                   'operating_status': constants.ONLINE,
+                  'provisioning_status': constants.PENDING_CREATE,
                   'id': uuidutils.generate_uuid()}
         health_monitor = {'type': constants.HEALTH_MONITOR_HTTP, 'delay': 1,
                           'timeout': 1, 'fall_threshold': 1,
@@ -343,6 +347,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'description': 'desc1', 'listener_id': None,
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'enabled': True, 'operating_status': constants.ONLINE,
+                'provisioning_status': constants.PENDING_CREATE,
                 'project_id': project_id, 'members': [member],
                 'health_monitor': health_monitor, 'session_persistence': sp,
                 'id': uuidutils.generate_uuid()}
@@ -351,7 +356,10 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         health_monitor['pool_id'] = pool.get('id')
         l7rule = {'type': constants.L7RULE_TYPE_HOST_NAME,
                   'compare_type': constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
-                  'value': 'localhost'}
+                  'operating_status': constants.ONLINE,
+                  'provisioning_status': constants.PENDING_CREATE,
+                  'value': 'localhost',
+                  'enabled': True}
         r_health_monitor = {'type': constants.HEALTH_MONITOR_HTTP, 'delay': 1,
                             'timeout': 1, 'fall_threshold': 1,
                             'rise_threshold': 1, 'enabled': True}
@@ -359,6 +367,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                          'description': 'desc1', 'project_id': project_id,
                          'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                          'enabled': True, 'operating_status': constants.ONLINE,
+                         'provisioning_status': constants.PENDING_CREATE,
                          'id': uuidutils.generate_uuid(),
                          'health_monitor': r_health_monitor}
         l7policy = {'name': 'l7policy1', 'enabled': True,
@@ -1814,6 +1823,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
             self.session, id=pool_id, project_id=project_id, name="pool_test",
             description="pool_description", protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
         return pool
 
@@ -1869,6 +1879,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
                                          pool_id=pool.id,
                                          ip_address="10.0.0.1",
                                          protocol_port=80, enabled=True,
+                                         provisioning_status=constants.ACTIVE,
                                          operating_status=constants.ONLINE)
         new_pool = self.pool_repo.get(self.session, id=pool.id)
         self.assertEqual(1, len(new_pool.members))
@@ -1917,6 +1928,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
                                          pool_id=pool.id,
                                          ip_address="10.0.0.1",
                                          protocol_port=80,
+                                         provisioning_status=constants.ACTIVE,
                                          operating_status=constants.ONLINE,
                                          enabled=True)
         sp = self.sp_repo.create(
@@ -1946,6 +1958,7 @@ class MemberRepositoryTest(BaseRepositoryTest):
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
 
     def create_member(self, member_id, project_id, pool_id, ip_address):
@@ -1955,6 +1968,7 @@ class MemberRepositoryTest(BaseRepositoryTest):
                                          ip_address=ip_address,
                                          protocol_port=80,
                                          operating_status=constants.ONLINE,
+                                         provisioning_status=constants.ACTIVE,
                                          enabled=True)
         return member
 
@@ -2017,6 +2031,7 @@ class SessionPersistenceRepositoryTest(BaseRepositoryTest):
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
 
     def create_session_persistence(self, pool_id):
@@ -2169,6 +2184,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True,
             load_balancer_id=load_balancer2.id)
         self.assertRaises(exceptions.NotFound, self.create_listener,
@@ -2237,6 +2253,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True,
             load_balancer_id=self.load_balancer.id)
         listener = self.create_listener(self.FAKE_UUID_1, 80,
@@ -2255,6 +2272,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True,
             load_balancer_id=self.load_balancer.id)
         listener = self.create_listener(self.FAKE_UUID_1, 80,
@@ -2288,6 +2306,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True,
             load_balancer_id=self.load_balancer.id)
         listener = self.create_listener(self.FAKE_UUID_1, 80,
@@ -2431,6 +2450,7 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
 
     def create_health_monitor(self, pool_id):
@@ -3142,6 +3162,7 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
             name="pool_test", description="pool_description",
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
         return pool
 
@@ -3160,10 +3181,12 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
     def create_l7rule(self, l7rule_id, l7policy_id,
                       type=constants.L7RULE_TYPE_PATH,
                       compare_type=constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
-                      key=None, value="/api"):
+                      key=None, value="/api", enabled=True):
         l7rule = self.l7rule_repo.create(
             self.session, id=l7rule_id, l7policy_id=l7policy_id,
-            type=type, compare_type=compare_type, key=key, value=value)
+            type=type, compare_type=compare_type, key=key, value=value,
+            operating_status=constants.ONLINE, enabled=enabled,
+            provisioning_status=constants.ACTIVE)
         return l7rule
 
     def test_get(self):
@@ -3366,7 +3389,7 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
         pool = self.create_pool(uuidutils.generate_uuid())
         l7policy = self.create_l7policy(uuidutils.generate_uuid(),
                                         listener.id, 1,
-                                        redirect_pool_id=pool.id)
+                                        redirect_pool_id=pool.id,)
         l7rule = self.create_l7rule(uuidutils.generate_uuid(), l7policy.id)
         new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
         new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
@@ -3504,6 +3527,7 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
             project_id=bad_lb.project_id,
             protocol=constants.PROTOCOL_HTTP,
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
         self.assertRaises(exceptions.NotFound, self.create_l7policy,
                           uuidutils.generate_uuid(), self.listener.id, 1,
@@ -3537,11 +3561,12 @@ class L7RuleRepositoryTest(BaseRepositoryTest):
     def create_l7rule(self, l7rule_id, l7policy_id,
                       type=constants.L7RULE_TYPE_PATH,
                       compare_type=constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
-                      key=None, value="/api", invert=False):
+                      key=None, value="/api", invert=False, enabled=True):
         l7rule = self.l7rule_repo.create(
             self.session, id=l7rule_id, l7policy_id=l7policy_id,
             type=type, compare_type=compare_type, key=key, value=value,
-            invert=invert)
+            invert=invert, provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, enabled=enabled)
         return l7rule
 
     def test_get(self):
@@ -3589,7 +3614,10 @@ class L7RuleRepositoryTest(BaseRepositoryTest):
             self.session, id=None, l7policy_id=self.l7policy.id,
             type=constants.L7RULE_TYPE_PATH,
             compare_type=constants.L7RULE_COMPARE_TYPE_CONTAINS,
-            value='something')
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            value='something',
+            enabled=True)
         new_l7rule = self.l7rule_repo.get(self.session, id=l7rule.id)
         self.assertIsNotNone(l7rule.id)
         self.assertEqual(self.l7policy.id, new_l7rule.l7policy_id)

@@ -237,7 +237,7 @@ class InvalidRegex(OctaviaException):
 
 
 class InvalidL7Rule(OctaviaException):
-    message = _('Invalid L7 Rule: $(msg)s')
+    message = _('Invalid L7 Rule: %(msg)s')
 
 
 class ServerGroupObjectCreateException(OctaviaException):

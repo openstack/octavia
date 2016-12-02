@@ -21,8 +21,8 @@ import pecan
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
-from octavia.api.v1.controllers import l7rule
 from octavia.api.v2.controllers import base
+from octavia.api.v2.controllers import l7rule
 from octavia.api.v2.types import l7policy as l7policy_types
 from octavia.common import constants
 from octavia.common import data_models
@@ -262,18 +262,13 @@ class L7PolicyController(base.BaseController):
         which controller, if any, should control be passed.
         """
         context = pecan.request.context.get('octavia_context')
-        db_l7policy = self._get_db_l7policy(context.session, l7policy_id)
-        load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
-            db_l7policy)
-        if l7policy_id and len(remainder) and remainder[0] == 'l7rules':
+        if l7policy_id and len(remainder) and remainder[0] == 'rules':
             remainder = remainder[1:]
             db_l7policy = self.repositories.l7policy.get(
                 context.session, id=l7policy_id)
             if not db_l7policy:
                 LOG.info(_LI("L7Policy %s not found."), l7policy_id)
                 raise exceptions.NotFound(
-                    resource=data_models.L7Policy._name(), id=l7policy_id)
+                    resource='L7Policy', id=l7policy_id)
             return l7rule.L7RuleController(
-                load_balancer_id=load_balancer_id,
-                listener_id=listener_id,
                 l7policy_id=db_l7policy.id), remainder

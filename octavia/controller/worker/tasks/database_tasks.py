@@ -1854,9 +1854,11 @@ class MarkL7RuleActiveInDB(BaseDatabaseTask):
 
         LOG.debug("Mark ACTIVE in DB for l7rule id: %s",
                   l7rule.id)
+        op_status = constants.ONLINE if l7rule.enabled else constants.OFFLINE
         self.l7rule_repo.update(db_apis.get_session(),
                                 l7rule.id,
-                                provisioning_status=constants.ACTIVE)
+                                provisioning_status=constants.ACTIVE,
+                                operating_status=op_status)
 
     def revert(self, l7rule, *args, **kwargs):
         """Mark the l7rule as broken

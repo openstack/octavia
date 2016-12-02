@@ -129,9 +129,13 @@ def create_l7policy(l7policy_dict, lb_id, listener_id):
 
 
 def create_l7rule(l7rule_dict, l7policy_id):
+    l7rule_dict['provisioning_status'] = constants.PENDING_CREATE
+    l7rule_dict['operating_status'] = constants.OFFLINE
     if not l7rule_dict.get('id'):
         l7rule_dict['id'] = uuidutils.generate_uuid()
     l7rule_dict['l7policy_id'] = l7policy_id
+    if 'enabled' not in l7rule_dict:
+        l7rule_dict['enabled'] = True
     return l7rule_dict
 
 
