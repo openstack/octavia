@@ -12,16 +12,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import pecan
 from pecan import rest
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
-from octavia.api.v1 import controllers
+from octavia.api.v1 import controllers as v1_controller
+from octavia.api.v2 import controllers as v2_controller
 
 
 class RootController(rest.RestController):
     """The controller in which the pecan wsgi app should be created with."""
-    v1 = controllers.V1Controller()
+    v1 = v1_controller.V1Controller()
 
     @wsme_pecan.wsexpose(wtypes.text)
     def get(self):
@@ -29,4 +31,13 @@ class RootController(rest.RestController):
         # here
         return {'versions': [{'status': 'CURRENT',
                               'updated': '2014-12-11T00:00:00Z',
-                              'id': 'v1'}]}
+                              'id': 'v1'},
+                             {'status': 'EXPERIMENTAL',
+                              'updated': '2016-12-11T00:00:00Z',
+                              'id': 'v2.0'}
+                             ]}
+
+
+# This controller cannot be specified directly as a member of RootController
+# as its path is not a valid python identifier
+pecan.route(RootController, 'v2.0', v2_controller.V2Controller())
