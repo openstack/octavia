@@ -17,6 +17,7 @@ import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
+import requests
 import requests_mock
 import six
 
@@ -267,8 +268,9 @@ class TestAmphoraAPIClientTest(base.TestCase):
         url = self.driver._base_url(FAKE_IPV6_LLA)
         self.assertEqual('https://[fe80::00ff:fe00:cafe%o-hm0]:9443/0.5/', url)
 
+    @mock.patch('requests.Session.get', side_effect=requests.ConnectionError)
     @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.time.sleep')
-    def test_request(self, mock_sleep):
+    def test_request(self, mock_sleep, mock_get):
         self.assertRaises(driver_except.TimeOutException,
                           self.driver.request,
                           'get', self.amp, 'unavailableURL')
