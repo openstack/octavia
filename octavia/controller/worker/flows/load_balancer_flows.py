@@ -267,6 +267,8 @@ class LoadBalancerFlows(object):
         delete_LB_flow = linear_flow.Flow(constants.DELETE_LOADBALANCER_FLOW)
         delete_LB_flow.add(lifecycle_tasks.LoadBalancerToErrorOnRevertTask(
             requires=constants.LOADBALANCER))
+        delete_LB_flow.add(compute_tasks.NovaServerGroupDelete(
+            requires=constants.SERVER_GROUP_ID))
         delete_LB_flow.add(database_tasks.MarkLBAmphoraeHealthBusy(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(pools_delete)
