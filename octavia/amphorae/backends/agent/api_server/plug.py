@@ -168,8 +168,8 @@ class Plug(object):
         with pyroute2.IPRoute() as ipr:
             # Move the interfaces into the namespace
             idx = ipr.link_lookup(ifname=default_netns_interface)[0]
-        ipr.link('set', index=idx, net_ns_fd=consts.AMPHORA_NAMESPACE,
-                 IFLA_IFNAME=primary_interface)
+            ipr.link('set', index=idx, net_ns_fd=consts.AMPHORA_NAMESPACE,
+                     IFLA_IFNAME=primary_interface)
 
         # bring interfaces up
         self._bring_if_down(primary_interface)
