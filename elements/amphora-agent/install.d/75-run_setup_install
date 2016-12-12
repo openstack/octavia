@@ -6,7 +6,7 @@ fi
 set -eu
 set -o pipefail
 
-pip install /opt/amphora-agent
+pip install -U -c /opt/upper-constraints.txt /opt/amphora-agent
 
 mkdir /etc/octavia
 # we assume certs, etc will come in through the config drive
