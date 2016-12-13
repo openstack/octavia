@@ -18,6 +18,7 @@ from octavia.common import context
 
 
 class ContextHook(hooks.PecanHook):
+    """Configures a request context and attaches it to the request."""
 
     def on_route(self, state):
         context_obj = context.Context.from_environ(state.request.environ)

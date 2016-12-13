@@ -358,3 +358,7 @@ INIT_PROC_COMM_PATH = '/proc/1/comm'
 KEEPALIVED_SYSTEMD = 'octavia-keepalived.service'
 KEEPALIVED_SYSVINIT = 'octavia-keepalived'
 KEEPALIVED_UPSTART = 'octavia-keepalived.conf'
+
+# Authentication
+KEYSTONE = 'keystone'
+NOAUTH = 'noauth'
