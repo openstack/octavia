@@ -34,8 +34,12 @@ function build_octavia_worker_image {
     TOKEN=$(openstack token issue | grep ' id ' | get_field 2)
     die_if_not_set $LINENO TOKEN "Keystone failed to get token."
 
+    octavia_dib_tracing_arg=
+    if [ "$OCTAVIA_DIB_TRACING" != "0" ]; then
+        octavia_dib_tracing_arg="-x"
+    fi
     if ! [ -f $OCTAVIA_AMP_IMAGE_FILE ]; then
-        $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -s 2 -o $OCTAVIA_AMP_IMAGE_FILE
+        $OCTAVIA_DIR/diskimage-create/diskimage-create.sh $octavia_dib_tracing_arg -s 2 -o $OCTAVIA_AMP_IMAGE_FILE
     fi
     upload_image file://${OCTAVIA_AMP_IMAGE_FILE} $TOKEN
 

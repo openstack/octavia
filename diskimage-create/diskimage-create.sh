@@ -45,6 +45,7 @@ usage() {
     echo "        '-t' is the image type (default: qcow2)"
     echo "        '-v' display the script version"
     echo "        '-w' working directory for image building (default: .)"
+    echo "        '-x' enable tracing for diskimage-builder"
     echo
     exit 1
 }
@@ -71,8 +72,9 @@ if [ -z $OCTAVIA_REPO_PATH ]; then
     AMP_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
     OCTAVIA_REPO_PATH=${OCTAVIA_REPO_PATH:-${AMP_DIR%/*}}
 fi
+dib_enable_tracing=
 
-while getopts "a:b:c:d:hi:o:t:r:s:vw:" opt; do
+while getopts "a:b:c:d:hi:o:t:r:s:vw:x" opt; do
     case $opt in
         a)
             AMP_ARCH=$OPTARG
@@ -137,6 +139,8 @@ while getopts "a:b:c:d:hi:o:t:r:s:vw:" opt; do
         ;;
         w)
             AMP_WORKING_DIR=$OPTARG
+        ;;
+        x)  dib_enable_tracing=1
         ;;
         *)
             usage
@@ -396,7 +400,12 @@ if [ "$AMP_BASEOS" = "ubuntu" ]; then
     export DIB_CLOUD_INIT_DATASOURCES=$CLOUD_INIT_DATASOURCES
 fi
 
-disk-image-create -a $AMP_ARCH -o $AMP_OUTPUTFILENAME -t $AMP_IMAGETYPE --image-size $AMP_IMAGESIZE --image-cache $AMP_CACHEDIR $AMP_element_sequence
+dib_trace_arg=
+if [ -n "$dib_enable_tracing" ]; then
+    dib_trace_arg="-x"
+fi
+
+disk-image-create $dib_trace_arg -a $AMP_ARCH -o $AMP_OUTPUTFILENAME -t $AMP_IMAGETYPE --image-size $AMP_IMAGESIZE --image-cache $AMP_CACHEDIR $AMP_element_sequence
 
 popd > /dev/null # out of $TEMP
 rm -rf $TEMP
