@@ -1,0 +1,12 @@
+/var/log/amphora-agent.log {
+    daily
+    rotate 10
+    missingok
+    notifempty
+    compress
+    delaycompress
+    sharedscripts
+    postrotate
+        kill -s SIGUSR1 $(cat /var/run/amphora-agent.pid)
+    endscript
+}
