@@ -54,6 +54,9 @@ function octavia_configure {
         cp $OCTAVIA_DIR/etc/octavia.conf $OCTAVIA_CONF
     fi
 
+    # Change bind host
+    iniset $OCTAVIA_CONF DEFAULT bind_host $SERVICE_HOST
+
     iniset $OCTAVIA_CONF database connection "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia"
 
     if [ "$OCTAVIA_AUTH_VERSION" == "2" ] ; then
@@ -89,6 +92,7 @@ function octavia_configure {
 
     # Setting neutron request_poll_timeout
     iniset $NEUTRON_CONF octavia request_poll_timeout 3000
+    iniset $NEUTRON_CONF octavia base_url http://$SERVICE_HOST:9876
 
     # Uncomment other default options
     iniuncomment $OCTAVIA_CONF haproxy_amphora base_path
