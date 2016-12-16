@@ -8,7 +8,10 @@ function octavia_install {
     if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
         install_package qemu kpartx
         git_clone https://git.openstack.org/openstack/diskimage-builder.git $DEST/diskimage-builder master
-        git_clone https://git.openstack.org/openstack/tripleo-image-elements.git $DEST/tripleo-image-elements master
+        # Pinning tripleo-image-elements to a commit as no stable/mitaka
+        # branch was created for tripleo-image-elements and master
+        # is not compatible with mitaka
+        git_clone https://git.openstack.org/openstack/tripleo-image-elements.git $DEST/tripleo-image-elements cd7fe85b8256ee5776d95c524acd381ef454fdf1
         sudo -H -E pip install -r $DEST/diskimage-builder/requirements.txt
     fi
 }
