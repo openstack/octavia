@@ -103,7 +103,7 @@ class Listener(object):
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         # mode 00600
         mode = stat.S_IRUSR | stat.S_IWUSR
-        with os.fdopen(os.open(name, flags, mode), 'w') as file:
+        with os.fdopen(os.open(name, flags, mode), 'wb') as file:
             b = stream.read(BUFFER)
             while (b):
                 file.write(b)
@@ -236,8 +236,9 @@ class Listener(object):
                          listener_id=listener_id, action=action))), 202)
 
         details = (
-            'Configuration file is valid\nhaproxy daemon for {0} '.format(
-                listener_id) + 'started')
+            'Configuration file is valid\n'
+            'haproxy daemon for {0} started'.format(listener_id)
+        )
 
         return flask.make_response(flask.jsonify(
             dict(message='OK',
@@ -380,7 +381,7 @@ class Listener(object):
         flags = os.O_WRONLY | os.O_CREAT
         # mode 00600
         mode = stat.S_IRUSR | stat.S_IWUSR
-        with os.fdopen(os.open(file, flags, mode), 'w') as crt_file:
+        with os.fdopen(os.open(file, flags, mode), 'wb') as crt_file:
             b = stream.read(BUFFER)
             while (b):
                 crt_file.write(b)

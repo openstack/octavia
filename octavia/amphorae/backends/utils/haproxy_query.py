@@ -15,6 +15,8 @@
 import csv
 import socket
 
+import six
+
 from octavia.common import constants as consts
 
 
@@ -49,13 +51,14 @@ class HAProxyQuery(object):
             raise Exception("HAProxy '{0}' query failed.".format(query))
 
         try:
-            sock.send(query + '\n')
-            data = ''
+            sock.send(six.b(query + '\n'))
+            data = u''
             while True:
                 x = sock.recv(1024)
                 if not x:
                     break
-                data += x
+                data += x.decode('ascii') if (
+                    isinstance(x, six.binary_type)) else x
             return data.rstrip()
         finally:
             sock.close()

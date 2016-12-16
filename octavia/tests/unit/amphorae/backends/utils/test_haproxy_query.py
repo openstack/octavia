@@ -15,6 +15,7 @@
 import socket
 
 import mock
+import six
 
 from octavia.amphorae.backends.utils import haproxy_query as query
 import octavia.tests.unit.base as base
@@ -75,7 +76,7 @@ class QueryTestCase(base.TestCase):
         self.q._query('test')
 
         sock.connect.assert_called_once_with('')
-        sock.send.assert_called_once_with('test' + '\n')
+        sock.send.assert_called_once_with(six.b('test\n'))
         sock.recv.assert_called_with(1024)
         self.assertTrue(sock.close.called)
 

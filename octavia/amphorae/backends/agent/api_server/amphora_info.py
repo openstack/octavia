@@ -75,9 +75,9 @@ def compile_amphora_details():
 
 
 def _get_version_of_installed_package(name):
-    cmd = "dpkg --status " + name
+    cmd = "dpkg --status {name}".format(name=name)
     out = subprocess.check_output(cmd.split())
-    m = re.search('Version: .*', out)
+    m = re.search(b'Version: .*', out)
     return m.group(0)[len('Version: '):]
 
 
@@ -145,10 +145,7 @@ def _get_networks():
 def get_interface(ip_addr):
 
     try:
-        if six.PY2:
-            ip_version = ipaddress.ip_address(unicode(ip_addr)).version
-        else:
-            ip_version = ipaddress.ip_address(ip_addr).version
+        ip_version = ipaddress.ip_address(six.text_type(ip_addr)).version
     except Exception:
         return flask.make_response(
             flask.jsonify(dict(message="Invalid IP address")), 400)

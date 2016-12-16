@@ -102,8 +102,7 @@ class Server(object):
         self.app.add_url_rule(rule=PATH_PREFIX + '/vrrp/<action>',
                               view_func=self.manage_service_vrrp,
                               methods=['PUT'])
-        self.app.add_url_rule(rule='/' + api_server.VERSION +
-                              '/interface/<ip_addr>',
+        self.app.add_url_rule(rule=PATH_PREFIX + '/interface/<ip_addr>',
                               view_func=self.get_interface,
                               methods=['GET'])
 

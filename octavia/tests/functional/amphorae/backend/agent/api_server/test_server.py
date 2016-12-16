@@ -108,7 +108,7 @@ class TestServerTestCase(base.TestCase):
                               data='test')
             mode = stat.S_IRUSR | stat.S_IWUSR
             mock_open.assert_called_with(file_name, flags, mode)
-            mock_fdopen.assert_called_with(123, 'w')
+            mock_fdopen.assert_called_with(123, 'wb')
             self.assertEqual(202, rv.status_code)
             handle = m()
             handle.write.assert_called_once_with(six.b('test'))
@@ -192,7 +192,7 @@ class TestServerTestCase(base.TestCase):
                 json.loads(rv.data.decode('utf-8')))
             mode = stat.S_IRUSR | stat.S_IWUSR
             mock_open.assert_called_with(file_name, flags, mode)
-            mock_fdopen.assert_called_with(123, 'w')
+            mock_fdopen.assert_called_with(123, 'wb')
             handle = mock_fdopen()
             handle.write.assert_called_with(six.b('test'))
             mock_subprocess.assert_called_with(
