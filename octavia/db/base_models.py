@@ -118,4 +118,9 @@ class ProjectMixin(object):
     project_id = sa.Column(sa.String(36))
 
 
+class NameMixin(object):
+    """Name mixin to add to classes which need a name."""
+    name = sa.Column(sa.String(255), nullable=True)
+
+
 BASE = declarative.declarative_base(cls=OctaviaBase)

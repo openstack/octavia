@@ -141,7 +141,7 @@ class ListenerStatistics(base_models.BASE):
 
 
 class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
-             models.TimestampMixin):
+             models.TimestampMixin, base_models.NameMixin):
 
     __data_model__ = data_models.Member
 
@@ -175,7 +175,8 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         nullable=True)
 
 
-class HealthMonitor(base_models.BASE, base_models.ProjectMixin):
+class HealthMonitor(base_models.BASE, base_models.ProjectMixin,
+                    base_models.NameMixin):
 
     __data_model__ = data_models.HealthMonitor
 
@@ -210,13 +211,12 @@ class HealthMonitor(base_models.BASE, base_models.ProjectMixin):
 
 
 class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
-           models.TimestampMixin):
+           models.TimestampMixin, base_models.NameMixin):
 
     __data_model__ = data_models.Pool
 
     __tablename__ = "pool"
 
-    name = sa.Column(sa.String(255), nullable=True)
     description = sa.Column(sa.String(255), nullable=True)
     protocol = sa.Column(
         sa.String(16),
@@ -265,13 +265,13 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
 
 
 class LoadBalancer(base_models.BASE, base_models.IdMixin,
-                   base_models.ProjectMixin, models.TimestampMixin):
+                   base_models.ProjectMixin, models.TimestampMixin,
+                   base_models.NameMixin):
 
     __data_model__ = data_models.LoadBalancer
 
     __tablename__ = "load_balancer"
 
-    name = sa.Column(sa.String(255), nullable=True)
     description = sa.Column(sa.String(255), nullable=True)
     provisioning_status = sa.Column(
         sa.String(16),
@@ -338,7 +338,8 @@ class Vip(base_models.BASE):
 
 
 class Listener(base_models.BASE, base_models.IdMixin,
-               base_models.ProjectMixin, models.TimestampMixin):
+               base_models.ProjectMixin, models.TimestampMixin,
+               base_models.NameMixin):
 
     __data_model__ = data_models.Listener
 
@@ -348,7 +349,6 @@ class Listener(base_models.BASE, base_models.IdMixin,
                             name='uq_listener_load_balancer_id_protocol_port'),
     )
 
-    name = sa.Column(sa.String(255), nullable=True)
     description = sa.Column(sa.String(255), nullable=True)
     protocol = sa.Column(
         sa.String(16),
@@ -510,13 +510,12 @@ class L7Rule(base_models.BASE, base_models.IdMixin):
         nullable=True)
 
 
-class L7Policy(base_models.BASE, base_models.IdMixin):
+class L7Policy(base_models.BASE, base_models.IdMixin, base_models.NameMixin):
 
     __data_model__ = data_models.L7Policy
 
     __tablename__ = "l7policy"
 
-    name = sa.Column(sa.String(255), nullable=True)
     description = sa.Column(sa.String(255), nullable=True)
     listener_id = sa.Column(
         sa.String(36),

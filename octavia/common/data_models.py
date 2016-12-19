@@ -195,7 +195,7 @@ class HealthMonitor(BaseDataModel):
                  delay=None, timeout=None, fall_threshold=None,
                  rise_threshold=None, http_method=None, url_path=None,
                  expected_codes=None, enabled=None, pool=None,
-                 provisioning_status=None):
+                 provisioning_status=None, name=None):
         self.id = id
         self.project_id = project_id
         self.pool_id = pool_id
@@ -210,6 +210,7 @@ class HealthMonitor(BaseDataModel):
         self.enabled = enabled
         self.pool = pool
         self.provisioning_status = provisioning_status
+        self.name = name
 
     def delete(self):
         self.pool.health_monitor = None
@@ -284,7 +285,8 @@ class Member(BaseDataModel):
     def __init__(self, id=None, project_id=None, pool_id=None, ip_address=None,
                  protocol_port=None, weight=None, enabled=None,
                  subnet_id=None, operating_status=None, pool=None,
-                 created_at=None, updated_at=None, provisioning_status=None):
+                 created_at=None, updated_at=None, provisioning_status=None,
+                 name=None):
         self.id = id
         self.project_id = project_id
         self.pool_id = pool_id
@@ -298,6 +300,7 @@ class Member(BaseDataModel):
         self.created_at = created_at
         self.updated_at = updated_at
         self.provisioning_status = provisioning_status
+        self.name = name
 
     def delete(self):
         for mem in self.pool.members:
