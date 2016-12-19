@@ -77,8 +77,8 @@ def main():
         'ca_certs': CONF.amphora_agent.agent_server_ca,
         'cert_reqs': True,
         'preload_app': True,
-        'accesslog': '-',
-        'errorlog': '-',
+        'accesslog': '/var/log/amphora-agent.log',
+        'errorlog': '/var/log/amphora-agent.log',
         'loglevel': 'debug',
     }
     AmphoraAgent(server_instance.app, options).run()
