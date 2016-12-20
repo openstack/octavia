@@ -53,7 +53,7 @@ CentOS requires the EPEL repo and python-argparse:
 Test Prerequisites
 ------------------
 The tox image tests require libguestfs-tools 1.24 or newer.
-Libguestfs allows testing the Amphora image without requiring root privledges.
+Libguestfs allows testing the Amphora image without requiring root privileges.
 On Ubuntu systems you also need to give read access to the kernels for the user
 running the tests:
 
