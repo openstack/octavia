@@ -20,7 +20,7 @@ Problem description
 ===================
 
 There is a need to define a generic interface for a networking service.  An
-Octavia controller should not know what networking infrastucture is being used
+Octavia controller should not know what networking infrastructure is being used
 underneath.  It should only know an interface.  This interface is needed to
 support differing networking infrastructures.
 

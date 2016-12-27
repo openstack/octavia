@@ -272,7 +272,7 @@ Amphora related changes
 
 * Extend data model to support active-active Amphora. This is somewhat
   similar to active-passive (VRRP) support. Each Amphora needs to store its
-  IP and port on it's front-end network (similar to ha_ip and ha_port_id
+  IP and port on its front-end network (similar to ha_ip and ha_port_id
   in the current model) and its role should indicate it is in a cluster.
 
   The provisioning status should be interpreted as referring to an Amphora

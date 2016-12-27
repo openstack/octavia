@@ -67,7 +67,7 @@ class DatabaseCleanup(object):
         self.lb_repo = repo.LoadBalancerRepository()
 
     def delete_old_amphorae(self):
-        """Checks the DB for old amphora and deletes them based on it's age."""
+        """Checks the DB for old amphora and deletes them based on its age."""
         exp_age = datetime.timedelta(
             seconds=CONF.house_keeping.amphora_expiry_age)
 

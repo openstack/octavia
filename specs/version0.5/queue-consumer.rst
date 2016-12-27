@@ -23,7 +23,7 @@ Queue Consumer.
 
 Proposed change
 ===============
-The major component of the Queue Consumer will be be a class that acts as a
+The major component of the Queue Consumer will be a class that acts as a
 consumer to Oslo messages. It will be responsible for configuring and starting
 a server that is then able to receive messages. There will be a one-to-one
 mapping between API methods and consumer methods (see code snippet below).

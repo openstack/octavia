@@ -12,7 +12,7 @@ To enable the octavia plugin, add a line of the form:
 
 where
 
-    <GITURL> is the URL of a octavia repository
+    <GITURL> is the URL of an octavia repository
     [GITREF] is an optional git ref (branch/ref/tag).  The default is
              master.
 

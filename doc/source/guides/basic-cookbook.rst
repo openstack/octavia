@@ -523,8 +523,8 @@ HTTP just get redirected to the HTTPS listener), then please see `the example
 
 .. _heath-monitor-best-practices:
 
-Heath Monitor Best Pratices
-===========================
+Heath Monitor Best Practices
+============================
 While it is possible to set up a listener without a health monitor, if a
 back-end pool member goes down, Octavia will not remove the failed server from
 the pool until a considerable time has passed. This can lead to service

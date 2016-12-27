@@ -149,7 +149,7 @@ for Octavia to have its own operator API / interface.
 
 **Notes:**
 
-* This interface is stateless. State should be managd by the controller, and
+* This interface is stateless. State should be managed by the controller, and
   stored in a highly available database.
 
 
@@ -264,7 +264,7 @@ LB NETWORK
 ----------
 This is the subnet that controllers will use to communicate with amphorae.
 This means that controllers must have connectivity (either layer 2 or routed)
-to this subnet in order to function, and visa versa. Since amphorae will be
+to this subnet in order to function, and vice versa. Since amphorae will be
 communicating on it, this means the network is not part of the "undercloud."
 
 **Notes:**
@@ -443,7 +443,7 @@ Note that this is somewhat problematic for active / standby virtual appliance
 topologies because the vip_address for a given load balancer effectively
 becomes a highly-available IP address (a true floating VIP), which means on
 service failover from active to standby, the active amphora needs to
-relenquish all the vip_addresses it has, and the standby needs to take them
+relinquish all the vip_addresses it has, and the standby needs to take them
 over *and* start up haproxy services. This is OK if a given amphora
 only has a few load balancers, but can lead to several minutes' down-time
 during a graceful failover if there are a dozen or more load balancers on the
