@@ -162,6 +162,10 @@ haproxy_amphora_opts = [
                default=5,
                help=_('Retry timeout between connection attempts in '
                       'seconds.')),
+    cfg.StrOpt('user_group',
+               default='nogroup',
+               help=_('The user group for haproxy to run under inside the '
+                      'amphora.')),
     cfg.StrOpt('haproxy_stick_size', default='10k',
                help=_('Size of the HAProxy stick table. Accepts k, m, g '
                       'suffixes.  Example: 10k')),

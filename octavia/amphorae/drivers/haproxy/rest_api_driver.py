@@ -70,9 +70,11 @@ class HaproxyAmphoraLoadBalancerDriver(
         for amp in listener.load_balancer.amphorae:
             if amp.status != consts.DELETED:
                 # Generate HaProxy configuration from listener object
-                config = self.jinja.build_config(amp,
-                                                 listener,
-                                                 certs['tls_cert'])
+                config = self.jinja.build_config(
+                    host_amphora=amp,
+                    listener=listener,
+                    tls_cert=certs['tls_cert'],
+                    user_group=CONF.haproxy_amphora.user_group)
                 self.client.upload_config(amp, listener.id, config)
                 self.client.reload_listener(amp, listener.id)
 
