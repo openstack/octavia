@@ -20,8 +20,6 @@ Octavia base exception handling.
 from oslo_utils import excutils
 from webob import exc
 
-from octavia.i18n import _LE, _LI
-
 
 class OctaviaException(Exception):
     """Base Octavia Exception.
@@ -156,40 +154,40 @@ class TooManyL7RulesOnL7Policy(APIException):
 
 
 class ComputeBuildException(OctaviaException):
-    message = _LE('Failed to build compute instance.')
+    message = _('Failed to build compute instance.')
 
 
 class ComputeDeleteException(OctaviaException):
-    message = _LE('Failed to delete compute instance.')
+    message = _('Failed to delete compute instance.')
 
 
 class ComputeGetException(OctaviaException):
-    message = _LE('Failed to retrieve compute instance.')
+    message = _('Failed to retrieve compute instance.')
 
 
 class ComputeStatusException(OctaviaException):
-    message = _LE('Failed to retrieve compute instance status.')
+    message = _('Failed to retrieve compute instance status.')
 
 
 class ComputeGetInterfaceException(OctaviaException):
-    message = _LE('Failed to retrieve compute virtual interfaces.')
+    message = _('Failed to retrieve compute virtual interfaces.')
 
 
 class IDAlreadyExists(OctaviaException):
-    message = _LE('Already an entity with that specified id.')
+    message = _('Already an entity with that specified id.')
     code = 409
 
 
 class NoReadyAmphoraeException(OctaviaException):
-    message = _LE('There are not any READY amphora available.')
+    message = _('There are not any READY amphora available.')
 
 
 class GlanceNoTaggedImages(OctaviaException):
-    message = _LE("No Glance images are tagged with %(tag)s tag.")
+    message = _("No Glance images are tagged with %(tag)s tag.")
 
 
 class NoSuitableAmphoraException(OctaviaException):
-    message = _LE('Unable to allocate an amphora due to: %(msg)s')
+    message = _('Unable to allocate an amphora due to: %(msg)s')
 
 
 # This is an internal use exception for the taskflow work flow
@@ -197,43 +195,43 @@ class NoSuitableAmphoraException(OctaviaException):
 # normal part of operation while waiting for compute to go active
 # on the instance
 class ComputeWaitTimeoutException(OctaviaException):
-    message = _LI('Waiting for compute to go active timeout.')
+    message = _('Waiting for compute to go active timeout.')
 
 
 class InvalidTopology(OctaviaException):
-    message = _LE('Invalid topology specified: %(topology)s')
+    message = _('Invalid topology specified: %(topology)s')
 
 
 # L7 policy and rule exceptions
 class InvalidL7PolicyAction(APIException):
-    message = _LE('Invalid L7 Policy action specified: %(action)s')
+    message = _('Invalid L7 Policy action specified: %(action)s')
     code = 400
 
 
 class InvalidL7PolicyArgs(APIException):
-    message = _LE('Invalid L7 Policy arguments: %(msg)s')
+    message = _('Invalid L7 Policy arguments: %(msg)s')
     code = 400
 
 
 class InvalidURL(OctaviaException):
-    message = _LE('Not a valid URL: %(url)s')
+    message = _('Not a valid URL: %(url)s')
 
 
 class InvalidString(OctaviaException):
-    message = _LE('Invalid characters in %(what)s')
+    message = _('Invalid characters in %(what)s')
 
 
 class InvalidRegex(OctaviaException):
-    message = _LE('Unable to parse regular expression: %(e)s')
+    message = _('Unable to parse regular expression: %(e)s')
 
 
 class InvalidL7Rule(OctaviaException):
-    message = _LE('Invalid L7 Rule: $(msg)s')
+    message = _('Invalid L7 Rule: $(msg)s')
 
 
 class ServerGroupObjectCreateException(OctaviaException):
-    message = _LE('Failed to create server group object.')
+    message = _('Failed to create server group object.')
 
 
 class ServerGroupObjectDeleteException(OctaviaException):
-    message = _LE('Failed to delete server group object.')
+    message = _('Failed to delete server group object.')
