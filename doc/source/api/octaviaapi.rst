@@ -1803,7 +1803,7 @@ Layer 7 Rules
 Layer 7 rules are individual statements of logic which match parts of
 an HTTP request, session, or other protocol-specific data for any given
 client request. All the layer 7 rules associated with a given layer 7 policy
-are logically ANDed together to see wether the policy matches a given client
+are logically ANDed together to see whether the policy matches a given client
 request. If logical OR behavior is desired instead, the user should instead
 create multiple layer 7 policies with rules which match each of the components
 of the logical OR statement.
