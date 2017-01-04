@@ -80,11 +80,12 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             if interface.network_id == network_id:
                 return interface
 
-    def _plug_amphora_vip(self, amphora, network_id):
+    def _plug_amphora_vip(self, amphora, subnet):
         # We need a vip port owned by Octavia for Act/Stby and failover
         try:
             port = {'port': {'name': 'octavia-lb-vrrp-' + amphora.id,
-                             'network_id': network_id,
+                             'network_id': subnet.network_id,
+                             'fixed_ips': [{'subnet_id': subnet.id}],
                              'admin_state_up': True,
                              'device_owner': OCTAVIA_OWNER}}
             new_port = self.neutron_client.create_port(port)
@@ -98,7 +99,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             message = _('Error plugging amphora (compute_id: {compute_id}) '
                         'into vip network {network_id}.').format(
                             compute_id=amphora.compute_id,
-                            network_id=network_id)
+                            network_id=subnet.network_id)
             LOG.exception(message)
             raise base.PlugVIPException(message)
         return interface
@@ -301,7 +302,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             interface = self._get_plugged_interface(amphora.compute_id,
                                                     subnet.network_id)
             if not interface:
-                interface = self._plug_amphora_vip(amphora, subnet.network_id)
+                interface = self._plug_amphora_vip(amphora, subnet)
 
             self._add_vip_address_pair(interface.port_id, vip.ip_address)
             if self.sec_grp_enabled:
