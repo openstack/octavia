@@ -77,7 +77,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
         auth_provider = mgr.auth_provider
         region = config.network.region or config.identity.region
         self.client_args = [auth_provider, 'octavia', region]
-        self.load_balancers_client = (
+        self.networks_client = (
             load_balancers_client.LoadBalancersClient(*self.client_args))
         self.listeners_client = (
             listeners_client.ListenersClient(*self.client_args))
@@ -114,13 +114,14 @@ class BaseTestCase(manager.NetworkScenarioTest):
         The configured private network and associated subnet is used as a
         fallback in absence of tenant networking.
         """
+        tenant_id = self.networks_client.tenant_id
         try:
-            tenant_net = self._list_networks(tenant_id=self.tenant_id)[0]
+            tenant_net = self._list_networks(tenant_id=tenant_id)[0]
         except IndexError:
             tenant_net = None
 
         if tenant_net:
-            tenant_subnet = self._list_subnets(tenant_id=self.tenant_id)[0]
+            tenant_subnet = self._list_subnets(tenant_id=tenant_id)[0]
             self.subnet = tenant_subnet
             self.network = tenant_net
         else:
@@ -135,7 +136,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
 
     def _create_security_group_for_test(self):
         self.security_group = self._create_security_group(
-            tenant_id=self.tenant_id)
+            tenant_id=self.networks_client.tenant_id)
         self._create_security_group_rules_for_port(self.start_port)
         self._create_security_group_rules_for_port(self.start_port + 1)
 
@@ -148,12 +149,13 @@ class BaseTestCase(manager.NetworkScenarioTest):
         }
         self._create_security_group_rule(
             secgroup=self.security_group,
-            tenant_id=self.tenant_id,
+            tenant_id=self.networks_client.tenant_id,
             **rule)
 
     def _ipv6_subnet(self, address6_mode):
-        router = self._get_router(tenant_id=self.tenant_id)
-        self.network = self._create_network(tenant_id=self.tenant_id)
+        tenant_id = self.networks_client.tenant_id
+        router = self._get_router(tenant_id=tenant_id)
+        self.network = self._create_network(tenant_id=tenant_id)
         self.subnet = self._create_subnet(network=self.network,
                                           namestart='sub6',
                                           ip_version=6,
@@ -335,7 +337,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
 
     def _cleanup_load_balancer(self, load_balancer_id):
         test_utils.call_and_ignore_notfound_exc(
-            self.load_balancers_client.delete_load_balancer, load_balancer_id)
+            self.networks_client.delete_load_balancer, load_balancer_id)
         self._wait_for_load_balancer_status(load_balancer_id, delete=True)
 
     def _cleanup_listener(self, listener_id, load_balancer_id=None):
@@ -445,7 +447,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
         :returns: ID of the created load balancer
         """
         self.create_lb_kwargs = {'vip': {'subnet_id': self.subnet['id']}}
-        self.load_balancer = self.load_balancers_client.create_load_balancer(
+        self.load_balancer = self.networks_client.create_load_balancer(
             **self.create_lb_kwargs)
         lb_id = self.load_balancer['id']
         self.addCleanup(self._cleanup_load_balancer, lb_id)
@@ -486,7 +488,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
         end_time = time.time() + timeout
         while time.time() < end_time:
             try:
-                lb = self.load_balancers_client.get_load_balancer(
+                lb = self.networks_client.get_load_balancer(
                     load_balancer_id)
             except lib_exc.NotFound as e:
                 if delete:
