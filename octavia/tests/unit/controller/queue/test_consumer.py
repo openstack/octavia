@@ -16,6 +16,7 @@ import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 import oslo_messaging as messaging
+from oslo_messaging.rpc import dispatcher
 
 from octavia.controller.queue import consumer
 from octavia.controller.queue import endpoint
@@ -51,10 +52,12 @@ class TestConsumer(base.TestCase):
         mock_target.assert_called_once_with(topic='foo_topic',
                                             server='foo_host', fanout=False)
         mock_endpoint.assert_called_once_with()
+        access_policy = dispatcher.DefaultRPCAccessPolicy
         mock_rpc_server.assert_called_once_with(mock_get_transport_rv,
                                                 mock_target_rv,
                                                 [mock_endpoint_rv],
-                                                executor='eventlet')
+                                                executor='eventlet',
+                                                access_policy=access_policy)
 
     def test_consumer_stop(self, mock_rpc_server, mock_endpoint, mock_target,
                            mock_get_transport):
