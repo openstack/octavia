@@ -37,7 +37,7 @@ way around.
 Octavia is a load balancer for large operators
 ----------------------------------------------
 That's not to say that small operators can't use it. (In fact, we expect it to
-work well for small deployements, too.) But what we mean here is that if in
+work well for small deployments, too.) But what we mean here is that if in
 creating, improving or maintaining Octavia we somehow make it unable to meet
 the needs of a typical large operator (or that operator's users), then we have
 failed.

@@ -808,7 +808,7 @@ Delete a listener.
 |                | Error   | 401, 404, 409, 500                             |
 +----------------+---------+------------------------------------------------+
 
-**No request/reponse body**
+**No request/response body**
 
 Pools
 -----
@@ -1081,7 +1081,7 @@ Delete a pool.
 |                | Error   | 401, 404, 409, 500                              |
 +----------------+---------+-------------------------------------------------+
 
-**No request/reponse body**
+**No request/response body**
 
 Health Monitors
 ---------------

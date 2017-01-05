@@ -181,7 +181,7 @@ def _read_pem_blocks(data, *markers):
 
     :param data: A long text string containing one or more PEM-encoded blocks
     :param markers: A tuple containing the test strings that indicate the
-                    start and end of the the PEM-encoded blocks
+                    start and end of the PEM-encoded blocks
     :returns: An ASN1 substrate suitable for DER decoding.
 
     """

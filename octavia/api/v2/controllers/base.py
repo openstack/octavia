@@ -40,7 +40,7 @@ class BaseController(rest.RestController):
 
     @staticmethod
     def _convert_db_to_type(db_entity, to_type, children=False):
-        """Converts a data model into a Octavia WSME type
+        """Converts a data model into an Octavia WSME type
 
         :param db_entity: data model to convert
         :param to_type: converts db_entity to this time

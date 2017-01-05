@@ -222,7 +222,7 @@ network. Octavia uses the standard python setuptools, so installation of the
 software itself should be straightforward.
 
 Running multiple instances of the individual Octavia controller components on
-seperate physical hosts is recommended in order to provide scalability and
+separate physical hosts is recommended in order to provide scalability and
 availability of the controller software.
 
 One important security note: In 0.9 of Octavia, the Octavia API is designed to

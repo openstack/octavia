@@ -113,7 +113,7 @@ class BaseRepository(object):
         """Determines whether an entity exists in the database by its id.
 
         :param session: A Sql Alchemy database session.
-        :param id: id of entity to check for existance.
+        :param id: id of entity to check for existence.
         :returns: octavia.common.data_model
         """
         return bool(session.query(self.model_class).filter_by(id=id).first())

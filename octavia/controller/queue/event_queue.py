@@ -42,8 +42,8 @@ class EventStreamerBase(object):
 class EventStreamerNoop(EventStreamerBase):
     """Nop class implementation of EventStreamer
 
-    Usefull if your running in standalone mode and don't need to send
-    updates to Neutron Lbaas
+    Useful if you're running in standalone mode and don't need to send
+    updates to Neutron LBaaS
     """
 
     def emit(self, cnt):

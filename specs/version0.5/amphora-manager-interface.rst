@@ -84,7 +84,7 @@ Establish an abstract base class to model the desired functionality:
             raise NotImplementedError
 
         def get_amphora(self, amphora_name = None, amphora_id = None):
-            """ Try to find a amphora given its name or id
+            """ Try to find an amphora given its name or id
 
             :param amphora_name: the name of the desired amphora
             :param amphora_id: the id of the desired amphora
