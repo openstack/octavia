@@ -75,8 +75,6 @@ class MemberFlows(object):
             requires=constants.MEMBER))
         delete_member_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
-        delete_member_flow.add(database_tasks.MarkMemberActiveInDB(
-            requires=constants.MEMBER))
         delete_member_flow.add(database_tasks.
                                MarkLBAndListenersActiveInDB(
                                    requires=[constants.LOADBALANCER,
