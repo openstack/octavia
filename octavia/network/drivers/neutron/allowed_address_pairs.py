@@ -460,6 +460,10 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         self._update_security_group_rules(load_balancer, sec_grp.get('id'))
 
     def failover_preparation(self, amphora):
+        if self.dns_integration_enabled:
+            self._failover_preparation(amphora)
+
+    def _failover_preparation(self, amphora):
         interfaces = self.get_plugged_networks(compute_id=amphora.compute_id)
 
         ports = []
@@ -475,10 +479,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
         for port in ports:
             try:
-
-                if self.dns_integration_enabled:
-                    self.neutron_client.update_port(port.id,
-                                                    {'port': {'dns_name': ''}})
+                self.neutron_client.update_port(port.id,
+                                                {'port': {'dns_name': ''}})
 
             except (neutron_client_exceptions.NotFound,
                     neutron_client_exceptions.PortNotFoundClient):
