@@ -18,7 +18,6 @@ from oslo_log import log as logging
 
 from octavia.common import clients
 from octavia.common import data_models
-from octavia.i18n import _LE
 from octavia.network import base
 from octavia.network import data_models as network_models
 from octavia.network.drivers.neutron import utils
@@ -150,14 +149,14 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             return getattr(utils, 'convert_%s_dict_to_model' %
                            resource_type)(resource)
         except neutron_client_exceptions.NotFound:
-            message = _LE('{resource_type} not found '
-                          '({resource_type} id: {resource_id}.').format(
+            message = _('{resource_type} not found '
+                        '({resource_type} id: {resource_id}.').format(
                 resource_type=resource_type, resource_id=resource_id)
             raise getattr(base, '%sNotFound' %
                           resource_type.capitalize())(message)
         except Exception:
-            message = _LE('Error retrieving {resource_type} '
-                          '({resource_type} id: {resource_id}.').format(
+            message = _('Error retrieving {resource_type} '
+                        '({resource_type} id: {resource_id}.').format(
                 resource_type=resource_type, resource_id=resource_id)
             LOG.exception(message)
             raise base.NetworkException(message)
@@ -171,15 +170,15 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             return getattr(utils, 'convert_%s_dict_to_model' %
                            resource_type)(resource)
         except neutron_client_exceptions.NotFound:
-            message = _LE('{resource_type} not found '
-                          '({resource_type} Filters: {filters}.').format(
+            message = _('{resource_type} not found '
+                        '({resource_type} Filters: {filters}.').format(
                 resource_type=resource_type, filters=filters)
             LOG.exception(message)
             raise getattr(base, '%sNotFound' %
                           resource_type.capitalize())(message)
         except Exception:
-            message = _LE('Error retrieving {resource_type} '
-                          '({resource_type} Filters: {filters}.').format(
+            message = _('Error retrieving {resource_type} '
+                        '({resource_type} Filters: {filters}.').format(
                 resource_type=resource_type, filters=filters)
             LOG.exception(message)
             raise base.NetworkException(message)

@@ -95,10 +95,10 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
             interface = self.plug_port(amphora, new_port)
         except Exception:
-            message = _LE('Error plugging amphora (compute_id: {compute_id}) '
-                          'into vip network {network_id}.').format(
-                              compute_id=amphora.compute_id,
-                              network_id=network_id)
+            message = _('Error plugging amphora (compute_id: {compute_id}) '
+                        'into vip network {network_id}.').format(
+                            compute_id=amphora.compute_id,
+                            network_id=network_id)
             LOG.exception(message)
             raise base.PlugVIPException(message)
         return interface
@@ -109,9 +109,9 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         except neutron_client_exceptions.PortNotFoundClient as e:
                 raise base.PortNotFound(e.message)
         except Exception:
-            message = _LE('Error adding allowed address pair {ip} '
-                          'to port {port_id}.').format(ip=vip_address,
-                                                       port_id=port_id)
+            message = _('Error adding allowed address pair {ip} '
+                        'to port {port_id}.').format(ip=vip_address,
+                                                     port_id=port_id)
             LOG.exception(message)
             raise base.PlugVIPException(message)
 
@@ -229,8 +229,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                             {'attempt': attempts + 1, 'sg': sec_grp})
             attempts += 1
             time.sleep(CONF.networking.retry_interval)
-        message = _LE("All attempts to remove security group {0} have "
-                      "failed.").format(sec_grp)
+        message = _("All attempts to remove security group {0} have "
+                    "failed.").format(sec_grp)
         LOG.exception(message)
         raise base.DeallocateVIPException(message)
 
@@ -281,8 +281,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             try:
                 self.neutron_client.delete_port(vip.port_id)
             except Exception:
-                message = _LE('Error deleting VIP port_id {port_id} from '
-                              'neutron').format(port_id=vip.port_id)
+                message = _('Error deleting VIP port_id {port_id} from '
+                            'neutron').format(port_id=vip.port_id)
                 LOG.exception(message)
                 raise base.DeallocateVIPException(message)
         else:
@@ -344,8 +344,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         try:
             new_port = self.neutron_client.create_port(port)
         except Exception:
-            message = _LE('Error creating neutron port on network '
-                          '{network_id}.').format(
+            message = _('Error creating neutron port on network '
+                        '{network_id}.').format(
                 network_id=subnet.network_id)
             LOG.exception(message)
             raise base.AllocateVIPException(message)
@@ -383,9 +383,9 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 self.neutron_client.update_port(interface.port_id,
                                                 aap_update)
             except Exception:
-                message = _LE('Error unplugging VIP. Could not clear '
-                              'allowed address pairs from port '
-                              '{port_id}.').format(port_id=vip.port_id)
+                message = _('Error unplugging VIP. Could not clear '
+                            'allowed address pairs from port '
+                            '{port_id}.').format(port_id=vip.port_id)
                 LOG.exception(message)
                 raise base.UnplugVIPException(message)
 
@@ -415,10 +415,10 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             else:
                 raise base.PlugNetworkException(e.message)
         except Exception:
-            message = _LE('Error plugging amphora (compute_id: {compute_id}) '
-                          'into network {network_id}.').format(
-                              compute_id=compute_id,
-                              network_id=network_id)
+            message = _('Error plugging amphora (compute_id: {compute_id}) '
+                        'into network {network_id}.').format(
+                            compute_id=compute_id,
+                            network_id=network_id)
             LOG.exception(message)
             raise base.PlugNetworkException(message)
 
@@ -438,20 +438,20 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 self.nova_client.servers.interface_detach(
                     server=compute_id, port_id=unplugger.port_id)
         except Exception:
-            message = _LE('Error unplugging amphora {amphora_id} from network '
-                          '{network_id}.').format(amphora_id=compute_id,
-                                                  network_id=network_id)
+            message = _('Error unplugging amphora {amphora_id} from network '
+                        '{network_id}.').format(amphora_id=compute_id,
+                                                network_id=network_id)
             if len(unpluggers) > 1:
-                message = _LE('{base} Other interfaces have been successfully '
-                              'unplugged: ').format(base=message)
+                message = _('{base} Other interfaces have been successfully '
+                            'unplugged: ').format(base=message)
                 unpluggeds = unpluggers[:index]
                 for unplugged in unpluggeds:
-                    message = _LE('{base} neutron port '
-                                  '{port_id} ').format(
-                                      base=message, port_id=unplugged.port_id)
+                    message = _('{base} neutron port '
+                                '{port_id} ').format(
+                                    base=message, port_id=unplugged.port_id)
             else:
-                message = _LE('{base} No other networks were '
-                              'unplugged.').format(base=message)
+                message = _('{base} No other networks were '
+                            'unplugged.').format(base=message)
             LOG.exception(message)
             raise base.UnplugNetworkException(message)
 
@@ -508,11 +508,11 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 port_id=port.id,
                 fixed_ips=port.fixed_ips)
         except Exception:
-            message = _LE('Error plugging amphora (compute_id: '
-                          '{compute_id}) into port '
-                          '{port_id}.').format(
-                              compute_id=amphora.compute_id,
-                              port_id=port.id)
+            message = _('Error plugging amphora (compute_id: '
+                        '{compute_id}) into port '
+                        '{port_id}.').format(
+                            compute_id=amphora.compute_id,
+                            port_id=port.id)
             LOG.exception(message)
             raise base.PlugNetworkException(message)
 
