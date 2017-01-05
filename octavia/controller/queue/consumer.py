@@ -15,6 +15,7 @@
 from oslo_config import cfg
 from oslo_log import log as logging
 import oslo_messaging as messaging
+from oslo_messaging.rpc import dispatcher
 from oslo_service import service
 
 from octavia.controller.queue import endpoint
@@ -35,8 +36,10 @@ class Consumer(service.Service):
         transport = messaging.get_transport(cfg.CONF)
         target = messaging.Target(topic=topic, server=server, fanout=False)
         endpoints = [endpoint.Endpoint()]
+        access_policy = dispatcher.DefaultRPCAccessPolicy
         self.server = messaging.get_rpc_server(transport, target, endpoints,
-                                               executor='eventlet')
+                                               executor='eventlet',
+                                               access_policy=access_policy)
         LOG.info(_LI('Starting consumer...'))
         self.server.start()
         super(Consumer, self).start()
