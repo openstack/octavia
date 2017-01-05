@@ -87,7 +87,7 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
         self.assertEqual('v3', cert.version.name)
 
         # Make sure this cert is marked as Server and Client Cert via the
-        # The extended Key Usage extension
+        # extended Key Usage extension
         self.assertIn(x509.oid.ExtendedKeyUsageOID.SERVER_AUTH,
                       cert.extensions.get_extension_for_class(
                           x509.ExtendedKeyUsage).value._usages)
