@@ -49,6 +49,7 @@ class AgentJinjaTemplater(object):
              'base_path': CONF.haproxy_amphora.base_path,
              'bind_host': CONF.haproxy_amphora.bind_host,
              'bind_port': CONF.haproxy_amphora.bind_port,
+             'user_group': CONF.haproxy_amphora.user_group,
              'controller_list': CONF.health_manager.controller_ip_port_list,
              'debug': CONF.debug,
              'haproxy_cmd': CONF.haproxy_amphora.haproxy_cmd,

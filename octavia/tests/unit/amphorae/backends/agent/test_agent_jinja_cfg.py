@@ -37,6 +37,7 @@ class AgentJinjaTestCase(base.TestCase):
         self.conf.config(group="haproxy_amphora",
                          base_cert_dir='/var/lib/octavia/certs')
         self.conf.config(group="haproxy_amphora", use_upstart='True')
+        self.conf.config(group="haproxy_amphora", user_group='nogroup')
         self.conf.config(group="haproxy_amphora", base_path='/var/lib/octavia')
         self.conf.config(group="haproxy_amphora", bind_host='0.0.0.0')
         self.conf.config(group="haproxy_amphora", bind_port=9443)
@@ -64,7 +65,8 @@ class AgentJinjaTestCase(base.TestCase):
                            'haproxy_cmd = /usr/sbin/haproxy\n'
                            'respawn_count = 2\n'
                            'respawn_interval = 2\n'
-                           'use_upstart = True\n\n'
+                           'use_upstart = True\n'
+                           'user_group = nogroup\n\n'
                            '[health_manager]\n'
                            'controller_ip_port_list = 192.0.2.10:5555\n'
                            'heartbeat_interval = 10\n'
@@ -96,7 +98,8 @@ class AgentJinjaTestCase(base.TestCase):
                            'haproxy_cmd = /usr/sbin/haproxy\n'
                            'respawn_count = 2\n'
                            'respawn_interval = 2\n'
-                           'use_upstart = False\n\n'
+                           'use_upstart = False\n'
+                           'user_group = nogroup\n\n'
                            '[health_manager]\n'
                            'controller_ip_port_list = 192.0.2.10:5555\n'
                            'heartbeat_interval = 10\n'
