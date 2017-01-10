@@ -14,12 +14,22 @@
 
 from oslo_context import context as common_context
 
+from octavia.common import policy
 from octavia.db import api as db_api
 
 
 class Context(common_context.RequestContext):
 
     _session = None
+
+    def __init__(self, user=None, project_id=None, is_admin=False, **kwargs):
+
+        if project_id:
+            kwargs['tenant'] = project_id
+
+        super(Context, self).__init__(is_admin=is_admin, **kwargs)
+
+        self.policy = policy.Policy(self)
 
     @property
     def session(self):

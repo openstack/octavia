@@ -1,0 +1,6 @@
+---
+features:
+  - Policy.json enforcement in Octavia.
+
+    * Enables verification of privileges on specific API command for a specific
+      user role and project_id.
