@@ -237,6 +237,10 @@ class ServerGroupObjectDeleteException(OctaviaException):
     message = _('Failed to delete server group object.')
 
 
+class InvalidAmphoraOperatingSystem(OctaviaException):
+    message = _('Invalid amphora operating system: %(os_name)s')
+
+
 class QuotaException(APIException):
     msg = _('Quota has been met.')
     code = 403

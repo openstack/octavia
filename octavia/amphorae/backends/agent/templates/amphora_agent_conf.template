@@ -34,7 +34,9 @@ heartbeat_key = {{ heartbeat_key }}
 [amphora_agent]
 agent_server_ca = {{ agent_server_ca }}
 agent_server_cert = {{ agent_server_cert }}
+{% if agent_server_network_dir -%}
 agent_server_network_dir = {{ agent_server_network_dir }}
+{% endif -%}
 {% if agent_server_network_file -%}
 agent_server_network_file = {{ agent_server_network_file }}
 {% endif -%}

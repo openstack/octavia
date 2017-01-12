@@ -15,7 +15,6 @@
 
 import logging
 import os
-import shutil
 import socket
 import stat
 import subprocess
@@ -29,9 +28,8 @@ import pyroute2
 import six
 from werkzeug import exceptions
 
-from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants as consts
-from octavia.i18n import _LE, _LI
+from octavia.i18n import _LI
 
 
 CONF = cfg.CONF
@@ -48,6 +46,8 @@ template_vip = j2_env.get_template(ETH_X_VIP_CONF)
 
 
 class Plug(object):
+    def __init__(self, osutils):
+        self._osutils = osutils
 
     def plug_vip(self, vip, subnet_cidr, gateway,
                  mac_address, mtu=None, vrrp_ip=None, host_routes=None):
@@ -97,57 +97,24 @@ class Plug(object):
         secondary_interface = "{interface}:0".format(
             interface=primary_interface)
 
-        # We need to setup the netns network directory so that the ifup
-        # commands used here and in the startup scripts "sees" the right
-        # interfaces and scripts.
-        interface_file_path = util.get_network_interface_file(
+        interface_file_path = self._osutils.get_network_interface_file(
             primary_interface)
-        os.makedirs('/etc/netns/' + consts.AMPHORA_NAMESPACE)
-        shutil.copytree(
-            '/etc/network',
-            '/etc/netns/{}/network'.format(consts.AMPHORA_NAMESPACE),
-            symlinks=True,
-            ignore=shutil.ignore_patterns('eth0*', 'openssh*'))
-        name = '/etc/netns/{}/network/interfaces'.format(
-            consts.AMPHORA_NAMESPACE)
-        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
-        # mode 00644
-        mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        with os.fdopen(os.open(name, flags, mode), 'w') as int_file:
-            int_file.write('auto lo\n')
-            int_file.write('iface lo inet loopback\n')
-            if not CONF.amphora_agent.agent_server_network_file:
-                int_file.write('source /etc/netns/{}/network/'
-                               'interfaces.d/*.cfg\n'.format(
-                                   consts.AMPHORA_NAMESPACE))
 
-        # write interface file
+        self._osutils.create_netns_dir()
 
-        mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-
-        # If we are using a consolidated interfaces file, just append
-        # otherwise clear the per interface file as we are rewriting it
-        # TODO(johnsom): We need a way to clean out old interfaces records
-        if CONF.amphora_agent.agent_server_network_file:
-            flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
-        else:
-            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
-
-        with os.fdopen(os.open(interface_file_path, flags, mode),
-                       'w') as text_file:
-            text = template_vip.render(
-                interface=primary_interface,
-                vip=vip,
-                vip_ipv6=ip.version is 6,
-                broadcast=broadcast,
-                netmask=netmask,
-                gateway=gateway,
-                mtu=mtu,
-                vrrp_ip=vrrp_ip,
-                vrrp_ipv6=vrrp_version is 6,
-                host_routes=render_host_routes,
-            )
-            text_file.write(text)
+        self._osutils.write_interfaces_file()
+        self._osutils.write_vip_interface_file(
+            interface_file_path=interface_file_path,
+            primary_interface=primary_interface,
+            vip=vip,
+            ip=ip,
+            broadcast=broadcast,
+            netmask=netmask,
+            gateway=gateway,
+            mtu=mtu,
+            vrrp_ip=vrrp_ip,
+            vrrp_version=vrrp_version,
+            render_host_routes=render_host_routes)
 
         # Update the list of interfaces to add to the namespace
         # This is used in the amphora reboot case to re-establish the namespace
@@ -172,59 +139,13 @@ class Plug(object):
                      IFLA_IFNAME=primary_interface)
 
         # bring interfaces up
-        self._bring_if_down(primary_interface)
-        self._bring_if_down(secondary_interface)
-        self._bring_if_up(primary_interface, 'VIP')
-        self._bring_if_up(secondary_interface, 'VIP')
+        self._osutils.bring_interfaces_up(
+            ip, primary_interface, secondary_interface)
 
         return flask.make_response(flask.jsonify(dict(
             message="OK",
             details="VIP {vip} plugged on interface {interface}".format(
                 vip=vip, interface=primary_interface))), 202)
-
-    def _generate_network_file_text(self, netns_interface, fixed_ips, mtu):
-        text = ''
-        if fixed_ips is None:
-            text = template_port.render(interface=netns_interface)
-        else:
-            for index, fixed_ip in enumerate(fixed_ips, -1):
-                if index == -1:
-                    netns_ip_interface = netns_interface
-                else:
-                    netns_ip_interface = "{int}:{ip}".format(
-                        int=netns_interface, ip=index)
-                try:
-                    ip_addr = fixed_ip['ip_address']
-                    cidr = fixed_ip['subnet_cidr']
-                    ip = ipaddress.ip_address(
-                        ip_addr if six.text_type == type(
-                            ip_addr) else six.u(ip_addr))
-                    network = ipaddress.ip_network(
-                        cidr if six.text_type == type(
-                            cidr) else six.u(cidr))
-                    broadcast = network.broadcast_address.exploded
-                    netmask = (network.prefixlen if ip.version is 6
-                               else network.netmask.exploded)
-                    host_routes = []
-                    for hr in fixed_ip.get('host_routes', []):
-                        network = ipaddress.ip_network(
-                            hr['destination'] if isinstance(
-                                hr['destination'], six.text_type) else
-                            six.u(hr['destination']))
-                        host_routes.append({'network': network,
-                                            'gw': hr['nexthop']})
-                except ValueError:
-                    return flask.make_response(flask.jsonify(dict(
-                        message="Invalid network IP")), 400)
-                new_text = template_port.render(interface=netns_ip_interface,
-                                                ipv6=ip.version is 6,
-                                                ip_address=ip.exploded,
-                                                broadcast=broadcast,
-                                                netmask=netmask,
-                                                mtu=mtu,
-                                                host_routes=host_routes)
-                text = '\n'.join([text, new_text])
-        return text
 
     def _check_ip_addresses(self, fixed_ips):
         if fixed_ips:
@@ -267,27 +188,13 @@ class Plug(object):
                      'namespace {2}').format(default_netns_interface,
                                              netns_interface,
                                              consts.AMPHORA_NAMESPACE))
-        interface_file_path = util.get_network_interface_file(netns_interface)
-
-        # write interface file
-
-        # If we are using a consolidated interfaces file, just append
-        # otherwise clear the per interface file as we are rewriting it
-        # TODO(johnsom): We need a way to clean out old interfaces records
-        if CONF.amphora_agent.agent_server_network_file:
-            flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
-        else:
-            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
-
-        # mode 00644
-        mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-
-        with os.fdopen(os.open(interface_file_path, flags, mode),
-                       'w') as text_file:
-            text = self._generate_network_file_text(netns_interface,
-                                                    fixed_ips,
-                                                    mtu)
-            text_file.write(text)
+        interface_file_path = self._osutils.get_network_interface_file(
+            netns_interface)
+        self._osutils.write_port_interface_file(
+            netns_interface=netns_interface,
+            fixed_ips=fixed_ips,
+            mtu=mtu,
+            interface_file_path=interface_file_path)
 
         # Update the list of interfaces to add to the namespace
         self._update_plugged_interfaces_file(netns_interface, mac_address)
@@ -299,8 +206,8 @@ class Plug(object):
                      net_ns_fd=consts.AMPHORA_NAMESPACE,
                      IFLA_IFNAME=netns_interface)
 
-        self._bring_if_down(netns_interface)
-        self._bring_if_up(netns_interface, 'network')
+        self._osutils._bring_if_down(netns_interface)
+        self._osutils._bring_if_up(netns_interface, 'network')
 
         return flask.make_response(flask.jsonify(dict(
             message="OK",
@@ -317,31 +224,6 @@ class Plug(object):
         raise exceptions.HTTPException(
             response=flask.make_response(flask.jsonify(dict(
                 details="No suitable network interface found")), 404))
-
-    def _bring_if_up(self, interface, what):
-        # Note, we are not using pyroute2 for this as it is not /etc/netns
-        # aware.
-        cmd = ("ip netns exec {ns} ifup {params}".format(
-            ns=consts.AMPHORA_NAMESPACE, params=interface))
-        try:
-            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            LOG.error(_LE('Failed to if up {0} due to '
-                          'error: {1}').format(interface, str(e)))
-            raise exceptions.HTTPException(
-                response=flask.make_response(flask.jsonify(dict(
-                    message='Error plugging {0}'.format(what),
-                    details=e.output)), 500))
-
-    def _bring_if_down(self, interface):
-        # Note, we are not using pyroute2 for this as it is not /etc/netns
-        # aware.
-        cmd = ("ip netns exec {ns} ifdown {params}".format(
-            ns=consts.AMPHORA_NAMESPACE, params=interface))
-        try:
-            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError:
-            pass
 
     def _update_plugged_interfaces_file(self, interface, mac_address):
         # write interfaces to plugged_interfaces file and prevent duplicates

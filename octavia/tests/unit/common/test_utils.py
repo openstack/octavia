@@ -42,3 +42,9 @@ class TestConfig(base.TestCase):
                          utils.ip_port_str('127.0.0.1', 8080))
         self.assertEqual("[::1]:8080",
                          utils.ip_port_str('::1', 8080))
+
+    def test_netmask_to_prefix(self):
+        self.assertEqual(utils.netmask_to_prefix('255.0.0.0'), 8)
+        self.assertEqual(utils.netmask_to_prefix('255.255.0.0'), 16)
+        self.assertEqual(utils.netmask_to_prefix('255.255.255.0'), 24)
+        self.assertEqual(utils.netmask_to_prefix('255.255.255.128'), 25)

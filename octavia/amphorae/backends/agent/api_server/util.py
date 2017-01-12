@@ -125,13 +125,6 @@ def is_listener_running(listener_id):
         os.path.join('/proc', get_haproxy_pid(listener_id)))
 
 
-def get_network_interface_file(interface):
-    if CONF.amphora_agent.agent_server_network_file:
-        return CONF.amphora_agent.agent_server_network_file
-    return os.path.join(CONF.amphora_agent.agent_server_network_dir,
-                        interface + '.cfg')
-
-
 def get_os_init_system():
     if os.path.exists(consts.INIT_PROC_COMM_PATH):
         with open(consts.INIT_PROC_COMM_PATH, 'r') as init_comm:

@@ -333,21 +333,21 @@ if [ "$AMP_BASEOS" = "ubuntu" ]; then
         export UBUNTU_MIRROR="$BASE_OS_MIRROR"
     fi
 elif [ "$AMP_BASEOS" = "fedora" ]; then
-    AMP_element_sequence=${AMP_element_sequence:-"base vm fedora"}
+    AMP_element_sequence=${AMP_element_sequence:-"base vm fedora selinux-permissive"}
     AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
     if [ "$BASE_OS_MIRROR" ]; then
         AMP_element_sequence="$AMP_element_sequence fedora-mirror"
         export FEDORA_MIRROR="$BASE_OS_MIRROR"
     fi
 elif [ "$AMP_BASEOS" = "centos" ]; then
-    AMP_element_sequence=${AMP_element_sequence:-"base vm centos7 epel"}
+    AMP_element_sequence=${AMP_element_sequence:-"base vm centos7 epel selinux-permissive"}
     AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
     if [ "$BASE_OS_MIRROR" ]; then
         AMP_element_sequence="$AMP_element_sequence centos-mirror"
         export CENTOS_MIRROR="$BASE_OS_MIRROR"
     fi
 elif [ "$AMP_BASEOS" = "rhel" ]; then
-    AMP_element_sequence=${AMP_element_sequence:-"base vm rhel7"}
+    AMP_element_sequence=${AMP_element_sequence:-"base vm rhel7 selinux-permissive"}
     AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
 fi
 

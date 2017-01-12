@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -eu
+set -o pipefail
+
+if [[ -d /etc/rsyslog.d ]] && [[ ! -e /etc/rsyslog.d/49-haproxy.conf ]]; then
+    cat >> /etc/rsyslog.d/49-haproxy.conf <<EOF
+# Send HAProxy messages to a dedicated logfile
+if \$programname startswith 'haproxy' then /var/log/haproxy.log
+&~
+EOF
+fi
