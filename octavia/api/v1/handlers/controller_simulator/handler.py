@@ -101,7 +101,7 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
                                  **l7policy_dict)
         elif create:
             db_l7policy = repo.l7policy.create(db_api.get_session(),
-                                               **l7policy_dict)
+                                               **l7policy.to_dict())
         if db_l7policy.listener:
             repo.listener.update(db_api.get_session(), db_l7policy.listener.id,
                                  operating_status=constants.ONLINE,
