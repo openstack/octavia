@@ -29,7 +29,6 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 import oslo_messaging as messaging
 
-from octavia.api.v1.handlers.queue import producer
 from octavia.api.v1.types import health_monitor
 from octavia.api.v1.types import l7policy
 from octavia.api.v1.types import l7rule
@@ -37,6 +36,7 @@ from octavia.api.v1.types import listener
 from octavia.api.v1.types import load_balancer
 from octavia.api.v1.types import member
 from octavia.api.v1.types import pool
+from octavia.api.v2.handlers.queue import producer
 from octavia.common import data_models
 from octavia.tests.unit import base
 
