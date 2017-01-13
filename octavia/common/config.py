@@ -439,6 +439,24 @@ glance_opts = [
                 help=_('Disable certificate validation on SSL connections ')),
 ]
 
+quota_opts = [
+    cfg.IntOpt('default_load_balancer_quota',
+               default=constants.QUOTA_UNLIMITED,
+               help=_('Default per project load balancer quota.')),
+    cfg.IntOpt('default_listener_quota',
+               default=constants.QUOTA_UNLIMITED,
+               help=_('Default per project listener quota.')),
+    cfg.IntOpt('default_member_quota',
+               default=constants.QUOTA_UNLIMITED,
+               help=_('Default per project member quota.')),
+    cfg.IntOpt('default_pool_quota',
+               default=constants.QUOTA_UNLIMITED,
+               help=_('Default per project pool quota.')),
+    cfg.IntOpt('default_health_monitor_quota',
+               default=constants.QUOTA_UNLIMITED,
+               help=_('Default per project health monitor quota.')),
+]
+
 
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
@@ -458,6 +476,7 @@ cfg.CONF.register_cli_opts(healthmanager_opts, group='health_manager')
 cfg.CONF.register_opts(nova_opts, group='nova')
 cfg.CONF.register_opts(glance_opts, group='glance')
 cfg.CONF.register_opts(neutron_opts, group='neutron')
+cfg.CONF.register_opts(quota_opts, group='quotas')
 
 
 # Ensure that the control exchange is set correctly

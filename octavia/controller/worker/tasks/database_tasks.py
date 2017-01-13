@@ -17,7 +17,9 @@ import logging
 
 from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
+from oslo_utils import excutils
 from oslo_utils import uuidutils
+import six
 import sqlalchemy
 from sqlalchemy.orm import exc
 from taskflow import task
@@ -2201,3 +2203,369 @@ class MarkPoolPendingUpdateInDB(BaseDatabaseTask):
         LOG.warning(_LW("Reverting mark pool pending update in DB "
                         "for pool id %s"), pool.id)
         self.task_utils.mark_pool_prov_status_error(pool.id)
+
+
+class DecrementHealthMonitorQuota(BaseDatabaseTask):
+    """Decrements the health monitor quota for a project.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, health_mon):
+        """Decrements the health monitor quota.
+
+        :param health_mon: The health monitor to decrement the quota on.
+        :returns: None
+        """
+
+        LOG.debug("Decrementing health monitor quota for "
+                  "project: %s ", health_mon.project_id)
+
+        lock_session = db_apis.get_session(autocommit=False)
+        try:
+            self.repos.decrement_quota(lock_session,
+                                       data_models.HealthMonitor,
+                                       health_mon.project_id)
+            lock_session.commit()
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                LOG.error(_LE('Failed to decrement health monitor quota for '
+                              'project: {proj} the project may have excess '
+                              'quota in use.').format(
+                    proj=health_mon.project_id))
+                lock_session.rollback()
+
+    def revert(self, health_mon, result, *args, **kwargs):
+        """Re-apply the quota
+
+        :param health_mon: The health monitor to decrement the quota on.
+        :returns: None
+        """
+
+        LOG.warning(_LW('Reverting decrement quota for health monitor '
+                        'on project {proj} Project quota counts may be '
+                        'incorrect.').format(proj=health_mon.project_id))
+
+        # Increment the quota back if this task wasn't the failure
+        if not isinstance(result, failure.Failure):
+
+            try:
+                session = db_apis.get_session()
+                lock_session = db_apis.get_session(autocommit=False)
+                try:
+                    self.repos.check_quota_met(session,
+                                               lock_session,
+                                               data_models.HealthMonitor,
+                                               health_mon.project_id)
+                    lock_session.commit()
+                except Exception:
+                    lock_session.rollback()
+            except Exception:
+                # Don't fail the revert flow
+                pass
+
+
+class DecrementListenerQuota(BaseDatabaseTask):
+    """Decrements the listener quota for a project.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, listener):
+        """Decrements the listener quota.
+
+        :param listener: The listener to decrement the quota on.
+        :returns: None
+        """
+
+        LOG.debug("Decrementing listener quota for "
+                  "project: %s ", listener.project_id)
+
+        lock_session = db_apis.get_session(autocommit=False)
+        try:
+            self.repos.decrement_quota(lock_session,
+                                       data_models.Listener,
+                                       listener.project_id)
+            lock_session.commit()
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                LOG.error(_LE('Failed to decrement listener quota for '
+                              'project: {proj} the project may have excess '
+                              'quota in use.').format(
+                    proj=listener.project_id))
+                lock_session.rollback()
+
+    def revert(self, listener, result, *args, **kwargs):
+        """Re-apply the quota
+
+        :param listener: The listener to decrement the quota on.
+        :returns: None
+        """
+
+        LOG.warning(_LW('Reverting decrement quota for listener '
+                        'on project {proj} Project quota counts may be '
+                        'incorrect.').format(proj=listener.project_id))
+
+        # Increment the quota back if this task wasn't the failure
+        if not isinstance(result, failure.Failure):
+
+            try:
+                session = db_apis.get_session()
+                lock_session = db_apis.get_session(autocommit=False)
+                try:
+                    self.repos.check_quota_met(session,
+                                               lock_session,
+                                               data_models.Listener,
+                                               listener.project_id)
+                    lock_session.commit()
+                except Exception:
+                    lock_session.rollback()
+            except Exception:
+                # Don't fail the revert flow
+                pass
+
+
+class DecrementLoadBalancerQuota(BaseDatabaseTask):
+    """Decrements the load balancer quota for a project.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, loadbalancer):
+        """Decrements the load balancer quota.
+
+        :param loadbalancer: The load balancer to decrement the quota on.
+        :returns: None
+        """
+
+        LOG.debug("Decrementing load balancer quota for "
+                  "project: %s ", loadbalancer.project_id)
+
+        lock_session = db_apis.get_session(autocommit=False)
+        try:
+            self.repos.decrement_quota(lock_session,
+                                       data_models.LoadBalancer,
+                                       loadbalancer.project_id)
+            lock_session.commit()
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                LOG.error(_LE('Failed to decrement load balancer quota for '
+                              'project: {proj} the project may have excess '
+                              'quota in use.').format(
+                    proj=loadbalancer.project_id))
+                lock_session.rollback()
+
+    def revert(self, loadbalancer, result, *args, **kwargs):
+        """Re-apply the quota
+
+        :param loadbalancer: The load balancer to decrement the quota on.
+        :returns: None
+        """
+
+        LOG.warning(_LW('Reverting decrement quota for load balancer '
+                        'on project {proj} Project quota counts may be '
+                        'incorrect.').format(proj=loadbalancer.project_id))
+
+        # Increment the quota back if this task wasn't the failure
+        if not isinstance(result, failure.Failure):
+
+            try:
+                session = db_apis.get_session()
+                lock_session = db_apis.get_session(autocommit=False)
+                try:
+                    self.repos.check_quota_met(session,
+                                               lock_session,
+                                               data_models.LoadBalancer,
+                                               loadbalancer.project_id)
+                    lock_session.commit()
+                except Exception:
+                    lock_session.rollback()
+            except Exception:
+                # Don't fail the revert flow
+                pass
+
+
+class DecrementMemberQuota(BaseDatabaseTask):
+    """Decrements the member quota for a project.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, member):
+        """Decrements the member quota.
+
+        :param member: The member to decrement the quota on.
+        :returns: None
+        """
+
+        LOG.debug("Decrementing member quota for "
+                  "project: %s ", member.project_id)
+
+        lock_session = db_apis.get_session(autocommit=False)
+        try:
+            self.repos.decrement_quota(lock_session,
+                                       data_models.Member,
+                                       member.project_id)
+            lock_session.commit()
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                LOG.error(_LE('Failed to decrement member quota for '
+                              'project: {proj} the project may have excess '
+                              'quota in use.').format(
+                    proj=member.project_id))
+                lock_session.rollback()
+
+    def revert(self, member, result, *args, **kwargs):
+        """Re-apply the quota
+
+        :param member: The member to decrement the quota on.
+        :returns: None
+        """
+
+        LOG.warning(_LW('Reverting decrement quota for member '
+                        'on project {proj} Project quota counts may be '
+                        'incorrect.').format(proj=member.project_id))
+
+        # Increment the quota back if this task wasn't the failure
+        if not isinstance(result, failure.Failure):
+
+            try:
+                session = db_apis.get_session()
+                lock_session = db_apis.get_session(autocommit=False)
+                try:
+                    self.repos.check_quota_met(session,
+                                               lock_session,
+                                               data_models.Member,
+                                               member.project_id)
+                    lock_session.commit()
+                except Exception:
+                    lock_session.rollback()
+            except Exception:
+                # Don't fail the revert flow
+                pass
+
+
+class DecrementPoolQuota(BaseDatabaseTask):
+    """Decrements the pool quota for a project.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, pool, pool_child_count):
+        """Decrements the pool quota.
+
+        :param pool: The pool to decrement the quota on
+        :returns: None
+        """
+
+        LOG.debug("Decrementing pool quota for "
+                  "project: %s ", pool.project_id)
+
+        lock_session = db_apis.get_session(autocommit=False)
+        try:
+            self.repos.decrement_quota(lock_session,
+                                       data_models.Pool,
+                                       pool.project_id)
+
+            # Pools cascade delete members and health monitors
+            # update the quota for those items as well.
+            if pool_child_count['HM'] > 0:
+                self.repos.decrement_quota(lock_session,
+                                           data_models.HealthMonitor,
+                                           pool.project_id)
+            if pool_child_count['member'] > 0:
+                self.repos.decrement_quota(
+                    lock_session, data_models.Member,
+                    pool.project_id, quantity=pool_child_count['member'])
+
+            lock_session.commit()
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                LOG.error(_LE('Failed to decrement pool quota for '
+                              'project: {proj} the project may have excess '
+                              'quota in use.').format(
+                    proj=pool.project_id))
+                lock_session.rollback()
+
+    def revert(self, pool, pool_child_count, result, *args, **kwargs):
+        """Re-apply the quota
+
+        :param project_id: The id of project to decrement the quota on
+        :returns: None
+        """
+
+        LOG.warning(_LW('Reverting decrement quota for pool '
+                        'on project {proj} Project quota counts may be '
+                        'incorrect.').format(proj=pool.project_id))
+
+        # Increment the quota back if this task wasn't the failure
+        if not isinstance(result, failure.Failure):
+
+            # These are all independent to maximize the correction
+            # in case other quota actions have occurred
+            try:
+                session = db_apis.get_session()
+                lock_session = db_apis.get_session(autocommit=False)
+                try:
+                    self.repos.check_quota_met(session,
+                                               lock_session,
+                                               data_models.Pool,
+                                               pool.project_id)
+                    lock_session.commit()
+                except Exception:
+                    lock_session.rollback()
+
+                # Attempt to increment back the health monitor quota
+                if pool_child_count['HM'] > 0:
+                    lock_session = db_apis.get_session(autocommit=False)
+                    try:
+                        self.repos.check_quota_met(session,
+                                                   lock_session,
+                                                   data_models.HealthMonitor,
+                                                   pool.project_id)
+                        lock_session.commit()
+                    except Exception:
+                        lock_session.rollback()
+
+                # Attempt to increment back the member quota
+                # This is seperate calls to maximize the correction
+                # should other factors have increased the in use quota
+                # before this point in the revert flow
+                for i in six.moves.range(pool_child_count['member']):
+                    lock_session = db_apis.get_session(autocommit=False)
+                    try:
+                        self.repos.check_quota_met(session,
+                                                   lock_session,
+                                                   data_models.Member,
+                                                   pool.project_id)
+                        lock_session.commit()
+                    except Exception:
+                        lock_session.rollback()
+            except Exception:
+                # Don't fail the revert flow
+                pass
+
+
+class CountPoolChildrenForQuota(BaseDatabaseTask):
+    """Counts the pool child resources for quota management.
+
+    Since the children of pools are cleaned up by the sqlalchemy
+    cascade delete settings, we need to collect the quota counts
+    for the child objects early.
+
+    """
+
+    def execute(self, pool):
+        """Count the pool child resources for quota management
+
+        :param pool: The pool to count children on
+        :returns: None
+        """
+
+        LOG.debug("Counting pool children for "
+                  "project: %s ", pool.project_id)
+
+        health_mon_count = 1 if pool.health_monitor else 0
+        member_count = len(pool.members)
+
+        return {'HM': health_mon_count, 'member': member_count}

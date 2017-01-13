@@ -30,7 +30,8 @@ def get_engine():
     return facade.get_engine()
 
 
-def get_session(expire_on_commit=True):
+def get_session(expire_on_commit=True, autocommit=True):
     """Helper method to grab session."""
     facade = _create_facade_lazily()
-    return facade.get_session(expire_on_commit=expire_on_commit)
+    return facade.get_session(expire_on_commit=expire_on_commit,
+                              autocommit=autocommit)

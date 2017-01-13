@@ -176,7 +176,8 @@ class TestMember(base.BaseAPITest):
                                             constants.ACTIVE, constants.ONLINE)
 
     def test_duplicate_create(self):
-        member = {'ip_address': '10.0.0.1', 'protocol_port': 80}
+        member = {'ip_address': '10.0.0.1', 'protocol_port': 80,
+                  'project_id': self.project_id}
         self.post(self.members_path, member, status=202)
         self.set_lb_status(self.lb.get('id'))
         self.post(self.members_path, member, status=409)
@@ -206,6 +207,11 @@ class TestMember(base.BaseAPITest):
             self.assertEqual('10.0.0.1', response.get('ip_address'))
             self.assertEqual(80, response.get('protocol_port'))
             self.assertEqual(subnet_id, response.get('subnet_id'))
+
+    def test_create_over_quota(self):
+        self.check_quota_met_true_mock.start()
+        body = {'ip_address': '10.0.0.3', 'protocol_port': 81}
+        self.post(self.members_path, body, status=403)
 
     def test_update(self):
         old_port = 80
@@ -340,7 +346,8 @@ class TestMember(base.BaseAPITest):
         self.put(self.LB_PATH.format(lb_id=self.lb.get('id')),
                  body={'name': 'test_name_change'})
         self.post(self.members_path,
-                  body={'ip_address': '10.0.0.1', 'protocol_port': 80},
+                  body={'ip_address': '10.0.0.1', 'protocol_port': 80,
+                        'project_id': self.project_id},
                   status=409)
 
     def test_update_when_lb_pending_update(self):
@@ -370,7 +377,8 @@ class TestMember(base.BaseAPITest):
         self.set_lb_status(self.lb.get('id'))
         self.delete(self.LB_PATH.format(lb_id=self.lb.get('id')))
         self.post(self.members_path,
-                  body={'ip_address': '10.0.0.2', 'protocol_port': 88},
+                  body={'ip_address': '10.0.0.2', 'protocol_port': 88,
+                        'project_id': self.project_id},
                   status=409)
 
     def test_update_when_lb_pending_delete(self):

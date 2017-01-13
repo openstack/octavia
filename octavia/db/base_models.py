@@ -43,6 +43,8 @@ class OctaviaBase(models.ModelBase):
         elif obj.__class__.__name__ in ['SNI']:
             return (obj.__class__.__name__ +
                     obj.listener_id + obj.tls_container_id)
+        elif obj.__class__.__name__ in ['Quotas']:
+            return obj.__class__.__name__ + obj.project_id
         else:
             raise NotImplementedError
 

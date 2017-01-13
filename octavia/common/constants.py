@@ -161,6 +161,7 @@ AMPS_DATA = 'amps_data'
 NICS = 'nics'
 VIP = 'vip'
 POOL = 'pool'
+POOL_CHILD_COUNT = 'pool_child_count'
 POOL_ID = 'pool_id'
 L7POLICY = 'l7policy'
 L7RULE = 'l7rule'
@@ -309,6 +310,9 @@ HAPROXY_BACKEND_STATUSES = (UP, DOWN)
 NO_CHECK = 'no check'
 
 HAPROXY_MEMBER_STATUSES = (UP, DOWN, NO_CHECK)
+
+# Quota Constants
+QUOTA_UNLIMITED = -1
 
 API_VERSION = '0.5'
 

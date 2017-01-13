@@ -25,6 +25,7 @@ from octavia.api.v1.types import health_monitor as hm_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
@@ -94,6 +95,7 @@ class HealthMonitorController(base.BaseController):
     def post(self, health_monitor):
         """Creates a health monitor on a pool."""
         context = pecan.request.context.get('octavia_context')
+
         try:
             db_hm = self.repositories.health_monitor.get(
                 context.session, pool_id=self.pool_id)
@@ -101,26 +103,33 @@ class HealthMonitorController(base.BaseController):
                 raise exceptions.DuplicateHealthMonitor()
         except exceptions.NotFound:
             pass
-        hm_dict = db_prepare.create_health_monitor(
-            health_monitor.to_dict(render_unsets=True), self.pool_id)
-        self._test_lb_and_listener_statuses(context.session)
+
+        lock_session = db_api.get_session(autocommit=False)
+        if self.repositories.check_quota_met(
+                context.session,
+                lock_session,
+                data_models.HealthMonitor,
+                health_monitor.project_id):
+            lock_session.rollback()
+            raise exceptions.QuotaException
 
         try:
-            db_hm = self.repositories.health_monitor.create(context.session,
+            hm_dict = db_prepare.create_health_monitor(
+                health_monitor.to_dict(render_unsets=True), self.pool_id)
+            self._test_lb_and_listener_statuses(lock_session)
+
+            db_hm = self.repositories.health_monitor.create(lock_session,
                                                             **hm_dict)
+            db_new_hm = self._get_db_hm(lock_session)
+            lock_session.commit()
         except odb_exceptions.DBError:
-            # Setting LB and Listener back to active because this is just a
-            # validation failure
-            self.repositories.load_balancer.update(
-                context.session, self.load_balancer_id,
-                provisioning_status=constants.ACTIVE)
-            for listener_id in self._get_affected_listener_ids(
-                    context.session):
-                self.repositories.listener.update(
-                    context.session, listener_id,
-                    provisioning_status=constants.ACTIVE)
+            lock_session.rollback()
             raise exceptions.InvalidOption(value=hm_dict.get('type'),
                                            option='type')
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                lock_session.rollback()
+
         try:
             LOG.info(_LI("Sending Creation of Health Monitor for Pool %s to "
                          "handler"), self.pool_id)
@@ -132,8 +141,8 @@ class HealthMonitorController(base.BaseController):
                     self.repositories.listener.update(
                         context.session, listener_id,
                         operating_status=constants.ERROR)
-        db_hm = self._get_db_hm(context.session)
-        return self._convert_db_to_type(db_hm, hm_types.HealthMonitorResponse)
+        return self._convert_db_to_type(db_new_hm,
+                                        hm_types.HealthMonitorResponse)
 
     @wsme_pecan.wsexpose(hm_types.HealthMonitorResponse,
                          body=hm_types.HealthMonitorPUT, status_code=202)

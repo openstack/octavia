@@ -232,6 +232,8 @@ class LoadBalancerFlows(object):
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(database_tasks.MarkLBDeletedInDB(
             requires=constants.LOADBALANCER))
+        delete_LB_flow.add(database_tasks.DecrementLoadBalancerQuota(
+            requires=constants.LOADBALANCER))
 
         return (delete_LB_flow, store)
 
@@ -284,6 +286,8 @@ class LoadBalancerFlows(object):
         delete_LB_flow.add(database_tasks.DisableLBAmphoraeHealthMonitoring(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(database_tasks.MarkLBDeletedInDB(
+            requires=constants.LOADBALANCER))
+        delete_LB_flow.add(database_tasks.DecrementLoadBalancerQuota(
             requires=constants.LOADBALANCER))
 
         return (delete_LB_flow, store)
