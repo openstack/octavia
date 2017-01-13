@@ -7,10 +7,12 @@ GET_PIP_CACHE_LOCATION=/opt/stack/cache/files/get-pip.py
 function octavia_install {
 
     setup_develop $OCTAVIA_DIR
-    if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
-        install_package qemu kpartx
-        git_clone $DISKIMAGE_BUILDER_REPO $DISKIMAGE_BUILDER_DIR $DISKIMAGE_BUILDER_BRANCH
-        sudo -H -E pip install -r $DEST/diskimage-builder/requirements.txt
+    if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
+        if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
+            install_package qemu kpartx
+            git_clone $DISKIMAGE_BUILDER_REPO $DISKIMAGE_BUILDER_DIR $DISKIMAGE_BUILDER_BRANCH
+            sudo -H -E pip install -r $DEST/diskimage-builder/requirements.txt
+        fi
     fi
 }
 
@@ -248,7 +250,9 @@ function configure_octavia_tempest {
 }
 
 function create_amphora_flavor {
-    amp_flavor_id=$(openstack flavor create --id auto --ram 1024 --disk 2 --vcpus 1 --private m1.amphora -f value -c id)
+    # Pass even if it exists to avoid race condition on multinode
+    openstack flavor create --id auto --ram 1024 --disk 2 --vcpus 1 --private m1.amphora -f value -c id || true
+    amp_flavor_id=$(openstack flavor list --all -c ID -c Name | awk ' / m1.amphora / {print $2}')
     iniset $OCTAVIA_CONF controller_worker amp_flavor_id $amp_flavor_id
 }
 
@@ -299,7 +303,6 @@ function octavia_start {
 
         if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
             build_octavia_worker_image
-            set_octavia_worker_image_owner_id
         fi
 
         OCTAVIA_AMP_IMAGE_ID=$(openstack image list -f value --property name=${OCTAVIA_AMP_IMAGE_NAME} -c ID)
@@ -307,7 +310,6 @@ function octavia_start {
         if [ -n "$OCTAVIA_AMP_IMAGE_ID" ]; then
             openstack image set --tag ${OCTAVIA_AMP_IMAGE_TAG} ${OCTAVIA_AMP_IMAGE_ID}
         fi
-        create_amphora_flavor
 
         # Create a management network.
         build_mgmt_network
@@ -318,9 +320,12 @@ function octavia_start {
         if is_service_enabled tempest; then
             configure_octavia_tempest ${OCTAVIA_AMP_NETWORK_ID}
         fi
-    else
+    fi
+
+    if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
         set_octavia_worker_image_owner_id
     fi
+    create_amphora_flavor
 
     create_mgmt_network_interface
     configure_lb_mgmt_sec_grp
