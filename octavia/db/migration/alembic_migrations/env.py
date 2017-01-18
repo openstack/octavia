@@ -14,6 +14,7 @@
 
 from __future__ import with_statement
 from logging import config as logging_config
+import sys
 
 from alembic import context
 from sqlalchemy import create_engine
@@ -21,7 +22,12 @@ from sqlalchemy import pool
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-octavia_config = config.octavia_config
+try:
+    octavia_config = config.octavia_config
+except AttributeError:
+    print ("Error: Please use the octavia-db-manage command for octavia"
+           " alembic actions.")
+    sys.exit(1)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
