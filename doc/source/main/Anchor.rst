@@ -12,7 +12,7 @@ Basic Setup
 # Change the listening port in config.py to 9999
 # I found it useful to run anchor in an additional devstack screen
 # Set in octavia.conf
-## [controller_worker] cert_generator to anchor
+## [certificates] cert_generator to anchor
 ## [haproxy_amphora] server_ca = /opt/stack/anchor/CA/root-ca.crt (Anchor CA)
 # Restart o-cw o-hm o-hk
 
