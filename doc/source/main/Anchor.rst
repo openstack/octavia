@@ -8,13 +8,15 @@ which secure the amphora - controller communication.
 
 Basic Setup
 -----------
-# Download/Install/Start Anchor from  https://github.com/openstack/anchor
-# Change the listening port in config.py to 9999
-# I found it useful to run anchor in an additional devstack screen
-# Set in octavia.conf
-## [certificates] cert_generator to anchor
-## [haproxy_amphora] server_ca = /opt/stack/anchor/CA/root-ca.crt (Anchor CA)
-# Restart o-cw o-hm o-hk
+1. Download/Install/Start Anchor from  https://github.com/openstack/anchor
+2. Change the listening port in config.py to 9999
+3. I found it useful to run anchor in an additional devstack screen
+4. Set in octavia.conf (root-ca.crt here is the Anchor CA)
+
+   a. [controller_worker] cert_generator = anchor
+   b. [haproxy_amphora] server_ca = /opt/stack/anchor/CA/root-ca.crt
+
+5. Restart o-cw o-hm o-hk
 
 Benefit
 -------
