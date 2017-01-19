@@ -18,7 +18,7 @@ from wsme import types as wsme_types
 
 from octavia.api.v1.types import pool as pool_type
 from octavia.common import constants
-from octavia.tests.unit.api.v1.types import base
+from octavia.tests.unit.api.common import base
 
 
 class TestSessionPersistence(object):

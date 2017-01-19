@@ -17,7 +17,7 @@ from wsme.rest import json as wsme_json
 from wsme import types as wsme_types
 
 from octavia.api.v1.types import member as member_type
-from octavia.tests.unit.api.v1.types import base
+from octavia.tests.unit.api.common import base
 
 
 class TestMemberPOST(base.BaseTypesTest):
