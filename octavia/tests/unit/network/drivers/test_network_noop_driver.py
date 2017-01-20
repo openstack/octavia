@@ -51,7 +51,7 @@ class TestNoopNetworkDriver(base.TestCase):
         self.driver.allocate_vip(self.load_balancer)
         self.assertEqual(
             (self.load_balancer, 'allocate_vip'),
-            self.driver.driver.networkconfigconfig[self.load_balancer])
+            self.driver.driver.networkconfigconfig[self.load_balancer.id])
 
     def test_deallocate_vip(self):
         self.driver.deallocate_vip(self.vip)
@@ -102,7 +102,7 @@ class TestNoopNetworkDriver(base.TestCase):
         self.driver.update_vip(self.load_balancer)
         self.assertEqual((self.load_balancer, 'update_vip'),
                          self.driver.driver.networkconfigconfig[(
-                             self.load_balancer
+                             self.load_balancer.id
                          )])
 
     def test_get_network(self):
@@ -168,5 +168,5 @@ class TestNoopNetworkDriver(base.TestCase):
         self.driver.get_network_configs(self.load_balancer)
         self.assertEqual(
             (self.load_balancer, 'get_network_configs'),
-            self.driver.driver.networkconfigconfig[self.load_balancer]
+            self.driver.driver.networkconfigconfig[self.load_balancer.id]
         )
