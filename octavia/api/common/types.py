@@ -89,6 +89,12 @@ class BaseType(wtypes.Base):
         :param render_unsets: If True, will convert items that are WSME Unset
                               types to None. If False, does not add the item
         """
+        # Set project_id equal tenant_id if project_id is unset and tenant_id
+        # is
+        if hasattr(self, 'project_id') and hasattr(self, 'tenant_id'):
+            if (isinstance(self.project_id, wtypes.UnsetType) and
+                    not isinstance(self.tenant_id, wtypes.UnsetType)):
+                self.project_id = self.tenant_id
         ret_dict = {}
         for attr in dir(self):
             if attr.startswith('_'):
@@ -99,7 +105,6 @@ class BaseType(wtypes.Base):
             # wsme.rest.json.fromjson and using the @fromjson.when_object
             # decorator.
             if attr == 'tenant_id':
-                ret_dict['project_id'] = value
                 continue
             if value and callable(value):
                     continue

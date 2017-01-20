@@ -37,6 +37,7 @@ class TestTypeRenameSubset(types.BaseType):
 
 class TestTypeTenantProject(types.BaseType):
     tenant_id = wtypes.wsattr(wtypes.StringType())
+    project_id = wtypes.wsattr(wtypes.StringType())
 
 
 class ChildTestModel(data_models.BaseDataModel):
@@ -153,3 +154,8 @@ class TestDataModelToDict(base.TestCase):
     def test_to_dict_recurse(self):
         self.assertEqual(self.model.to_dict(recurse=True),
                          self.RECURSED_RESULT)
+
+    def test_type_to_dict_with_project_id(self):
+        type_dict = TestTypeTenantProject(project_id='1234').to_dict()
+        self.assertEqual('1234', type_dict['project_id'])
+        self.assertNotIn('tenant_id', type_dict)
