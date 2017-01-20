@@ -599,6 +599,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
             if (time.time() - start) > timeout:
                 message = "Timed out trying to connect to %s" % check_ip
                 raise exceptions.TimeoutException(message)
+            time.sleep(1)
 
     def _send_requests(self, vip_ip, path=''):
         counters = dict()
