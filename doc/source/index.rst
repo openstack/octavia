@@ -1,8 +1,8 @@
 .. octavia-specs documentation master file
 
-====
-Main
-====
+=====================
+Octavia Documentation
+=====================
 
 Getting started
 ---------------
@@ -43,6 +43,7 @@ For operators
 
    guides/dev-quick-start.rst
    main/configref.rst
+   main/Anchor.rst
 
 ====
 APIs
@@ -98,6 +99,15 @@ Version 0.9 (newton)
    :maxdepth: 1
 
    specs/version0.9/*
+
+Version 1.0
+-----------
+
+.. toctree::
+   :glob:
+   :maxdepth: 1
+
+   specs/version1/*
 
 ==================
 Indices and tables
