@@ -1450,7 +1450,7 @@ class TestServerTestCase(base.TestCase):
 
             mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
             mock_open.assert_called_with(cfg_path, flags, mode)
-            mock_fdopen.assert_called_with(123, 'w')
+            mock_fdopen.assert_called_with(123, 'wb')
             self.assertEqual(200, rv.status_code)
 
         mock_exists.return_value = False

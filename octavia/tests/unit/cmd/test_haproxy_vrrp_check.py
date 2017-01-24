@@ -28,7 +28,7 @@ class TestHAproxyVRRPCheckCMD(base.TestCase):
         socket_mock = mock.MagicMock()
         mock_socket.return_value = socket_mock
         recv_mock = mock.MagicMock()
-        recv_mock.side_effect = ['1', Exception('BREAK')]
+        recv_mock.side_effect = [b'1', Exception('BREAK')]
         socket_mock.recv = recv_mock
 
         self.assertRaisesRegexp(Exception, 'BREAK',

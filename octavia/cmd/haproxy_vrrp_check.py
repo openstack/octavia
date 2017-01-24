@@ -29,8 +29,8 @@ def get_status(sock_address):
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     s.settimeout(SOCKET_TIMEOUT)
     s.connect(sock_address)
-    s.send('show stat -1 -1 -1\n')
-    data = ''
+    s.send(b'show stat -1 -1 -1\n')
+    data = b''
     while True:
         x = s.recv(1024)
         if not x:
