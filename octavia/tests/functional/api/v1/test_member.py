@@ -210,6 +210,7 @@ class TestMember(base.BaseAPITest):
 
     def test_create_over_quota(self):
         self.check_quota_met_true_mock.start()
+        self.addCleanup(self.check_quota_met_true_mock.stop)
         body = {'ip_address': '10.0.0.3', 'protocol_port': 81}
         self.post(self.members_path, body, status=403)
 

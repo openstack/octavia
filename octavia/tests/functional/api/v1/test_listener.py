@@ -209,6 +209,7 @@ class TestListener(base.BaseAPITest):
                        'protocol_port': 80,
                        'project_id': self.project_id}
         self.check_quota_met_true_mock.start()
+        self.addCleanup(self.check_quota_met_true_mock.stop)
         self.post(self.listeners_path, lb_listener, status=403)
 
     def test_update(self):

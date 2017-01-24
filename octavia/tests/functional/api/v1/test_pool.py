@@ -225,6 +225,7 @@ class TestPool(base.BaseAPITest):
 
     def test_create_over_quota(self):
         self.check_quota_met_true_mock.start()
+        self.addCleanup(self.check_quota_met_true_mock.stop)
         body = {'protocol': constants.PROTOCOL_HTTP,
                 'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
                 'project_id': self.project_id}

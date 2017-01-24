@@ -297,7 +297,7 @@ class TestServerTestCase(base.TestCase):
     def test_info(self, mock_subbprocess, mock_hostname):
         mock_hostname.side_effect = ['test-host']
         mock_subbprocess.side_effect = [
-            """Package: haproxy
+            b"""Package: haproxy
             Status: install ok installed
             Priority: optional
             Section: net

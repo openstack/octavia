@@ -65,6 +65,7 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_create_over_quota(self):
         lb_json = {'name': 'test1', 'vip': {}, 'project_id': self.project_id}
         self.check_quota_met_true_mock.start()
+        self.addCleanup(self.check_quota_met_true_mock.stop)
         self.post(self.LBS_PATH, lb_json, status=403)
 
     def test_get_all(self):

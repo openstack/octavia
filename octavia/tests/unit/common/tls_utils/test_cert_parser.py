@@ -80,7 +80,7 @@ class TestTLSParseUtils(base.TestCase):
                 sample_certs.X509_CERT,
                 private_key=sample_certs.X509_CERT_KEY,
                 intermediates=(sample_certs.TEST_X509_IMDS +
-                               "\nParser should ignore junk\n")))
+                               b"\nParser should ignore junk\n")))
         self.assertRaises(exceptions.MisMatchedKey,
                           cert_parser.validate_cert,
                           sample_certs.X509_CERT,
@@ -112,7 +112,7 @@ class TestTLSParseUtils(base.TestCase):
         self.assertRaises(
             exceptions.UnreadableCert,
             lambda: list(cert_parser.get_intermediates_pems(
-                '-----BEGIN PKCS7-----\nbad data\n-----END PKCS7-----')))
+                b'-----BEGIN PKCS7-----\nbad data\n-----END PKCS7-----')))
 
     def test_get_intermediates_pkcs7_der(self):
         self.assertEqual(
@@ -124,7 +124,7 @@ class TestTLSParseUtils(base.TestCase):
         self.assertRaises(
             exceptions.UnreadableCert,
             lambda: list(cert_parser.get_intermediates_pems(
-                '\xfe\xfe\xff\xff')))
+                b'\xfe\xfe\xff\xff')))
 
     def test_get_x509_from_der_bytes_bad(self):
         self.assertRaises(
@@ -178,11 +178,11 @@ class TestTLSParseUtils(base.TestCase):
                     cert_mock).intermediates)
 
     def test_build_pem(self):
-        expected = 'imacert\nimakey\nimainter\nimainter2\n'
-        tls_tupe = sample_configs.sample_tls_container_tuple(
-            certificate='imacert', private_key='imakey',
-            intermediates=['imainter', 'imainter2'])
-        self.assertEqual(expected, cert_parser.build_pem(tls_tupe))
+        expected = b'imacert\nimakey\nimainter\nimainter2\n'
+        tls_tuple = sample_configs.sample_tls_container_tuple(
+            certificate=b'imacert', private_key=b'imakey',
+            intermediates=[b'imainter', b'imainter2'])
+        self.assertEqual(expected, cert_parser.build_pem(tls_tuple))
 
     def test_get_primary_cn(self):
         cert = mock.MagicMock()

@@ -121,6 +121,7 @@ class TestHealthMonitor(base.BaseAPITest):
 
     def test_create_over_quota(self):
         self.check_quota_met_true_mock.start()
+        self.addCleanup(self.check_quota_met_true_mock.stop)
         self.post(self.hm_path,
                   body={'type': constants.HEALTH_MONITOR_HTTP,
                         'delay': 1, 'timeout': 1, 'fall_threshold': 1,

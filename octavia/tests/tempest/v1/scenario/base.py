@@ -258,7 +258,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
                 private_key=private_key)
 
             with tempfile.NamedTemporaryFile() as key:
-                key.write(private_key)
+                key.write(private_key.encode('utf-8'))
                 key.flush()
                 self.copy_file_to_host(httpd,
                                        "/dev/shm/httpd",
@@ -591,6 +591,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
         3. Check that no unexpected members were balanced.
         """
         members = members or ['server1_0', 'server1_1']
+        members = list(map(
+            lambda x: six.b(x) if type(x) == six.text_type else x, members))
         LOG.info(_('Checking all members are balanced...'))
         self._wait_for_http_service(self.vip_ip)
         LOG.info(_('Connection to {vip} is valid').format(vip=self.vip_ip))
@@ -695,19 +697,6 @@ class BaseTestCase(manager.NetworkScenarioTest):
                     total_counters[server] = 0
                 total_counters[server] += ct.counters[server]
         return total_counters
-
-    def _traffic_validation_after_stopping_server(self):
-        """Check that the requests are sent to the only ACTIVE server."""
-
-        LOG.info(('Starting traffic_validation_after_stopping_server...'))
-        counters = self._send_requests(self.vip_ip, ["server1", "server2"])
-        LOG.info(('Counters is: {0}'.format(counters)))
-
-        # Assert that no traffic is sent to server1.
-        for member, counter in six.iteritems(counters):
-            if member == 'server1':
-                self.assertEqual(counter, 0,
-                                 'Member %s is not balanced' % member)
 
     def _check_load_balancing_after_deleting_resources(self):
         """Check load balancer after deleting resources
@@ -818,7 +807,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
         return self.execute(cmd)
 
     def execute(self, cmd, cwd=None):
-        args = shlex.split(cmd.encode('utf-8'))
+        args = shlex.split(cmd)
         subprocess_args = {'stdout': subprocess.PIPE,
                            'stderr': subprocess.STDOUT,
                            'cwd': cwd}

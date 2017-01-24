@@ -413,9 +413,6 @@ class Repositories(object):
                   'object: {obj}'.format(quant=quantity, proj=project_id,
                                          obj=str(_class)))
 
-        if not project_id:
-            raise exceptions.MissingProjectID()
-
         # Lock the project record in the database to block other quota checks
         try:
             quotas = lock_session.query(models.Quotas).filter_by(
@@ -428,7 +425,8 @@ class Repositories(object):
                             clss=type(_class), proj=project_id))
                 return
             if _class == data_models.LoadBalancer:
-                if quotas.in_use_load_balancer > 0:
+                if (quotas.in_use_load_balancer is not None and
+                        quotas.in_use_load_balancer > 0):
                     quotas.in_use_load_balancer = (
                         quotas.in_use_load_balancer - quantity)
                 else:
@@ -439,7 +437,8 @@ class Repositories(object):
                             'quota.').format(clss=type(_class),
                                              proj=project_id))
             if _class == data_models.Listener:
-                if quotas.in_use_listener > 0:
+                if (quotas.in_use_listener is not None and
+                        quotas.in_use_listener > 0):
                     quotas.in_use_listener = (
                         quotas.in_use_listener - quantity)
                 else:
@@ -450,7 +449,8 @@ class Repositories(object):
                             'quota.').format(clss=type(_class),
                                              proj=project_id))
             if _class == data_models.Pool:
-                if quotas.in_use_pool > 0:
+                if (quotas.in_use_pool is not None and
+                        quotas.in_use_pool > 0):
                     quotas.in_use_pool = (
                         quotas.in_use_pool - quantity)
                 else:
@@ -461,7 +461,8 @@ class Repositories(object):
                             'quota.').format(clss=type(_class),
                                              proj=project_id))
             if _class == data_models.HealthMonitor:
-                if quotas.in_use_health_monitor > 0:
+                if (quotas.in_use_health_monitor is not None and
+                        quotas.in_use_health_monitor > 0):
                     quotas.in_use_health_monitor = (
                         quotas.in_use_health_monitor - quantity)
                 else:
@@ -472,7 +473,8 @@ class Repositories(object):
                             'quota.').format(clss=type(_class),
                                              proj=project_id))
             if _class == data_models.Member:
-                if quotas.in_use_member > 0:
+                if (quotas.in_use_member is not None and
+                        quotas.in_use_member > 0):
                     quotas.in_use_member = (
                         quotas.in_use_member - quantity)
                 else:

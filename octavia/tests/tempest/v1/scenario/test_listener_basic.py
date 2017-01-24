@@ -40,7 +40,7 @@ class TestListenerBasic(base.BaseTestCase):
         listener = self._create_listener(lb_id, default_pool_id=pool['id'])
         self._create_members(lb_id, pool['id'], 'server1',
                              subnet_id=self.subnet['id'])
-        self._check_members_balanced()
+        self._check_members_balanced(['server1_0', 'server1_1'])
         self._cleanup_pool(pool['id'], lb_id)
         self._cleanup_listener(listener['id'], lb_id)
         self._check_load_balancing_after_deleting_resources()
