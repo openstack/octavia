@@ -50,7 +50,7 @@ class Keepalived(object):
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         # mode 00644
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        with os.fdopen(os.open(conf_file, flags, mode), 'w') as f:
+        with os.fdopen(os.open(conf_file, flags, mode), 'wb') as f:
             b = stream.read(BUFFER)
             while b:
                 f.write(b)
