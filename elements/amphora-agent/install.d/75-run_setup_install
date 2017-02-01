@@ -8,6 +8,9 @@ set -o pipefail
 
 pip install -U -c /opt/upper-constraints.txt /opt/amphora-agent
 
+# Accommodate centos default install location
+ln -s /bin/amphora-agent /usr/local/bin/amphora-agent || true
+
 mkdir /etc/octavia
 # we assume certs, etc will come in through the config drive
 mkdir /etc/octavia/certs

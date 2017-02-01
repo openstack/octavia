@@ -18,6 +18,7 @@ import subprocess
 import mock
 import netifaces
 
+from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.agent.api_server import plug
 import octavia.tests.unit.base as base
 
@@ -36,7 +37,8 @@ class TestPlug(base.TestCase):
     def setUp(self):
         super(TestPlug, self).setUp()
         self.mock_netifaces = mock.patch.object(plug, "netifaces").start()
-        self.test_plug = plug.Plug()
+        self.osutil = osutils.BaseOS.get_os_util()
+        self.test_plug = plug.Plug(self.osutil)
         self.addCleanup(self.mock_netifaces.stop)
 
         # Set up our fake interface
@@ -48,9 +50,18 @@ class TestPlug(base.TestCase):
             ]
         }
 
-    def test__interface_by_mac_case_insensitive(self):
+    def test__interface_by_mac_case_insensitive_ubuntu(self):
         interface = self.test_plug._interface_by_mac(FAKE_MAC_ADDRESS.upper())
         self.assertEqual(FAKE_INTERFACE, interface)
+
+    def test__interface_by_mac_case_insensitive_rh(self):
+        with mock.patch('platform.linux_distribution',
+                        return_value=['centos', 'Foo']):
+            osutil = osutils.BaseOS.get_os_util()
+            self.test_plug = plug.Plug(osutil)
+            interface = self.test_plug._interface_by_mac(
+                FAKE_MAC_ADDRESS.upper())
+            self.assertEqual(FAKE_INTERFACE, interface)
 
     @mock.patch('pyroute2.NSPopen')
     @mock.patch.object(plug, "flask")
@@ -146,9 +157,10 @@ class TestPlug(base.TestCase):
 class TestPlugNetwork(base.TestCase):
     def setUp(self):
         super(TestPlugNetwork, self).setUp()
-        self.test_plug = plug.Plug()
+        self.osutil = osutils.BaseOS.get_os_util()
+        self.test_plug = plug.Plug(self.osutil)
 
-    def test__generate_network_file_text_static_ip(self):
+    def test__generate_network_file_text_static_ip_ubuntu(self):
         netns_interface = 'eth1234'
         FIXED_IP = '192.0.2.2'
         BROADCAST = '192.0.2.255'
@@ -177,8 +189,9 @@ class TestPlugNetwork(base.TestCase):
             'up route add -net {dest2} gw {nexthop} dev {netns_interface}\n'
             'down route del -net {dest2} gw {nexthop} dev {netns_interface}\n')
 
-        text = self.test_plug._generate_network_file_text(netns_interface,
-                                                          fixed_ips, MTU)
+        template_port = osutils.j2_env.get_template('plug_port_ethX.conf.j2')
+        text = self.test_plug._osutils._generate_network_file_text(
+            netns_interface, fixed_ips, MTU, template_port)
         expected_text = format_text.format(netns_interface=netns_interface,
                                            fixed_ip=FIXED_IP,
                                            broadcast=BROADCAST,

@@ -26,6 +26,7 @@ import jinja2
 import six
 from werkzeug import exceptions
 
+from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.amphorae.backends.utils import haproxy_query as query
 from octavia.common import constants as consts
@@ -73,6 +74,9 @@ class Wrapped(object):
 
 
 class Listener(object):
+
+    def __init__(self):
+        self._osutils = osutils.BaseOS.get_os_util()
 
     def get_haproxy_config(self, listener_id):
         """Gets the haproxy config
@@ -171,7 +175,8 @@ class Listener(object):
                     respawn_count=util.CONF.haproxy_amphora.respawn_count,
                     respawn_interval=(util.CONF.haproxy_amphora.
                                       respawn_interval),
-                    amphora_nsname=consts.AMPHORA_NAMESPACE
+                    amphora_nsname=consts.AMPHORA_NAMESPACE,
+                    HasIFUPAll=self._osutils.has_ifup_all()
                 )
                 text_file.write(text)
 

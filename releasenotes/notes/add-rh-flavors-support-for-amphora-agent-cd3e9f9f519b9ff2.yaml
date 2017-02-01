@@ -1,0 +1,18 @@
+---
+prelude: >
+    Amphora image support for RH Linux flavors.
+features:
+  - The diskimage-create script supports different operating system flavors
+    such as Ubuntu (the default option), CentOS, Fedora and RHEL. Adaptations
+    were made to several elements to ensure all images are operational.
+  - The amphora-agent is now able to distinguish between operating systems and
+    choose the right course of action to manage files and networking on each
+    Linux flavor.
+issues:
+  - To use CentOS, Fedora, or RHEL in your amphora image you must set
+    the user_group option, located in the [haproxy_amphora] section of the
+    octavia.conf file to "haproxy".  This will be made automatic in a
+    future version.
+upgrade:
+  - agent_server_network_dir is now auto-detected for Ubuntu, CentOS, Fedora
+    and RHEL if one is not specified in the configuration file.

@@ -28,6 +28,9 @@ class OpenFixture(fixtures.Fixture):
 
     def _setUp(self):
         self.mock_open = mock.mock_open(read_data=self.contents)
+        # work around for https://bugs.python.org/issue21258
+        self.mock_open.return_value.__iter__ = (
+            lambda self: iter(self.readline, ''))
         self._orig_open = open
 
         def replacement_open(name, *args, **kwargs):

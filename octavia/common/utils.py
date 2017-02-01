@@ -74,6 +74,10 @@ def ip_port_str(ip_address, port):
         return "[{ip}]:{port}".format(ip=ip, port=port)
 
 
+def netmask_to_prefix(netmask):
+    return netaddr.IPAddress(netmask).netmask_bits()
+
+
 class exception_logger(object):
     """Wrap a function and log raised exception
 

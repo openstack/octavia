@@ -22,6 +22,7 @@ from octavia.amphorae.backends.agent.api_server import amphora_info
 from octavia.amphorae.backends.agent.api_server import certificate_update
 from octavia.amphorae.backends.agent.api_server import keepalived
 from octavia.amphorae.backends.agent.api_server import listener
+from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.agent.api_server import plug
 
 PATH_PREFIX = '/' + api_server.VERSION
@@ -43,9 +44,11 @@ def register_app_error_handler(app):
 class Server(object):
     def __init__(self):
         self.app = flask.Flask(__name__)
+        self._osutils = osutils.BaseOS.get_os_util()
         self._keepalived = keepalived.Keepalived()
         self._listener = listener.Listener()
-        self._plug = plug.Plug()
+        self._plug = plug.Plug(self._osutils)
+        self._amphora_info = amphora_info.AmphoraInfo(self._osutils)
 
         register_app_error_handler(self.app)
 
@@ -119,10 +122,10 @@ class Server(object):
         return self._listener.delete_listener(listener_id)
 
     def get_details(self):
-        return amphora_info.compile_amphora_details()
+        return self._amphora_info.compile_amphora_details()
 
     def get_info(self):
-        return amphora_info.compile_amphora_info()
+        return self._amphora_info.compile_amphora_info()
 
     def get_all_listeners_status(self):
         return self._listener.get_all_listeners_status()
@@ -179,4 +182,4 @@ class Server(object):
         return self._keepalived.manager_keepalived_service(action)
 
     def get_interface(self, ip_addr):
-        return amphora_info.get_interface(ip_addr)
+        return self._amphora_info.get_interface(ip_addr)

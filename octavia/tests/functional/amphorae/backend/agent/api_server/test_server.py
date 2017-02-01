@@ -22,6 +22,7 @@ import subprocess
 import mock
 import netifaces
 from oslo_config import fixture as oslo_fixture
+from oslo_utils import uuidutils
 import six
 
 from octavia.amphorae.backends.agent import api_server
@@ -44,55 +45,53 @@ class TestServerTestCase(base.TestCase):
 
     def setUp(self):
         super(TestServerTestCase, self).setUp()
+        with mock.patch('platform.linux_distribution',
+                        return_value=['Ubuntu', 'Foo', 'Bar']):
+            self.ubuntu_test_server = server.Server()
+            self.ubuntu_app = self.ubuntu_test_server.app.test_client()
 
-        self.test_server = server.Server()
-        self.app = self.test_server.app.test_client()
+        with mock.patch('platform.linux_distribution',
+                        return_value=['centos', 'Foo', 'Bar']):
+            self.centos_test_server = server.Server()
+            self.centos_app = self.centos_test_server.app.test_client()
 
-        conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))
-        conf.config(group="haproxy_amphora", base_path='/var/lib/octavia')
+        self.conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))
+        self.conf.config(group="haproxy_amphora", base_path='/var/lib/octavia')
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
-    @mock.patch('os.path.exists')
-    @mock.patch('os.makedirs')
-    @mock.patch('os.rename')
-    @mock.patch('subprocess.check_output')
-    @mock.patch('os.remove')
-    def test_haproxy_systemd(self, mock_remove, mock_subprocess, mock_rename,
-                             mock_makedirs, mock_exists, mock_init_system):
-        self._test_haproxy(mock_remove, mock_subprocess, mock_rename,
-                           mock_makedirs, mock_exists, mock_init_system,
-                           consts.INIT_SYSTEMD)
+    def test_ubuntu_haproxy_systemd(self, mock_init_system):
+        self._test_haproxy(consts.INIT_SYSTEMD, consts.UBUNTU,
+                           mock_init_system)
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
+    def test_centos_haproxy_systemd(self, mock_init_system):
+        self._test_haproxy(consts.INIT_SYSTEMD, consts.CENTOS,
+                           mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSVINIT)
-    @mock.patch('os.path.exists')
-    @mock.patch('os.makedirs')
-    @mock.patch('os.rename')
-    @mock.patch('subprocess.check_output')
-    @mock.patch('os.remove')
-    def test_haproxy_sysvinit(self, mock_remove, mock_subprocess, mock_rename,
-                              mock_makedirs, mock_exists, mock_init_system):
-        self._test_haproxy(mock_remove, mock_subprocess, mock_rename,
-                           mock_makedirs, mock_exists, mock_init_system,
-                           consts.INIT_SYSVINIT)
+    def test_ubuntu_haproxy_sysvinit(self, mock_init_system):
+        self._test_haproxy(consts.INIT_SYSVINIT, consts.UBUNTU,
+                           mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_UPSTART)
+    def test_ubuntu_haproxy_upstart(self, mock_init_system):
+        self._test_haproxy(consts.INIT_UPSTART, consts.UBUNTU,
+                           mock_init_system)
+
     @mock.patch('os.path.exists')
     @mock.patch('os.makedirs')
     @mock.patch('os.rename')
     @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
-    def test_haproxy_upstart(self, mock_remove, mock_subprocess, mock_rename,
-                             mock_makedirs, mock_exists, mock_init_system):
-        self._test_haproxy(mock_remove, mock_subprocess, mock_rename,
-                           mock_makedirs, mock_exists, mock_init_system,
-                           consts.INIT_UPSTART)
+    def _test_haproxy(self, init_system, distro, mock_init_system,
+                      mock_remove, mock_subprocess, mock_rename,
+                      mock_makedirs, mock_exists):
 
-    def _test_haproxy(self, mock_remove, mock_subprocess, mock_rename,
-                      mock_makedirs, mock_exists, mock_init_system,
-                      init_system):
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
 
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mock_exists.return_value = True
@@ -103,9 +102,14 @@ class TestServerTestCase(base.TestCase):
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.put('/' + api_server.VERSION +
-                              '/listeners/amp_123/123/haproxy',
-                              data='test')
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/listeners/amp_123/123/haproxy',
+                                         data='test')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put('/' + api_server.VERSION +
+                                         '/listeners/amp_123/123/haproxy',
+                                         data='test')
             mode = stat.S_IRUSR | stat.S_IWUSR
             mock_open.assert_called_with(file_name, flags, mode)
             mock_fdopen.assert_called_with(123, 'wb')
@@ -137,9 +141,14 @@ class TestServerTestCase(base.TestCase):
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         m.side_effect = IOError()  # open crashes
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
-            rv = self.app.put('/' + api_server.VERSION +
-                              '/listeners/amp_123/123/haproxy',
-                              data='test')
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/listeners/amp_123/123/haproxy',
+                                         data='test')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put('/' + api_server.VERSION +
+                                         '/listeners/amp_123/123/haproxy',
+                                         data='test')
             self.assertEqual(500, rv.status_code)
 
         # check if files get created
@@ -158,9 +167,15 @@ class TestServerTestCase(base.TestCase):
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.put('/' + api_server.VERSION +
-                              '/listeners/amp_123/123/haproxy',
-                              data='test')
+
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/listeners/amp_123/123/haproxy',
+                                         data='test')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put('/' + api_server.VERSION +
+                                         '/listeners/amp_123/123/haproxy',
+                                         data='test')
 
             self.assertEqual(202, rv.status_code)
             if init_system == consts.INIT_SYSTEMD:
@@ -183,9 +198,14 @@ class TestServerTestCase(base.TestCase):
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.put('/' + api_server.VERSION +
-                              '/listeners/amp_123/123/haproxy',
-                              data='test')
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/listeners/amp_123/123/haproxy',
+                                         data='test')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put('/' + api_server.VERSION +
+                                         '/listeners/amp_123/123/haproxy',
+                                         data='test')
             self.assertEqual(400, rv.status_code)
             self.assertEqual(
                 {'message': 'Invalid request', u'details': u'random error'},
@@ -208,17 +228,34 @@ class TestServerTestCase(base.TestCase):
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.put('/' + api_server.VERSION +
-                              '/listeners/amp_123/123/haproxy',
-                              data='test')
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/listeners/amp_123/123/haproxy',
+                                         data='test')
+            elif distro == consts.CENTOS:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/listeners/amp_123/123/haproxy',
+                                         data='test')
             self.assertEqual(500, rv.status_code)
+
+    def test_ubuntu_start(self):
+        self._test_start(consts.UBUNTU)
+
+    def test_centos_start(self):
+        self._test_start(consts.CENTOS)
 
     @mock.patch('os.path.exists')
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 'vrrp_check_script_update')
     @mock.patch('subprocess.check_output')
-    def test_start(self, mock_subprocess, mock_vrrp, mock_exists):
-        rv = self.app.put('/' + api_server.VERSION + '/listeners/123/error')
+    def _test_start(self, distro, mock_subprocess, mock_vrrp, mock_exists):
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/error')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/error')
         self.assertEqual(400, rv.status_code)
         self.assertEqual(
             {'message': 'Invalid Request',
@@ -226,7 +263,12 @@ class TestServerTestCase(base.TestCase):
             json.loads(rv.data.decode('utf-8')))
 
         mock_exists.return_value = False
-        rv = self.app.put('/' + api_server.VERSION + '/listeners/123/start')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/start')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/start')
         self.assertEqual(404, rv.status_code)
         self.assertEqual(
             {'message': 'Listener Not Found',
@@ -235,7 +277,12 @@ class TestServerTestCase(base.TestCase):
         mock_exists.assert_called_with('/var/lib/octavia/123/haproxy.cfg')
 
         mock_exists.return_value = True
-        rv = self.app.put('/' + api_server.VERSION + '/listeners/123/start')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/start')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/start')
         self.assertEqual(202, rv.status_code)
         self.assertEqual(
             {'message': 'OK',
@@ -248,7 +295,12 @@ class TestServerTestCase(base.TestCase):
         mock_exists.return_value = True
         mock_subprocess.side_effect = subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR)
-        rv = self.app.put('/' + api_server.VERSION + '/listeners/123/start')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/start')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/start')
         self.assertEqual(500, rv.status_code)
         self.assertEqual(
             {
@@ -258,19 +310,32 @@ class TestServerTestCase(base.TestCase):
         mock_subprocess.assert_called_with(
             ['/usr/sbin/service', 'haproxy-123', 'start'], stderr=-2)
 
+    def test_ubuntu_reload(self):
+        self._test_reload(consts.UBUNTU)
+
+    def test_centos_reload(self):
+        self._test_reload(consts.CENTOS)
+
     @mock.patch('os.path.exists')
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 'vrrp_check_script_update')
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 '_check_haproxy_status')
     @mock.patch('subprocess.check_output')
-    def test_reload(self, mock_subprocess, mock_haproxy_status,
-                    mock_vrrp, mock_exists):
+    def _test_reload(self, distro, mock_subprocess, mock_haproxy_status,
+                     mock_vrrp, mock_exists):
+
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
 
         # Process running so reload
         mock_exists.return_value = True
         mock_haproxy_status.return_value = consts.ACTIVE
-        rv = self.app.put('/' + api_server.VERSION + '/listeners/123/reload')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/reload')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/reload')
         self.assertEqual(202, rv.status_code)
         self.assertEqual(
             {'message': 'OK',
@@ -282,7 +347,12 @@ class TestServerTestCase(base.TestCase):
         # Process not running so start
         mock_exists.return_value = True
         mock_haproxy_status.return_value = consts.OFFLINE
-        rv = self.app.put('/' + api_server.VERSION + '/listeners/123/reload')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/reload')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/reload')
         self.assertEqual(202, rv.status_code)
         self.assertEqual(
             {'message': 'OK',
@@ -292,9 +362,16 @@ class TestServerTestCase(base.TestCase):
         mock_subprocess.assert_called_with(
             ['/usr/sbin/service', 'haproxy-123', 'start'], stderr=-2)
 
+    def test_ubuntu_info(self):
+        self._test_info(consts.UBUNTU)
+
+    def test_centos_info(self):
+        self._test_info(consts.CENTOS)
+
     @mock.patch('socket.gethostname')
     @mock.patch('subprocess.check_output')
-    def test_info(self, mock_subbprocess, mock_hostname):
+    def _test_info(self, distro, mock_subbprocess, mock_hostname):
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         mock_hostname.side_effect = ['test-host']
         mock_subbprocess.side_effect = [
             """Package: haproxy
@@ -304,66 +381,62 @@ class TestServerTestCase(base.TestCase):
             Installed-Size: 803
             Maintainer: Ubuntu Developers
             Architecture: amd64
-            Version: 1.4.24-2
+            Version: 9.9.99-9
             """]
-        rv = self.app.get('/' + api_server.VERSION + '/info')
+
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION + '/info')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION + '/info')
 
         self.assertEqual(200, rv.status_code)
         self.assertEqual(dict(
             api_version='0.5',
-            haproxy_version='1.4.24-2',
+            haproxy_version='9.9.99-9',
             hostname='test-host'),
             json.loads(rv.data.decode('utf-8')))
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
-    @mock.patch('os.path.exists')
-    @mock.patch('subprocess.check_output')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.' +
-                'get_haproxy_pid')
-    @mock.patch('shutil.rmtree')
-    @mock.patch('os.remove')
-    def test_delete_listener_systemd(self, mock_remove, mock_rmtree, mock_pid,
-                                     mock_check_output, mock_exists,
-                                     mock_init_system):
-        self._test_delete_listener(mock_remove, mock_rmtree, mock_pid,
-                                   mock_check_output, mock_exists,
-                                   consts.INIT_SYSTEMD)
+    def test_delete_ubuntu_listener_systemd(self, mock_init_system):
+        self._test_delete_listener(consts.INIT_SYSTEMD, consts.UBUNTU,
+                                   mock_init_system)
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
+    def test_delete_centos_listener_systemd(self, mock_init_system):
+        self._test_delete_listener(consts.INIT_SYSTEMD, consts.CENTOS,
+                                   mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSVINIT)
-    @mock.patch('os.path.exists')
-    @mock.patch('subprocess.check_output')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.' +
-                'get_haproxy_pid')
-    @mock.patch('shutil.rmtree')
-    @mock.patch('os.remove')
-    def test_delete_listener_sysvinit(self, mock_remove, mock_rmtree, mock_pid,
-                                      mock_check_output, mock_exists,
-                                      mock_init_system):
-        self._test_delete_listener(mock_remove, mock_rmtree, mock_pid,
-                                   mock_check_output, mock_exists,
-                                   consts.INIT_SYSVINIT)
+    def test_delete_ubuntu_listener_sysvinit(self, mock_init_system):
+        self._test_delete_listener(consts.INIT_SYSVINIT, consts.UBUNTU,
+                                   mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_UPSTART)
+    def test_delete_ubuntu_listener_upstart(self, mock_init_system):
+        self._test_delete_listener(consts.INIT_UPSTART, consts.UBUNTU,
+                                   mock_init_system)
+
     @mock.patch('os.path.exists')
     @mock.patch('subprocess.check_output')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.' +
                 'get_haproxy_pid')
     @mock.patch('shutil.rmtree')
     @mock.patch('os.remove')
-    def test_delete_listener_upstart(self, mock_remove, mock_rmtree, mock_pid,
-                                     mock_check_output, mock_exists,
-                                     mock_init_system):
-        self._test_delete_listener(mock_remove, mock_rmtree, mock_pid,
-                                   mock_check_output, mock_exists,
-                                   consts.INIT_UPSTART)
-
-    def _test_delete_listener(self, mock_remove, mock_rmtree, mock_pid,
-                              mock_check_output, mock_exists, init_system):
+    def _test_delete_listener(self, init_system, distro, mock_init_system,
+                              mock_remove, mock_rmtree, mock_pid,
+                              mock_check_output, mock_exists):
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         mock_exists.return_value = False
-        rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
         self.assertEqual(404, rv.status_code)
         self.assertEqual(
             {'message': 'Listener Not Found',
@@ -373,7 +446,12 @@ class TestServerTestCase(base.TestCase):
 
         # service is stopped + no upstart script
         mock_exists.side_effect = [True, False, False]
-        rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
         self.assertEqual(200, rv.status_code)
         self.assertEqual({u'message': u'OK'},
                          json.loads(rv.data.decode('utf-8')))
@@ -395,7 +473,12 @@ class TestServerTestCase(base.TestCase):
 
         # service is stopped + upstart script
         mock_exists.side_effect = [True, False, True]
-        rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
         self.assertEqual(200, rv.status_code)
         self.assertEqual({u'message': u'OK'},
                          json.loads(rv.data.decode('utf-8')))
@@ -415,7 +498,12 @@ class TestServerTestCase(base.TestCase):
         # service is running + upstart script
         mock_exists.side_effect = [True, True, True, True]
         mock_pid.return_value = '456'
-        rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
         self.assertEqual(200, rv.status_code)
         self.assertEqual({u'message': u'OK'},
                          json.loads(rv.data.decode('utf-8')))
@@ -441,7 +529,12 @@ class TestServerTestCase(base.TestCase):
         mock_exists.side_effect = [True, True, True]
         mock_check_output.side_effect = subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR)
-        rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
         self.assertEqual(500, rv.status_code)
         self.assertEqual(
             {'details': 'random error', 'message': 'Error stopping haproxy'},
@@ -449,11 +542,25 @@ class TestServerTestCase(base.TestCase):
         # that's the last call before exception
         mock_exists.assert_called_with('/proc/456')
 
+    def test_ubuntu_get_haproxy(self):
+        self._test_get_haproxy(consts.UBUNTU)
+
+    def test_centos_get_haproxy(self):
+        self._test_get_haproxy(consts.CENTOS)
+
     @mock.patch('os.path.exists')
-    def test_get_haproxy(self, mock_exists):
+    def _test_get_haproxy(self, distro, mock_exists):
+
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
+
         CONTENT = "bibble\nbibble"
         mock_exists.side_effect = [False]
-        rv = self.app.get('/' + api_server.VERSION + '/listeners/123/haproxy')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION +
+                                     '/listeners/123/haproxy')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION +
+                                     '/listeners/123/haproxy')
         self.assertEqual(404, rv.status_code)
 
         mock_exists.side_effect = [True]
@@ -461,12 +568,22 @@ class TestServerTestCase(base.TestCase):
         path = util.config_path('123')
         self.useFixture(test_utils.OpenFixture(path, CONTENT))
 
-        rv = self.app.get('/' + api_server.VERSION +
-                          '/listeners/123/haproxy')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION +
+                                     '/listeners/123/haproxy')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION +
+                                     '/listeners/123/haproxy')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(six.b(CONTENT), rv.data)
         self.assertEqual('text/plain; charset=utf-8',
                          rv.headers['Content-Type'])
+
+    def test_ubuntu_get_all_listeners(self):
+        self._test_get_all_listeners(consts.UBUNTU)
+
+    def test_get_all_listeners(self):
+        self._test_get_all_listeners(consts.CENTOS)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_listeners')
@@ -474,10 +591,16 @@ class TestServerTestCase(base.TestCase):
                 '_check_listener_status')
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 '_parse_haproxy_file')
-    def test_get_all_listeners(self, mock_parse, mock_status, mock_listener):
+    def _test_get_all_listeners(self, distro, mock_parse, mock_status,
+                                mock_listener):
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
+
         # no listeners
         mock_listener.side_effect = [[]]
-        rv = self.app.get('/' + api_server.VERSION + '/listeners')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION + '/listeners')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION + '/listeners')
 
         self.assertEqual(200, rv.status_code)
         self.assertFalse(json.loads(rv.data.decode('utf-8')))
@@ -486,7 +609,10 @@ class TestServerTestCase(base.TestCase):
         mock_listener.side_effect = [['123']]
         mock_parse.side_effect = [{'mode': 'test'}]
         mock_status.side_effect = [consts.ACTIVE]
-        rv = self.app.get('/' + api_server.VERSION + '/listeners')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION + '/listeners')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION + '/listeners')
 
         self.assertEqual(200, rv.status_code)
         self.assertEqual(
@@ -497,7 +623,10 @@ class TestServerTestCase(base.TestCase):
         mock_listener.side_effect = [['123', '456']]
         mock_parse.side_effect = [{'mode': 'test'}, {'mode': 'http'}]
         mock_status.side_effect = [consts.ACTIVE, consts.ERROR]
-        rv = self.app.get('/' + api_server.VERSION + '/listeners')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION + '/listeners')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION + '/listeners')
 
         self.assertEqual(200, rv.status_code)
         self.assertEqual(
@@ -505,17 +634,29 @@ class TestServerTestCase(base.TestCase):
              {'status': consts.ERROR, 'type': '', 'uuid': '456'}],
             json.loads(rv.data.decode('utf-8')))
 
+    def test_ubuntu_get_listener(self):
+        self._test_get_listener(consts.UBUNTU)
+
+    def test_centos_get_listener(self):
+        self._test_get_listener(consts.CENTOS)
+
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 '_check_listener_status')
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 '_parse_haproxy_file')
     @mock.patch('octavia.amphorae.backends.utils.haproxy_query.HAProxyQuery')
     @mock.patch('os.path.exists')
-    def test_get_listener(self, mock_exists, mock_query, mock_parse,
-                          mock_status):
+    def _test_get_listener(self, distro, mock_exists, mock_query, mock_parse,
+                           mock_status):
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         # Listener not found
         mock_exists.side_effect = [False]
-        rv = self.app.get('/' + api_server.VERSION + '/listeners/123')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION +
+                                     '/listeners/123')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION +
+                                     '/listeners/123')
         self.assertEqual(404, rv.status_code)
         self.assertEqual(
             {'message': 'Listener Not Found',
@@ -526,7 +667,12 @@ class TestServerTestCase(base.TestCase):
         mock_parse.side_effect = [dict(mode='test')]
         mock_status.side_effect = [consts.ERROR]
         mock_exists.side_effect = [True]
-        rv = self.app.get('/' + api_server.VERSION + '/listeners/123')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION +
+                                     '/listeners/123')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION +
+                                     '/listeners/123')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(dict(
             status=consts.ERROR,
@@ -546,7 +692,12 @@ class TestServerTestCase(base.TestCase):
                 'members': [
                     {'id-34833': 'DOWN'},
                     {'id-34836': 'DOWN'}]}}]
-        rv = self.app.get('/' + api_server.VERSION + '/listeners/123')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION +
+                                     '/listeners/123')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION +
+                                     '/listeners/123')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(dict(
             status=consts.ACTIVE,
@@ -560,12 +711,23 @@ class TestServerTestCase(base.TestCase):
                     {u'id-34836': u'DOWN'}])]),
             json.loads(rv.data.decode('utf-8')))
 
+    def test_ubuntu_delete_cert(self):
+        self._test_delete_cert(consts.UBUNTU)
+
+    def test_centos_delete_cert(self):
+        self._test_delete_cert(consts.CENTOS)
+
     @mock.patch('os.path.exists')
     @mock.patch('os.remove')
-    def test_delete_cert(self, mock_remove, mock_exists):
+    def _test_delete_cert(self, distro, mock_remove, mock_exists):
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         mock_exists.side_effect = [False]
-        rv = self.app.delete('/' + api_server.VERSION +
-                             '/listeners/123/certificates/test.pem')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123/certificates/test.pem')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123/certificates/test.pem')
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(
             details='No certificate with filename: test.pem',
@@ -576,26 +738,46 @@ class TestServerTestCase(base.TestCase):
 
         # wrong file name
         mock_exists.side_effect = [True]
-        rv = self.app.put('/' + api_server.VERSION +
-                          '/listeners/123/certificates/test.bla',
-                          data='TestTest')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123/certificates/test.bla')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123/certificates/test.bla')
         self.assertEqual(400, rv.status_code)
 
         mock_exists.side_effect = [True]
-        rv = self.app.delete('/' + api_server.VERSION +
-                             '/listeners/123/certificates/test.pem')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123/certificates/test.pem')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123/certificates/test.pem')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
         mock_remove.assert_called_once_with(
             '/var/lib/octavia/certs/123/test.pem')
 
+    def test_ubuntu_get_certificate_md5(self):
+        self._test_get_certificate_md5(consts.UBUNTU)
+
+    def test_centos_get_certificate_md5(self):
+        self._test_get_certificate_md5(consts.CENTOS)
+
     @mock.patch('os.path.exists')
-    def test_get_certificate_md5(self, mock_exists):
+    def _test_get_certificate_md5(self, distro, mock_exists):
+
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         CONTENT = "TestTest"
 
         mock_exists.side_effect = [False]
-        rv = self.app.get('/' + api_server.VERSION +
-                          '/listeners/123/certificates/test.pem')
+
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION +
+                                     '/listeners/123/certificates/test.pem')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION +
+                                     '/listeners/123/certificates/test.pem')
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(
             details='No certificate with filename: test.pem',
@@ -605,40 +787,76 @@ class TestServerTestCase(base.TestCase):
 
         # wrong file name
         mock_exists.side_effect = [True]
-        rv = self.app.put('/' + api_server.VERSION +
-                          '/listeners/123/certificates/test.bla',
-                          data='TestTest')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/certificates/test.bla',
+                                     data='TestTest')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/certificates/test.bla',
+                                     data='TestTest')
         self.assertEqual(400, rv.status_code)
 
         mock_exists.return_value = True
         mock_exists.side_effect = None
-        path = self.test_server._listener._cert_file_path('123', 'test.pem')
+        if distro == consts.UBUNTU:
+            path = self.ubuntu_test_server._listener._cert_file_path(
+                '123', 'test.pem')
+        elif distro == consts.CENTOS:
+            path = self.centos_test_server._listener._cert_file_path(
+                '123', 'test.pem')
         self.useFixture(test_utils.OpenFixture(path, CONTENT))
-
-        rv = self.app.get('/' + api_server.VERSION +
-                          '/listeners/123/certificates/test.pem')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION +
+                                     '/listeners/123/certificates/test.pem')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION +
+                                     '/listeners/123/certificates/test.pem')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(dict(md5sum=hashlib.md5(six.b(CONTENT)).hexdigest()),
                          json.loads(rv.data.decode('utf-8')))
 
+    def test_ubuntu_upload_certificate_md5(self):
+        self._test_upload_certificate_md5(consts.UBUNTU)
+
+    def test_centos_upload_certificate_md5(self):
+        self._test_upload_certificate_md5(consts.CENTOS)
+
     @mock.patch('os.path.exists')
     @mock.patch('os.makedirs')
-    def test_upload_certificate_md5(self, mock_makedir, mock_exists):
+    def _test_upload_certificate_md5(self, distro, mock_makedir, mock_exists):
 
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         # wrong file name
-        rv = self.app.put('/' + api_server.VERSION +
-                          '/listeners/123/certificates/test.bla',
-                          data='TestTest')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/certificates/test.bla',
+                                     data='TestTest')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.put('/' + api_server.VERSION +
+                                     '/listeners/123/certificates/test.bla',
+                                     data='TestTest')
         self.assertEqual(400, rv.status_code)
 
         mock_exists.return_value = True
-        path = self.test_server._listener._cert_file_path('123', 'test.pem')
+        if distro == consts.UBUNTU:
+            path = self.ubuntu_test_server._listener._cert_file_path(
+                '123', 'test.pem')
+        elif distro == consts.CENTOS:
+            path = self.centos_test_server._listener._cert_file_path(
+                '123', 'test.pem')
+
         m = self.useFixture(test_utils.OpenFixture(path)).mock_open
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
 
-            rv = self.app.put('/' + api_server.VERSION +
-                              '/listeners/123/certificates/test.pem',
-                              data='TestTest')
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/listeners/123/certificates/'
+                                         'test.pem', data='TestTest')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put('/' + api_server.VERSION +
+                                         '/listeners/123/certificates/'
+                                         'test.pem', data='TestTest')
             self.assertEqual(200, rv.status_code)
             self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
             handle = m()
@@ -648,28 +866,54 @@ class TestServerTestCase(base.TestCase):
         m = self.useFixture(test_utils.OpenFixture(path)).mock_open
 
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
-            rv = self.app.put('/' + api_server.VERSION +
-                              '/listeners/123/certificates/test.pem',
-                              data='TestTest')
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/listeners/123/certificates/'
+                                         'test.pem', data='TestTest')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put('/' + api_server.VERSION +
+                                         '/listeners/123/certificates/'
+                                         'test.pem', data='TestTest')
             self.assertEqual(200, rv.status_code)
             self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
             handle = m()
             handle.write.assert_called_once_with(six.b('TestTest'))
             mock_makedir.assert_called_once_with('/var/lib/octavia/certs/123')
 
-    def test_upload_server_certificate(self):
+    def test_ubuntu_upload_server_certificate(self):
+        self._test_upload_server_certificate(consts.UBUNTU)
+
+    def test_centos_upload_server_certificate(self):
+        self._test_upload_server_certificate(consts.CENTOS)
+
+    def _test_upload_server_certificate(self, distro):
         certificate_update.BUFFER = 5  # test the while loop
         path = '/etc/octavia/certs/server.pem'
         m = self.useFixture(test_utils.OpenFixture(path)).mock_open
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
-            rv = self.app.put('/' + api_server.VERSION +
-                              '/certificate',
-                              data='TestTest')
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/certificate', data='TestTest')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put('/' + api_server.VERSION +
+                                         '/certificate', data='TestTest')
             self.assertEqual(202, rv.status_code)
             self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
             handle = m()
             handle.write.assert_any_call(six.b('TestT'))
             handle.write.assert_any_call(six.b('est'))
+
+    def test_ubuntu_plug_network(self):
+        self._test_plug_network(consts.UBUNTU)
+        self.conf.config(group="amphora_agent",
+                         agent_server_network_file="/path/to/interfaces_file")
+        self._test_plug_network(consts.UBUNTU)
+
+    def test_centos_plug_network(self):
+        self._test_plug_network(consts.CENTOS)
+        self.conf.config(group="amphora_agent",
+                         agent_server_network_file="/path/to/interfaces_file")
+        self._test_plug_network(consts.CENTOS)
 
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
@@ -678,8 +922,10 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'plug.Plug._netns_interface_exists')
-    def test_plug_network(self, mock_int_exists, mock_check_output, mock_netns,
-                          mock_pyroute2, mock_ifaddress, mock_interfaces):
+    def _test_plug_network(self, distro, mock_int_exists, mock_check_output,
+                           mock_netns, mock_pyroute2, mock_ifaddress,
+                           mock_interfaces):
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         port_info = {'mac_address': '123'}
         test_int_num = random.randint(0, 9999)
 
@@ -691,9 +937,16 @@ class TestServerTestCase(base.TestCase):
 
         # Interface already plugged
         mock_int_exists.return_value = True
-        rv = self.app.post('/' + api_server.VERSION + "/plug/network",
-                           content_type='application/json',
-                           data=json.dumps(port_info))
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      "/plug/network",
+                                      content_type='application/json',
+                                      data=json.dumps(port_info))
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      "/plug/network",
+                                      content_type='application/json',
+                                      data=json.dumps(port_info))
         self.assertEqual(409, rv.status_code)
         self.assertEqual(dict(message="Interface already exists"),
                          json.loads(rv.data.decode('utf-8')))
@@ -701,9 +954,16 @@ class TestServerTestCase(base.TestCase):
 
         # No interface at all
         mock_interfaces.side_effect = [[]]
-        rv = self.app.post('/' + api_server.VERSION + "/plug/network",
-                           content_type='application/json',
-                           data=json.dumps(port_info))
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      "/plug/network",
+                                      content_type='application/json',
+                                      data=json.dumps(port_info))
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      "/plug/network",
+                                      content_type='application/json',
+                                      data=json.dumps(port_info))
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
@@ -711,9 +971,16 @@ class TestServerTestCase(base.TestCase):
         # No interface down
         mock_interfaces.side_effect = [['blah']]
         mock_ifaddress.side_effect = [[netifaces.AF_INET]]
-        rv = self.app.post('/' + api_server.VERSION + "/plug/network",
-                           content_type='application/json',
-                           data=json.dumps(port_info))
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      "/plug/network",
+                                      content_type='application/json',
+                                      data=json.dumps(port_info))
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      "/plug/network",
+                                      content_type='application/json',
+                                      data=json.dumps(port_info))
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
@@ -724,17 +991,38 @@ class TestServerTestCase(base.TestCase):
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
                                       {netifaces.AF_LINK: [{'addr': '123'}]}]
 
-        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        file_name = '/etc/netns/{0}/network/interfaces.d/eth{1}.cfg'.format(
-            consts.AMPHORA_NAMESPACE, test_int_num)
+
+        if self.conf.conf.amphora_agent.agent_server_network_file:
+            file_name = self.conf.conf.amphora_agent.agent_server_network_file
+            flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+
+        elif distro == consts.UBUNTU:
+            file_name = ('/etc/netns/{0}/network/interfaces.d/'
+                         'eth{1}.cfg'.format(consts.AMPHORA_NAMESPACE,
+                                             test_int_num))
+            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+
+        elif distro == consts.CENTOS:
+            file_name = ('/etc/netns/{0}/sysconfig/network-scripts/'
+                         'ifcfg-eth{1}'.format(consts.AMPHORA_NAMESPACE,
+                                               test_int_num))
+            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.post('/' + api_server.VERSION + "/plug/network",
-                               content_type='application/json',
-                               data=json.dumps(port_info))
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
             self.assertEqual(202, rv.status_code)
 
             mock_open.assert_any_call(file_name, flags, mode)
@@ -747,12 +1035,24 @@ class TestServerTestCase(base.TestCase):
             mock_fdopen.assert_any_call(123, 'r+')
 
             handle = m()
-            handle.write.assert_any_call(
-                '\n# Generated by Octavia agent\n'
-                'auto eth' + test_int_num +
-                '\niface eth' + test_int_num + ' inet dhcp\n'
-                'auto eth' + test_int_num + ':0\n'
-                'iface eth' + test_int_num + ':0 inet6 auto\n')
+            if distro == consts.UBUNTU:
+                handle.write.assert_any_call(
+                    '\n# Generated by Octavia agent\n'
+                    'auto eth{int}\n'
+                    'iface eth{int} inet dhcp\n'
+                    'auto eth{int}:0\n'
+                    'iface eth{int}:0 inet6 auto\n'.format(int=test_int_num))
+            elif distro == consts.CENTOS:
+                handle.write.assert_any_call(
+                    '\n# Generated by Octavia agent\n'
+                    'NM_CONTROLLED="no"\n'
+                    'DEVICE="eth{int}"\n'
+                    'ONBOOT="yes"\n'
+                    'TYPE="Ethernet"\n'
+                    'USERCTL="yes"\n'
+                    'IPV6INIT="no"\n'
+                    'BOOTPROTO="dhcp"\n'
+                    'PERSISTENT_DHCLIENT="1"\n'.format(int=test_int_num))
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                  'ifup', 'eth' + test_int_num], stderr=-2)
@@ -764,17 +1064,36 @@ class TestServerTestCase(base.TestCase):
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
                                       {netifaces.AF_LINK: [{'addr': '123'}]}]
 
-        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        file_name = '/etc/netns/{0}/network/interfaces.d/eth{1}.cfg'.format(
-            consts.AMPHORA_NAMESPACE, test_int_num)
+
+        if self.conf.conf.amphora_agent.agent_server_network_file:
+            file_name = self.conf.conf.amphora_agent.agent_server_network_file
+            flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+        elif distro == consts.UBUNTU:
+            file_name = ('/etc/netns/{0}/network/interfaces.d/'
+                         'eth{1}.cfg'.format(consts.AMPHORA_NAMESPACE,
+                                             test_int_num))
+            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        elif distro == consts.CENTOS:
+            file_name = ('/etc/netns/{0}/sysconfig/network-scripts/'
+                         'ifcfg-eth{1}'.format(consts.AMPHORA_NAMESPACE,
+                                               test_int_num))
+            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.post('/' + api_server.VERSION + "/plug/network",
-                               content_type='application/json',
-                               data=json.dumps(port_info))
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
             self.assertEqual(202, rv.status_code)
 
             mock_open.assert_any_call(file_name, flags, mode)
@@ -787,12 +1106,27 @@ class TestServerTestCase(base.TestCase):
             mock_fdopen.assert_any_call(123, 'r+')
 
             handle = m()
-            handle.write.assert_any_call(
-                '\n\n# Generated by Octavia agent\n'
-                'auto eth' + test_int_num +
-                '\niface eth' + test_int_num + ' inet static\n' +
-                'address 10.0.0.5\nbroadcast 10.0.0.255\n' +
-                'netmask 255.255.255.0\nmtu 1450\n')
+            if distro == consts.UBUNTU:
+                handle.write.assert_any_call(
+                    '\n\n# Generated by Octavia agent\n'
+                    'auto eth{int}\n'
+                    'iface eth{int} inet static\n'
+                    'address 10.0.0.5\nbroadcast 10.0.0.255\n'
+                    'netmask 255.255.255.0\n'
+                    'mtu 1450\n'.format(int=test_int_num))
+            elif distro == consts.CENTOS:
+                handle.write.assert_any_call(
+                    '\n\n# Generated by Octavia agent\n'
+                    'NM_CONTROLLED="no"\n'
+                    'DEVICE="eth{int}"\n'
+                    'ONBOOT="yes"\n'
+                    'TYPE="Ethernet"\n'
+                    'USERCTL="yes"\n'
+                    'IPV6INIT="no"\n'
+                    'MTU="1450"\n'
+                    'BOOTPROTO="static"\n'
+                    'IPADDR="10.0.0.5"\n'
+                    'NETMASK="255.255.255.0"\n'.format(int=test_int_num))
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                  'ifup', 'eth' + test_int_num], stderr=-2)
@@ -804,17 +1138,36 @@ class TestServerTestCase(base.TestCase):
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
                                       {netifaces.AF_LINK: [{'addr': '123'}]}]
 
-        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        file_name = '/etc/netns/{0}/network/interfaces.d/eth{1}.cfg'.format(
-            consts.AMPHORA_NAMESPACE, test_int_num)
+
+        if self.conf.conf.amphora_agent.agent_server_network_file:
+            file_name = self.conf.conf.amphora_agent.agent_server_network_file
+            flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+        elif distro == consts.UBUNTU:
+            file_name = ('/etc/netns/{0}/network/interfaces.d/'
+                         'eth{1}.cfg'.format(consts.AMPHORA_NAMESPACE,
+                                             test_int_num))
+            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        elif distro == consts.CENTOS:
+            file_name = ('/etc/netns/{0}/sysconfig/network-scripts/'
+                         'ifcfg-eth{1}'.format(consts.AMPHORA_NAMESPACE,
+                                               test_int_num))
+            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.post('/' + api_server.VERSION + "/plug/network",
-                               content_type='application/json',
-                               data=json.dumps(port_info))
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
             self.assertEqual(202, rv.status_code)
 
             mock_open.assert_any_call(file_name, flags, mode)
@@ -827,13 +1180,23 @@ class TestServerTestCase(base.TestCase):
             mock_fdopen.assert_any_call(123, 'r+')
 
             handle = m()
-            handle.write.assert_any_call(
-                '\n\n# Generated by Octavia agent\n'
-                'auto eth' + test_int_num +
-                '\niface eth' + test_int_num + ' inet6 static\n' +
-                'address 2001:0db8:0000:0000:0000:0000:0000:0002\n'
-                'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n' +
-                'netmask 32\nmtu 1450\n')
+            if distro == consts.UBUNTU:
+                handle.write.assert_any_call(
+                    '\n\n# Generated by Octavia agent\n'
+                    'auto eth{int}\n'
+                    'iface eth{int} inet6 static\n'
+                    'address 2001:0db8:0000:0000:0000:0000:0000:0002\n'
+                    'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n'
+                    'netmask 32\nmtu 1450\n'.format(int=test_int_num))
+            elif distro == consts.CENTOS:
+                handle.write.assert_any_call(
+                    '\n\n# Generated by Octavia agent\n'
+                    'NM_CONTROLLED="no"\nDEVICE="eth{int}"\n'
+                    'ONBOOT="yes"\nTYPE="Ethernet"\nUSERCTL="yes"\n'
+                    'IPV6INIT="yes"\nIPV6_MTU="1450"\n'
+                    'IPV6_AUTOCONF="no"\n'
+                    'IPV6ADDR="2001:0db8:0000:0000:0000:0000:'
+                    '0000:0002"\n'.format(int=test_int_num))
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                  'ifup', 'eth' + test_int_num], stderr=-2)
@@ -853,9 +1216,16 @@ class TestServerTestCase(base.TestCase):
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.post('/' + api_server.VERSION + "/plug/network",
-                               content_type='application/json',
-                               data=json.dumps(port_info))
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
             self.assertEqual(400, rv.status_code)
 
         # same as above but ifup fails
@@ -870,23 +1240,69 @@ class TestServerTestCase(base.TestCase):
 
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
-            rv = self.app.post('/' + api_server.VERSION + "/plug/network",
-                               content_type='application/json',
-                               data=json.dumps(port_info))
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
             self.assertEqual(500, rv.status_code)
             self.assertEqual(
                 {'details': RANDOM_ERROR,
                  'message': 'Error plugging network'},
                 json.loads(rv.data.decode('utf-8')))
 
+        # Bad port_info tests
+        port_info = 'Bad data'
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      "/plug/network",
+                                      content_type='application/json',
+                                      data=json.dumps(port_info))
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      "/plug/network",
+                                      content_type='application/json',
+                                      data=json.dumps(port_info))
+        self.assertEqual(400, rv.status_code)
+
+        port_info = {'fixed_ips': [{'ip_address': '10.0.0.5',
+                                    'subnet_cidr': '10.0.0.0/24'}]}
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      "/plug/network",
+                                      content_type='application/json',
+                                      data=json.dumps(port_info))
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      "/plug/network",
+                                      content_type='application/json',
+                                      data=json.dumps(port_info))
+        self.assertEqual(400, rv.status_code)
+
+    def test_ubuntu_plug_network_host_routes(self):
+        self._test_plug_network_host_routes(consts.UBUNTU)
+        self.conf.config(group="amphora_agent",
+                         agent_server_network_file="/path/to/interfaces_file")
+
+    def test_centos_plug_network_host_routes(self):
+        self._test_plug_network_host_routes(consts.CENTOS)
+
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
     @mock.patch('pyroute2.IPRoute')
     @mock.patch('pyroute2.NetNS')
     @mock.patch('subprocess.check_output')
-    def test_plug_network_host_routes(self, mock_check_output, mock_netns,
-                                      mock_pyroute2, mock_ifaddress,
-                                      mock_interfaces):
+    def _test_plug_network_host_routes(self, distro, mock_check_output,
+                                       mock_netns, mock_pyroute2,
+                                       mock_ifaddress, mock_interfaces):
+
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
+
         SUBNET_CIDR = '192.0.2.0/24'
         BROADCAST = '192.0.2.255'
         NETMASK = '255.255.255.0'
@@ -910,15 +1326,27 @@ class TestServerTestCase(base.TestCase):
 
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        file_name = '/etc/netns/{0}/network/interfaces.d/{1}.cfg'.format(
-            consts.AMPHORA_NAMESPACE, consts.NETNS_PRIMARY_INTERFACE)
+        if distro == consts.UBUNTU:
+            file_name = '/etc/netns/{0}/network/interfaces.d/{1}.cfg'.format(
+                consts.AMPHORA_NAMESPACE, consts.NETNS_PRIMARY_INTERFACE)
+        elif distro == consts.CENTOS:
+            file_name = ('/etc/netns/{0}/sysconfig/network-scripts/'
+                         'ifcfg-{1}'.format(consts.AMPHORA_NAMESPACE,
+                                            consts.NETNS_PRIMARY_INTERFACE))
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.post('/' + api_server.VERSION + "/plug/network",
-                               content_type='application/json',
-                               data=json.dumps(port_info))
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
             self.assertEqual(202, rv.status_code)
 
             mock_open.assert_any_call(file_name, flags, mode)
@@ -931,26 +1359,50 @@ class TestServerTestCase(base.TestCase):
             mock_fdopen.assert_any_call(123, 'r+')
 
             handle = m()
-            handle.write.assert_any_call(
-                '\n\n# Generated by Octavia agent\n'
-                'auto ' + consts.NETNS_PRIMARY_INTERFACE +
-                '\niface ' + consts.NETNS_PRIMARY_INTERFACE +
-                ' inet static\n' +
-                'address ' + IP + '\nbroadcast ' + BROADCAST + '\n' +
-                'netmask ' + NETMASK + '\n' + 'mtu 1450\n' +
-                'up route add -net ' + DEST1 + ' gw ' + NEXTHOP +
-                ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
-                'down route del -net ' + DEST1 + ' gw ' + NEXTHOP +
-                ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
-                'up route add -net ' + DEST2 + ' gw ' + NEXTHOP +
-                ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
-                'down route del -net ' + DEST2 + ' gw ' + NEXTHOP +
-                ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
-            )
+            if distro == consts.UBUNTU:
+                handle.write.assert_any_call(
+                    '\n\n# Generated by Octavia agent\n'
+                    'auto ' + consts.NETNS_PRIMARY_INTERFACE +
+                    '\niface ' + consts.NETNS_PRIMARY_INTERFACE +
+                    ' inet static\n' +
+                    'address ' + IP + '\nbroadcast ' + BROADCAST + '\n' +
+                    'netmask ' + NETMASK + '\n' + 'mtu 1450\n' +
+                    'up route add -net ' + DEST1 + ' gw ' + NEXTHOP +
+                    ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
+                    'down route del -net ' + DEST1 + ' gw ' + NEXTHOP +
+                    ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
+                    'up route add -net ' + DEST2 + ' gw ' + NEXTHOP +
+                    ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
+                    'down route del -net ' + DEST2 + ' gw ' + NEXTHOP +
+                    ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
+                )
+            elif distro == consts.CENTOS:
+                handle.write.assert_any_call(
+                    '\n\n# Generated by Octavia agent\n'
+                    'NM_CONTROLLED="no"\nDEVICE="{int}"\n'
+                    'ONBOOT="yes"\nTYPE="Ethernet"\n'
+                    'USERCTL="yes"\nIPV6INIT="no"\nMTU="1450"\n'
+                    'BOOTPROTO="static"\nIPADDR="{ip}"\n'
+                    'NETMASK="{mask}"\n'.format(
+                        int=consts.NETNS_PRIMARY_INTERFACE,
+                        ip=IP,
+                        mask=NETMASK))
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                  'ifup', consts.NETNS_PRIMARY_INTERFACE], stderr=-2)
 
+    def test_ubuntu_plug_VIP4(self):
+        self._test_plug_VIP4(consts.UBUNTU)
+        self.conf.config(group="amphora_agent",
+                         agent_server_network_file="/path/to/interfaces_file")
+        self._test_plug_VIP4(consts.UBUNTU)
+
+        self._test_plug_VIP4(consts.CENTOS)
+        self.conf.config(group="amphora_agent",
+                         agent_server_network_file="/path/to/interfaces_file")
+        self._test_plug_VIP4(consts.CENTOS)
+
+    @mock.patch('shutil.copy2')
     @mock.patch('pyroute2.NSPopen')
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'plug.Plug._netns_interface_exists')
@@ -962,11 +1414,12 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
     @mock.patch('os.makedirs')
-    def test_plug_VIP4(self, mock_makedirs, mock_copytree, mock_check_output,
-                       mock_netns, mock_netns_create, mock_pyroute2,
-                       mock_ifaddress, mock_interfaces, mock_int_exists,
-                       mock_nspopen):
+    def _test_plug_VIP4(self, distro, mock_makedirs, mock_copytree,
+                        mock_check_output, mock_netns, mock_netns_create,
+                        mock_pyroute2, mock_ifaddress, mock_interfaces,
+                        mock_int_exists, mock_nspopen, mock_copy2):
 
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         subnet_info = {
             'subnet_cidr': '203.0.113.0/24',
             'gateway': '203.0.113.1',
@@ -974,20 +1427,40 @@ class TestServerTestCase(base.TestCase):
         }
 
         # malformed ip
-        rv = self.app.post('/' + api_server.VERSION + '/plug/vip/error',
-                           data=json.dumps(subnet_info),
-                           content_type='application/json')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      '/plug/vip/error',
+                                      data=json.dumps(subnet_info),
+                                      content_type='application/json')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      '/plug/vip/error',
+                                      data=json.dumps(subnet_info),
+                                      content_type='application/json')
         self.assertEqual(400, rv.status_code)
 
         # No subnet info
-        rv = self.app.post('/' + api_server.VERSION + '/plug/vip/error')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      '/plug/vip/error')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      '/plug/vip/error')
+
         self.assertEqual(400, rv.status_code)
 
         # Interface already plugged
         mock_int_exists.return_value = True
-        rv = self.app.post('/' + api_server.VERSION + "/plug/vip/203.0.113.2",
-                           content_type='application/json',
-                           data=json.dumps(subnet_info))
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      "/plug/vip/203.0.113.2",
+                                      content_type='application/json',
+                                      data=json.dumps(subnet_info))
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      "/plug/vip/203.0.113.2",
+                                      content_type='application/json',
+                                      data=json.dumps(subnet_info))
         self.assertEqual(409, rv.status_code)
         self.assertEqual(dict(message="Interface already exists"),
                          json.loads(rv.data.decode('utf-8')))
@@ -995,9 +1468,16 @@ class TestServerTestCase(base.TestCase):
 
         # No interface at all
         mock_interfaces.side_effect = [[]]
-        rv = self.app.post('/' + api_server.VERSION + "/plug/vip/203.0.113.2",
-                           content_type='application/json',
-                           data=json.dumps(subnet_info))
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      "/plug/vip/203.0.113.2",
+                                      content_type='application/json',
+                                      data=json.dumps(subnet_info))
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      "/plug/vip/203.0.113.2",
+                                      content_type='application/json',
+                                      data=json.dumps(subnet_info))
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
@@ -1005,9 +1485,16 @@ class TestServerTestCase(base.TestCase):
         # Two interfaces down
         mock_interfaces.side_effect = [['blah', 'blah2']]
         mock_ifaddress.side_effect = [['blabla'], ['blabla']]
-        rv = self.app.post('/' + api_server.VERSION + "/plug/vip/203.0.113.2",
-                           content_type='application/json',
-                           data=json.dumps(subnet_info))
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      "/plug/vip/203.0.113.2",
+                                      content_type='application/json',
+                                      data=json.dumps(subnet_info))
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      "/plug/vip/203.0.113.2",
+                                      content_type='application/json',
+                                      data=json.dumps(subnet_info))
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
@@ -1029,21 +1516,39 @@ class TestServerTestCase(base.TestCase):
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
                                       {netifaces.AF_LINK: [{'addr': '123'}]}]
 
-        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        file_name = ('/etc/netns/{netns}/network/interfaces.d/'
-                     '{netns_int}.cfg'.format(
-                         netns=consts.AMPHORA_NAMESPACE,
-                         netns_int=consts.NETNS_PRIMARY_INTERFACE))
+
+        if self.conf.conf.amphora_agent.agent_server_network_file:
+            file_name = self.conf.conf.amphora_agent.agent_server_network_file
+            flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+        elif distro == consts.UBUNTU:
+            file_name = ('/etc/netns/{netns}/network/interfaces.d/'
+                         '{netns_int}.cfg'.format(
+                             netns=consts.AMPHORA_NAMESPACE,
+                             netns_int=consts.NETNS_PRIMARY_INTERFACE))
+            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        elif distro == consts.CENTOS:
+            file_name = ('/etc/netns/{netns}/sysconfig/network-scripts/'
+                         'ifcfg-{netns_int}'.format(
+                             netns=consts.AMPHORA_NAMESPACE,
+                             netns_int=consts.NETNS_PRIMARY_INTERFACE))
+            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
 
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.post('/' + api_server.VERSION +
-                               "/plug/vip/203.0.113.2",
-                               content_type='application/json',
-                               data=json.dumps(full_subnet_info))
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/203.0.113.2",
+                                          content_type='application/json',
+                                          data=json.dumps(full_subnet_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/203.0.113.2",
+                                          content_type='application/json',
+                                          data=json.dumps(full_subnet_info))
             self.assertEqual(202, rv.status_code)
             mock_open.assert_any_call(file_name, flags, mode)
             mock_fdopen.assert_any_call(123, 'w')
@@ -1055,29 +1560,39 @@ class TestServerTestCase(base.TestCase):
             mock_fdopen.assert_any_call(123, 'r+')
 
             handle = m()
-            handle.write.assert_any_call(
-                '\n# Generated by Octavia agent\n'
-                'auto {netns_int} {netns_int}:0\n'
-                'iface {netns_int} inet static\n'
-                'address 203.0.113.4\n'
-                'broadcast 203.0.113.255\n'
-                'netmask 255.255.255.0\n'
-                'gateway 203.0.113.1\n'
-                'mtu 1450\n'
-                'up route add -net 203.0.114.0/24 gw 203.0.113.5 '
-                'dev {netns_int}\n'
-                'down route del -net 203.0.114.0/24 gw 203.0.113.5 '
-                'dev {netns_int}\n'
-                'up route add -net 203.0.115.0/24 gw 203.0.113.5 '
-                'dev {netns_int}\n'
-                'down route del -net 203.0.115.0/24 gw 203.0.113.5 '
-                'dev {netns_int}\n'
-                '\n'
-                'iface {netns_int}:0 inet static\n'
-                'address 203.0.113.2\n'
-                'broadcast 203.0.113.255\n'
-                'netmask 255.255.255.0'.format(
-                    netns_int=consts.NETNS_PRIMARY_INTERFACE))
+            if distro == consts.UBUNTU:
+                handle.write.assert_any_call(
+                    '\n# Generated by Octavia agent\n'
+                    'auto {netns_int} {netns_int}:0\n'
+                    'iface {netns_int} inet static\n'
+                    'address 203.0.113.4\n'
+                    'broadcast 203.0.113.255\n'
+                    'netmask 255.255.255.0\n'
+                    'gateway 203.0.113.1\n'
+                    'mtu 1450\n'
+                    'up route add -net 203.0.114.0/24 gw 203.0.113.5 '
+                    'dev {netns_int}\n'
+                    'down route del -net 203.0.114.0/24 gw 203.0.113.5 '
+                    'dev {netns_int}\n'
+                    'up route add -net 203.0.115.0/24 gw 203.0.113.5 '
+                    'dev {netns_int}\n'
+                    'down route del -net 203.0.115.0/24 gw 203.0.113.5 '
+                    'dev {netns_int}\n'
+                    '\n'
+                    'iface {netns_int}:0 inet static\n'
+                    'address 203.0.113.2\n'
+                    'broadcast 203.0.113.255\n'
+                    'netmask 255.255.255.0'.format(
+                        netns_int=consts.NETNS_PRIMARY_INTERFACE))
+            elif distro == consts.CENTOS:
+                handle.write.assert_any_call(
+                    '\n# Generated by Octavia agent\n'
+                    'NM_CONTROLLED="no"\nDEVICE="{netns_int}"\n'
+                    'ONBOOT="yes"\nTYPE="Ethernet"\nUSERCTL="yes" \n'
+                    'BOOTPROTO="static"\nIPADDR="203.0.113.4"\n'
+                    'NETMASK="255.255.255.0"\nGATEWAY="203.0.113.1"\n'
+                    'MTU="1450"  \n'.format(
+                        netns_int=consts.NETNS_PRIMARY_INTERFACE))
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                  'ifup', '{netns_int}:0'.format(
@@ -1093,21 +1608,40 @@ class TestServerTestCase(base.TestCase):
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
                                       {netifaces.AF_LINK: [{'addr': '123'}]}]
 
-        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        file_name = ('/etc/netns/{netns}/network/interfaces.d/'
-                     '{netns_int}.cfg'.format(
-                         netns=consts.AMPHORA_NAMESPACE,
-                         netns_int=consts.NETNS_PRIMARY_INTERFACE))
+
+        if self.conf.conf.amphora_agent.agent_server_network_file:
+            file_name = self.conf.conf.amphora_agent.agent_server_network_file
+            flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+
+        elif distro == consts.UBUNTU:
+            file_name = ('/etc/netns/{netns}/network/interfaces.d/'
+                         '{netns_int}.cfg'.format(
+                             netns=consts.AMPHORA_NAMESPACE,
+                             netns_int=consts.NETNS_PRIMARY_INTERFACE))
+            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        elif distro == consts.CENTOS:
+            file_name = ('/etc/netns/{netns}/sysconfig/network-scripts/'
+                         'ifcfg-{netns_int}'.format(
+                             netns=consts.AMPHORA_NAMESPACE,
+                             netns_int=consts.NETNS_PRIMARY_INTERFACE))
+            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
 
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.post('/' + api_server.VERSION +
-                               "/plug/vip/203.0.113.2",
-                               content_type='application/json',
-                               data=json.dumps(subnet_info))
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/203.0.113.2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/203.0.113.2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
             self.assertEqual(202, rv.status_code)
             mock_open.assert_any_call(file_name, flags, mode)
             mock_fdopen.assert_any_call(123, 'w')
@@ -1119,15 +1653,23 @@ class TestServerTestCase(base.TestCase):
             mock_fdopen.assert_any_call(123, 'r+')
 
             handle = m()
-            handle.write.assert_any_call(
-                '\n# Generated by Octavia agent\n'
-                'auto {netns_int} {netns_int}:0\n'
-                'iface {netns_int} inet dhcp\n\n'
-                'iface {netns_int}:0 inet static\n'
-                'address 203.0.113.2\n'
-                'broadcast 203.0.113.255\n'
-                'netmask 255.255.255.0'.format(
-                    netns_int=consts.NETNS_PRIMARY_INTERFACE))
+            if distro == consts.UBUNTU:
+                handle.write.assert_any_call(
+                    '\n# Generated by Octavia agent\n'
+                    'auto {netns_int} {netns_int}:0\n\n'
+                    'iface {netns_int} inet dhcp\n\n'
+                    'iface {netns_int}:0 inet static\n'
+                    'address 203.0.113.2\n'
+                    'broadcast 203.0.113.255\n'
+                    'netmask 255.255.255.0'.format(
+                        netns_int=consts.NETNS_PRIMARY_INTERFACE))
+            elif distro == consts.CENTOS:
+                handle.write.assert_any_call(
+                    '\n# Generated by Octavia agent\n'
+                    'NM_CONTROLLED="no"\nDEVICE="{netns_int}"\n'
+                    'ONBOOT="yes"\nTYPE="Ethernet"\nUSERCTL="yes" \n'
+                    'BOOTPROTO="dhcp"\nPERSISTENT_DHCLIENT="1"  \n'.format(
+                        netns_int=consts.NETNS_PRIMARY_INTERFACE))
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                  'ifup', '{netns_int}:0'.format(
@@ -1144,16 +1686,29 @@ class TestServerTestCase(base.TestCase):
 
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
-            rv = self.app.post('/' + api_server.VERSION +
-                               "/plug/vip/203.0.113.2",
-                               content_type='application/json',
-                               data=json.dumps(subnet_info))
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/203.0.113.2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/203.0.113.2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
             self.assertEqual(500, rv.status_code)
             self.assertEqual(
                 {'details': RANDOM_ERROR,
                  'message': 'Error plugging VIP'},
                 json.loads(rv.data.decode('utf-8')))
 
+    def test_ubuntu_plug_VIP6(self):
+        self._test_plug_vip6(consts.UBUNTU)
+
+    def test_centos_plug_VIP6(self):
+        self._test_plug_vip6(consts.CENTOS)
+
+    @mock.patch('shutil.copy2')
     @mock.patch('pyroute2.NSPopen')
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
@@ -1163,10 +1718,12 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
     @mock.patch('os.makedirs')
-    def test_plug_vip6(self, mock_makedirs, mock_copytree, mock_check_output,
-                       mock_netns, mock_netns_create, mock_pyroute2,
-                       mock_ifaddress, mock_interfaces, mock_nspopen):
+    def _test_plug_vip6(self, distro, mock_makedirs, mock_copytree,
+                        mock_check_output, mock_netns, mock_netns_create,
+                        mock_pyroute2, mock_ifaddress, mock_interfaces,
+                        mock_nspopen, mock_copy2):
 
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         subnet_info = {
             'subnet_cidr': '2001:db8::/32',
             'gateway': '2001:db8::1',
@@ -1174,20 +1731,43 @@ class TestServerTestCase(base.TestCase):
         }
 
         # malformed ip
-        rv = self.app.post('/' + api_server.VERSION + '/plug/vip/error',
-                           data=json.dumps(subnet_info),
-                           content_type='application/json')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      '/plug/vip/error',
+                                      data=json.dumps(subnet_info),
+                                      content_type='application/json')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      '/plug/vip/error',
+                                      data=json.dumps(subnet_info),
+                                      content_type='application/json')
         self.assertEqual(400, rv.status_code)
 
         # No subnet info
-        rv = self.app.post('/' + api_server.VERSION + '/plug/vip/error')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      '/plug/vip/error',
+                                      data=json.dumps(subnet_info),
+                                      content_type='application/json')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      '/plug/vip/error',
+                                      data=json.dumps(subnet_info),
+                                      content_type='application/json')
         self.assertEqual(400, rv.status_code)
 
         # No interface at all
         mock_interfaces.side_effect = [[]]
-        rv = self.app.post('/' + api_server.VERSION + "/plug/vip/2001:db8::2",
-                           content_type='application/json',
-                           data=json.dumps(subnet_info))
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      "/plug/vip/2001:db8::2",
+                                      content_type='application/json',
+                                      data=json.dumps(subnet_info))
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      "/plug/vip/2001:db8::2",
+                                      content_type='application/json',
+                                      data=json.dumps(subnet_info))
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
@@ -1195,9 +1775,16 @@ class TestServerTestCase(base.TestCase):
         # Two interfaces down
         mock_interfaces.side_effect = [['blah', 'blah2']]
         mock_ifaddress.side_effect = [['blabla'], ['blabla']]
-        rv = self.app.post('/' + api_server.VERSION + "/plug/vip/2001:db8::2",
-                           content_type='application/json',
-                           data=json.dumps(subnet_info))
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                      "/plug/vip/2001:db8::2",
+                                      content_type='application/json',
+                                      data=json.dumps(subnet_info))
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.post('/' + api_server.VERSION +
+                                      "/plug/vip/2001:db8::2",
+                                      content_type='application/json',
+                                      data=json.dumps(subnet_info))
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
@@ -1221,19 +1808,32 @@ class TestServerTestCase(base.TestCase):
 
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        file_name = ('/etc/netns/{netns}/network/interfaces.d/'
-                     '{netns_int}.cfg'.format(
-                         netns=consts.AMPHORA_NAMESPACE,
-                         netns_int=consts.NETNS_PRIMARY_INTERFACE))
+
+        if distro == consts.UBUNTU:
+            file_name = ('/etc/netns/{netns}/network/interfaces.d/'
+                         '{netns_int}.cfg'.format(
+                             netns=consts.AMPHORA_NAMESPACE,
+                             netns_int=consts.NETNS_PRIMARY_INTERFACE))
+        elif distro == consts.CENTOS:
+            file_name = ('/etc/netns/{netns}/sysconfig/network-scripts/'
+                         'ifcfg-{netns_int}'.format(
+                             netns=consts.AMPHORA_NAMESPACE,
+                             netns_int=consts.NETNS_PRIMARY_INTERFACE))
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
 
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.post('/' + api_server.VERSION +
-                               "/plug/vip/2001:db8::2",
-                               content_type='application/json',
-                               data=json.dumps(full_subnet_info))
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/2001:db8::2",
+                                          content_type='application/json',
+                                          data=json.dumps(full_subnet_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/2001:db8::2",
+                                          content_type='application/json',
+                                          data=json.dumps(full_subnet_info))
             self.assertEqual(202, rv.status_code)
             mock_open.assert_any_call(file_name, flags, mode)
             mock_fdopen.assert_any_call(123, 'w')
@@ -1244,32 +1844,52 @@ class TestServerTestCase(base.TestCase):
             mock_open.assert_any_call(plug_inf_file, flags, mode)
             mock_fdopen.assert_any_call(123, 'r+')
             handle = m()
-            handle.write.assert_any_call(
-                '\n# Generated by Octavia agent\n'
-                'auto {netns_int} {netns_int}:0\n'
-                'iface {netns_int} inet6 static\n'
-                'address 2001:db8::4\n'
-                'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n'
-                'netmask 32\n'
-                'gateway 2001:db8::1\n'
-                'mtu 1450\n'
-                'up route add -net 2001:db9::/32 gw 2001:db8::5 '
-                'dev {netns_int}\n'
-                'down route del -net 2001:db9::/32 gw 2001:db8::5 '
-                'dev {netns_int}\n'
-                'up route add -net 2001:db9::/32 gw 2001:db8::5 '
-                'dev {netns_int}\n'
-                'down route del -net 2001:db9::/32 gw 2001:db8::5 '
-                'dev {netns_int}\n'
-                '\n'
-                'iface {netns_int}:0 inet6 static\n'
-                'address 2001:0db8:0000:0000:0000:0000:0000:0002\n'
-                'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n'
-                'netmask 32'.format(netns_int=consts.NETNS_PRIMARY_INTERFACE))
-            mock_check_output.assert_called_with(
-                ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'ifup', '{netns_int}:0'.format(
-                     netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
+            if distro == consts.UBUNTU:
+                handle.write.assert_any_call(
+                    '\n# Generated by Octavia agent\n'
+                    'auto {netns_int} {netns_int}:0\n'
+                    'iface {netns_int} inet6 static\n'
+                    'address 2001:db8::4\n'
+                    'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n'
+                    'netmask 32\n'
+                    'gateway 2001:db8::1\n'
+                    'mtu 1450\n'
+                    'up route add -net 2001:db9::/32 gw 2001:db8::5 '
+                    'dev {netns_int}\n'
+                    'down route del -net 2001:db9::/32 gw 2001:db8::5 '
+                    'dev {netns_int}\n'
+                    'up route add -net 2001:db9::/32 gw 2001:db8::5 '
+                    'dev {netns_int}\n'
+                    'down route del -net 2001:db9::/32 gw 2001:db8::5 '
+                    'dev {netns_int}\n'
+                    '\n'
+                    'iface {netns_int}:0 inet6 static\n'
+                    'address 2001:0db8:0000:0000:0000:0000:0000:0002\n'
+                    'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n'
+                    'netmask 32'.format(
+                        netns_int=consts.NETNS_PRIMARY_INTERFACE))
+            elif distro == consts.CENTOS:
+                handle.write.assert_any_call(
+                    '\n# Generated by Octavia agent\n'
+                    'NM_CONTROLLED="no"\nDEVICE="{netns_int}"\n'
+                    'ONBOOT="yes"\nTYPE="Ethernet"\nUSERCTL="yes"\n'
+                    'IPV6INIT="yes"\nIPV6_DEFROUTE="yes"\n'
+                    'IPV6_AUTOCONF="no"\nIPV6ADDR="2001:db8::4/32"\n'
+                    'IPV6_DEFAULTGW="2001:db8::1"\nIPV6_MTU="1450"  \n'
+                    'IPV6ADDR_SECONDARIES="2001:0db8:0000:0000:0000:0000:'
+                    '0000:0002/32"\n'.format(
+                        netns_int=consts.NETNS_PRIMARY_INTERFACE))
+
+            if distro == consts.UBUNTU:
+                mock_check_output.assert_called_with(
+                    ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
+                     'ifup', '{netns_int}:0'.format(
+                         netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
+            elif distro == consts.CENTOS:
+                mock_check_output.assert_called_with(
+                    ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
+                     'ifup', '{netns_int}'.format(
+                         netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
 
         # Verify sysctl was loaded
         mock_nspopen.assert_called_once_with(
@@ -1283,19 +1903,31 @@ class TestServerTestCase(base.TestCase):
 
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        file_name = ('/etc/netns/{netns}/network/interfaces.d/'
-                     '{netns_int}.cfg'.format(
-                         netns=consts.AMPHORA_NAMESPACE,
-                         netns_int=consts.NETNS_PRIMARY_INTERFACE))
+        if distro == consts.UBUNTU:
+            file_name = ('/etc/netns/{netns}/network/interfaces.d/'
+                         '{netns_int}.cfg'.format(
+                             netns=consts.AMPHORA_NAMESPACE,
+                             netns_int=consts.NETNS_PRIMARY_INTERFACE))
+        elif distro == consts.CENTOS:
+            file_name = ('/etc/netns/{netns}/sysconfig/network-scripts/'
+                         'ifcfg-{netns_int}'.format(
+                             netns=consts.AMPHORA_NAMESPACE,
+                             netns_int=consts.NETNS_PRIMARY_INTERFACE))
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
 
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.post('/' + api_server.VERSION +
-                               "/plug/vip/2001:db8::2",
-                               content_type='application/json',
-                               data=json.dumps(subnet_info))
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/2001:db8::2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/2001:db8::2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
             self.assertEqual(202, rv.status_code)
             mock_open.assert_any_call(file_name, flags, mode)
             mock_fdopen.assert_any_call(123, 'w')
@@ -1306,18 +1938,37 @@ class TestServerTestCase(base.TestCase):
             mock_open.assert_any_call(plug_inf_file, flags, mode)
             mock_fdopen.assert_any_call(123, 'r+')
             handle = m()
-            handle.write.assert_any_call(
-                '\n# Generated by Octavia agent\n'
-                'auto {netns_int} {netns_int}:0\n'
-                'iface {netns_int} inet6 auto\n\n'
-                'iface {netns_int}:0 inet6 static\n'
-                'address 2001:0db8:0000:0000:0000:0000:0000:0002\n'
-                'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n'
-                'netmask 32'.format(netns_int=consts.NETNS_PRIMARY_INTERFACE))
-            mock_check_output.assert_called_with(
-                ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'ifup', '{netns_int}:0'.format(
-                     netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
+            if distro == consts.UBUNTU:
+                handle.write.assert_any_call(
+                    '\n# Generated by Octavia agent\n'
+                    'auto {netns_int} {netns_int}:0\n\n'
+                    'iface {netns_int} inet6 auto\n\n'
+                    'iface {netns_int}:0 inet6 static\n'
+                    'address 2001:0db8:0000:0000:0000:0000:0000:0002\n'
+                    'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n'
+                    'netmask 32'.format(
+                        netns_int=consts.NETNS_PRIMARY_INTERFACE))
+            elif distro == consts.CENTOS:
+                handle.write.assert_any_call(
+                    '\n# Generated by Octavia agent\n'
+                    'NM_CONTROLLED="no"\nDEVICE="{netns_int}"\n'
+                    'ONBOOT="yes"\nTYPE="Ethernet"\nUSERCTL="yes" \n'
+                    'IPV6INIT="yes"\nIPV6_DEFROUTE="yes"\n'
+                    'IPV6_AUTOCONF="yes"  \n'
+                    'IPV6ADDR_SECONDARIES="2001:0db8:0000:0000:0000:0000:'
+                    '0000:0002/32"\n'.format(
+                        netns_int=consts.NETNS_PRIMARY_INTERFACE))
+
+            if distro == consts.UBUNTU:
+                mock_check_output.assert_called_with(
+                    ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
+                     'ifup', '{netns_int}:0'.format(
+                         netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
+            elif distro == consts.CENTOS:
+                mock_check_output.assert_called_with(
+                    ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
+                     'ifup', '{netns_int}'.format(
+                         netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
 
         mock_interfaces.side_effect = [['blah']]
         mock_ifaddress.side_effect = [[netifaces.AF_LINK],
@@ -1330,18 +1981,32 @@ class TestServerTestCase(base.TestCase):
 
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
-            rv = self.app.post('/' + api_server.VERSION +
-                               "/plug/vip/2001:db8::2",
-                               content_type='application/json',
-                               data=json.dumps(subnet_info))
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/2001:db8::2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/2001:db8::2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
             self.assertEqual(500, rv.status_code)
             self.assertEqual(
                 {'details': RANDOM_ERROR,
                  'message': 'Error plugging VIP'},
                 json.loads(rv.data.decode('utf-8')))
 
+    def test_ubuntu_get_interface(self):
+        self._test_get_interface(consts.UBUNTU)
+
+    def test_centos_get_interface(self):
+        self._test_get_interface(consts.CENTOS)
+
     @mock.patch('pyroute2.NetNS')
-    def test_get_interface(self, mock_netns):
+    def _test_get_interface(self, distro, mock_netns):
+
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
 
         netns_handle = mock_netns.return_value.__enter__.return_value
 
@@ -1353,9 +2018,16 @@ class TestServerTestCase(base.TestCase):
             'attrs': [['IFA_ADDRESS', '203.0.113.2']]}]
         netns_handle.get_links.return_value = [{
             'attrs': [['IFLA_IFNAME', 'eth0']]}]
-        rv = self.app.get('/' + api_server.VERSION + '/interface/203.0.113.2',
-                          data=json.dumps(interface_res),
-                          content_type='application/json')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION +
+                                     '/interface/203.0.113.2',
+                                     data=json.dumps(interface_res),
+                                     content_type='application/json')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION +
+                                     '/interface/203.0.113.2',
+                                     data=json.dumps(interface_res),
+                                     content_type='application/json')
         self.assertEqual(200, rv.status_code)
 
         # Happy path with IPv6 address normalization
@@ -1365,77 +2037,79 @@ class TestServerTestCase(base.TestCase):
                        '0000:0000:0000:0000:0000:0000:0000:0001']]}]
         netns_handle.get_links.return_value = [{
             'attrs': [['IFLA_IFNAME', 'eth0']]}]
-        rv = self.app.get('/' + api_server.VERSION + '/interface/::1',
-                          data=json.dumps(interface_res),
-                          content_type='application/json')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION +
+                                     '/interface/::1',
+                                     data=json.dumps(interface_res),
+                                     content_type='application/json')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION +
+                                     '/interface/::1',
+                                     data=json.dumps(interface_res),
+                                     content_type='application/json')
         self.assertEqual(200, rv.status_code)
 
         # Nonexistent interface
-        rv = self.app.get('/' + api_server.VERSION + '/interface/10.0.0.1',
-                          data=json.dumps(interface_res),
-                          content_type='application/json')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION +
+                                     '/interface/10.0.0.1',
+                                     data=json.dumps(interface_res),
+                                     content_type='application/json')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION +
+                                     '/interface/10.0.0.1',
+                                     data=json.dumps(interface_res),
+                                     content_type='application/json')
         self.assertEqual(404, rv.status_code)
 
         # Invalid IP address
-        rv = self.app.get('/' + api_server.VERSION +
-                          '/interface/00:00:00:00:00:00',
-                          data=json.dumps(interface_res),
-                          content_type='application/json')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION +
+                                     '/interface/00:00:00:00:00:00',
+                                     data=json.dumps(interface_res),
+                                     content_type='application/json')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION +
+                                     '/interface/00:00:00:00:00:00',
+                                     data=json.dumps(interface_res),
+                                     content_type='application/json')
         self.assertEqual(400, rv.status_code)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
-    @mock.patch('os.path.exists')
-    @mock.patch('os.makedirs')
-    @mock.patch('os.rename')
-    @mock.patch('subprocess.check_output')
-    @mock.patch('os.remove')
-    def test_upload_keepalived_config_systemd(self, mock_remove,
-                                              mock_subprocess, mock_rename,
-                                              mock_makedirs, mock_exists,
-                                              mock_init_system):
-        self._test_upload_keepalived_config(mock_remove, mock_subprocess,
-                                            mock_rename, mock_makedirs,
-                                            mock_exists, mock_init_system,
-                                            consts.INIT_SYSTEMD)
+    def test_ubuntu_upload_keepalived_config_systemd(self, mock_init_system):
+        self._test_upload_keepalived_config(consts.INIT_SYSTEMD,
+                                            consts.UBUNTU, mock_init_system)
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
+    def test_centos_upload_keepalived_config_systemd(self, mock_init_system):
+        self._test_upload_keepalived_config(consts.INIT_SYSTEMD,
+                                            consts.CENTOS, mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_UPSTART)
-    @mock.patch('os.path.exists')
-    @mock.patch('os.makedirs')
-    @mock.patch('os.rename')
-    @mock.patch('subprocess.check_output')
-    @mock.patch('os.remove')
-    def test_upload_keepalived_config_upstart(self, mock_remove,
-                                              mock_subprocess, mock_rename,
-                                              mock_makedirs, mock_exists,
-                                              mock_init_system):
-        self._test_upload_keepalived_config(mock_remove, mock_subprocess,
-                                            mock_rename, mock_makedirs,
-                                            mock_exists, mock_init_system,
-                                            consts.INIT_UPSTART)
+    def test_ubuntu_upload_keepalived_config_upstart(self, mock_init_system):
+        self._test_upload_keepalived_config(consts.INIT_UPSTART,
+                                            consts.UBUNTU, mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSVINIT)
+    def test_ubuntu_upload_keepalived_config_sysvinit(self, mock_init_system):
+        self._test_upload_keepalived_config(consts.INIT_SYSVINIT,
+                                            consts.UBUNTU, mock_init_system)
+
     @mock.patch('os.path.exists')
     @mock.patch('os.makedirs')
     @mock.patch('os.rename')
     @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
-    def test_upload_keepalived_config_sysvinit(self, mock_remove,
-                                               mock_subprocess, mock_rename,
-                                               mock_makedirs, mock_exists,
-                                               mock_init_system):
-        self._test_upload_keepalived_config(mock_remove, mock_subprocess,
-                                            mock_rename, mock_makedirs,
-                                            mock_exists, mock_init_system,
-                                            consts.INIT_SYSVINIT)
+    def _test_upload_keepalived_config(self, init_system, distro,
+                                       mock_init_system, mock_remove,
+                                       mock_subprocess, mock_rename,
+                                       mock_makedirs, mock_exists):
 
-    def _test_upload_keepalived_config(self, mock_remove, mock_subprocess,
-                                       mock_rename, mock_makedirs,
-                                       mock_exists, mock_init_system,
-                                       init_system):
-
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
 
         mock_exists.return_value = True
@@ -1445,8 +2119,12 @@ class TestServerTestCase(base.TestCase):
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.put('/' + api_server.VERSION + '/vrrp/upload',
-                              data='test')
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/vrrp/upload', data='test')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put('/' + api_server.VERSION +
+                                         '/vrrp/upload', data='test')
 
             mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
             mock_open.assert_called_with(cfg_path, flags, mode)
@@ -1460,24 +2138,204 @@ class TestServerTestCase(base.TestCase):
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
-            rv = self.app.put('/' + api_server.VERSION + '/vrrp/upload',
-                              data='test')
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/vrrp/upload', data='test')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put('/' + api_server.VERSION +
+                                         '/vrrp/upload', data='test')
             mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
                     stat.S_IROTH | stat.S_IXOTH)
             mock_open.assert_called_with(script_path, flags, mode)
             mock_fdopen.assert_called_with(123, 'w')
             self.assertEqual(200, rv.status_code)
 
+    def test_ubuntu_manage_service_vrrp(self):
+        self._test_manage_service_vrrp(consts.UBUNTU)
+
+    def test_centos_manage_service_vrrp(self):
+        self._test_manage_service_vrrp(consts.CENTOS)
+
     @mock.patch('subprocess.check_output')
-    def test_manage_service_vrrp(self, mock_check_output):
-        rv = self.app.put('/' + api_server.VERSION + '/vrrp/start')
+    def _test_manage_service_vrrp(self, distro, mock_check_output):
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
+
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.put('/' + api_server.VERSION + '/vrrp/start')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.put('/' + api_server.VERSION + '/vrrp/start')
+
         self.assertEqual(202, rv.status_code)
 
-        rv = self.app.put('/' + api_server.VERSION + '/vrrp/restart')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                     '/vrrp/restart')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.put('/' + api_server.VERSION +
+                                     '/vrrp/restart')
         self.assertEqual(400, rv.status_code)
 
         mock_check_output.side_effect = subprocess.CalledProcessError(1,
                                                                       'blah!')
 
-        rv = self.app.put('/' + api_server.VERSION + '/vrrp/start')
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.put('/' + api_server.VERSION + '/vrrp/start')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.put('/' + api_server.VERSION + '/vrrp/start')
         self.assertEqual(500, rv.status_code)
+
+    def test_ubuntu_details(self):
+        self._test_details(consts.UBUNTU)
+
+    def test_centos_details(self):
+        self._test_details(consts.CENTOS)
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.amphora_info.'
+                'AmphoraInfo._count_haproxy_processes')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.amphora_info.'
+                'AmphoraInfo._get_networks')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.amphora_info.'
+                'AmphoraInfo._load')
+    @mock.patch('os.statvfs')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.amphora_info.'
+                'AmphoraInfo._cpu')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.amphora_info.'
+                'AmphoraInfo._get_meminfo')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'util.get_listeners')
+    @mock.patch('socket.gethostname')
+    @mock.patch('subprocess.check_output')
+    def _test_details(self, distro, mock_subbprocess, mock_hostname,
+                      mock_get_listeners, mock_get_mem, mock_cpu,
+                      mock_statvfs, mock_load, mock_get_nets,
+                      mock_count_haproxy):
+
+        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
+
+        listener_id = uuidutils.generate_uuid()
+        mock_get_listeners.return_value = [listener_id]
+
+        mock_hostname.side_effect = ['test-host']
+
+        mock_subbprocess.side_effect = [
+            """Package: haproxy
+            Status: install ok installed
+            Priority: optional
+            Section: net
+            Installed-Size: 803
+            Maintainer: Ubuntu Developers
+            Architecture: amd64
+            Version: 9.9.99-9
+            """]
+
+        MemTotal = random.randrange(0, 1000)
+        MemFree = random.randrange(0, 1000)
+        Buffers = random.randrange(0, 1000)
+        Cached = random.randrange(0, 1000)
+        SwapCached = random.randrange(0, 1000)
+        Shmem = random.randrange(0, 1000)
+        Slab = random.randrange(0, 1000)
+
+        memory_dict = {'CmaFree': 0, 'Mapped': 38244, 'CommitLimit': 508048,
+                       'MemFree': MemFree, 'AnonPages': 92384,
+                       'DirectMap2M': 997376, 'SwapTotal': 0,
+                       'NFS_Unstable': 0, 'SReclaimable': 34168,
+                       'Writeback': 0, 'PageTables': 3760, 'Shmem': Shmem,
+                       'Hugepagesize': 2048, 'MemAvailable': 738356,
+                       'HardwareCorrupted': 0, 'SwapCached': SwapCached,
+                       'Dirty': 80, 'Active': 237060, 'VmallocUsed': 0,
+                       'Inactive(anon)': 2752, 'Slab': Slab, 'Cached': Cached,
+                       'Inactive(file)': 149588, 'SUnreclaim': 17796,
+                       'Mlocked': 3656, 'AnonHugePages': 6144, 'SwapFree': 0,
+                       'Active(file)': 145512, 'CmaTotal': 0,
+                       'Unevictable': 3656, 'KernelStack': 2368,
+                       'Inactive': 152340, 'MemTotal': MemTotal, 'Bounce': 0,
+                       'Committed_AS': 401884, 'Active(anon)': 91548,
+                       'VmallocTotal': 34359738367, 'VmallocChunk': 0,
+                       'DirectMap4k': 51072, 'WritebackTmp': 0,
+                       'Buffers': Buffers}
+        mock_get_mem.return_value = memory_dict
+
+        cpu_total = random.randrange(0, 1000)
+        cpu_user = random.randrange(0, 1000)
+        cpu_system = random.randrange(0, 1000)
+        cpu_softirq = random.randrange(0, 1000)
+
+        cpu_dict = {'idle': '7168848', 'system': cpu_system,
+                    'total': cpu_total, 'softirq': cpu_softirq, 'nice': '31',
+                    'iowait': '902', 'user': cpu_user, 'irq': '0'}
+
+        mock_cpu.return_value = cpu_dict
+
+        f_blocks = random.randrange(0, 1000)
+        f_bfree = random.randrange(0, 1000)
+        f_frsize = random.randrange(0, 1000)
+        f_bavail = random.randrange(0, 1000)
+
+        stats = mock.MagicMock()
+        stats.f_blocks = f_blocks
+        stats.f_bfree = f_bfree
+        stats.f_frsize = f_frsize
+        stats.f_bavail = f_bavail
+        disk_used = (f_blocks - f_bfree) * f_frsize
+        disk_available = f_bavail * f_frsize
+
+        mock_statvfs.return_value = stats
+
+        load_1min = random.randrange(0, 10)
+        load_5min = random.randrange(0, 10)
+        load_15min = random.randrange(0, 10)
+
+        mock_load.return_value = [load_1min, load_5min, load_15min]
+
+        eth1_rx = random.randrange(0, 1000)
+        eth1_tx = random.randrange(0, 1000)
+        eth2_rx = random.randrange(0, 1000)
+        eth2_tx = random.randrange(0, 1000)
+        eth3_rx = random.randrange(0, 1000)
+        eth3_tx = random.randrange(0, 1000)
+
+        net_dict = {'eth2': {'network_rx': eth2_rx, 'network_tx': eth2_tx},
+                    'eth1': {'network_rx': eth1_rx, 'network_tx': eth1_tx},
+                    'eth3': {'network_rx': eth3_rx, 'network_tx': eth3_tx}}
+
+        mock_get_nets.return_value = net_dict
+
+        haproxy_count = random.randrange(0, 100)
+        mock_count_haproxy.return_value = haproxy_count
+
+        expected_dict = {'active': True, 'api_version': '0.5',
+                         'cpu': {'soft_irq': cpu_softirq, 'system': cpu_system,
+                                 'total': cpu_total, 'user': cpu_user},
+                         'disk': {'available': disk_available,
+                                  'used': disk_used},
+                         'haproxy_count': haproxy_count,
+                         'haproxy_version': '9.9.99-9',
+                         'hostname': 'test-host',
+                         'listeners': [listener_id],
+                         'load': [load_1min, load_5min, load_15min],
+                         'memory': {'buffers': Buffers,
+                                    'cached': Cached,
+                                    'free': MemFree,
+                                    'shared': Shmem,
+                                    'slab': Slab,
+                                    'swap_used': SwapCached,
+                                    'total': MemTotal},
+                         'networks': {'eth1': {'network_rx': eth1_rx,
+                                               'network_tx': eth1_tx},
+                                      'eth2': {'network_rx': eth2_rx,
+                                               'network_tx': eth2_tx},
+                                      'eth3': {'network_rx': eth3_rx,
+                                               'network_tx': eth3_tx}},
+                         'packages': {},
+                         'topology': consts.TOPOLOGY_SINGLE,
+                         'topology_status': consts.TOPOLOGY_STATUS_OK}
+
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.get('/' + api_server.VERSION + '/details')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.get('/' + api_server.VERSION + '/details')
+
+        self.assertEqual(200, rv.status_code)
+        self.assertEqual(expected_dict,
+                         json.loads(rv.data.decode('utf-8')))

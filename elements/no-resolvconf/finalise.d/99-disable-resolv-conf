@@ -14,3 +14,7 @@ else
 make_resolv_conf() { : ; }" > /etc/dhclient-enter-hooks
     chmod +x /etc/dhclient-enter-hooks
 fi
+
+if [ -e /etc/nsswitch.conf ]; then
+    sed -i -e "/hosts:/ s/dns//g" /etc/nsswitch.conf
+fi
