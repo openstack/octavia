@@ -64,20 +64,6 @@ class TestAmphoraInfo(base.TestCase):
         self.assertEqual(1, result)
 
     def test__get_meminfo(self):
-
-        # Test live data from host
-
-        result = self.amp_info._get_meminfo()
-
-        # check that /proc/meminfo is giving us the fields we use
-        self.assertIn('MemTotal', result)
-        self.assertIn('MemFree', result)
-        self.assertIn('Buffers', result)
-        self.assertIn('Cached', result)
-        self.assertIn('SwapCached', result)
-        self.assertIn('Shmem', result)
-        self.assertIn('Slab', result)
-
         # Known data test
         meminfo = ('MemTotal:       21692784 kB\n'
                    'MemFree:        12685624 kB\n'
