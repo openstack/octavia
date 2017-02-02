@@ -323,38 +323,43 @@ class AmphoraFlows(object):
             prefix=constants.FAILOVER_AMPHORA_FLOW)
         failover_amphora_flow.add(get_amp_subflow)
 
-        # Update the new amphora with the failed amphora details
-        failover_amphora_flow.add(database_tasks.UpdateAmpFailoverDetails(
-            requires=(constants.AMPHORA, constants.AMP_DATA)))
+        if role:
+            # Update the new amphora with the failed amphora details
+            failover_amphora_flow.add(database_tasks.UpdateAmpFailoverDetails(
+                requires=(constants.AMPHORA, constants.AMP_DATA)))
 
-        failover_amphora_flow.add(database_tasks.ReloadLoadBalancer(
-            requires=constants.LOADBALANCER_ID,
-            provides=constants.LOADBALANCER))
+            failover_amphora_flow.add(database_tasks.ReloadLoadBalancer(
+                requires=constants.LOADBALANCER_ID,
+                provides=constants.LOADBALANCER))
 
-        failover_amphora_flow.add(network_tasks.GetAmphoraeNetworkConfigs(
-            requires=constants.LOADBALANCER,
-            provides=constants.AMPHORAE_NETWORK_CONFIG))
-        failover_amphora_flow.add(database_tasks.GetListenersFromLoadbalancer(
-            requires=constants.LOADBALANCER, provides=constants.LISTENERS))
+            failover_amphora_flow.add(network_tasks.GetAmphoraeNetworkConfigs(
+                requires=constants.LOADBALANCER,
+                provides=constants.AMPHORAE_NETWORK_CONFIG))
+            failover_amphora_flow.add(
+                database_tasks.GetListenersFromLoadbalancer(
+                    requires=constants.LOADBALANCER,
+                    provides=constants.LISTENERS))
 
-        failover_amphora_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=(constants.LOADBALANCER, constants.LISTENERS)))
+            failover_amphora_flow.add(amphora_driver_tasks.ListenersUpdate(
+                requires=(constants.LOADBALANCER, constants.LISTENERS)))
 
-        # Plug the VIP ports into the new amphora
-        failover_amphora_flow.add(network_tasks.PlugVIPPort(
-            requires=(constants.AMPHORA, constants.AMPHORAE_NETWORK_CONFIG)))
-        failover_amphora_flow.add(amphora_driver_tasks.AmphoraPostVIPPlug(
-            requires=(constants.AMPHORA, constants.LOADBALANCER,
-                      constants.AMPHORAE_NETWORK_CONFIG)))
+            # Plug the VIP ports into the new amphora
+            failover_amphora_flow.add(network_tasks.PlugVIPPort(
+                requires=(constants.AMPHORA,
+                          constants.AMPHORAE_NETWORK_CONFIG)))
+            failover_amphora_flow.add(amphora_driver_tasks.AmphoraPostVIPPlug(
+                requires=(constants.AMPHORA, constants.LOADBALANCER,
+                          constants.AMPHORAE_NETWORK_CONFIG)))
 
-        # Plug the member networks into the new amphora
-        failover_amphora_flow.add(network_tasks.CalculateDelta(
-            requires=(constants.LOADBALANCER),
-            provides=constants.DELTAS))
-        failover_amphora_flow.add(network_tasks.HandleNetworkDeltas(
-            requires=constants.DELTAS, provides=constants.ADDED_PORTS))
-        failover_amphora_flow.add(amphora_driver_tasks.AmphoraePostNetworkPlug(
-            requires=(constants.LOADBALANCER, constants.ADDED_PORTS)))
+            # Plug the member networks into the new amphora
+            failover_amphora_flow.add(network_tasks.CalculateDelta(
+                requires=constants.LOADBALANCER,
+                provides=constants.DELTAS))
+            failover_amphora_flow.add(network_tasks.HandleNetworkDeltas(
+                requires=constants.DELTAS, provides=constants.ADDED_PORTS))
+            failover_amphora_flow.add(
+                amphora_driver_tasks.AmphoraePostNetworkPlug(
+                    requires=(constants.LOADBALANCER, constants.ADDED_PORTS)))
 
         # Handle the amphora role and VRRP if necessary
         if role == constants.ROLE_MASTER:
@@ -375,8 +380,9 @@ class AmphoraFlows(object):
                     name=constants.MARK_AMP_STANDALONE_INDB,
                     requires=constants.AMPHORA))
 
-        failover_amphora_flow.add(amphora_driver_tasks.ListenersStart(
-            requires=(constants.LOADBALANCER, constants.LISTENERS)))
+        if role:
+            failover_amphora_flow.add(amphora_driver_tasks.ListenersStart(
+                requires=(constants.LOADBALANCER, constants.LISTENERS)))
 
         return failover_amphora_flow
 
