@@ -619,7 +619,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                          id=amphora_id)
 
             failover_amphora_tf = self._taskflow_load(
-                self._amphora_flows.get_failover_flow(role=amp.role),
+                self._amphora_flows.get_failover_flow(role=amp.role,
+                                                      status=amp.status),
                 store={constants.FAILED_AMPHORA: amp,
                        constants.LOADBALANCER_ID: amp.load_balancer_id})
             with tf_logging.DynamicLoggingListener(

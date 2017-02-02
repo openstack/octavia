@@ -234,28 +234,10 @@ class TestAmphoraFlows(base.TestCase):
         result = self.AmpFlow._create_new_amp_for_lb_decider(history)
         self.assertFalse(result)
 
-    def test_get_failover_flow(self, mock_get_net_driver):
+    def test_get_failover_flow_allocated(self, mock_get_net_driver):
 
-        amp_flow = self.AmpFlow.get_failover_flow()
-
-        self.assertIsInstance(amp_flow, flow.Flow)
-
-        self.assertIn(constants.FAILED_AMPHORA, amp_flow.requires)
-        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
-
-        self.assertIn(constants.AMP_DATA, amp_flow.provides)
-        self.assertIn(constants.AMPHORA, amp_flow.provides)
-        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
-        self.assertIn(constants.AMPHORAE_NETWORK_CONFIG, amp_flow.provides)
-        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
-        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
-        self.assertIn(constants.LISTENERS, amp_flow.provides)
-        self.assertIn(constants.LOADBALANCER, amp_flow.provides)
-
-        self.assertEqual(2, len(amp_flow.requires))
-        self.assertEqual(11, len(amp_flow.provides))
-
-        amp_flow = self.AmpFlow.get_failover_flow(role=constants.ROLE_MASTER)
+        amp_flow = self.AmpFlow.get_failover_flow(
+            status=constants.AMPHORA_ALLOCATED)
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
@@ -274,7 +256,8 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(2, len(amp_flow.requires))
         self.assertEqual(11, len(amp_flow.provides))
 
-        amp_flow = self.AmpFlow.get_failover_flow(role=constants.ROLE_BACKUP)
+        amp_flow = self.AmpFlow.get_failover_flow(
+            role=constants.ROLE_MASTER, status=constants.AMPHORA_ALLOCATED)
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
@@ -293,7 +276,8 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(2, len(amp_flow.requires))
         self.assertEqual(11, len(amp_flow.provides))
 
-        amp_flow = self.AmpFlow.get_failover_flow(role='BOGUSROLE')
+        amp_flow = self.AmpFlow.get_failover_flow(
+            role=constants.ROLE_BACKUP, status=constants.AMPHORA_ALLOCATED)
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
@@ -311,6 +295,38 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertEqual(2, len(amp_flow.requires))
         self.assertEqual(11, len(amp_flow.provides))
+
+        amp_flow = self.AmpFlow.get_failover_flow(
+            role='BOGUSROLE', status=constants.AMPHORA_ALLOCATED)
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.FAILED_AMPHORA, amp_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+
+        self.assertIn(constants.AMP_DATA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.AMPHORAE_NETWORK_CONFIG, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.assertIn(constants.LISTENERS, amp_flow.provides)
+        self.assertIn(constants.LOADBALANCER, amp_flow.provides)
+
+        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(11, len(amp_flow.provides))
+
+    def test_get_failover_flow_spare(self, mock_get_net_driver):
+
+        amp_flow = self.AmpFlow.get_failover_flow(
+            status=constants.AMPHORA_READY)
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.FAILED_AMPHORA, amp_flow.requires)
+
+        self.assertEqual(1, len(amp_flow.requires))
+        self.assertEqual(0, len(amp_flow.provides))
 
     def test_cert_rotate_amphora_flow(self, mock_get_net_driver):
         self.AmpFlow = amphora_flows.AmphoraFlows()
