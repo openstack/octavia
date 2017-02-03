@@ -37,6 +37,8 @@ class TestPlug(base.TestCase):
     def setUp(self):
         super(TestPlug, self).setUp()
         self.mock_netifaces = mock.patch.object(plug, "netifaces").start()
+        self.mock_platform = mock.patch("platform.linux_distribution").start()
+        self.mock_platform.return_value = ("Ubuntu",)
         self.osutil = osutils.BaseOS.get_os_util()
         self.test_plug = plug.Plug(self.osutil)
         self.addCleanup(self.mock_netifaces.stop)
@@ -157,6 +159,8 @@ class TestPlug(base.TestCase):
 class TestPlugNetwork(base.TestCase):
     def setUp(self):
         super(TestPlugNetwork, self).setUp()
+        self.mock_platform = mock.patch("platform.linux_distribution").start()
+        self.mock_platform.return_value = ("Ubuntu",)
         self.osutil = osutils.BaseOS.get_os_util()
         self.test_plug = plug.Plug(self.osutil)
 

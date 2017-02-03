@@ -34,6 +34,8 @@ class ListenerTestCase(base.TestCase):
         self.jinja_cfg = jinja_cfg.JinjaTemplater(
             base_amp_path=BASE_AMP_PATH,
             base_crt_dir=BASE_CRT_PATH)
+        self.mock_platform = mock.patch("platform.linux_distribution").start()
+        self.mock_platform.return_value = ("Ubuntu",)
         self.test_listener = listener.Listener()
 
     def test_parse_haproxy_config(self):
