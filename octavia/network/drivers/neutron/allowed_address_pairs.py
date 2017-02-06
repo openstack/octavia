@@ -323,22 +323,15 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         return plugged_amphorae
 
     def allocate_vip(self, load_balancer):
-        if not load_balancer.vip.port_id and not load_balancer.vip.subnet_id:
-            raise base.AllocateVIPException('Cannot allocate a vip '
-                                            'without a port_id or '
-                                            'a subnet_id.')
         if load_balancer.vip.port_id:
             LOG.info(_LI('Port %s already exists. Nothing to be done.'),
                      load_balancer.vip.port_id)
             port = self.get_port(load_balancer.vip.port_id)
             return self._port_to_vip(port, load_balancer)
 
-        # Must retrieve the network_id from the subnet
-        subnet = self.get_subnet(load_balancer.vip.subnet_id)
-
         # It can be assumed that network_id exists
         port = {'port': {'name': 'octavia-lb-' + load_balancer.id,
-                         'network_id': subnet.network_id,
+                         'network_id': load_balancer.vip.network_id,
                          'admin_state_up': False,
                          'device_id': 'lb-{0}'.format(load_balancer.id),
                          'device_owner': OCTAVIA_OWNER}}
@@ -347,7 +340,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         except Exception:
             message = _('Error creating neutron port on network '
                         '{network_id}.').format(
-                network_id=subnet.network_id)
+                network_id=load_balancer.vip.network_id)
             LOG.exception(message)
             raise base.AllocateVIPException(message)
         new_port = utils.convert_port_dict_to_model(new_port)
@@ -488,7 +481,6 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 raise base.PortNotFound()
 
     def plug_port(self, amphora, port):
-        plugged_interface = None
         try:
             interface = self.nova_client.servers.interface_attach(
                 server=amphora.compute_id, net_id=None,

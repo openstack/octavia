@@ -202,12 +202,38 @@ def sanitize_l7policy_api_args(l7policy, create=False):
     return l7policy
 
 
-def subnet_exists(subnet_id):
+def port_exists(port_id):
+    """Raises an exception when a port does not exist."""
     network_driver = utils.get_network_driver()
-    # Throws an exception when trying to get a subnet which
-    # does not exist.
     try:
-        network_driver.get_subnet(subnet_id)
+        port = network_driver.get_port(port_id)
     except Exception:
-        return False
-    return True
+        raise exceptions.InvalidSubresource(resource='Port', id=port_id)
+    return port
+
+
+def subnet_exists(subnet_id):
+    """Raises an exception when a subnet does not exist."""
+    network_driver = utils.get_network_driver()
+    try:
+        subnet = network_driver.get_subnet(subnet_id)
+    except Exception:
+        raise exceptions.InvalidSubresource(resource='Subnet', id=subnet_id)
+    return subnet
+
+
+def network_exists_optionally_contains_subnet(network_id, subnet_id=None):
+    """Raises an exception when a network does not exist.
+
+    If a subnet is provided, also validate the network contains that subnet.
+    """
+    network_driver = utils.get_network_driver()
+    try:
+        network = network_driver.get_network(network_id)
+    except Exception:
+        raise exceptions.InvalidSubresource(resource='Network', id=network_id)
+    if subnet_id:
+        if not network.subnets or subnet_id not in network.subnets:
+            raise exceptions.InvalidSubresource(resource='Subnet',
+                                                id=subnet_id)
+    return network

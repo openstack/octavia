@@ -23,7 +23,8 @@ class TestListener(base.BaseAPITest):
 
     def setUp(self):
         super(TestListener, self).setUp()
-        self.lb = self.create_load_balancer({})
+        self.lb = self.create_load_balancer(
+            {'subnet_id': uuidutils.generate_uuid()})
         self.set_lb_status(self.lb.get('id'))
         self.listeners_path = self.LISTENERS_PATH.format(
             lb_id=self.lb.get('id'))
@@ -339,8 +340,9 @@ class TestListener(base.BaseAPITest):
         self.put(listener_path, new_listener, status=400)
 
     def test_update_pending_create(self):
-        lb = self.create_load_balancer({}, name='lb1', description='desc1',
-                                       enabled=False)
+        lb = self.create_load_balancer(
+            {'subnet_id': uuidutils.generate_uuid()},
+            name='lb1', description='desc1', enabled=False)
         lb_listener = {'name': 'listener1', 'description': 'desc1',
                        'enabled': False, 'protocol': constants.PROTOCOL_HTTP,
                        'protocol_port': 80, 'connection_limit': 10,
@@ -349,8 +351,9 @@ class TestListener(base.BaseAPITest):
                   lb_listener, status=409)
 
     def test_delete_pending_update(self):
-        lb = self.create_load_balancer({}, name='lb1', description='desc1',
-                                       enabled=False)
+        lb = self.create_load_balancer(
+            {'subnet_id': uuidutils.generate_uuid()},
+            name='lb1', description='desc1', enabled=False)
         self.set_lb_status(lb.get('id'))
         lb_listener = {'name': 'listener1', 'description': 'desc1',
                        'enabled': False, 'protocol': constants.PROTOCOL_HTTP,
@@ -363,8 +366,9 @@ class TestListener(base.BaseAPITest):
             status=409)
 
     def test_update_pending_update(self):
-        lb = self.create_load_balancer({}, name='lb1', description='desc1',
-                                       enabled=False)
+        lb = self.create_load_balancer(
+            {'subnet_id': uuidutils.generate_uuid()},
+            name='lb1', description='desc1', enabled=False)
         self.set_lb_status(lb.get('id'))
         lb_listener = {'name': 'listener1', 'description': 'desc1',
                        'enabled': False, 'protocol': constants.PROTOCOL_HTTP,
@@ -379,8 +383,9 @@ class TestListener(base.BaseAPITest):
             {}, status=409)
 
     def test_update_pending_delete(self):
-        lb = self.create_load_balancer({}, name='lb1', description='desc1',
-                                       enabled=False)
+        lb = self.create_load_balancer(
+            {'subnet_id': uuidutils.generate_uuid()},
+            name='lb1', description='desc1', enabled=False)
         self.set_lb_status(lb.get('id'))
         lb_listener = {'name': 'listener1', 'description': 'desc1',
                        'enabled': False, 'protocol': constants.PROTOCOL_HTTP,
@@ -395,8 +400,9 @@ class TestListener(base.BaseAPITest):
             {}, status=409)
 
     def test_delete_pending_delete(self):
-        lb = self.create_load_balancer({}, name='lb1', description='desc1',
-                                       enabled=False)
+        lb = self.create_load_balancer(
+            {'subnet_id': uuidutils.generate_uuid()},
+            name='lb1', description='desc1', enabled=False)
         self.set_lb_status(lb.get('id'))
         lb_listener = {'name': 'listener1', 'description': 'desc1',
                        'enabled': False, 'protocol': constants.PROTOCOL_HTTP,

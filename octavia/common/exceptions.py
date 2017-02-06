@@ -255,6 +255,11 @@ class MissingProjectID(OctaviaException):
     message = _('Missing project ID in request where one is required.')
 
 
-class MissingAPIProjectID(APIException):
-    msg = _('Missing project ID in request where one is required.')
+class InvalidSubresource(APIException):
+    msg = _('%(resource)s %(id)s not found.')
+    code = 400
+
+
+class ValidationException(APIException):
+    msg = _('Validation failure: %(detail)s')
     code = 400

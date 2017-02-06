@@ -332,6 +332,7 @@ class Vip(base_models.BASE):
     ip_address = sa.Column(sa.String(64), nullable=True)
     port_id = sa.Column(sa.String(36), nullable=True)
     subnet_id = sa.Column(sa.String(36), nullable=True)
+    network_id = sa.Column(sa.String(36), nullable=True)
     load_balancer = orm.relationship("LoadBalancer", uselist=False,
                                      backref=orm.backref("vip", uselist=False,
                                                          cascade="delete"))

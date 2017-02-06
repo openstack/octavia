@@ -24,7 +24,8 @@ class TestMember(base.BaseAPITest):
 
     def setUp(self):
         super(TestMember, self).setUp()
-        self.lb = self.create_load_balancer({})
+        self.lb = self.create_load_balancer(
+            {'subnet_id': uuidutils.generate_uuid()})
         self.set_lb_status(self.lb.get('id'))
         self.listener = self.create_listener(self.lb.get('id'),
                                              constants.PROTOCOL_HTTP, 80)

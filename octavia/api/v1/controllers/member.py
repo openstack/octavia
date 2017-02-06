@@ -99,9 +99,8 @@ class MembersController(base.BaseController):
                                                     self.load_balancer_id)
 
         # Validate member subnet
-        if member.subnet_id and not validate.subnet_exists(member.subnet_id):
-            raise exceptions.NotFound(resource='Subnet',
-                                      id=member.subnet_id)
+        if member.subnet_id:
+            validate.subnet_exists(member.subnet_id)
 
         lock_session = db_api.get_session(autocommit=False)
         if self.repositories.check_quota_met(

@@ -417,10 +417,12 @@ class VRRPGroup(BaseDataModel):
 class Vip(BaseDataModel):
 
     def __init__(self, load_balancer_id=None, ip_address=None,
-                 subnet_id=None, port_id=None, load_balancer=None):
+                 subnet_id=None, network_id=None, port_id=None,
+                 load_balancer=None):
         self.load_balancer_id = load_balancer_id
         self.ip_address = ip_address
         self.subnet_id = subnet_id
+        self.network_id = network_id
         self.port_id = port_id
         self.load_balancer = load_balancer
 
