@@ -25,8 +25,8 @@ config = context.config
 try:
     octavia_config = config.octavia_config
 except AttributeError:
-    print ("Error: Please use the octavia-db-manage command for octavia"
-           " alembic actions.")
+    print("Error: Please use the octavia-db-manage command for octavia"
+          " alembic actions.")
     sys.exit(1)
 
 # Interpret the config file for Python logging.
