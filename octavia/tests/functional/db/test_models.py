@@ -80,7 +80,8 @@ class ModelTestMixin(object):
         return self._insert(session, models.SessionPersistence, kwargs)
 
     def create_health_monitor(self, session, pool_id, **overrides):
-        kwargs = {'pool_id': pool_id,
+        kwargs = {'id': pool_id,
+                  'pool_id': pool_id,
                   'type': constants.HEALTH_MONITOR_HTTP,
                   'delay': 1,
                   'timeout': 1,

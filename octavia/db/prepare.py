@@ -142,5 +142,6 @@ def create_member(member_dict, pool_id):
 
 
 def create_health_monitor(hm_dict, pool_id):
+    hm_dict['id'] = pool_id
     hm_dict['pool_id'] = pool_id
     return hm_dict
