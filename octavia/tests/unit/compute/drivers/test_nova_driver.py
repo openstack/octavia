@@ -94,6 +94,7 @@ class TestNovaClient(base.TestCase):
         self.net_name = "lb-mgmt-net"
         conf.config(group="networking", lb_network_name=self.net_name)
         conf.config(group="controller_worker", amp_boot_network_list=[1, 2])
+        self.conf = conf
 
         self.amphora = models.Amphora(
             compute_id=uuidutils.generate_uuid(),
@@ -162,6 +163,15 @@ class TestNovaClient(base.TestCase):
             userdata='Blah',
             config_drive=True,
             scheduler_hints=None)
+
+    def test_build_with_random_amphora_name_length(self):
+        self.conf.config(group="nova", random_amphora_name_length=15)
+        self.addCleanup(self.conf.config,
+                        group='nova', random_amphora_name_length=0)
+
+        self.manager.build(name="b" * 50, image_id=1)
+        self.assertEqual(
+            15, len(self.manager.manager.create.call_args[1]['name']))
 
     def test_bad_build(self):
         self.manager.manager.create.side_effect = Exception

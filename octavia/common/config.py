@@ -392,12 +392,16 @@ nova_opts = [
                help=_('CA certificates file path')),
     cfg.BoolOpt('insecure',
                 default=False,
-                help=_('Disable certificate validation on SSL connections ')),
+                help=_('Disable certificate validation on SSL connections')),
     cfg.BoolOpt('enable_anti_affinity', default=False,
                 help=_('Flag to indicate if nova anti-affinity feature is '
-                       'turned on.'))
+                       'turned on.')),
+    cfg.IntOpt('random_amphora_name_length', default=0,
+               help=_('If non-zero, generate a random name of the length '
+                      'provided for each amphora, in the format "a[A-Z0-9]*". '
+                      'Otherwise, the default name format will be used: '
+                      '"amphora-{UUID}".')),
 ]
-
 neutron_opts = [
     cfg.StrOpt('service_name',
                help=_('The name of the neutron service in the '
