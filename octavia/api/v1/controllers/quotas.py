@@ -21,6 +21,8 @@ from wsmeext import pecan as wsme_pecan
 
 from octavia.api.v1.controllers import base
 from octavia.api.v1.types import quotas as quota_types
+from octavia.common import constants
+from octavia.common import exceptions
 
 CONF = cfg.CONF
 CONF.import_group('quotas', 'octavia.common.config')
@@ -52,6 +54,17 @@ class QuotasController(base.BaseController):
     def put(self, project_id, quotas):
         """Update any or all quotas for a project."""
         context = pecan.request.context.get('octavia_context')
+
+        new_project_id = context.project_id
+        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
+            if project_id:
+                new_project_id = project_id
+
+        if not new_project_id:
+            raise exceptions.MissingAPIProjectID()
+
+        project_id = new_project_id
+
         quotas_dict = quotas.to_dict()
         self.repositories.quotas.update(context.session, project_id,
                                         **quotas_dict)

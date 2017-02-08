@@ -123,7 +123,7 @@ class TestMember(base.BaseAPITest):
         api_member = self.create_member(self.lb.get('id'),
                                         self.pool.get('id'),
                                         '10.0.0.1', 80, project_id=pid)
-        self.assertEqual(pid, api_member.get('project_id'))
+        self.assertEqual(self.project_id, api_member.get('project_id'))
 
     def test_create_with_duplicate_id(self):
         member = self.create_member(self.lb.get('id'),

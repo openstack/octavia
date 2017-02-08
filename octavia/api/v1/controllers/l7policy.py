@@ -77,6 +77,7 @@ class L7PolicyController(base.BaseController):
     def post(self, l7policy):
         """Creates a l7policy on a listener."""
         context = pecan.request.context.get('octavia_context')
+
         l7policy_dict = validate.sanitize_l7policy_api_args(
             l7policy.to_dict(render_unsets=True), create=True)
         # Make sure any pool specified by redirect_pool_id exists

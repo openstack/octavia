@@ -117,7 +117,7 @@ class TestHealthMonitor(base.BaseAPITest):
                                             self.pool.get('id'),
                                             constants.HEALTH_MONITOR_HTTP,
                                             1, 1, 1, 1, project_id=pid)
-        self.assertEqual(pid, api_hm.get('project_id'))
+        self.assertEqual(self.project_id, api_hm.get('project_id'))
 
     def test_create_over_quota(self):
         self.check_quota_met_true_mock.start()
