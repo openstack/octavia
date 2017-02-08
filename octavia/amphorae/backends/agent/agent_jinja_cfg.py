@@ -49,6 +49,8 @@ class AgentJinjaTemplater(object):
              'base_path': CONF.haproxy_amphora.base_path,
              'bind_host': CONF.haproxy_amphora.bind_host,
              'bind_port': CONF.haproxy_amphora.bind_port,
+             # TODO(nmagnezi): user_group is Deprecated in Pike,
+             # should be Removed in R cycle.
              'user_group': CONF.haproxy_amphora.user_group,
              'controller_list': CONF.health_manager.controller_ip_port_list,
              'debug': CONF.debug,

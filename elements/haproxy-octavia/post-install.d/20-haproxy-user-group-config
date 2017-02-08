@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -eu
+set -o pipefail
+
+case $DISTRO_NAME in
+    ubuntu | debian )
+        HAPROXY_USER_GROUP=nogroup
+    ;;
+    fedora | centos* | rhel* )
+        HAPROXY_USER_GROUP=haproxy
+    ;;
+    *)
+        HAPROXY_USER_GROUP=nogroup
+    ;;
+esac
+
+cat >> /var/lib/octavia/haproxy-default-user-group.conf <<EOF
+global
+    group $HAPROXY_USER_GROUP
+EOF
