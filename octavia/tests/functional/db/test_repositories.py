@@ -1468,14 +1468,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_member)
 
     def test_decrement_quota(self):
-
-        project_id = uuidutils.generate_uuid()
-
-        # Test check for missing project_id
-        self.assertRaises(exceptions.MissingProjectID,
-                          self.repos.decrement_quota,
-                          self.session, models.LoadBalancer, None)
-
         # Test decrement on non-existent quota with noauth
         project_id = uuidutils.generate_uuid()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))

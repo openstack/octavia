@@ -109,15 +109,15 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.client.get_cert_md5sum.assert_called_with(
             self.amp, self.sl.id, sample_certs.X509_CERT_CN_3 + '.pem')
         # this is called three times (last MD5 matches)
-        fp1 = '\n'.join([sample_certs.X509_CERT,
-                         sample_certs.X509_CERT_KEY,
-                         sample_certs.X509_IMDS]) + '\n'
-        fp2 = '\n'.join([sample_certs.X509_CERT_2,
-                         sample_certs.X509_CERT_KEY_2,
-                         sample_certs.X509_IMDS]) + '\n'
-        fp3 = '\n'.join([sample_certs.X509_CERT_3,
-                         sample_certs.X509_CERT_KEY_3,
-                         sample_certs.X509_IMDS]) + '\n'
+        fp1 = b'\n'.join([sample_certs.X509_CERT,
+                          sample_certs.X509_CERT_KEY,
+                          sample_certs.X509_IMDS]) + b'\n'
+        fp2 = b'\n'.join([sample_certs.X509_CERT_2,
+                          sample_certs.X509_CERT_KEY_2,
+                          sample_certs.X509_IMDS]) + b'\n'
+        fp3 = b'\n'.join([sample_certs.X509_CERT_3,
+                          sample_certs.X509_CERT_KEY_3,
+                          sample_certs.X509_IMDS]) + b'\n'
         ucp_calls = [
             mock.call(self.amp, self.sl.id,
                       sample_certs.X509_CERT_CN + '.pem', fp1),
@@ -259,6 +259,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
                             'gateway': FAKE_GATEWAY,
                             'mac_address': FAKE_MAC_ADDRESS,
                             'vrrp_ip': self.amp.vrrp_ip}
+        patcher = mock.patch('time.sleep').start()
+        self.addCleanup(patcher.stop)
 
     def test_base_url(self):
         url = self.driver._base_url(FAKE_IP)

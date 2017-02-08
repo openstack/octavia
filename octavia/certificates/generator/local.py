@@ -47,7 +47,7 @@ class LocalCertGenerator(cert_gen.CertGenerator):
         if not ca_cert:
             LOG.info(_LI("Using CA Certificate from config."))
             try:
-                ca_cert = open(CONF.certificates.ca_certificate).read()
+                ca_cert = open(CONF.certificates.ca_certificate, 'rb').read()
             except IOError:
                 raise exceptions.CertificateGenerationException(
                     msg="Failed to load CA Certificate {0}."
@@ -56,7 +56,7 @@ class LocalCertGenerator(cert_gen.CertGenerator):
         if not ca_key:
             LOG.info(_LI("Using CA Private Key from config."))
             try:
-                ca_key = open(CONF.certificates.ca_private_key).read()
+                ca_key = open(CONF.certificates.ca_private_key, 'rb').read()
             except IOError:
                 raise exceptions.CertificateGenerationException(
                     msg="Failed to load CA Private Key {0}."
@@ -105,13 +105,14 @@ class LocalCertGenerator(cert_gen.CertGenerator):
             )
 
         if not ca_cert:
-            with open(CONF.certificates.ca_certificate, 'r') as f:
+            with open(CONF.certificates.ca_certificate, 'rb') as f:
                 ca_cert = f.read()
         if not ca_key:
-            with open(CONF.certificates.ca_private_key, 'r') as f:
+            with open(CONF.certificates.ca_private_key, 'rb') as f:
                 ca_key = f.read()
         if not ca_key_pass:
             ca_key_pass = CONF.certificates.ca_private_key_passphrase
+            ca_key_pass = ca_key_pass.encode('utf-8')
 
         try:
             lo_cert = x509.load_pem_x509_certificate(

@@ -184,7 +184,7 @@ class HaproxyAmphoraLoadBalancerDriver(
 
         for cert in certs:
             pem = cert_parser.build_pem(cert)
-            md5 = hashlib.md5(six.b(pem)).hexdigest()  # nosec
+            md5 = hashlib.md5(pem).hexdigest()  # nosec
             name = '{cn}.pem'.format(cn=cert.primary_cn)
             self._apply(self._upload_cert, listener, pem, md5, name)
 
