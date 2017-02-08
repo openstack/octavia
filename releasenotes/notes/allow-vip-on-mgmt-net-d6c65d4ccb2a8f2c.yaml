@@ -1,0 +1,4 @@
+---
+fixes:
+  - Allow the loadbalancer's VIP to be created on the same
+    network as the management interface.

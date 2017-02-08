@@ -252,11 +252,17 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         show_subnet = self.driver.neutron_client.show_subnet
         show_subnet.return_value = {
             'subnet': {
-                'id': lb.vip.subnet_id
+                'id': t_constants.MOCK_VIP_SUBNET_ID,
+                'network_id': t_constants.MOCK_VIP_NET_ID
             }
         }
+        list_ports = self.driver.neutron_client.list_ports
+        port1 = t_constants.MOCK_MANAGEMENT_PORT1['port']
+        port2 = t_constants.MOCK_MANAGEMENT_PORT2['port']
+        list_ports.side_effect = [{'ports': [port1]}, {'ports': [port2]}]
         interface_attach = self.driver.nova_client.servers.interface_attach
-        interface_attach.return_value = t_constants.MOCK_NOVA_INTERFACE
+        interface_attach.side_effect = [t_constants.MOCK_VRRP_INTERFACE1,
+                                        t_constants.MOCK_VRRP_INTERFACE2]
         list_security_groups = self.driver.neutron_client.list_security_groups
         list_security_groups.return_value = {
             'security_groups': [
@@ -266,22 +272,69 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         update_port = self.driver.neutron_client.update_port
         expected_aap = {'port': {'allowed_address_pairs':
                                  [{'ip_address': lb.vip.ip_address}]}}
-        interface_list = self.driver.nova_client.servers.interface_list
-        if1 = t_constants.MOCK_NOVA_INTERFACE
-        if2 = t_constants.MockNovaInterface()
-        if2.net_id = '3'
-        if2.port_id = '4'
-        if2.fixed_ips = [{'ip_address': '10.0.0.2'}]
-        if1.fixed_ips = [{'ip_address': t_constants.MOCK_IP_ADDRESS,
-                          'subnet_id': lb.vip.subnet_id}]
-        interface_list.return_value = [if1, if2]
         amps = self.driver.plug_vip(lb, lb.vip)
         self.assertEqual(5, update_port.call_count)
-        update_port.assert_any_call(if1.port_id, expected_aap)
         for amp in amps:
-            self.assertEqual(t_constants.MOCK_IP_ADDRESS, amp.vrrp_ip)
+            update_port.assert_any_call(amp.vrrp_port_id, expected_aap)
+            self.assertIn(amp.vrrp_ip, [t_constants.MOCK_VRRP_IP1,
+                                        t_constants.MOCK_VRRP_IP2])
             self.assertEqual(lb.vip.ip_address, amp.ha_ip)
-            self.assertIn(amp.id, [lb.amphorae[0].id, lb.amphorae[1].id])
+
+    def _set_safely(self, obj, name, value):
+        if isinstance(obj, dict):
+            current = obj.get(name)
+            self.addCleanup(obj.update, {name: current})
+            obj.update({name: value})
+        else:
+            current = getattr(obj, name)
+            self.addCleanup(setattr, obj, name, current)
+            setattr(obj, name, value)
+
+    def test_plug_vip_on_mgmt_net(self):
+        lb = dmh.generate_load_balancer_tree()
+        lb.vip.subnet_id = t_constants.MOCK_MANAGEMENT_SUBNET_ID
+        show_subnet = self.driver.neutron_client.show_subnet
+        show_subnet.return_value = {
+            'subnet': {
+                'id': t_constants.MOCK_MANAGEMENT_SUBNET_ID,
+                'network_id': t_constants.MOCK_MANAGEMENT_NET_ID
+            }
+        }
+        list_ports = self.driver.neutron_client.list_ports
+        port1 = t_constants.MOCK_MANAGEMENT_PORT1['port']
+        port2 = t_constants.MOCK_MANAGEMENT_PORT2['port']
+        self._set_safely(t_constants.MOCK_MANAGEMENT_FIXED_IPS1[0],
+                         'ip_address', lb.amphorae[0].lb_network_ip)
+        self._set_safely(t_constants.MOCK_MANAGEMENT_FIXED_IPS2[0],
+                         'ip_address', lb.amphorae[1].lb_network_ip)
+        list_ports.side_effect = [{'ports': [port1]}, {'ports': [port2]}]
+        interface_attach = self.driver.nova_client.servers.interface_attach
+        self._set_safely(t_constants.MOCK_VRRP_INTERFACE1,
+                         'net_id', t_constants.MOCK_MANAGEMENT_NET_ID)
+        self._set_safely(t_constants.MOCK_VRRP_FIXED_IPS1[0],
+                         'subnet_id', t_constants.MOCK_MANAGEMENT_SUBNET_ID)
+        self._set_safely(t_constants.MOCK_VRRP_INTERFACE2,
+                         'net_id', t_constants.MOCK_MANAGEMENT_NET_ID)
+        self._set_safely(t_constants.MOCK_VRRP_FIXED_IPS2[0],
+                         'subnet_id', t_constants.MOCK_MANAGEMENT_SUBNET_ID)
+        interface_attach.side_effect = [t_constants.MOCK_VRRP_INTERFACE1,
+                                        t_constants.MOCK_VRRP_INTERFACE2]
+        list_security_groups = self.driver.neutron_client.list_security_groups
+        list_security_groups.return_value = {
+            'security_groups': [
+                {'id': 'lb-sec-grp1'}
+            ]
+        }
+        update_port = self.driver.neutron_client.update_port
+        expected_aap = {'port': {'allowed_address_pairs':
+                                 [{'ip_address': lb.vip.ip_address}]}}
+        amps = self.driver.plug_vip(lb, lb.vip)
+        self.assertEqual(5, update_port.call_count)
+        for amp in amps:
+            update_port.assert_any_call(amp.vrrp_port_id, expected_aap)
+            self.assertIn(amp.vrrp_ip, [t_constants.MOCK_VRRP_IP1,
+                                        t_constants.MOCK_VRRP_IP2])
+            self.assertEqual(lb.vip.ip_address, amp.ha_ip)
 
     def test_allocate_vip_when_port_already_provided(self):
         show_port = self.driver.neutron_client.show_port
@@ -306,7 +359,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertRaises(network_base.AllocateVIPException,
                           self.driver.allocate_vip, fake_lb)
 
-    def test_allocate_vip_when_only_subnet_provided(self):
+    def test_allocate_vip_when_no_port_provided(self):
         port_create_dict = copy.copy(t_constants.MOCK_NEUTRON_PORT)
         port_create_dict['port']['device_owner'] = (
             allowed_address_pairs.OCTAVIA_OWNER)
@@ -433,7 +486,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         actual_ips = [fixed_ip.ip_address
                       for fixed_ip in oct_interface.fixed_ips]
         self.assertEqual(exp_ips, actual_ips)
-        self.assertEqual(t_constants.MOCK_COMPUTE_ID, oct_interface.compute_id)
+        self.assertEqual(t_constants.MOCK_COMPUTE_ID,
+                         oct_interface.compute_id)
         self.assertEqual(net_id, oct_interface.network_id)
 
     def test_unplug_network_when_compute_port_cant_be_found(self):
