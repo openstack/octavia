@@ -264,14 +264,14 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
         This can happen if a failover has occurred.
         """
-        try:
-            for amphora in six.moves.filter(self._filter_amphora,
-                                            vip.load_balancer.amphorae):
+        for amphora in six.moves.filter(self._filter_amphora,
+                                        vip.load_balancer.amphorae):
+            try:
                 self.neutron_client.delete_port(amphora.vrrp_port_id)
-        except (neutron_client_exceptions.NotFound,
-                neutron_client_exceptions.PortNotFoundClient):
-            LOG.debug('VIP instance port {0} already deleted.  '
-                      'Skipping.'.format(amphora.vrrp_port_id))
+            except (neutron_client_exceptions.NotFound,
+                    neutron_client_exceptions.PortNotFoundClient):
+                LOG.debug('VIP instance port {0} already deleted. '
+                          'Skipping.'.format(amphora.vrrp_port_id))
 
         try:
             port = self.get_port(vip.port_id)

@@ -41,7 +41,6 @@ def generate_load_balancer(vip=None, amphorae=None):
         amp.load_balancer = lb
         amp.load_balancer_id = lb.id
         amp.status = constants.AMPHORA_ALLOCATED
-        amp.vrrp_port_id = 'vrrp_port-{0}-id'.format(VIP_SEED)
     if vip:
         vip.load_balancer = lb
         vip.load_balancer_id = lb.id
@@ -74,6 +73,7 @@ def generate_amphora(load_balancer=None):
                               status='ACTIVE',
                               lb_network_ip='99.99.99.{0}'.format(AMP_SEED),
                               vrrp_ip='55.55.55.{0}'.format(AMP_SEED),
+                              vrrp_port_id='vrrp_port-{0}-id'.format(AMP_SEED),
                               load_balancer=load_balancer)
     if load_balancer:
         amp.load_balancer_id = load_balancer.id
