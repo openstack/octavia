@@ -424,7 +424,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
                       show_floatingip(floatingip_id)['floatingip'])
             return status == result['status']
 
-        test.call_until_true(refresh, 100, 1)
+        test_utils.call_until_true(refresh, 100, 1)
 
         floating_ip = self.floating_ips_client_admin.show_floatingip(
             floatingip_id)['floatingip']
