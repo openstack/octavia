@@ -39,8 +39,17 @@ function build_octavia_worker_image {
     if [ "$OCTAVIA_DIB_TRACING" != "0" ]; then
         octavia_dib_tracing_arg="-x"
     fi
+    if [[ ${OCTAVIA_AMP_BASE_OS:+1} ]] ; then
+    export PARAM_OCTAVIA_AMP_BASE_OS='-i '$OCTAVIA_AMP_BASE_OS
+    fi
+    if [[ ${OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID:+1} ]] ; then
+    export PARAM_OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID='-d '$OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID
+    fi
+    if [[ ${OCTAVIA_AMP_IMAGE_SIZE:+1} ]] ; then
+    export PARAM_OCTAVIA_AMP_IMAGE_SIZE='-s '$OCTAVIA_AMP_IMAGE_SIZE
+    fi
     if ! [ -f $OCTAVIA_AMP_IMAGE_FILE ]; then
-        $OCTAVIA_DIR/diskimage-create/diskimage-create.sh $octavia_dib_tracing_arg -s 2 -o $OCTAVIA_AMP_IMAGE_FILE
+        $OCTAVIA_DIR/diskimage-create/diskimage-create.sh $octavia_dib_tracing_arg -o $OCTAVIA_AMP_IMAGE_FILE ${PARAM_OCTAVIA_AMP_BASE_OS:-''} ${PARAM_OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID:-''} ${PARAM_OCTAVIA_AMP_IMAGE_SIZE:-''}
     fi
     upload_image file://${OCTAVIA_AMP_IMAGE_FILE} $TOKEN
 
