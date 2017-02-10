@@ -19,7 +19,7 @@ from wsme import types as wsme_types
 
 from octavia.api.v1.types import listener as lis_type
 from octavia.common import constants
-from octavia.tests.unit.api.v1.types import base
+from octavia.tests.unit.api.common import base
 
 
 class TestListener(object):
