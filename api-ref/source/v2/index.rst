@@ -14,3 +14,4 @@ General API Overview
 --------------
 Load Balancers
 --------------
+.. include:: loadbalancer.inc

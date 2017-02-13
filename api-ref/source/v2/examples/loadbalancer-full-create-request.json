@@ -1,0 +1,87 @@
+{
+    "loadbalancer": {
+        "description": "My favorite load balancer",
+        "admin_state_up": true,
+        "project_id": "e3cd678b11784734bc366148aa37580e",
+        "flavor": "",
+        "listeners": [
+            {
+                "name": "http_listener",
+                "protocol": "HTTP",
+                "protocol_port": 80,
+                "default_pool": {
+                    "name": "rr_pool",
+                    "protocol": "HTTP",
+                    "lb_algorithm": "ROUND_ROBIN",
+                    "health_monitor": {
+                        "type": "HTTP",
+                        "delay": "3",
+                        "expected_codes": "200,201,202",
+                        "http_method": "GET",
+                        "max_retries": 2,
+                        "timeout": 1,
+                        "url_path": "/index.html"
+                    },
+                    "members": [
+                        {
+                            "ip_address": "'192.0.2.16'",
+                            "protocol_port": 80
+                        },
+                        {
+                            "ip_address": "'192.0.2.19'",
+                            "protocol_port": 80
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "https_listener",
+                "protocol": "HTTPS",
+                "protocol_port": 443,
+                "default_pool": {
+                    "name": "https_pool"
+                }
+            },
+            {
+                "name": "redirect_listener",
+                "protocol": "HTTP",
+                "protocol_port": 8080,
+                "l7policies": [
+                    {
+                        "action": "REDIRECT_TO_URL",
+                        "name": "redirect_policy",
+                        "redirect_url": "https://www.example.com/",
+                        "admin_state_up": true
+                    }
+                ]
+            }
+        ],
+        "pools": [
+            {
+                "name": "https_pool",
+                "protocol": "HTTPS",
+                "lb_algorithm": "ROUND_ROBIN",
+                "health_monitor": {
+                    "type": "HTTPS",
+                    "delay": "3",
+                    "max_retries": 2,
+                    "timeout": 1
+                },
+                "members": [
+                    {
+                        "ip_address": "'192.0.2.16'",
+                        "protocol_port": 80
+                    },
+                    {
+                        "ip_address": "'192.0.2.19'",
+                        "protocol_port": 80
+                    }
+                ]
+            }
+        ],
+        "vip_subnet_id": "d4af86e1-0051-488c-b7a0-527f97490c9a",
+        "vip_address": "203.0.113.50",
+        "provider": "octavia",
+        "name": "best_load_balancer"
+    }
+}

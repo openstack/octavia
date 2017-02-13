@@ -445,7 +445,8 @@ the client.
 | Code | Description                                                    |
 +======+================================================================+
 | 400  | - Bad request                                                  |
-|      | - Malformed request URI or body requested admin state invalid  |
+|      | - Malformed request URI or body requested                      |
+|      | - The request could not be understood                          |
 |      | - Invalid values entered                                       |
 |      | - Bulk operations disallowed                                   |
 |      | - Validation failed                                            |
@@ -454,7 +455,8 @@ the client.
 +------+----------------------------------------------------------------+
 | 401  | - Unauthorized: Access is denied due to invalid credentials    |
 +------+----------------------------------------------------------------+
-| 403  | - The project is over quota for the request                    |
+| 403  | - Policy does not allow current user to do this operation      |
+|      | - The project is over quota for the request                    |
 +------+----------------------------------------------------------------+
 | 404  | - Not Found                                                    |
 |      | - Non existent URI                                             |
@@ -483,6 +485,8 @@ update operation is occuring on this member and it is in an immutable state
 but it is healthy and able to service requests.  This situation could occur if
 the user made a request to update the weight of the member.
 
+.. _op_status:
+
 Operating Status Codes
 ----------------------
 
@@ -503,6 +507,8 @@ Operating Status Codes
 | NO_MONITOR | - No health monitor is configured for this entity and it's   |
 |            |   status is unknown                                          |
 +------------+--------------------------------------------------------------+
+
+.. _prov_status:
 
 Provisioning Status Codes
 -------------------------

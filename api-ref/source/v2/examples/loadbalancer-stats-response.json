@@ -1,0 +1,9 @@
+{
+    "stats": {
+        "bytes_in": 131342840,
+        "total_connections": 52378345,
+        "active_connections": 97258,
+        "bytes_out": 1549542372,
+        "request_errors": 0
+    }
+}

@@ -1,3 +1,82 @@
+###############################################################################
+# Path fields
+###############################################################################
+path-loadbalancer-id:
+  description: |
+    The ID of the load balancer to query.
+  in: path
+  required: true
+  type: string
+###############################################################################
+# Query fields
+###############################################################################
+fields:
+  description: |
+    The fields that you want the server to return.
+    If no ``fields`` query parameter is specified,
+    the octavia API returns all attributes allowed by the policy settings.
+    By using the ``fields`` parameter, the API returns only the requested set
+    of attributes. The ``fields`` parameter can be specified multiple times.
+    For example, if you specify ``fields=id&fields=name`` in the request URL,
+    only the ``id`` and ``name`` attributes will be returned.
+  in: query
+  required: false
+  type: string
+project_id_query:
+  description: |
+    The ID of the project to query.
+  in: query
+  required: false
+  type: string
+tenant_id_query:
+  description: |
+    The ID of the project to query. (deprecated)
+  in: query
+  required: false
+  type: string
+
+###############################################################################
+# Body fields
+###############################################################################
+action:
+  description: |
+    The action associated with the resource.
+  in: body
+  required: true
+  type: string
+active_connections:
+  description: |
+    The currently active connections.
+  in: body
+  required: true
+  type: integer
+address:
+  description: |
+    The IP address of the resource.
+  in: body
+  required: true
+  type: string
+admin_state_up:
+  description: |
+    The administrative state of the resource, which is
+    up (``true``) or down (``false``).
+  in: body
+  required: true
+  type: boolean
+admin_state_up-default-optional:
+  description: |
+    The administrative state of the resource, which is
+    up (``true``) or down (``false``). Default is ``true``.
+  in: body
+  required: false
+  type: boolean
+admin_state_up-optional:
+  description: |
+    The administrative state of the resource, which is
+    up (``true``) or down (``false``).
+  in: body
+  required: false
+  type: boolean
 api_links:
   description: |
     Links to the resources in question.
@@ -21,9 +100,277 @@ api_version_status:
   in: body
   required: true
   type: string
+bytes_in:
+  description: |
+    The total bytes received.
+  in: body
+  required: true
+  type: integer
+bytes_out:
+  description: |
+    The total bytes sent.
+  in: body
+  required: true
+  type: integer
+created_at:
+  description: |
+    The UTC date and timestamp when the resource was created.
+  in: body
+  required: true
+  type: string
+description:
+  description: |
+    A human-readable description for the resource.
+  in: body
+  required: true
+  type: string
+description-optional:
+  description: |
+    A human-readable description for the resource.
+  in: body
+  required: false
+  type: string
+flavor-id:
+  description: |
+    The ID of the flavor.
+  in: body
+  required: true
+  type: string
+flavor-id-optional:
+  description: |
+    The ID of the flavor.
+  in: body
+  required: false
+  type: string
+healthmonitor-status:
+  description: |
+    The associated healthmonitor status object.
+  in: body
+  required: true
+  type: object
+id:
+  description: |
+    The ID of the resource.
+  in: body
+  required: true
+  type: string
+l7policies-status-object-list:
+  description: |
+    A list of L7 policy status objects.
+  in: body
+  required: true
+  type: array
+l7rules-status-object-list:
+  description: |
+    A list of L7 rule status objects.
+  in: body
+  required: true
+  type: array
+listeners:
+  description: |
+    The associated listener IDs, if any.
+  in: body
+  required: true
+  type: array
+listeners-optional:
+  description: |
+    The associated listener IDs, if any.
+  in: body
+  required: false
+  type: array
+listeners-status-object-list:
+  description: |
+    A list of listener status objects.
+  in: body
+  required: true
+  type: array
+loadbalancer:
+  description: |
+    A load balancer object.
+  in: body
+  required: true
+  type: object
+loadbalancer-id:
+  description: |
+    The ID of the load balancer.
+  in: body
+  required: true
+  type: string
+loadbalancer-status:
+  description: |
+    A load balancer status object.
+  in: body
+  required: true
+  type: object
+loadbalancers:
+  description: |
+    A list of ``loadbalancer`` objects.
+  in: body
+  required: true
+  type: array
+members-status-object-list:
+  description: |
+    A list of members status objects.
+  in: body
+  required: true
+  type: array
+name:
+  description: |
+    Human-readable name of the resource.
+  in: body
+  required: true
+  type: string
+name-optional:
+  description: |
+    Human-readable name of the resource.
+  in: body
+  required: false
+  type: string
+operating_status:
+  description: |
+    The operating status of the resource. See :ref:`op_status`.
+  in: body
+  required: true
+  type: string
+pools-status-list:
+  description: |
+    The list of pools status objects.
+  in: body
+  required: true
+  type: array
+pools_ids:
+  description: |
+    The associated pool IDs, if any.
+  in: body
+  required: true
+  type: array
+project_id:
+  description: |
+    The ID of the project owning this resource.
+  in: body
+  required: true
+  type: string
+project_id-optional:
+  description: |
+    The ID of the project owning this resource.
+  in: body
+  required: false
+  type: string
+protocol_port:
+  description: |
+    The protocol port number for the resource.
+  in: body
+  required: true
+  type: integer
+provider:
+  description: |
+    Provider name for the load balancer.
+  in: body
+  required: true
+  type: string
+provider-optional:
+  description: |
+    Provider name for the load balancer. Default is ``octavia``.
+  in: body
+  required: false
+  type: string
+provisioning_status:
+  description: |
+    The provisioning status of the resource. See :ref:`prov_status`.
+  in: body
+  required: true
+  type: string
+request_errors:
+  description: |
+    The total requests that were unable to be fulfilled.
+  in: body
+  required: true
+  type: integer
+stats:
+  description: |
+    A statistics object.
+  in: body
+  required: true
+  type: object
+statuses:
+  description: |
+    The status tree of a load balancer object contains all provisioning and
+    operating statuses for its children.
+  in: body
+  required: true
+  type: object
+tenant_id:
+  description: |
+    The ID of the project that owns the resource. (deprecated)
+  in: body
+  required: false
+  type: string
+total_connections:
+  description: |
+    The total connections handled.
+  in: body
+  required: true
+  type: integer
+type:
+  description: |
+    The type associated with the resource.
+  in: body
+  required: true
+  type: string
 updated_at:
   description: |
     The UTC date and timestamp when the resource was last updated.
   in: body
   required: true
+  type: string
+vip_address:
+  description: |
+    The IP address of the Virtual IP (VIP).
+  in: body
+  required: true
+  type: string
+vip_address-optional:
+  description: |
+    The IP address of the Virtual IP (VIP).
+  in: body
+  required: false
+  type: string
+vip_network_id:
+  description: |
+    The ID of the network for the Virtual IP (VIP).
+  in: body
+  required: true
+  type: string
+vip_network_id-optional:
+  description: |
+    The ID of the network for the Virtual IP (VIP). One of ``vip_network_id``,
+    ``vip_port_id``, or ``vip_subnet_id`` must be specified.
+  in: body
+  required: false
+  type: string
+vip_port_id:
+  description: |
+    The ID of the Virtual IP (VIP) port.
+  in: body
+  required: true
+  type: string
+vip_port_id-optional:
+  description: |
+    The ID of the Virtual IP (VIP) port. One of ``vip_network_id``,
+    ``vip_port_id``, or ``vip_subnet_id`` must be specified.
+  in: body
+  required: false
+  type: string
+vip_subnet_id:
+  description: |
+    The ID of the subnet for the Virtual IP (VIP).
+  in: body
+  required: true
+  type: string
+vip_subnet_id-optional:
+  description: |
+    The ID of the subnet for the Virtual IP (VIP). One of ``vip_network_id``,
+    ``vip_port_id``, or ``vip_subnet_id`` must be specified.
+  in: body
+  required: false
   type: string

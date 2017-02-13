@@ -1,0 +1,7 @@
+{
+    "loadbalancer": {
+        "description": "Temporarily disabled load balancer",
+        "admin_state_up": false,
+        "name": "disabled_load_balancer"
+    }
+}

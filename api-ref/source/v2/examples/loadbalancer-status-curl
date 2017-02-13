@@ -1,0 +1,1 @@
+curl -X GET -H "X-Auth-Token: <token>" http://198.51.100.10:9876/v2.0/lbaas/loadbalancers/bda6f032-80d3-414a-b395-e79c374e3929/status
