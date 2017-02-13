@@ -1,0 +1,29 @@
+api_links:
+  description: |
+    Links to the resources in question.
+  in: body
+  required: true
+  type: array
+api_version_id:
+  description: |
+    A common name for the version.
+  in: body
+  required: true
+  type: string
+api_version_status:
+  description: |
+    The status of this API version. This can be one of:
+
+    - ``CURRENT``: This is the preferred version of the API to use.
+    - ``SUPPORTED``: This is an older, but still supported version of the API.
+    - ``DEPRECATED``: A deprecated version of the API that is slated for
+      removal.
+  in: body
+  required: true
+  type: string
+updated_at:
+  description: |
+    The UTC date and timestamp when the resource was last updated.
+  in: body
+  required: true
+  type: string

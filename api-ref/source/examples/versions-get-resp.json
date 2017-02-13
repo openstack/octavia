@@ -1,0 +1,14 @@
+{
+    "versions": [
+        {
+            "id": "v2.0",
+            "status": "CURRENT",
+            "updated": "2017-02-17T00:00:00Z"
+        },
+        {
+            "id": "v1",
+            "status": "DEPRECATED",
+            "updated": "2014-12-11T00:00:00Z"
+        }
+    ]
+}
