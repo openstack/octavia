@@ -239,11 +239,6 @@ controller_worker_opts = [
                 help=_('List of networks to attach to the Amphorae. '
                        'All networks defined in the list will '
                        'be attached to each amphora.')),
-    cfg.StrOpt('amp_network',
-               deprecated_for_removal=True,
-               deprecated_reason='Replaced by amp_boot_network_list.',
-               default='',
-               help=_('Network to attach to the Amphorae.')),
     cfg.ListOpt('amp_secgroup_list',
                 default='',
                 help=_('List of security groups to attach to the Amphora.')),

@@ -209,10 +209,6 @@ class VirtualMachineManager(compute_base.ComputeBase):
                 if net_id in CONF.controller_worker.amp_boot_network_list:
                     lb_network_ip = interface.fixed_ips[0]['ip_address']
                     break
-                elif net_id == CONF.controller_worker.amp_network:
-                    # TODO(ptoohill) deprecated, remove this block when ready..
-                    lb_network_ip = interface.fixed_ips[0]['ip_address']
-                    break
         except Exception:
             LOG.debug('Extracting virtual interfaces through nova '
                       'os-interfaces extension failed.')

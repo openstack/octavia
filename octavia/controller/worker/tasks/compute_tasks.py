@@ -55,9 +55,6 @@ class ComputeCreate(BaseComputeTask):
         """
         ports = ports or []
         network_ids = CONF.controller_worker.amp_boot_network_list[:]
-        # TODO(ptoohill) amp_network is now deprecated, remove when ready...
-        if CONF.controller_worker.amp_network:
-            network_ids.append(CONF.controller_worker.amp_network)
         config_drive_files = config_drive_files or {}
         user_data = None
         LOG.debug("Compute create execute for amphora with id %s", amphora_id)
