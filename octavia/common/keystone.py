@@ -21,7 +21,7 @@ from octavia.common import constants
 LOG = logging.getLogger(__name__)
 
 
-class KeystoneSession:
+class KeystoneSession(object):
 
     def __init__(self, section=constants.SERVICE_AUTH):
         self._session = None
