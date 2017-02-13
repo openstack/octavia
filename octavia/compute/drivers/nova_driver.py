@@ -12,6 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import random
+import string
+
 from novaclient import exceptions as nova_exceptions
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -133,6 +136,14 @@ class VirtualMachineManager(compute_base.ComputeBase):
 
             image_id = _get_image_uuid(
                 self._glance_client, image_id, image_tag, image_owner)
+
+            if CONF.nova.random_amphora_name_length:
+                r = random.SystemRandom()
+                name = "a{}".format("".join(
+                    [r.choice(string.ascii_uppercase + string.digits)
+                     for i in range(CONF.nova.random_amphora_name_length - 1)]
+                ))
+
             amphora = self.manager.create(
                 name=name, image=image_id, flavor=amphora_flavor,
                 key_name=key_name, security_groups=sec_groups,
