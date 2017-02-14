@@ -88,6 +88,7 @@ class L7RuleController(base.BaseController):
         except Exception as e:
             raise exceptions.L7RuleValidation(error=e)
         context = pecan.request.context.get('octavia_context')
+
         self._check_l7policy_max_rules(context.session)
         l7rule_dict = db_prepare.create_l7rule(
             l7rule.to_dict(render_unsets=True), self.l7policy_id)

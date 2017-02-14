@@ -39,6 +39,7 @@ class MemberPOST(base.BaseType):
     protocol_port = wtypes.wsattr(wtypes.IntegerType(), mandatory=True)
     weight = wtypes.wsattr(wtypes.IntegerType(), default=1)
     subnet_id = wtypes.wsattr(wtypes.UuidType())
+    # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
 
 

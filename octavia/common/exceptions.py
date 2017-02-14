@@ -253,3 +253,8 @@ class ProjectBusyException(APIException):
 
 class MissingProjectID(OctaviaException):
     message = _('Missing project ID in request where one is required.')
+
+
+class MissingAPIProjectID(APIException):
+    msg = _('Missing project ID in request where one is required.')
+    code = 400

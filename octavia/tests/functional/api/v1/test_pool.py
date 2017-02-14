@@ -166,7 +166,7 @@ class TestPool(base.BaseAPITest):
                                     constants.PROTOCOL_HTTP,
                                     constants.LB_ALGORITHM_ROUND_ROBIN,
                                     project_id=pid)
-        self.assertEqual(pid, api_pool.get('project_id'))
+        self.assertEqual(self.project_id, api_pool.get('project_id'))
 
     def test_create_with_duplicate_id(self):
         pool = self.create_pool(self.lb.get('id'),

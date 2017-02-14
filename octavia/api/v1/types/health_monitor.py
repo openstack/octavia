@@ -48,6 +48,7 @@ class HealthMonitorPOST(base.BaseType):
     expected_codes = wtypes.wsattr(
         wtypes.text, default=constants.HEALTH_MONITOR_DEFAULT_EXPECTED_CODES)
     enabled = wtypes.wsattr(bool, default=True)
+    # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
 
 

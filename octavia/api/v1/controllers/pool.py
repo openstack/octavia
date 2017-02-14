@@ -134,6 +134,9 @@ class PoolsController(base.BaseController):
         # pool_dict:
         context = pecan.request.context.get('octavia_context')
 
+        pool.project_id = self._get_lb_project_id(context.session,
+                                                  self.load_balancer_id)
+
         lock_session = db_api.get_session(autocommit=False)
         if self.repositories.check_quota_met(
                 context.session,

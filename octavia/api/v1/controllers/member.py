@@ -94,6 +94,10 @@ class MembersController(base.BaseController):
     def post(self, member):
         """Creates a pool member on a pool."""
         context = pecan.request.context.get('octavia_context')
+
+        member.project_id = self._get_lb_project_id(context.session,
+                                                    self.load_balancer_id)
+
         # Validate member subnet
         if member.subnet_id and not validate.subnet_exists(member.subnet_id):
             raise exceptions.NotFound(resource='Subnet',

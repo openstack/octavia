@@ -89,6 +89,7 @@ class ListenerPOST(base.BaseType):
     tls_certificate_id = wtypes.wsattr(wtypes.StringType(max_length=255))
     tls_termination = wtypes.wsattr(TLSTermination)
     sni_containers = [wtypes.StringType(max_length=255)]
+    # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     default_pool_id = wtypes.wsattr(wtypes.UuidType())
     default_pool = wtypes.wsattr(pool.PoolPOST)

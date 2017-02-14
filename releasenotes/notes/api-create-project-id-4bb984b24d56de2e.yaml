@@ -1,0 +1,9 @@
+---
+deprecations:
+  - |
+    The project_id attribute of the POST method on the following objects
+    is now deprecated\: listener, pool, health monitor, and member.
+    These objects will use the parent load balancer's project_id.
+    Values passed into the project_id on those objects will be ignored
+    until the deprecation cycle has expired, at which point they will
+    cause an error.

@@ -96,6 +96,9 @@ class HealthMonitorController(base.BaseController):
         """Creates a health monitor on a pool."""
         context = pecan.request.context.get('octavia_context')
 
+        health_monitor.project_id = self._get_lb_project_id(
+            context.session, self.load_balancer_id)
+
         try:
             db_hm = self.repositories.health_monitor.get(
                 context.session, pool_id=self.pool_id)
