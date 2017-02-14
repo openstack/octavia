@@ -37,7 +37,7 @@ and defines new terms to describe new components and features as necessary.
 
 .. _P2:
 
-  **Note:** Items marked with [P2]_ refer to lower priority features to be
+  **Note:** Items marked with [`P2`_] refer to lower priority features to be
   designed / implemented only after initial release.
 
 
@@ -48,7 +48,7 @@ Proposed change
   topology.
 
 * The operator should be able to select and configure the Distributor
-  (e.g., through an Octavia configuration file or [P2]_ through a flavor
+  (e.g., through an Octavia configuration file or [`P2`_] through a flavor
   framework).
 
 * Octavia shall support a pluggable design for the Distributor, allowing
@@ -58,7 +58,7 @@ Proposed change
 
 * Octavia shall support different provisioning types for the Distributor;
   including VM-based (the default, similar to current Amphorae),
-  [P2]_ container-based, and [P2]_ external (vendor-specific) hardware.
+  [`P2`_] container-based, and [`P2`_] external (vendor-specific) hardware.
 
 * The operator shall be able to configure the distribution policies,
   including affinity and availability (see below for details).
@@ -163,7 +163,7 @@ Affinity of Flows to Amphorae
   with similar attributes are always sent to the same Amphora; this may be
   desired to achieve better performance (see discussion below).
 
-- [P2]_ The Distributor shall support different modes of client-to-Amphora
+- [`P2`_] The Distributor shall support different modes of client-to-Amphora
   affinity. The operator should be able to select and configure the desired
   affinity level.
 
@@ -297,7 +297,7 @@ Forwarding with OVS and OpenFlow Rules
     Amphora is ready it becomes the new *standby* (no changes to OpenFlow
     rules).
 
-  - [P2]_ Handle concurrent failure of more than a single Amphora
+  - [`P2`_] Handle concurrent failure of more than a single Amphora
 
 * Handling Distributor failover
 
@@ -336,14 +336,14 @@ https://blueprints.launchpad.net/octavia/+spec/active-active-topology)
     requests for the VIP address.
 
   **Notes:**
-    [P2]_ It is desirable that the Distributor be considered as a router by
+    [`P2`_] It is desirable that the Distributor be considered as a router by
     Neutron (to handle port security, network forwarding without ``arp``
     spoofing, etc.). This may require changes to Neutron and may also mean
     that Octavia will be a privileged user of Neutron.
 
     Distributor needs to support IPv6 NDP
 
-    [P2_] If the Distributor is implemented as a container then hot-plugging
+    [`P2`_] If the Distributor is implemented as a container then hot-plugging
     a port for each VIP might not be possible.
 
     If DVR is used then routing rules must be used to forward external
@@ -374,10 +374,11 @@ https://blueprints.launchpad.net/octavia/+spec/active-active-topology)
   - Reference implementation shall spawn a new Distributor VM as needed. It
     shall monitor its health and handle recovery using heartbeats sent to the
     health monitor in a similar fashion to how this is done presently with
-    Amphorae. [P2]_ Spawn a new Distributor if the number VIPs exceeds a given
-    limit (to limit the number of Neutron ports attached to one Distributor).
-    [P2]_ Add configuration options and/or Operator API to allow operator to
-    request a dedicated Distributor for a VIP (or per tenant).
+    Amphorae. [`P2`_] Spawn a new Distributor if the number VIPs exceeds a
+    given limit (to limit the number of Neutron ports attached to one
+    Distributor).  [`P2`_] Add configuration options and/or Operator API to
+    allow operator to request a dedicated Distributor for a VIP (or per
+    tenant).
 
 * Define a REST API for Distributor configuration (no SSH API).
   See below for details.
@@ -486,7 +487,7 @@ Following API calls will be addressed.
      requests to Amphorae part of this load balancer configuration. This
      consists of an algorithm name and affinity type. In the initial release
      of ACTIVE-ACTIVE, the only valid algorithm will be *hash*, and the
-     affinity type may be ``Source_IP`` or [P2]_ ``Source_IP_AND_port``.
+     affinity type may be ``Source_IP`` or [`P2`_] ``Source_IP_AND_port``.
 
 2. Pre VIP unplug
 
@@ -568,8 +569,8 @@ Further Discussion
   future/alternative design and some will hopefully make their way into, yet
   to be written, related blueprints (e.g., auto-scaled topology).
 
-[P2]_ Handling changes in Cluster size (manual or auto-scaled)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[`P2`_] Handling changes in Cluster size (manual or auto-scaled)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - The Distributor shall support different mechanism for preserving affinity
   of flows to Amphorae following a *change in the size* of the Amphorae

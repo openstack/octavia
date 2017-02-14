@@ -33,7 +33,7 @@ and defines new terms to describe new components and features as necessary.
 
 .. _P2:
 
-  **Note:** Items marked with [P2]_ refer to lower priority features to be
+  **Note:** Items marked with [`P2`_] refer to lower priority features to be
   designed / implemented only after initial release.
 
 
@@ -44,7 +44,7 @@ A tenant should be able to start a highly-available, loadbalancer for the
 tenant's backend services as follows:
 
 * The operator should be able to configure an active-active topology
-  through an Octavia configuration file or [P2]_ through a Neutron flavor,
+  through an Octavia configuration file or [`P2`_] through a Neutron flavor,
   which the loadbalancer shall support. Octavia shall support active-active
   topologies in addition to the topologies that it currently supports.
 
@@ -58,7 +58,7 @@ tenant's backend services as follows:
   including L7 load-balancing, SSL termination, etc.
 
 * The active-active topology shall support various Amphora types and
-  implementations; including, virtual machines, [P2]_ containers, and
+  implementations; including, virtual machines, [`P2`_] containers, and
   bare-metal servers.
 
 * The operator should be able to configure the high-availability
@@ -67,7 +67,7 @@ tenant's backend services as follows:
   in the load-balancing Amphora Cluster. If the number of healthy Amphorae
   drops under the desired number, Octavia shall automatically and
   seamlessly create and configure a new Amphora and add it to the Amphora
-  Cluster. [P2]_ The operator should be further able to define that the
+  Cluster. [`P2`_] The operator should be further able to define that the
   Amphora Cluster shall be allocated on separate physical resources.
 
 * An Amphora Cluster will collectively act to serve as a single logical
@@ -238,7 +238,7 @@ Problem Details
   amphora. See :doc:`active-active-distributor` for details.
 
 * Octavia controller shall seamlessly configure any newly created Amphora
-  ([P2]_ including peer state synchronization, such as sticky-tables, if
+  ([`P2`_] including peer state synchronization, such as sticky-tables, if
   needed) and shall reconfigure the other solution components (e.g.,
   Neutron) as needed. The  controller shall further manage all Amphora
   life-cycle events.
@@ -266,7 +266,7 @@ Amphora related changes
   the same VIP). Amphorae should continue to have a management IP on the LB
   Network so Octavia can configure them. Amphorae should also generally
   support hot-plugging interfaces into back-end tenant networks as they do
-  in the current implementation. [P2]_ Finally, the Amphora configuration
+  in the current implementation. [`P2`_] Finally, the Amphora configuration
   may need to be changed to randomize the member list, in order to prevent
   synchronized decisions by all Amphorae in the Amphora Cluster.
 
@@ -294,7 +294,7 @@ Amphora related changes
 
 * Create a flow (or task) for the controller worker for (de-)registration
   of Amphorae with Distributor. The Distributor has to be aware of the
-  current ``ONLINE`` Amphorae, to which it can forward traffic. [P2_] The
+  current ``ONLINE`` Amphorae, to which it can forward traffic. [`P2`_] The
   Distributor can do very basic monitoring of the Amphorae health (primarily
   to make sure network connectivity between the Distributor and Amphorae is
   working). Monitoring pool member health will remain the purview of the
@@ -328,7 +328,7 @@ Amphora Cluster Manager driver for the active-active topology (*new*)
 * The ACM shall orchestrate creation and deletion of Amphora instances to
   meet the availability requirements. Amphora failover will utilize the
   existing health monitor flows, with hooks to notify the ACM when
-  ACTIVE-ACTIVE topology is used. [P2]_ ACM shall handle graceful amphora
+  ACTIVE-ACTIVE topology is used. [`P2`_] ACM shall handle graceful amphora
   removal via draining (delay actual removal until existing connections are
   terminated or some timeout has passed).
 
@@ -359,7 +359,7 @@ Amphora Cluster Manager driver for the active-active topology (*new*)
   properties for the specific implementation.
 
 * Add configuration file options to support configuration of an
-  active-active Amphora Cluster. Add default configuration. [P2]_ Add
+  active-active Amphora Cluster. Add default configuration. [`P2`_] Add
   Operator API.
 
 * Add or update documentation for new components added and new or changed
@@ -389,7 +389,7 @@ Network driver changes
   ``arp`` disabled), and registering the Amphora with the Distributor. The
   tenant's front-end and back-end networks must allow attachment of
   dynamically created Amphorae by involving the ACM (e.g., when the health
-  monitor replaces a failed Amphora). ([P2]_ extend the LBaaS API to allow
+  monitor replaces a failed Amphora). ([`P2`_] extend the LBaaS API to allow
   specifying an address range for new Amphorae usage, e.g., a subnet pool).
 
 
@@ -400,7 +400,7 @@ Amphora health-monitoring support
   the ACM; namely, forward Amphora health change events to the ACM, so it
   can decide when the Amphora Cluster is considered to be in healthy state.
   This should be done in addition to managing the health of each Amphora.
-  [P2]_ Monitor the Amphorae also on their front-end network (i.e., from
+  [`P2`_] Monitor the Amphorae also on their front-end network (i.e., from
   the Distributor).
 
 
@@ -426,7 +426,7 @@ Distributor support
 
   - Status
 
-  - [P2]_ Macro-level stats
+  - [`P2`_] Macro-level stats
 
 * Spawn Distributors (if using on demand Distributor compute nodes) and/or
   attach to existing ones as needed. Manage health and life-cycle of the
@@ -437,7 +437,7 @@ Distributor support
 
 * Add Distributor driver and flows to (re-)configure the Distributor on
   creation/destruction of a new loadbalancer (add/remove loadbalancer VIP)
-  and [P2]_ configure the distribution algorithm for the loadbalancer's
+  and [`P2`_] configure the distribution algorithm for the loadbalancer's
   Amphora Cluster.
 
 * Add flows to Octavia to (re-)configure the Distributor on adding/removing
@@ -532,7 +532,7 @@ REST API impact
 
 * Amphora REST API -- support configuration of disabling ``arp`` on VIP.
 
-* [P2]_ LBaaS API -- support configuration of desired availability, perhaps
+* [`P2`_] LBaaS API -- support configuration of desired availability, perhaps
   by selecting a flavor (e.g., gold is a minimum of 4 Amphorae, platinum is
   a minimum of 10 Amphora).
 
