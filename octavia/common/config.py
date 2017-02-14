@@ -401,6 +401,8 @@ nova_opts = [
                       'provided for each amphora, in the format "a[A-Z0-9]*". '
                       'Otherwise, the default name format will be used: '
                       '"amphora-{UUID}".')),
+    cfg.StrOpt('availability_zone', default=None,
+               help=_('Availability zone to use for creating Amphorae')),
 ]
 neutron_opts = [
     cfg.StrOpt('service_name',

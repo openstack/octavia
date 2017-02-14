@@ -151,7 +151,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
                 files=config_drive_files,
                 userdata=user_data,
                 config_drive=True,
-                scheduler_hints=server_group
+                scheduler_hints=server_group,
+                availability_zone=CONF.nova.availability_zone
             )
 
             return amphora.id
