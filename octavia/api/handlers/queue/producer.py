@@ -30,7 +30,7 @@ from oslo_config import cfg
 import oslo_messaging as messaging
 import six
 
-from octavia.api.v2.handlers import abstract_handler
+from octavia.api.handlers import abstract_handler
 from octavia.common import constants
 from octavia.common import data_models
 

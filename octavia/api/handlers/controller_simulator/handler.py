@@ -24,7 +24,7 @@ import time
 
 from oslo_log import log as logging
 
-from octavia.api.v1.handlers import abstract_handler
+from octavia.api.handlers import abstract_handler
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.db import api as db_api

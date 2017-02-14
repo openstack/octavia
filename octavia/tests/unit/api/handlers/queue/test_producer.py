@@ -29,7 +29,7 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 import oslo_messaging as messaging
 
-from octavia.api.v1.handlers.queue import producer
+from octavia.api.handlers.queue import producer
 from octavia.api.v1.types import health_monitor
 from octavia.api.v1.types import l7policy
 from octavia.api.v1.types import l7rule
@@ -49,12 +49,12 @@ class TestProducer(base.TestCase):
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="oslo_messaging", topic='OCTAVIA_PROV')
         mck_target = mock.patch(
-            'octavia.api.v1.handlers.queue.producer.messaging.Target')
+            'octavia.api.handlers.queue.producer.messaging.Target')
         mck_transport = mock.patch(
-            'octavia.api.v1.handlers.queue.producer.messaging.get_transport')
+            'octavia.api.handlers.queue.producer.messaging.get_transport')
         self.mck_client = mock.create_autospec(messaging.RPCClient)
         mck_client = mock.patch(
-            'octavia.api.v1.handlers.queue.producer.messaging.RPCClient',
+            'octavia.api.handlers.queue.producer.messaging.RPCClient',
             return_value=self.mck_client)
         mck_target.start()
         mck_transport.start()

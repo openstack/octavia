@@ -71,7 +71,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.pool_repo = repositories.PoolRepository()
         self.member_repo = repositories.MemberRepository()
         self.amphora_repo = repositories.AmphoraRepository()
-        patcher = mock.patch('octavia.api.v1.handlers.controller_simulator.'
+        patcher = mock.patch('octavia.api.handlers.controller_simulator.'
                              'handler.SimulatedControllerHandler')
         self.handler_mock = patcher.start()
         self.app = self._make_app()
