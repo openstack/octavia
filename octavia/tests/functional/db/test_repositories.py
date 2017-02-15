@@ -25,6 +25,8 @@ from oslo_utils import uuidutils
 from octavia.common import constants
 from octavia.common import data_models as models
 from octavia.common import exceptions
+from octavia.db import api as db_api
+from octavia.db import models as db_models
 from octavia.db import repositories as repo
 from octavia.tests.functional.db import base
 
@@ -386,11 +388,65 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         listener['load_balancer_id'] = lb.get('id')
         pool['load_balancer_id'] = lb.get('id')
         redirect_pool['load_balancer_id'] = lb.get('id')
-        db_lb = self.repos.create_load_balancer_tree(self.session, lb)
+        lock_session = db_api.get_session(autocommit=False)
+        db_lb = self.repos.create_load_balancer_tree(self.session,
+                                                     lock_session, lb)
         self.assertIsNotNone(db_lb)
         self.assertIsInstance(db_lb, models.LoadBalancer)
 
+    def test_sqlite_transactions_broken(self):
+        """This test is a canary for pysqlite fixing transaction handling.
+
+        When this test starts failing, we can fix and un-skip the deadlock
+        test below: `test_create_load_balancer_tree_quotas`.
+        """
+        project_id = uuidutils.generate_uuid()
+        vip = {'ip_address': '10.0.0.1', 'port_id': uuidutils.generate_uuid(),
+               'subnet_id': uuidutils.generate_uuid()}
+        lb = {'name': 'lb1', 'description': 'desc1', 'enabled': True,
+              'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
+              'vrrp_group': None, 'server_group_id': uuidutils.generate_uuid(),
+              'project_id': project_id,
+              'provisioning_status': constants.PENDING_CREATE,
+              'operating_status': constants.ONLINE,
+              'id': uuidutils.generate_uuid()}
+
+        session = db_api.get_session()
+        lock_session = db_api.get_session(autocommit=False)
+        lbs = lock_session.query(db_models.LoadBalancer).filter_by(
+            project_id=project_id).all()
+        self.assertEqual(0, len(lbs))  # Initially: 0
+        self.repos.create_load_balancer_and_vip(lock_session, lb, vip)
+        lbs = lock_session.query(db_models.LoadBalancer).filter_by(
+            project_id=project_id).all()
+        self.assertEqual(1, len(lbs))  # After create: 1
+        lock_session.rollback()
+        lbs = lock_session.query(db_models.LoadBalancer).filter_by(
+            project_id=project_id).all()
+        self.assertEqual(0, len(lbs))  # After rollback: 0
+        self.repos.create_load_balancer_and_vip(lock_session, lb, vip)
+        lbs = lock_session.query(db_models.LoadBalancer).filter_by(
+            project_id=project_id).all()
+        self.assertEqual(1, len(lbs))  # After create: 1
+        lock_session.rollback()
+        lbs = lock_session.query(db_models.LoadBalancer).filter_by(
+            project_id=project_id).all()
+        self.assertEqual(0, len(lbs))  # After rollback: 0
+        # Force a count(), which breaks transaction integrity in pysqlite
+        session.query(db_models.LoadBalancer).filter(
+            db_models.LoadBalancer.project_id == project_id).count()
+        self.repos.create_load_balancer_and_vip(lock_session, lb, vip)
+        lbs = lock_session.query(db_models.LoadBalancer).filter_by(
+            project_id=project_id).all()
+        self.assertEqual(1, len(lbs))  # After create: 1
+        lock_session.rollback()
+        lbs = lock_session.query(db_models.LoadBalancer).filter_by(
+            project_id=project_id).all()
+        self.assertEqual(1, len(lbs))  # After rollback: 1 (broken!)
+
     def test_create_load_balancer_tree_quotas(self):
+        self.skipTest("PySqlite transaction handling is broken. We can unskip"
+                      "this when `test_sqlite_transactions_broken` fails.")
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(auth_strategy='testing')
         project_id = uuidutils.generate_uuid()
@@ -522,10 +578,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'health_monitor': 10,
                  'member': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
             exceptions.QuotaException,
             self.repos.create_load_balancer_tree,
-            self.session, copy.deepcopy(lb))
+            self.session, lock_session, copy.deepcopy(lb))
         # Make sure we didn't create the load balancer anyway
         self.assertIsNone(self.repos.load_balancer.get(self.session,
                                                        name='lb1'))
@@ -536,10 +593,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'health_monitor': 10,
                  'member': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
             exceptions.QuotaException,
             self.repos.create_load_balancer_tree,
-            self.session, copy.deepcopy(lb))
+            self.session, lock_session, copy.deepcopy(lb))
         # Make sure we didn't create the load balancer anyway
         self.assertIsNone(self.repos.load_balancer.get(self.session,
                                                        name='lb1'))
@@ -550,10 +608,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'health_monitor': 10,
                  'member': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
             exceptions.QuotaException,
             self.repos.create_load_balancer_tree,
-            self.session, copy.deepcopy(lb))
+            self.session, lock_session, copy.deepcopy(lb))
         # Make sure we didn't create the load balancer anyway
         self.assertIsNone(self.repos.load_balancer.get(self.session,
                                                        name='lb1'))
@@ -564,10 +623,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'health_monitor': 0,
                  'member': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
             exceptions.QuotaException,
             self.repos.create_load_balancer_tree,
-            self.session, copy.deepcopy(lb))
+            self.session, lock_session, copy.deepcopy(lb))
         # Make sure we didn't create the load balancer anyway
         self.assertIsNone(self.repos.load_balancer.get(self.session,
                                                        name='lb1'))
@@ -578,10 +638,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'health_monitor': 10,
                  'member': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
             exceptions.QuotaException,
             self.repos.create_load_balancer_tree,
-            self.session, copy.deepcopy(lb))
+            self.session, lock_session, copy.deepcopy(lb))
         # Make sure we didn't create the load balancer anyway
         self.assertIsNone(self.repos.load_balancer.get(self.session,
                                                        name='lb1'))
@@ -593,10 +654,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'health_monitor': 10,
                  'member': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
             exceptions.QuotaException,
             self.repos.create_load_balancer_tree,
-            self.session, copy.deepcopy(lb))
+            self.session, lock_session, copy.deepcopy(lb))
         # Make sure we didn't create the load balancer anyway
         self.assertIsNone(self.repos.load_balancer.get(self.session,
                                                        name='lb1'))
@@ -608,10 +670,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'health_monitor': 1,
                  'member': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
             exceptions.QuotaException,
             self.repos.create_load_balancer_tree,
-            self.session, copy.deepcopy(lb))
+            self.session, lock_session, copy.deepcopy(lb))
         # Make sure we didn't create the load balancer anyway
         self.assertIsNone(self.repos.load_balancer.get(self.session,
                                                        name='lb1'))
@@ -623,10 +686,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'health_monitor': 10,
                  'member': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
             exceptions.QuotaException,
             self.repos.create_load_balancer_tree,
-            self.session, copy.deepcopy(lb))
+            self.session, lock_session, copy.deepcopy(lb))
         # Make sure we didn't create the load balancer anyway
         self.assertIsNone(self.repos.load_balancer.get(self.session,
                                                        name='lb1'))
@@ -639,15 +703,18 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'health_monitor': 10,
                  'member': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
-        self.repos.create_load_balancer_tree(self.session, copy.deepcopy(lb))
+        lock_session = db_api.get_session(autocommit=False)
+        self.repos.create_load_balancer_tree(self.session, lock_session,
+                                             copy.deepcopy(lb))
         # Check if first LB build passed quota checks
         self.assertIsNotNone(self.repos.load_balancer.get(self.session,
                                                           name='lb1'))
         # Try building another LB, it should fail
+        lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
             exceptions.QuotaException,
             self.repos.create_load_balancer_tree,
-            self.session, copy.deepcopy(lb2))
+            self.session, lock_session, copy.deepcopy(lb2))
         # Make sure we didn't create the load balancer anyway
         self.assertIsNone(self.repos.load_balancer.get(self.session,
                                                        name='lb2'))
@@ -661,10 +728,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'health_monitor': 10,
                  'member': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
             exceptions.QuotaException,
             self.repos.create_load_balancer_tree,
-            self.session, copy.deepcopy(lb2))
+            self.session, lock_session, copy.deepcopy(lb2))
         # Make sure we didn't create the load balancer anyway
         self.assertIsNone(self.repos.load_balancer.get(self.session,
                                                        name='lb2'))
@@ -678,10 +746,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'health_monitor': 10,
                  'member': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
             exceptions.QuotaException,
             self.repos.create_load_balancer_tree,
-            self.session, copy.deepcopy(lb2))
+            self.session, lock_session, copy.deepcopy(lb2))
         # Make sure we didn't create the load balancer anyway
         self.assertIsNone(self.repos.load_balancer.get(self.session,
                                                        name='lb2'))
@@ -695,10 +764,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'health_monitor': 1,
                  'member': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
             exceptions.QuotaException,
             self.repos.create_load_balancer_tree,
-            self.session, copy.deepcopy(lb2))
+            self.session, lock_session, copy.deepcopy(lb2))
         # Make sure we didn't create the load balancer anyway
         self.assertIsNone(self.repos.load_balancer.get(self.session,
                                                        name='lb2'))
@@ -712,10 +782,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'health_monitor': 10,
                  'member': 2}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
             exceptions.QuotaException,
             self.repos.create_load_balancer_tree,
-            self.session, copy.deepcopy(lb2))
+            self.session, lock_session, copy.deepcopy(lb2))
         # Make sure we didn't create the load balancer anyway
         self.assertIsNone(self.repos.load_balancer.get(self.session,
                                                        name='lb2'))

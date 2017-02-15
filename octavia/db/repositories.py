@@ -31,7 +31,6 @@ from octavia.common import constants as consts
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import validate
-from octavia.db import api as db_api
 from octavia.db import models
 from octavia.i18n import _LE, _LW
 
@@ -273,11 +272,10 @@ class Repositories(object):
         quotas = self.quotas.get(session, project_id=project_id)
         if not quotas:
             # Make sure we have a record to lock
-            quotas = self.quotas.update(
+            self.quotas.update(
                 session,
                 project_id,
                 quota={})
-            session.flush()
         # Lock the project record in the database to block other quota checks
         #
         # Note: You cannot just use the current count as the in-use
@@ -487,125 +485,123 @@ class Repositories(object):
                             '{proj}').format(proj=project_id))
             raise exceptions.ProjectBusyException()
 
-    def create_load_balancer_tree(self, session, lb_dict):
+    def create_load_balancer_tree(self, session, lock_session, lb_dict):
         listener_dicts = lb_dict.pop('listeners', [])
         vip_dict = lb_dict.pop('vip')
-        with session.begin(subtransactions=True):
-            lock_session = db_api.get_session(autocommit=False)
-            try:
+        try:
+            if self.check_quota_met(session,
+                                    lock_session,
+                                    data_models.LoadBalancer,
+                                    lb_dict['project_id']):
+                raise exceptions.QuotaException
+            lb_dm = self.create_load_balancer_and_vip(
+                lock_session, lb_dict, vip_dict)
+            for listener_dict in listener_dicts:
+                # Add listener quota check
                 if self.check_quota_met(session,
                                         lock_session,
-                                        data_models.LoadBalancer,
+                                        data_models.Listener,
                                         lb_dict['project_id']):
                     raise exceptions.QuotaException
-                lb_dm = self.create_load_balancer_and_vip(
-                    lock_session, lb_dict, vip_dict)
-                for listener_dict in listener_dicts:
-                    # Add listener quota check
+                pool_dict = listener_dict.pop('default_pool', None)
+                l7policies_dict = listener_dict.pop('l7policies', None)
+                sni_containers = listener_dict.pop('sni_containers', [])
+                if pool_dict:
+                    # Add pool quota check
                     if self.check_quota_met(session,
                                             lock_session,
-                                            data_models.Listener,
+                                            data_models.Pool,
                                             lb_dict['project_id']):
                         raise exceptions.QuotaException
-                    pool_dict = listener_dict.pop('default_pool', None)
-                    l7policies_dict = listener_dict.pop('l7policies', None)
-                    sni_containers = listener_dict.pop('sni_containers', [])
-                    if pool_dict:
-                        # Add pool quota check
+                    hm_dict = pool_dict.pop('health_monitor', None)
+                    member_dicts = pool_dict.pop('members', [])
+                    sp_dict = pool_dict.pop('session_persistence', None)
+                    pool_dict['load_balancer_id'] = lb_dm.id
+                    del pool_dict['listener_id']
+                    pool_dm = self.pool.create(lock_session, **pool_dict)
+                    if sp_dict:
+                        sp_dict['pool_id'] = pool_dm.id
+                        self.session_persistence.create(lock_session,
+                                                        **sp_dict)
+                    if hm_dict:
+                        # Add hm quota check
                         if self.check_quota_met(session,
                                                 lock_session,
-                                                data_models.Pool,
+                                                data_models.HealthMonitor,
                                                 lb_dict['project_id']):
                             raise exceptions.QuotaException
-                        hm_dict = pool_dict.pop('health_monitor', None)
-                        member_dicts = pool_dict.pop('members', [])
-                        sp_dict = pool_dict.pop('session_persistence', None)
-                        pool_dict['load_balancer_id'] = lb_dm.id
-                        del pool_dict['listener_id']
-                        pool_dm = self.pool.create(lock_session, **pool_dict)
-                        if sp_dict:
-                            sp_dict['pool_id'] = pool_dm.id
-                            self.session_persistence.create(lock_session,
-                                                            **sp_dict)
-                        if hm_dict:
-                            # Add hm quota check
+                        hm_dict['pool_id'] = pool_dm.id
+                        self.health_monitor.create(lock_session, **hm_dict)
+                    for r_member_dict in member_dicts:
+                        # Add member quota check
+                        if self.check_quota_met(session,
+                                                lock_session,
+                                                data_models.Member,
+                                                lb_dict['project_id']):
+                            raise exceptions.QuotaException
+                        r_member_dict['pool_id'] = pool_dm.id
+                        self.member.create(lock_session, **r_member_dict)
+                    listener_dict['default_pool_id'] = pool_dm.id
+                self.listener.create(lock_session, **listener_dict)
+                for sni_container in sni_containers:
+                    self.sni.create(lock_session, **sni_container)
+                if l7policies_dict:
+                    for policy_dict in l7policies_dict:
+                        l7rules_dict = policy_dict.pop('l7rules')
+                        if policy_dict.get('redirect_pool'):
+                            # Add pool quota check
                             if self.check_quota_met(session,
                                                     lock_session,
-                                                    data_models.HealthMonitor,
+                                                    data_models.Pool,
                                                     lb_dict['project_id']):
                                 raise exceptions.QuotaException
-                            hm_dict['pool_id'] = pool_dm.id
-                            self.health_monitor.create(lock_session, **hm_dict)
-                        for r_member_dict in member_dicts:
-                            # Add member quota check
-                            if self.check_quota_met(session,
-                                                    lock_session,
-                                                    data_models.Member,
-                                                    lb_dict['project_id']):
-                                raise exceptions.QuotaException
-                            r_member_dict['pool_id'] = pool_dm.id
-                            self.member.create(lock_session, **r_member_dict)
-                        listener_dict['default_pool_id'] = pool_dm.id
-                    self.listener.create(lock_session, **listener_dict)
-                    for sni_container in sni_containers:
-                        self.sni.create(lock_session, **sni_container)
-                    if l7policies_dict:
-                        for policy_dict in l7policies_dict:
-                            l7rules_dict = policy_dict.pop('l7rules')
-                            if policy_dict.get('redirect_pool'):
-                                # Add pool quota check
-                                if self.check_quota_met(session,
-                                                        lock_session,
-                                                        data_models.Pool,
-                                                        lb_dict['project_id']):
+                            r_pool_dict = policy_dict.pop(
+                                'redirect_pool')
+                            r_hm_dict = r_pool_dict.pop('health_monitor',
+                                                        None)
+                            r_sp_dict = r_pool_dict.pop(
+                                'session_persistence', None)
+                            r_member_dicts = r_pool_dict.pop('members', [])
+                            if 'listener_id' in r_pool_dict.keys():
+                                del r_pool_dict['listener_id']
+                            r_pool_dm = self.pool.create(lock_session,
+                                                         **r_pool_dict)
+                            if r_sp_dict:
+                                r_sp_dict['pool_id'] = r_pool_dm.id
+                                self.session_persistence.create(lock_session,
+                                                                **r_sp_dict)
+                            if r_hm_dict:
+                                # Add hm quota check
+                                if self.check_quota_met(
+                                        session,
+                                        lock_session,
+                                        data_models.HealthMonitor,
+                                        lb_dict['project_id']):
                                     raise exceptions.QuotaException
-                                r_pool_dict = policy_dict.pop(
-                                    'redirect_pool')
-                                r_hm_dict = r_pool_dict.pop('health_monitor',
-                                                            None)
-                                r_sp_dict = r_pool_dict.pop(
-                                    'session_persistence', None)
-                                r_member_dicts = r_pool_dict.pop('members', [])
-                                if 'listener_id' in r_pool_dict.keys():
-                                    del r_pool_dict['listener_id']
-                                r_pool_dm = self.pool.create(lock_session,
-                                                             **r_pool_dict)
-                                if r_sp_dict:
-                                    r_sp_dict['pool_id'] = r_pool_dm.id
-                                    self.session_persistence.create(
-                                        lock_session, **r_sp_dict)
-                                if r_hm_dict:
-                                    # Add hm quota check
-                                    if self.check_quota_met(
-                                            session,
-                                            lock_session,
-                                            data_models.HealthMonitor,
-                                            lb_dict['project_id']):
-                                        raise exceptions.QuotaException
-                                    r_hm_dict['pool_id'] = r_pool_dm.id
-                                    self.health_monitor.create(lock_session,
-                                                               **r_hm_dict)
-                                for r_member_dict in r_member_dicts:
-                                    # Add member quota check
-                                    if self.check_quota_met(
-                                            session,
-                                            lock_session,
-                                            data_models.Member,
-                                            lb_dict['project_id']):
-                                        raise exceptions.QuotaException
-                                    r_member_dict['pool_id'] = r_pool_dm.id
-                                    self.member.create(lock_session,
-                                                       **r_member_dict)
-                                policy_dict['redirect_pool_id'] = r_pool_dm.id
-                            policy_dm = self.l7policy.create(lock_session,
-                                                             **policy_dict)
-                            for rule_dict in l7rules_dict:
-                                rule_dict['l7policy_id'] = policy_dm.id
-                                self.l7rule.create(lock_session, **rule_dict)
-                lock_session.commit()
-            except Exception:
-                with excutils.save_and_reraise_exception():
-                    lock_session.rollback()
+                                r_hm_dict['pool_id'] = r_pool_dm.id
+                                self.health_monitor.create(lock_session,
+                                                           **r_hm_dict)
+                            for r_member_dict in r_member_dicts:
+                                # Add member quota check
+                                if self.check_quota_met(
+                                        session,
+                                        lock_session,
+                                        data_models.Member,
+                                        lb_dict['project_id']):
+                                    raise exceptions.QuotaException
+                                r_member_dict['pool_id'] = r_pool_dm.id
+                                self.member.create(lock_session,
+                                                   **r_member_dict)
+                            policy_dict['redirect_pool_id'] = r_pool_dm.id
+                        policy_dm = self.l7policy.create(lock_session,
+                                                         **policy_dict)
+                        for rule_dict in l7rules_dict:
+                            rule_dict['l7policy_id'] = policy_dm.id
+                            self.l7rule.create(lock_session, **rule_dict)
+            lock_session.commit()
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                lock_session.rollback()
 
         session.expire_all()
         return self.load_balancer.get(session, id=lb_dm.id)

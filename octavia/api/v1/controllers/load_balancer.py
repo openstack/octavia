@@ -75,12 +75,13 @@ class LoadBalancersController(base.BaseController):
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=id)
 
-    def _create_load_balancer_graph_db(self, lock_session, load_balancer):
+    def _create_load_balancer_graph_db(self, session,
+                                       lock_session, load_balancer):
         prepped_lb = db_prepare.create_load_balancer_tree(
             load_balancer.to_dict(render_unsets=True))
         try:
             db_lb = self.repositories.create_load_balancer_tree(
-                lock_session, prepped_lb)
+                session, lock_session, prepped_lb)
         except Exception:
             raise
         return db_lb
@@ -110,17 +111,10 @@ class LoadBalancersController(base.BaseController):
                                           id=load_balancer.vip.subnet_id)
 
         lock_session = db_api.get_session(autocommit=False)
-        if self.repositories.check_quota_met(
-                context.session,
-                lock_session,
-                data_models.LoadBalancer,
-                load_balancer.project_id):
-            lock_session.rollback()
-            raise exceptions.QuotaException
-
         if load_balancer.listeners:
             try:
-                db_lb = self._create_load_balancer_graph_db(lock_session,
+                db_lb = self._create_load_balancer_graph_db(context.session,
+                                                            lock_session,
                                                             load_balancer)
                 lock_session.commit()
             except Exception:
@@ -128,6 +122,14 @@ class LoadBalancersController(base.BaseController):
                     lock_session.rollback()
 
             return self._load_balancer_graph_to_handler(context, db_lb)
+        else:
+            if self.repositories.check_quota_met(
+                    context.session,
+                    lock_session,
+                    data_models.LoadBalancer,
+                    load_balancer.project_id):
+                lock_session.rollback()
+                raise exceptions.QuotaException
 
         try:
             lb_dict = db_prepare.create_load_balancer(load_balancer.to_dict(
