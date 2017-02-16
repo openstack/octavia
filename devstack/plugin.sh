@@ -50,7 +50,7 @@ function create_octavia_accounts {
     create_service_user "octavia"
 
     local octavia_service=$(get_or_create_service "octavia" \
-        "octavia" "Octavia Service")
+        "load-balancing" "Octavia Load Balancing Service")
     get_or_create_endpoint $octavia_service \
         "$REGION_NAME" \
         "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/" \
