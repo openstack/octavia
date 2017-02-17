@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
 from tempest import config
 from tempest import test
 
@@ -21,8 +20,6 @@ from tempest import test
 from octavia.tests.tempest.v1.scenario import base
 
 config = config.CONF
-
-LOG = logging.getLogger(__name__)
 
 
 class TestLoadBalancerTreeMinimal(base.BaseTestCase):

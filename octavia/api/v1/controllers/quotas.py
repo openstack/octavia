@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
-
 from oslo_config import cfg
 import pecan
 from wsme import types as wtypes
@@ -26,7 +24,6 @@ from octavia.common import exceptions
 
 CONF = cfg.CONF
 CONF.import_group('quotas', 'octavia.common.config')
-LOG = logging.getLogger(__name__)
 
 
 class QuotasController(base.BaseController):
