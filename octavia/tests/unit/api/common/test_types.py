@@ -98,3 +98,58 @@ class TestTypeDataModelRenames(base.TestCase):
         type_dict = TestTypeTenantProject(tenant_id='1234').to_dict()
         self.assertEqual('1234', type_dict['project_id'])
         self.assertNotIn('tenant_id', type_dict)
+
+
+class TestToDictModel(data_models.BaseDataModel):
+    def __init__(self, text, parent=None):
+        self.parent = parent
+        self.child = None
+        self.children = None
+        self.text = text
+
+    def set_children(self, children):
+        self.children = children
+
+    def set_child(self, child):
+        self.child = child
+
+    def set_parent(self, parent):
+        self.parent = parent
+
+
+class TestDataModelToDict(base.TestCase):
+    RECURSED_RESULT = {'parent': None,
+                       'text': 'parent_text',
+                       'child': {'parent': None,
+                                 'text': 'child_text',
+                                 'child': None,
+                                 'children': None},
+                       'children': [
+                           {'parent': None,
+                            'text': 'child1_text',
+                            'child': None,
+                            'children': None},
+                           {'parent': None,
+                            'text': 'child2_text',
+                            'child': None,
+                            'children': None}]}
+
+    NO_RECURSE_RESULT = {'parent': None,
+                         'text': 'parent_text',
+                         'child': None,
+                         'children': None}
+
+    def setUp(self):
+        super(TestDataModelToDict, self).setUp()
+        self.model = TestToDictModel('parent_text')
+        self.model.set_child(TestToDictModel('child_text', self.model))
+        self.model.set_children([TestToDictModel('child1_text', self.model),
+                                 TestToDictModel('child2_text', self.model)])
+
+    def test_to_dict_no_recurse(self):
+        self.assertEqual(self.model.to_dict(),
+                         self.NO_RECURSE_RESULT)
+
+    def test_to_dict_recurse(self):
+        self.assertEqual(self.model.to_dict(recurse=True),
+                         self.RECURSED_RESULT)
