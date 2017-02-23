@@ -34,6 +34,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     QUOTA_DEFAULT_PATH = QUOTAS_PATH + '/{project_id}/default'
     LBS_PATH = '/loadbalancers'
     LB_PATH = LBS_PATH + '/{lb_id}'
+    LB_DELETE_CASCADE_PATH = LB_PATH + '/delete_cascade'
     LB_STATS_PATH = LB_PATH + '/stats'
     LISTENERS_PATH = LB_PATH + '/listeners'
     LISTENER_PATH = LISTENERS_PATH + '/{listener_id}'

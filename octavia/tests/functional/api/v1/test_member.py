@@ -377,7 +377,8 @@ class TestMember(base.BaseAPITest):
                            self.pool.get('id'), ip_address="10.0.0.1",
                            protocol_port=80)
         self.set_lb_status(self.lb.get('id'))
-        self.delete(self.LB_PATH.format(lb_id=self.lb.get('id')))
+        self.delete(self.LB_DELETE_CASCADE_PATH.format(
+            lb_id=self.lb.get('id')))
         self.post(self.members_path,
                   body={'ip_address': '10.0.0.2', 'protocol_port': 88,
                         'project_id': self.project_id},
@@ -388,7 +389,8 @@ class TestMember(base.BaseAPITest):
                                     self.pool.get('id'), ip_address="10.0.0.1",
                                     protocol_port=80)
         self.set_lb_status(self.lb.get('id'))
-        self.delete(self.LB_PATH.format(lb_id=self.lb.get('id')))
+        self.delete(self.LB_DELETE_CASCADE_PATH.format(
+            lb_id=self.lb.get('id')))
         self.put(self.member_path.format(member_id=member.get('id')),
                  body={'protocol_port': 88}, status=409)
 
@@ -397,6 +399,7 @@ class TestMember(base.BaseAPITest):
                                     self.pool.get('id'), ip_address="10.0.0.1",
                                     protocol_port=80)
         self.set_lb_status(self.lb.get('id'))
-        self.delete(self.LB_PATH.format(lb_id=self.lb.get('id')))
+        self.delete(self.LB_DELETE_CASCADE_PATH.format(
+            lb_id=self.lb.get('id')))
         self.delete(self.member_path.format(member_id=member.get('id')),
                     status=409)

@@ -119,8 +119,8 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertIn(constants.LOADBALANCER, lb_flow.requires)
 
-        self.assertEqual(0, len(lb_flow.provides))
-        self.assertEqual(5, len(lb_flow.requires))
+        self.assertEqual(1, len(lb_flow.provides))
+        self.assertEqual(4, len(lb_flow.requires))
 
     def test_get_new_LB_networking_subflow(self, mock_get_net_driver):
 

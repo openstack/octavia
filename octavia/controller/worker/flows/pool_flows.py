@@ -80,13 +80,22 @@ class PoolFlows(object):
         delete_pool_flow = linear_flow.Flow(constants.DELETE_POOL_FLOW)
         # health monitor should cascade
         # members should cascade
+        delete_pool_flow.add(database_tasks.MarkPoolPendingDeleteInDB(
+            requires=constants.POOL,
+            rebind={constants.POOL: name}))
+        delete_pool_flow.add(database_tasks.CountPoolChildrenForQuota(
+            requires=constants.POOL,
+            provides=constants.POOL_CHILD_COUNT,
+            rebind={constants.POOL: name}))
+        delete_pool_flow.add(model_tasks.DeleteModelObject(
+            rebind={constants.OBJECT: name}))
         delete_pool_flow.add(database_tasks.DeletePoolInDB(
             name='delete_pool_in_db_' + name,
             requires=constants.POOL,
             rebind={constants.POOL: name}))
         delete_pool_flow.add(database_tasks.DecrementPoolQuota(
             name='decrement_pool_quota_' + name,
-            requires=constants.POOL,
+            requires=[constants.POOL, constants.POOL_CHILD_COUNT],
             rebind={constants.POOL: name}))
 
         return delete_pool_flow

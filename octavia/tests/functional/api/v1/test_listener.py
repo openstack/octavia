@@ -394,7 +394,7 @@ class TestListener(base.BaseAPITest):
         api_listener = self.post(
             self.LISTENERS_PATH.format(lb_id=lb.get('id')), lb_listener).json
         self.set_lb_status(lb.get('id'))
-        self.delete(self.LB_PATH.format(lb_id=lb.get('id')))
+        self.delete(self.LB_DELETE_CASCADE_PATH.format(lb_id=lb.get('id')))
         self.put(self.LISTENER_PATH.format(
             lb_id=lb.get('id'), listener_id=api_listener.get('id')),
             {}, status=409)
@@ -411,7 +411,7 @@ class TestListener(base.BaseAPITest):
         api_listener = self.post(
             self.LISTENERS_PATH.format(lb_id=lb.get('id')), lb_listener).json
         self.set_lb_status(lb.get('id'))
-        self.delete(self.LB_PATH.format(lb_id=lb.get('id')))
+        self.delete(self.LB_DELETE_CASCADE_PATH.format(lb_id=lb.get('id')))
         self.delete(self.LISTENER_PATH.format(
             lb_id=lb.get('id'), listener_id=api_listener.get('id')),
             status=409)

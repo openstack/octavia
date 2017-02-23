@@ -574,7 +574,8 @@ class TestPool(base.BaseAPITest):
         self.delete(self.pool_path.format(pool_id=pool.get('id')), status=409)
 
     def test_create_when_lb_pending_delete(self):
-        self.delete(self.LB_PATH.format(lb_id=self.lb.get('id')))
+        self.delete(self.LB_DELETE_CASCADE_PATH.format(
+            lb_id=self.lb.get('id')))
         self.post(self.pools_path,
                   body={'protocol': constants.PROTOCOL_HTTP,
                         'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
@@ -586,7 +587,8 @@ class TestPool(base.BaseAPITest):
                                 constants.PROTOCOL_HTTP,
                                 constants.LB_ALGORITHM_ROUND_ROBIN)
         self.set_lb_status(self.lb.get('id'))
-        self.delete(self.LB_PATH.format(lb_id=self.lb.get('id')))
+        self.delete(self.LB_DELETE_CASCADE_PATH.format(
+            lb_id=self.lb.get('id')))
         self.put(self.pool_path.format(pool_id=pool.get('id')),
                  body={'protocol': constants.PROTOCOL_HTTPS},
                  status=409)
@@ -596,5 +598,6 @@ class TestPool(base.BaseAPITest):
                                 constants.PROTOCOL_HTTP,
                                 constants.LB_ALGORITHM_ROUND_ROBIN)
         self.set_lb_status(self.lb.get('id'))
-        self.delete(self.LB_PATH.format(lb_id=self.lb.get('id')))
+        self.delete(self.LB_DELETE_CASCADE_PATH.format(
+            lb_id=self.lb.get('id')))
         self.delete(self.pool_path.format(pool_id=pool.get('id')), status=409)

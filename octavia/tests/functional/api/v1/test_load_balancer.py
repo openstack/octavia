@@ -412,6 +412,32 @@ class TestLoadBalancer(base.BaseAPITest):
                          api_lb.get('operational_status'))
         self.assert_final_lb_statuses(api_lb.get('id'), delete=True)
 
+    def test_delete_with_listener(self):
+        lb = self.create_load_balancer(
+            {'subnet_id': uuidutils.generate_uuid()},
+            name='lb1', description='desc1', enabled=False)
+        lb = self.set_lb_status(lb.get('id'))
+        self.create_listener(
+            lb_id=lb.get('id'),
+            protocol=constants.PROTOCOL_HTTP,
+            protocol_port=80
+        )
+        lb = self.set_lb_status(lb.get('id'))
+        self.delete(self.LB_PATH.format(lb_id=lb.get('id')), status=400)
+
+    def test_delete_with_pool(self):
+        lb = self.create_load_balancer(
+            {'subnet_id': uuidutils.generate_uuid()},
+            name='lb1', description='desc1', enabled=False)
+        lb = self.set_lb_status(lb.get('id'))
+        self.create_pool_sans_listener(
+            lb_id=lb.get('id'),
+            protocol=constants.PROTOCOL_HTTP,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN
+        )
+        lb = self.set_lb_status(lb.get('id'))
+        self.delete(self.LB_PATH.format(lb_id=lb.get('id')), status=400)
+
     def test_delete_bad_lb_id(self):
         path = self.LB_PATH.format(lb_id='bad_uuid')
         self.delete(path, status=404)

@@ -24,6 +24,8 @@ class LoadBalancersClient(rest_client.RestClient):
     _LOAD_BALANCERS_URL = "v1/loadbalancers"
     _LOAD_BALANCER_URL = "{base_url}/{{lb_id}}".format(
         base_url=_LOAD_BALANCERS_URL)
+    _LOAD_BALANCER_CASCADE_DELETE_URL = "{lb_url}/delete_cascade".format(
+        lb_url=_LOAD_BALANCER_URL)
 
     def list_load_balancers(self, params=None):
         """List all load balancers."""
@@ -75,6 +77,13 @@ class LoadBalancersClient(rest_client.RestClient):
     def delete_load_balancer(self, lb_id):
         """Delete an existing load balancer build."""
         url = self._LOAD_BALANCER_URL.format(lb_id=lb_id)
+        resp, body = self.delete(url)
+        self.expected_success(202, resp.status)
+        return rest_client.ResponseBody(resp, body)
+
+    def delete_load_balancer_cascade(self, lb_id):
+        """Delete an existing load balancer (cascading)."""
+        url = self._LOAD_BALANCER_CASCADE_DELETE_URL.format(lb_id=lb_id)
         resp, body = self.delete(url)
         self.expected_success(202, resp.status)
         return rest_client.ResponseBody(resp, body)

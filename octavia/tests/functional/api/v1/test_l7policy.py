@@ -396,7 +396,8 @@ class TestL7Policy(base.BaseAPITest):
             self.lb.get('id'), self.listener.get('id'),
             constants.L7POLICY_ACTION_REJECT)
         self.set_lb_status(self.lb.get('id'))
-        self.delete(self.LB_PATH.format(lb_id=self.lb.get('id')))
+        self.delete(self.LB_DELETE_CASCADE_PATH.format(
+            lb_id=self.lb.get('id')))
         new_l7policy = {'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
                         'redirect_url': 'http://www.example.com'}
         self.post(self.l7policies_path, body=new_l7policy, status=409)
@@ -406,7 +407,8 @@ class TestL7Policy(base.BaseAPITest):
             self.lb.get('id'), self.listener.get('id'),
             constants.L7POLICY_ACTION_REJECT)
         self.set_lb_status(self.lb.get('id'))
-        self.delete(self.LB_PATH.format(lb_id=self.lb.get('id')))
+        self.delete(self.LB_DELETE_CASCADE_PATH.format(
+            lb_id=self.lb.get('id')))
         new_l7policy = {'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
                         'redirect_url': 'http://www.example.com'}
         self.put(self.l7policy_path.format(l7policy_id=l7policy.get('id')),
@@ -417,6 +419,7 @@ class TestL7Policy(base.BaseAPITest):
             self.lb.get('id'), self.listener.get('id'),
             constants.L7POLICY_ACTION_REJECT)
         self.set_lb_status(self.lb.get('id'))
-        self.delete(self.LB_PATH.format(lb_id=self.lb.get('id')))
+        self.delete(self.LB_DELETE_CASCADE_PATH.format(
+            lb_id=self.lb.get('id')))
         self.delete(self.l7policy_path.format(l7policy_id=l7policy.get('id')),
                     status=409)

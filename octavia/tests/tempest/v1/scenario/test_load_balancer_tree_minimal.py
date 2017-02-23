@@ -41,5 +41,6 @@ class TestLoadBalancerTreeMinimal(base.BaseTestCase):
         self._start_backend_httpd_processes('server1')
         self._create_server('server2')
         self._start_backend_httpd_processes('server2')
-        self._create_load_balancer_tree()
+        self._create_load_balancer_tree(cleanup=False)
         self._check_members_balanced(['server1_0', 'server2_0'])
+        self._delete_load_balancer_cascade(self.load_balancer.get('id'))

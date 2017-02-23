@@ -345,6 +345,11 @@ class BaseTestCase(manager.NetworkScenarioTest):
             self.load_balancers_client.delete_load_balancer, load_balancer_id)
         self._wait_for_load_balancer_status(load_balancer_id, delete=True)
 
+    def _delete_load_balancer_cascade(self, load_balancer_id):
+        self.load_balancers_client.delete_load_balancer_cascade(
+            load_balancer_id)
+        self._wait_for_load_balancer_status(load_balancer_id, delete=True)
+
     def _cleanup_listener(self, listener_id, load_balancer_id=None):
         test_utils.call_and_ignore_notfound_exc(
             self.listeners_client.delete_listener, load_balancer_id,
@@ -831,7 +836,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
             'pool': pool, 'health_monitor': health_monitor, 'member': member}}
         return self.quotas_client.update_quotas(project_id, **body)
 
-    def _create_load_balancer_tree(self, ip_version=4):
+    def _create_load_balancer_tree(self, ip_version=4, cleanup=True):
         # TODO(ptoohill): remove or null out project ID when Octavia supports
         # keystone auth and automatically populates it for us.
         project_id = self.networks_client.tenant_id
@@ -855,7 +860,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
                               .create_load_balancer_graph(create_lb))
 
         load_balancer_id = self.load_balancer['id']
-        self.addCleanup(self._cleanup_load_balancer, load_balancer_id)
+        if cleanup:
+            self.addCleanup(self._cleanup_load_balancer, load_balancer_id)
         LOG.info(('Waiting for lb status on create load balancer id: {0}'
                   .format(load_balancer_id)))
         self.load_balancer = self._wait_for_load_balancer_status(
