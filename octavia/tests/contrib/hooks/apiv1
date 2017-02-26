@@ -1,0 +1,8 @@
+[[post-config|/etc/octavia/octavia.conf]]
+[DEFAULT]
+debug = True
+
+[controller_worker]
+amphora_driver = amphora_noop_driver
+compute_driver = compute_noop_driver
+network_driver = network_noop_driver

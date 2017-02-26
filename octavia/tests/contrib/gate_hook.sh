@@ -3,7 +3,16 @@
 set -ex
 
 GATE_DEST=$BASE/new
-DEVSTACK_PATH=$GATE_DEST/devstack
+
+_DEVSTACK_LOCAL_CONFIG_TAIL=
+
+# Inject config from hook
+function load_conf_hook {
+    local hook="$1"
+    local GATE_HOOKS=$GATE_DEST/octavia/octavia/tests/contrib/hooks
+
+    _DEVSTACK_LOCAL_CONFIG_TAIL+=$'\n'"$(cat $GATE_HOOKS/$hook)"
+}
 
 export DEVSTACK_LOCAL_CONFIG+="
 enable_plugin barbican https://git.openstack.org/openstack/barbican
@@ -25,28 +34,11 @@ function _setup_octavia {
         ENABLED_SERVICES+="octavia,o-cw,o-hk,o-hm,o-api,"
     fi
     if [ "$testenv" = "apiv1" ]; then
-       cat > "$DEVSTACK_PATH/local.conf" <<EOF
-[[post-config|/etc/octavia/octavia.conf]]
-[DEFAULT]
-debug = True
-
-[controller_worker]
-amphora_driver = amphora_noop_driver
-compute_driver = compute_noop_driver
-network_driver = network_noop_driver
-
-EOF
-
+        load_conf_hook apiv1
     fi
 
     if [ "$testenv" = "scenario" ]; then
-       cat > "$DEVSTACK_PATH/local.conf" <<EOF
-[[post-config|/etc/octavia/octavia.conf]]
-[DEFAULT]
-debug = True
-
-EOF
-
+        load_conf_hook scenario
     fi
 }
 
@@ -56,7 +48,6 @@ case "$testtype" in
     "dsvm-functional")
         PROJECT_NAME=octavia
         OCTAVIA_PATH=$GATE_DEST/$PROJECT_NAME
-        DEVSTACK_PATH=$GATE_DEST/devstack
         IS_GATE=True
         USE_CONSTRAINT_ENV=False
         export LOG_COLOR=False
@@ -95,6 +86,7 @@ case "$testtype" in
         fi
 
         export ENABLED_SERVICES
+        export DEVSTACK_LOCAL_CONFIG+=$'\n'"$_DEVSTACK_LOCAL_CONFIG_TAIL"
         "$GATE_DEST"/devstack-gate/devstack-vm-gate.sh
         ;;
 
