@@ -154,7 +154,7 @@ function octavia_configure {
     # Used to communicate with the amphora over the mgmt network, may differ from amp_ssh_key in a real deployment.
     iniset $OCTAVIA_CONF haproxy_amphora key_path ${OCTAVIA_AMP_SSH_KEY_PATH}
 
-    if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
+    if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] || [ $OCTAVIA_NODE == 'api' ]; then
         recreate_database_mysql octavia
         octavia-db-manage upgrade head
     fi
@@ -287,7 +287,7 @@ function octavia_start {
     # Several steps in this function would more logically be in the configure function, but
     # we need nova, glance, and neutron to be running.
 
-    if [ $OCTAVIA_NODE != 'main' ] && [ $OCTAVIA_NODE != 'standalone' ] ; then
+    if [ $OCTAVIA_NODE != 'main' ] && [ $OCTAVIA_NODE != 'standalone' ]  && [ $OCTAVIA_NODE != 'api' ]; then
         # without the other services enabled apparently we don't have
         # credentials at this point
         TOP_DIR=$(cd $(dirname "$0") && pwd)
@@ -332,10 +332,13 @@ function octavia_start {
     if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
         set_octavia_worker_image_owner_id
     fi
-    create_amphora_flavor
 
-    create_mgmt_network_interface
-    configure_lb_mgmt_sec_grp
+    if [ $OCTAVIA_NODE != 'api' ] ; then
+        create_mgmt_network_interface
+
+        create_amphora_flavor
+        configure_lb_mgmt_sec_grp
+    fi
 
     iniset $OCTAVIA_CONF controller_worker amp_image_tag ${OCTAVIA_AMP_IMAGE_TAG}
 
