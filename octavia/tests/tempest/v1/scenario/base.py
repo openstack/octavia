@@ -33,11 +33,11 @@ from tempest import config
 from tempest import exceptions
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
-from tempest.scenario import manager
 from tempest import test
 
 
 from octavia.i18n import _
+from octavia.tests.tempest.common import manager
 from octavia.tests.tempest.v1.clients import health_monitors_client
 from octavia.tests.tempest.v1.clients import listeners_client
 from octavia.tests.tempest.v1.clients import load_balancers_client
