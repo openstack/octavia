@@ -16,7 +16,7 @@ from oslo_utils import uuidutils
 from wsme import exc
 from wsme.rest import json as wsme_json
 
-from octavia.api.v1.types import base as base_type
+from octavia.api.common import types as base_type
 from octavia.common import constants
 from octavia.tests.unit import base
 
