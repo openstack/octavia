@@ -1,5 +1,5 @@
 ### BEGIN INIT INFO
-# Provides:          cert-ramfs-ecrypt
+# Provides:          certs-ramfs
 # Required-Start:    $remote_fs $syslog $network cloud-config
 # Required-Stop:     $remote_fs $syslog $network
 # Default-Start:     2 3 4 5
@@ -12,25 +12,26 @@
 # Using the lsb functions to perform the operations.
 . /lib/lsb/init-functions
 # Process name ( For display )
-NAME=cert-ramfs-ecrypt
+NAME=certs-ramfs
 
 case $1 in
  start)
   log_daemon_msg "Starting the process" "$NAME"
-  passphrase=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-  token=$(echo $passphrase | ecryptfs-add-passphrase | awk -F'[][]' '{printf $2}')
-
-  certs_path=$(awk '/base_cert_dir / {printf $3}' /etc/octavia/amphora-agent.conf)
-  mkdir -p $certs_path
-  mount -t ramfs -o size=1m ramfs $certs_path
-  mount -t ecryptfs -o key=passphrase:passphrase_passwd=$passphrase,no_sig_cache=yes,verbose=no,ecryptfs_sig=$token,ecryptfs_cipher=aes,ecryptfs_key_bytes=16,ecryptfs_passthrough=no,ecryptfs_enable_filename_crypto=no $certs_path $certs_path
+  modprobe brd
+  passphrase=$(head /dev/urandom | tr -dc "a-zA-Z0-9" | fold -w 32 | head -n 1)
+  certs_path=$(awk "/base_cert_dir / {printf \$3}" /etc/octavia/amphora-agent.conf)
+  mkdir -p "${certs_path}"
+  echo -n "${passphrase}" | cryptsetup luksFormat /dev/ram0 -
+  echo -n "${passphrase}" | cryptsetup luksOpen /dev/ram0 certfs-ramfs -
+  mkfs.ext2 /dev/mapper/certfs-ramfs
+  mount /dev/mapper/certfs-ramfs "${certs_path}"
   log_end_msg 0
   ;;
  stop)
   log_daemon_msg "Stopping the process" "$NAME"
-  certs_path=$(awk '/base_cert_dir / {printf $3}' /etc/octavia/amphora-agent.conf)
-  umount $certs_path
-  umount $certs_path
+  certs_path=$(awk "/base_cert_dir / {printf \$3}" /etc/octavia/amphora-agent.conf)
+  umount "${certs_path}"
+  cryptsetup luksClose /dev/mapper/certfs-ramfs
   log_end_msg 0
   ;;
  restart)
