@@ -78,6 +78,65 @@ function build_octavia_worker_image {
 
 }
 
+function _configure_octavia_apache_wsgi {
+
+    # Make sure mod_wsgi is enabled in apache
+    # This is important for multinode where other services have not yet
+    # enabled it.
+    install_apache_wsgi
+
+    local octavia_apache_conf
+    octavia_apache_conf=$(apache_site_config_for octavia)
+
+    # Use the alternate port if we are running multinode behind haproxy
+    if [ $OCTAVIA_NODE != 'standalone' ] && [ $OCTAVIA_NODE != 'api' ]; then
+        local octavia_api_port=$OCTAVIA_HA_PORT
+    else
+        local octavia_api_port=$OCTAVIA_PORT
+    fi
+    local octavia_ssl=""
+    local octavia_certfile=""
+    local octavia_keyfile=""
+    local venv_path=""
+
+    if is_ssl_enabled_service octavia; then
+        octavia_ssl="SSLEngine On"
+        octavia_certfile="SSLCertificateFile $OCTAVIA_SSL_CERT"
+        octavia_keyfile="SSLCertificateKeyFile $OCTAVIA_SSL_KEY"
+    fi
+
+    if [[ ${USE_VENV} = True ]]; then
+        venv_path="python-path=${PROJECT_VENV["octavia"]}/lib/$(python_version)/site-packages"
+    fi
+
+    sudo cp ${OCTAVIA_DIR}/devstack/files/wsgi/octavia-api.template $octavia_apache_conf
+    sudo sed -e "
+        s|%OCTAVIA_SERVICE_PORT%|$octavia_api_port|g;
+        s|%APACHE_NAME%|$APACHE_NAME|g;
+        s|%SSLENGINE%|$octavia_ssl|g;
+        s|%SSLCERTFILE%|$octavia_certfile|g;
+        s|%SSLKEYFILE%|$octavia_keyfile|g;
+        s|%VIRTUALENV%|$venv_path|g
+        s|%APIWORKERS%|$API_WORKERS|g;
+    " -i $octavia_apache_conf
+
+}
+
+function _cleanup_octavia_apache_wsgi {
+    sudo rm -f $(apache_site_config_for octavia)
+    restart_apache_server
+}
+
+function _start_octavia_apache_wsgi {
+    enable_apache_site octavia
+    restart_apache_server
+}
+
+function _stop_octavia_apache_wsgi {
+    disable_apache_site octavia
+    restart_apache_server
+}
+
 function create_octavia_accounts {
     create_service_user "octavia"
 
@@ -205,6 +264,10 @@ function octavia_configure {
     # create dhclient.conf file for dhclient
     mkdir -m755 -p $OCTAVIA_DHCLIENT_DIR
     cp $OCTAVIA_DIR/etc/dhcp/dhclient.conf $OCTAVIA_DHCLIENT_CONF
+
+    if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
+        _configure_octavia_apache_wsgi
+    fi
 
 }
 
@@ -386,7 +449,12 @@ function octavia_start {
         iniset $OCTAVIA_CONF DEFAULT bind_host 0.0.0.0
     fi
 
-    run_process $OCTAVIA_API  "$OCTAVIA_API_BINARY $OCTAVIA_API_ARGS"
+    if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
+        _start_octavia_apache_wsgi
+    else
+        run_process $OCTAVIA_API  "$OCTAVIA_API_BINARY $OCTAVIA_API_ARGS"
+    fi
+
     run_process $OCTAVIA_CONSUMER  "$OCTAVIA_CONSUMER_BINARY $OCTAVIA_CONSUMER_ARGS"
     run_process $OCTAVIA_HOUSEKEEPER  "$OCTAVIA_HOUSEKEEPER_BINARY $OCTAVIA_HOUSEKEEPER_ARGS"
     run_process $OCTAVIA_HEALTHMANAGER  "$OCTAVIA_HEALTHMANAGER_BINARY $OCTAVIA_HEALTHMANAGER_ARGS"
@@ -403,6 +471,9 @@ function octavia_stop {
         if ip link show o-hm0 ; then
             sudo ip link del o-hm0
         fi
+    fi
+    if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
+        _stop_octavia_apache_wsgi
     fi
 }
 
@@ -434,6 +505,9 @@ function octavia_cleanup {
         if [ ${OCTAVIA_AMP_SSH_KEY_NAME}x != x ] ; then
             openstack keypair delete ${OCTAVIA_AMP_SSH_KEY_NAME}
         fi
+    fi
+    if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
+        _cleanup_octavia_apache_wsgi
     fi
 
     sudo rm -rf $NOVA_STATE_PATH $NOVA_AUTH_CACHE_DIR

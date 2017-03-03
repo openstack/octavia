@@ -45,6 +45,7 @@ For operators
    guides/operator-maintenance.rst
    main/configref.rst
    main/Anchor.rst
+   devref/apache-httpd.rst
 
 ====
 APIs
