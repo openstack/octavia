@@ -57,9 +57,12 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assert_final_lb_statuses(api_lb.get('id'))
 
     def test_create_with_duplicate_id(self):
+        project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(
-            uuidutils.generate_uuid()).get('loadbalancer')
+            uuidutils.generate_uuid(),
+            project_id=project_id).get('loadbalancer')
         body = self._build_body({'id': lb.get('id'),
+                                 'project_id': project_id,
                                  'vip_subnet_id': uuidutils.generate_uuid()})
         self.post(self.LBS_PATH, body,
                   status=409, expect_errors=True)
@@ -72,13 +75,14 @@ class TestLoadBalancer(base.BaseAPITest):
         self.test_create(project_id=uuidutils.generate_uuid())
 
     def test_get_all(self):
+        project_id = uuidutils.generate_uuid()
         root_tag = 'loadbalancer'
         lb1 = self.create_load_balancer(uuidutils.generate_uuid(),
-                                        name='lb1')
+                                        name='lb1', project_id=project_id)
         lb2 = self.create_load_balancer(uuidutils.generate_uuid(),
-                                        name='lb2')
+                                        name='lb2', project_id=project_id)
         lb3 = self.create_load_balancer(uuidutils.generate_uuid(),
-                                        name='lb3')
+                                        name='lb3', project_id=project_id)
         response = self.get(self.LBS_PATH,
                             params={'project_id': self.project_id})
         lbs = response.json.get(root_tag)
@@ -125,8 +129,10 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertIn((lb3.get('id'), lb3.get('name')), lb_id_names)
 
     def test_get(self):
+        project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1',
+                                       project_id=project_id,
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get('loadbalancer')
@@ -134,6 +140,7 @@ class TestLoadBalancer(base.BaseAPITest):
             self.LB_PATH.format(
                 lb_id=lb_dict.get('id'))).json.get('loadbalancer')
         self.assertEqual('lb1', response.get('name'))
+        self.assertEqual(project_id, response.get('project_id'))
         self.assertEqual('desc1', response.get('description'))
         self.assertFalse(response.get('admin_state_up'))
 
@@ -181,8 +188,10 @@ class TestLoadBalancer(base.BaseAPITest):
         self.post(self.LBS_PATH, lb_json, status=400)
 
     def test_update(self):
+        project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1',
+                                       project_id=project_id,
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get('loadbalancer')
@@ -193,6 +202,7 @@ class TestLoadBalancer(base.BaseAPITest):
         api_lb = response.json.get('loadbalancer')
         self.assertIsNotNone(api_lb.get('vip_subnet_id'))
         self.assertEqual('lb1', api_lb.get('name'))
+        self.assertEqual(project_id, api_lb.get('project_id'))
         self.assertEqual('desc1', api_lb.get('description'))
         self.assertFalse(api_lb.get('admin_state_up'))
         self.assertEqual(lb.get('operational_status'),
@@ -202,8 +212,10 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assert_final_lb_statuses(api_lb.get('id'))
 
     def test_update_with_vip(self):
+        project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1',
+                                       project_id=project_id,
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get('loadbalancer')
@@ -217,8 +229,10 @@ class TestLoadBalancer(base.BaseAPITest):
         self.put(path, body={}, status=404)
 
     def test_update_pending_create(self):
+        project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1',
+                                       project_id=project_id,
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get('loadbalancer')
@@ -227,16 +241,20 @@ class TestLoadBalancer(base.BaseAPITest):
                  lb_json, status=409)
 
     def test_delete_pending_create(self):
+        project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1',
+                                       project_id=project_id,
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get('loadbalancer')
         self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')), status=409)
 
     def test_update_pending_update(self):
+        project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1',
+                                       project_id=project_id,
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get('loadbalancer')
@@ -247,8 +265,10 @@ class TestLoadBalancer(base.BaseAPITest):
                  lb_json, status=409)
 
     def test_delete_pending_update(self):
+        project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1',
+                                       project_id=project_id,
                                        description='desc1',
                                        admin_state_up=False)
         lb_json = self._build_body({'name': 'Steve'})
@@ -259,8 +279,10 @@ class TestLoadBalancer(base.BaseAPITest):
         self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')), status=409)
 
     def test_delete_with_error_status(self):
+        project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1',
+                                       project_id=project_id,
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get('loadbalancer')
@@ -268,8 +290,10 @@ class TestLoadBalancer(base.BaseAPITest):
         self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')), status=204)
 
     def test_update_pending_delete(self):
+        project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1',
+                                       project_id=project_id,
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get('loadbalancer')
@@ -280,8 +304,10 @@ class TestLoadBalancer(base.BaseAPITest):
                  lb_json, status=409)
 
     def test_delete_pending_delete(self):
+        project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1',
+                                       project_id=project_id,
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get('loadbalancer')
@@ -290,8 +316,10 @@ class TestLoadBalancer(base.BaseAPITest):
         self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')), status=409)
 
     def test_delete(self):
+        project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1',
+                                       project_id=project_id,
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get('loadbalancer')
@@ -301,6 +329,7 @@ class TestLoadBalancer(base.BaseAPITest):
         api_lb = response.json.get('loadbalancer')
         self.assertEqual('lb1', api_lb.get('name'))
         self.assertEqual('desc1', api_lb.get('description'))
+        self.assertEqual(project_id, api_lb.get('project_id'))
         self.assertFalse(api_lb.get('admin_state_up'))
         self.assertEqual(lb.get('operational_status'),
                          api_lb.get('operational_status'))

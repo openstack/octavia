@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
@@ -31,6 +32,7 @@ from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -82,6 +84,17 @@ class LoadBalancersController(base.BaseController):
         """Creates a load balancer."""
         load_balancer = load_balancer.loadbalancer
         context = pecan.request.context.get('octavia_context')
+
+        project_id = context.project_id
+        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
+            if load_balancer.project_id:
+                project_id = load_balancer.project_id
+
+        if not project_id:
+            raise exceptions.MissingAPIProjectID()
+
+        load_balancer.project_id = project_id
+
         # Validate the subnet id
         if load_balancer.vip_subnet_id:
             if not validate.subnet_exists(load_balancer.vip_subnet_id):
