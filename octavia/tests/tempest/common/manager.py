@@ -22,12 +22,12 @@ from oslo_serialization import jsonutils as json
 from oslo_utils import netutils
 from tempest.common import compute
 from tempest.common import image as common_image
-from tempest.common import utils
 from tempest.common.utils.linux import remote_client
 from tempest.common.utils import net_utils
 from tempest.common import waiters
 from tempest import config
 from tempest import exceptions
+from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 import tempest.test
@@ -95,7 +95,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
                      **kwargs):
         if not client:
             client = self.ports_client
-        name = utils.data_utils.rand_name(namestart)
+        name = data_utils.rand_name(namestart)
         result = client.create_port(
             name=name,
             network_id=network_id,
@@ -109,7 +109,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
     def create_keypair(self, client=None):
         if not client:
             client = self.keypairs_client
-        name = utils.data_utils.rand_name(self.__class__.__name__)
+        name = data_utils.rand_name(self.__class__.__name__)
         # We don't need to create a keypair by pubkey in scenario
         body = client.create_keypair(name=name)
         self.addCleanup(client.delete_keypair, name)
@@ -140,8 +140,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
             clients = self.manager
 
         if name is None:
-            name = utils.data_utils.rand_name(
-                self.__class__.__name__ + "-server")
+            name = data_utils.rand_name(self.__class__.__name__ + "-server")
 
         vnic_type = CONF.network.port_vnic_type
 
@@ -223,8 +222,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
             min_disk = image.get('minDisk')
             size = max(size, min_disk)
         if name is None:
-            name = utils.data_utils.rand_name(
-                self.__class__.__name__ + "-volume")
+            name = data_utils.rand_name(self.__class__.__name__ + "-volume")
         kwargs = {'display_name': name,
                   'snapshot_id': snapshot_id,
                   'imageRef': imageRef,
@@ -254,8 +252,8 @@ class ScenarioTest(tempest.test.BaseTestCase):
             client = self.admin_volume_types_client
         if not name:
             class_name = self.__class__.__name__
-            name = utils.data_utils.rand_name(class_name + '-volume-type')
-        randomized_name = utils.data_utils.rand_name('scenario-type-' + name)
+            name = data_utils.rand_name(class_name + '-volume-type')
+        randomized_name = data_utils.rand_name('scenario-type-' + name)
 
         LOG.debug("Creating a volume type: %s on backend %s",
                   randomized_name, backend_name)
@@ -308,7 +306,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
 
     def _create_security_group(self):
         # Create security group
-        sg_name = utils.data_utils.rand_name(self.__class__.__name__)
+        sg_name = data_utils.rand_name(self.__class__.__name__)
         sg_desc = sg_name + " description"
         secgroup = self.compute_security_groups_client.create_security_group(
             name=sg_name, description=sg_desc)['security_group']
@@ -367,7 +365,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
                       disk_format=None, properties=None):
         if properties is None:
             properties = {}
-        name = utils.data_utils.rand_name('%s-' % name)
+        name = data_utils.rand_name('%s-' % name)
         params = {
             'name': name,
             'container_format': fmt,
@@ -450,8 +448,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
         # Compute client
         _images_client = self.compute_images_client
         if name is None:
-            name = utils.data_utils.rand_name(
-                self.__class__.__name__ + 'snapshot')
+            name = data_utils.rand_name(self.__class__.__name__ + 'snapshot')
         LOG.debug("Creating a snapshot image for server: %s", server['name'])
         image = _images_client.create_image(server['id'], name=name)
         image_id = image.response['location'].split('images/')[1]
@@ -718,7 +715,7 @@ class NetworkScenarioTest(ScenarioTest):
             networks_client = self.networks_client
         if not tenant_id:
             tenant_id = networks_client.tenant_id
-        name = utils.data_utils.rand_name(namestart)
+        name = data_utils.rand_name(namestart)
         network_kwargs = dict(name=name, tenant_id=tenant_id)
         # Neutron disables port security by default so we have to check the
         # config before trying to create the network with port_security_enabled
@@ -775,7 +772,7 @@ class NetworkScenarioTest(ScenarioTest):
                 continue
 
             subnet = dict(
-                name=utils.data_utils.rand_name(namestart),
+                name=data_utils.rand_name(namestart),
                 network_id=network['id'],
                 tenant_id=network['tenant_id'],
                 cidr=str_cidr,
@@ -989,7 +986,7 @@ class NetworkScenarioTest(ScenarioTest):
             client = self.security_groups_client
         if not tenant_id:
             tenant_id = client.tenant_id
-        sg_name = utils.data_utils.rand_name(namestart)
+        sg_name = data_utils.rand_name(namestart)
         sg_desc = sg_name + " description"
         sg_dict = dict(name=sg_name,
                        description=sg_desc)
@@ -1153,7 +1150,7 @@ class NetworkScenarioTest(ScenarioTest):
             client = self.routers_client
         if not tenant_id:
             tenant_id = client.tenant_id
-        name = utils.data_utils.rand_name(namestart)
+        name = data_utils.rand_name(namestart)
         result = client.create_router(name=name,
                                       admin_state_up=True,
                                       tenant_id=tenant_id)
@@ -1291,7 +1288,7 @@ class ObjectStorageScenarioTest(ScenarioTest):
         LOG.debug('Swift status information obtained successfully')
 
     def create_container(self, container_name=None):
-        name = container_name or utils.data_utils.rand_name(
+        name = container_name or data_utils.rand_name(
             'swift-scenario-container')
         self.container_client.create_container(name)
         # look for the container to assure it is created
@@ -1307,9 +1304,8 @@ class ObjectStorageScenarioTest(ScenarioTest):
         LOG.debug('Container %s deleted', container_name)
 
     def upload_object_to_container(self, container_name, obj_name=None):
-        obj_name = obj_name or utils.data_utils.rand_name(
-            'swift-scenario-object')
-        obj_data = utils.data_utils.random_bytes()
+        obj_name = obj_name or data_utils.rand_name('swift-scenario-object')
+        obj_data = data_utils.random_bytes()
         self.object_client.create_object(container_name, obj_name, obj_data)
         self.addCleanup(test_utils.call_and_ignore_notfound_exc,
                         self.object_client.delete_object,
