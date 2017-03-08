@@ -40,6 +40,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
     vip_address = wtypes.wsattr(types.IPAddressType())
     vip_port_id = wtypes.wsattr(wtypes.UuidType())
     vip_subnet_id = wtypes.wsattr(wtypes.UuidType())
+    vip_network_id = wtypes.wsattr(wtypes.UuidType())
     # TODO(blogan): add listeners once that has been merged
     # TODO(ankur-gupta-f): add pools once that has been merged
 
