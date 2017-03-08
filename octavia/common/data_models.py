@@ -589,10 +589,9 @@ class L7Policy(BaseDataModel):
                 self.redirect_url = None
                 pool = self._find_in_graph('Pool' + value)
                 self.redirect_pool = pool
-                if len(self.l7rules) > 0 and (self.enabled is True or
-                                              ('enabled' in update_dict.keys()
-                                               and update_dict['enabled']
-                                               is True)):
+                if len(self.l7rules) > 0 and (self.enabled is True or (
+                        'enabled' in update_dict.keys() and
+                        update_dict['enabled'] is True)):
                     if pool not in self.listener.pools:
                         self.listener.pools.append(pool)
                     if self.listener not in pool.listeners:
@@ -612,15 +611,15 @@ class L7Policy(BaseDataModel):
                 self.listener.l7policies.insert(value - 1, self)
             elif key == 'enabled':
                 if (value is True and self.action ==
-                        constants.L7POLICY_ACTION_REDIRECT_TO_POOL
-                        and self.redirect_pool is not None
-                        and len(self.l7rules) > 0
-                        and self.redirect_pool not in self.listener.pools):
+                        constants.L7POLICY_ACTION_REDIRECT_TO_POOL and
+                        self.redirect_pool is not None and
+                        len(self.l7rules) > 0 and
+                        self.redirect_pool not in self.listener.pools):
                     self.listener.pools.append(self.redirect_pool)
                     self.redirect_pool.listeners.append(self.listener)
                 elif (value is False and self.action ==
-                        constants.L7POLICY_ACTION_REDIRECT_TO_POOL
-                        and self.redirect_pool is not None):
+                        constants.L7POLICY_ACTION_REDIRECT_TO_POOL and
+                        self.redirect_pool is not None):
                     self._conditionally_remove_pool_links(
                         self.redirect_pool)
             setattr(self, key, value)

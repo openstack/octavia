@@ -20,12 +20,12 @@ Create Date: 2016-08-12 03:37:38.656962
 
 """
 
+from alembic import op
+import sqlalchemy as sa
+
 # revision identifiers, used by Alembic.
 revision = 'c11292016060'
 down_revision = '9b5473976d6d'
-
-from alembic import op
-import sqlalchemy as sa
 
 
 def upgrade():

@@ -138,9 +138,9 @@ class LoadBalancersController(base.BaseController):
 
         load_balancer.project_id = project_id
 
-        if not (load_balancer.vip.port_id
-                or load_balancer.vip.network_id
-                or load_balancer.vip.subnet_id):
+        if not (load_balancer.vip.port_id or
+                load_balancer.vip.network_id or
+                load_balancer.vip.subnet_id):
             raise exceptions.ValidationException(detail=_(
                 "VIP must contain one of: port_id, network_id, subnet_id."))
 

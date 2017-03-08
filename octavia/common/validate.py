@@ -162,8 +162,8 @@ def sanitize_l7policy_api_args(l7policy, create=False):
             l7policy.update({'redirect_pool_id': None})
             l7policy.pop('redirect_pool', None)
         elif l7policy['action'] == constants.L7POLICY_ACTION_REDIRECT_TO_POOL:
-            if (not l7policy.get('redirect_pool_id')
-                    and not l7policy.get('redirect_pool')):
+            if (not l7policy.get('redirect_pool_id') and
+                    not l7policy.get('redirect_pool')):
                 raise exceptions.InvalidL7PolicyArgs(
                     msg='redirect_pool_id or redirect_pool must not be None')
             l7policy.update({'redirect_url': None})

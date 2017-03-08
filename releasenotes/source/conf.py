@@ -30,6 +30,7 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 # -- General configuration ------------------------------------------------
+from octavia import version
 
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
@@ -63,7 +64,6 @@ copyright = u'2015, Octavia Developers'
 # built documents.
 #
 # The short X.Y version.
-from octavia import version
 # from octavia.version import version_info as octavia_version
 # The full version, including alpha/beta/rc tags.
 release = version.version_info.version_string_with_vcs()

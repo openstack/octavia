@@ -114,8 +114,8 @@ class ListenerTestCase(base.TestCase):
             pass
 
     @mock.patch('os.path.exists')
-    @mock.patch('octavia.amphorae.backends.agent.api_server'
-                + '.util.get_haproxy_pid')
+    @mock.patch('octavia.amphorae.backends.agent.api_server' +
+                '.util.get_haproxy_pid')
     def test_check_listener_status(self, mock_pid, mock_exists):
         mock_pid.return_value = '1245'
         mock_exists.side_effect = [True, True]
@@ -170,8 +170,8 @@ class ListenerTestCase(base.TestCase):
         handle.write.assert_called_once_with(cmd)
 
     @mock.patch('os.path.exists')
-    @mock.patch('octavia.amphorae.backends.agent.api_server'
-                + '.util.get_haproxy_pid')
+    @mock.patch('octavia.amphorae.backends.agent.api_server' +
+                '.util.get_haproxy_pid')
     def test_check_haproxy_status(self, mock_pid, mock_exists):
         mock_pid.return_value = '1245'
         mock_exists.side_effect = [True, True]

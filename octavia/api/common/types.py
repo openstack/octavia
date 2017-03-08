@@ -115,8 +115,8 @@ class BaseType(wtypes.Base):
                 else:
                     continue
             attr_name = attr
-            if (hasattr(self, '_type_to_model_map')
-                    and attr in self._type_to_model_map):
+            if (hasattr(self, '_type_to_model_map') and
+                    attr in self._type_to_model_map):
                 renamed = self._type_to_model_map[attr]
                 if '.' in renamed:
                     parent, child = renamed.split('.')

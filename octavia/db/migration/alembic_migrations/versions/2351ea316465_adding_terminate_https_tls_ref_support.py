@@ -19,13 +19,13 @@ Create Date: 2015-05-22 11:57:04.703910
 
 """
 
-# revision identifiers, used by Alembic.
-revision = '2351ea316465'
-down_revision = '357d17a6d5ac'
-
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import sql
+
+# revision identifiers, used by Alembic.
+revision = '2351ea316465'
+down_revision = '357d17a6d5ac'
 
 
 new_protocol = 'TERMINATED_HTTPS'

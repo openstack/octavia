@@ -21,13 +21,13 @@ Create Date: 2015-01-20 13:31:30.017959
 
 """
 
-# revision identifiers, used by Alembic.
-revision = '48660b6643f0'
-down_revision = '3e5b37a0bdb9'
-
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import sql
+
+# revision identifiers, used by Alembic.
+revision = '48660b6643f0'
+down_revision = '3e5b37a0bdb9'
 
 
 def upgrade():

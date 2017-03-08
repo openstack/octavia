@@ -131,8 +131,8 @@ class AmphoraInfo(object):
             for interface in netns.get_links():
                 interface_name = None
                 for item in interface['attrs']:
-                    if (item[0] == 'IFLA_IFNAME'
-                            and not item[1].startswith('eth')):
+                    if (item[0] == 'IFLA_IFNAME' and
+                            not item[1].startswith('eth')):
                         break
                     elif item[0] == 'IFLA_IFNAME':
                         interface_name = item[1]

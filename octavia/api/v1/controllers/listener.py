@@ -111,10 +111,10 @@ class ListenersController(base.BaseController):
 
         Update the load balancer db when provisioning status changes.
         """
-        if (listener_dict
-            and listener_dict.get('insert_headers')
-            and list(set(listener_dict['insert_headers'].keys()) -
-                     set(constants.SUPPORTED_HTTP_HEADERS))):
+        if (listener_dict and
+            listener_dict.get('insert_headers') and
+            list(set(listener_dict['insert_headers'].keys()) -
+                 set(constants.SUPPORTED_HTTP_HEADERS))):
             raise exceptions.InvalidOption(
                 value=listener_dict.get('insert_headers'),
                 option='insert_headers')

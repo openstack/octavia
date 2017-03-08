@@ -57,8 +57,8 @@ class AnchorCertGenerator(local.LocalCertGenerator):
 
             if r.status_code != 200:
                 LOG.debug('Anchor returned: %s', r.content)
-                raise AnchorException("Anchor returned Status Code : "
-                                      + str(r.status_code))
+                raise AnchorException("Anchor returned Status Code : " +
+                                      str(r.status_code))
 
             return r.content
 

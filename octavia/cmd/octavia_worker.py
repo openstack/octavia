@@ -16,13 +16,13 @@ import sys
 
 import eventlet
 eventlet.monkey_patch()
-from oslo_config import cfg
-from oslo_reports import guru_meditation_report as gmr
-from oslo_service import service
+from oslo_config import cfg  # noqa: E402
+from oslo_reports import guru_meditation_report as gmr  # noqa: E402
+from oslo_service import service  # noqa: E402
 
-from octavia.common import service as octavia_service
-from octavia.controller.queue import consumer
-from octavia import version
+from octavia.common import service as octavia_service  # noqa: E402
+from octavia.controller.queue import consumer  # noqa: E402
+from octavia import version  # noqa: E402
 
 CONF = cfg.CONF
 
