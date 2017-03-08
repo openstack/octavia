@@ -1,4 +1,4 @@
 Babel>=1.3
-dib-utils
+diskimage-builder
 PyYAML
 six>=1.9.0
