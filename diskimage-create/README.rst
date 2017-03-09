@@ -14,29 +14,15 @@ Prerequisites
 This script assumes a typical Linux environment and was developed on
 Ubuntu 12.04.5 LTS.
 
-Python pip should be installed as well as the following python modules:
-
- | argparse
- | Babel>=1.3
- | dib-utils
- | PyYAML
+Python pip should be installed as well as the python modules found in the
+requirements.txt file.
 
 Your cache directory should have at least 1GB available, the working directory
 will need ~1.5GB, and your image destination will need ~500MB
 
-The script expects to find the diskimage-builder git repository one
-directory above the Octavia git repository.
+The script will use the version of diskimage-builder installed on your system,
+or it can be overridden by setting the following environment variables:
 
- | /<some directory>/octavia
- | /<some directory>/diskimage-builder
-
- | cd /<some directory>
- | git clone https://github.com/openstack/octavia.git
- | git clone https://git.openstack.org/openstack/diskimage-builder.git
-
-These paths can be overridden with the following environment variables:
-
- | OCTAVIA_REPO_PATH = /<some directory>/octavia
  | DIB_REPO_PATH = /<some directory>/diskimage-builder
  | DIB_ELEMENTS = /<some directory>/diskimage-builder/elements
 
