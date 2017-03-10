@@ -74,10 +74,14 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                     ret.append(interface)
         return ret
 
-    def _get_plugged_interface(self, compute_id, network_id):
+    def _get_plugged_interface(self, compute_id, network_id, lb_network_ip):
         interfaces = self.get_plugged_networks(compute_id)
         for interface in interfaces:
-            if interface.network_id == network_id:
+            is_correct_interface = interface.network_id == network_id
+            for ip in interface.fixed_ips:
+                if ip.ip_address == lb_network_ip:
+                    is_correct_interface = False
+            if is_correct_interface:
                 return interface
 
     def _plug_amphora_vip(self, amphora, subnet):
@@ -299,8 +303,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 load_balancer.amphorae):
 
-            interface = self._get_plugged_interface(amphora.compute_id,
-                                                    subnet.network_id)
+            interface = self._get_plugged_interface(
+                amphora.compute_id, subnet.network_id, amphora.lb_network_ip)
             if not interface:
                 interface = self._plug_amphora_vip(amphora, subnet)
 
@@ -310,7 +314,9 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                                                      interface.port_id)
             vrrp_ip = None
             for fixed_ip in interface.fixed_ips:
-                if fixed_ip.subnet_id == subnet.id:
+                is_correct_subnet = fixed_ip.subnet_id == subnet.id
+                is_management_ip = fixed_ip.ip_address == amphora.lb_network_ip
+                if is_correct_subnet and not is_management_ip:
                     vrrp_ip = fixed_ip.ip_address
                     break
             plugged_amphorae.append(data_models.Amphora(
@@ -358,8 +364,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 load_balancer.amphorae):
 
-            interface = self._get_plugged_interface(amphora.compute_id,
-                                                    subnet.network_id)
+            interface = self._get_plugged_interface(
+                amphora.compute_id, subnet.network_id, amphora.lb_network_ip)
             if not interface:
                 # Thought about raising PluggedVIPNotFound exception but
                 # then that wouldn't evaluate all amphorae, so just continue
