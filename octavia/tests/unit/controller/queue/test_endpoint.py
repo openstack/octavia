@@ -56,6 +56,11 @@ class TestEndpoint(base.TestCase):
         self.ep.worker.delete_load_balancer.assert_called_once_with(
             self.resource_id, False)
 
+    def test_failover_load_balancer(self):
+        self.ep.failover_load_balancer(self.context, self.resource_id)
+        self.ep.worker.failover_loadbalancer.assert_called_once_with(
+            self.resource_id)
+
     def test_create_listener(self):
         self.ep.create_listener(self.context, self.resource_id)
         self.ep.worker.create_listener.assert_called_once_with(

@@ -76,6 +76,14 @@ rules = [
         [{'method': 'GET',
           'path': '/v2.0/lbaas/loadbalancers/{loadbalancer_id}/status'}]
     ),
+    policy.DocumentedRuleDefault(
+        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LOADBALANCER,
+                                    action=constants.RBAC_PUT_FAILOVER),
+        constants.RULE_API_ADMIN,
+        "Failover a Load Balancer",
+        [{'method': 'PUT',
+          'path': '/v2.0/lbaas/loadbalancers/{loadbalancer_id}/failover'}]
+    ),
 ]
 
 

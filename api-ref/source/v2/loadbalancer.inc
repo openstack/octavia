@@ -550,3 +550,43 @@ Response Example
 
 .. literalinclude:: examples/loadbalancer-status-response.json
    :language: javascript
+
+Failover a load balancer
+========================
+
+.. rest_method:: PUT /v2.0/lbaas/loadbalancers/{loadbalancer_id}/failover
+
+Performs a failover of a load balancer.
+
+This operation is only available to users with load balancer administrative
+rights.
+
+.. rest_status_code:: success ../http-status.yaml
+
+   - 202
+
+.. rest_status_code:: error ../http-status.yaml
+
+   - 401
+   - 403
+   - 404
+   - 409
+   - 500
+
+Request
+-------
+
+.. rest_parameters:: ../parameters.yaml
+
+   - loadbalancer_id: path-loadbalancer-id
+
+Curl Example
+------------
+
+.. literalinclude:: examples/loadbalancer-failover-curl
+   :language: bash
+
+Response
+--------
+
+There is no body content for the response of a successful failover request.

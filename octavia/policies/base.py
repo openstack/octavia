@@ -40,6 +40,10 @@ rules = [
     policy.RuleDefault('load-balancer:owner', 'project_id:%(project_id)s'),
 
     # API access roles
+    policy.RuleDefault('load-balancer:admin', 'is_admin:True or '
+                                              'role:admin or '
+                                              'role:load-balancer_admin'),
+
     policy.RuleDefault('load-balancer:observer_and_owner',
                        'role:load-balancer_observer and '
                        'rule:load-balancer:owner'),
@@ -55,29 +59,32 @@ rules = [
     policy.RuleDefault('load-balancer:read',
                        'rule:load-balancer:observer_and_owner or '
                        'rule:load-balancer:global_observer or '
-                       'rule:load-balancer:member_and_owner or is_admin:True'),
+                       'rule:load-balancer:member_and_owner or '
+                       'rule:load-balancer:admin'),
 
     policy.RuleDefault('load-balancer:read-global',
                        'rule:load-balancer:global_observer or '
-                       'is_admin:True'),
+                       'rule:load-balancer:admin'),
 
     policy.RuleDefault('load-balancer:write',
-                       'rule:load-balancer:member_and_owner or is_admin:True'),
+                       'rule:load-balancer:member_and_owner or '
+                       'rule:load-balancer:admin'),
 
     policy.RuleDefault('load-balancer:read-quota',
                        'rule:load-balancer:observer_and_owner or '
                        'rule:load-balancer:global_observer or '
                        'rule:load-balancer:member_and_owner or '
                        'role:load-balancer_quota_admin or '
-                       'is_admin:True'),
+                       'rule:load-balancer:admin'),
 
     policy.RuleDefault('load-balancer:read-quota-global',
                        'rule:load-balancer:global_observer or '
                        'role:load-balancer_quota_admin or '
-                       'is_admin:True'),
+                       'rule:load-balancer:admin'),
 
     policy.RuleDefault('load-balancer:write-quota',
-                       'role:load-balancer_quota_admin or is_admin:True'),
+                       'role:load-balancer_quota_admin or '
+                       'rule:load-balancer:admin'),
 ]
 
 

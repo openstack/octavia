@@ -1387,6 +1387,179 @@ class TestLoadBalancer(base.BaseAPITest):
         path = self.LB_PATH.format(lb_id='bad_uuid')
         self.delete(path, status=404)
 
+    def test_failover(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       description='desc1',
+                                       admin_state_up=False)
+        lb_dict = lb.get(self.root_tag)
+        lb = self.set_lb_status(lb_dict.get('id'))
+        self.app.put(self._get_full_path(
+            self.LB_PATH.format(lb_id=lb_dict.get('id')) + "/failover"),
+            status=202)
+
+    def test_failover_pending(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       description='desc1',
+                                       admin_state_up=False)
+        lb_dict = lb.get(self.root_tag)
+        lb = self.set_lb_status(lb_dict.get('id'),
+                                status=constants.PENDING_UPDATE)
+        self.app.put(self._get_full_path(
+            self.LB_PATH.format(lb_id=lb_dict.get('id')) + "/failover"),
+            status=409)
+
+    def test_failover_error(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       description='desc1',
+                                       admin_state_up=False)
+        lb_dict = lb.get(self.root_tag)
+        lb = self.set_lb_status(lb_dict.get('id'),
+                                status=constants.ERROR)
+        self.app.put(self._get_full_path(
+            self.LB_PATH.format(lb_id=lb_dict.get('id')) + "/failover"),
+            status=409)
+
+    def test_failover_not_authorized(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       description='desc1',
+                                       admin_state_up=False)
+        lb_dict = lb.get(self.root_tag)
+        lb = self.set_lb_status(lb_dict.get('id'))
+
+        path = self._get_full_path(self.LB_PATH.format(
+            lb_id=lb_dict.get('id')) + "/failover")
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+                response = self.app.put(path, status=403)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
+
+    def test_failover_not_authorized_no_role(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       description='desc1',
+                                       admin_state_up=False)
+        lb_dict = lb.get(self.root_tag)
+        lb = self.set_lb_status(lb_dict.get('id'))
+
+        path = self._get_full_path(self.LB_PATH.format(
+            lb_id=lb_dict.get('id')) + "/failover")
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': [],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self.app.put(path, status=403)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
+
+    def test_failover_authorized_lb_admin(self):
+        project_id = uuidutils.generate_uuid()
+        project_id_2 = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       description='desc1',
+                                       admin_state_up=False)
+        lb_dict = lb.get(self.root_tag)
+        lb = self.set_lb_status(lb_dict.get('id'))
+
+        path = self._get_full_path(self.LB_PATH.format(
+            lb_id=lb_dict.get('id')) + "/failover")
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               project_id_2):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_admin'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': project_id_2}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                self.app.put(path, status=202)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+
+    def test_failover_authorized_no_auth(self):
+        project_id = uuidutils.generate_uuid()
+        project_id_2 = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       description='desc1',
+                                       admin_state_up=False)
+        lb_dict = lb.get(self.root_tag)
+        lb = self.set_lb_status(lb_dict.get('id'))
+
+        path = self._get_full_path(self.LB_PATH.format(
+            lb_id=lb_dict.get('id')) + "/failover")
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.NOAUTH)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               project_id_2):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': project_id_2}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                self.app.put(path, status=202)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+
     def test_create_with_bad_handler(self):
         self.handler_mock().load_balancer.create.side_effect = Exception()
         api_lb = self.create_load_balancer(

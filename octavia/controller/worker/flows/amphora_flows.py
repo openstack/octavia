@@ -297,6 +297,17 @@ class AmphoraFlows(object):
                 database_tasks.TestLBStatusSetPendingInDB(
                     requires=constants.LOADBALANCER_ID))
 
+        # Note: It seems intuitive to boot an amphora prior to deleting
+        #       the old amphora, however this is a complicated issue.
+        #       If the target host (due to anit-affinity) is resource
+        #       constrained, this will fail where a post-delete will
+        #       succeed. Since this is async with the API it would result
+        #       in the LB ending in ERROR though the amps are still alive.
+        #       Consider in the future making this a complicated
+        #       try-on-failure-retry flow, or move upgrade failovers to be
+        #       synchronous with the API. For now spares pool and act/stdby
+        #       will mitigate most of this delay.
+
         # Delete the old amphora
         failover_amphora_flow.add(
             database_tasks.MarkAmphoraPendingDeleteInDB(

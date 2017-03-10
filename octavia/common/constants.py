@@ -297,6 +297,7 @@ RPC_NAMESPACE_CONTROLLER_AGENT = 'controller'
 LB_CREATE_FAILOVER_PRIORITY = 20
 LB_CREATE_NORMAL_PRIORITY = 40
 LB_CREATE_SPARES_POOL_PRIORITY = 60
+LB_CREATE_ADMIN_FAILOVER_PRIORITY = 80
 BUILD_TYPE_PRIORITY = 'build_type_priority'
 
 # Active standalone roles and topology
@@ -434,6 +435,7 @@ DEFAULT_PAGE_SIZE = 1000
 
 # RBAC
 LOADBALANCER_API = 'os_load-balancer_api'
+RULE_API_ADMIN = 'rule:load-balancer:admin'
 RULE_API_READ = 'rule:load-balancer:read'
 RULE_API_READ_GLOBAL = 'rule:load-balancer:read-global'
 RULE_API_WRITE = 'rule:load-balancer:write'
@@ -450,6 +452,7 @@ RBAC_L7RULE = '{}:l7rule:'.format(LOADBALANCER_API)
 RBAC_QUOTA = '{}:quota:'.format(LOADBALANCER_API)
 RBAC_POST = 'post'
 RBAC_PUT = 'put'
+RBAC_PUT_FAILOVER = 'put_failover'
 RBAC_DELETE = 'delete'
 RBAC_GET_ONE = 'get_one'
 RBAC_GET_ALL = 'get_all'

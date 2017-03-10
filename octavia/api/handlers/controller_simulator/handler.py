@@ -245,7 +245,7 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
         LOG.info("Simulated Controller Handler Thread Complete")
 
     def loadbalancer_controller(loadbalancer, delete=False, update=False,
-                                create=False):
+                                create=False, failover=False):
         time.sleep(ASYNC_TIME)
         LOG.info("Simulating controller operation for loadbalancer...")
 
@@ -264,6 +264,11 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
             repo.load_balancer.update(db_api.get_session(), id=loadbalancer.id,
                                       operating_status=constants.ONLINE,
                                       provisioning_status=constants.ACTIVE)
+        elif failover:
+            repo.load_balancer.update(
+                db_api.get_session(), id=loadbalancer.id,
+                operating_status=constants.ONLINE,
+                provisioning_status=constants.PENDING_UPDATE)
         LOG.info("Simulated Controller Handler Thread Complete")
 
     controller = loadbalancer_controller

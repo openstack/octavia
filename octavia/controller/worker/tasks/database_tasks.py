@@ -479,7 +479,7 @@ class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
 class MapLoadbalancerToAmphora(BaseDatabaseTask):
     """Maps and assigns a load balancer to an amphora in the database."""
 
-    def execute(self, loadbalancer_id):
+    def execute(self, loadbalancer_id, server_group_id=None):
         """Allocates an Amphora for the load balancer in the database.
 
         :param loadbalancer_id: The load balancer id to map to an amphora
@@ -489,6 +489,11 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
 
         LOG.debug("Allocating an Amphora for load balancer with id %s",
                   loadbalancer_id)
+
+        if server_group_id is not None:
+            LOG.debug("Load balancer is using anti-affinity. Skipping spares "
+                      "pool allocation.")
+            return None
 
         amp = self.amphora_repo.allocate_and_associate(
             db_apis.get_session(),
