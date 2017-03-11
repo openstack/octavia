@@ -1,4 +1,4 @@
-:tocdepth: 2
+:tocdepth: 3
 
 ==========================
 Octavia API v2.0 (Current)
@@ -9,6 +9,8 @@ Octavia API v2.0 (Current)
 --------------------
 General API Overview
 --------------------
+.. include:: general.inc
 
+--------------
 Load Balancers
-==============
+--------------

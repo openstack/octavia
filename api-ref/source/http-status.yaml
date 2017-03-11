@@ -1,0 +1,6 @@
+200:
+  default: |
+    The synchronous request was successful.
+500:
+  default: |
+    The request encountered an unexpected failure.
