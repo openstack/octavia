@@ -15,7 +15,6 @@
 import re
 
 import pep8
-import six
 
 """
 Guidelines for writing new hacking checks
@@ -48,7 +47,7 @@ _all_log_levels = {
     'exception': '_LE',
 }
 log_translation_hints = []
-for level, hint in six.iteritems(_all_log_levels):
+for level, hint in _all_log_levels.items():
     r = "(.)*LOG\.%(level)s\(\s*((%(wrong_hints)s)\(|'|\")" % {
         'level': level,
         'wrong_hints': '|'.join(_all_hints - set([hint])),
