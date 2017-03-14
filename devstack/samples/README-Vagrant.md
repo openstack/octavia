@@ -34,7 +34,7 @@ Single node deployment
 
     vagrant ssh
 
-4) Continue on the common section bellow
+4) Continue on the common section below
 
 Multinode
 ~~~~~~~~~
@@ -43,7 +43,7 @@ This will create an environment where the octavia services are replicated
 across two nodes, and in front of the octavia api, an haproxy is configured
 to distribute traffic among both API servers, and provide failure tolerance.
 
-Please note that the database is a single mysql instance, with no clustering. 
+Please note that the database is a single mysql instance, with no clustering.
 
 1) Create and deploy the environment VMs
 
