@@ -26,10 +26,11 @@ from octavia.api.v2.types import load_balancer as lb_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.common import utils
 import octavia.common.validate as validate
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
-from octavia.i18n import _LI
+from octavia.i18n import _, _LI
 
 
 CONF = cfg.CONF
@@ -78,6 +79,27 @@ class LoadBalancersController(base.BaseController):
             raise exceptions.LBPendingStateError(
                 state=prov_status, id=id)
 
+    @staticmethod
+    def _validate_network_and_fill_or_validate_subnet(load_balancer):
+        network = validate.network_exists_optionally_contains_subnet(
+            network_id=load_balancer.vip_network_id,
+            subnet_id=load_balancer.vip_subnet_id)
+        # If subnet is not provided, pick the first subnet, preferring ipv4
+        if not load_balancer.vip_subnet_id:
+            network_driver = utils.get_network_driver()
+            for subnet_id in network.subnets:
+                # Use the first subnet, in case there are no ipv4 subnets
+                if not load_balancer.vip_subnet_id:
+                    load_balancer.vip_subnet_id = subnet_id
+                subnet = network_driver.get_subnet(subnet_id)
+                if subnet.ip_version == 4:
+                    load_balancer.vip_subnet_id = subnet_id
+                    break
+            if not load_balancer.vip_subnet_id:
+                raise exceptions.ValidationException(detail=_(
+                    "Supplied network does not contain a subnet."
+                ))
+
     @wsme_pecan.wsexpose(lb_types.LoadBalancerRootResponse,
                          body=lb_types.LoadBalancerRootPOST, status_code=202)
     def post(self, load_balancer):
@@ -91,15 +113,29 @@ class LoadBalancersController(base.BaseController):
                 project_id = load_balancer.project_id
 
         if not project_id:
-            raise exceptions.MissingAPIProjectID()
+            raise exceptions.ValidationException(detail=_(
+                "Missing project ID in request where one is required."))
 
         load_balancer.project_id = project_id
 
-        # Validate the subnet id
-        if load_balancer.vip_subnet_id:
-            if not validate.subnet_exists(load_balancer.vip_subnet_id):
-                raise exceptions.NotFound(resource='Subnet',
-                                          id=load_balancer.vip_subnet_id)
+        if not (load_balancer.vip_port_id or
+                load_balancer.vip_network_id or
+                load_balancer.vip_subnet_id):
+            raise exceptions.ValidationException(detail=_(
+                "VIP must contain one of: port_id, network_id, subnet_id."))
+
+        # Validate the port id
+        if load_balancer.vip_port_id:
+            port = validate.port_exists(port_id=load_balancer.vip_port_id)
+            load_balancer.vip_network_id = port.network_id
+        # If no port id, validate the network id (and subnet if provided)
+        elif load_balancer.vip_network_id:
+            self._validate_network_and_fill_or_validate_subnet(load_balancer)
+        # Validate just the subnet id
+        elif load_balancer.vip_subnet_id:
+            subnet = validate.subnet_exists(
+                subnet_id=load_balancer.vip_subnet_id)
+            load_balancer.vip_network_id = subnet.network_id
 
         lock_session = db_api.get_session(autocommit=False)
         if self.repositories.check_quota_met(
@@ -117,6 +153,7 @@ class LoadBalancersController(base.BaseController):
                 render_unsets=True
             ))
             vip_dict = lb_dict.pop('vip', {})
+
             db_lb = self.repositories.create_load_balancer_and_vip(
                 lock_session, lb_dict, vip_dict)
             lock_session.commit()

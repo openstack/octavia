@@ -268,8 +268,3 @@ class InvalidSubresource(APIException):
 class ValidationException(APIException):
     msg = _('Validation failure: %(detail)s')
     code = 400
-
-
-class MissingAPIProjectID(APIException):
-    msg = _('Missing project ID in request where one is required.')
-    code = 400
