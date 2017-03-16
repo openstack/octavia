@@ -84,6 +84,24 @@ class L7PolicyAction(base_models.BASE, base_models.LookupTableMixin):
     __tablename__ = "l7policy_action"
 
 
+class AmphoraBuildSlots(base_models.BASE):
+
+    __tablename__ = "amphora_build_slots"
+
+    id = sa.Column(sa.Integer(), primary_key=True)
+    slots_used = sa.Column(sa.Integer())
+
+
+class AmphoraBuildRequest(base_models.BASE):
+
+    __tablename__ = "amphora_build_request"
+
+    amphora_id = sa.Column(sa.String(36), nullable=True, primary_key=True)
+    priority = sa.Column(sa.Integer())
+    created_time = sa.Column(sa.DateTime, default=func.now(), nullable=False)
+    status = sa.Column(sa.String(16), default='WAITING', nullable=False)
+
+
 class SessionPersistence(base_models.BASE):
 
     __data_model__ = data_models.SessionPersistence

@@ -160,6 +160,18 @@ haproxy_amphora_opts = [
                default=5,
                help=_('Retry timeout between connection attempts in '
                       'seconds.')),
+    cfg.IntOpt('build_rate_limit',
+               default=-1,
+               help=_('Number of amphorae that could be built per controller'
+                      'worker, simultaneously.')),
+    cfg.IntOpt('build_active_retries',
+               default=300,
+               help=_('Retry threshold for waiting for a build slot for '
+                      'an amphorae.')),
+    cfg.IntOpt('build_retry_interval',
+               default=5,
+               help=_('Retry timeout between build attempts in '
+                      'seconds.')),
     cfg.StrOpt('user_group',
                default='nogroup',
                help=_('The user group for haproxy to run under inside the '

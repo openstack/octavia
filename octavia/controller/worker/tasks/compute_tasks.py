@@ -26,6 +26,7 @@ from octavia.amphorae.backends.agent import agent_jinja_cfg
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.common.jinja import user_data_jinja_cfg
+from octavia.controller.worker import amphora_rate_limit
 from octavia.i18n import _LE, _LW
 
 CONF = cfg.CONF
@@ -42,12 +43,15 @@ class BaseComputeTask(task.Task):
             name=CONF.controller_worker.compute_driver,
             invoke_on_load=True
         ).driver
+        self.rate_limit = amphora_rate_limit.AmphoraBuildRateLimit()
 
 
 class ComputeCreate(BaseComputeTask):
     """Create the compute instance for a new amphora."""
 
-    def execute(self, amphora_id, ports=None, config_drive_files=None,
+    def execute(self, amphora_id,
+                build_type_priority=constants.LB_CREATE_NORMAL_PRIORITY,
+                ports=None, config_drive_files=None,
                 server_group_id=None):
         """Create an amphora
 
@@ -65,6 +69,10 @@ class ComputeCreate(BaseComputeTask):
         key_name = None if not ssh_access else ssh_key
 
         try:
+            if CONF.haproxy_amphora.build_rate_limit != -1:
+                self.rate_limit.add_to_build_request_queue(
+                    amphora_id, build_type_priority)
+
             agent_cfg = agent_jinja_cfg.AgentJinjaTemplater()
             config_drive_files['/etc/octavia/amphora-agent.conf'] = (
                 agent_cfg.build_agent_config(amphora_id))
@@ -115,8 +123,9 @@ class ComputeCreate(BaseComputeTask):
 
 
 class CertComputeCreate(ComputeCreate):
-    def execute(self, amphora_id, server_pem, ports=None,
-                server_group_id=None):
+    def execute(self, amphora_id, server_pem,
+                build_type_priority=constants.LB_CREATE_NORMAL_PRIORITY,
+                ports=None, server_group_id=None):
         """Create an amphora
 
         :returns: an amphora
@@ -129,7 +138,8 @@ class CertComputeCreate(ComputeCreate):
             '/etc/octavia/certs/server.pem': server_pem,
             '/etc/octavia/certs/client_ca.pem': ca}
         return super(CertComputeCreate, self).execute(
-            amphora_id, ports=ports, config_drive_files=config_drive_files,
+            amphora_id, build_type_priority=build_type_priority,
+            ports=ports, config_drive_files=config_drive_files,
             server_group_id=server_group_id)
 
 
@@ -167,7 +177,7 @@ class ComputeDelete(BaseComputeTask):
 class ComputeWait(BaseComputeTask):
     """Wait for the compute driver to mark the amphora active."""
 
-    def execute(self, compute_id):
+    def execute(self, compute_id, amphora_id):
         """Wait for the compute driver to mark the amphora active
 
         :raises: Generic exception if the amphora is not active
@@ -176,6 +186,8 @@ class ComputeWait(BaseComputeTask):
         for i in range(CONF.controller_worker.amp_active_retries):
             amp = self.compute.get_amphora(compute_id)
             if amp.status == constants.ACTIVE:
+                if CONF.haproxy_amphora.build_rate_limit != -1:
+                    self.rate_limit.remove_from_build_req_queue(amphora_id)
                 return amp
             elif amp.status == constants.ERROR:
                 raise exceptions.ComputeBuildException()

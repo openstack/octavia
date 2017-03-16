@@ -142,6 +142,8 @@ class Repositories(object):
         self.vrrpgroup = VRRPGroupRepository()
         self.l7rule = L7RuleRepository()
         self.l7policy = L7PolicyRepository()
+        self.amp_build_slots = AmphoraBuildSlotsRepository()
+        self.amp_build_req = AmphoraBuildReqRepository()
         self.quotas = QuotasRepository()
 
     def create_load_balancer_and_vip(self, session, lb_dict, vip_dict):
@@ -898,6 +900,73 @@ class AmphoraRepository(BaseRepository):
             amp.cert_busy = True
 
         return amp.to_data_model()
+
+
+class AmphoraBuildReqRepository(BaseRepository):
+    model_class = models.AmphoraBuildRequest
+
+    def add_to_build_queue(self, session, amphora_id=None, priority=None):
+        """Adds the build request to the table."""
+        with session.begin(subtransactions=True):
+            model = self.model_class(amphora_id=amphora_id, priority=priority)
+            session.add(model)
+
+    def update_req_status(self, session, amphora_id=None):
+        """Updates the request status."""
+        with session.begin(subtransactions=True):
+            (session.query(self.model_class)
+             .filter_by(amphora_id=amphora_id)
+             .update({self.model_class.status: 'BUILDING'}))
+
+    def get_highest_priority_build_req(self, session):
+        """Fetches build request with highest priority and least created_time.
+
+        priority 20 = failover (highest)
+        priority 40 = create_loadbalancer
+        priority 60 = sparespool (least)
+        :param session: A Sql Alchemy database session.
+        :returns amphora_id corresponding to highest priority and least created
+        time in 'WAITING' status.
+        """
+        with session.begin(subtransactions=True):
+            return (session.query(self.model_class.amphora_id)
+                    .order_by(self.model_class.status.desc())
+                    .order_by(self.model_class.priority.asc())
+                    .order_by(self.model_class.created_time.asc())
+                    .first())[0]
+
+    def delete_all(self, session):
+        "Deletes all the build requests."
+        with session.begin(subtransactions=True):
+            session.query(self.model_class).delete()
+
+
+class AmphoraBuildSlotsRepository(BaseRepository):
+    model_class = models.AmphoraBuildSlots
+
+    def get_used_build_slots_count(self, session):
+        """Gets the number of build slots in use.
+
+             :returns: Number of current build slots.
+        """
+        with session.begin(subtransactions=True):
+            count = session.query(self.model_class.slots_used).one()
+        return count[0]
+
+    def update_count(self, session, action='increment'):
+        """Increments/Decrements/Resets the number of build_slots used."""
+        with session.begin(subtransactions=True):
+            if action == 'increment':
+                session.query(self.model_class).filter_by(id=1).update(
+                    {self.model_class.slots_used:
+                     self.get_used_build_slots_count(session) + 1})
+            elif action == 'decrement':
+                session.query(self.model_class).filter_by(id=1).update(
+                    {self.model_class.slots_used:
+                     self.get_used_build_slots_count(session) - 1})
+            elif action == 'reset':
+                session.query(self.model_class).filter_by(id=1).update(
+                    {self.model_class.slots_used: 0})
 
 
 class SNIRepository(BaseRepository):

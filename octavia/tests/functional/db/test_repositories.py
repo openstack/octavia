@@ -99,7 +99,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                            'session_persistence', 'pool', 'member', 'listener',
                            'listener_stats', 'amphora', 'sni',
                            'amphorahealth', 'vrrpgroup', 'l7rule', 'l7policy',
-                           'quotas')
+                           'amp_build_slots', 'amp_build_req', 'quotas')
         for repo_attr in repo_attr_names:
             single_repo = getattr(self.repos, repo_attr, None)
             message = ("Class Repositories should have %s instance"
