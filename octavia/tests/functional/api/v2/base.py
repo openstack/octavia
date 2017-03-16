@@ -75,6 +75,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                              'handler.SimulatedControllerHandler')
         self.handler_mock = patcher.start()
         self.app = self._make_app()
+        self.project_id = uuidutils.generate_uuid()
 
         def reset_pecan():
             patcher.stop()
@@ -89,7 +90,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     def _get_full_path(self, path):
         return ''.join([self.BASE_PATH, path])
 
-    def delete(self, path, headers=None, status=202, expect_errors=False):
+    def delete(self, path, headers=None, status=204, expect_errors=False):
         headers = headers or {}
         full_path = self._get_full_path(path)
         response = self.app.delete(full_path,
@@ -108,7 +109,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                                       expect_errors=expect_errors)
         return response
 
-    def put(self, path, body, headers=None, status=202, expect_errors=False):
+    def put(self, path, body, headers=None, status=200, expect_errors=False):
         headers = headers or {}
         full_path = self._get_full_path(path)
         response = self.app.put_json(full_path,
@@ -128,17 +129,22 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                                 expect_errors=expect_errors)
         return response
 
-    def create_load_balancer(self, vip, **optionals):
-        req_dict = {'vip': vip}
+    def create_load_balancer(self, vip_subnet_id,
+                             **optionals):
+        req_dict = {'vip_subnet_id': vip_subnet_id}
         req_dict.update(optionals)
-        response = self.post(self.LBS_PATH, req_dict)
+        body = {'loadbalancer': req_dict}
+        response = self.post(self.LBS_PATH, body)
         return response.json
 
-    def create_listener(self, lb_id, protocol, protocol_port, **optionals):
-        req_dict = {'protocol': protocol, 'protocol_port': protocol_port}
+    def create_listener(self, protocol, protocol_port, lb_id,
+                        **optionals):
+        req_dict = {'protocol': protocol, 'protocol_port': protocol_port,
+                    'load_balancer_id': lb_id}
         req_dict.update(optionals)
-        path = self.LISTENERS_PATH.format(lb_id=lb_id)
-        response = self.post(path, req_dict)
+        path = self.LISTENERS_PATH
+        body = {'listener': req_dict}
+        response = self.post(path, body)
         return response.json
 
     def create_listener_stats(self, listener_id, amphora_id):
@@ -160,59 +166,66 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
             **opts)
         return amphora
 
-    def get_listener(self, lb_id, listener_id):
-        path = self.LISTENER_PATH.format(lb_id=lb_id, listener_id=listener_id)
+    def get_listener(self, listener_id):
+        path = self.LISTENER_PATH.format(listener_id=listener_id)
         response = self.get(path)
         return response.json
 
-    def create_pool_sans_listener(self, lb_id, protocol, lb_algorithm,
-                                  **optionals):
-        req_dict = {'protocol': protocol, 'lb_algorithm': lb_algorithm}
+    def create_pool_with_listener(self, lb_id, listener_id, protocol,
+                                  lb_algorithm, **optionals):
+        req_dict = {'load_balancer_id': lb_id, 'listener_id': listener_id,
+                    'protocol': protocol, 'lb_algorithm': lb_algorithm}
         req_dict.update(optionals)
-        path = self.POOLS_PATH.format(lb_id=lb_id)
-        response = self.post(path, req_dict)
+        body = {'pool': req_dict}
+        path = self.POOLS_PATH
+        response = self.post(path, body)
         return response.json
 
-    def create_pool(self, lb_id, listener_id, protocol, lb_algorithm,
-                    **optionals):
-        req_dict = {'protocol': protocol, 'lb_algorithm': lb_algorithm}
+    def create_pool(self, lb_id, protocol, lb_algorithm, **optionals):
+        req_dict = {'load_balancer_id': lb_id, 'protocol': protocol,
+                    'lb_algorithm': lb_algorithm}
         req_dict.update(optionals)
-        path = self.DEPRECATED_POOLS_PATH.format(lb_id=lb_id,
-                                                 listener_id=listener_id)
-        response = self.post(path, req_dict)
+        body = {'pool': req_dict}
+        path = self.POOLS_PATH
+        response = self.post(path, body)
         return response.json
 
-    def create_member(self, lb_id, pool_id, ip_address,
-                      protocol_port, expect_error=False, **optionals):
+    def create_member(self, pool_id, ip_address, protocol_port,
+                      expect_error=False, **optionals):
         req_dict = {'ip_address': ip_address, 'protocol_port': protocol_port}
         req_dict.update(optionals)
-        path = self.MEMBERS_PATH.format(lb_id=lb_id, pool_id=pool_id)
-        response = self.post(path, req_dict, expect_errors=expect_error)
+        body = {'member': req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=pool_id)
+        response = self.post(path, body, expect_errors=expect_error)
         return response.json
 
-    def create_member_with_listener(self, lb_id, listener_id, pool_id,
-                                    ip_address, protocol_port, **optionals):
-        req_dict = {'ip_address': ip_address, 'protocol_port': protocol_port}
+    def create_member_with_listener(self, pool_id, listener_id, ip_address,
+                                    protocol_port, **optionals):
+        req_dict = {'listener_id': listener_id, 'ip_address': ip_address,
+                    'protocol_port': protocol_port}
         req_dict.update(optionals)
-        path = self.DEPRECATED_MEMBERS_PATH.format(
-            lb_id=lb_id, listener_id=listener_id, pool_id=pool_id)
-        response = self.post(path, req_dict)
+        body = {'member': req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=pool_id)
+        response = self.post(path, body)
         return response.json
 
-    def create_health_monitor(self, lb_id, pool_id, type,
-                              delay, timeout, fall_threshold, rise_threshold,
+    # TODO(sindhu): Will be modified later in the Health_Monitor review
+    def create_health_monitor(self, lb_id, type, delay, timeout,
+                              fall_threshold, rise_threshold, root_tag=None,
                               **optionals):
-        req_dict = {'type': type,
+        req_dict = {'load_balancer_id': lb_id, 'type': type,
                     'delay': delay,
                     'timeout': timeout,
                     'fall_threshold': fall_threshold,
                     'rise_threshold': rise_threshold}
         req_dict.update(optionals)
-        path = self.HM_PATH.format(lb_id=lb_id,
-                                   pool_id=pool_id)
-        response = self.post(path, req_dict)
+        body = {root_tag: req_dict}
+        path = self.HMS_PATH
+        response = self.post(path, body)
         return response.json
 
+    # TODO(sindhu): Will be modified according to the
+    # health_monitor_test_cases later
     def create_health_monitor_with_listener(
             self, lb_id, listener_id, pool_id, type,
             delay, timeout, fall_threshold, rise_threshold, **optionals):
@@ -227,21 +240,21 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         response = self.post(path, req_dict)
         return response.json
 
-    def create_l7policy(self, lb_id, listener_id, action, **optionals):
-        req_dict = {'action': action}
+    def create_l7policy(self, listener_id, action, **optionals):
+        req_dict = {'listener_id': listener_id, 'action': action}
         req_dict.update(optionals)
-        path = self.L7POLICIES_PATH.format(lb_id=lb_id,
-                                           listener_id=listener_id)
-        response = self.post(path, req_dict)
+        body = {'l7policy': req_dict}
+        path = self.L7POLICIES_PATH
+        response = self.post(path, body)
         return response.json
 
-    def create_l7rule(self, lb_id, listener_id, l7policy_id, type,
-                      compare_type, value, **optionals):
+    def create_l7rule(self, l7policy_id, type, compare_type,
+                      value, **optionals):
         req_dict = {'type': type, 'compare_type': compare_type, 'value': value}
         req_dict.update(optionals)
-        path = self.L7RULES_PATH.format(lb_id=lb_id, listener_id=listener_id,
-                                        l7policy_id=l7policy_id)
-        response = self.post(path, req_dict)
+        body = {'l7rule': req_dict}
+        path = self.L7RULES_PATH.format(l7policy_id=l7policy_id)
+        response = self.post(path, body)
         return response.json
 
     def _set_lb_and_children_statuses(self, lb_id, prov_status, op_status):
@@ -289,22 +302,23 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
             expected_prov_status = constants.DELETED
             expected_op_status = constants.OFFLINE
         self.set_lb_status(lb_id, status=expected_prov_status)
-        self.assert_correct_listener_status(lb_id, listener_id,
-                                            expected_prov_status,
-                                            expected_op_status)
+        self.assert_correct_listener_status(expected_prov_status,
+                                            expected_op_status,
+                                            listener_id)
 
     def assert_correct_lb_status(self, lb_id, provisioning_status,
                                  operating_status):
-        api_lb = self.get(self.LB_PATH.format(lb_id=lb_id)).json
+        api_lb = self.get(
+            self.LB_PATH.format(lb_id=lb_id)).json.get('loadbalancer')
         self.assertEqual(provisioning_status,
                          api_lb.get('provisioning_status'))
         self.assertEqual(operating_status,
                          api_lb.get('operating_status'))
 
-    def assert_correct_listener_status(self, lb_id, listener_id,
-                                       provisioning_status, operating_status):
+    def assert_correct_listener_status(self, provisioning_status,
+                                       operating_status, listener_id):
         api_listener = self.get(self.LISTENER_PATH.format(
-            lb_id=lb_id, listener_id=listener_id)).json
+            listener_id=listener_id)).json.get('listener')
         self.assertEqual(provisioning_status,
                          api_listener.get('provisioning_status'))
         self.assertEqual(operating_status,

@@ -148,6 +148,11 @@ class ImmutableObject(APIException):
     code = 409
 
 
+class LBPendingStateError(APIException):
+    msg = _("Invalid state %(state)s of loadbalancer resource %(id)s")
+    code = 409
+
+
 class TooManyL7RulesOnL7Policy(APIException):
     msg = _("Too many rules on L7 policy %(id)s")
     code = 409
