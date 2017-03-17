@@ -1,0 +1,6 @@
+---
+upgrade:
+    - Adding `ID` column to the health_monitor table in Octavia,
+      whose value is same as the `pool_id` column.
+      The database needs to be upgraded first, followed by upgrade
+      and restart of the API servers.

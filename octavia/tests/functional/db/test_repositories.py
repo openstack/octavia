@@ -1296,8 +1296,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             operating_status=constants.ONLINE,
             enabled=True, load_balancer_id=lb.id)
         self.repos.health_monitor.create(
-            self.session, project_id=project_id, name="health_mon1",
-            type=constants.HEALTH_MONITOR_HTTP,
+            self.session, project_id=project_id,
+            name="health_mon1", type=constants.HEALTH_MONITOR_HTTP,
             delay=1, timeout=1, fall_threshold=1, rise_threshold=1,
             provisioning_status=constants.ACTIVE,
             enabled=True, pool_id=pool.id)
@@ -1325,8 +1325,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             operating_status=constants.ONLINE,
             enabled=True, load_balancer_id=lb.id)
         self.repos.health_monitor.create(
-            self.session, project_id=project_id, name="health_mon1",
-            type=constants.HEALTH_MONITOR_HTTP,
+            self.session, project_id=project_id,
+            name="health_mon1", type=constants.HEALTH_MONITOR_HTTP,
             delay=1, timeout=1, fall_threshold=1, rise_threshold=1,
             provisioning_status=constants.DELETED,
             enabled=True, pool_id=pool.id)
@@ -2433,9 +2433,10 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
 
     def create_health_monitor(self, pool_id):
         health_monitor = self.hm_repo.create(
-            self.session, type=constants.HEALTH_MONITOR_HTTP, pool_id=pool_id,
-            delay=1, timeout=1, fall_threshold=1, rise_threshold=1,
-            http_method="POST", url_path="http://localhost:80/index.php",
+            self.session, type=constants.HEALTH_MONITOR_HTTP,
+            pool_id=pool_id, delay=1, timeout=1, fall_threshold=1,
+            rise_threshold=1, http_method="POST",
+            url_path="http://localhost:80/index.php",
             expected_codes="200", enabled=True)
         return health_monitor
 

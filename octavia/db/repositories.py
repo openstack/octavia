@@ -534,6 +534,7 @@ class Repositories(object):
                                                 data_models.HealthMonitor,
                                                 lb_dict['project_id']):
                             raise exceptions.QuotaException
+                        hm_dict['id'] = pool_dm.id
                         hm_dict['pool_id'] = pool_dm.id
                         self.health_monitor.create(lock_session, **hm_dict)
                     for r_member_dict in member_dicts:
@@ -582,6 +583,7 @@ class Repositories(object):
                                         data_models.HealthMonitor,
                                         lb_dict['project_id']):
                                     raise exceptions.QuotaException
+                                r_hm_dict['id'] = r_pool_dm.id
                                 r_hm_dict['pool_id'] = r_pool_dm.id
                                 self.health_monitor.create(lock_session,
                                                            **r_hm_dict)
@@ -678,6 +680,13 @@ class VipRepository(BaseRepository):
 
 class HealthMonitorRepository(BaseRepository):
     model_class = models.HealthMonitor
+
+    def create(self, session, **model_kwargs):
+        with session.begin(subtransactions=True):
+            model_kwargs['id'] = model_kwargs['pool_id']
+            model = self.model_class(**model_kwargs)
+            session.add(model)
+        return model.to_data_model()
 
     def update(self, session, pool_id, **model_kwargs):
         """Updates a health monitor entity in the database by pool_id."""

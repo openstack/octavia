@@ -193,7 +193,8 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         nullable=True)
 
 
-class HealthMonitor(base_models.BASE, base_models.ProjectMixin,
+class HealthMonitor(base_models.BASE, base_models.IdMixin,
+                    base_models.ProjectMixin,
                     base_models.NameMixin):
 
     __data_model__ = data_models.HealthMonitor
@@ -208,7 +209,7 @@ class HealthMonitor(base_models.BASE, base_models.ProjectMixin,
     pool_id = sa.Column(
         sa.String(36),
         sa.ForeignKey("pool.id", name="fk_health_monitor_pool_id"),
-        nullable=False, primary_key=True)
+        nullable=False)
     delay = sa.Column(sa.Integer, nullable=False)
     timeout = sa.Column(sa.Integer, nullable=False)
     fall_threshold = sa.Column(sa.Integer, nullable=False)
