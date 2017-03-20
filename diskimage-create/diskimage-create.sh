@@ -197,12 +197,10 @@ else
 fi
 
 # For system-wide installs, DIB will automatically find the elements, so we only check local path
-DIB_ELEMENTS_PATH=${DIB_REPO_PATH:-${OCTAVIA_REPO_PATH%/*}/diskimage-builder/elements}
-
 if [ "$DIB_LOCAL_ELEMENTS_PATH" ]; then
-    export ELEMENTS_PATH=$DIB_ELEMENTS_PATH:$OCTAVIA_ELEMENTS_PATH:$DIB_LOCAL_ELEMENTS_PATH
+    export ELEMENTS_PATH=$OCTAVIA_ELEMENTS_PATH:$DIB_LOCAL_ELEMENTS_PATH
 else
-    export ELEMENTS_PATH=$DIB_ELEMENTS_PATH:$OCTAVIA_ELEMENTS_PATH
+    export ELEMENTS_PATH=$OCTAVIA_ELEMENTS_PATH
 fi
 
 export CLOUD_INIT_DATASOURCES=${CLOUD_INIT_DATASOURCES:-"ConfigDrive"}
