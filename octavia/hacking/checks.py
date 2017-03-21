@@ -14,7 +14,6 @@
 
 import re
 
-import pep8
 
 """
 Guidelines for writing new hacking checks
@@ -31,28 +30,17 @@ Guidelines for writing new hacking checks
 
 """
 
-log_translation = re.compile(
-    r"(.)*LOG\.(audit|error|info|warn|warning|critical|exception)\(\s*('|\")")
 author_tag_re = (re.compile("^\s*#\s*@?(a|A)uthor"),
                  re.compile("^\.\.\s+moduleauthor::"))
-_all_hints = set(['_', '_LI', '_LE', '_LW', '_LC'])
-_all_log_levels = {
-    # NOTE(yamamoto): Following nova which uses _() for audit.
-    'audit': '_',
-    'error': '_LE',
-    'info': '_LI',
-    'warn': '_LW',
-    'warning': '_LW',
-    'critical': '_LC',
-    'exception': '_LE',
-}
-log_translation_hints = []
-for level, hint in _all_log_levels.items():
-    r = "(.)*LOG\.%(level)s\(\s*((%(wrong_hints)s)\(|'|\")" % {
-        'level': level,
-        'wrong_hints': '|'.join(_all_hints - set([hint])),
-    }
-    log_translation_hints.append(re.compile(r))
+
+_all_log_levels = {'critical', 'error', 'exception', 'info', 'warning'}
+_all_hints = {'_LC', '_LE', '_LI', '_', '_LW'}
+
+_log_translation_hint = re.compile(
+    r".*LOG\.(%(levels)s)\(\s*(%(hints)s)\(" % {
+        'levels': '|'.join(_all_log_levels),
+        'hints': '|'.join(_all_hints),
+    })
 
 assert_trueinst_re = re.compile(
     r"(.)*assertTrue\(isinstance\((\w|\.|\'|\"|\[|\])+, "
@@ -76,8 +64,9 @@ assert_no_xrange_re = re.compile(
     r"\s*xrange\s*\(")
 
 
-def _directory_to_check_translation(filename):
-    return True
+def _translation_checks_not_enforced(filename):
+    # Do not do these validations on tests
+    return any(pat in filename for pat in ["/tests/", "rally-jobs/plugins/"])
 
 
 def assert_true_instance(logical_line):
@@ -104,38 +93,6 @@ def assert_equal_or_not_none(logical_line):
            assert_not_equal_end_with_none_re.match(logical_line))
     if res:
         yield (0, msg)
-
-
-def no_translate_debug_logs(logical_line, filename):
-    """Check for 'LOG.debug(_('
-
-    As per our translation policy,
-    https://wiki.openstack.org/wiki/LoggingStandards#Log_Translation
-    we shouldn't translate debug level logs.
-
-    * This check assumes that 'LOG' is a logger.
-    O319
-    """
-    if _directory_to_check_translation(filename) and logical_line.startswith(
-            "LOG.debug(_("):
-        yield(0, "O319 Don't translate debug level logs")
-
-
-def validate_log_translations(logical_line, physical_line, filename):
-    # Translations are not required in the test directory
-    if "octavia/tests" in filename:
-        return
-    if pep8.noqa(physical_line):
-        return
-    msg = "O320: Log messages require translations!"
-    if log_translation.match(logical_line):
-        yield (0, msg)
-
-    if _directory_to_check_translation(filename):
-        msg = "O320: Log messages require translation hints!"
-        for log_translation_hint in log_translation_hints:
-            if log_translation_hint.match(logical_line):
-                yield (0, msg)
 
 
 def use_jsonutils(logical_line, filename):
@@ -219,11 +176,57 @@ def no_xrange(logical_line):
         yield(0, "O340: Do not use xrange().")
 
 
+def no_translate_logs(logical_line, filename):
+    """O341 - Don't translate logs.
+
+    Check for 'LOG.*(_(' and 'LOG.*(_Lx('
+
+    Translators don't provide translations for log messages, and operators
+    asked not to translate them.
+
+    * This check assumes that 'LOG' is a logger.
+
+    :param logical_line: The logical line to check.
+    :param filename: The file name where the logical line exists.
+    :returns: None if the logical line passes the check, otherwise a tuple
+    is yielded that contains the offending index in logical line and a
+    message describe the check validation failure.
+    """
+    if _translation_checks_not_enforced(filename):
+        return
+
+    msg = "O341: Log messages should not be translated!"
+    match = _log_translation_hint.match(logical_line)
+    if match:
+        yield (logical_line.index(match.group()), msg)
+
+
+def check_raised_localized_exceptions(logical_line, filename):
+    """O342 - Untranslated exception message.
+
+    :param logical_line: The logical line to check.
+    :param filename: The file name where the logical line exists.
+    :returns: None if the logical line passes the check, otherwise a tuple
+    is yielded that contains the offending index in logical line and a
+    message describe the check validation failure.
+    """
+    if _translation_checks_not_enforced(filename):
+        return
+
+    logical_line = logical_line.strip()
+    raised_search = re.compile(
+        r"raise (?:\w*)\((.*)\)").match(logical_line)
+    if raised_search:
+        exception_msg = raised_search.groups()[0]
+        if exception_msg.startswith("\"") or exception_msg.startswith("\'"):
+            msg = "O342: Untranslated exception message."
+            yield (logical_line.index(exception_msg), msg)
+
+
 def factory(register):
     register(assert_true_instance)
     register(assert_equal_or_not_none)
-    register(no_translate_debug_logs)
-    register(validate_log_translations)
+    register(no_translate_logs)
     register(use_jsonutils)
     register(no_author_tags)
     register(assert_equal_true_or_false)
@@ -231,3 +234,4 @@ def factory(register):
     register(assert_equal_in)
     register(no_log_warn)
     register(no_xrange)
+    register(check_raised_localized_exceptions)

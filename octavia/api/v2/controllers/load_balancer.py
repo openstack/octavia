@@ -30,7 +30,7 @@ from octavia.common import utils
 import octavia.common.validate as validate
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
-from octavia.i18n import _, _LI
+from octavia.i18n import _
 
 
 CONF = cfg.CONF
@@ -79,9 +79,8 @@ class LoadBalancersController(base.BaseController):
         if not lb_repo.test_and_set_provisioning_status(
                 session, id, lb_status):
             prov_status = lb_repo.get(session, id=id).provisioning_status
-            LOG.info(_LI(
-                "Invalid state %(state)s of loadbalancer resource %(id)s"),
-                {"state": prov_status, "id": id})
+            LOG.info("Invalid state %(state)s of loadbalancer resource %(id)s",
+                     {"state": prov_status, "id": id})
             raise exceptions.LBPendingStateError(
                 state=prov_status, id=id)
 
@@ -174,7 +173,7 @@ class LoadBalancersController(base.BaseController):
 
         # Handler will be responsible for sending to controller
         try:
-            LOG.info(_LI("Sending created Load Balancer %s to the handler"),
+            LOG.info("Sending created Load Balancer %s to the handler",
                      db_lb.id)
             self.handler.create(db_lb)
         except Exception:
@@ -195,8 +194,7 @@ class LoadBalancersController(base.BaseController):
         db_lb = self._get_db_lb(context.session, id)
         self._test_lb_status(context.session, id)
         try:
-            LOG.info(_LI("Sending updated Load Balancer %s to the handler"),
-                     id)
+            LOG.info("Sending updated Load Balancer %s to the handler", id)
             self.handler.update(db_lb, load_balancer)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
@@ -214,7 +212,7 @@ class LoadBalancersController(base.BaseController):
                              lb_status=constants.PENDING_DELETE)
 
         try:
-            LOG.info(_LI("Sending deleted Load Balancer %s to the handler"),
+            LOG.info("Sending deleted Load Balancer %s to the handler",
                      db_lb.id)
             self.handler.delete(db_lb, cascade)
         except Exception:

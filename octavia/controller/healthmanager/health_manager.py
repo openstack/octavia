@@ -21,7 +21,6 @@ from oslo_log import log as logging
 from octavia.controller.worker import controller_worker as cw
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
-from octavia.i18n import _LI
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -50,12 +49,12 @@ class HealthManager(object):
                         if amp is None:
                             break
                         failover_count += 1
-                        LOG.info(_LI("Stale amphora's id is: %s"),
+                        LOG.info("Stale amphora's id is: %s",
                                  amp.amphora_id)
                         executor.submit(self.cw.failover_amphora,
                                         amp.amphora_id)
                     if failover_count > 0:
-                        LOG.info(_LI("Failed over %s amphora"),
+                        LOG.info("Failed over %s amphora",
                                  failover_count)
                     time.sleep(CONF.health_manager.health_check_interval)
             finally:

@@ -24,7 +24,6 @@ from octavia.common import constants
 from octavia.common import data_models as models
 from octavia.common import exceptions
 from octavia.compute import compute_base
-from octavia.i18n import _LE, _LW
 
 LOG = logging.getLogger(__name__)
 
@@ -51,20 +50,17 @@ def _extract_amp_image_id_by_tag(client, image_tag, image_owner):
     image_id = images[0]['id']
     num_images = len(images)
     if num_images > 1:
-        LOG.warning(
-            _LW("A single Glance image should be tagged with %(tag)s tag, "
-                "but at least two were found. Using %(image_id)s."),
-            {'tag': image_tag, 'image_id': image_id}
-        )
+        LOG.warning("A single Glance image should be tagged with %(tag)s tag, "
+                    "but at least two were found. Using %(image_id)s.",
+                    {'tag': image_tag, 'image_id': image_id})
     return image_id
 
 
 def _get_image_uuid(client, image_id, image_tag, image_owner):
     if image_id:
         if image_tag:
-            LOG.warning(
-                _LW("Both amp_image_id and amp_image_tag options defined. "
-                    "Using the amp_image_id."))
+            LOG.warning("Both amp_image_id and amp_image_tag options defined. "
+                        "Using the amp_image_id.")
         return image_id
 
     return _extract_amp_image_id_by_tag(client, image_tag, image_owner)
@@ -157,7 +153,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
 
             return amphora.id
         except Exception:
-            LOG.exception(_LE("Error building nova virtual machine."))
+            LOG.exception("Error building nova virtual machine.")
             raise exceptions.ComputeBuildException()
 
     def delete(self, compute_id):
@@ -168,10 +164,10 @@ class VirtualMachineManager(compute_base.ComputeBase):
         try:
             self.manager.delete(server=compute_id)
         except nova_exceptions.NotFound:
-            LOG.warning(_LW("Nova instance with id: %s not found. "
-                            "Assuming already deleted."), compute_id)
+            LOG.warning("Nova instance with id: %s not found. "
+                        "Assuming already deleted.", compute_id)
         except Exception:
-            LOG.exception(_LE("Error deleting nova virtual machine."))
+            LOG.exception("Error deleting nova virtual machine.")
             raise exceptions.ComputeDeleteException()
 
     def status(self, compute_id):
@@ -185,7 +181,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
             if amphora and amphora.status == 'ACTIVE':
                 return constants.UP
         except Exception:
-            LOG.exception(_LE("Error retrieving nova virtual machine status."))
+            LOG.exception("Error retrieving nova virtual machine status.")
             raise exceptions.ComputeStatusException()
         return constants.DOWN
 
@@ -199,7 +195,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
         try:
             amphora = self.manager.get(compute_id)
         except Exception:
-            LOG.exception(_LE("Error retrieving nova virtual machine."))
+            LOG.exception("Error retrieving nova virtual machine.")
             raise exceptions.ComputeGetException()
         return self._translate_amphora(amphora)
 
@@ -246,7 +242,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
             server_group_obj = self.server_groups.create(**kwargs)
             return server_group_obj
         except Exception:
-            LOG.exception(_LE("Error create server group instance."))
+            LOG.exception("Error create server group instance.")
             raise exceptions.ServerGroupObjectCreateException()
 
     def delete_server_group(self, server_group_id):
@@ -259,8 +255,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
             self.server_groups.delete(server_group_id)
 
         except nova_exceptions.NotFound:
-            LOG.warning(_LW("Server group instance with id: %s not found. "
-                            "Assuming already deleted."), server_group_id)
+            LOG.warning("Server group instance with id: %s not found. "
+                        "Assuming already deleted.", server_group_id)
         except Exception:
-            LOG.exception(_LE("Error delete server group instance."))
+            LOG.exception("Error delete server group instance.")
             raise exceptions.ServerGroupObjectDeleteException()

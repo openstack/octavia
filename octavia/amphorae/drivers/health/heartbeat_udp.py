@@ -21,8 +21,6 @@ from oslo_log import log as logging
 from octavia.amphorae.backends.health_daemon import status_message
 from octavia.common import exceptions
 from octavia.db import repositories
-from octavia.i18n import _LI
-
 
 UDP_MAX_SIZE = 64 * 1024
 LOG = logging.getLogger(__name__)
@@ -41,7 +39,7 @@ class UDPStatusGetter(object):
         self.ip = cfg.CONF.health_manager.bind_ip
         self.port = cfg.CONF.health_manager.bind_port
         self.sockaddr = None
-        LOG.info(_LI('attempting to listen on %(ip)s port %(port)s'),
+        LOG.info('attempting to listen on %(ip)s port %(port)s',
                  {'ip': self.ip, 'port': self.port})
         self.sock = None
         self.update(self.key, self.ip, self.port)
@@ -68,7 +66,7 @@ class UDPStatusGetter(object):
             self.sock.bind(self.sockaddr)
             if cfg.CONF.health_manager.sock_rlimit > 0:
                 rlimit = cfg.CONF.health_manager.sock_rlimit
-                LOG.info(_LI("setting sock rlimit to %s"), rlimit)
+                LOG.info("setting sock rlimit to %s", rlimit)
                 self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF,
                                      rlimit)
             break  # just used the first addr getaddrinfo finds

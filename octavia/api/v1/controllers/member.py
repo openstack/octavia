@@ -29,8 +29,6 @@ from octavia.common import exceptions
 import octavia.common.validate as validate
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
-from octavia.i18n import _LI
-
 
 LOG = logging.getLogger(__name__)
 
@@ -82,8 +80,8 @@ class MembersController(base.BaseController):
                 session, self.load_balancer_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE,
                 listener_ids=self._get_affected_listener_ids(session, member)):
-            LOG.info(_LI("Member cannot be created or modified because the "
-                         "Load Balancer is in an immutable state"))
+            LOG.info("Member cannot be created or modified because the "
+                     "Load Balancer is in an immutable state")
             lb_repo = self.repositories.load_balancer
             db_lb = lb_repo.get(session, id=self.load_balancer_id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
@@ -133,7 +131,7 @@ class MembersController(base.BaseController):
                 lock_session.rollback()
 
         try:
-            LOG.info(_LI("Sending Creation of Member %s to handler"),
+            LOG.info("Sending Creation of Member %s to handler",
                      db_member.id)
             self.handler.create(db_member)
         except Exception:
@@ -156,7 +154,7 @@ class MembersController(base.BaseController):
         self._test_lb_and_listener_statuses(context.session, member=db_member)
 
         try:
-            LOG.info(_LI("Sending Update of Member %s to handler"), id)
+            LOG.info("Sending Update of Member %s to handler", id)
             self.handler.update(db_member, member)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
@@ -176,7 +174,7 @@ class MembersController(base.BaseController):
         self._test_lb_and_listener_statuses(context.session, member=db_member)
 
         try:
-            LOG.info(_LI("Sending Deletion of Member %s to handler"),
+            LOG.info("Sending Deletion of Member %s to handler",
                      db_member.id)
             self.handler.delete(db_member)
         except Exception:

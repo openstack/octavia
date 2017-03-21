@@ -33,7 +33,6 @@ from octavia.amphorae.backends.agent.api_server import util
 from octavia.amphorae.backends.utils import haproxy_query as query
 from octavia.common import constants as consts
 from octavia.common import utils as octavia_utils
-from octavia.i18n import _LE
 
 LOG = logging.getLogger(__name__)
 BUFFER = 100
@@ -136,7 +135,7 @@ class Listener(object):
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            LOG.error(_LE("Failed to verify haproxy file: %s"), e)
+            LOG.error("Failed to verify haproxy file: %s", e)
             os.remove(name)  # delete file
             return flask.make_response(flask.jsonify(dict(
                 message="Invalid request",
@@ -166,7 +165,7 @@ class Listener(object):
                 raise util.UnknownInitError()
 
         except util.UnknownInitError:
-            LOG.error(_LE("Unknown init system found."))
+            LOG.error("Unknown init system found.")
             return flask.make_response(flask.jsonify(dict(
                 message="Unknown init system in amphora",
                 details="The amphora image is running an unknown init "
@@ -203,8 +202,7 @@ class Listener(object):
                 subprocess.check_output(init_enable_cmd.split(),
                                         stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                LOG.error(_LE("Failed to enable haproxy-%(list)s "
-                              "service: %(err)s"),
+                LOG.error("Failed to enable haproxy-%(list)s service: %(err)s",
                           {'list': listener_id, 'err': e})
                 return flask.make_response(flask.jsonify(dict(
                     message="Error enabling haproxy-{0} service".format(
@@ -276,7 +274,7 @@ class Listener(object):
             try:
                 subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                LOG.error(_LE("Failed to stop HAProxy service: %s"), e)
+                LOG.error("Failed to stop HAProxy service: %s", e)
                 return flask.make_response(flask.jsonify(dict(
                     message="Error stopping haproxy",
                     details=e.output)), 500)
@@ -311,9 +309,8 @@ class Listener(object):
                 subprocess.check_output(init_disable_cmd.split(),
                                         stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                LOG.error(_LE("Failed to disable haproxy-%(list)s "
-                              "service: %(err)s"),
-                          {'list': listener_id, 'err': e})
+                LOG.error("Failed to disable haproxy-%(list)s service: "
+                          "%(err)s", {'list': listener_id, 'err': e})
                 return flask.make_response(flask.jsonify(dict(
                     message="Error disabling haproxy-{0} service".format(
                             listener_id), details=e.output)), 500)

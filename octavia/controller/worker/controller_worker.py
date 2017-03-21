@@ -27,7 +27,6 @@ from octavia.controller.worker.flows import member_flows
 from octavia.controller.worker.flows import pool_flows
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
-from octavia.i18n import _LE, _LI
 
 from oslo_config import cfg
 from oslo_utils import excutils
@@ -653,7 +652,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         except Exception as e:
             with excutils.save_and_reraise_exception():
-                LOG.error(_LE("Failover exception: %s") % e)
+                LOG.error("Failover exception: %s" % e)
 
     def amphora_cert_rotation(self, amphora_id):
         """Perform cert rotation for an amphora.
@@ -665,8 +664,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         amp = self._amphora_repo.get(db_apis.get_session(),
                                      id=amphora_id)
-        LOG.info(_LI("Start amphora cert rotation, amphora's id is: %s")
-                 % amp.id)
+        LOG.info("Start amphora cert rotation, amphora's id is: %s" % amp.id)
 
         certrotation_amphora_tf = self._taskflow_load(
             self._amphora_flows.cert_rotate_amphora_flow(),

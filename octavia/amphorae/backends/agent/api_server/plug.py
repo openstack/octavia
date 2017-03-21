@@ -29,7 +29,6 @@ import six
 from werkzeug import exceptions
 
 from octavia.common import constants as consts
-from octavia.i18n import _LI
 
 
 CONF = cfg.CONF
@@ -55,9 +54,9 @@ class Plug(object):
         try:
             render_host_routes = []
             ip = ipaddress.ip_address(
-                vip if six.text_type == type(vip) else six.u(vip))
+                vip if isinstance(vip, six.text_type) else six.u(vip))
             network = ipaddress.ip_network(
-                subnet_cidr if six.text_type == type(subnet_cidr)
+                subnet_cidr if isinstance(subnet_cidr, six.text_type)
                 else six.u(subnet_cidr))
             vip = ip.exploded
             broadcast = network.broadcast_address.exploded
@@ -66,7 +65,7 @@ class Plug(object):
             vrrp_version = None
             if vrrp_ip:
                 vrrp_ip_obj = ipaddress.ip_address(
-                    vrrp_ip if six.text_type == type(vrrp_ip)
+                    vrrp_ip if isinstance(vrrp_ip, six.text_type)
                     else six.u(vrrp_ip)
                 )
                 vrrp_version = vrrp_ip_obj.version
@@ -184,10 +183,10 @@ class Plug(object):
             # Note, eth0 is skipped because that is the VIP interface
             netns_interface = 'eth{0}'.format(len(netns.get_links()))
 
-        LOG.info(_LI('Plugged interface {0} will become {1} in the '
-                     'namespace {2}').format(default_netns_interface,
-                                             netns_interface,
-                                             consts.AMPHORA_NAMESPACE))
+        LOG.info('Plugged interface {0} will become {1} in the '
+                 'namespace {2}'.format(default_netns_interface,
+                                        netns_interface,
+                                        consts.AMPHORA_NAMESPACE))
         interface_file_path = self._osutils.get_network_interface_file(
             netns_interface)
         self._osutils.write_port_interface_file(

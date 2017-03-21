@@ -29,7 +29,6 @@ from werkzeug import exceptions
 from octavia.common import constants as consts
 from octavia.common import exceptions as octavia_exceptions
 from octavia.common import utils
-from octavia.i18n import _LE
 
 CONF = cfg.CONF
 
@@ -144,12 +143,11 @@ class BaseOS(object):
                 try:
                     ip_addr = fixed_ip['ip_address']
                     cidr = fixed_ip['subnet_cidr']
-                    ip = ipaddress.ip_address(
-                        ip_addr if six.text_type == type(
-                            ip_addr) else six.u(ip_addr))
+                    ip = ipaddress.ip_address(ip_addr if isinstance(
+                        ip_addr, six.text_type) else six.u(ip_addr))
                     network = ipaddress.ip_network(
-                        cidr if six.text_type == type(
-                            cidr) else six.u(cidr))
+                        cidr if isinstance(
+                            cidr, six.text_type) else six.u(cidr))
                     broadcast = network.broadcast_address.exploded
                     netmask = (network.prefixlen if ip.version is 6
                                else network.netmask.exploded)
@@ -186,8 +184,8 @@ class BaseOS(object):
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            LOG.error(_LE('Failed to if up {0} due to '
-                          'error: {1}').format(interface, str(e)))
+            LOG.error('Failed to if up {0} due to '
+                      'error: {1}'.format(interface, str(e)))
             raise exceptions.HTTPException(
                 response=flask.make_response(flask.jsonify(dict(
                     message='Error plugging {0}'.format(what),

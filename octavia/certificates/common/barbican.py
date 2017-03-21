@@ -25,7 +25,7 @@ from oslo_utils import encodeutils
 
 from octavia.certificates.common import cert
 from octavia.common.tls_utils import cert_parser
-from octavia.i18n import _LE
+from octavia.i18n import _
 
 
 class BarbicanCert(cert.Cert):
@@ -33,9 +33,8 @@ class BarbicanCert(cert.Cert):
     def __init__(self, cert_container):
         if not isinstance(cert_container,
                           barbican_client.containers.CertificateContainer):
-            raise TypeError(_LE(
-                "Retrieved Barbican Container is not of the correct type "
-                "(certificate)."))
+            raise TypeError(_("Retrieved Barbican Container is not of the "
+                              "correct type (certificate)."))
         self._cert_container = cert_container
 
     def get_certificate(self):

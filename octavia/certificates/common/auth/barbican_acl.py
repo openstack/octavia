@@ -23,8 +23,6 @@ from oslo_utils import excutils
 
 from octavia.certificates.common import barbican as barbican_common
 from octavia.common import keystone
-from octavia.i18n import _LE
-
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
@@ -45,5 +43,5 @@ class BarbicanACLAuth(barbican_common.BarbicanAuth):
                 )
             except Exception:
                 with excutils.save_and_reraise_exception():
-                    LOG.exception(_LE("Error creating Barbican client"))
+                    LOG.exception("Error creating Barbican client")
         return cls._barbican_client

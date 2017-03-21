@@ -23,7 +23,6 @@ from octavia.amphorae.drivers.health import heartbeat_udp
 from octavia.common import service
 from octavia.controller.healthmanager import health_manager
 from octavia.controller.healthmanager import update_db
-from octavia.i18n import _LI
 from octavia import version
 
 
@@ -59,15 +58,15 @@ def main():
     hm_health_check_proc = multiprocessing.Process(name='HM_health_check',
                                                    target=hm_health_check)
     processes.append(hm_health_check_proc)
-    LOG.info(_LI("Health Manager listener process starts:"))
+    LOG.info("Health Manager listener process starts:")
     hm_listener_proc.start()
-    LOG.info(_LI("Health manager check process starts:"))
+    LOG.info("Health manager check process starts:")
     hm_health_check_proc.start()
 
     try:
         for process in processes:
             process.join()
     except KeyboardInterrupt:
-        LOG.info(_LI("Health Manager existing due to signal"))
+        LOG.info("Health Manager existing due to signal")
         hm_listener_proc.terminate()
         hm_health_check_proc.terminate()

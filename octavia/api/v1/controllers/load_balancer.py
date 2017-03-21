@@ -33,7 +33,7 @@ from octavia.common import utils
 import octavia.common.validate as validate
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
-from octavia.i18n import _, _LI
+from octavia.i18n import _
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -72,7 +72,7 @@ class LoadBalancersController(base.BaseController):
         lb_repo = self.repositories.load_balancer
         if not lb_repo.test_and_set_provisioning_status(
                 session, id, lb_status):
-            LOG.info(_LI("Load Balancer %s is immutable."), id)
+            LOG.info("Load Balancer %s is immutable.", id)
             db_lb = lb_repo.get(session, id=id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
                                              id=id)
@@ -90,8 +90,8 @@ class LoadBalancersController(base.BaseController):
 
     def _load_balancer_graph_to_handler(self, context, db_lb):
         try:
-            LOG.info(_LI("Sending full load balancer configuration %s to "
-                         "the handler"), db_lb.id)
+            LOG.info("Sending full load balancer configuration %s to "
+                     "the handler", db_lb.id)
             self.handler.create(db_lb)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
@@ -197,7 +197,7 @@ class LoadBalancersController(base.BaseController):
 
         # Handler will be responsible for sending to controller
         try:
-            LOG.info(_LI("Sending created Load Balancer %s to the handler"),
+            LOG.info("Sending created Load Balancer %s to the handler",
                      db_lb.id)
             self.handler.create(db_lb)
         except Exception:
@@ -217,7 +217,7 @@ class LoadBalancersController(base.BaseController):
         self._test_lb_status(context.session, id)
 
         try:
-            LOG.info(_LI("Sending updated Load Balancer %s to the handler"),
+            LOG.info("Sending updated Load Balancer %s to the handler",
                      id)
             self.handler.update(db_lb, load_balancer)
         except Exception:
@@ -239,7 +239,7 @@ class LoadBalancersController(base.BaseController):
             raise exceptions.ValidationException(detail=msg)
 
         try:
-            LOG.info(_LI("Sending deleted Load Balancer %s to the handler"),
+            LOG.info("Sending deleted Load Balancer %s to the handler",
                      db_lb.id)
             self.handler.delete(db_lb, cascade)
         except Exception:
@@ -270,7 +270,7 @@ class LoadBalancersController(base.BaseController):
             db_lb = self.repositories.load_balancer.get(context.session,
                                                         id=lb_id)
             if not db_lb:
-                LOG.info(_LI("Load Balancer %s was not found."), lb_id)
+                LOG.info("Load Balancer %s was not found.", lb_id)
                 raise exceptions.NotFound(
                     resource=data_models.LoadBalancer._name(), id=lb_id)
             if controller == 'listeners':
@@ -287,11 +287,11 @@ class LoadBalancersController(base.BaseController):
 
 
 class LBCascadeDeleteController(LoadBalancersController):
-        def __init__(self, lb_id):
-            super(LBCascadeDeleteController, self).__init__()
-            self.lb_id = lb_id
+    def __init__(self, lb_id):
+        super(LBCascadeDeleteController, self).__init__()
+        self.lb_id = lb_id
 
-        @wsme_pecan.wsexpose(None, status_code=202)
-        def delete(self):
-            """Deletes a load balancer."""
-            return self._delete(self.lb_id, cascade=True)
+    @wsme_pecan.wsexpose(None, status_code=202)
+    def delete(self):
+        """Deletes a load balancer."""
+        return self._delete(self.lb_id, cascade=True)

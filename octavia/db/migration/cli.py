@@ -42,7 +42,7 @@ def add_alembic_subparser(sub, cmd):
 
 def do_upgrade(config, cmd):
     if not CONF.command.revision and not CONF.command.delta:
-        raise SystemExit('You must provide a revision or relative delta')
+        raise SystemExit(_('You must provide a revision or relative delta'))
 
     revision = CONF.command.revision or ''
     if '-' in revision:

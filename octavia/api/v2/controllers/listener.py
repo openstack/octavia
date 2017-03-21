@@ -29,7 +29,6 @@ from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
-from octavia.i18n import _LI
 
 
 CONF = cfg.CONF
@@ -50,7 +49,7 @@ class ListenersController(base.BaseController):
         db_listener = self.repositories.listener.get(
             session, load_balancer_id=load_balancer_id, id=id)
         if not db_listener:
-            LOG.info(_LI("Listener %s not found."), id)
+            LOG.info("Listener %s not found.", id)
             raise exceptions.NotFound(
                 resource=data_models.Listener._name(), id=id)
         return db_listener
@@ -91,8 +90,7 @@ class ListenersController(base.BaseController):
             if not self.repositories.test_and_set_lb_and_listeners_prov_status(
                     session, lb_id, constants.PENDING_UPDATE,
                     listener_status, listener_ids=[id]):
-                LOG.info(_LI("Load Balancer %s is immutable."),
-                         lb_id)
+                LOG.info("Load Balancer %s is immutable.", lb_id)
                 db_lb = lb_repo.get(session, id=lb_id)
                 raise exceptions.ImmutableObject(resource=db_lb._name(),
                                                  id=lb_id)
@@ -100,7 +98,7 @@ class ListenersController(base.BaseController):
             if not lb_repo.test_and_set_provisioning_status(
                     session, lb_id, constants.PENDING_UPDATE):
                 db_lb = lb_repo.get(session, id=lb_id)
-                LOG.info(_LI("Load Balancer %s is immutable."), db_lb.id)
+                LOG.info("Load Balancer %s is immutable.", db_lb.id)
                 raise exceptions.ImmutableObject(resource=db_lb._name(),
                                                  id=lb_id)
 
@@ -168,7 +166,7 @@ class ListenersController(base.BaseController):
 
     def _send_listener_to_handler(self, session, db_listener):
         try:
-            LOG.info(_LI("Sending Creation of Listener %s to handler"),
+            LOG.info("Sending Creation of Listener %s to handler",
                      db_listener.id)
             self.handler.create(db_listener)
         except Exception:
@@ -230,7 +228,7 @@ class ListenersController(base.BaseController):
                                             id=id)
 
         try:
-            LOG.info(_LI("Sending Update of Listener %s to handler"), id)
+            LOG.info("Sending Update of Listener %s to handler", id)
             self.handler.update(db_listener, listener)
         except Exception:
             with excutils.save_and_reraise_exception(
@@ -257,7 +255,7 @@ class ListenersController(base.BaseController):
             id=id, listener_status=constants.PENDING_DELETE)
 
         try:
-            LOG.info(_LI("Sending Deletion of Listener %s to handler"),
+            LOG.info("Sending Deletion of Listener %s to handler",
                      db_listener.id)
             self.handler.delete(db_listener)
         except Exception:

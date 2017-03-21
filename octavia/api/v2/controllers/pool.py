@@ -31,7 +31,6 @@ from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
-from octavia.i18n import _LI
 
 
 CONF = cfg.CONF
@@ -82,8 +81,8 @@ class PoolsController(base.BaseController):
                 session, lb_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE,
                 listener_ids=listener_ids):
-            LOG.info(_LI("Pool cannot be created or modified because the Load "
-                         "Balancer is in an immutable state"))
+            LOG.info("Pool cannot be created or modified because the Load "
+                     "Balancer is in an immutable state")
             raise exceptions.ImmutableObject(resource=_('Load Balancer'),
                                              id=lb_id)
 
@@ -119,8 +118,7 @@ class PoolsController(base.BaseController):
 
     def _send_pool_to_handler(self, session, db_pool, listener_id):
         try:
-            LOG.info(_LI("Sending Creation of Pool %s to handler"),
-                     db_pool.id)
+            LOG.info("Sending Creation of Pool %s to handler", db_pool.id)
             self.handler.create(db_pool)
         except Exception:
             with excutils.save_and_reraise_exception(
@@ -212,7 +210,7 @@ class PoolsController(base.BaseController):
             context.session, db_pool.id,
             provisioning_status=constants.PENDING_UPDATE)
         try:
-            LOG.info(_LI("Sending Update of Pool %s to handler"), id)
+            LOG.info("Sending Update of Pool %s to handler", id)
             self.handler.update(db_pool, pool)
         except Exception:
             with excutils.save_and_reraise_exception(
@@ -244,8 +242,7 @@ class PoolsController(base.BaseController):
             provisioning_status=constants.PENDING_DELETE)
 
         try:
-            LOG.info(_LI("Sending Deletion of Pool %s to handler"),
-                     db_pool.id)
+            LOG.info("Sending Deletion of Pool %s to handler", db_pool.id)
             self.handler.delete(db_pool)
         except Exception:
             with excutils.save_and_reraise_exception(
@@ -275,7 +272,7 @@ class PoolsController(base.BaseController):
             remainder = remainder[1:]
             db_pool = self.repositories.pool.get(context.session, id=pool_id)
             if not db_pool:
-                LOG.info(_LI("Pool %s not found."), pool_id)
+                LOG.info("Pool %s not found.", pool_id)
                 raise exceptions.NotFound(resource=data_models.Pool._name(),
                                           id=pool_id)
             if controller == 'members':

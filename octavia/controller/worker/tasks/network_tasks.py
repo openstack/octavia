@@ -22,7 +22,6 @@ from taskflow.types import failure
 
 from octavia.common import constants
 from octavia.common import utils
-from octavia.i18n import _LW, _LE
 from octavia.network import base
 from octavia.network import data_models as n_data_models
 
@@ -148,7 +147,7 @@ class PlugNetworks(BaseNetworkTask):
     def revert(self, amphora, delta, *args, **kwargs):
         """Handle a failed network plug by removing all nics added."""
 
-        LOG.warning(_LW("Unable to plug networks for amp id %s"), amphora.id)
+        LOG.warning("Unable to plug networks for amp id %s", amphora.id)
         if not delta:
             return
 
@@ -183,7 +182,7 @@ class UnPlugNetworks(BaseNetworkTask):
                 LOG.debug("Network %d not found", nic.network_id)
                 pass
             except Exception:
-                LOG.exception(_LE("Unable to unplug network"))
+                LOG.exception("Unable to unplug network")
                 pass  # Todo(german) follow up if that makes sense
 
 
@@ -238,7 +237,7 @@ class HandleNetworkDeltas(BaseNetworkTask):
                 except base.NetworkNotFound:
                     LOG.debug("Network %d not found ", nic.network_id)
                 except Exception:
-                    LOG.exception(_LE("Unable to unplug network"))
+                    LOG.exception("Unable to unplug network")
         return added_ports
 
     def revert(self, result, deltas, *args, **kwargs):
@@ -247,7 +246,7 @@ class HandleNetworkDeltas(BaseNetworkTask):
         if isinstance(result, failure.Failure):
             return
         for amp_id, delta in six.iteritems(deltas):
-            LOG.warning(_LW("Unable to plug networks for amp id %s"),
+            LOG.warning("Unable to plug networks for amp id %s",
                         delta.amphora_id)
             if not delta:
                 return
@@ -277,7 +276,7 @@ class PlugVIP(BaseNetworkTask):
 
         if isinstance(result, failure.Failure):
             return
-        LOG.warning(_LW("Unable to plug VIP for loadbalancer id %s"),
+        LOG.warning("Unable to plug VIP for loadbalancer id %s",
                     loadbalancer.id)
 
         try:
@@ -291,9 +290,8 @@ class PlugVIP(BaseNetworkTask):
 
             self.network_driver.unplug_vip(loadbalancer, loadbalancer.vip)
         except Exception as e:
-            LOG.error(_LE("Failed to unplug VIP.  Resources may still "
-                          "be in use from vip: %(vip)s due to "
-                          "error: %(except)s"),
+            LOG.error("Failed to unplug VIP.  Resources may still "
+                      "be in use from vip: %(vip)s due to error: %(except)s",
                       {'vip': loadbalancer.vip.ip_address, 'except': e})
 
 
@@ -307,7 +305,7 @@ class UnplugVIP(BaseNetworkTask):
         try:
             self.network_driver.unplug_vip(loadbalancer, loadbalancer.vip)
         except Exception:
-            LOG.exception(_LE("Unable to unplug vip from load balancer %s"),
+            LOG.exception("Unable to unplug vip from load balancer %s",
                           loadbalancer.id)
 
 
@@ -328,16 +326,15 @@ class AllocateVIP(BaseNetworkTask):
         """Handle a failure to allocate vip."""
 
         if isinstance(result, failure.Failure):
-            LOG.exception(_LE("Unable to allocate VIP"))
+            LOG.exception("Unable to allocate VIP")
             return
         vip = result
-        LOG.warning(_LW("Deallocating vip %s"), vip.ip_address)
+        LOG.warning("Deallocating vip %s", vip.ip_address)
         try:
             self.network_driver.deallocate_vip(vip)
         except Exception as e:
-            LOG.error(_LE("Failed to deallocate VIP.  Resources may still "
-                          "be in use from vip: %(vip)s due to "
-                          "error: %(except)s"),
+            LOG.error("Failed to deallocate VIP.  Resources may still "
+                      "be in use from vip: %(vip)s due to error: %(except)s",
                       {'vip': vip.ip_address, 'except': e})
 
 
@@ -438,9 +435,8 @@ class PlugVIPPort(BaseNetworkTask):
             vrrp_port = amphorae_network_config.get(amphora.id).vrrp_port
             self.network_driver.unplug_port(amphora, vrrp_port)
         except Exception:
-            LOG.warning(_LW('Failed to unplug vrrp port: {port} '
-                            'from amphora: {amp}').format(port=vrrp_port.id,
-                                                          amp=amphora.id))
+            LOG.warning(('Failed to unplug vrrp port: {port} from amphora: '
+                         '{amp}').format(port=vrrp_port.id, amp=amphora.id))
 
 
 class WaitForPortDetach(BaseNetworkTask):

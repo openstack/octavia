@@ -22,7 +22,6 @@ from octavia.common import constants
 from octavia.controller.worker import controller_worker as cw
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
-from octavia.i18n import _LI
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
@@ -47,8 +46,7 @@ class SpareAmphora(object):
 
         # When the current spare amphora is less than required
         if diff_count > 0:
-            LOG.info(_LI("Initiating creation of %d spare amphora.") %
-                     diff_count)
+            LOG.info("Initiating creation of %d spare amphora." % diff_count)
 
             # Call Amphora Create Flow diff_count times
             for i in range(1, diff_count + 1):
@@ -56,8 +54,7 @@ class SpareAmphora(object):
                 self.cw.create_amphora()
 
         else:
-            LOG.debug(_LI("Current spare amphora count satisfies the "
-                          "requirement"))
+            LOG.debug("Current spare amphora count satisfies the requirement")
 
 
 class DatabaseCleanup(object):
@@ -77,9 +74,9 @@ class DatabaseCleanup(object):
         for amp in amphora:
             if self.amp_health_repo.check_amphora_expired(session, amp.id,
                                                           exp_age):
-                LOG.info(_LI('Attempting to delete Amphora id : %s'), amp.id)
+                LOG.info('Attempting to delete Amphora id : %s', amp.id)
                 self.amp_repo.delete(session, id=amp.id)
-                LOG.info(_LI('Deleted Amphora id : %s') % amp.id)
+                LOG.info('Deleted Amphora id : %s' % amp.id)
 
     def cleanup_load_balancers(self):
         """Checks the DB for old load balancers and triggers their removal."""
@@ -93,10 +90,9 @@ class DatabaseCleanup(object):
         for lb in load_balancers:
             if self.lb_repo.check_load_balancer_expired(session, lb.id,
                                                         exp_age):
-                LOG.info(_LI('Attempting to delete load balancer id : %s'),
-                         lb.id)
+                LOG.info('Attempting to delete load balancer id : %s', lb.id)
                 self.lb_repo.delete(session, id=lb.id)
-                LOG.info(_LI('Deleted load balancer id : %s') % lb.id)
+                LOG.info('Deleted load balancer id : %s' % lb.id)
 
 
 class CertRotation(object):
@@ -120,7 +116,7 @@ class CertRotation(object):
                     LOG.debug("Cert expired amphora's id is: %s", amp.id)
                     executor.submit(self.cw.amphora_cert_rotation, amp.id)
                 if rotation_count > 0:
-                    LOG.info(_LI("Rotated certificates for %s amphora") %
+                    LOG.info("Rotated certificates for %s amphora" %
                              rotation_count)
             finally:
                 executor.shutdown(wait=True)

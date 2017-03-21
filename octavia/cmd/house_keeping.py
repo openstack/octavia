@@ -24,9 +24,7 @@ from oslo_reports import guru_meditation_report as gmr
 
 from octavia.common import service
 from octavia.controller.housekeeping import house_keeping
-from octavia.i18n import _LI
 from octavia import version
-
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
@@ -41,7 +39,7 @@ def spare_amphora_check():
 
     # Read the interval from CONF
     interval = CONF.house_keeping.spare_check_interval
-    LOG.info(_LI("Spare check interval is set to %d sec"), interval)
+    LOG.info("Spare check interval is set to %d sec", interval)
 
     spare_amp = house_keeping.SpareAmphora()
     while not spare_amp_thread_event.is_set():
@@ -54,10 +52,10 @@ def db_cleanup():
     """Perform db cleanup for old resources."""
     # Read the interval from CONF
     interval = CONF.house_keeping.cleanup_interval
-    LOG.info(_LI("DB cleanup interval is set to %d sec"), interval)
-    LOG.info(_LI('Amphora expiry age is %s seconds'),
+    LOG.info("DB cleanup interval is set to %d sec", interval)
+    LOG.info('Amphora expiry age is %s seconds',
              CONF.house_keeping.amphora_expiry_age)
-    LOG.info(_LI('Load balancer expiry age is %s seconds'),
+    LOG.info('Load balancer expiry age is %s seconds',
              CONF.house_keeping.load_balancer_expiry_age)
 
     db_cleanup = house_keeping.DatabaseCleanup()
@@ -72,7 +70,7 @@ def cert_rotation():
     """Perform certificate rotation."""
     interval = CONF.house_keeping.cert_interval
     LOG.info(
-        _LI("Expiring certificate check interval is set to %d sec"), interval)
+        "Expiring certificate check interval is set to %d sec", interval)
     cert_rotate = house_keeping.CertRotation()
     while not cert_rotate_thread_event.is_set():
         LOG.debug("Initiating certification rotation ...")
@@ -86,7 +84,7 @@ def main():
     gmr.TextGuruMeditation.setup_autorun(version)
 
     timestamp = str(datetime.datetime.utcnow())
-    LOG.info(_LI("Starting house keeping at %s"), timestamp)
+    LOG.info("Starting house keeping at %s", timestamp)
 
     # Thread to perform spare amphora check
     spare_amp_thread = threading.Thread(target=spare_amphora_check)
@@ -108,11 +106,11 @@ def main():
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        LOG.info(_LI("Attempting to gracefully terminate House-Keeping"))
+        LOG.info("Attempting to gracefully terminate House-Keeping")
         spare_amp_thread_event.set()
         db_cleanup_thread_event.set()
         cert_rotate_thread_event.set()
         spare_amp_thread.join()
         db_cleanup_thread.join()
         cert_rotate_thread.join()
-        LOG.info(_LI("House-Keeping process terminated"))
+        LOG.info("House-Keeping process terminated")

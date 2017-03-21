@@ -27,8 +27,6 @@ from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import validate
 from octavia.db import prepare as db_prepare
-from octavia.i18n import _LI
-
 
 LOG = logging.getLogger(__name__)
 
@@ -65,8 +63,8 @@ class L7RuleController(base.BaseController):
                 session, self.load_balancer_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE,
                 listener_ids=[self.listener_id]):
-            LOG.info(_LI("L7Rule cannot be created or modified because the "
-                         "Load Balancer is in an immutable state"))
+            LOG.info("L7Rule cannot be created or modified because the "
+                     "Load Balancer is in an immutable state")
             lb_repo = self.repositories.load_balancer
             db_lb = lb_repo.get(session, id=self.load_balancer_id)
             raise exceptions.ImmutableObject(resource=db_lb._name(),
@@ -109,7 +107,7 @@ class L7RuleController(base.BaseController):
             if ['id'] == de.columns:
                 raise exceptions.IDAlreadyExists()
         try:
-            LOG.info(_LI("Sending Creation of L7Rule %s to handler"),
+            LOG.info("Sending Creation of L7Rule %s to handler",
                      db_l7rule.id)
             self.handler.create(db_l7rule)
         except Exception:
@@ -138,7 +136,7 @@ class L7RuleController(base.BaseController):
         self._test_lb_and_listener_statuses(context.session)
 
         try:
-            LOG.info(_LI("Sending Update of L7Rule %s to handler"), id)
+            LOG.info("Sending Update of L7Rule %s to handler", id)
             self.handler.update(db_l7rule, l7rule)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
@@ -157,7 +155,7 @@ class L7RuleController(base.BaseController):
         self._test_lb_and_listener_statuses(context.session)
 
         try:
-            LOG.info(_LI("Sending Deletion of L7Rule %s to handler"),
+            LOG.info("Sending Deletion of L7Rule %s to handler",
                      db_l7rule.id)
             self.handler.delete(db_l7rule)
         except Exception:

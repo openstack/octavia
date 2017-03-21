@@ -19,7 +19,6 @@ from oslo_log import log as logging
 from oslo_utils import excutils
 
 from octavia.common import keystone
-from octavia.i18n import _LE
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
@@ -64,7 +63,7 @@ class NovaAuth(object):
                     version=api_versions.APIVersion(NOVA_VERSION), **kwargs)
             except Exception:
                 with excutils.save_and_reraise_exception():
-                    LOG.exception(_LE("Error creating Nova client."))
+                    LOG.exception("Error creating Nova client.")
         return cls.nova_client
 
 
@@ -103,7 +102,7 @@ class NeutronAuth(object):
                     NEUTRON_VERSION, **kwargs)
             except Exception:
                 with excutils.save_and_reraise_exception():
-                    LOG.exception(_LE("Error creating Neutron client."))
+                    LOG.exception("Error creating Neutron client.")
         return cls.neutron_client
 
 
@@ -142,5 +141,5 @@ class GlanceAuth(object):
                     GLANCE_VERSION, **kwargs)
             except Exception:
                 with excutils.save_and_reraise_exception():
-                    LOG.exception(_LE("Error creating Glance client."))
+                    LOG.exception("Error creating Glance client.")
         return cls.glance_client

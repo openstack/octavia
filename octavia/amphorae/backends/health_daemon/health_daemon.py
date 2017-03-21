@@ -24,7 +24,6 @@ import six
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.amphorae.backends.health_daemon import health_sender
 from octavia.amphorae.backends.utils import haproxy_query
-from octavia.i18n import _LI
 
 if six.PY2:
     import Queue as queue
@@ -48,7 +47,7 @@ def list_sock_stat_files(hadir=None):
 
 
 def run_sender(cmd_queue):
-    LOG.info(_LI('Health Manager Sender starting.'))
+    LOG.info('Health Manager Sender starting.')
     sender = health_sender.UDPStatusSender()
     while True:
         message = build_stats_message()
@@ -56,10 +55,10 @@ def run_sender(cmd_queue):
         try:
             cmd = cmd_queue.get_nowait()
             if cmd is 'reload':
-                LOG.info(_LI('Reloading configuration'))
+                LOG.info('Reloading configuration')
                 CONF.reload_config_files()
             elif cmd is 'shutdown':
-                LOG.info(_LI('Health Manager Sender shutting down.'))
+                LOG.info('Health Manager Sender shutting down.')
                 break
         except queue.Empty:
             pass
