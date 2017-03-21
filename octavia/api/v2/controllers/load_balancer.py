@@ -101,7 +101,7 @@ class LoadBalancersController(base.BaseController):
                 ))
 
     @wsme_pecan.wsexpose(lb_types.LoadBalancerRootResponse,
-                         body=lb_types.LoadBalancerRootPOST, status_code=202)
+                         body=lb_types.LoadBalancerRootPOST, status_code=201)
     def post(self, load_balancer):
         """Creates a load balancer."""
         load_balancer = load_balancer.loadbalancer

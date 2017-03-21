@@ -99,7 +99,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                                    expect_errors=expect_errors)
         return response
 
-    def post(self, path, body, headers=None, status=202, expect_errors=False):
+    def post(self, path, body, headers=None, status=201, expect_errors=False):
         headers = headers or {}
         full_path = self._get_full_path(path)
         response = self.app.post_json(full_path,
