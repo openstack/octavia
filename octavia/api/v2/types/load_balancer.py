@@ -54,6 +54,11 @@ class LoadBalancerResponse(BaseLoadBalancerType):
             result.vip_address = data_model.vip.ip_address
             result.vip_network_id = data_model.vip.network_id
         result.tenant_id = data_model.project_id
+        if not result.description:
+            result.description = ""
+        if not result.name:
+            result.name = ""
+
         return result
 
 
