@@ -42,6 +42,7 @@ For operators
    :maxdepth: 1
 
    guides/dev-quick-start.rst
+   guides/operator-maintenance.rst
    main/configref.rst
    main/Anchor.rst
 
