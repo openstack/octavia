@@ -71,17 +71,6 @@ class TestLoadBalancer(base.BaseAPITest):
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
 
-    def test_create_with_duplicate_id(self):
-        project_id = uuidutils.generate_uuid()
-        lb = self.create_load_balancer(
-            uuidutils.generate_uuid(),
-            project_id=project_id).get(self.root_tag)
-        body = self._build_body({'id': lb.get('id'),
-                                 'project_id': project_id,
-                                 'vip_subnet_id': uuidutils.generate_uuid()})
-        self.post(self.LBS_PATH, body,
-                  status=409, expect_errors=True)
-
     def test_create_without_vip(self):
         lb_json = {'name': 'test1',
                    'project_id': self.project_id}
@@ -494,9 +483,14 @@ class TestLoadBalancer(base.BaseAPITest):
 
 class TestLoadBalancerGraph(base.BaseAPITest):
 
+    root_tag = 'loadbalancer'
+
     def setUp(self):
         super(TestLoadBalancerGraph, self).setUp()
         self._project_id = uuidutils.generate_uuid()
+
+    def _build_body(self, json):
+        return {self.root_tag: json}
 
     def _assert_graphs_equal(self, expected_graph, observed_graph):
         observed_graph_copy = copy.deepcopy(observed_graph)
@@ -747,7 +741,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         create_listener, expected_listener = self._get_listener_bodies()
         create_lb, expected_lb = self._get_lb_bodies([create_listener],
                                                      [expected_listener])
-        response = self.post(self.LBS_PATH, create_lb)
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
@@ -886,7 +881,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             expected_l7policies=expected_l7policies)
         create_lb, expected_lb = self._get_lb_bodies([create_listener],
                                                      [expected_listener])
-        self.post(self.LBS_PATH, create_lb, expect_errors=True)
+        self.post(self.LBS_PATH, create_lb)
 
     @testtools.skip('Skip until complete v2 merge')
     def test_with_l7policies_one_redirect_pool_one_rule(self):
@@ -977,5 +972,4 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         with mock.patch('octavia.db.repositories.Repositories.'
                         'create_load_balancer_tree') as repo_mock:
             repo_mock.side_effect = Exception('I am a DB Error')
-            response = self.post(self.LBS_PATH, create_lb, expect_errors=True)
-            self.assertEqual(500, response.status_code)
+            self.post(self.LBS_PATH, create_lb, status=500)
