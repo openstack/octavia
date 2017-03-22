@@ -31,8 +31,16 @@ class TestLoadBalancer(base.BaseAPITest):
 
     def _assert_request_matches_response(self, req, resp, **optionals):
         self.assertTrue(uuidutils.is_uuid_like(resp.get('id')))
-        self.assertEqual(req.get('name'), resp.get('name'))
-        self.assertEqual(req.get('description'), resp.get('description'))
+        req_name = req.get('name')
+        req_description = req.get('description')
+        if not req_name:
+            self.assertEqual('', resp.get('name'))
+        else:
+            self.assertEqual(req.get('name'), resp.get('name'))
+        if not req_description:
+            self.assertEqual('', resp.get('description'))
+        else:
+            self.assertEqual(req.get('description'), resp.get('description'))
         self.assertEqual(constants.PENDING_CREATE,
                          resp.get('provisioning_status'))
         self.assertEqual(constants.OFFLINE, resp.get('operating_status'))
