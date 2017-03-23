@@ -16,7 +16,6 @@ import datetime
 
 from oslo_config import cfg
 from oslo_log import log as logging
-import six
 import sqlalchemy
 from stevedore import driver as stevedore_driver
 
@@ -118,7 +117,7 @@ class UpdateHealthDb(object):
         lb_status = constants.ONLINE
 
         # update listener and nodes db information
-        for listener_id, listener in six.iteritems(listeners):
+        for listener_id, listener in listeners.items():
 
             listener_status = None
             # OPEN = HAProxy listener status nbconn < maxconn
@@ -144,7 +143,7 @@ class UpdateHealthDb(object):
                 LOG.error(_LE("Listener %s is not in DB"), listener_id)
 
             pools = listener['pools']
-            for pool_id, pool in six.iteritems(pools):
+            for pool_id, pool in pools.items():
 
                 pool_status = None
                 # UP = HAProxy backend has working or no servers
@@ -160,7 +159,7 @@ class UpdateHealthDb(object):
                                 'status': pool.get('status')})
 
                 members = pool['members']
-                for member_id, status in six.iteritems(members):
+                for member_id, status in members.items():
 
                     member_status = None
                     if status == constants.UP:
@@ -257,7 +256,7 @@ class UpdateStatsDb(stats.StatsMixin):
 
         amphora_id = health_message['id']
         listeners = health_message['listeners']
-        for listener_id, listener in six.iteritems(listeners):
+        for listener_id, listener in listeners.items():
 
             stats = listener.get('stats')
             stats = {'bytes_in': stats['rx'], 'bytes_out': stats['tx'],

@@ -25,7 +25,6 @@ from oslo_db import exception as db_exception
 from oslo_log import log as logging
 from oslo_utils import excutils
 from oslo_utils import uuidutils
-import six
 
 from octavia.common import constants as consts
 from octavia.common import data_models
@@ -1261,7 +1260,7 @@ class QuotasRepository(BaseRepository):
             if not quotas:
                 quotas = models.Quotas(project_id=project_id)
 
-            for key, val in six.iteritems(kwargs_quota):
+            for key, val in kwargs_quota.items():
                 setattr(quotas, key, val)
             session.add(quotas)
             session.flush()

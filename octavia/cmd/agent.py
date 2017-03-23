@@ -20,7 +20,6 @@ import sys
 import gunicorn.app.base
 from oslo_config import cfg
 from oslo_reports import guru_meditation_report as gmr
-import six
 
 from octavia.amphorae.backends.agent.api_server import server
 from octavia.amphorae.backends.health_daemon import health_daemon
@@ -41,10 +40,10 @@ class AmphoraAgent(gunicorn.app.base.BaseApplication):
 
     def load_config(self):
         config = dict(
-            [(key, value) for key, value in six.iteritems(self.options)
+            [(key, value) for key, value in self.options.items()
              if key in self.cfg.settings and value is not None]
         )
-        for key, value in six.iteritems(config):
+        for key, value in config.items():
             self.cfg.set(key.lower(), value)
 
     def load(self):

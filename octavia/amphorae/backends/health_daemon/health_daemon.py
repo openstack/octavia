@@ -79,7 +79,7 @@ def build_stats_message():
            'seq': SEQ, "listeners": {}}
     SEQ += 1
     stat_sock_files = list_sock_stat_files()
-    for listener_id, stat_sock_file in six.iteritems(stat_sock_files):
+    for listener_id, stat_sock_file in stat_sock_files.items():
         listener_dict = {'pools': {},
                          'status': 'DOWN',
                          'stats': {
@@ -100,7 +100,7 @@ def build_stats_message():
                     listener_dict['stats']['totconns'] = int(row['stot'])
                     listener_dict['stats']['ereq'] = int(row['ereq'])
                     listener_dict['status'] = row['status']
-            for oid, pool in six.iteritems(pool_status):
+            for oid, pool in pool_status.items():
                 if oid != listener_id:
                     pool_id = oid
                     pools = listener_dict['pools']
