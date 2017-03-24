@@ -60,9 +60,15 @@ class LoadBalancersController(base.BaseController):
         # tenant_id and project_id are the same thing.  tenant_id will be kept
         # around for a long amount of time.
         context = pecan.request.context.get('octavia_context')
-        project_id = context.project_id or project_id or tenant_id
+        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
+            if project_id or tenant_id:
+                project_id = {'project_id': project_id or tenant_id}
+            else:
+                project_id = {}
+        else:
+            project_id = {'project_id': context.project_id}
         load_balancers = self.repositories.load_balancer.get_all(
-            context.session, project_id=project_id)
+            context.session, **project_id)
         result = self._convert_db_to_type(load_balancers,
                                           [lb_types.LoadBalancerResponse])
         return lb_types.LoadBalancersRootResponse(loadbalancers=result)

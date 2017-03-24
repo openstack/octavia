@@ -18,6 +18,7 @@ import mock
 from oslo_utils import uuidutils
 
 from octavia.common import constants
+import octavia.common.context
 from octavia.network import base as network_base
 from octavia.network import data_models as network_models
 from octavia.tests.functional.api.v2 import base
@@ -237,24 +238,46 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_create_with_project_id(self):
         self.test_create(project_id=uuidutils.generate_uuid())
 
-    def test_get_all(self):
+    def test_get_all_admin(self):
         project_id = uuidutils.generate_uuid()
         lb1 = self.create_load_balancer(uuidutils.generate_uuid(),
-                                        name='lb1', project_id=project_id)
+                                        name='lb1', project_id=self.project_id)
         lb2 = self.create_load_balancer(uuidutils.generate_uuid(),
                                         name='lb2', project_id=project_id)
         lb3 = self.create_load_balancer(uuidutils.generate_uuid(),
                                         name='lb3', project_id=project_id)
-        response = self.get(self.LBS_PATH,
-                            params={'project_id': self.project_id})
-        lbs = response.json.get(self.root_tag)
-        # Same get all project_id issue
-        if lbs is not None:
-            lb_id_names = [(lb.get('id'), lb.get('name')) for lb in lbs]
-            self.assertEqual(3, len(lbs))
-            self.assertIn((lb1.get('id'), lb1.get('name')), lb_id_names)
-            self.assertIn((lb2.get('id'), lb2.get('name')), lb_id_names)
-            self.assertIn((lb3.get('id'), lb3.get('name')), lb_id_names)
+        response = self.get(self.LBS_PATH)
+        lbs = response.json.get(self.root_tag_list)
+        self.assertEqual(3, len(lbs))
+        lb_id_names = [(lb.get('id'), lb.get('name')) for lb in lbs]
+        lb1 = lb1.get(self.root_tag)
+        lb2 = lb2.get(self.root_tag)
+        lb3 = lb3.get(self.root_tag)
+        self.assertIn((lb1.get('id'), lb1.get('name')), lb_id_names)
+        self.assertIn((lb2.get('id'), lb2.get('name')), lb_id_names)
+        self.assertIn((lb3.get('id'), lb3.get('name')), lb_id_names)
+
+    def test_get_all_non_admin(self):
+        project_id = uuidutils.generate_uuid()
+        self.create_load_balancer(uuidutils.generate_uuid(),
+                                  name='lb1', project_id=project_id)
+        self.create_load_balancer(uuidutils.generate_uuid(),
+                                  name='lb2', project_id=project_id)
+        lb3 = self.create_load_balancer(uuidutils.generate_uuid(),
+                                        name='lb3', project_id=self.project_id)
+        lb3 = lb3.get(self.root_tag)
+
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.KEYSTONE)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            response = self.get(self.LBS_PATH)
+        self.conf.config(auth_strategy=auth_strategy)
+
+        lbs = response.json.get(self.root_tag_list)
+        self.assertEqual(1, len(lbs))
+        lb_id_names = [(lb.get('id'), lb.get('name')) for lb in lbs]
+        self.assertIn((lb3.get('id'), lb3.get('name')), lb_id_names)
 
     def test_get_all_by_project_id(self):
         project1_id = uuidutils.generate_uuid()
@@ -268,22 +291,20 @@ class TestLoadBalancer(base.BaseAPITest):
         lb3 = self.create_load_balancer(uuidutils.generate_uuid(),
                                         name='lb3',
                                         project_id=project2_id)
-        project1_path = "{0}?project_id={1}".format(self.LBS_PATH, project1_id)
-        response = self.get(project1_path)
+        response = self.get(self.LBS_PATH,
+                            params={'project_id': project1_id})
         lbs = response.json.get(self.root_tag_list)
 
         self.assertEqual(2, len(lbs))
 
         lb_id_names = [(lb.get('id'), lb.get('name')) for lb in lbs]
-        self.assertEqual(2, len(lbs))
         lb1 = lb1.get(self.root_tag)
         lb2 = lb2.get(self.root_tag)
         lb3 = lb3.get(self.root_tag)
         self.assertIn((lb1.get('id'), lb1.get('name')), lb_id_names)
         self.assertIn((lb2.get('id'), lb2.get('name')), lb_id_names)
-        project2_path = "{0}?project_id={1}".format(self.LBS_PATH,
-                                                    project2_id)
-        response = self.get(project2_path)
+        response = self.get(self.LBS_PATH,
+                            params={'project_id': project2_id})
         lbs = response.json.get(self.root_tag_list)
         lb_id_names = [(lb.get('id'), lb.get('name')) for lb in lbs]
         self.assertEqual(1, len(lbs))
