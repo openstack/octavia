@@ -54,8 +54,8 @@ core_opts = [
                help=_("The maximum number of items returned in a single "
                       "response. The string 'infinite' or a negative "
                       "integer value means 'no limit'")),
-    cfg.StrOpt('host', default=utils.get_hostname(),
-               help=_("The hostname Octavia is running on")),
+    cfg.HostAddressOpt('host', default=utils.get_hostname(),
+                       help=_("The hostname Octavia is running on")),
     cfg.StrOpt('octavia_plugins',
                default='hot_plug_plugin',
                help=_('Name of the controller plugin to use'))
