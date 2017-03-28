@@ -76,7 +76,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
 
         auth_provider = mgr.auth_provider
         region = config.network.region or config.identity.region
-        self.client_args = [auth_provider, 'load-balancing', region]
+        self.client_args = [auth_provider, 'load-balancer', region]
         self.load_balancers_client = (
             load_balancers_client.LoadBalancersClient(*self.client_args))
         self.listeners_client = (
