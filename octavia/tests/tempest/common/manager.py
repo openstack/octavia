@@ -579,7 +579,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
             negative - attempt ping and fail if succeed
         :param mtu: network MTU to use for connectivity validation
 
-        :raises: AssertError if the result of the connectivity check does
+        :raises AssertError: if the result of the connectivity check does
             not match the value of the should_connect param
         """
         if should_connect:
@@ -881,7 +881,7 @@ class NetworkScenarioTest(ScenarioTest):
 
         :param dict floating_ip: floating IP dict to check status
         :param status: target status
-        :raises: AssertionError if status doesn't match
+        :raises AssertionError: if status doesn't match
         """
         floatingip_id = floating_ip['id']
 
