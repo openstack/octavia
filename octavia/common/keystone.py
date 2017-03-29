@@ -13,12 +13,8 @@
 #    under the License.
 
 from keystoneauth1 import loading as ks_loading
-from oslo_config import cfg
-from oslo_log import log as logging
-
 from octavia.common import constants
-
-LOG = logging.getLogger(__name__)
+from oslo_config import cfg
 
 
 class KeystoneSession(object):

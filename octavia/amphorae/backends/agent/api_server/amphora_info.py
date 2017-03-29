@@ -12,7 +12,6 @@
 # License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
 import os
 import re
 import socket
@@ -27,8 +26,6 @@ import six
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants as consts
-
-LOG = logging.getLogger(__name__)
 
 
 class AmphoraInfo(object):
