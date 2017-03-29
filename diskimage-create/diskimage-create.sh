@@ -238,7 +238,7 @@ fi
 
 # Make sure we have the required packages installed
 if [ "$platform" = 'NAME="Ubuntu"' ]; then
-    PKG_LIST="qemu kpartx git"
+    PKG_LIST="qemu git"
     for pkg in $PKG_LIST; do
         if ! dpkg --get-selections | grep -q "^$pkg[[:space:]]*install$" >/dev/null; then
             echo "Required package " $pkg " is not installed.  Exiting."
@@ -255,43 +255,17 @@ if [ "$platform" = 'NAME="Ubuntu"' ]; then
             exit 1
     fi
 
-elif [ "$platform" = 'NAME=Fedora' ]; then
-    PKG_LIST="qemu kpartx git"
+else
+    # fedora/centos/rhel
+    # Actual qemu-img name may be qemu-img, qemu-img-ev, qemu-img-rhev, ...
+    # "yum install qemu-img" works for all, but search requires wildcard
+    PKG_LIST="qemu-img* git"
     for pkg in $PKG_LIST; do
         if ! yum info installed $pkg &> /dev/null; then
-            echo "Required package " $pkg " is not installed.  Exiting."
+            echo "Required package " ${pkg/\*} " is not installed.  Exiting."
             exit 1
         fi
     done
-else
-    # centos or rhel
-        PKG_LIST="qemu-kvm qemu-img"
-        for pkg in $PKG_LIST; do
-            # Actual name may be qemu-img, qemu-img-ev, qemu-img-rhev, ...
-            # "yum install qemu-img" works for all, but search requires wildcard
-            if ! yum info installed ${pkg}* &> /dev/null; then
-                echo "Required package " $pkg " is not installed.  Exiting."
-                exit 1
-            fi
-        done
-        PKG_LIST="kpartx git"
-        for pkg in $PKG_LIST; do
-            if ! yum info installed $pkg &> /dev/null; then
-                echo "Required package " $pkg " is not installed.  Exiting."
-                exit 1
-            fi
-        done
-
-        if [ ${platform:0:6} = "CentOS" ]; then
-            # install EPEL repo, in order to install argparse
-            PKG_LIST="python-argparse"
-            if ! yum info installed $pkg &> /dev/null; then
-                echo "CentOS requires the python-argparse package be "
-                echo "installed separately from the EPEL repo."
-                echo "Required package " $pkg " is not installed.  Exiting."
-                exit 1
-            fi
-        fi
 fi
 
 if  [ "$AMP_WORKING_DIR" ]; then
@@ -319,7 +293,7 @@ elif [ "$AMP_BASEOS" = "fedora" ]; then
         export FEDORA_MIRROR="$BASE_OS_MIRROR"
     fi
 elif [ "$AMP_BASEOS" = "centos" ]; then
-    AMP_element_sequence=${AMP_element_sequence:-"base vm centos7 epel selinux-permissive"}
+    AMP_element_sequence=${AMP_element_sequence:-"base vm centos7 selinux-permissive"}
     AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
     if [ "$BASE_OS_MIRROR" ]; then
         AMP_element_sequence="$AMP_element_sequence centos-mirror"

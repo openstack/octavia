@@ -27,14 +27,8 @@ or it can be overridden by setting the following environment variables:
  | DIB_ELEMENTS = /<some directory>/diskimage-builder/elements
 
 The following packages are required on each platform:
-Ubuntu and Fedora: qemu kpartx git
-CentOS and RedHat Enterprise Linux: qemu-kvm qemu-img kpartx git
-CentOS requires the EPEL repo and python-argparse:
-
-.. code:: bash
-
-    $ sudo rpm -Uvh --force http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm
-    $ yum install python-argparse
+Ubuntu: qemu git
+Fedora, CentOS and RedHat Enterprise Linux: qemu-img git
 
 Test Prerequisites
 ------------------

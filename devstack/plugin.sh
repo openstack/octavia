@@ -9,7 +9,6 @@ function octavia_install {
     setup_develop $OCTAVIA_DIR
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
         if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
-            install_package kpartx
             if [[ ${DISTRO} =~ "rhel7" ]]; then
                 # Installing qemu would bring in the default OS qemu package,
                 # which is too old for Pike and later releases
