@@ -415,7 +415,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
 
         :param dict floating_ip: floating IP dict to check status
         :param status: target status
-        :raises: AssertionError if status doesn't match
+        :raises AssertionError: if status doesn't match
         """
 
         # TODO(ptoohill): Find a way to utilze the proper client method
