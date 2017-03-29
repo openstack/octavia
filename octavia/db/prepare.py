@@ -70,7 +70,7 @@ def create_load_balancer(lb_dict):
 def create_listener(listener_dict, lb_id):
     if not listener_dict.get('id'):
         listener_dict['id'] = uuidutils.generate_uuid()
-    if 'loadbalancer_id' in listener_dict.keys():
+    if 'loadbalancer_id' in listener_dict:
         listener_dict['load_balancer_id'] = listener_dict.pop(
             'loadbalancer_id')
     else:
@@ -136,7 +136,9 @@ def create_l7rule(l7rule_dict, l7policy_id):
 def create_pool(pool_dict, lb_id=None):
     if not pool_dict.get('id'):
         pool_dict['id'] = uuidutils.generate_uuid()
-    if lb_id:
+    if 'loadbalancer_id' in pool_dict:
+        pool_dict['load_balancer_id'] = pool_dict.pop('loadbalancer_id')
+    else:
         pool_dict['load_balancer_id'] = lb_id
     if pool_dict.get('session_persistence'):
         pool_dict['session_persistence']['pool_id'] = pool_dict.get('id')
@@ -146,6 +148,7 @@ def create_pool(pool_dict, lb_id=None):
         prepped_members = []
         for member_dict in pool_dict.get('members'):
             prepped_members.append(create_member(member_dict, pool_dict['id']))
+    pool_dict['provisioning_status'] = constants.PENDING_CREATE
     pool_dict['operating_status'] = constants.OFFLINE
     return pool_dict
 

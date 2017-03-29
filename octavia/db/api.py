@@ -12,8 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import contextlib
+
 from oslo_config import cfg
 from oslo_db.sqlalchemy import session as db_session
+from oslo_utils import excutils
 
 _FACADE = None
 
@@ -35,3 +38,15 @@ def get_session(expire_on_commit=True, autocommit=True):
     facade = _create_facade_lazily()
     return facade.get_session(expire_on_commit=expire_on_commit,
                               autocommit=autocommit)
+
+
+@contextlib.contextmanager
+def get_lock_session():
+    """Context manager for using a locking (not auto-commit) session."""
+    lock_session = get_session(autocommit=False)
+    try:
+        yield
+        lock_session.commit()
+    except Exception:
+        with excutils.save_and_reraise_exception():
+            lock_session.rollback()

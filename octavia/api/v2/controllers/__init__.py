@@ -18,27 +18,18 @@ from wsmeext import pecan as wsme_pecan
 from octavia.api.v2.controllers import base
 from octavia.api.v2.controllers import listener
 from octavia.api.v2.controllers import load_balancer
+from octavia.api.v2.controllers import pool
 
 
 class BaseV2Controller(base.BaseController):
     loadbalancers = load_balancer.LoadBalancersController()
     listeners = listener.ListenersController()
+    pools = pool.PoolsController()
 
     @wsme_pecan.wsexpose(wtypes.text)
     def get(self):
         return "v2.0"
 
 
-class LBaaSController(BaseV2Controller):
-    """Expose /lbaas/ endpoint for the v2.0 controller.
-
-    Provides backwards compatibility with LBaaSV2
-
-    To be removed once LBaasV2 has been removed.
-
-    """
-    pass
-
-
 class V2Controller(BaseV2Controller):
-    lbaas = LBaaSController()
+    lbaas = BaseV2Controller()
