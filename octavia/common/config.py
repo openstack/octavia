@@ -403,6 +403,9 @@ nova_opts = [
     cfg.BoolOpt('enable_anti_affinity', default=False,
                 help=_('Flag to indicate if nova anti-affinity feature is '
                        'turned on.')),
+    cfg.StrOpt('anti_affinity_policy', default=constants.ANTI_AFFINITY,
+               choices=[constants.ANTI_AFFINITY, constants.SOFT_ANTI_AFFINITY],
+               help=_('Sets the anti-affinity policy for nova')),
     cfg.IntOpt('random_amphora_name_length', default=0,
                help=_('If non-zero, generate a random name of the length '
                       'provided for each amphora, in the format "a[A-Z0-9]*". '
