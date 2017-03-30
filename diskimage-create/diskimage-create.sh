@@ -289,25 +289,6 @@ else
         fi
 fi
 
-# pip may not be installed from package managers
-# only check that we find an executable
-if ! which pip &> /dev/null; then
-    echo "Required executable pip not found.  Exiting."
-    exit 1
-fi
-
-# "pip freeze" does not show argparse, even if it is explicitly installed,
-# because it is part of the standard python library in 2.7.
-# See https://github.com/pypa/pip/issues/1570
-
-PKG_LIST="Babel dib-utils PyYAML"
-    for pkg in $PKG_LIST; do
-        if ! pip freeze 2>/dev/null| grep -q "^$pkg==" &>/dev/null; then
-            echo "Required python package " $pkg " is not installed.  Exiting."
-            exit 1
-        fi
-    done
-
 if  [ "$AMP_WORKING_DIR" ]; then
     mkdir -p $AMP_WORKING_DIR
     TEMP=$(mktemp -d $AMP_WORKING_DIR/diskimage-create.XXXXXX)
