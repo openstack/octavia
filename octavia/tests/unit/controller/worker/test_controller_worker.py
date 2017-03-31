@@ -1086,6 +1086,45 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
+                'amphora_flows.AmphoraFlows.get_failover_flow',
+                return_value=_flow_mock)
+    @mock.patch(
+        'octavia.db.repositories.AmphoraRepository.get_all_lbs_on_amphora',
+        return_value=[_load_balancer_mock])
+    def test_failover_amphora_anti_affinity(self,
+                                            mock_get_update_listener_flow,
+                                            mock_get_all_lbs_for_amp_mock,
+                                            mock_api_get_session,
+                                            mock_dyn_log_listener,
+                                            mock_taskflow_load,
+                                            mock_pool_repo_get,
+                                            mock_member_repo_get,
+                                            mock_l7rule_repo_get,
+                                            mock_l7policy_repo_get,
+                                            mock_listener_repo_get,
+                                            mock_lb_repo_get,
+                                            mock_health_mon_repo_get,
+                                            mock_amp_repo_get):
+
+        self.conf.config(group="nova", enable_anti_affinity=True)
+        _flow_mock.reset_mock()
+        _load_balancer_mock.server_group_id = "123"
+
+        cw = controller_worker.ControllerWorker()
+        cw.failover_amphora(AMP_ID)
+
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+            assert_called_once_with(
+                _flow_mock,
+                store={constants.FAILED_AMPHORA: _amphora_mock,
+                       constants.LOADBALANCER_ID:
+                           _amphora_mock.load_balancer_id,
+                       constants.SERVER_GROUP_ID: "123",
+                       }))
+
+        _flow_mock.run.assert_called_once_with()
+
+    @mock.patch('octavia.controller.worker.flows.'
                 'amphora_flows.AmphoraFlows.cert_rotate_amphora_flow',
                 return_value=_flow_mock)
     def test_amphora_cert_rotation(self,
