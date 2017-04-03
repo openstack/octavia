@@ -12,7 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from octavia.api.v1 import hooks
+from octavia.api.common import hooks
 
 # Pecan Application Configurations
 # See https://pecan.readthedocs.org/en/latest/configuration.html#application-configuration # noqa
