@@ -26,7 +26,7 @@ CONF = cfg.CONF
 
 GLANCE_VERSION = '2'
 NEUTRON_VERSION = '2.0'
-NOVA_VERSION = '2.1'
+NOVA_VERSION = '2.15'
 
 
 class NovaAuth(object):

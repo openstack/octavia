@@ -208,7 +208,7 @@ class NovaServerGroupCreate(BaseComputeTask):
 
         name = 'octavia-lb-' + loadbalancer_id
         server_group = self.compute.create_server_group(
-            name, constants.ANTI_AFFINITY)
+            name, CONF.nova.anti_affinity_policy)
         LOG.debug("Server Group created with id: %s for load balancer id: "
                   "%s", server_group.id, loadbalancer_id)
         return server_group.id
