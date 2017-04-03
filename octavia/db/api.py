@@ -45,7 +45,7 @@ def get_lock_session():
     """Context manager for using a locking (not auto-commit) session."""
     lock_session = get_session(autocommit=False)
     try:
-        yield
+        yield lock_session
         lock_session.commit()
     except Exception:
         with excutils.save_and_reraise_exception():

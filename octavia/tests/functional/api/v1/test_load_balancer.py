@@ -612,7 +612,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'weight': 1,
             'enabled': True,
             'subnet_id': None,
-            'operating_status': constants.OFFLINE
+            'operating_status': constants.NO_MONITOR
         }
         expected_member.update(create_member)
         return create_member, expected_member

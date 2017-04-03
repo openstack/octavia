@@ -16,14 +16,13 @@ import copy
 
 import mock
 from oslo_utils import uuidutils
+import testtools
 
 from octavia.common import constants
 import octavia.common.context
 from octavia.network import base as network_base
 from octavia.network import data_models as network_models
 from octavia.tests.functional.api.v2 import base
-
-import testtools
 
 
 class TestLoadBalancer(base.BaseAPITest):

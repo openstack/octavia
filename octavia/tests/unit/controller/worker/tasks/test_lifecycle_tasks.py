@@ -285,8 +285,11 @@ class TestLifecycleTasks(base.TestCase):
                 'mark_loadbalancer_prov_status_active')
     @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
                 'mark_listener_prov_status_active')
+    @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
+                'mark_pool_prov_status_active')
     def test_MemberToErrorOnRevertTask(
             self,
+            mock_pool_prov_status_active,
             mock_listener_prov_status_active,
             mock_loadbalancer_prov_status_active,
             mock_member_prov_status_error):
@@ -296,14 +299,16 @@ class TestLifecycleTasks(base.TestCase):
         # Execute
         member_to_error_on_revert.execute(self.MEMBER,
                                           self.LISTENERS,
-                                          self.LOADBALANCER)
+                                          self.LOADBALANCER,
+                                          self.POOL)
 
         self.assertFalse(mock_member_prov_status_error.called)
 
         # Revert
         member_to_error_on_revert.revert(self.MEMBER,
                                          self.LISTENERS,
-                                         self.LOADBALANCER)
+                                         self.LOADBALANCER,
+                                         self.POOL)
 
         mock_member_prov_status_error.assert_called_once_with(
             self.MEMBER_ID)
@@ -311,6 +316,8 @@ class TestLifecycleTasks(base.TestCase):
             self.LOADBALANCER_ID)
         mock_listener_prov_status_active.assert_called_once_with(
             self.LISTENER_ID)
+        mock_pool_prov_status_active.assert_called_once_with(
+            self.POOL_ID)
 
     @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
                 'mark_pool_prov_status_error')

@@ -340,9 +340,9 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         """
         member = self._member_repo.get(db_apis.get_session(),
                                        id=member_id)
-
-        listeners = member.pool.listeners
-        load_balancer = member.pool.load_balancer
+        pool = member.pool
+        listeners = pool.listeners
+        load_balancer = pool.load_balancer
 
         create_member_tf = self._taskflow_load(self._member_flows.
                                                get_create_member_flow(),
@@ -350,7 +350,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                       constants.LISTENERS:
                                                           listeners,
                                                       constants.LOADBALANCER:
-                                                          load_balancer})
+                                                          load_balancer,
+                                                      constants.POOL: pool})
         with tf_logging.DynamicLoggingListener(create_member_tf,
                                                log=LOG):
             create_member_tf.run()
@@ -364,14 +365,15 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         """
         member = self._member_repo.get(db_apis.get_session(),
                                        id=member_id)
-
-        listeners = member.pool.listeners
-        load_balancer = member.pool.load_balancer
+        pool = member.pool
+        listeners = pool.listeners
+        load_balancer = pool.load_balancer
 
         delete_member_tf = self._taskflow_load(
             self._member_flows.get_delete_member_flow(),
             store={constants.MEMBER: member, constants.LISTENERS: listeners,
-                   constants.LOADBALANCER: load_balancer})
+                   constants.LOADBALANCER: load_balancer, constants.POOL: pool}
+        )
         with tf_logging.DynamicLoggingListener(delete_member_tf,
                                                log=LOG):
             delete_member_tf.run()
@@ -386,9 +388,9 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         """
         member = self._member_repo.get(db_apis.get_session(),
                                        id=member_id)
-
-        listeners = member.pool.listeners
-        load_balancer = member.pool.load_balancer
+        pool = member.pool
+        listeners = pool.listeners
+        load_balancer = pool.load_balancer
 
         update_member_tf = self._taskflow_load(self._member_flows.
                                                get_update_member_flow(),
@@ -397,6 +399,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                           listeners,
                                                       constants.LOADBALANCER:
                                                           load_balancer,
+                                                      constants.POOL:
+                                                          pool,
                                                       constants.UPDATE_DICT:
                                                           member_updates})
         with tf_logging.DynamicLoggingListener(update_member_tf,

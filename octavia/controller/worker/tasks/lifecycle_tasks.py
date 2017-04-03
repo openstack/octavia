@@ -132,14 +132,15 @@ class LoadBalancerToErrorOnRevertTask(LoadBalancerIDToErrorOnRevertTask):
 class MemberToErrorOnRevertTask(BaseLifecycleTask):
     """Task to set a member to ERROR on revert."""
 
-    def execute(self, member, listeners, loadbalancer):
+    def execute(self, member, listeners, loadbalancer, pool):
         pass
 
-    def revert(self, member, listeners, loadbalancer, *args, **kwargs):
+    def revert(self, member, listeners, loadbalancer, pool, *args, **kwargs):
         self.task_utils.mark_member_prov_status_error(member.id)
         self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_active(listener.id)
+        self.task_utils.mark_pool_prov_status_active(pool.id)
 
 
 class PoolToErrorOnRevertTask(BaseLifecycleTask):

@@ -154,6 +154,22 @@ class TaskUtils(object):
                           "provisioning status to ACTIVE due to: "
                           "%(except)s"), {'list': listener_id, 'except': e})
 
+    def mark_pool_prov_status_active(self, pool_id):
+        """Sets a pool provisioning status to ACTIVE.
+
+        NOTE: This should only be called from revert methods.
+
+        :param pool_id: Pool ID to set provisioning status to ACTIVE
+        """
+        try:
+            self.pool_repo.update(db_apis.get_session(),
+                                  id=pool_id,
+                                  provisioning_status=constants.ACTIVE)
+        except Exception as e:
+            LOG.error(_LE("Failed to update pool %(pool)s "
+                          "provisioning status to ACTIVE due to: "
+                          "%(except)s"), {'pool': pool_id, 'except': e})
+
     def mark_loadbalancer_prov_status_active(self, loadbalancer_id):
         """Sets a load balancer provisioning status to ACTIVE.
 

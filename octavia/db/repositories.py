@@ -218,7 +218,8 @@ class Repositories(object):
     def test_and_set_lb_and_listeners_prov_status(self, session, lb_id,
                                                   lb_prov_status,
                                                   listener_prov_status,
-                                                  listener_ids=None):
+                                                  listener_ids=None,
+                                                  pool_id=None):
         """Tests and sets a load balancer and listener provisioning status.
 
         Puts a lock on the load balancer table to check the status of a
@@ -227,11 +228,14 @@ class Repositories(object):
         status is not ACTIVE, then nothing is done and False is returned.
 
         :param session: A Sql Alchemy database session.
-        :param lb_id: id of Load Balancer
+        :param lb_id: ID of the Load Balancer to check and lock
         :param lb_prov_status: Status to set Load Balancer and Listener if
                                check passes.
         :param listener_prov_status: Status to set Listeners if check passes
-        :param listener_ids: List of ids of a listeners (can be empty)
+        :param listener_ids: List of IDs of listeners to check and lock
+                             (only use this when relevant to the operation)
+        :param pool_id: ID of the Pool to check and lock (only use this when
+                        relevant to the operation)
         :returns: bool
         """
         listener_ids = listener_ids or []
@@ -241,9 +245,12 @@ class Repositories(object):
         # are changed.
         success = self.load_balancer.test_and_set_provisioning_status(
             session, lb_id, lb_prov_status)
-        for id in listener_ids:
-            self.listener.update(session, id,
+        for listener_id in listener_ids:
+            self.listener.update(session, listener_id,
                                  provisioning_status=listener_prov_status)
+        if pool_id:
+            self.pool.update(session, pool_id,
+                             provisioning_status=lb_prov_status)
         return success
 
     def check_quota_met(self, session, lock_session, _class, project_id):
