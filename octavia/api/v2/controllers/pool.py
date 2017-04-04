@@ -162,7 +162,7 @@ class PoolsController(base.BaseController):
         else:
             msg = _("Must provide at least one of: "
                     "loadbalancer_id, listener_id")
-            raise exceptions.ValidationException(details=msg)
+            raise exceptions.ValidationException(detail=msg)
 
         lock_session = db_api.get_session(autocommit=False)
         if self.repositories.check_quota_met(
