@@ -10,8 +10,6 @@ function octavia_install {
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
         if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
             install_package qemu kpartx
-            git_clone $DISKIMAGE_BUILDER_REPO $DISKIMAGE_BUILDER_DIR $DISKIMAGE_BUILDER_BRANCH
-            sudo -H -E pip install -r $DEST/diskimage-builder/requirements.txt
         fi
     fi
 }
