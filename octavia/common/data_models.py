@@ -517,9 +517,10 @@ class AmphoraHealth(BaseDataModel):
 
 class L7Rule(BaseDataModel):
 
-    def __init__(self, id=None, l7policy_id=None, type=None,
+    def __init__(self, id=None, l7policy_id=None, type=None, enabled=None,
                  compare_type=None, key=None, value=None, l7policy=None,
-                 invert=False, provisioning_status=None):
+                 invert=False, provisioning_status=None, operating_status=None,
+                 project_id=None, created_at=None, updated_at=None):
         self.id = id
         self.l7policy_id = l7policy_id
         self.type = type
@@ -529,6 +530,11 @@ class L7Rule(BaseDataModel):
         self.l7policy = l7policy
         self.invert = invert
         self.provisioning_status = provisioning_status
+        self.operating_status = operating_status
+        self.project_id = project_id
+        self.created_at = created_at
+        self.updated_at = updated_at
+        self.enabled = enabled
 
     def delete(self):
         if len(self.l7policy.l7rules) == 1:

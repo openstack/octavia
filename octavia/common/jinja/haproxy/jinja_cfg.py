@@ -311,7 +311,8 @@ class JinjaTemplater(object):
                 l7policy.redirect_pool)
         else:
             ret_value['redirect_pool'] = None
-        l7rules = [self._transform_l7rule(x) for x in l7policy.l7rules]
+        l7rules = [self._transform_l7rule(x) for x in l7policy.l7rules
+                   if x.enabled]
         ret_value['l7rules'] = l7rules
         return ret_value
 
@@ -326,7 +327,8 @@ class JinjaTemplater(object):
             'compare_type': l7rule.compare_type,
             'key': l7rule.key,
             'value': self._escape_haproxy_config_string(l7rule.value),
-            'invert': l7rule.invert
+            'invert': l7rule.invert,
+            'enabled': l7rule.enabled
         }
 
     @staticmethod

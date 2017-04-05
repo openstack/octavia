@@ -127,7 +127,8 @@ RET_L7RULE_1 = {
     'compare_type': constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
     'key': None,
     'value': '/api',
-    'invert': False}
+    'invert': False,
+    'enabled': True}
 
 RET_L7RULE_2 = {
     'id': 'sample_l7rule_id_2',
@@ -135,7 +136,8 @@ RET_L7RULE_2 = {
     'compare_type': constants.L7RULE_COMPARE_TYPE_CONTAINS,
     'key': 'Some-header',
     'value': 'This\\ string\\\\\\ with\\ stuff',
-    'invert': True}
+    'invert': True,
+    'enabled': True}
 
 RET_L7RULE_3 = {
     'id': 'sample_l7rule_id_3',
@@ -143,7 +145,8 @@ RET_L7RULE_3 = {
     'compare_type': constants.L7RULE_COMPARE_TYPE_REGEX,
     'key': 'some-cookie',
     'value': 'this.*|that',
-    'invert': False}
+    'invert': False,
+    'enabled': True}
 
 RET_L7RULE_4 = {
     'id': 'sample_l7rule_id_4',
@@ -151,7 +154,8 @@ RET_L7RULE_4 = {
     'compare_type': constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
     'key': None,
     'value': 'jpg',
-    'invert': False}
+    'invert': False,
+    'enabled': True}
 
 RET_L7RULE_5 = {
     'id': 'sample_l7rule_id_5',
@@ -159,7 +163,17 @@ RET_L7RULE_5 = {
     'compare_type': constants.L7RULE_COMPARE_TYPE_ENDS_WITH,
     'key': None,
     'value': '.example.com',
-    'invert': False}
+    'invert': False,
+    'enabled': True}
+
+RET_L7RULE_6 = {
+    'id': 'sample_l7rule_id_6',
+    'type': constants.L7RULE_TYPE_HOST_NAME,
+    'compare_type': constants.L7RULE_COMPARE_TYPE_ENDS_WITH,
+    'key': None,
+    'value': '.example.com',
+    'invert': False,
+    'enabled': False}
 
 RET_L7POLICY_1 = {
     'id': 'sample_l7policy_id_1',
@@ -201,6 +215,14 @@ RET_L7POLICY_5 = {
     'enabled': False,
     'l7rules': [RET_L7RULE_5]}
 
+RET_L7POLICY_6 = {
+    'id': 'sample_l7policy_id_6',
+    'action': constants.L7POLICY_ACTION_REJECT,
+    'redirect_pool': None,
+    'redirect_url': None,
+    'enabled': True,
+    'l7rules': []}
+
 RET_LISTENER = {
     'id': 'sample_listener_id_1',
     'protocol_port': '80',
@@ -228,7 +250,7 @@ RET_LISTENER_L7 = {
     'topology': 'SINGLE',
     'pools': [RET_POOL_1, RET_POOL_2],
     'l7policies': [RET_L7POLICY_1, RET_L7POLICY_2, RET_L7POLICY_3,
-                   RET_L7POLICY_4, RET_L7POLICY_5],
+                   RET_L7POLICY_4, RET_L7POLICY_5, RET_L7POLICY_6],
     'enabled': True,
     'insert_headers': {}}
 
@@ -404,7 +426,8 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
             sample_l7policy_tuple('sample_l7policy_id_2', sample_policy=2),
             sample_l7policy_tuple('sample_l7policy_id_3', sample_policy=3),
             sample_l7policy_tuple('sample_l7policy_id_4', sample_policy=4),
-            sample_l7policy_tuple('sample_l7policy_id_5', sample_policy=5)]
+            sample_l7policy_tuple('sample_l7policy_id_5', sample_policy=5),
+            sample_l7policy_tuple('sample_l7policy_id_6', sample_policy=6)]
     else:
         pools = [
             sample_pool_tuple(
@@ -560,6 +583,7 @@ def sample_l7policy_tuple(id,
     in_l7policy = collections.namedtuple('l7policy',
                                          'id, action, redirect_pool, '
                                          'redirect_url, l7rules, enabled')
+    l7rules = []
     if sample_policy == 1:
         action = constants.L7POLICY_ACTION_REDIRECT_TO_POOL
         redirect_pool = sample_pool_tuple(sample_pool=2)
@@ -575,11 +599,13 @@ def sample_l7policy_tuple(id,
                    sample_l7rule_tuple('sample_l7rule_id_5', sample_rule=5)]
     elif sample_policy == 4:
         action = constants.L7POLICY_ACTION_REJECT
-        l7rules = []
     elif sample_policy == 5:
         action = constants.L7POLICY_ACTION_REJECT
         enabled = False
         l7rules = [sample_l7rule_tuple('sample_l7rule_id_5', sample_rule=5)]
+    elif sample_policy == 6:
+        action = constants.L7POLICY_ACTION_REJECT
+        l7rules = [sample_l7rule_tuple('sample_l7rule_id_6', sample_rule=6)]
     return in_l7policy(
         id=id,
         action=action,
@@ -595,41 +621,54 @@ def sample_l7rule_tuple(id,
                         key=None,
                         value='/api',
                         invert=False,
+                        enabled=True,
                         sample_rule=1):
     in_l7rule = collections.namedtuple('l7rule',
                                        'id, type, compare_type, '
-                                       'key, value, invert')
+                                       'key, value, invert, enabled')
     if sample_rule == 2:
         type = constants.L7RULE_TYPE_HEADER
         compare_type = constants.L7RULE_COMPARE_TYPE_CONTAINS
         key = 'Some-header'
         value = 'This string\\ with stuff'
         invert = True
+        enabled = True
     if sample_rule == 3:
         type = constants.L7RULE_TYPE_COOKIE
         compare_type = constants.L7RULE_COMPARE_TYPE_REGEX
         key = 'some-cookie'
         value = 'this.*|that'
         invert = False
+        enabled = True
     if sample_rule == 4:
         type = constants.L7RULE_TYPE_FILE_TYPE
         compare_type = constants.L7RULE_COMPARE_TYPE_EQUAL_TO
         key = None
         value = 'jpg'
         invert = False
+        enabled = True
     if sample_rule == 5:
         type = constants.L7RULE_TYPE_HOST_NAME
         compare_type = constants.L7RULE_COMPARE_TYPE_ENDS_WITH
         key = None
         value = '.example.com'
         invert = False
+        enabled = True
+    if sample_rule == 6:
+        type = constants.L7RULE_TYPE_HOST_NAME
+        compare_type = constants.L7RULE_COMPARE_TYPE_ENDS_WITH
+        key = None
+        value = '.example.com'
+        invert = False
+        enabled = False
     return in_l7rule(
         id=id,
         type=type,
         compare_type=compare_type,
         key=key,
         value=value,
-        invert=invert)
+        invert=invert,
+        enabled=enabled)
 
 
 def sample_base_expected_config(frontend=None, backend=None, peers=None):

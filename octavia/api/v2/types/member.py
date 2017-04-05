@@ -72,9 +72,9 @@ class MemberPOST(BaseMemberType):
         minimum=constants.MIN_WEIGHT, maximum=constants.MAX_WEIGHT), default=1)
     subnet_id = wtypes.wsattr(wtypes.UuidType())
     # TODO(johnsom) Remove after deprecation (R series)
-    project_id = wtypes.wsattr(wtypes.StringType())
+    project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     # TODO(johnsom) Remove after deprecation (R series)
-    tenant_id = wtypes.wsattr(wtypes.StringType())
+    tenant_id = wtypes.wsattr(wtypes.StringType(max_length=36))
 
 
 class MemberRootPOST(types.BaseType):

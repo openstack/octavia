@@ -438,6 +438,12 @@ class TestHaproxyCfg(base.TestCase):
         ret = self.jinja_cfg._transform_l7policy(in_l7policy)
         self.assertEqual(sample_configs.RET_L7POLICY_2, ret)
 
+    def test_transform_l7policy_disabled_rule(self):
+        in_l7policy = sample_configs.sample_l7policy_tuple(
+            'sample_l7policy_id_6', sample_policy=6)
+        ret = self.jinja_cfg._transform_l7policy(in_l7policy)
+        self.assertEqual(sample_configs.RET_L7POLICY_6, ret)
+
     def test_escape_haproxy_config_string(self):
         self.assertEqual(self.jinja_cfg._escape_haproxy_config_string(
             'string_with_none'), 'string_with_none')

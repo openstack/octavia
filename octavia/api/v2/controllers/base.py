@@ -103,6 +103,12 @@ class BaseController(rest.RestController):
                               data_models.LoadBalancer, id)
         return lb.project_id
 
+    def _get_l7policy_project_id(self, session, id):
+        """Get the project_id of the load balancer from the database."""
+        l7policy = self._get_db_obj(session, self.repositories.l7policy,
+                                    data_models.LoadBalancer, id)
+        return l7policy.project_id
+
     def _get_default_quotas(self, project_id):
         """Gets the project's default quotas."""
         quotas = data_models.Quotas(

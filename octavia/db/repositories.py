@@ -219,7 +219,8 @@ class Repositories(object):
                                                   lb_prov_status,
                                                   listener_prov_status,
                                                   listener_ids=None,
-                                                  pool_id=None):
+                                                  pool_id=None,
+                                                  l7policy_id=None):
         """Tests and sets a load balancer and listener provisioning status.
 
         Puts a lock on the load balancer table to check the status of a
@@ -236,6 +237,8 @@ class Repositories(object):
                              (only use this when relevant to the operation)
         :param pool_id: ID of the Pool to check and lock (only use this when
                         relevant to the operation)
+        :param l7policy_id: ID of the L7Policy to check and lock (only use this
+                            when relevant to the operation)
         :returns: bool
         """
         listener_ids = listener_ids or []
@@ -251,6 +254,9 @@ class Repositories(object):
         if pool_id:
             self.pool.update(session, pool_id,
                              provisioning_status=lb_prov_status)
+        if l7policy_id:
+            self.l7policy.update(session, l7policy_id,
+                                 provisioning_status=lb_prov_status)
         return success
 
     def check_quota_met(self, session, lock_session, _class, project_id):

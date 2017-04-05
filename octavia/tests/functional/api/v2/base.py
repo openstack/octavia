@@ -56,7 +56,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     # /lbaas/l7policies
     L7POLICIES_PATH = '/l7policies'
     L7POLICY_PATH = L7POLICIES_PATH + '/{l7policy_id}'
-    L7RULES_PATH = L7POLICY_PATH + '/l7rules'
+    L7RULES_PATH = L7POLICY_PATH + '/rules'
     L7RULE_PATH = L7RULES_PATH + '/{l7rule_id}'
 
     def setUp(self):
@@ -71,6 +71,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.pool_repo = repositories.PoolRepository()
         self.member_repo = repositories.MemberRepository()
         self.l7policy_repo = repositories.L7PolicyRepository()
+        self.l7rule_repo = repositories.L7RuleRepository()
         self.amphora_repo = repositories.AmphoraRepository()
         patcher = mock.patch('octavia.api.handlers.controller_simulator.'
                              'handler.SimulatedControllerHandler')
@@ -260,7 +261,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                       value, **optionals):
         req_dict = {'type': type, 'compare_type': compare_type, 'value': value}
         req_dict.update(optionals)
-        body = {'l7rule': req_dict}
+        body = {'rule': req_dict}
         path = self.L7RULES_PATH.format(l7policy_id=l7policy_id)
         response = self.post(path, body)
         return response.json
@@ -284,9 +285,25 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
             lb_l7policies = self.l7policy_repo.get_all(db_api.get_session(),
                                                        listener_id=listener.id)
             for l7policy in lb_l7policies:
+                if autodetect and (l7policy.provisioning_status ==
+                                   constants.PENDING_DELETE):
+                    l7policy_prov = constants.DELETED
+                else:
+                    l7policy_prov = prov_status
                 self.l7policy_repo.update(db_api.get_session(), l7policy.id,
-                                          provisioning_status=listener_prov,
+                                          provisioning_status=l7policy_prov,
                                           operating_status=op_status)
+                l7rules = self.l7rule_repo.get_all(db_api.get_session(),
+                                                   l7policy_id=l7policy.id)
+                for l7rule in l7rules:
+                    if autodetect and (l7rule.provisioning_status ==
+                                       constants.PENDING_DELETE):
+                        l7rule_prov = constants.DELETED
+                    else:
+                        l7rule_prov = prov_status
+                    self.l7rule_repo.update(db_api.get_session(), l7rule.id,
+                                            provisioning_status=l7rule_prov,
+                                            operating_status=op_status)
         lb_pools = self.pool_repo.get_all(db_api.get_session(),
                                           load_balancer_id=lb_id)
         for pool in lb_pools:
@@ -389,18 +406,29 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.assertEqual(operating_status,
                          api_l7policy.get('operating_status'))
 
+    def assert_correct_l7rule_status(self, provisioning_status,
+                                     operating_status, l7policy_id, l7rule_id):
+        api_l7rule = self.get(self.L7RULE_PATH.format(
+            l7policy_id=l7policy_id, l7rule_id=l7rule_id)).json.get('rule')
+        self.assertEqual(provisioning_status,
+                         api_l7rule.get('provisioning_status'))
+        self.assertEqual(operating_status,
+                         api_l7rule.get('operating_status'))
+
     def assert_correct_status(self, lb_id=None, listener_id=None, pool_id=None,
-                              member_id=None, l7policy_id=None,
+                              member_id=None, l7policy_id=None, l7rule_id=None,
                               lb_prov_status=constants.ACTIVE,
                               listener_prov_status=constants.ACTIVE,
                               pool_prov_status=constants.ACTIVE,
                               member_prov_status=constants.ACTIVE,
                               l7policy_prov_status=constants.ACTIVE,
+                              l7rule_prov_status=constants.ACTIVE,
                               lb_op_status=constants.ONLINE,
                               listener_op_status=constants.ONLINE,
                               pool_op_status=constants.ONLINE,
                               member_op_status=constants.ONLINE,
-                              l7policy_op_status=constants.ONLINE):
+                              l7policy_op_status=constants.ONLINE,
+                              l7rule_op_status=constants.ONLINE):
         if lb_id:
             self.assert_correct_lb_status(lb_prov_status, lb_op_status, lb_id)
         if listener_id:
@@ -415,3 +443,6 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         if l7policy_id:
             self.assert_correct_l7policy_status(
                 l7policy_prov_status, l7policy_op_status, l7policy_id)
+        if l7rule_id:
+            self.assert_correct_l7rule_status(
+                l7rule_prov_status, l7rule_op_status, l7policy_id, l7rule_id)
