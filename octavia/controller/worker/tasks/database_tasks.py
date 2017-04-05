@@ -1726,9 +1726,12 @@ class MarkL7PolicyActiveInDB(BaseDatabaseTask):
 
         LOG.debug("Mark ACTIVE in DB for l7policy id: %s",
                   l7policy.id)
+
+        op_status = constants.ONLINE if l7policy.enabled else constants.OFFLINE
         self.l7policy_repo.update(db_apis.get_session(),
                                   l7policy.id,
-                                  provisioning_status=constants.ACTIVE)
+                                  provisioning_status=constants.ACTIVE,
+                                  operating_status=op_status)
 
     def revert(self, l7policy, *args, **kwargs):
         """Mark the l7policy as broken

@@ -366,7 +366,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                     'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
                     'redirect_pool': redirect_pool, 'l7rules': [l7rule],
                     'redirect_pool_id': redirect_pool.get('id'),
-                    'id': uuidutils.generate_uuid()}
+                    'id': uuidutils.generate_uuid(),
+                    'provisioning_status': constants.PENDING_CREATE,
+                    'operating_status': constants.ONLINE}
         l7rule['l7policy_id'] = l7policy.get('id')
         listener = {'project_id': project_id, 'name': 'listener1',
                     'description': 'listener_description',
@@ -3151,7 +3153,8 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
             description='l7policy_description', listener_id=listener_id,
             position=position, action=action,
             redirect_pool_id=redirect_pool_id, redirect_url=redirect_url,
-            enabled=True)
+            operating_status=constants.ONLINE,
+            provisioning_status=constants.ACTIVE, enabled=True)
         return l7policy
 
     def create_l7rule(self, l7rule_id, l7policy_id,
@@ -3223,6 +3226,8 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
         l7policy = self.l7policy_repo.create(
             self.session, listener_id=listener.id,
             action=constants.L7POLICY_ACTION_REJECT,
+            operating_status=constants.ONLINE,
+            provisioning_status=constants.ACTIVE,
             enabled=True)
         new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
         self.assertEqual(listener.id, new_l7policy.listener_id)
@@ -3302,6 +3307,16 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
         self.assertEqual(2, new_l7policy_a.position)
         self.assertEqual(1, new_l7policy_b.position)
         self.assertEqual(3, new_l7policy_c.position)
+        self.l7policy_repo.update(self.session, id=l7policy_c.id, position=1)
+        new_l7policy_a = self.l7policy_repo.get(self.session,
+                                                id=l7policy_a.id)
+        new_l7policy_b = self.l7policy_repo.get(self.session,
+                                                id=l7policy_b.id)
+        new_l7policy_c = self.l7policy_repo.get(self.session,
+                                                id=l7policy_c.id)
+        self.assertEqual(3, new_l7policy_a.position)
+        self.assertEqual(2, new_l7policy_b.position)
+        self.assertEqual(1, new_l7policy_c.position)
         self.l7policy_repo.update(self.session, id=l7policy_c.id, position=1)
         new_l7policy_a = self.l7policy_repo.get(self.session,
                                                 id=l7policy_a.id)
@@ -3516,7 +3531,8 @@ class L7RuleRepositoryTest(BaseRepositoryTest):
             self.session, id=self.FAKE_UUID_1, name='l7policy_test',
             description='l7policy_description', listener_id=self.listener.id,
             position=1, action=constants.L7POLICY_ACTION_REJECT,
-            enabled=True)
+            operating_status=constants.ONLINE,
+            provisioning_status=constants.ACTIVE, enabled=True)
 
     def create_l7rule(self, l7rule_id, l7policy_id,
                       type=constants.L7RULE_TYPE_PATH,
@@ -3540,7 +3556,8 @@ class L7RuleRepositoryTest(BaseRepositoryTest):
             self.session, id=uuidutils.generate_uuid(), name='l7policy_test',
             description='l7policy_description', listener_id=self.listener.id,
             position=1, action=constants.L7POLICY_ACTION_REJECT,
-            enabled=True)
+            operating_status=constants.ONLINE,
+            provisioning_status=constants.ACTIVE, enabled=True)
         l7rule_a = self.create_l7rule(uuidutils.generate_uuid(), l7policy.id)
         l7rule_b = self.create_l7rule(uuidutils.generate_uuid(), l7policy.id)
         new_l7rule_a = self.l7rule_repo.get(self.session,

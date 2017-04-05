@@ -119,6 +119,7 @@ SUPPORTED_L7POLICY_ACTIONS = (L7POLICY_ACTION_REJECT,
                               L7POLICY_ACTION_REDIRECT_TO_URL,
                               L7POLICY_ACTION_REDIRECT_TO_POOL)
 
+MIN_POLICY_POSITION = 1
 # Largest a 32-bit integer can be, which is a limitation
 # here if you're using MySQL, as most probably are. This just needs
 # to be larger than any existing rule position numbers which will

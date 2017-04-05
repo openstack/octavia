@@ -70,6 +70,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.listener_stats_repo = repositories.ListenerStatisticsRepository()
         self.pool_repo = repositories.PoolRepository()
         self.member_repo = repositories.MemberRepository()
+        self.l7policy_repo = repositories.L7PolicyRepository()
         self.amphora_repo = repositories.AmphoraRepository()
         patcher = mock.patch('octavia.api.handlers.controller_simulator.'
                              'handler.SimulatedControllerHandler')
@@ -280,6 +281,12 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
             self.listener_repo.update(db_api.get_session(), listener.id,
                                       provisioning_status=listener_prov,
                                       operating_status=op_status)
+            lb_l7policies = self.l7policy_repo.get_all(db_api.get_session(),
+                                                       listener_id=listener.id)
+            for l7policy in lb_l7policies:
+                self.l7policy_repo.update(db_api.get_session(), l7policy.id,
+                                          provisioning_status=listener_prov,
+                                          operating_status=op_status)
         lb_pools = self.pool_repo.get_all(db_api.get_session(),
                                           load_balancer_id=lb_id)
         for pool in lb_pools:
@@ -373,16 +380,27 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.assertEqual(operating_status,
                          api_member.get('operating_status'))
 
+    def assert_correct_l7policy_status(self, provisioning_status,
+                                       operating_status, l7policy_id):
+        api_l7policy = self.get(self.L7POLICY_PATH.format(
+            l7policy_id=l7policy_id)).json.get('l7policy')
+        self.assertEqual(provisioning_status,
+                         api_l7policy.get('provisioning_status'))
+        self.assertEqual(operating_status,
+                         api_l7policy.get('operating_status'))
+
     def assert_correct_status(self, lb_id=None, listener_id=None, pool_id=None,
-                              member_id=None,
+                              member_id=None, l7policy_id=None,
                               lb_prov_status=constants.ACTIVE,
                               listener_prov_status=constants.ACTIVE,
                               pool_prov_status=constants.ACTIVE,
                               member_prov_status=constants.ACTIVE,
+                              l7policy_prov_status=constants.ACTIVE,
                               lb_op_status=constants.ONLINE,
                               listener_op_status=constants.ONLINE,
                               pool_op_status=constants.ONLINE,
-                              member_op_status=constants.ONLINE):
+                              member_op_status=constants.ONLINE,
+                              l7policy_op_status=constants.ONLINE):
         if lb_id:
             self.assert_correct_lb_status(lb_prov_status, lb_op_status, lb_id)
         if listener_id:
@@ -394,3 +412,6 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         if member_id:
             self.assert_correct_member_status(
                 member_prov_status, member_op_status, pool_id, member_id)
+        if l7policy_id:
+            self.assert_correct_l7policy_status(
+                l7policy_prov_status, l7policy_op_status, l7policy_id)

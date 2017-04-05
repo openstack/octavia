@@ -85,7 +85,7 @@ class ListenerResponse(BaseListenerType):
         if not listener.default_pool:
             del listener.default_pool
             del listener.default_pool_id
-        if not listener.l7policies or len(listener.l7policies) <= 0:
+        if not listener.l7policies:
             del listener.l7policies
 
         return listener
