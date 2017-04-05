@@ -76,7 +76,7 @@ class Port(data_models.BaseDataModel):
     def __init__(self, id=None, name=None, device_id=None, device_owner=None,
                  mac_address=None, network_id=None, status=None,
                  project_id=None, admin_state_up=None, fixed_ips=None,
-                 network=None):
+                 network=None, qos_policy_id=None):
         self.id = id
         self.name = name
         self.device_id = device_id
@@ -88,6 +88,7 @@ class Port(data_models.BaseDataModel):
         self.admin_state_up = admin_state_up
         self.fixed_ips = fixed_ips or []
         self.network = network
+        self.qos_policy_id = qos_policy_id
 
     def get_subnet_id(self, fixed_ip_address):
         for fixed_ip in self.fixed_ips:
@@ -122,3 +123,8 @@ class HostRoute(data_models.BaseDataModel):
     def __init__(self, nexthop=None, destination=None):
         self.nexthop = nexthop
         self.destination = destination
+
+
+class QosPolicy(data_models.BaseDataModel):
+    def __init__(self, id):
+        self.id = id

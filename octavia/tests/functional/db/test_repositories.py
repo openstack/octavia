@@ -133,7 +133,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         vip = {'ip_address': '10.0.0.1',
                'port_id': uuidutils.generate_uuid(),
                'subnet_id': uuidutils.generate_uuid(),
-               'network_id': uuidutils.generate_uuid()}
+               'network_id': uuidutils.generate_uuid(),
+               'qos_policy_id': None}
         lb_dm = self.repos.create_load_balancer_and_vip(self.session, lb, vip)
         lb_dm_dict = lb_dm.to_dict()
         del lb_dm_dict['vip']

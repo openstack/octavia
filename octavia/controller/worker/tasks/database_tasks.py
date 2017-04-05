@@ -45,6 +45,7 @@ class BaseDatabaseTask(task.Task):
         self.health_mon_repo = repo.HealthMonitorRepository()
         self.listener_repo = repo.ListenerRepository()
         self.loadbalancer_repo = repo.LoadBalancerRepository()
+        self.vip_repo = repo.VipRepository()
         self.member_repo = repo.MemberRepository()
         self.pool_repo = repo.PoolRepository()
         self.amp_health_repo = repo.AmphoraHealthRepository()
@@ -1272,6 +1273,11 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Update DB for loadbalancer id: %s ", loadbalancer.id)
+        if update_dict.get('vip'):
+            vip_dict = update_dict.pop('vip')
+            self.vip_repo.update(db_apis.get_session(),
+                                 loadbalancer.vip.load_balancer_id,
+                                 **vip_dict)
         self.loadbalancer_repo.update(db_apis.get_session(), loadbalancer.id,
                                       **update_dict)
 

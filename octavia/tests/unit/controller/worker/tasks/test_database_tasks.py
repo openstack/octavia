@@ -1427,6 +1427,34 @@ class TestDatabaseTasks(base.TestCase):
             id=LB_ID,
             provisioning_status=constants.ERROR)
 
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    @mock.patch('octavia.db.repositories.VipRepository.update')
+    def test_update_vip_in_db_during_update_loadbalancer(self,
+                                                         mock_vip_update,
+                                                         mock_listner_update,
+                                                         mock_generate_uuid,
+                                                         mock_LOG,
+                                                         mock_get_session,
+                                                         mock_lb_update,
+                                                         mock_listener_update,
+                                                         mock_amphora_update,
+                                                         mock_amphora_delete):
+
+        self.loadbalancer_mock.vip.load_balancer_id = LB_ID
+        update_load_balancer = database_tasks.UpdateLoadbalancerInDB()
+        update_load_balancer.execute(self.loadbalancer_mock,
+                                     {'name': 'test',
+                                      'description': 'test2',
+                                      'vip': {'qos_policy_id': 'fool'}})
+
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            LB_ID,
+            name='test', description='test2')
+
+        repo.VipRepository.update.assert_called_once_with('TEST', LB_ID,
+                                                          qos_policy_id='fool')
+
     @mock.patch('octavia.db.repositories.ListenerRepository.update')
     def test_update_listener_in_db(self,
                                    mock_listner_repo_update,

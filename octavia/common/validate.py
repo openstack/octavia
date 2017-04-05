@@ -244,6 +244,16 @@ def subnet_exists(subnet_id):
     return subnet
 
 
+def qos_policy_exists(qos_policy_id):
+    network_driver = utils.get_network_driver()
+    try:
+        qos_policy = network_driver.get_qos_policy(qos_policy_id)
+    except Exception:
+        raise exceptions.InvalidSubresource(resource='qos_policy',
+                                            id=qos_policy_id)
+    return qos_policy
+
+
 def network_exists_optionally_contains_subnet(network_id, subnet_id=None):
     """Raises an exception when a network does not exist.
 

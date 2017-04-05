@@ -233,3 +233,16 @@ class TaskUtils(object):
             LOG.error("Failed to update pool %(pool)s "
                       "provisioning status to ERROR due to: "
                       "%(except)s", {'pool': pool_id, 'except': e})
+
+    def get_current_loadbalancer_from_db(self, loadbalancer_id):
+        """Gets a Loadbalancer from db.
+
+        :param: loadbalancer_id: Load balancer ID which to get from db
+        """
+        try:
+            return self.loadbalancer_repo.get(db_apis.get_session(),
+                                              id=loadbalancer_id)
+        except Exception as e:
+            LOG.error("Failed to get loadbalancer &(loadbalancer)s "
+                      "due to: %(except)s",
+                      {'loadbalancer': loadbalancer_id, 'except': e})

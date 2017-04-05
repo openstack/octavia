@@ -132,11 +132,12 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.AMPS_DATA, lb_flow.provides)
         self.assertIn(constants.LOADBALANCER, lb_flow.provides)
 
+        self.assertIn(constants.UPDATE_DICT, lb_flow.requires)
         self.assertIn(constants.LOADBALANCER, lb_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, lb_flow.requires)
 
         self.assertEqual(4, len(lb_flow.provides))
-        self.assertEqual(2, len(lb_flow.requires))
+        self.assertEqual(3, len(lb_flow.requires))
 
     def test_get_update_load_balancer_flow(self, mock_get_net_driver):
 

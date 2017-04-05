@@ -410,3 +410,39 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                          port1.fixed_ips[0].ip_address)
         self.assertEqual(t_constants.MOCK_IP_ADDRESS2,
                          port2.fixed_ips[0].ip_address)
+
+    def test_get_qos_policy(self):
+        get_qos = self.driver.neutron_client.show_qos_policy
+        get_qos.return_value = {'policy': {
+            'id': t_constants.MOCK_NEUTRON_QOS_POLICY_ID}}
+        qos = self.driver.get_qos_policy(
+            t_constants.MOCK_NEUTRON_QOS_POLICY_ID)
+        self.assertIsInstance(qos, network_models.QosPolicy)
+        self.assertEqual(t_constants.MOCK_NEUTRON_QOS_POLICY_ID,
+                         qos.id)
+
+        get_qos.side_effect = neutron_client_exceptions.NotFound
+        self.assertRaises(network_base.QosPolicyNotFound,
+                          self.driver.get_qos_policy,
+                          t_constants.MOCK_NEUTRON_QOS_POLICY_ID)
+
+        get_qos.side_effect = neutron_client_exceptions.ServiceUnavailable
+        self.assertRaises(network_base.NetworkException,
+                          self.driver.get_qos_policy,
+                          t_constants.MOCK_NEUTRON_QOS_POLICY_ID)
+
+    def test_apply_or_undo_qos_on_port(self):
+        # The apply and undo qos function use the same "update_port" with
+        # neutron client. So testing them in one Uts.
+        update_port = self.driver.neutron_client.update_port
+        update_port.side_effect = neutron_client_exceptions.PortNotFoundClient
+        self.assertRaises(network_base.PortNotFound,
+                          self.driver.apply_qos_on_port,
+                          t_constants.MOCK_PORT_ID,
+                          t_constants.MOCK_NEUTRON_QOS_POLICY_ID)
+
+        update_port.side_effect = neutron_client_exceptions.ServiceUnavailable
+        self.assertRaises(network_base.NetworkException,
+                          self.driver.apply_qos_on_port,
+                          t_constants.MOCK_PORT_ID,
+                          t_constants.MOCK_NEUTRON_QOS_POLICY_ID)

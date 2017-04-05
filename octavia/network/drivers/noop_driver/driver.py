@@ -190,6 +190,19 @@ class NoopManager(object):
         LOG.debug("failover %s no-op, wait_for_port_detach, amphora id %s",
                   self.__class__.__name__, amphora.id)
 
+    def get_qos_policy(self, qos_policy_id):
+        LOG.debug("Qos Policy %s no-op, get_qos_policy qos_policy_id %s",
+                  self.__class__.__name__, qos_policy_id)
+        self.networkconfigconfig[qos_policy_id] = (qos_policy_id,
+                                                   'get_qos_policy')
+        return qos_policy_id
+
+    def apply_qos_on_port(self, qos_id, port_id):
+        LOG.debug("Network %s no-op, apply_qos_on_port qos_id %s, port_id "
+                  "%s", self.__class__.__name__, qos_id, port_id)
+        self.networkconfigconfig[(qos_id, port_id)] = (
+            qos_id, port_id, 'apply_qos_on_port')
+
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def __init__(self):
@@ -230,6 +243,9 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def get_port(self, port_id):
         return self.driver.get_port(port_id)
 
+    def get_qos_policy(self, qos_policy_id):
+        return self.driver.get_qos_policy(qos_policy_id)
+
     def get_network_by_name(self, network_name):
         return self.driver.get_network_by_name(network_name)
 
@@ -253,3 +269,6 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def wait_for_port_detach(self, amphora):
         self.driver.wait_for_port_detach(amphora)
+
+    def apply_qos_on_port(self, qos_id, port_id):
+        self.driver.apply_qos_on_port(qos_id, port_id)

@@ -347,3 +347,18 @@ class TestValidations(base.TestCase):
         self.assertRaises(
             exceptions.ValidationException,
             validate.network_allowed_by_config, net_id3)
+
+    def test_qos_policy_exists(self):
+        qos_policy_id = uuidutils.generate_uuid()
+        qos_policy = network_models.QosPolicy(id=qos_policy_id)
+        with mock.patch(
+                'octavia.common.utils.get_network_driver') as net_mock:
+            net_mock.return_value.get_qos_policy.return_value = qos_policy
+            self.assertEqual(
+                validate.qos_policy_exists(qos_policy_id),
+                qos_policy)
+
+            net_mock.return_value.get_qos_policy.side_effect = Exception
+            self.assertRaises(exceptions.InvalidSubresource,
+                              validate.qos_policy_exists,
+                              qos_policy_id)

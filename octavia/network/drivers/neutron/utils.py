@@ -47,7 +47,8 @@ def convert_port_dict_to_model(port_dict):
         status=port.get('status'),
         project_id=port.get('tenant_id'),
         admin_state_up=port.get('admin_state_up'),
-        fixed_ips=fixed_ips
+        fixed_ips=fixed_ips,
+        qos_policy_id=port.get('qos_policy_id')
     )
 
 
@@ -71,3 +72,8 @@ def convert_fixed_ip_dict_to_model(fixed_ip_dict):
     fixed_ip = fixed_ip_dict.get('fixed_ip', fixed_ip_dict)
     return network_models.FixedIP(subnet_id=fixed_ip.get('subnet_id'),
                                   ip_address=fixed_ip.get('ip_address'))
+
+
+def convert_qos_policy_dict_to_model(qos_policy_dict):
+    qos_policy = qos_policy_dict.get('policy', qos_policy_dict)
+    return network_models.QosPolicy(id=qos_policy.get('id'))

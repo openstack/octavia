@@ -135,6 +135,18 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
         }
         self.neutron_client.create_security_group_rule(rule)
 
+    def apply_qos_on_port(self, qos_id, port_id):
+        body = {
+            'port':
+                {'qos_policy_id': qos_id}
+        }
+        try:
+            self.neutron_client.update_port(port_id, body)
+        except neutron_client_exceptions.PortNotFoundClient as e:
+            raise base.PortNotFound(e.message)
+        except Exception as e:
+            raise base.NetworkException(str(e))
+
     def get_plugged_networks(self, compute_id):
         # List neutron ports associated with the Amphora
         try:
@@ -223,3 +235,6 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
         return self._get_resources_by_filters(
             'port', unique_item=True,
             network_id=network_id, device_id=device_id)
+
+    def get_qos_policy(self, qos_policy_id):
+        return self._get_resource('qos_policy', qos_policy_id)

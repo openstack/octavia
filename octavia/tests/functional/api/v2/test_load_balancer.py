@@ -461,6 +461,129 @@ class TestLoadBalancer(base.BaseAPITest):
         # the octavia error message
         self.assertIn("neutron_msg", response.json.get("faultstring"))
 
+    def test_create_with_qos(self):
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                       network_id=uuidutils.generate_uuid())
+        qos_policy_id = uuidutils.generate_uuid()
+        # Test with specific vip_qos_policy_id
+        lb_json = {'vip_subnet_id': subnet.id,
+                   'project_id': self.project_id,
+                   'vip_qos_policy_id': qos_policy_id}
+        body = self._build_body(lb_json)
+        with mock.patch("octavia.network.drivers.noop_driver.driver"
+                        ".NoopManager.get_subnet") as mock_get_subnet:
+            with mock.patch("octavia.common.validate."
+                            "qos_policy_exists") as mock_get_qos:
+                mock_get_subnet.return_value = subnet
+                mock_get_qos.return_value = qos_policy_id
+                response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_request_matches_response(lb_json, api_lb)
+        self.assertEqual(subnet.id, api_lb.get('vip_subnet_id'))
+        self.assertEqual(qos_policy_id, api_lb.get('vip_qos_policy_id'))
+
+    def test_create_with_qos_vip_port(self):
+        # Test with vip_port_id which applied qos_policy
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                       network_id=uuidutils.generate_uuid())
+        port_qos_policy_id = uuidutils.generate_uuid()
+        ip_address = '192.168.50.50'
+        network = network_models.Network(id=uuidutils.generate_uuid(),
+                                         subnets=[subnet])
+        fixed_ip = network_models.FixedIP(subnet_id=subnet.id,
+                                          ip_address=ip_address)
+        port = network_models.Port(id=uuidutils.generate_uuid(),
+                                   fixed_ips=[fixed_ip],
+                                   network_id=network.id,
+                                   qos_policy_id=port_qos_policy_id)
+        lb_json = {'vip_port_id': port.id,
+                   'project_id': self.project_id}
+        body = self._build_body(lb_json)
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver."
+                "NoopManager.get_network") as m_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_port") as mock_get_port, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".allocate_vip") as mock_allocate_vip, mock.patch(
+            "octavia.common.validate."
+                "qos_policy_exists") as m_get_qos:
+            m_get_qos.return_value = port_qos_policy_id
+            mock_allocate_vip.return_value = data_models.Vip(
+                ip_address=ip_address, subnet_id=subnet.id,
+                network_id=network.id, port_id=port.id)
+            m_get_network.return_value = network
+            mock_get_port.return_value = port
+            response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_request_matches_response(lb_json, api_lb)
+        self.assertEqual(port.id, api_lb.get('vip_port_id'))
+        self.assertEqual(subnet.id, api_lb.get('vip_subnet_id'))
+        self.assertEqual(network.id, api_lb.get('vip_network_id'))
+        self.assertEqual(port_qos_policy_id, api_lb.get(
+            'vip_qos_policy_id'))
+
+    def test_create_with_qos_vip_port_and_vip_qos(self):
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                       network_id=uuidutils.generate_uuid())
+        port_qos_policy_id = uuidutils.generate_uuid()
+        new_qos_policy_id = uuidutils.generate_uuid()
+        ip_address = '192.168.50.50'
+        network = network_models.Network(id=uuidutils.generate_uuid(),
+                                         subnets=[subnet])
+        fixed_ip = network_models.FixedIP(subnet_id=subnet.id,
+                                          ip_address=ip_address)
+        port = network_models.Port(id=uuidutils.generate_uuid(),
+                                   fixed_ips=[fixed_ip],
+                                   network_id=network.id,
+                                   qos_policy_id=port_qos_policy_id)
+        lb_json = {'vip_port_id': port.id,
+                   'project_id': self.project_id,
+                   'vip_qos_policy_id': new_qos_policy_id}
+        body = self._build_body(lb_json)
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver."
+                "NoopManager.get_network") as m_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_port") as mock_get_port, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".allocate_vip") as mock_allocate_vip, mock.patch(
+            "octavia.common.validate."
+                "qos_policy_exists") as m_get_qos:
+            m_get_qos.return_value = mock.ANY
+            mock_allocate_vip.return_value = data_models.Vip(
+                ip_address=ip_address, subnet_id=subnet.id,
+                network_id=network.id, port_id=port.id)
+            m_get_network.return_value = network
+            mock_get_port.return_value = port
+            response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_request_matches_response(lb_json, api_lb)
+        self.assertEqual(port.id, api_lb.get('vip_port_id'))
+        self.assertEqual(subnet.id, api_lb.get('vip_subnet_id'))
+        self.assertEqual(network.id, api_lb.get('vip_network_id'))
+        self.assertEqual(new_qos_policy_id, api_lb.get(
+            'vip_qos_policy_id'))
+
+    def test_create_with_non_exist_qos_policy_id(self):
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                       network_id=uuidutils.generate_uuid())
+        qos_policy_id = uuidutils.generate_uuid()
+        lb_json = {'vip_subnet_id': subnet.id,
+                   'project_id': self.project_id,
+                   'vip_qos_policy_id': qos_policy_id}
+        body = self._build_body(lb_json)
+        with mock.patch("octavia.network.drivers.noop_driver.driver"
+                        ".NoopManager.get_subnet") as mock_get_subnet:
+            with mock.patch("octavia.network.drivers.noop_driver."
+                            "driver.NoopManager."
+                            "get_qos_policy") as mock_get_qos:
+                mock_get_subnet.return_value = subnet
+                mock_get_qos.side_effect = Exception()
+                response = self.post(self.LBS_PATH, body, status=400)
+        err_msg = "qos_policy %s not found." % qos_policy_id
+        self.assertEqual(err_msg, response.json.get('faultstring'))
+
     def test_create_with_long_name(self):
         lb_json = {'name': 'n' * 256,
                    'vip_subnet_id': uuidutils.generate_uuid(),
@@ -1113,6 +1236,32 @@ class TestLoadBalancer(base.BaseAPITest):
         self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
                  lb_json, status=400)
 
+    def test_update_with_qos(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid(), name='lb1',
+            project_id=project_id,
+            vip_qos_policy_id=uuidutils.generate_uuid())
+        lb_dict = lb.get(self.root_tag)
+        self.set_lb_status(lb_dict.get('id'))
+        lb_json = self._build_body(
+            {'vip_qos_policy_id': uuidutils.generate_uuid()})
+        self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
+                 lb_json, status=200)
+
+    def test_update_with_bad_qos(self):
+        project_id = uuidutils.generate_uuid()
+        vip_qos_policy_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       vip_qos_policy_id=vip_qos_policy_id)
+        lb_dict = lb.get(self.root_tag)
+        lb_json = self._build_body({'vip_qos_policy_id': 'BAD'})
+        self.set_lb_status(lb_dict.get('id'))
+        self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
+                 lb_json, status=400)
+
     def test_update_bad_lb_id(self):
         path = self.LB_PATH.format(lb_id='SEAN-CONNERY')
         self.put(path, body={}, status=404)
@@ -1726,6 +1875,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             # for this test without interfering with a ton of stuff, and it is
             # expected that this would be overwritten anyway, so 'ANY' is fine?
             'vip_network_id': mock.ANY,
+            'vip_qos_policy_id': None,
             'flavor': '',
             'provider': 'octavia'
         }

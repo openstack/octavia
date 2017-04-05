@@ -1059,6 +1059,18 @@ vip_port_id-optional:
   in: body
   required: false
   type: string
+vip_qos_policy_id:
+  description: |
+    The ID of the QoS Policy which will apply to the Virtual IP (VIP).
+  in: body
+  required: true
+  type: string
+vip_qos_policy_id-optional:
+  description: |
+    The ID of the QoS Policy which will apply to the Virtual IP (VIP).
+  in: body
+  required: false
+  type: string
 vip_subnet_id:
   description: |
     The ID of the subnet for the Virtual IP (VIP).

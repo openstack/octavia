@@ -25,6 +25,8 @@ class TestNoopNetworkDriver(base.TestCase):
     FAKE_UUID_2 = uuidutils.generate_uuid()
     FAKE_UUID_3 = uuidutils.generate_uuid()
     FAKE_UUID_4 = uuidutils.generate_uuid()
+    FAKE_UUID_5 = uuidutils.generate_uuid()
+    FAKE_UUID_6 = uuidutils.generate_uuid()
 
     def setUp(self):
         super(TestNoopNetworkDriver, self).setUp()
@@ -46,6 +48,8 @@ class TestNoopNetworkDriver(base.TestCase):
         self.compute_id = self.FAKE_UUID_2
         self.subnet_id = self.FAKE_UUID_3
         self.subnet_name = 'subnet1'
+        self.qos_policy_id = self.FAKE_UUID_5
+        self.vrrp_port_id = self.FAKE_UUID_6
 
     def test_allocate_vip(self):
         self.driver.allocate_vip(self.load_balancer)
@@ -169,4 +173,19 @@ class TestNoopNetworkDriver(base.TestCase):
         self.assertEqual(
             (self.load_balancer, 'get_network_configs'),
             self.driver.driver.networkconfigconfig[self.load_balancer.id]
+        )
+
+    def test_get_qos_policy(self):
+        self.driver.get_qos_policy(self.qos_policy_id)
+        self.assertEqual(
+            (self.qos_policy_id, 'get_qos_policy'),
+            self.driver.driver.networkconfigconfig[self.qos_policy_id]
+        )
+
+    def test_apply_qos_on_port(self):
+        self.driver.apply_qos_on_port(self.qos_policy_id, self.vrrp_port_id)
+        self.assertEqual(
+            (self.qos_policy_id, self.vrrp_port_id, 'apply_qos_on_port'),
+            self.driver.driver.networkconfigconfig[self.qos_policy_id,
+                                                   self.vrrp_port_id]
         )

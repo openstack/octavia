@@ -1,0 +1,5 @@
+---
+features:
+  - Now Octavia API can accept the QoS Policy id from neutron to support the
+    QoS requirements towards Load Balancer VIP port when create/update load
+    balancer.

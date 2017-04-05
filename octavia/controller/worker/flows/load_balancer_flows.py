@@ -311,6 +311,9 @@ class LoadBalancerFlows(object):
         new_LB_net_subflow.add(network_tasks.PlugVIP(
             requires=constants.LOADBALANCER,
             provides=constants.AMPS_DATA))
+        new_LB_net_subflow.add(network_tasks.ApplyQos(
+            requires=(constants.LOADBALANCER, constants.AMPS_DATA,
+                      constants.UPDATE_DICT)))
         new_LB_net_subflow.add(database_tasks.UpdateAmphoraVIPData(
             requires=constants.AMPS_DATA))
         new_LB_net_subflow.add(database_tasks.ReloadLoadBalancer(
@@ -339,6 +342,8 @@ class LoadBalancerFlows(object):
                                rebind={constants.OBJECT:
                                        constants.LOADBALANCER},
                                requires=[constants.UPDATE_DICT]))
+        update_LB_flow.add(network_tasks.ApplyQos(
+            requires=(constants.LOADBALANCER, constants.UPDATE_DICT)))
         update_LB_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_LB_flow.add(database_tasks.UpdateLoadbalancerInDB(

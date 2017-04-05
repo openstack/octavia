@@ -56,6 +56,11 @@ class TestLoadBalancer(object):
         self.assertRaises(ValueError, wsme_json.fromjson, self._type,
                           body)
 
+    def test_invalid_qos_policy_id(self):
+        body = {"vip_qos_policy_id": "invalid_uuid"}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
 
 class TestLoadBalancerPOST(base.BaseTypesTest, TestLoadBalancer):
 
@@ -70,7 +75,8 @@ class TestLoadBalancerPOST(base.BaseTypesTest, TestLoadBalancer):
 
     def test_vip(self):
         body = {"vip_subnet_id": uuidutils.generate_uuid(),
-                "vip_port_id": uuidutils.generate_uuid()}
+                "vip_port_id": uuidutils.generate_uuid(),
+                "vip_qos_policy_id": uuidutils.generate_uuid()}
         wsme_json.fromjson(self._type, body)
 
     def test_invalid_ip_address(self):

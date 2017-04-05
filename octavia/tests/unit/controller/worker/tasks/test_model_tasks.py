@@ -15,6 +15,7 @@
 
 import mock
 
+from octavia.common import data_models as o_data_models
 from octavia.controller.worker.tasks import model_tasks
 import octavia.tests.unit.base as base
 
@@ -41,4 +42,14 @@ class TestObjectUpdateTasks(base.TestCase):
         update_attr.execute(self.listener_mock,
                             {'name': 'TEST2'})
 
-        self.listener_mock.update.assert_called_once_with({'name': 'TEST2'})
+        self.assertEqual('TEST2', getattr(self.listener_mock, 'name'))
+
+    @mock.patch('octavia.common.data_models.Vip.update')
+    def test_update_vip_during_update_loadbalancer(self, mock_vip):
+        vip_object = o_data_models.Vip()
+        lb_object = o_data_models.LoadBalancer(vip=vip_object)
+        update_attr = model_tasks.UpdateAttributes()
+        update_attr.execute(lb_object, {'vip': {'fool1': 'bar1'},
+                                        'description': 'bar2'})
+
+        mock_vip.assert_called_once_with({'fool1': 'bar1'})

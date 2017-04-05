@@ -25,6 +25,7 @@ class BaseLoadBalancerType(types.BaseType):
                           'vip_subnet_id': 'vip.subnet_id',
                           'vip_port_id': 'vip.port_id',
                           'vip_network_id': 'vip.network_id',
+                          'vip_qos_policy_id': 'vip.qos_policy_id',
                           'admin_state_up': 'enabled'}
     _child_map = {'vip': {
         'ip_address': 'vip_address',
@@ -52,6 +53,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
     pools = wtypes.wsattr([types.IdOnlyType])
     provider = wtypes.wsattr(wtypes.StringType())
     flavor = wtypes.wsattr(wtypes.StringType())
+    vip_qos_policy_id = wtypes.wsattr(wtypes.UuidType())
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -62,7 +64,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
             result.vip_port_id = data_model.vip.port_id
             result.vip_address = data_model.vip.ip_address
             result.vip_network_id = data_model.vip.network_id
-
+            result.vip_qos_policy_id = data_model.vip.qos_policy_id
         if cls._full_response():
             listener_model = listener.ListenerFullResponse
             pool_model = pool.PoolFullResponse
@@ -114,6 +116,7 @@ class LoadBalancerPOST(BaseLoadBalancerType):
     vip_port_id = wtypes.wsattr(wtypes.UuidType())
     vip_subnet_id = wtypes.wsattr(wtypes.UuidType())
     vip_network_id = wtypes.wsattr(wtypes.UuidType())
+    vip_qos_policy_id = wtypes.wsattr(wtypes.UuidType())
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     listeners = wtypes.wsattr([listener.ListenerSingleCreate], default=[])
     pools = wtypes.wsattr([pool.PoolSingleCreate], default=[])
@@ -134,6 +137,7 @@ class LoadBalancerPUT(BaseLoadBalancerType):
 
     name = wtypes.wsattr(wtypes.StringType(max_length=255))
     description = wtypes.wsattr(wtypes.StringType(max_length=255))
+    vip_qos_policy_id = wtypes.wsattr(wtypes.UuidType())
     admin_state_up = wtypes.wsattr(bool)
 
 

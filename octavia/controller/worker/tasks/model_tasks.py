@@ -13,6 +13,7 @@
 # under the License.
 #
 
+from octavia.common import data_models
 from taskflow import task
 
 
@@ -28,5 +29,19 @@ class UpdateAttributes(task.Task):
     """Task to update an object for changes."""
 
     def execute(self, object, update_dict):
+        """Update an object and its associated resources in nested way.
 
-        object.update(update_dict)
+        Such as LoadBalancer object, will nested update the Vip object if there
+        is any new field in PUT request.
+        :param object: The object will be updated.
+        :param update_dict: The PUT request body in dictionary type.
+        :returns: None
+        """
+        for key, value in update_dict.items():
+            if (hasattr(object, key) and
+                    isinstance(getattr(object, key),
+                               data_models.BaseDataModel) and
+                    isinstance(value, dict)):
+                getattr(object, key).update(value)
+            else:
+                setattr(object, key, value)

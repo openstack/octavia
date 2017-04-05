@@ -262,3 +262,22 @@ class TestTaskUtils(base.TestCase):
         self.task_utils.mark_pool_prov_status_error(self.POOL_ID)
 
         self.assertFalse(mock_pool_repo_update.called)
+
+    @mock.patch('octavia.db.api.get_session', return_value=TEST_SESSION)
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    def test_get_current_loadbalancer_from_db(self, mock_lb_repo_get,
+                                              mock_get_session):
+        # Happy path
+        self.task_utils.get_current_loadbalancer_from_db(self.LOADBALANCER_ID)
+
+        mock_lb_repo_get.assert_called_once_with(
+            TEST_SESSION,
+            id=self.LOADBALANCER_ID)
+
+        # Exception path
+        mock_lb_repo_get.reset_mock()
+        mock_get_session.side_effect = Exception('fail')
+
+        self.task_utils.get_current_loadbalancer_from_db(self.POOL_ID)
+
+        self.assertFalse(mock_lb_repo_get.called)

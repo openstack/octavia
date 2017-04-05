@@ -75,6 +75,9 @@ MOCK_NEUTRON_PORT = {'port': {'network_id': MOCK_NETWORK_ID,
                               'mac_address': MOCK_MAC_ADDR,
                               'fixed_ips': [{'ip_address': MOCK_IP_ADDRESS,
                                              'subnet_id': MOCK_SUBNET_ID}]}}
+MOCK_NEUTRON_QOS_POLICY_ID = 'mock-qos-id'
+MOCK_QOS_POLICY_ID1 = 'qos1-id'
+MOCK_QOS_POLICY_ID2 = 'qos2-id'
 
 MOCK_NEUTRON_PORT2 = {'port': {'network_id': MOCK_NETWORK_ID2,
                                'device_id': MOCK_DEVICE_ID2,

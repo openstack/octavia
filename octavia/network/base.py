@@ -79,6 +79,10 @@ class TimeoutException(NetworkException):
     pass
 
 
+class QosPolicyNotFound(NetworkException):
+    pass
+
+
 @six.add_metaclass(abc.ABCMeta)
 class AbstractNetworkDriver(object):
     """This class defines the methods for a fully functional network driver.

@@ -63,6 +63,7 @@ Response Parameters
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
    - vip_subnet_id: vip_subnet_id
+   - vip_qos_policy_id: vip_qos_policy_id
 
 Response Example
 ----------------
@@ -105,6 +106,10 @@ An optional ``flavor`` attribute can be used to create the load balancer
 using a pre-configured octavia flavor.  Flavors are created by the operator
 to allow custom load balancer configurations, such as allocating more
 memory for the load balancer.
+
+An optional ``vip_qos_policy_id`` attribute from Neutron can be used to
+apply QoS policies on a loadbalancer VIP, also could pass a 'null' value to
+remove QoS policies.
 
 You can also specify the ``provider`` attribute when you create a
 load balancer. The ``provider`` attribute specifies which backend should
@@ -167,6 +172,7 @@ Request
    - vip_network_id: vip_network_id-optional
    - vip_port_id: vip_port_id-optional
    - vip_subnet_id: vip_subnet_id-optional
+   - vip_qos_policy_id: vip_qos_policy_id-optional
 
 Request Example
 ----------------
@@ -203,6 +209,7 @@ Response Parameters
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
    - vip_subnet_id: vip_subnet_id
+   - vip_qos_policy_id: vip_qos_policy_id
 
 Response Example
 ----------------
@@ -294,6 +301,7 @@ Response Parameters
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
    - vip_subnet_id: vip_subnet_id
+   - vip_qos_policy_id: vip_qos_policy_id
 
 Response Example
 ----------------
@@ -340,6 +348,7 @@ Request
    - loadbalancer: loadbalancer
    - loadbalancer_id: path-loadbalancer-id
    - name: name-optional
+   - vip_qos_policy_id: vip_qos_policy_id-optional
 
 Request Example
 ---------------
@@ -376,6 +385,7 @@ Response Parameters
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
    - vip_subnet_id: vip_subnet_id
+   - vip_qos_policy_id: vip_qos_policy_id
 
 Response Example
 ----------------

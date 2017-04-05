@@ -22,6 +22,7 @@ from taskflow.types import failure
 
 from octavia.common import constants
 from octavia.common import utils
+from octavia.controller.worker import task_utils
 from octavia.network import base
 from octavia.network import data_models as n_data_models
 
@@ -35,6 +36,7 @@ class BaseNetworkTask(task.Task):
     def __init__(self, **kwargs):
         super(BaseNetworkTask, self).__init__(**kwargs)
         self._network_driver = None
+        self.task_utils = task_utils.TaskUtils()
 
     @property
     def network_driver(self):
@@ -452,3 +454,50 @@ class WaitForPortDetach(BaseNetworkTask):
         LOG.debug('Waiting for ports to detach from amphora: %(amp_id)s.',
                   {'amp_id': amphora.id})
         self.network_driver.wait_for_port_detach(amphora)
+
+
+class ApplyQos(BaseNetworkTask):
+    """Apply Quality of Services to the VIP"""
+
+    def _apply_qos_on_vrrp_ports(self, loadbalancer, amps_data, qos_policy_id,
+                                 is_revert=False, request_qos_id=None):
+        """Call network driver to apply QoS Policy on the vrrp ports."""
+        if not amps_data:
+            amps_data = loadbalancer.amphorae
+        vrrp_port_ids = [amp.vrrp_port_id for amp in amps_data]
+        for port_id in vrrp_port_ids:
+            try:
+                self.network_driver.apply_qos_on_port(qos_policy_id, port_id)
+            except Exception:
+                if not is_revert:
+                    raise
+                else:
+                    LOG.warning('Failed to undo qos policy %(qos_id)s '
+                                'on vrrp port: %(port)s from '
+                                'amphorae: %(amp)s',
+                                {'qos_id': request_qos_id,
+                                 'port': vrrp_port_ids,
+                                 'amp': [amp.id for amp in amps_data]})
+
+    def execute(self, loadbalancer, amps_data=None, update_dict=None):
+        """Apply qos policy on the vrrp ports which are related with vip."""
+        qos_policy_id = loadbalancer.vip.qos_policy_id
+        if not qos_policy_id and (
+            update_dict and (
+                'vip' not in update_dict or
+                'qos_policy_id' not in update_dict['vip'])):
+            return
+        self._apply_qos_on_vrrp_ports(loadbalancer, amps_data, qos_policy_id)
+
+    def revert(self, result, loadbalancer, amps_data=None, update_dict=None,
+               *args, **kwargs):
+        """Handle a failure to apply QoS to VIP"""
+        request_qos_id = loadbalancer.vip.qos_policy_id
+        orig_lb = self.task_utils.get_current_loadbalancer_from_db(
+            loadbalancer.id)
+        orig_qos_id = orig_lb.vip.qos_policy_id
+        if request_qos_id != orig_qos_id:
+            self._apply_qos_on_vrrp_ports(loadbalancer, amps_data, orig_qos_id,
+                                          is_revert=True,
+                                          request_qos_id=request_qos_id)
+        return

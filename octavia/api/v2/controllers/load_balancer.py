@@ -132,6 +132,15 @@ class LoadBalancersController(base.BaseController):
         port = validate.port_exists(port_id=load_balancer.vip_port_id)
         load_balancer.vip_network_id = port.network_id
 
+        # validate the request vip port whether applied the qos_policy and
+        # store the port_qos_policy to loadbalancer obj if possible. The
+        # default behavior is that if 'vip_qos_policy_id' is specified in the
+        # request, it will override the qos_policy applied on vip_port.
+        port_qos_policy_id = port.qos_policy_id
+        if (port_qos_policy_id and
+                isinstance(load_balancer.vip_qos_policy_id, wtypes.UnsetType)):
+            load_balancer.vip_qos_policy_id = port_qos_policy_id
+
         # Identify the subnet for this port
         if load_balancer.vip_subnet_id:
             validate.subnet_exists(subnet_id=load_balancer.vip_subnet_id)
@@ -193,7 +202,9 @@ class LoadBalancersController(base.BaseController):
             subnet = validate.subnet_exists(
                 subnet_id=load_balancer.vip_subnet_id)
             load_balancer.vip_network_id = subnet.network_id
-
+        if load_balancer.vip_qos_policy_id:
+            validate.qos_policy_exists(
+                qos_policy_id=load_balancer.vip_qos_policy_id)
         validate.network_allowed_by_config(load_balancer.vip_network_id)
 
     def _create_vip_port_if_not_exist(self, load_balancer_db):
@@ -418,6 +429,11 @@ class LoadBalancersController(base.BaseController):
         self._auth_validate_action(context, db_lb.project_id,
                                    constants.RBAC_PUT)
 
+        if (load_balancer.vip_qos_policy_id and
+                not isinstance(load_balancer.vip_qos_policy_id,
+                               wtypes.UnsetType) and
+                db_lb.vip.qos_policy_id != load_balancer.vip_qos_policy_id):
+            validate.qos_policy_exists(load_balancer.vip_qos_policy_id)
         self._test_lb_status(context.session, id)
         try:
             LOG.info("Sending updated Load Balancer %s to the handler", id)
