@@ -15,8 +15,8 @@
 from wsme import types as wtypes
 
 from octavia.api.common import types
-from octavia.api.v1.types import l7policy
-from octavia.api.v1.types import pool
+from octavia.api.v2.types import l7policy
+from octavia.api.v2.types import pool
 from octavia.common import constants
 
 
