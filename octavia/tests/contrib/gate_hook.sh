@@ -42,6 +42,8 @@ function _setup_octavia {
     fi
 }
 
+# Make sure lbaasv2 is listed as enabled for tempest
+load_conf_hook api_extensions
 
 case "$testtype" in
 
