@@ -216,6 +216,9 @@ haproxy_amphora_opts = [
 ]
 
 controller_worker_opts = [
+    cfg.IntOpt('workers',
+               default=1, min=1,
+               help='Number of workers for the controller-worker service.'),
     cfg.IntOpt('amp_active_retries',
                default=10,
                help=_('Retry attempts to wait for Amphora to become active')),

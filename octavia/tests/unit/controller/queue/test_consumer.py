@@ -34,9 +34,10 @@ class TestConsumer(base.TestCase):
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="oslo_messaging", topic='foo_topic')
         conf.config(host='test-hostname')
+        self.conf = conf.conf
 
-    def test_consumer_start(self, mock_rpc_server, mock_endpoint, mock_target,
-                            mock_get_transport):
+    def test_consumer_run(self, mock_rpc_server, mock_endpoint, mock_target,
+                          mock_get_transport):
         mock_get_transport_rv = mock.Mock()
         mock_get_transport.return_value = mock_get_transport_rv
         mock_rpc_server_rv = mock.Mock()
@@ -46,7 +47,7 @@ class TestConsumer(base.TestCase):
         mock_target_rv = mock.Mock()
         mock_target.return_value = mock_target_rv
 
-        consumer.Consumer().start()
+        consumer.ConsumerService(1, self.conf).run()
 
         mock_get_transport.assert_called_once_with(cfg.CONF)
         mock_target.assert_called_once_with(topic='foo_topic',
@@ -57,27 +58,27 @@ class TestConsumer(base.TestCase):
         mock_rpc_server.assert_called_once_with(mock_get_transport_rv,
                                                 mock_target_rv,
                                                 [mock_endpoint_rv],
-                                                executor='eventlet',
+                                                executor='threading',
                                                 access_policy=access_policy)
 
-    def test_consumer_stop(self, mock_rpc_server, mock_endpoint, mock_target,
-                           mock_get_transport):
+    def test_consumer_terminate(self, mock_rpc_server, mock_endpoint,
+                                mock_target, mock_get_transport):
         mock_rpc_server_rv = mock.Mock()
         mock_rpc_server.return_value = mock_rpc_server_rv
 
-        cons = consumer.Consumer()
-        cons.start()
-        cons.stop()
+        cons = consumer.ConsumerService(1, self.conf)
+        cons.run()
+        cons.terminate()
         mock_rpc_server_rv.stop.assert_called_once_with()
         self.assertFalse(mock_rpc_server_rv.wait.called)
 
-    def test_consumer_graceful_stop(self, mock_rpc_server, mock_endpoint,
-                                    mock_target, mock_get_transport):
+    def test_consumer_graceful_terminate(self, mock_rpc_server, mock_endpoint,
+                                         mock_target, mock_get_transport):
         mock_rpc_server_rv = mock.Mock()
         mock_rpc_server.return_value = mock_rpc_server_rv
 
-        cons = consumer.Consumer()
-        cons.start()
-        cons.stop(graceful=True)
+        cons = consumer.ConsumerService(1, self.conf)
+        cons.run()
+        cons.terminate(graceful=True)
         mock_rpc_server_rv.stop.assert_called_once_with()
         mock_rpc_server_rv.wait.assert_called_once_with()

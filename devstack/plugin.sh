@@ -134,6 +134,7 @@ function octavia_configure {
     iniuncomment $OCTAVIA_CONF haproxy_amphora rest_request_read_timeout
     iniuncomment $OCTAVIA_CONF controller_worker amp_active_retries
     iniuncomment $OCTAVIA_CONF controller_worker amp_active_wait_sec
+    iniuncomment $OCTAVIA_CONF controller_worker workers
 
     # devstack optimizations for tempest runs
     iniset $OCTAVIA_CONF haproxy_amphora connection_max_retries 1500
@@ -142,6 +143,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF haproxy_amphora rest_request_read_timeout ${OCTAVIA_AMP_READ_TIMEOUT}
     iniset $OCTAVIA_CONF controller_worker amp_active_retries 100
     iniset $OCTAVIA_CONF controller_worker amp_active_wait_sec 2
+    iniset $OCTAVIA_CONF controller_worker workers 2
 
     if [[ -a $OCTAVIA_SSH_DIR ]] ; then
         rm -rf $OCTAVIA_SSH_DIR
