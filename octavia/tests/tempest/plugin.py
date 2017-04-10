@@ -34,8 +34,8 @@ class OctaviaTempestPlugin(plugins.TempestPlugin):
     def register_opts(self, conf):
         conf.register_group(octavia_config.octavia_group)
         conf.register_opts(octavia_config.OctaviaGroup, group='octavia')
-        conf.register_opts(octavia_config.service_option,
-                           group='service_available')
+        conf.register_opt(octavia_config.service_option,
+                          group='service_available')
 
     def get_opt_lists(self):
         return [('octavia', octavia_config.OctaviaGroup),
