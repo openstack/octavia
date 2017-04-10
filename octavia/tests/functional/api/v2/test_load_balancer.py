@@ -67,6 +67,7 @@ class TestLoadBalancer(base.BaseAPITest):
         response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
+        return api_lb
 
     def test_create_without_vip(self):
         lb_json = {'name': 'test1',
@@ -231,8 +232,16 @@ class TestLoadBalancer(base.BaseAPITest):
         lb_json = {'vip_subnet_id': 'HI'}
         self.post(self.LBS_PATH, lb_json, status=400)
 
-    def test_create_with_project_id(self):
-        self.test_create(project_id=uuidutils.generate_uuid())
+    def test_create_with_tenant_id(self):
+        tenant_id = uuidutils.generate_uuid()
+        api_lb = self.test_create(tenant_id=tenant_id, project_id=None)
+        self.assertEqual(tenant_id, api_lb.get('project_id'))
+
+    def test_create_with_project_and_tenant_id(self):
+        project_id = uuidutils.generate_uuid()
+        api_lb = self.test_create(tenant_id=uuidutils.generate_uuid(),
+                                  project_id=project_id)
+        self.assertEqual(project_id, api_lb.get('project_id'))
 
     def test_get_all_admin(self):
         project_id = uuidutils.generate_uuid()

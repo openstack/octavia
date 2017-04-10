@@ -117,6 +117,8 @@ class LoadBalancersController(base.BaseController):
         if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
             if load_balancer.project_id:
                 project_id = load_balancer.project_id
+            elif load_balancer.tenant_id:
+                project_id = load_balancer.tenant_id
 
         if not project_id:
             raise exceptions.ValidationException(detail=_(
