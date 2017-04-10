@@ -23,7 +23,7 @@ from oslo_config import cfg
 service_option = cfg.BoolOpt('octavia',
                              default=False,
                              help="Whether or not Octavia is expected to be "
-                                  "available"),
+                                  "available")
 
 octavia_group = cfg.OptGroup(name='octavia', title='Octavia Service')
 
