@@ -25,7 +25,7 @@ ExecStartPre=-/bin/awk '{system("/sbin/ip netns exec {{ amphora_nsname }} ifup "
 {%- endif %}
 #
 ExecStart=/sbin/ip netns exec {{ amphora_nsname }} /usr/sbin/haproxy-systemd-wrapper -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }} -p {{ haproxy_pid }} -L {{ peer_name }} $EXTRAOPTS
-ExecReload=/usr/sbin/haproxy -c -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }}
+ExecReload=/usr/sbin/haproxy -c -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }} -L {{ peer_name }}
 ExecReload=/bin/kill -USR2 $MAINPID
 KillMode=mixed
 Restart=always
