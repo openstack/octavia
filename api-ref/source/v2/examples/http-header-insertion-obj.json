@@ -1,0 +1,6 @@
+{
+    "insert_headers": {
+        "X-Forwarded-For": "true",
+        "X-Forwarded-Port": "true"
+    }
+}
