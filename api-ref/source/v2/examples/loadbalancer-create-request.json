@@ -1,0 +1,11 @@
+{
+    "loadbalancer": {
+        "description": "My favorite load balancer",
+        "admin_state_up": true,
+        "project_id": "e3cd678b11784734bc366148aa37580e",
+        "vip_subnet_id": "d4af86e1-0051-488c-b7a0-527f97490c9a",
+        "vip_address": "203.0.113.50",
+        "provider": "octavia",
+        "name": "best_load_balancer"
+    }
+}

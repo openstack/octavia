@@ -35,6 +35,17 @@ List All Major Versions
 This fetches all the information about all known major API versions in the
 deployment.
 
+Response codes
+--------------
+
+.. rest_status_code:: success http-status.yaml
+
+   - 200
+
+.. rest_status_code:: error http-status.yaml
+
+   - 500
+
 Response
 --------
 
@@ -53,14 +64,3 @@ Response Example
 .. note::
    This is just an example output and does not represent the current API
    versions available.
-
-Response codes
---------------
-
-.. rest_status_code:: success http-status.yaml
-
-   - 200
-
-.. rest_status_code:: error http-status.yaml
-
-   - 500

@@ -1,0 +1,113 @@
+{
+    "statuses": {
+        "loadbalancer": {
+            "name": "excellent_load_balancer",
+            "provisioning_status": "ACTIVE",
+            "listeners": [
+                {
+                    "name": "HTTP_listener",
+                    "provisioning_status": "ACTIVE",
+                    "pools": [
+                        {
+                            "name": "HTTP_pool",
+                            "provisioning_status": "ACTIVE",
+                            "healthmonitor": {
+                                "type": "HTTP",
+                                "id": "0b608787-ea2d-48c7-89a1-8b8c24fa3b17",
+                                "name": "HTTP_health_monitor",
+                                "provisioning_status": "ACTIVE"
+                            },
+                            "members": [
+                                {
+                                    "name": "",
+                                    "provisioning_status": "ACTIVE",
+                                    "address": "192.0.2.20",
+                                    "protocol_port": 80,
+                                    "id": "3c6857f4-057a-405a-9134-bdeaa8796c8a",
+                                    "operating_status": "ERROR"
+                                },
+                                {
+                                    "name": "",
+                                    "provisioning_status": "ACTIVE",
+                                    "address": "192.0.2.21",
+                                    "protocol_port": 80,
+                                    "id": "f7495909-1706-4c91-83b4-641dab6962ac",
+                                    "operating_status": "ONLINE"
+                                }
+                            ],
+                            "id": "89a47f78-cf81-480b-ad74-bba4177eeb81",
+                            "operating_status": "DEGRADED"
+                        }
+                    ],
+                    "l7policies": [],
+                    "id": "78febaf6-1e63-47c6-af5f-7b5e23fd7094",
+                    "operating_status": "DEGRADED"
+                },
+                {
+                    "name": "redirect_listener",
+                    "provisioning_status": "ACTIVE",
+                    "pools": [],
+                    "l7policies": [
+                        {
+                            "action": "REDIRECT_TO_URL",
+                            "rules": [
+                                {
+                                    "type": "PATH",
+                                    "id": "27f3007a-a1cb-4e17-9696-0e578d617715",
+                                    "provisioning_status": "ACTIVE"
+                                }
+                            ],
+                            "id": "2e8f3139-0673-43f9-aae4-c7a9460e3233",
+                            "name": "redirect_policy",
+                            "provisioning_status": "ACTIVE"
+                        }
+                    ],
+                    "id": "1341fbaf-ad4f-4cfe-a943-ad5e14e664cb",
+                    "operating_status": "ONLINE"
+                }
+            ],
+            "pools": [
+                {
+                    "name": "HTTP_pool",
+                    "provisioning_status": "ACTIVE",
+                    "healthmonitor": {
+                        "type": "HTTP",
+                        "id": "0b608787-ea2d-48c7-89a1-8b8c24fa3b17",
+                        "name": "HTTP_health_monitor",
+                        "provisioning_status": "ACTIVE"
+                    },
+                    "members": [
+                        {
+                            "name": "",
+                            "provisioning_status": "ACTIVE",
+                            "address": "192.0.2.20",
+                            "protocol_port": 80,
+                            "id": "3c6857f4-057a-405a-9134-bdeaa8796c8a",
+                            "operating_status": "ERROR"
+                        },
+                        {
+                            "name": "",
+                            "provisioning_status": "ACTIVE",
+                            "address": "192.0.2.21",
+                            "protocol_port": 80,
+                            "id": "f7495909-1706-4c91-83b4-641dab6962ac",
+                            "operating_status": "ONLINE"
+                        }
+                    ],
+                    "id": "89a47f78-cf81-480b-ad74-bba4177eeb81",
+                    "operating_status": "DEGRADED"
+                },
+                {
+                    "name": "source_ip_pool",
+                    "provisioning_status": "ACTIVE",
+                    "healthmonitor": {},
+                    "members": [],
+                    "id": "8189d6a9-646e-4d23-b742-548dab991951",
+                    "operating_status": "ONLINE"
+                }
+            ],
+            "id": "84faceee-cb97-48d0-93df-9e41d40d4cb4",
+            "operating_status": "DEGRADED"
+        }
+    }
+}
