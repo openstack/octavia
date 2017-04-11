@@ -2,8 +2,8 @@
 Team and repository tags
 ========================
 
-.. image:: http://governance.openstack.org/badges/octavia.svg
-    :target: http://governance.openstack.org/reference/tags/index.html
+.. image:: https://governance.openstack.org/badges/octavia.svg
+    :target: https://governance.openstack.org/reference/tags/index.html
 
 .. Change things from this point on
 
@@ -17,7 +17,7 @@ Octavia
 
 Octavia is an operator-grade open source scalable load balancer for use in
 large OpenStack deployments. It delivers load balancing services on `amphorae
-<http://docs.openstack.org/developer/octavia/main/glossary.html>`_ and
+<https://docs.openstack.org/developer/octavia/main/glossary.html>`_ and
 provides centralized command and control. Octavia is currently the reference
 backend for Neutron LBaaS. In the near future, Octavia is likely to become the
 standard OpenStack LBaaS API endpoint.
@@ -30,13 +30,13 @@ Project resources
 ~~~~~~~~~~~~~~~~~
 
 Developer documentation for the Octavia project is available at
-http://docs.openstack.org/developer/octavia
+https://docs.openstack.org/developer/octavia
 
 The project source code repository is located at
-http://git.openstack.org/cgit/openstack/octavia
+https://git.openstack.org/cgit/openstack/octavia
 
 Project status, bugs, and requests for feature enhancements are tracked on
-http://launchpad.net/octavia
+https://launchpad.net/octavia
 
 For more information on project direction and guiding principles for
 contributors, please see the CONSTITUTION.rst file in this directory, or
