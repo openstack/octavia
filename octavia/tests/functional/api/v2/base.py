@@ -59,6 +59,10 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     L7RULES_PATH = L7POLICY_PATH + '/rules'
     L7RULE_PATH = L7RULES_PATH + '/{l7rule_id}'
 
+    QUOTAS_PATH = '/quotas'
+    QUOTA_PATH = QUOTAS_PATH + '/{project_id}'
+    QUOTA_DEFAULT_PATH = QUOTAS_PATH + '/{project_id}/default'
+
     def setUp(self):
         super(BaseAPITest, self).setUp()
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
