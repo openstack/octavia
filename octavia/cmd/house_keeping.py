@@ -44,10 +44,10 @@ def spare_amphora_check():
     LOG.info(_LI("Spare check interval is set to %d sec"), interval)
 
     spare_amp = house_keeping.SpareAmphora()
-    while spare_amp_thread_event.is_set():
+    while not spare_amp_thread_event.is_set():
         LOG.debug("Initiating spare amphora check...")
         spare_amp.spare_check()
-        time.sleep(interval)
+        spare_amp_thread_event.wait(interval)
 
 
 def db_cleanup():
@@ -61,11 +61,11 @@ def db_cleanup():
              CONF.house_keeping.load_balancer_expiry_age)
 
     db_cleanup = house_keeping.DatabaseCleanup()
-    while db_cleanup_thread_event.is_set():
+    while not db_cleanup_thread_event.is_set():
         LOG.debug("Initiating the cleanup of old resources...")
         db_cleanup.delete_old_amphorae()
         db_cleanup.cleanup_load_balancers()
-        time.sleep(interval)
+        db_cleanup_thread_event.wait(interval)
 
 
 def cert_rotation():
@@ -74,10 +74,10 @@ def cert_rotation():
     LOG.info(
         _LI("Expiring certificate check interval is set to %d sec"), interval)
     cert_rotate = house_keeping.CertRotation()
-    while cert_rotate_thread_event.is_set():
+    while not cert_rotate_thread_event.is_set():
         LOG.debug("Initiating certification rotation ...")
         cert_rotate.rotate()
-        time.sleep(interval)
+        cert_rotate_thread_event.wait(interval)
 
 
 def main():
@@ -91,19 +91,16 @@ def main():
     # Thread to perform spare amphora check
     spare_amp_thread = threading.Thread(target=spare_amphora_check)
     spare_amp_thread.daemon = True
-    spare_amp_thread_event.set()
     spare_amp_thread.start()
 
     # Thread to perform db cleanup
     db_cleanup_thread = threading.Thread(target=db_cleanup)
     db_cleanup_thread.daemon = True
-    db_cleanup_thread_event.set()
     db_cleanup_thread.start()
 
     # Thread to perform certificate rotation
     cert_rotate_thread = threading.Thread(target=cert_rotation)
     cert_rotate_thread.daemon = True
-    cert_rotate_thread_event.set()
     cert_rotate_thread.start()
 
     # Try-Exception block should be at the end to gracefully exit threads
@@ -112,9 +109,9 @@ def main():
             time.sleep(1)
     except KeyboardInterrupt:
         LOG.info(_LI("Attempting to gracefully terminate House-Keeping"))
-        spare_amp_thread_event.clear()
-        db_cleanup_thread_event.clear()
-        cert_rotate_thread_event.clear()
+        spare_amp_thread_event.set()
+        db_cleanup_thread_event.set()
+        cert_rotate_thread_event.set()
         spare_amp_thread.join()
         db_cleanup_thread.join()
         cert_rotate_thread.join()

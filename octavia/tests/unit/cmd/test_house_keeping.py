@@ -25,8 +25,7 @@ class TestHouseKeepingCMD(base.TestCase):
     @mock.patch('octavia.cmd.house_keeping.spare_amp_thread_event')
     @mock.patch('octavia.controller.housekeeping.'
                 'house_keeping.SpareAmphora')
-    @mock.patch('time.sleep')
-    def test_spare_amphora_check(self, sleep_mock, mock_SpareAmphora,
+    def test_spare_amphora_check(self, mock_SpareAmphora,
                                  spare_amp_thread_event_mock):
         spare_amp_mock = mock.MagicMock()
         spare_check_mock = mock.MagicMock()
@@ -35,7 +34,7 @@ class TestHouseKeepingCMD(base.TestCase):
 
         # mock spare_amp_thread_event.is_set() in the while loop
         spare_amp_thread_event_mock.is_set = mock.MagicMock()
-        spare_amp_thread_event_mock.is_set.side_effect = [True,
+        spare_amp_thread_event_mock.is_set.side_effect = [False,
                                                           Exception('break')]
 
         self.assertRaisesRegexp(Exception, 'break',
@@ -47,8 +46,7 @@ class TestHouseKeepingCMD(base.TestCase):
     @mock.patch('octavia.cmd.house_keeping.db_cleanup_thread_event')
     @mock.patch('octavia.controller.housekeeping.'
                 'house_keeping.DatabaseCleanup')
-    @mock.patch('time.sleep')
-    def test_db_cleanup(self, sleep_mock, mock_DatabaseCleanup,
+    def test_db_cleanup(self, mock_DatabaseCleanup,
                         db_cleanup_event_mock):
         db_cleanup = mock.MagicMock()
         delete_old_amphorae = mock.MagicMock()
@@ -57,7 +55,7 @@ class TestHouseKeepingCMD(base.TestCase):
 
         # mock db_cleanup_thread_event.is_set() in the while loop
         db_cleanup_event_mock.is_set = mock.MagicMock()
-        db_cleanup_event_mock.is_set.side_effect = [True, Exception('break')]
+        db_cleanup_event_mock.is_set.side_effect = [False, Exception('break')]
 
         self.assertRaisesRegexp(Exception, 'break', house_keeping.db_cleanup)
 
@@ -67,9 +65,7 @@ class TestHouseKeepingCMD(base.TestCase):
     @mock.patch('octavia.cmd.house_keeping.cert_rotate_thread_event')
     @mock.patch('octavia.controller.housekeeping.'
                 'house_keeping.CertRotation')
-    @mock.patch('time.sleep')
-    def test_hk_cert_rotation_with_exception(self, sleep_mock,
-                                             mock_CertRotation,
+    def test_hk_cert_rotation_with_exception(self, mock_CertRotation,
                                              cert_rotate_event_mock):
         # mock cert_rotate object
         cert_rotate_mock = mock.MagicMock()
@@ -82,7 +78,7 @@ class TestHouseKeepingCMD(base.TestCase):
 
         # mock cert_rotate_thread_event.is_set() in the while loop
         cert_rotate_event_mock.is_set = mock.MagicMock()
-        cert_rotate_event_mock.is_set.side_effect = [True, Exception('break')]
+        cert_rotate_event_mock.is_set.side_effect = [False, Exception('break')]
 
         self.assertRaisesRegexp(Exception, 'break',
                                 house_keeping.cert_rotation)
@@ -93,9 +89,7 @@ class TestHouseKeepingCMD(base.TestCase):
     @mock.patch('octavia.cmd.house_keeping.cert_rotate_thread_event')
     @mock.patch('octavia.controller.housekeeping.'
                 'house_keeping.CertRotation')
-    @mock.patch('time.sleep')
-    def test_hk_cert_rotation_without_exception(self, sleep_mock,
-                                                mock_CertRotation,
+    def test_hk_cert_rotation_without_exception(self, mock_CertRotation,
                                                 cert_rotate_event_mock):
         # mock cert_rotate object
         cert_rotate_mock = mock.MagicMock()
@@ -108,7 +102,7 @@ class TestHouseKeepingCMD(base.TestCase):
 
         # mock cert_rotate_thread_event.is_set() in the while loop
         cert_rotate_event_mock.is_set = mock.MagicMock()
-        cert_rotate_event_mock.is_set.side_effect = [True, None]
+        cert_rotate_event_mock.is_set.side_effect = [False, True]
 
         self.assertIsNone(house_keeping.cert_rotation())
 
@@ -141,10 +135,6 @@ class TestHouseKeepingCMD(base.TestCase):
         # mock the time.sleep() in the while loop
         sleep_time.side_effect = [True, Exception('break')]
         self.assertRaisesRegexp(Exception, 'break', house_keeping.main)
-
-        spare_amp_thread_event_mock.set.assert_called_once_with()
-        db_cleanup_thread_event_mock.set.assert_called_once_with()
-        cert_rotate_thread_event_mock.set.assert_called_once_with()
 
         spare_amp_thread_mock.start.assert_called_once_with()
         db_cleanup_thread_mock.start.assert_called_once_with()
@@ -182,13 +172,10 @@ class TestHouseKeepingCMD(base.TestCase):
         house_keeping.main()
 
         spare_amp_thread_event_mock.set.assert_called_once_with()
-        spare_amp_thread_event_mock.clear.assert_called_once_with()
 
         db_cleanup_thread_event_mock.set.assert_called_once_with()
-        db_cleanup_thread_event_mock.clear.assert_called_once_with()
 
         cert_rotate_thread_event_mock.set.assert_called_once_with()
-        cert_rotate_thread_event_mock.clear.assert_called_once_with()
 
         spare_amp_thread_mock.start.assert_called_once_with()
         db_cleanup_thread_mock.start.assert_called_once_with()
