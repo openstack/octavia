@@ -618,11 +618,23 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             amp = self._amphora_repo.get(db_apis.get_session(),
                                          id=amphora_id)
 
+            stored_params = {constants.FAILED_AMPHORA: amp,
+                             constants.LOADBALANCER_ID: amp.load_balancer_id}
+
+            # if we run with anti-affinity we need to set the server group
+            # as well
+            if CONF.nova.enable_anti_affinity:
+                lb = self._amphora_repo.get_all_lbs_on_amphora(
+                    db_apis.get_session(), amp.id)
+                if lb:
+                    stored_params[constants.SERVER_GROUP_ID] = (
+                        lb[0].server_group_id)
+
             failover_amphora_tf = self._taskflow_load(
-                self._amphora_flows.get_failover_flow(role=amp.role,
-                                                      status=amp.status),
-                store={constants.FAILED_AMPHORA: amp,
-                       constants.LOADBALANCER_ID: amp.load_balancer_id})
+                self._amphora_flows.get_failover_flow(
+                    role=amp.role,
+                    status=amp.status),
+                store=stored_params)
             with tf_logging.DynamicLoggingListener(
                     failover_amphora_tf, log=LOG,
                     hide_inputs_outputs_of=self._exclude_result_logging_tasks):
