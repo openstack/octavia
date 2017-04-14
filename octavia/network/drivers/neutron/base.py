@@ -150,7 +150,7 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
                            resource_type)(resource)
         except neutron_client_exceptions.NotFound:
             message = _('{resource_type} not found '
-                        '({resource_type} id: {resource_id}.').format(
+                        '({resource_type} id: {resource_id}).').format(
                 resource_type=resource_type, resource_id=resource_id)
             raise getattr(base, '%sNotFound' %
                           resource_type.capitalize())(message)
