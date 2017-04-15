@@ -649,7 +649,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
                     counters[server] += 1
             # HTTP exception means fail of server, so don't increase counter
             # of success and continue connection tries
-            except (error.HTTPError, error.URLError, socket.timeout) as e:
+            except (error.HTTPError, error.URLError,
+                    socket.timeout, socket.error) as e:
                 LOG.info(('Got Error in sending request: {0}'.format(e)))
                 continue
         return counters
