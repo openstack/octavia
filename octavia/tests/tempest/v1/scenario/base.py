@@ -33,7 +33,6 @@ from six.moves.urllib import request as urllib2
 from tempest.common import credentials_factory
 from tempest.common import waiters
 from tempest import config
-from tempest import exceptions
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 from tempest import test
@@ -644,7 +643,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
         while not try_connect(check_ip, port):
             if (time.time() - start) > timeout:
                 message = "Timed out trying to connect to %s" % check_ip
-                raise exceptions.TimeoutException(message)
+                raise lib_exc.TimeoutException(message)
             time.sleep(1)
 
     def _send_requests(self, vip_ip, path=''):
