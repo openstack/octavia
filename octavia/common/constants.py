@@ -382,6 +382,7 @@ KEEPALIVED_UPSTART = 'octavia-keepalived.conf'
 # Authentication
 KEYSTONE = 'keystone'
 NOAUTH = 'noauth'
+TESTING = 'testing'
 
 UBUNTU_AMP_NET_DIR_TEMPLATE = '/etc/netns/{netns}/network/interfaces.d/'
 RH_AMP_NET_DIR_TEMPLATE = '/etc/netns/{netns}/sysconfig/network-scripts/'

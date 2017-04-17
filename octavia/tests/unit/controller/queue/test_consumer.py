@@ -33,7 +33,7 @@ class TestConsumer(base.TestCase):
         super(TestConsumer, self).setUp()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="oslo_messaging", topic='foo_topic')
-        conf.config(host='foo_host')
+        conf.config(host='test-hostname')
 
     def test_consumer_start(self, mock_rpc_server, mock_endpoint, mock_target,
                             mock_get_transport):
@@ -50,7 +50,8 @@ class TestConsumer(base.TestCase):
 
         mock_get_transport.assert_called_once_with(cfg.CONF)
         mock_target.assert_called_once_with(topic='foo_topic',
-                                            server='foo_host', fanout=False)
+                                            server='test-hostname',
+                                            fanout=False)
         mock_endpoint.assert_called_once_with()
         access_policy = dispatcher.DefaultRPCAccessPolicy
         mock_rpc_server.assert_called_once_with(mock_get_transport_rv,
