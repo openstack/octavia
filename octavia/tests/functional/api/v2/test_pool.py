@@ -314,14 +314,12 @@ class TestPool(base.BaseAPITest):
         self.post(self.POOLS_PATH, self._build_body(lb_pool), status=400)
 
     def test_create_with_bad_handler(self):
-        self.handler_mock_bug_workaround.pool.create.side_effect = Exception()
+        self.handler_mock().pool.create.side_effect = Exception()
         api_pool = self.create_pool(
             self.lb_id,
             constants.PROTOCOL_HTTP,
             constants.LB_ALGORITHM_ROUND_ROBIN,
             listener_id=self.listener_id).get(self.root_tag)
-        # This mock doesn't recycle properly so we have to do cleanup manually
-        self.handler_mock_bug_workaround.pool.create.side_effect = None
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=api_pool.get('id'),
@@ -388,11 +386,9 @@ class TestPool(base.BaseAPITest):
             listener_id=self.listener_id).get(self.root_tag)
         self.set_lb_status(lb_id=self.lb_id)
         new_pool = {'name': 'new_name'}
-        self.handler_mock_bug_workaround.pool.update.side_effect = Exception()
+        self.handler_mock().pool.update.side_effect = Exception()
         self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
                  self._build_body(new_pool))
-        # This mock doesn't recycle properly so we have to do cleanup manually
-        self.handler_mock_bug_workaround.pool.update.side_effect = None
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=api_pool.get('id'),
@@ -458,10 +454,8 @@ class TestPool(base.BaseAPITest):
         self.assertIsNone(api_pool.pop('updated_at'))
         self.assertIsNotNone(response.pop('updated_at'))
         self.assertEqual(api_pool, response)
-        self.handler_mock_bug_workaround.pool.delete.side_effect = Exception()
+        self.handler_mock().pool.delete.side_effect = Exception()
         self.delete(self.POOL_PATH.format(pool_id=api_pool.get('id')))
-        # This mock doesn't recycle properly so we have to do cleanup manually
-        self.handler_mock_bug_workaround.pool.delete.side_effect = None
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=api_pool.get('id'),

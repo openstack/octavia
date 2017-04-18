@@ -80,12 +80,6 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
             'octavia.db.repositories.Repositories.check_quota_met',
             return_value=True)
         self.app = self._make_app()
-        # For no apparent reason, the controller code for v2 uses a static
-        # handler mock (the one generated on the initial run) so we need to
-        # retrieve it so we use the "correct" mock instead of the one above
-        self.handler_mock_bug_workaround = getattr(
-            self.app.app.application.application.application.root,
-            'v2.0').handler
         self.project_id = uuidutils.generate_uuid()
 
         def reset_pecan():

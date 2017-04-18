@@ -273,12 +273,10 @@ class TestL7Policy(base.BaseAPITest):
         self.post(self.L7POLICIES_PATH, self._build_body(l7policy), status=400)
 
     def test_create_with_bad_handler(self):
-        (self.handler_mock_bug_workaround.
-         l7policy.create.side_effect) = Exception
+        self.handler_mock().l7policy.create.side_effect = Exception()
         api_l7policy = self.create_l7policy(self.listener_id,
                                             constants.L7POLICY_ACTION_REJECT,
                                             ).get(self.root_tag)
-        self.handler_mock_bug_workaround.l7policy.create.side_effect = None
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             l7policy_id=api_l7policy.get('id'),
@@ -355,12 +353,10 @@ class TestL7Policy(base.BaseAPITest):
         new_l7policy = {
             'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
             'redirect_url': 'http://www.example.com'}
-        (self.handler_mock_bug_workaround.
-         l7policy.update.side_effect) = Exception
+        self.handler_mock().l7policy.update.side_effect = Exception()
         self.put(self.L7POLICY_PATH.format(
             l7policy_id=api_l7policy.get('id')),
             self._build_body(new_l7policy))
-        self.handler_mock_bug_workaround.l7policy.update.side_effect = None
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             l7policy_id=api_l7policy.get('id'),
@@ -445,11 +441,9 @@ class TestL7Policy(base.BaseAPITest):
         self.assertIsNone(api_l7policy.pop('updated_at'))
         self.assertIsNotNone(response.pop('updated_at'))
         self.assertEqual(api_l7policy, response)
-        (self.handler_mock_bug_workaround.
-         l7policy.delete.side_effect) = Exception
+        self.handler_mock().l7policy.delete.side_effect = Exception()
         self.delete(self.L7POLICY_PATH.format(
             l7policy_id=api_l7policy.get('id')))
-        self.handler_mock_bug_workaround.l7policy.delete.side_effect = None
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             l7policy_id=api_l7policy.get('id'),
