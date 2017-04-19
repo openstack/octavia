@@ -89,6 +89,8 @@ class ModelTestMixin(object):
                   'fall_threshold': 1,
                   'rise_threshold': 1,
                   'enabled': True,
+                  'operating_status': constants.ONLINE,
+                  'provisioning_status': constants.ACTIVE,
                   'project_id': self.FAKE_UUID_1}
         kwargs.update(overrides)
         return self._insert(session, models.HealthMonitor, kwargs)

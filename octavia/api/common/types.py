@@ -47,10 +47,13 @@ class URLType(wtypes.UserType):
     basetype = unicode
     name = 'url'
 
-    @staticmethod
-    def validate(value):
+    def __init__(self, require_scheme=True):
+        super(URLType, self).__init__()
+        self.require_scheme = require_scheme
+
+    def validate(self, value):
         try:
-            validate.url(value)
+            validate.url(value, require_scheme=self.require_scheme)
         except exceptions.InvalidURL:
             error = 'Value must be a valid URL string'
             raise ValueError(error)

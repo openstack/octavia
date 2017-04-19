@@ -16,6 +16,7 @@ from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
 from octavia.api.v2.controllers import base
+from octavia.api.v2.controllers import health_monitor
 from octavia.api.v2.controllers import l7policy
 from octavia.api.v2.controllers import listener
 from octavia.api.v2.controllers import load_balancer
@@ -27,6 +28,7 @@ class BaseV2Controller(base.BaseController):
     listeners = None
     pools = None
     l7policies = None
+    healthmonitors = None
 
     def __init__(self):
         super(BaseV2Controller, self).__init__()
@@ -34,6 +36,7 @@ class BaseV2Controller(base.BaseController):
         self.listeners = listener.ListenersController()
         self.pools = pool.PoolsController()
         self.l7policies = l7policy.L7PolicyController()
+        self.healthmonitors = health_monitor.HealthMonitorController()
 
     @wsme_pecan.wsexpose(wtypes.text)
     def get(self):

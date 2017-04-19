@@ -28,14 +28,15 @@ from octavia.common import exceptions
 from octavia.common import utils
 
 
-def url(url):
+def url(url, require_scheme=True):
     """Raises an error if the url doesn't look like a URL."""
     try:
-        if not rfc3986.is_valid_uri(url, require_scheme=True):
+        if not rfc3986.is_valid_uri(url, require_scheme=require_scheme):
             raise exceptions.InvalidURL(url=url)
         p_url = rfc3986.urlparse(rfc3986.normalize_uri(url))
-        if p_url.scheme != 'http' and p_url.scheme != 'https':
-            raise exceptions.InvalidURL(url=url)
+        if require_scheme:
+            if p_url.scheme != 'http' and p_url.scheme != 'https':
+                raise exceptions.InvalidURL(url=url)
     except Exception:
         raise exceptions.InvalidURL(url=url)
     return True

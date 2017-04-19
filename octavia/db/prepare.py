@@ -169,7 +169,13 @@ def create_member(member_dict, pool_id, has_health_monitor=False):
     return member_dict
 
 
-def create_health_monitor(hm_dict, pool_id):
-    hm_dict['id'] = pool_id
-    hm_dict['pool_id'] = pool_id
+def create_health_monitor(hm_dict, pool_id=None):
+    hm_dict['provisioning_status'] = constants.PENDING_CREATE
+    hm_dict['operating_status'] = constants.OFFLINE
+    if pool_id:
+        hm_dict['id'] = pool_id
+        hm_dict['pool_id'] = pool_id
+    else:
+        if not hm_dict.get('id'):
+            hm_dict['id'] = uuidutils.generate_uuid()
     return hm_dict

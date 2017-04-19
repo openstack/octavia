@@ -1713,6 +1713,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_health_mon_repo_update.assert_called_once_with(
             'TEST',
             POOL_ID,
+            operating_status=constants.ONLINE,
             provisioning_status=constants.ACTIVE)
 
         # Test the revert
