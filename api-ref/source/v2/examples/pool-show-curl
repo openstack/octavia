@@ -1,0 +1,1 @@
+curl -X GET -H "X-Auth-Token: <token>" http://198.51.100.10:9876/v2.0/lbaas/pools/24a43e68-36de-45f6-89cf-c03df583131d

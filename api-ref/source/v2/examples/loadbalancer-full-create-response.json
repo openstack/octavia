@@ -2,7 +2,6 @@
     "loadbalancer": {
         "description": "My favorite load balancer",
         "admin_state_up": true,
-        "tenant_id": "e3cd678b11784734bc366148aa37580e",
         "project_id": "e3cd678b11784734bc366148aa37580e",
         "provisioning_status": "ACTIVE",
         "flavor": "",
@@ -17,7 +16,6 @@
                 "default_pool": {
                     "id": "c8cec227-410a-4a5b-af13-ecf38c2b0abb"
                 },
-                "tenant_id": "e3cd678b11784734bc366148aa37580e",
                 "project_id": "e3cd678b11784734bc366148aa37580e",
                 "default_tls_container_id": null,
                 "connection_limit": -1,
@@ -33,9 +31,8 @@
                 "default_tls_container_ref": null,
                 "admin_state_up": true,
                 "default_pool": {
-                    "id": "b0577aff-c1f9-40c6-9a3b-7b1d2a669136",
+                    "id": "b0577aff-c1f9-40c6-9a3b-7b1d2a669136"
                 },
-                "tenant_id": "e3cd678b11784734bc366148aa37580e",
                 "project_id": "e3cd678b11784734bc366148aa37580e",
                 "default_tls_container_id": null,
                 "connection_limit": -1,
@@ -50,7 +47,6 @@
                         "description": "",
                         "admin_state_up": true,
                         "rules": [],
-                        "tenant_id": "e3cd678b11784734bc366148aa37580e",
                         "project_id": "e3cd678b11784734bc366148aa37580e",
                         "listener_id": "95de30ec-67f4-437b-b3f3-22c5d9ef9828",
                         "redirect_url": "https://www.example.com/",
@@ -65,7 +61,6 @@
                 "default_tls_container_ref": null,
                 "admin_state_up": true,
                 "default_pool": null,
-                "tenant_id": "e3cd678b11784734bc366148aa37580e",
                 "project_id": "e3cd678b11784734bc366148aa37580e",
                 "default_tls_container_id": null,
                 "connection_limit": -1,
@@ -91,7 +86,6 @@
                 "healthmonitor": {
                     "name": "",
                     "admin_state_up": true,
-                    "tenant_id": "e3cd678b11784734bc366148aa37580e",
                     "project_id": "e3cd678b11784734bc366148aa37580e",
                     "delay": 3,
                     "expected_codes": "200,201,202",
@@ -109,7 +103,6 @@
                         "weight": 1,
                         "admin_state_up": true,
                         "subnet_id": "bbb35f84-35cc-4b2f-84c2-a6a29bba68aa",
-                        "tenant_id": "e3cd678b11784734bc366148aa37580e",
                         "project_id": "e3cd678b11784734bc366148aa37580e",
                         "address": "192.0.2.16",
                         "protocol_port": 80,

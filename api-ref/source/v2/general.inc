@@ -44,7 +44,7 @@ the full API call for ``/v2.0/lbaas/loadbalancers`` is
 ``http://198.51.100.10:9876/v2.0/lbaas/loadbalancers``.
 
 Depending on the deployment, the ``load-balancer`` ``endpoint URL`` might be
-http or https, a custom port, a custom path, and include your tenant id. The
+http or https, a custom port, a custom path, and include your project id. The
 only way to know the URLs for your deployment is by using the service catalog.
 The ``load-balancer`` ``endpoint URL`` should never be hard coded in
 applications, even if they are only expected to work at a single site. It
@@ -87,9 +87,6 @@ header. You obtain the token by authenticating to the Keystone endpoint.
 When Keystone is enabled, the ``project_id`` attribute is not required in create
 requests because the project ID is derived from the authentication token.
 
-NOTE: Currently the Octavia API accepts the deprecated ``tenant_id``
-attribute for the project ID for backward compatibility.
-
 The default authorization settings allow only administrative users to create
 resources on behalf of a different project.
 
@@ -118,18 +115,6 @@ Request format
 The Octavia API v2.0 only accepts requests with the JSON data serialization
 format. The ``Content-Type`` header is ignored.
 
-Tenant and project attributes in requests
------------------------------------------
-
-Starting with the Newton release of the Octavia service, the Octavia API
-accepts the ``project_id`` attribute in addition to the ``tenant_id`` attribute
-in requests. The ``tenant_id`` attribute is accepted for backward compatibility.
-If both the ``project_id`` and the ``tenant_id`` attribute are provided in the
-same request, ``project_id`` will be used.
-
-The ``tenant_id`` attribute is deprecated and will be removed in a future
-release.
-
 Response format
 ---------------
 
@@ -143,18 +128,6 @@ Query extension
     - **GET** *publicURL*/loadbalancers
 
     - **GET** *publicURL*/loadbalancers.json
-
-Tenant and project attributes in responses
-------------------------------------------
-
-Starting with the Newton release of the Octavia service, the Octavia API
-returns a ``project_id`` attribute in responses, while still returning a
-``tenant_id`` attribute for backward compatibility. The values will always be
-identical.
-
-The ``tenant_id`` attribute is deprecated and will be removed in a future
-release.
-
 
 .. _filtering:
 
@@ -288,7 +261,6 @@ behavior regardless of the particular plug-in running in the background.
                 "provisioning_status": "ACTIVE",
                 "vip_port_id": "1e20d91d-8df9-4c15-9778-28bc89226c19",
                 "vip_address": "203.0.113.10",
-                "tenant_id": "bf325b04-e7b1-4002-9b10-f4984630367f",
                 "project_id": "bf325b04-e7b1-4002-9b10-f4984630367f"
             },
             {
@@ -304,7 +276,6 @@ behavior regardless of the particular plug-in running in the background.
                 "provisioning_status": "ACTIVE",
                 "vip_port_id": "21f7ac04-6824-4222-93cf-46e0d70607f9",
                 "vip_address": "203.0.113.20",
-                "tenant_id": "bf325b04-e7b1-4002-9b10-f4984630367f",
                 "project_id": "bf325b04-e7b1-4002-9b10-f4984630367f"
             }
         ],
@@ -353,7 +324,6 @@ The last page won't show the "next" links
                 "provisioning_status": "ACTIVE",
                 "vip_port_id": "f777a1c7-7f59-4a36-ad34-24dfebaf19e6",
                 "vip_address": "203.0.113.50",
-                "tenant_id": "bf325b04-e7b1-4002-9b10-f4984630367f",
                 "project_id": "bf325b04-e7b1-4002-9b10-f4984630367f"
             }
         ],

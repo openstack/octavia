@@ -3,7 +3,6 @@
         {
             "description": "My favorite load balancer",
             "admin_state_up": true,
-            "tenant_id": "e3cd678b11784734bc366148aa37580e",
             "project_id": "e3cd678b11784734bc366148aa37580e",
             "provisioning_status": "ACTIVE",
             "flavor": "a7ae5d5a-d855-4f9a-b187-af66b53f4d04",

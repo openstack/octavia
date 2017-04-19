@@ -1,0 +1,10 @@
+{
+    "pool": {
+        "lb_algorithm": "LEAST_CONNECTIONS",
+        "session_persistence": {
+            "type": "SOURCE_IP"
+        },
+        "description": "Super Least Connections Pool",
+        "name": "super-least-conn-pool"
+    }
+}

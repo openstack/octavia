@@ -3,7 +3,6 @@
         {
             "description": "A great TLS listener",
             "admin_state_up": true,
-            "tenant_id": "e3cd678b11784734bc366148aa37580e",
             "project_id": "e3cd678b11784734bc366148aa37580e",
             "protocol": "TERMINATED_HTTPS",
             "protocol_port": 443,
