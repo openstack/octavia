@@ -72,6 +72,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.member_repo = repositories.MemberRepository()
         self.l7policy_repo = repositories.L7PolicyRepository()
         self.l7rule_repo = repositories.L7RuleRepository()
+        self.health_monitor_repo = repositories.HealthMonitorRepository()
         self.amphora_repo = repositories.AmphoraRepository()
         patcher = mock.patch('octavia.api.handlers.controller_simulator.'
                              'handler.SimulatedControllerHandler')
@@ -212,35 +213,20 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         response = self.post(path, body, **status)
         return response.json
 
-    # TODO(sindhu): Will be modified later in the Health_Monitor review
-    def create_health_monitor(self, lb_id, type, delay, timeout,
-                              fall_threshold, rise_threshold, root_tag=None,
-                              **optionals):
-        req_dict = {'load_balancer_id': lb_id, 'type': type,
+    def create_health_monitor(self, pool_id, type, delay, timeout,
+                              max_retries_down, max_retries,
+                              status=None, **optionals):
+        req_dict = {'pool_id': pool_id,
+                    'type': type,
                     'delay': delay,
                     'timeout': timeout,
-                    'fall_threshold': fall_threshold,
-                    'rise_threshold': rise_threshold}
+                    'max_retries_down': max_retries_down,
+                    'max_retries': max_retries}
         req_dict.update(optionals)
-        body = {root_tag: req_dict}
+        body = {'healthmonitor': req_dict}
         path = self.HMS_PATH
-        response = self.post(path, body)
-        return response.json
-
-    # TODO(sindhu): Will be modified according to the
-    # health_monitor_test_cases later
-    def create_health_monitor_with_listener(
-            self, lb_id, listener_id, pool_id, type,
-            delay, timeout, fall_threshold, rise_threshold, **optionals):
-        req_dict = {'type': type,
-                    'delay': delay,
-                    'timeout': timeout,
-                    'fall_threshold': fall_threshold,
-                    'rise_threshold': rise_threshold}
-        req_dict.update(optionals)
-        path = self.DEPRECATED_HM_PATH.format(
-            lb_id=lb_id, listener_id=listener_id, pool_id=pool_id)
-        response = self.post(path, req_dict)
+        status = {'status': status} if status else {}
+        response = self.post(path, body, **status)
         return response.json
 
     def create_l7policy(self, listener_id, action, **optionals):
@@ -318,6 +304,16 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                 self.member_repo.update(db_api.get_session(), member.id,
                                         provisioning_status=member_prov,
                                         operating_status=op_status)
+            if pool.health_monitor:
+                if autodetect and (pool.health_monitor.provisioning_status ==
+                                   constants.PENDING_DELETE):
+                    hm_prov = constants.DELETED
+                else:
+                    hm_prov = prov_status
+                self.health_monitor_repo.update(db_api.get_session(),
+                                                pool.health_monitor.id,
+                                                provisioning_status=hm_prov,
+                                                operating_status=op_status)
 
     def set_lb_status(self, lb_id, status=None):
         explicit_status = True if status is not None else False
@@ -409,20 +405,32 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.assertEqual(operating_status,
                          api_l7rule.get('operating_status'))
 
+    def assert_correct_hm_status(self, provisioning_status,
+                                 operating_status, hm_id):
+        api_hm = self.get(self.HM_PATH.format(
+            healthmonitor_id=hm_id)).json.get('healthmonitor')
+        self.assertEqual(provisioning_status,
+                         api_hm.get('provisioning_status'))
+        self.assertEqual(operating_status,
+                         api_hm.get('operating_status'))
+
     def assert_correct_status(self, lb_id=None, listener_id=None, pool_id=None,
                               member_id=None, l7policy_id=None, l7rule_id=None,
+                              hm_id=None,
                               lb_prov_status=constants.ACTIVE,
                               listener_prov_status=constants.ACTIVE,
                               pool_prov_status=constants.ACTIVE,
                               member_prov_status=constants.ACTIVE,
                               l7policy_prov_status=constants.ACTIVE,
                               l7rule_prov_status=constants.ACTIVE,
+                              hm_prov_status=constants.ACTIVE,
                               lb_op_status=constants.ONLINE,
                               listener_op_status=constants.ONLINE,
                               pool_op_status=constants.ONLINE,
                               member_op_status=constants.ONLINE,
                               l7policy_op_status=constants.ONLINE,
-                              l7rule_op_status=constants.ONLINE):
+                              l7rule_op_status=constants.ONLINE,
+                              hm_op_status=constants.ONLINE):
         if lb_id:
             self.assert_correct_lb_status(lb_prov_status, lb_op_status, lb_id)
         if listener_id:
@@ -440,3 +448,6 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         if l7rule_id:
             self.assert_correct_l7rule_status(
                 l7rule_prov_status, l7rule_op_status, l7policy_id, l7rule_id)
+        if hm_id:
+            self.assert_correct_hm_status(
+                hm_prov_status, hm_op_status, hm_id)

@@ -340,7 +340,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                   'id': uuidutils.generate_uuid()}
         health_monitor = {'type': constants.HEALTH_MONITOR_HTTP, 'delay': 1,
                           'timeout': 1, 'fall_threshold': 1,
-                          'rise_threshold': 1, 'enabled': True}
+                          'rise_threshold': 1, 'enabled': True,
+                          'operating_status': constants.OFFLINE,
+                          'provisioning_status': constants.PENDING_CREATE}
         sp = {'type': constants.SESSION_PERSISTENCE_APP_COOKIE,
               'cookie_name': 'cookie_name'}
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
@@ -362,7 +364,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                   'enabled': True}
         r_health_monitor = {'type': constants.HEALTH_MONITOR_HTTP, 'delay': 1,
                             'timeout': 1, 'fall_threshold': 1,
-                            'rise_threshold': 1, 'enabled': True}
+                            'rise_threshold': 1, 'enabled': True,
+                            'operating_status': constants.OFFLINE,
+                            'provisioning_status': constants.PENDING_CREATE}
         redirect_pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
                          'description': 'desc1', 'project_id': project_id,
                          'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
@@ -1311,6 +1315,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             name="health_mon1", type=constants.HEALTH_MONITOR_HTTP,
             delay=1, timeout=1, fall_threshold=1, rise_threshold=1,
             provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
             enabled=True, pool_id=pool.id)
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
@@ -1340,6 +1345,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             name="health_mon1", type=constants.HEALTH_MONITOR_HTTP,
             delay=1, timeout=1, fall_threshold=1, rise_threshold=1,
             provisioning_status=constants.DELETED,
+            operating_status=constants.OFFLINE,
             enabled=True, pool_id=pool.id)
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
@@ -1894,7 +1900,9 @@ class PoolRepositoryTest(BaseRepositoryTest):
         hm = self.hm_repo.create(self.session, pool_id=pool.id,
                                  type=constants.HEALTH_MONITOR_HTTP,
                                  delay=1, timeout=1, fall_threshold=1,
-                                 rise_threshold=1, enabled=True)
+                                 rise_threshold=1, enabled=True,
+                                 provisioning_status=constants.ACTIVE,
+                                 operating_status=constants.ONLINE)
         new_pool = self.pool_repo.get(self.session, id=pool.id)
         self.assertEqual(pool, new_pool)
         self.assertEqual(hm, new_pool.health_monitor)
@@ -1922,7 +1930,9 @@ class PoolRepositoryTest(BaseRepositoryTest):
         hm = self.hm_repo.create(self.session, pool_id=pool.id,
                                  type=constants.HEALTH_MONITOR_HTTP,
                                  delay=1, timeout=1, fall_threshold=1,
-                                 rise_threshold=1, enabled=True)
+                                 rise_threshold=1, enabled=True,
+                                 provisioning_status=constants.ACTIVE,
+                                 operating_status=constants.ONLINE)
         member = self.member_repo.create(self.session, id=self.FAKE_UUID_3,
                                          project_id=self.FAKE_UUID_2,
                                          pool_id=pool.id,
@@ -2459,6 +2469,8 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
             pool_id=pool_id, delay=1, timeout=1, fall_threshold=1,
             rise_threshold=1, http_method="POST",
             url_path="http://localhost:80/index.php",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
             expected_codes="200", enabled=True)
         return health_monitor
 

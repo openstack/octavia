@@ -194,7 +194,7 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
 
 
 class HealthMonitor(base_models.BASE, base_models.IdMixin,
-                    base_models.ProjectMixin,
+                    base_models.ProjectMixin, models.TimestampMixin,
                     base_models.NameMixin):
 
     __data_model__ = data_models.HealthMonitor
@@ -226,7 +226,12 @@ class HealthMonitor(base_models.BASE, base_models.IdMixin,
         sa.String(16),
         sa.ForeignKey("provisioning_status.name",
                       name="fk_health_monitor_provisioning_status_name"),
-        nullable=True)
+        nullable=False)
+    operating_status = sa.Column(
+        sa.String(16),
+        sa.ForeignKey("operating_status.name",
+                      name="fk_health_monitor_operating_status_name"),
+        nullable=False)
 
 
 class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,

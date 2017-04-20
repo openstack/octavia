@@ -220,8 +220,9 @@ class HealthMonitor(BaseDataModel):
     def __init__(self, id=None, project_id=None, pool_id=None, type=None,
                  delay=None, timeout=None, fall_threshold=None,
                  rise_threshold=None, http_method=None, url_path=None,
-                 expected_codes=None, enabled=None, pool=None,
-                 provisioning_status=None, name=None):
+                 expected_codes=None, enabled=None, pool=None, name=None,
+                 provisioning_status=None, operating_status=None,
+                 created_at=None, updated_at=None):
         self.id = id
         self.project_id = project_id
         self.pool_id = pool_id
@@ -236,7 +237,10 @@ class HealthMonitor(BaseDataModel):
         self.enabled = enabled
         self.pool = pool
         self.provisioning_status = provisioning_status
+        self.operating_status = operating_status
         self.name = name
+        self.created_at = created_at
+        self.updated_at = updated_at
 
     def delete(self):
         self.pool.health_monitor = None

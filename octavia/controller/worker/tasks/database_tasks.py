@@ -1599,9 +1599,13 @@ class MarkHealthMonitorActiveInDB(BaseDatabaseTask):
 
         LOG.debug("Mark ACTIVE in DB for health monitor id: %s",
                   health_mon.pool_id)
+
+        op_status = (constants.ONLINE if health_mon.enabled
+                     else constants.OFFLINE)
         self.health_mon_repo.update(db_apis.get_session(),
                                     health_mon.pool_id,
-                                    provisioning_status=constants.ACTIVE)
+                                    provisioning_status=constants.ACTIVE,
+                                    operating_status=op_status)
 
     def revert(self, health_mon, *args, **kwargs):
         """Mark the health monitor as broken
