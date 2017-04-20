@@ -92,7 +92,7 @@ function octavia_configure {
     configure_auth_token_middleware $OCTAVIA_CONF octavia $OCTAVIA_AUTH_CACHE_DIR
 
     # Ensure config is set up properly for authentication as admin
-    iniset $OCTAVIA_CONF service_auth auth_url $KEYSTONE_AUTH_URI
+    iniset $OCTAVIA_CONF service_auth auth_url $OS_AUTH_URL
     iniset $OCTAVIA_CONF service_auth auth_type password
     iniset $OCTAVIA_CONF service_auth username $OCTAVIA_USERNAME
     iniset $OCTAVIA_CONF service_auth password $OCTAVIA_PASSWORD
