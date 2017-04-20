@@ -36,7 +36,9 @@ core_opts = [
     cfg.PortOpt('bind_port', default=9876,
                 help=_("The port to bind to")),
     cfg.StrOpt('auth_strategy', default=constants.NOAUTH,
-               choices=[constants.NOAUTH, constants.KEYSTONE],
+               choices=[constants.NOAUTH,
+                        constants.KEYSTONE,
+                        constants.TESTING],
                help=_("The auth strategy for API requests.")),
     cfg.StrOpt('api_handler', default='queue_producer',
                help=_("The handler that the API communicates with")),
@@ -54,8 +56,8 @@ core_opts = [
                help=_("The maximum number of items returned in a single "
                       "response. The string 'infinite' or a negative "
                       "integer value means 'no limit'")),
-    cfg.HostAddressOpt('host', default=utils.get_hostname(),
-                       help=_("The hostname Octavia is running on")),
+    cfg.HostnameOpt('host', default=utils.get_hostname(),
+                    help=_("The hostname Octavia is running on")),
     cfg.StrOpt('octavia_plugins',
                default='hot_plug_plugin',
                help=_('Name of the controller plugin to use'))

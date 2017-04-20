@@ -93,7 +93,8 @@ class TestNovaClient(base.TestCase):
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.net_name = "lb-mgmt-net"
         conf.config(group="networking", lb_network_name=self.net_name)
-        conf.config(group="controller_worker", amp_boot_network_list=[1, 2])
+        conf.config(group="controller_worker",
+                    amp_boot_network_list=['1', '2'])
         self.conf = conf
 
         self.amphora = models.Amphora(
@@ -107,7 +108,7 @@ class TestNovaClient(base.TestCase):
         self.nova_response.status = 'ACTIVE'
 
         self.interface_list = mock.MagicMock()
-        self.interface_list.net_id = 1
+        self.interface_list.net_id = '1'
         self.interface_list.fixed_ips = [mock.MagicMock()]
         self.interface_list.fixed_ips[0] = {'ip_address': '10.0.0.1'}
 

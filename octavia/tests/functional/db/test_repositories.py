@@ -460,7 +460,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.skipTest("PySqlite transaction handling is broken. We can unskip"
                       "this when `test_sqlite_transactions_broken` fails.")
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(auth_strategy='testing')
+        conf.config(auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
         member = {'project_id': project_id, 'ip_address': '11.0.0.1',
                   'protocol_port': 80, 'enabled': True,
@@ -809,12 +809,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
 
         # Test auth_strategy == NOAUTH
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(auth_strategy='noauth')
+        conf.config(auth_strategy=constants.NOAUTH)
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     models.LoadBalancer,
                                                     project_id))
-        conf.config(auth_strategy='testing')
+        conf.config(auth_strategy=constants.TESTING)
 
         # Test check for missing project_id
         self.assertRaises(exceptions.MissingProjectID,
@@ -1554,13 +1554,13 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         # Test decrement on non-existent quota with noauth
         project_id = uuidutils.generate_uuid()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(auth_strategy='noauth')
+        conf.config(auth_strategy=constants.NOAUTH)
         self.repos.decrement_quota(self.session,
                                    models.LoadBalancer,
                                    project_id)
         self.assertEqual(0, self.repos.quotas.count(self.session,
                                                     project_id=project_id))
-        conf.config(auth_strategy='testing')
+        conf.config(auth_strategy=constants.TESTING)
 
         # Test decrement on non-existent quota
         project_id = uuidutils.generate_uuid()
@@ -1594,7 +1594,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         # Test decrement on zero in use quota with noauth
         project_id = uuidutils.generate_uuid()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(auth_strategy='noauth')
+        conf.config(auth_strategy=constants.NOAUTH)
         quota = {'in_use_load_balancer': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.repos.decrement_quota(self.session,
@@ -1602,7 +1602,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                    project_id)
         self.assertEqual(0, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_load_balancer)
-        conf.config(auth_strategy='testing')
+        conf.config(auth_strategy=constants.TESTING)
 
         # Test decrement on in use quota
         project_id = uuidutils.generate_uuid()
@@ -1617,7 +1617,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         # Test decrement on in use quota with noauth
         project_id = uuidutils.generate_uuid()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(auth_strategy='noauth')
+        conf.config(auth_strategy=constants.NOAUTH)
         quota = {'in_use_load_balancer': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.repos.decrement_quota(self.session,
@@ -1625,7 +1625,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                    project_id)
         self.assertEqual(0, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_load_balancer)
-        conf.config(auth_strategy='testing')
+        conf.config(auth_strategy=constants.TESTING)
 
         # ### Test listner quota
         # Test decrement on zero in use quota
@@ -1641,7 +1641,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         # Test decrement on zero in use quota with noauth
         project_id = uuidutils.generate_uuid()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(auth_strategy='noauth')
+        conf.config(auth_strategy=constants.NOAUTH)
         quota = {'in_use_listener': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.repos.decrement_quota(self.session,
@@ -1649,7 +1649,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                    project_id)
         self.assertEqual(0, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_listener)
-        conf.config(auth_strategy='testing')
+        conf.config(auth_strategy=constants.TESTING)
 
         # Test decrement on in use quota
         project_id = uuidutils.generate_uuid()
@@ -1664,7 +1664,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         # Test decrement on in use quota with noauth
         project_id = uuidutils.generate_uuid()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(auth_strategy='noauth')
+        conf.config(auth_strategy=constants.NOAUTH)
         quota = {'in_use_listener': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.repos.decrement_quota(self.session,
@@ -1672,7 +1672,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                    project_id)
         self.assertEqual(0, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_listener)
-        conf.config(auth_strategy='testing')
+        conf.config(auth_strategy=constants.TESTING)
 
         # ### Test pool quota
         # Test decrement on zero in use quota
@@ -1688,7 +1688,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         # Test decrement on zero in use quota with noauth
         project_id = uuidutils.generate_uuid()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(auth_strategy='noauth')
+        conf.config(auth_strategy=constants.NOAUTH)
         quota = {'in_use_pool': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.repos.decrement_quota(self.session,
@@ -1696,7 +1696,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                    project_id)
         self.assertEqual(0, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_pool)
-        conf.config(auth_strategy='testing')
+        conf.config(auth_strategy=constants.TESTING)
 
         # Test decrement on in use quota
         project_id = uuidutils.generate_uuid()
@@ -1711,7 +1711,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         # Test decrement on in use quota with noauth
         project_id = uuidutils.generate_uuid()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(auth_strategy='noauth')
+        conf.config(auth_strategy=constants.NOAUTH)
         quota = {'in_use_pool': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.repos.decrement_quota(self.session,
@@ -1719,7 +1719,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                    project_id)
         self.assertEqual(0, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_pool)
-        conf.config(auth_strategy='testing')
+        conf.config(auth_strategy=constants.TESTING)
 
         # ### Test health monitor quota
         # Test decrement on zero in use quota
@@ -1735,7 +1735,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         # Test decrement on zero in use quota with noauth
         project_id = uuidutils.generate_uuid()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(auth_strategy='noauth')
+        conf.config(auth_strategy=constants.NOAUTH)
         quota = {'in_use_health_monitor': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.repos.decrement_quota(self.session,
@@ -1743,7 +1743,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                    project_id)
         self.assertEqual(0, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_health_monitor)
-        conf.config(auth_strategy='testing')
+        conf.config(auth_strategy=constants.TESTING)
 
         # Test decrement on in use quota
         project_id = uuidutils.generate_uuid()
@@ -1758,7 +1758,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         # Test decrement on in use quota with noauth
         project_id = uuidutils.generate_uuid()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(auth_strategy='noauth')
+        conf.config(auth_strategy=constants.NOAUTH)
         quota = {'in_use_health_monitor': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.repos.decrement_quota(self.session,
@@ -1766,7 +1766,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                    project_id)
         self.assertEqual(0, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_health_monitor)
-        conf.config(auth_strategy='testing')
+        conf.config(auth_strategy=constants.TESTING)
 
         # ### Test member quota
         # Test decrement on zero in use quota
@@ -1782,7 +1782,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         # Test decrement on zero in use quota with noauth
         project_id = uuidutils.generate_uuid()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(auth_strategy='noauth')
+        conf.config(auth_strategy=constants.NOAUTH)
         quota = {'in_use_member': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.repos.decrement_quota(self.session,
@@ -1790,7 +1790,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                    project_id)
         self.assertEqual(0, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
-        conf.config(auth_strategy='testing')
+        conf.config(auth_strategy=constants.TESTING)
 
         # Test decrement on in use quota
         project_id = uuidutils.generate_uuid()
@@ -1805,7 +1805,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         # Test decrement on in use quota with noauth
         project_id = uuidutils.generate_uuid()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(auth_strategy='noauth')
+        conf.config(auth_strategy=constants.NOAUTH)
         quota = {'in_use_member': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.repos.decrement_quota(self.session,
@@ -1813,7 +1813,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                    project_id)
         self.assertEqual(0, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
-        conf.config(auth_strategy='testing')
+        conf.config(auth_strategy=constants.TESTING)
 
 
 class PoolRepositoryTest(BaseRepositoryTest):

@@ -25,8 +25,8 @@ from octavia.tests.common import utils as test_utils
 import octavia.tests.unit.base as base
 
 
-AMP_FLAVOR_ID = 10
-AMP_IMAGE_ID = 11
+AMP_FLAVOR_ID = '10'
+AMP_IMAGE_ID = '11'
 AMP_IMAGE_TAG = 'glance_tag'
 AMP_SSH_KEY_NAME = None
 AMP_NET = [uuidutils.generate_uuid()]
