@@ -277,6 +277,53 @@ class TestListener(base.BaseAPITest):
         self.assert_final_lb_statuses(self.lb_id)
         self.assert_final_listener_statuses(self.lb_id, listener_api['id'])
 
+    def test_create_with_bad_handler(self):
+        self.handler_mock().listener.create.side_effect = Exception()
+        api_listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80,
+            self.lb_id).get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=self.lb_id,
+            listener_id=api_listener.get('id'),
+            listener_prov_status=constants.ERROR,
+            listener_op_status=constants.OFFLINE)
+
+    def test_update_with_bad_handler(self):
+        api_listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80,
+            self.lb_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        new_listener = {'name': 'new_name'}
+        self.handler_mock().listener.update.side_effect = Exception()
+        self.put(self.LISTENER_PATH.format(listener_id=api_listener.get('id')),
+                 self._build_body(new_listener))
+        self.assert_correct_status(
+            lb_id=self.lb_id,
+            listener_id=api_listener.get('id'),
+            listener_prov_status=constants.ERROR)
+
+    def test_delete_with_bad_handler(self):
+        api_listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80,
+            self.lb_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        # Set status to ACTIVE/ONLINE because set_lb_status did it in the db
+        api_listener['provisioning_status'] = constants.ACTIVE
+        api_listener['operating_status'] = constants.ONLINE
+        response = self.get(self.LISTENER_PATH.format(
+            listener_id=api_listener.get('id'))).json.get(self.root_tag)
+
+        self.assertIsNone(api_listener.pop('updated_at'))
+        self.assertIsNotNone(response.pop('updated_at'))
+        self.assertEqual(api_listener, response)
+        self.handler_mock().listener.delete.side_effect = Exception()
+        self.delete(self.LISTENER_PATH.format(
+            listener_id=api_listener.get('id')))
+        self.assert_correct_status(
+            lb_id=self.lb_id,
+            listener_id=api_listener.get('id'),
+            listener_prov_status=constants.ERROR)
+
     def test_update(self):
         tls_uuid = uuidutils.generate_uuid()
         listener = self.create_listener(

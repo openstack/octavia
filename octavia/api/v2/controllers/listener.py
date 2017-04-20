@@ -27,6 +27,7 @@ from octavia.api.v2.types import listener as listener_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _LI
 
@@ -111,6 +112,12 @@ class ListenersController(base.BaseController):
             raise exceptions.NotFound(
                 resource=data_models.Pool._name(), id=pool_id)
 
+    def _reset_lb_status(self, session, lb_id):
+        # Setting LB back to active because this should be a recoverable error
+        self.repositories.load_balancer.update(
+            session, lb_id,
+            provisioning_status=constants.ACTIVE)
+
     def _validate_listener(self, session, lb_id, listener_dict):
         """Validate listener for wrong protocol or duplicate listeners
 
@@ -165,9 +172,13 @@ class ListenersController(base.BaseController):
                      db_listener.id)
             self.handler.create(db_listener)
         except Exception:
-            with excutils.save_and_reraise_exception(reraise=False):
+            with excutils.save_and_reraise_exception(
+                    reraise=False), db_api.get_lock_session() as lock_session:
+                self._reset_lb_status(
+                    lock_session, lb_id=db_listener.load_balancer_id)
+                # Listener now goes to ERROR
                 self.repositories.listener.update(
-                    session, db_listener.id,
+                    lock_session, db_listener.id,
                     provisioning_status=constants.ERROR)
         db_listener = self._get_db_listener(session, db_listener.id)
         result = self._convert_db_to_type(db_listener,
@@ -222,9 +233,14 @@ class ListenersController(base.BaseController):
             LOG.info(_LI("Sending Update of Listener %s to handler"), id)
             self.handler.update(db_listener, listener)
         except Exception:
-            with excutils.save_and_reraise_exception(reraise=False):
+            with excutils.save_and_reraise_exception(
+                    reraise=False), db_api.get_lock_session() as lock_session:
+                self._reset_lb_status(
+                    lock_session, lb_id=db_listener.load_balancer_id)
+                # Listener now goes to ERROR
                 self.repositories.listener.update(
-                    context.session, id, provisioning_status=constants.ERROR)
+                    lock_session, db_listener.id,
+                    provisioning_status=constants.ERROR)
         db_listener = self._get_db_listener(context.session, id)
         result = self._convert_db_to_type(db_listener,
                                           listener_types.ListenerResponse)
@@ -245,9 +261,13 @@ class ListenersController(base.BaseController):
                      db_listener.id)
             self.handler.delete(db_listener)
         except Exception:
-            with excutils.save_and_reraise_exception(reraise=False):
+            with excutils.save_and_reraise_exception(
+                    reraise=False), db_api.get_lock_session() as lock_session:
+                self._reset_lb_status(
+                    lock_session, lb_id=db_listener.load_balancer_id)
+                # Listener now goes to ERROR
                 self.repositories.listener.update(
-                    context.session, db_listener.id,
+                    lock_session, db_listener.id,
                     provisioning_status=constants.ERROR)
         db_listener = self.repositories.listener.get(
             context.session, id=db_listener.id)

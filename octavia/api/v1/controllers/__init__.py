@@ -22,8 +22,13 @@ from octavia.api.v1.controllers import quotas
 
 class V1Controller(base.BaseController):
 
-    loadbalancers = load_balancer.LoadBalancersController()
-    quotas = quotas.QuotasController()
+    loadbalancers = None
+    quotas = None
+
+    def __init__(self):
+        super(V1Controller, self).__init__()
+        self.loadbalancers = load_balancer.LoadBalancersController()
+        self.quotas = quotas.QuotasController()
 
     @wsme_pecan.wsexpose(wtypes.text)
     def get(self):

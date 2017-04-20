@@ -23,10 +23,17 @@ from octavia.api.v2.controllers import pool
 
 
 class BaseV2Controller(base.BaseController):
-    loadbalancers = load_balancer.LoadBalancersController()
-    listeners = listener.ListenersController()
-    pools = pool.PoolsController()
-    l7policies = l7policy.L7PolicyController()
+    loadbalancers = None
+    listeners = None
+    pools = None
+    l7policies = None
+
+    def __init__(self):
+        super(BaseV2Controller, self).__init__()
+        self.loadbalancers = load_balancer.LoadBalancersController()
+        self.listeners = listener.ListenersController()
+        self.pools = pool.PoolsController()
+        self.l7policies = l7policy.L7PolicyController()
 
     @wsme_pecan.wsexpose(wtypes.text)
     def get(self):
@@ -34,4 +41,8 @@ class BaseV2Controller(base.BaseController):
 
 
 class V2Controller(BaseV2Controller):
-    lbaas = BaseV2Controller()
+    lbaas = None
+
+    def __init__(self):
+        super(V2Controller, self).__init__()
+        self.lbaas = BaseV2Controller()

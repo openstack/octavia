@@ -505,6 +505,46 @@ class TestLoadBalancer(base.BaseAPITest):
         path = self.LB_PATH.format(lb_id='bad_uuid')
         self.delete(path, status=404)
 
+    def test_create_with_bad_handler(self):
+        self.handler_mock().load_balancer.create.side_effect = Exception()
+        api_lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=api_lb.get('id'),
+            lb_prov_status=constants.ERROR,
+            lb_op_status=constants.OFFLINE)
+
+    def test_update_with_bad_handler(self):
+        api_lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get(self.root_tag)
+        self.set_lb_status(lb_id=api_lb.get('id'))
+        new_listener = {'name': 'new_name'}
+        self.handler_mock().load_balancer.update.side_effect = Exception()
+        self.put(self.LB_PATH.format(lb_id=api_lb.get('id')),
+                 self._build_body(new_listener))
+        self.assert_correct_status(
+            lb_id=api_lb.get('id'),
+            lb_prov_status=constants.ERROR)
+
+    def test_delete_with_bad_handler(self):
+        api_lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get(self.root_tag)
+        self.set_lb_status(lb_id=api_lb.get('id'))
+        # Set status to ACTIVE/ONLINE because set_lb_status did it in the db
+        api_lb['provisioning_status'] = constants.ACTIVE
+        api_lb['operating_status'] = constants.ONLINE
+        response = self.get(self.LB_PATH.format(
+            lb_id=api_lb.get('id'))).json.get(self.root_tag)
+
+        self.assertIsNone(api_lb.pop('updated_at'))
+        self.assertIsNotNone(response.pop('updated_at'))
+        self.assertEqual(api_lb, response)
+        self.handler_mock().load_balancer.delete.side_effect = Exception()
+        self.delete(self.LB_PATH.format(lb_id=api_lb.get('id')))
+        self.assert_correct_status(
+            lb_id=api_lb.get('id'),
+            lb_prov_status=constants.ERROR)
+
 
 class TestLoadBalancerGraph(base.BaseAPITest):
 
