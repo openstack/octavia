@@ -15,8 +15,8 @@
 from wsme import types as wtypes
 
 from octavia.api.common import types
-from octavia.api.v1.types import health_monitor
-from octavia.api.v1.types import member
+from octavia.api.v2.types import health_monitor
+from octavia.api.v2.types import member
 from octavia.common import constants
 
 
