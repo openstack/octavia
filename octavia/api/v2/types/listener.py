@@ -21,10 +21,15 @@ from octavia.common import constants
 
 
 class BaseListenerType(types.BaseType):
-    _type_to_model_map = {'admin_state_up': 'enabled'}
+    _type_to_model_map = {'admin_state_up': 'enabled',
+                          'default_tls_container_ref': 'tls_certificate_id'}
 
 
 class MinimalLoadBalancer(types.BaseType):
+    id = wtypes.wsattr(wtypes.UuidType())
+
+
+class MinimalL7Policy(types.BaseType):
     id = wtypes.wsattr(wtypes.UuidType())
 
 
@@ -46,8 +51,7 @@ class ListenerResponse(BaseListenerType):
     # TODO(johnsom) Remove after deprecation (R series)
     tenant_id = wtypes.wsattr(wtypes.StringType())
     default_pool_id = wtypes.wsattr(wtypes.UuidType())
-    default_pool = wtypes.wsattr(pool.PoolResponse)
-    l7policies = wtypes.wsattr([l7policy.L7PolicyResponse])
+    l7policies = wtypes.wsattr([MinimalL7Policy])
     insert_headers = wtypes.wsattr(wtypes.DictType(str, str))
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
@@ -58,35 +62,18 @@ class ListenerResponse(BaseListenerType):
         listener = super(ListenerResponse, cls).from_data_model(
             data_model, children=children)
         listener.tenant_id = data_model.project_id
-        listener.sni_container_refs = [sni_c.tls_container_id
-                                       for sni_c in data_model.sni_containers]
-        if data_model.tls_certificate_id:
-            listener.default_tls_container_ref = data_model.tls_certificate_id
+
+        listener.sni_container_refs = [
+            sni_c.tls_container_id for sni_c in data_model.sni_containers]
         listener.loadbalancers = [
-            MinimalLoadBalancer.from_data_model(data_model.load_balancer)
-        ]
+            MinimalLoadBalancer.from_data_model(data_model.load_balancer)]
+        listener.l7policies = [
+            MinimalL7Policy.from_data_model(i) for i in data_model.l7policies]
+
         if not listener.description:
             listener.description = ""
         if not listener.name:
             listener.name = ""
-
-        if not children:
-            # NOTE(blogan): do not show default_pool if the request does not
-            # want to see children
-            del listener.default_pool
-            del listener.l7policies
-            return listener
-        if data_model.default_pool:
-            listener.default_pool = pool.PoolResponse.from_data_model(
-                data_model.default_pool, children=children)
-        if data_model.l7policies:
-            listener.l7policies = [l7policy.L7PolicyResponse.from_data_model(
-                policy, children=children) for policy in data_model.l7policies]
-        if not listener.default_pool:
-            del listener.default_pool
-            del listener.default_pool_id
-        if not listener.l7policies:
-            del listener.l7policies
 
         return listener
 
