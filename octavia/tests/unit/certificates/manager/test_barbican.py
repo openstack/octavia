@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import six
 import uuid
 
 from barbicanclient import containers
@@ -40,11 +41,22 @@ class TestBarbicanManager(base.TestCase):
         )
 
         self.name = 'My Fancy Cert'
-        self.private_key = mock.Mock(spec=secrets.Secret)
-        self.certificate = mock.Mock(spec=secrets.Secret)
-        self.intermediates = mock.Mock(spec=secrets.Secret)
-        self.intermediates.payload = sample.X509_IMDS
-        self.private_key_passphrase = mock.Mock(spec=secrets.Secret)
+        self.certificate = secrets.Secret(
+            api=mock.MagicMock(),
+            payload=sample.X509_CERT
+        )
+        self.intermediates = secrets.Secret(
+            api=mock.MagicMock(),
+            payload=sample.X509_IMDS
+        )
+        self.private_key = secrets.Secret(
+            api=mock.MagicMock(),
+            payload=sample.X509_CERT_KEY_ENCRYPTED
+        )
+        self.private_key_passphrase = secrets.Secret(
+            api=mock.MagicMock(),
+            payload=sample.X509_CERT_KEY_PASSPHRASE
+        )
 
         container = mock.Mock(spec=containers.CertificateContainer)
         container.container_ref = self.container_ref
@@ -184,7 +196,7 @@ class TestBarbicanManager(base.TestCase):
         self.assertEqual(data.get_intermediates(),
                          sample.X509_IMDS_LIST)
         self.assertEqual(data.get_private_key_passphrase(),
-                         self.private_key_passphrase.payload)
+                         six.b(self.private_key_passphrase.payload))
 
     def test_get_cert_no_registration(self):
         self.bc.containers.get.return_value = self.container
@@ -209,7 +221,7 @@ class TestBarbicanManager(base.TestCase):
         self.assertEqual(data.get_intermediates(),
                          sample.X509_IMDS_LIST)
         self.assertEqual(data.get_private_key_passphrase(),
-                         self.private_key_passphrase.payload)
+                         six.b(self.private_key_passphrase.payload))
 
     def test_delete_cert(self):
         # Attempt to deregister as a consumer
