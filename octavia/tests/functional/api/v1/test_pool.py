@@ -110,6 +110,31 @@ class TestPool(base.BaseAPITest):
                                             self.listener.get('id'),
                                             constants.ACTIVE, constants.ONLINE)
 
+    def test_create_with_proxy_protocol(self):
+        api_pool = self.create_pool(self.lb.get('id'),
+                                    self.listener.get('id'),
+                                    constants.PROTOCOL_PROXY,
+                                    constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ONLINE)
+        self.set_lb_status(self.lb.get('id'))
+        self.assertEqual(constants.PROTOCOL_PROXY, api_pool.get('protocol'))
+        self.assertEqual(constants.LB_ALGORITHM_ROUND_ROBIN,
+                         api_pool.get('lb_algorithm'))
+        self.assertIsNotNone(api_pool.get('created_at'))
+        self.assertIsNone(api_pool.get('updated_at'))
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.ACTIVE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.ACTIVE, constants.ONLINE)
+
     def test_create_sans_listener(self):
         api_pool = self.create_pool_sans_listener(
             self.lb.get('id'), constants.PROTOCOL_HTTP,

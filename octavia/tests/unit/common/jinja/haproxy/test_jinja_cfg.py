@@ -371,6 +371,27 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs.sample_base_expected_config(backend=be),
             rendered_obj)
 
+    def test_render_template_pool_proxy_protocol(self):
+        be = ("backend sample_pool_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31s\n"
+              "    fullconn 98\n"
+              "    server sample_member_id_1 10.0.0.99:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_1 send-proxy\n"
+              "    server sample_member_id_2 10.0.0.98:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_2 send-proxy\n\n")
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
+            sample_configs.sample_listener_tuple(
+                be_proto='PROXY'))
+        self.assertEqual(
+            sample_configs.sample_base_expected_config(backend=be),
+            rendered_obj)
+
     def test_transform_session_persistence(self):
         in_persistence = sample_configs.sample_session_persistence_tuple()
         ret = self.jinja_cfg._transform_session_persistence(in_persistence)

@@ -826,7 +826,7 @@ Pools
 +---------------------+---------------+------------------------------------+
 | protocol            | String        | Network protocol from the \        |
 |                     |               | following: ``TCP``, ``HTTP``, \    |
-|                     |               | ``HTTPS``                          |
+|                     |               | ``HTTPS``, ``PROXY``               |
 +---------------------+---------------+------------------------------------+
 | lb_algorithm        | UUID          | Load balancing algorithm from \    |
 |                     |               | the following: \                   |
