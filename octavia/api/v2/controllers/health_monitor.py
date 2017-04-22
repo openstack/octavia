@@ -64,9 +64,7 @@ class HealthMonitorController(base.BaseController):
 
     @wsme_pecan.wsexpose(hm_types.HealthMonitorsRootResponse, wtypes.text)
     def get_all(self, project_id=None):
-        """Gets a single health monitor's details."""
-        # NOTE(blogan): since a pool can only have one health monitor
-        # we are using the get_all method to only get the single health monitor
+        """Gets all health monitors."""
         context = pecan.request.context.get('octavia_context')
         if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
             if project_id:
@@ -161,6 +159,13 @@ class HealthMonitorController(base.BaseController):
         health_monitor.project_id = pool.project_id
 
         lock_session = db_api.get_session(autocommit=False)
+        if self.repositories.check_quota_met(
+                context.session,
+                lock_session,
+                data_models.HealthMonitor,
+                health_monitor.project_id):
+            lock_session.rollback()
+            raise exceptions.QuotaException
 
         hm_dict = db_prepare.create_health_monitor(
             health_monitor.to_dict(render_unsets=True))
@@ -174,6 +179,12 @@ class HealthMonitorController(base.BaseController):
                 lock_session.rollback()
 
         return self._send_hm_to_handler(context.session, db_hm)
+
+    def _graph_create(self, lock_session, hm_dict):
+        hm_dict = db_prepare.create_health_monitor(hm_dict)
+        db_hm = self._validate_create_hm(lock_session, hm_dict)
+
+        return db_hm
 
     @wsme_pecan.wsexpose(hm_types.HealthMonitorRootResponse, wtypes.text,
                          body=hm_types.HealthMonitorRootPUT, status_code=200)

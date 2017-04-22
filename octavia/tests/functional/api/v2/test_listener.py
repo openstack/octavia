@@ -19,6 +19,7 @@ from oslo_utils import uuidutils
 
 from octavia.common import constants
 import octavia.common.context
+from octavia.common import data_models
 from octavia.tests.functional.api.v2 import base
 
 
@@ -283,6 +284,15 @@ class TestListener(base.BaseAPITest):
                                       constants.ONLINE, self.lb_id)
         self.assert_final_lb_statuses(self.lb_id)
         self.assert_final_listener_statuses(self.lb_id, listener_api['id'])
+
+    def test_create_over_quota(self):
+        self.start_quota_mock(data_models.Listener)
+        lb_listener = {'name': 'listener1',
+                       'protocol': constants.PROTOCOL_HTTP,
+                       'protocol_port': 80,
+                       'loadbalancer_id': self.lb_id}
+        body = self._build_body(lb_listener)
+        self.post(self.LISTENERS_PATH, body, status=403)
 
     def test_create_with_bad_handler(self):
         self.handler_mock().listener.create.side_effect = Exception()

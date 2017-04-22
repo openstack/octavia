@@ -16,6 +16,7 @@ import mock
 from oslo_utils import uuidutils
 
 from octavia.common import constants
+from octavia.common import data_models
 from octavia.network import base as network_base
 from octavia.tests.functional.api.v2 import base
 
@@ -232,8 +233,7 @@ class TestMember(base.BaseAPITest):
                       resp.json.get('faultstring'))
 
     def test_create_over_quota(self):
-        self.check_quota_met_true_mock.start()
-        self.addCleanup(self.check_quota_met_true_mock.stop)
+        self.start_quota_mock(data_models.Member)
         member = {'address': '10.0.0.3', 'protocol_port': 81}
         self.post(self.members_path, self._build_body(member), status=403)
 

@@ -43,22 +43,6 @@ class BasePoolType(types.BaseType):
     _type_to_model_map = {'admin_state_up': 'enabled'}
 
 
-class MinimalLoadBalancer(types.BaseType):
-    id = wtypes.wsattr(wtypes.UuidType())
-
-
-class MinimalListener(types.BaseType):
-    id = wtypes.wsattr(wtypes.UuidType())
-
-
-class MinimalMember(types.BaseType):
-    id = wtypes.wsattr(wtypes.UuidType())
-
-
-class MinimalHealthmonitor(types.BaseType):
-    id = wtypes.wsattr(wtypes.UuidType())
-
-
 class PoolResponse(BasePoolType):
     """Defines which attributes are to be shown on any response."""
     id = wtypes.wsattr(wtypes.UuidType())
@@ -71,12 +55,12 @@ class PoolResponse(BasePoolType):
     lb_algorithm = wtypes.wsattr(wtypes.text)
     session_persistence = wtypes.wsattr(SessionPersistenceResponse)
     project_id = wtypes.wsattr(wtypes.StringType())
-    loadbalancers = wtypes.wsattr([MinimalLoadBalancer])
-    listeners = wtypes.wsattr([MinimalListener])
+    loadbalancers = wtypes.wsattr([types.IdOnlyType])
+    listeners = wtypes.wsattr([types.IdOnlyType])
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
     health_monitor_id = wtypes.wsattr(wtypes.UuidType())
-    members = wtypes.wsattr([MinimalMember])
+    members = wtypes.wsattr([types.IdOnlyType])
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -86,17 +70,37 @@ class PoolResponse(BasePoolType):
             pool.session_persistence = (
                 SessionPersistenceResponse.from_data_model(
                     data_model.session_persistence))
-        if data_model.load_balancer:
-            pool.loadbalancers = [
-                MinimalLoadBalancer.from_data_model(data_model.load_balancer)]
+
+        if cls._full_response():
+            del pool.loadbalancers
+            member_model = member.MemberFullResponse
+            if pool.health_monitor:
+                pool.health_monitor = (
+                    health_monitor.HealthMonitorFullResponse
+                    .from_data_model(data_model.health_monitor))
         else:
-            pool.loadbalancers = []
+            if data_model.load_balancer:
+                pool.loadbalancers = [
+                    types.IdOnlyType.from_data_model(data_model.load_balancer)]
+            else:
+                pool.loadbalancers = []
+            member_model = types.IdOnlyType
+
         pool.listeners = [
-            MinimalListener.from_data_model(i) for i in data_model.listeners]
+            types.IdOnlyType.from_data_model(i) for i in data_model.listeners]
         pool.members = [
-            MinimalMember.from_data_model(i) for i in data_model.members]
+            member_model.from_data_model(i) for i in data_model.members]
 
         return pool
+
+
+class PoolFullResponse(PoolResponse):
+    @classmethod
+    def _full_response(cls):
+        return True
+
+    members = wtypes.wsattr([member.MemberFullResponse])
+    health_monitor = wtypes.wsattr(health_monitor.HealthMonitorFullResponse)
 
 
 class PoolRootResponse(types.BaseType):
@@ -122,8 +126,8 @@ class PoolPOST(BasePoolType):
     session_persistence = wtypes.wsattr(SessionPersistencePOST)
     # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
-    health_monitor = wtypes.wsattr(health_monitor.HealthMonitorPOST)
-    members = wtypes.wsattr([member.MemberPOST])
+    health_monitor = wtypes.wsattr(health_monitor.HealthMonitorSingleCreate)
+    members = wtypes.wsattr([member.MemberSingleCreate])
 
 
 class PoolRootPOST(types.BaseType):
@@ -142,3 +146,16 @@ class PoolPUT(BasePoolType):
 
 class PoolRootPut(types.BaseType):
     pool = wtypes.wsattr(PoolPUT)
+
+
+class PoolSingleCreate(BasePoolType):
+    """Defines mandatory and optional attributes of a POST request."""
+    name = wtypes.wsattr(wtypes.StringType(max_length=255))
+    description = wtypes.wsattr(wtypes.StringType(max_length=255))
+    admin_state_up = wtypes.wsattr(bool, default=True)
+    protocol = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROTOCOLS))
+    lb_algorithm = wtypes.wsattr(
+        wtypes.Enum(str, *constants.SUPPORTED_LB_ALGORITHMS))
+    session_persistence = wtypes.wsattr(SessionPersistencePOST)
+    health_monitor = wtypes.wsattr(health_monitor.HealthMonitorSingleCreate)
+    members = wtypes.wsattr([member.MemberSingleCreate])

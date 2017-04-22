@@ -15,6 +15,7 @@
 from oslo_utils import uuidutils
 
 from octavia.common import constants
+from octavia.common import data_models
 from octavia.tests.functional.api.v2 import base
 
 
@@ -190,6 +191,16 @@ class TestHealthMonitor(base.BaseAPITest):
         self.create_health_monitor(
             self.pool_id, constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1,
             status=409)
+
+    def test_create_over_quota(self):
+        self.start_quota_mock(data_models.HealthMonitor)
+        hm = {'pool_id': self.pool_id,
+              'type': constants.HEALTH_MONITOR_HTTP,
+              'delay': 1,
+              'timeout': 1,
+              'max_retries_down': 1,
+              'max_retries': 1}
+        self.post(self.HMS_PATH, self._build_body(hm), status=403)
 
     def test_update(self):
         api_hm = self.create_health_monitor(

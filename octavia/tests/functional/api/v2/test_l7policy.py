@@ -18,6 +18,7 @@ from oslo_utils import uuidutils
 
 from octavia.common import constants
 import octavia.common.context
+from octavia.common import data_models
 from octavia.tests.functional.api.v2 import base
 
 
@@ -298,8 +299,7 @@ class TestL7Policy(base.BaseAPITest):
             l7policy_op_status=constants.OFFLINE)
 
     def test_create_over_quota(self):
-        self.check_quota_met_true_mock.start()
-        self.addCleanup(self.check_quota_met_true_mock.stop)
+        self.start_quota_mock(data_models.L7Policy)
         l7policy = {'listener_id': self.listener_id,
                     'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
                     'redirect_url': 'http://a.com'}

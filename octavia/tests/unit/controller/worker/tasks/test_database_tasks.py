@@ -1104,7 +1104,7 @@ class TestDatabaseTasks(base.TestCase):
         listeners = [data_models.Listener(id='listener1'),
                      data_models.Listener(id='listener2')]
         lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners)
-        mark_lb_active = database_tasks.MarkLBActiveInDB(mark_listeners=True)
+        mark_lb_active = database_tasks.MarkLBActiveInDB(mark_subobjects=True)
         mark_lb_active.execute(lb)
 
         repo.LoadBalancerRepository.update.assert_called_once_with(
@@ -1131,6 +1131,140 @@ class TestDatabaseTasks(base.TestCase):
             [mock.call('TEST', listeners[0].id,
                        provisioning_status=constants.ERROR),
              mock.call('TEST', listeners[1].id,
+                       provisioning_status=constants.ERROR)])
+
+    @mock.patch('octavia.db.repositories.PoolRepository.update')
+    @mock.patch('octavia.db.repositories.MemberRepository.update')
+    @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
+    @mock.patch('octavia.db.repositories.L7PolicyRepository.update')
+    @mock.patch('octavia.db.repositories.L7RuleRepository.update')
+    def test_mark_LB_active_in_db_full_graph(self,
+                                             mock_l7r_repo_update,
+                                             mock_l7p_repo_update,
+                                             mock_hm_repo_update,
+                                             mock_member_repo_update,
+                                             mock_pool_repo_update,
+                                             mock_generate_uuid,
+                                             mock_LOG,
+                                             mock_get_session,
+                                             mock_loadbalancer_repo_update,
+                                             mock_listener_repo_update,
+                                             mock_amphora_repo_update,
+                                             mock_amphora_repo_delete):
+        unused_pool = data_models.Pool(id='unused_pool')
+        members1 = [data_models.Member(id='member1'),
+                    data_models.Member(id='member2')]
+        health_monitor = data_models.HealthMonitor(id='hm1')
+        default_pool = data_models.Pool(id='default_pool',
+                                        members=members1,
+                                        health_monitor=health_monitor)
+        listener1 = data_models.Listener(id='listener1',
+                                         default_pool=default_pool)
+        members2 = [data_models.Member(id='member3'),
+                    data_models.Member(id='member4')]
+        redirect_pool = data_models.Pool(id='redirect_pool',
+                                         members=members2)
+        l7rules = [data_models.L7Rule(id='rule1')]
+        redirect_policy = data_models.L7Policy(id='redirect_policy',
+                                               redirect_pool=redirect_pool,
+                                               l7rules=l7rules)
+        l7policies = [redirect_policy]
+        listener2 = data_models.Listener(id='listener2',
+                                         l7policies=l7policies)
+        listener2.l7policies = l7policies
+        listeners = [listener1, listener2]
+        pools = [default_pool, redirect_pool, unused_pool]
+
+        lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners,
+                                      pools=pools)
+        mark_lb_active = database_tasks.MarkLBActiveInDB(mark_subobjects=True)
+        mark_lb_active.execute(lb)
+
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            lb.id,
+            provisioning_status=constants.ACTIVE)
+        self.assertEqual(2, repo.ListenerRepository.update.call_count)
+        repo.ListenerRepository.update.has_calls(
+            [mock.call('TEST', listeners[0].id,
+                       provisioning_status=constants.ACTIVE),
+             mock.call('TEST', listeners[1].id,
+                       provisioning_status=constants.ACTIVE)])
+        self.assertEqual(2, repo.PoolRepository.update.call_count)
+        repo.PoolRepository.update.has_calls(
+            [mock.call('TEST', default_pool.id,
+                       provisioning_status=constants.ACTIVE),
+             mock.call('TEST', redirect_pool.id,
+                       provisioning_status=constants.ACTIVE)])
+        self.assertEqual(4, repo.MemberRepository.update.call_count)
+        repo.MemberRepository.update.has_calls(
+            [mock.call('TEST', members1[0].id,
+                       provisioning_status=constants.ACTIVE),
+             mock.call('TEST', members1[1].id,
+                       provisioning_status=constants.ACTIVE),
+             mock.call('TEST', members2[0].id,
+                       provisioning_status=constants.ACTIVE),
+             mock.call('TEST', members2[1].id,
+                       provisioning_status=constants.ACTIVE)])
+        self.assertEqual(1, repo.HealthMonitorRepository.update.call_count)
+        repo.HealthMonitorRepository.update.has_calls(
+            [mock.call('TEST', health_monitor.id,
+                       provisioning_status=constants.ACTIVE)])
+        self.assertEqual(1, repo.L7PolicyRepository.update.call_count)
+        repo.L7PolicyRepository.update.has_calls(
+            [mock.call('TEST', l7policies[0].id,
+                       provisioning_status=constants.ACTIVE)])
+        self.assertEqual(1, repo.L7RuleRepository.update.call_count)
+        repo.L7RuleRepository.update.has_calls(
+            [mock.call('TEST', l7rules[0].id,
+                       provisioning_status=constants.ACTIVE)])
+
+        mock_loadbalancer_repo_update.reset_mock()
+        mock_listener_repo_update.reset_mock()
+        mock_pool_repo_update.reset_mock()
+        mock_member_repo_update.reset_mock()
+        mock_hm_repo_update.reset_mock()
+        mock_l7p_repo_update.reset_mock()
+        mock_l7r_repo_update.reset_mock()
+        mark_lb_active.revert(lb)
+
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            id=lb.id,
+            provisioning_status=constants.ERROR)
+        self.assertEqual(2, repo.ListenerRepository.update.call_count)
+        repo.ListenerRepository.update.has_calls(
+            [mock.call('TEST', listeners[0].id,
+                       provisioning_status=constants.ERROR),
+             mock.call('TEST', listeners[1].id,
+                       provisioning_status=constants.ERROR)])
+        self.assertEqual(2, repo.PoolRepository.update.call_count)
+        repo.PoolRepository.update.has_calls(
+            [mock.call('TEST', default_pool.id,
+                       provisioning_status=constants.ERROR),
+             mock.call('TEST', redirect_pool.id,
+                       provisioning_status=constants.ERROR)])
+        self.assertEqual(4, repo.MemberRepository.update.call_count)
+        repo.MemberRepository.update.has_calls(
+            [mock.call('TEST', members1[0].id,
+                       provisioning_status=constants.ERROR),
+             mock.call('TEST', members1[1].id,
+                       provisioning_status=constants.ERROR),
+             mock.call('TEST', members2[0].id,
+                       provisioning_status=constants.ERROR),
+             mock.call('TEST', members2[1].id,
+                       provisioning_status=constants.ERROR)])
+        self.assertEqual(1, repo.HealthMonitorRepository.update.call_count)
+        repo.HealthMonitorRepository.update.has_calls(
+            [mock.call('TEST', health_monitor.id,
+                       provisioning_status=constants.ERROR)])
+        self.assertEqual(1, repo.L7PolicyRepository.update.call_count)
+        repo.L7PolicyRepository.update.has_calls(
+            [mock.call('TEST', l7policies[0].id,
+                       provisioning_status=constants.ERROR)])
+        self.assertEqual(1, repo.L7RuleRepository.update.call_count)
+        repo.L7RuleRepository.update.has_calls(
+            [mock.call('TEST', l7rules[0].id,
                        provisioning_status=constants.ERROR)])
 
     def test_mark_LB_deleted_in_db(self,

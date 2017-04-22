@@ -23,6 +23,7 @@ from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
 from octavia.api.v2.controllers import base
+from octavia.api.v2.controllers import l7policy
 from octavia.api.v2.types import listener as listener_types
 from octavia.common import constants
 from octavia.common import data_models
@@ -115,12 +116,11 @@ class ListenersController(base.BaseController):
             session, lb_id,
             provisioning_status=constants.ACTIVE)
 
-    def _validate_listener(self, session, lb_id, listener_dict):
+    def _validate_create_listener(self, lock_session, lb_id, listener_dict):
         """Validate listener for wrong protocol or duplicate listeners
 
         Update the load balancer db when provisioning status changes.
         """
-        lb_repo = self.repositories.load_balancer
         if (listener_dict and
             listener_dict.get('insert_headers') and
             list(set(listener_dict['insert_headers'].keys()) -
@@ -132,21 +132,17 @@ class ListenersController(base.BaseController):
         try:
             sni_containers = listener_dict.pop('sni_containers', [])
             db_listener = self.repositories.listener.create(
-                session, **listener_dict)
+                lock_session, **listener_dict)
             if sni_containers:
                 for container in sni_containers:
                     sni_dict = {'listener_id': db_listener.id,
                                 'tls_container_id': container.get(
                                     'tls_container_id')}
-                    self.repositories.sni.create(session, **sni_dict)
-                db_listener = self.repositories.listener.get(session,
-                                                             id=db_listener.id)
+                    self.repositories.sni.create(lock_session, **sni_dict)
+                db_listener = self.repositories.listener.get(
+                    lock_session, id=db_listener.id)
             return db_listener
         except odb_exceptions.DBDuplicateEntry as de:
-            # Setting LB back to active because this is just a validation
-            # failure
-            lb_repo.update(session, lb_id,
-                           provisioning_status=constants.ACTIVE)
             column_list = ['load_balancer_id', 'protocol_port']
             constraint_list = ['uq_listener_load_balancer_id_protocol_port']
             if ['id'] == de.columns:
@@ -156,10 +152,6 @@ class ListenersController(base.BaseController):
                 raise exceptions.DuplicateListenerEntry(
                     port=listener_dict.get('protocol_port'))
         except odb_exceptions.DBError:
-            # Setting LB back to active because this is just a validation
-            # failure
-            lb_repo.update(session, lb_id,
-                           provisioning_status=constants.ACTIVE)
             raise exceptions.InvalidOption(value=listener_dict.get('protocol'),
                                            option='protocol')
 
@@ -189,21 +181,68 @@ class ListenersController(base.BaseController):
         listener = listener_.listener
         context = pecan.request.context.get('octavia_context')
 
+        load_balancer_id = listener.loadbalancer_id
+        listener.project_id = self._get_lb_project_id(
+            context.session, load_balancer_id)
+
+        lock_session = db_api.get_session(autocommit=False)
+        if self.repositories.check_quota_met(
+                context.session,
+                lock_session,
+                data_models.Listener,
+                listener.project_id):
+            lock_session.rollback()
+            raise exceptions.QuotaException
+
         listener_dict = db_prepare.create_listener(
             listener.to_dict(render_unsets=True), None)
-        load_balancer_id = listener_dict['load_balancer_id']
-        listener_dict['project_id'] = self._get_lb_project_id(
-            context.session, load_balancer_id)
 
         if listener_dict['default_pool_id']:
             self._validate_pool(context.session, load_balancer_id,
                                 listener_dict['default_pool_id'])
-        self._test_lb_and_listener_statuses(context.session, load_balancer_id)
-        # This is the extra validation layer for wrong protocol or duplicate
-        # listeners on the same load balancer.
-        db_listener = self._validate_listener(
-            context.session, load_balancer_id, listener_dict)
+
+        try:
+            self._test_lb_and_listener_statuses(
+                lock_session, lb_id=load_balancer_id)
+
+            db_listener = self._validate_create_listener(
+                lock_session, load_balancer_id, listener_dict)
+            lock_session.commit()
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                lock_session.rollback()
+
         return self._send_listener_to_handler(context.session, db_listener)
+
+    def _graph_create(self, lock_session, listener_dict,
+                      l7policies=None, pool_name_ids=None):
+        load_balancer_id = listener_dict['load_balancer_id']
+        listener_dict = db_prepare.create_listener(
+            listener_dict, load_balancer_id)
+        l7policies = listener_dict.pop('l7policies', l7policies)
+        if listener_dict.get('default_pool_id'):
+            self._validate_pool(lock_session, load_balancer_id,
+                                listener_dict['default_pool_id'])
+        db_listener = self._validate_create_listener(
+            lock_session, load_balancer_id, listener_dict)
+
+        # Now create l7policies
+        new_l7ps = []
+        for l7p in l7policies:
+            l7p['project_id'] = db_listener.project_id
+            l7p['load_balancer_id'] = load_balancer_id
+            l7p['listener_id'] = db_listener.id
+            redirect_pool = l7p.pop('redirect_pool', None)
+            if redirect_pool:
+                pool_name = redirect_pool['name']
+                pool_id = pool_name_ids.get(pool_name)
+                if not pool_id:
+                    raise exceptions.SingleCreateDetailsMissing(
+                        type='Pool', name=pool_name)
+                l7p['redirect_pool_id'] = pool_id
+            new_l7ps.append(l7policy.L7PolicyController()._graph_create(
+                lock_session, l7p))
+        return db_listener, new_l7ps
 
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text,
                          body=listener_types.ListenerRootPUT, status_code=200)

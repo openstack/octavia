@@ -893,27 +893,25 @@ class MarkLBActiveInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def __init__(self, mark_listeners=False, **kwargs):
+    def __init__(self, mark_subobjects=False, **kwargs):
         super(MarkLBActiveInDB, self).__init__(**kwargs)
-        self.mark_listeners = mark_listeners
+        self.mark_subobjects = mark_subobjects
 
     def execute(self, loadbalancer):
         """Mark the load balancer as active in DB.
 
-        This also marks ACTIVE all listeners of the load balancer if
-        self.mark_listeners is True.
+        This also marks ACTIVE all sub-objects of the load balancer if
+        self.mark_subobjects is True.
 
         :param loadbalancer: Load balancer object to be updated
         :returns: None
         """
 
-        if self.mark_listeners:
+        if self.mark_subobjects:
             LOG.debug("Marking all listeners of loadbalancer %s ACTIVE",
                       loadbalancer.id)
             for listener in loadbalancer.listeners:
-                self.listener_repo.update(db_apis.get_session(),
-                                          listener.id,
-                                          provisioning_status=constants.ACTIVE)
+                self._mark_listener_status(listener, constants.ACTIVE)
 
         LOG.info("Mark ACTIVE in DB for load balancer id: %s",
                  loadbalancer.id)
@@ -921,24 +919,78 @@ class MarkLBActiveInDB(BaseDatabaseTask):
                                       loadbalancer.id,
                                       provisioning_status=constants.ACTIVE)
 
+    def _mark_listener_status(self, listener, status):
+        self.listener_repo.update(db_apis.get_session(),
+                                  listener.id,
+                                  provisioning_status=status)
+        LOG.debug("Marking all l7policies of listener %s %s",
+                  listener.id, status)
+        for l7policy in listener.l7policies:
+            self._mark_l7policy_status(l7policy, status)
+
+        if listener.default_pool:
+            LOG.debug("Marking default pool of listener %s %s",
+                      listener.id, status)
+            self._mark_pool_status(listener.default_pool, status)
+
+    def _mark_l7policy_status(self, l7policy, status):
+        self.l7policy_repo.update(
+            db_apis.get_session(), l7policy.id,
+            provisioning_status=status)
+
+        LOG.debug("Marking all l7rules of l7policy %s %s",
+                  l7policy.id, status)
+        for l7rule in l7policy.l7rules:
+            self._mark_l7rule_status(l7rule, status)
+
+        if l7policy.redirect_pool:
+            LOG.debug("Marking redirect pool of l7policy %s %s",
+                      l7policy.id, status)
+            self._mark_pool_status(l7policy.redirect_pool, status)
+
+    def _mark_l7rule_status(self, l7rule, status):
+        self.l7rule_repo.update(
+            db_apis.get_session(), l7rule.id,
+            provisioning_status=status)
+
+    def _mark_pool_status(self, pool, status):
+        self.pool_repo.update(
+            db_apis.get_session(), pool.id,
+            provisioning_status=status)
+        if pool.health_monitor:
+            LOG.debug("Marking health monitor of pool %s %s", pool.id, status)
+            self._mark_hm_status(pool.health_monitor, status)
+
+        LOG.debug("Marking all members of pool %s %s", pool.id, status)
+        for member in pool.members:
+            self._mark_member_status(member, status)
+
+    def _mark_hm_status(self, hm, status):
+        self.health_mon_repo.update(
+            db_apis.get_session(), hm.id,
+            provisioning_status=status)
+
+    def _mark_member_status(self, member, status):
+        self.member_repo.update(
+            db_apis.get_session(), member.id,
+            provisioning_status=status)
+
     def revert(self, loadbalancer, *args, **kwargs):
         """Mark the load balancer as broken and ready to be cleaned up.
 
-        This also puts all listeners of the load balancer to ERROR state if
-        self.mark_listeners is True
+        This also puts all sub-objects of the load balancer to ERROR state if
+        self.mark_subobjects is True
 
         :param loadbalancer: Load balancer object that failed to update
         :returns: None
         """
 
-        if self.mark_listeners:
+        if self.mark_subobjects:
             LOG.debug("Marking all listeners of loadbalancer %s ERROR",
                       loadbalancer.id)
             for listener in loadbalancer.listeners:
                 try:
-                    self.listener_repo.update(
-                        db_apis.get_session(), listener.id,
-                        provisioning_status=constants.ERROR)
+                    self._mark_listener_status(listener, constants.ERROR)
                 except Exception:
                     LOG.warning("Error updating listener %s provisioning "
                                 "status", listener.id)

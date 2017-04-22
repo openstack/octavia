@@ -260,14 +260,6 @@ class TestL7Rule(base.BaseAPITest):
             l7rule_prov_status=constants.ERROR,
             l7rule_op_status=constants.OFFLINE)
 
-    def test_create_over_quota(self):
-        self.check_quota_met_true_mock.start()
-        self.addCleanup(self.check_quota_met_true_mock.stop)
-        body = {'type': constants.L7RULE_TYPE_PATH,
-                'compare_type': constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
-                'value': '/api'}
-        self.post(self.l7rules_path, self._build_body(body), status=403)
-
     def test_update(self):
         api_l7rule = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,

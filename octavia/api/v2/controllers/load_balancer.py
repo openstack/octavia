@@ -22,6 +22,8 @@ from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
 from octavia.api.v2.controllers import base
+from octavia.api.v2.controllers import listener
+from octavia.api.v2.controllers import pool
 from octavia.api.v2.types import load_balancer as lb_types
 from octavia.common import constants
 from octavia.common import data_models
@@ -101,7 +103,7 @@ class LoadBalancersController(base.BaseController):
                     "Supplied network does not contain a subnet."
                 ))
 
-    @wsme_pecan.wsexpose(lb_types.LoadBalancerRootResponse,
+    @wsme_pecan.wsexpose(lb_types.LoadBalancerFullRootResponse,
                          body=lb_types.LoadBalancerRootPOST, status_code=201)
     def post(self, load_balancer):
         """Creates a load balancer."""
@@ -147,16 +149,24 @@ class LoadBalancersController(base.BaseController):
             lock_session.rollback()
             raise exceptions.QuotaException
 
-        # TODO(blogan): lb graph, look at v1 code
-
+        db_lb, db_pools, db_lists = None, None, None
         try:
             lb_dict = db_prepare.create_load_balancer(load_balancer.to_dict(
-                render_unsets=True
+                render_unsets=False
             ))
             vip_dict = lb_dict.pop('vip', {})
 
+            # NoneType can be weird here, have to force type a second time
+            listeners = lb_dict.pop('listeners', []) or []
+            pools = lb_dict.pop('pools', []) or []
+
             db_lb = self.repositories.create_load_balancer_and_vip(
                 lock_session, lb_dict, vip_dict)
+
+            if listeners or pools:
+                db_pools, db_lists = self._graph_create(
+                    context.session, lock_session, db_lb, listeners, pools)
+
             lock_session.commit()
         except odb_exceptions.DBDuplicateEntry:
             lock_session.rollback()
@@ -175,8 +185,118 @@ class LoadBalancersController(base.BaseController):
                 self.repositories.load_balancer.update(
                     context.session, db_lb.id,
                     provisioning_status=constants.ERROR)
-        result = self._convert_db_to_type(db_lb, lb_types.LoadBalancerResponse)
-        return lb_types.LoadBalancerRootResponse(loadbalancer=result)
+
+        db_lb = self._get_db_lb(context.session, db_lb.id)
+
+        result = self._convert_db_to_type(
+            db_lb, lb_types.LoadBalancerFullResponse)
+        return lb_types.LoadBalancerFullRootResponse(loadbalancer=result)
+
+    def _graph_create(self, session, lock_session, db_lb, listeners, pools):
+        # Track which pools must have a full specification
+        pools_required = set()
+        # Look through listeners and find any extra pools, and move them to the
+        # top level so they are created first.
+        for l in listeners:
+            default_pool = l.get('default_pool')
+            pool_name = (
+                default_pool.get('name') if default_pool else None)
+            # All pools need to have a name so they can be referenced
+            if default_pool and not pool_name:
+                raise exceptions.ValidationException(
+                    detail='Pools must be named when creating a fully '
+                           'populated loadbalancer.')
+            # If a pool has more than a name, assume it's a full specification
+            # (but use >2 because it will also have "enabled" as default)
+            if default_pool and len(default_pool) > 2:
+                pools.append(default_pool)
+                l['default_pool'] = {'name': pool_name}
+            # Otherwise, it's a reference and we record it and move on
+            elif default_pool:
+                pools_required.add(pool_name)
+            # We also need to check policy redirects
+            for policy in l.get('l7policies'):
+                redirect_pool = policy.get('redirect_pool')
+                pool_name = (
+                    redirect_pool.get('name') if redirect_pool else None)
+                # All pools need to have a name so they can be referenced
+                if default_pool and not pool_name:
+                    raise exceptions.ValidationException(
+                        detail='Pools must be named when creating a fully '
+                               'populated loadbalancer.')
+                # If a pool has more than a name, assume it's a full spec
+                # (but use >2 because it will also have "enabled" as default)
+                if redirect_pool and len(redirect_pool) > 2:
+                    pool_name = redirect_pool['name']
+                    policy['redirect_pool'] = {'name': pool_name}
+                    pools.append(redirect_pool)
+                # Otherwise, it's a reference and we record it and move on
+                elif default_pool:
+                    pools_required.add(pool_name)
+
+        # Make sure all pool names are unique.
+        pool_names = [p.get('name') for p in pools]
+        if len(set(pool_names)) != len(pool_names):
+            raise exceptions.ValidationException(
+                detail="Pool names must be unique when creating a fully "
+                       "populated loadbalancer.")
+        # Make sure every reference is present in our spec list
+        for pool_ref in pools_required:
+            if pool_ref not in pool_names:
+                raise exceptions.ValidationException(
+                    detail="Pool '{name}' was referenced but no full "
+                           "definition was found.".format(name=pool_ref))
+
+        # Check quotas for pools.
+        if pools and self.repositories.check_quota_met(
+                session, lock_session, data_models.Pool, db_lb.project_id,
+                count=len(pools)):
+            raise exceptions.QuotaException
+
+        # Now create all of the pools ahead of the listeners.
+        new_pools = []
+        pool_name_ids = {}
+        for p in pools:
+            # Check that pools have mandatory attributes, since we have to
+            # bypass the normal validation layer to allow for name-only
+            for attr in ('protocol', 'lb_algorithm'):
+                if attr not in p:
+                    raise exceptions.ValidationException(
+                        detail="Pool definition for '{name}' missing required "
+                               "attribute: {attr}".format(name=p['name'],
+                                                          attr=attr))
+            p['load_balancer_id'] = db_lb.id
+            p['project_id'] = db_lb.project_id
+            new_pool, new_hm, new_members = (
+                pool.PoolsController()._graph_create(
+                    session, lock_session, p))
+            new_pools.append(new_pool)
+            pool_name_ids[new_pool.name] = new_pool.id
+
+        # Now check quotas for listeners
+        if listeners and self.repositories.check_quota_met(
+                session, lock_session, data_models.Listener, db_lb.project_id,
+                count=len(listeners)):
+            raise exceptions.QuotaException
+
+        # Now create all of the listeners
+        new_lists = []
+        for l in listeners:
+            default_pool = l.pop('default_pool', None)
+            # If there's a default pool, replace it with the ID
+            if default_pool:
+                pool_name = default_pool['name']
+                pool_id = pool_name_ids.get(pool_name)
+                if not pool_id:
+                    raise exceptions.SingleCreateDetailsMissing(
+                        type='Pool', name=pool_name)
+                l['default_pool_id'] = pool_id
+            l['load_balancer_id'] = db_lb.id
+            l['project_id'] = db_lb.project_id
+            new_lists.append(listener.ListenersController()._graph_create(
+                lock_session, l, pool_name_ids=pool_name_ids))
+
+        return new_pools, new_lists
 
     @wsme_pecan.wsexpose(lb_types.LoadBalancerRootResponse,
                          wtypes.text, status_code=200,

@@ -25,14 +25,6 @@ class BaseListenerType(types.BaseType):
                           'default_tls_container_ref': 'tls_certificate_id'}
 
 
-class MinimalLoadBalancer(types.BaseType):
-    id = wtypes.wsattr(wtypes.UuidType())
-
-
-class MinimalL7Policy(types.BaseType):
-    id = wtypes.wsattr(wtypes.UuidType())
-
-
 class ListenerResponse(BaseListenerType):
     """Defines which attributes are to be shown on any response."""
     id = wtypes.wsattr(wtypes.UuidType())
@@ -48,11 +40,11 @@ class ListenerResponse(BaseListenerType):
     sni_container_refs = [wtypes.StringType()]
     project_id = wtypes.wsattr(wtypes.StringType())
     default_pool_id = wtypes.wsattr(wtypes.UuidType())
-    l7policies = wtypes.wsattr([MinimalL7Policy])
+    l7policies = wtypes.wsattr([types.IdOnlyType])
     insert_headers = wtypes.wsattr(wtypes.DictType(str, str))
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
-    loadbalancers = wtypes.wsattr([MinimalLoadBalancer])
+    loadbalancers = wtypes.wsattr([types.IdOnlyType])
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -61,10 +53,17 @@ class ListenerResponse(BaseListenerType):
 
         listener.sni_container_refs = [
             sni_c.tls_container_id for sni_c in data_model.sni_containers]
-        listener.loadbalancers = [
-            MinimalLoadBalancer.from_data_model(data_model.load_balancer)]
+
+        if cls._full_response():
+            del listener.loadbalancers
+            l7policy_type = l7policy.L7PolicyFullResponse
+        else:
+            listener.loadbalancers = [
+                types.IdOnlyType.from_data_model(data_model.load_balancer)]
+            l7policy_type = types.IdOnlyType
+
         listener.l7policies = [
-            MinimalL7Policy.from_data_model(i) for i in data_model.l7policies]
+            l7policy_type.from_data_model(i) for i in data_model.l7policies]
 
         if not listener.description:
             listener.description = ""
@@ -72,6 +71,14 @@ class ListenerResponse(BaseListenerType):
             listener.name = ""
 
         return listener
+
+
+class ListenerFullResponse(ListenerResponse):
+    @classmethod
+    def _full_response(cls):
+        return True
+
+    l7policies = wtypes.wsattr([l7policy.L7PolicyFullResponse])
 
 
 class ListenerRootResponse(types.BaseType):
@@ -100,8 +107,8 @@ class ListenerPOST(BaseListenerType):
     # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     default_pool_id = wtypes.wsattr(wtypes.UuidType())
-    default_pool = wtypes.wsattr(pool.PoolPOST)
-    l7policies = wtypes.wsattr([l7policy.L7PolicyPOST], default=[])
+    default_pool = wtypes.wsattr(pool.PoolSingleCreate)
+    l7policies = wtypes.wsattr([l7policy.L7PolicySingleCreate], default=[])
     insert_headers = wtypes.wsattr(
         wtypes.DictType(str, wtypes.StringType(max_length=255)))
     loadbalancer_id = wtypes.wsattr(wtypes.UuidType(), mandatory=True)
@@ -128,3 +135,25 @@ class ListenerPUT(BaseListenerType):
 
 class ListenerRootPUT(types.BaseType):
     listener = wtypes.wsattr(ListenerPUT)
+
+
+class ListenerSingleCreate(BaseListenerType):
+    """Defines mandatory and optional attributes of a POST request."""
+    name = wtypes.wsattr(wtypes.StringType(max_length=255))
+    description = wtypes.wsattr(wtypes.StringType(max_length=255))
+    admin_state_up = wtypes.wsattr(bool, default=True)
+    protocol = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROTOCOLS),
+                             mandatory=True)
+    protocol_port = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_PORT_NUMBER,
+                           maximum=constants.MAX_PORT_NUMBER), mandatory=True)
+    connection_limit = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_CONNECTION_LIMIT), default=-1)
+    default_tls_container_ref = wtypes.wsattr(
+        wtypes.StringType(max_length=255))
+    sni_container_refs = [wtypes.StringType(max_length=255)]
+    default_pool_id = wtypes.wsattr(wtypes.UuidType())
+    default_pool = wtypes.wsattr(pool.PoolSingleCreate)
+    l7policies = wtypes.wsattr([l7policy.L7PolicySingleCreate], default=[])
+    insert_headers = wtypes.wsattr(
+        wtypes.DictType(str, wtypes.StringType(max_length=255)))

@@ -48,6 +48,12 @@ class MemberResponse(BaseMemberType):
         return member
 
 
+class MemberFullResponse(MemberResponse):
+    @classmethod
+    def _full_response(cls):
+        return True
+
+
 class MemberRootResponse(types.BaseType):
     member = wtypes.wsattr(MemberResponse)
 
@@ -85,3 +91,16 @@ class MemberPUT(BaseMemberType):
 
 class MemberRootPUT(types.BaseType):
     member = wtypes.wsattr(MemberPUT)
+
+
+class MemberSingleCreate(BaseMemberType):
+    """Defines mandatory and optional attributes of a POST request."""
+    name = wtypes.wsattr(wtypes.StringType(max_length=255))
+    admin_state_up = wtypes.wsattr(bool, default=True)
+    address = wtypes.wsattr(types.IPAddressType(), mandatory=True)
+    protocol_port = wtypes.wsattr(wtypes.IntegerType(
+        minimum=constants.MIN_PORT_NUMBER, maximum=constants.MAX_PORT_NUMBER),
+        mandatory=True)
+    weight = wtypes.wsattr(wtypes.IntegerType(
+        minimum=constants.MIN_WEIGHT, maximum=constants.MAX_WEIGHT), default=1)
+    subnet_id = wtypes.wsattr(wtypes.UuidType())

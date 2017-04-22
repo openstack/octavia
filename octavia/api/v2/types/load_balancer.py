@@ -16,6 +16,7 @@ from wsme import types as wtypes
 
 from octavia.api.common import types
 from octavia.api.v2.types import listener
+from octavia.api.v2.types import pool
 
 
 class BaseLoadBalancerType(types.BaseType):
@@ -24,10 +25,6 @@ class BaseLoadBalancerType(types.BaseType):
                           'vip_port_id': 'vip.port_id',
                           'vip_network_id': 'vip.network_id',
                           'admin_state_up': 'enabled'}
-
-
-class MinimalListener(types.BaseType):
-    id = wtypes.wsattr(wtypes.UuidType())
 
 
 class LoadBalancerResponse(BaseLoadBalancerType):
@@ -45,8 +42,10 @@ class LoadBalancerResponse(BaseLoadBalancerType):
     vip_port_id = wtypes.wsattr(wtypes.UuidType())
     vip_subnet_id = wtypes.wsattr(wtypes.UuidType())
     vip_network_id = wtypes.wsattr(wtypes.UuidType())
-    listeners = wtypes.wsattr([MinimalListener])
-    # TODO(ankur-gupta-f): add pools once that has been merged
+    listeners = wtypes.wsattr([types.IdOnlyType])
+    pools = wtypes.wsattr([types.IdOnlyType])
+    provider = wtypes.wsattr(wtypes.StringType())
+    flavor = wtypes.wsattr(wtypes.StringType())
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -57,18 +56,45 @@ class LoadBalancerResponse(BaseLoadBalancerType):
             result.vip_port_id = data_model.vip.port_id
             result.vip_address = data_model.vip.ip_address
             result.vip_network_id = data_model.vip.network_id
+
+        if cls._full_response():
+            listener_model = listener.ListenerFullResponse
+            pool_model = pool.PoolFullResponse
+        else:
+            listener_model = types.IdOnlyType
+            pool_model = types.IdOnlyType
         result.listeners = [
-            MinimalListener.from_data_model(i) for i in data_model.listeners]
+            listener_model.from_data_model(i) for i in data_model.listeners]
+        result.pools = [
+            pool_model.from_data_model(i) for i in data_model.pools]
+
         if not result.description:
             result.description = ""
         if not result.name:
             result.name = ""
+        if not result.flavor:
+            result.flavor = ""
+        if not result.provider:
+            result.provider = "octavia"
 
         return result
 
 
+class LoadBalancerFullResponse(LoadBalancerResponse):
+    @classmethod
+    def _full_response(cls):
+        return True
+
+    listeners = wtypes.wsattr([listener.ListenerFullResponse])
+    pools = wtypes.wsattr([pool.PoolFullResponse])
+
+
 class LoadBalancerRootResponse(types.BaseType):
     loadbalancer = wtypes.wsattr(LoadBalancerResponse)
+
+
+class LoadBalancerFullRootResponse(LoadBalancerRootResponse):
+    loadbalancer = wtypes.wsattr(LoadBalancerFullResponse)
 
 
 class LoadBalancersRootResponse(types.BaseType):
@@ -86,7 +112,10 @@ class LoadBalancerPOST(BaseLoadBalancerType):
     vip_subnet_id = wtypes.wsattr(wtypes.UuidType())
     vip_network_id = wtypes.wsattr(wtypes.UuidType())
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
-    listeners = wtypes.wsattr([listener.ListenerPOST], default=[])
+    listeners = wtypes.wsattr([listener.ListenerSingleCreate], default=[])
+    pools = wtypes.wsattr([pool.PoolSingleCreate], default=[])
+    provider = wtypes.wsattr(wtypes.StringType(max_length=255))
+    flavor = wtypes.wsattr(wtypes.StringType(max_length=255))
 
 
 class LoadBalancerRootPOST(types.BaseType):

@@ -22,8 +22,8 @@ import pecan
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
-from octavia.api.v1.controllers import health_monitor
 from octavia.api.v2.controllers import base
+from octavia.api.v2.controllers import health_monitor
 from octavia.api.v2.controllers import member
 from octavia.api.v2.types import pool as pool_types
 from octavia.common import constants
@@ -194,6 +194,44 @@ class PoolsController(base.BaseController):
 
         return self._send_pool_to_handler(context.session, db_pool,
                                           listener_id=listener_id)
+
+    def _graph_create(self, session, lock_session, pool_dict):
+        load_balancer_id = pool_dict['load_balancer_id']
+        pool_dict = db_prepare.create_pool(
+            pool_dict, load_balancer_id)
+        members = pool_dict.pop('members', []) or []
+        hm = pool_dict.pop('health_monitor', None)
+        db_pool = self._validate_create_pool(
+            lock_session, pool_dict)
+
+        # Check quotas for healthmonitors
+        if hm and self.repositories.check_quota_met(
+                session, lock_session, data_models.HealthMonitor,
+                db_pool.project_id):
+            raise exceptions.QuotaException
+
+        # Now possibly create a healthmonitor
+        new_hm = None
+        if hm:
+            hm['pool_id'] = db_pool.id
+            hm['project_id'] = db_pool.project_id
+            new_hm = health_monitor.HealthMonitorController()._graph_create(
+                lock_session, hm)
+
+        # Now check quotas for members
+        if members and self.repositories.check_quota_met(
+                session, lock_session, data_models.Member,
+                db_pool.project_id, count=len(members)):
+            raise exceptions.QuotaException
+
+        # Now create members
+        new_members = []
+        for m in members:
+            m['project_id'] = db_pool.project_id
+            new_members.append(
+                member.MembersController(db_pool.id)._graph_create(
+                    lock_session, m))
+        return db_pool, new_hm, new_members
 
     @wsme_pecan.wsexpose(pool_types.PoolRootResponse, wtypes.text,
                          body=pool_types.PoolRootPut, status_code=200)

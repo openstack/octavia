@@ -18,6 +18,7 @@ from oslo_utils import uuidutils
 
 from octavia.common import constants
 import octavia.common.context
+from octavia.common import data_models
 from octavia.tests.functional.api.v2 import base
 
 import testtools
@@ -368,8 +369,7 @@ class TestPool(base.BaseAPITest):
             pool_op_status=constants.OFFLINE)
 
     def test_create_over_quota(self):
-        self.check_quota_met_true_mock.start()
-        self.addCleanup(self.check_quota_met_true_mock.stop)
+        self.start_quota_mock(data_models.Pool)
         lb_pool = {
             'loadbalancer_id': self.lb_id,
             'protocol': constants.PROTOCOL_HTTP,

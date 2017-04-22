@@ -85,6 +85,11 @@ class L7RuleValidation(APIException):
     code = 400
 
 
+class SingleCreateDetailsMissing(APIException):
+    msg = _("Missing details for %(type)s object: %(name)")
+    code = 400
+
+
 class InvalidHMACException(OctaviaException):
     message = _("HMAC hashes didn't match")
 

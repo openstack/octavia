@@ -16,10 +16,10 @@ import copy
 
 import mock
 from oslo_utils import uuidutils
-import testtools
 
 from octavia.common import constants
 import octavia.common.context
+from octavia.common import data_models
 from octavia.network import base as network_base
 from octavia.network import data_models as network_models
 from octavia.tests.functional.api.v2 import base
@@ -361,6 +361,14 @@ class TestLoadBalancer(base.BaseAPITest):
         path = self.LB_PATH.format(lb_id='SEAN-CONNERY')
         self.get(path, status=404)
 
+    def test_create_over_quota(self):
+        self.start_quota_mock(data_models.LoadBalancer)
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id}
+        body = self._build_body(lb_json)
+        self.post(self.LBS_PATH, body, status=403)
+
     def test_update(self):
         project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
@@ -568,18 +576,29 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         observed_graph_copy = copy.deepcopy(observed_graph)
         del observed_graph_copy['created_at']
         del observed_graph_copy['updated_at']
-        obs_lb_id = observed_graph_copy.pop('id')
 
+        obs_lb_id = observed_graph_copy.pop('id')
         self.assertTrue(uuidutils.is_uuid_like(obs_lb_id))
+
         expected_listeners = expected_graph.pop('listeners', [])
         observed_listeners = observed_graph_copy.pop('listeners', [])
+        expected_pools = expected_graph.pop('pools', [])
+        observed_pools = observed_graph_copy.pop('pools', [])
         self.assertEqual(expected_graph, observed_graph_copy)
+
+        self.assertEqual(len(expected_pools), len(observed_pools))
+
+        self.assertEqual(len(expected_listeners), len(observed_listeners))
         for observed_listener in observed_listeners:
             del observed_listener['created_at']
             del observed_listener['updated_at']
 
             self.assertTrue(uuidutils.is_uuid_like(
                 observed_listener.pop('id')))
+            if observed_listener.get('default_pool_id'):
+                self.assertTrue(uuidutils.is_uuid_like(
+                    observed_listener.pop('default_pool_id')))
+
             default_pool = observed_listener.get('default_pool')
             if default_pool:
                 observed_listener.pop('default_pool_id')
@@ -601,50 +620,50 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             o_l7policies = observed_listener.get('l7policies')
             if o_l7policies:
                 for o_l7policy in o_l7policies:
-                    if o_l7policy.get('redirect_pool'):
-                        r_pool = o_l7policy.get('redirect_pool')
-                        self.assertTrue(r_pool.get('id'))
-                        r_pool.pop('id')
-                        r_pool.pop('created_at')
-                        r_pool.pop('updated_at')
-                        self.assertTrue(o_l7policy.get('redirect_pool_id'))
-                        o_l7policy.pop('redirect_pool_id')
-                        if r_pool.get('members'):
-                            for r_member in r_pool.get('members'):
-                                self.assertTrue(r_member.get('id'))
-                                r_member.pop('id')
-                                r_member.pop('created_at')
-                                r_member.pop('updated_at')
-                    self.assertTrue(o_l7policy.get('id'))
-                    o_l7policy.pop('id')
-                    l7rules = o_l7policy.get('l7rules')
+                    o_l7policy.pop('created_at')
+                    o_l7policy.pop('updated_at')
+                    if o_l7policy.get('redirect_pool_id'):
+                        r_pool_id = o_l7policy.pop('redirect_pool_id')
+                        self.assertTrue(uuidutils.is_uuid_like(r_pool_id))
+                    o_l7policy_id = o_l7policy.pop('id')
+                    self.assertTrue(uuidutils.is_uuid_like(o_l7policy_id))
+                    o_l7policy_l_id = o_l7policy.pop('listener_id')
+                    self.assertTrue(uuidutils.is_uuid_like(o_l7policy_l_id))
+                    l7rules = o_l7policy.get('rules') or []
                     for l7rule in l7rules:
-                        self.assertTrue(l7rule.get('id'))
-                        l7rule.pop('id')
+                        l7rule.pop('created_at')
+                        l7rule.pop('updated_at')
+                        self.assertTrue(l7rule.pop('id'))
             self.assertIn(observed_listener, expected_listeners)
 
-    def _get_lb_bodies(self, create_listeners, expected_listeners):
+    def _get_lb_bodies(self, create_listeners, expected_listeners,
+                       create_pools=None):
         create_lb = {
             'name': 'lb1',
             'project_id': self._project_id,
-            'vip_subnet_id': None,
-            'listeners': create_listeners
+            'vip_subnet_id': uuidutils.generate_uuid(),
+            'listeners': create_listeners,
+            'pools': create_pools or []
         }
         expected_lb = {
-            'description': None,
-            'enabled': True,
+            'description': '',
+            'admin_state_up': True,
             'provisioning_status': constants.PENDING_CREATE,
             'operating_status': constants.OFFLINE,
-            'vip_subnet_id': None,
             'vip_address': None,
+            'vip_network_id': None,
+            'vip_port_id': None,
+            'flavor': '',
+            'provider': 'octavia'
         }
         expected_lb.update(create_lb)
         expected_lb['listeners'] = expected_listeners
+        expected_lb['pools'] = create_pools or []
         return create_lb, expected_lb
 
     def _get_listener_bodies(self, name='listener1', protocol_port=80,
-                             create_default_pool=None,
-                             expected_default_pool=None,
+                             create_default_pool_name=None,
+                             create_default_pool_id=None,
                              create_l7policies=None,
                              expected_l7policies=None,
                              create_sni_containers=None,
@@ -652,36 +671,39 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         create_listener = {
             'name': name,
             'protocol_port': protocol_port,
-            'protocol': constants.PROTOCOL_HTTP,
-            'project_id': self._project_id
+            'protocol': constants.PROTOCOL_HTTP
         }
         expected_listener = {
-            'description': None,
-            'tls_certificate_id': None,
-            'sni_containers': [],
-            'connection_limit': None,
-            'enabled': True,
+            'description': '',
+            'default_tls_container_ref': None,
+            'sni_container_refs': [],
+            'connection_limit': -1,
+            'admin_state_up': True,
             'provisioning_status': constants.PENDING_CREATE,
             'operating_status': constants.OFFLINE,
-            'insert_headers': {}
+            'insert_headers': {},
+            'project_id': self._project_id
         }
         if create_sni_containers:
-            create_listener['sni_containers'] = create_sni_containers
+            create_listener['sni_container_refs'] = create_sni_containers
         expected_listener.update(create_listener)
-        if create_default_pool:
-            pool = create_default_pool
+        if create_default_pool_name:
+            pool = {'name': create_default_pool_name}
             create_listener['default_pool'] = pool
-            if pool.get('id'):
-                create_listener['default_pool_id'] = pool['id']
+        elif create_default_pool_id:
+            create_listener['default_pool_id'] = create_default_pool_id
+            expected_listener['default_pool_id'] = create_default_pool_id
+        else:
+            expected_listener['default_pool_id'] = None
         if create_l7policies:
             l7policies = create_l7policies
             create_listener['l7policies'] = l7policies
-        if expected_default_pool:
-            expected_listener['default_pool'] = expected_default_pool
         if expected_sni_containers:
-            expected_listener['sni_containers'] = expected_sni_containers
+            expected_listener['sni_container_refs'] = expected_sni_containers
         if expected_l7policies:
             expected_listener['l7policies'] = expected_l7policies
+        else:
+            expected_listener['l7policies'] = []
         return create_listener, expected_listener
 
     def _get_pool_bodies(self, name='pool1', create_members=None,
@@ -692,7 +714,6 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'name': name,
             'protocol': protocol,
             'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
-            'project_id': self._project_id
         }
         if session_persistence:
             create_pool['session_persistence'] = {
@@ -707,7 +728,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'session_persistence': None,
             'members': [],
             'enabled': True,
-            'operating_status': constants.OFFLINE
+            'provisioning_status': constants.PENDING_CREATE,
+            'operating_status': constants.OFFLINE,
+            'project_id': self._project_id
         }
         expected_pool.update(create_pool)
         if expected_members:
@@ -718,15 +741,15 @@ class TestLoadBalancerGraph(base.BaseAPITest):
 
     def _get_member_bodies(self, protocol_port=80):
         create_member = {
-            'ip_address': '10.0.0.1',
-            'protocol_port': protocol_port,
-            'project_id': self._project_id
+            'address': '10.0.0.1',
+            'protocol_port': protocol_port
         }
         expected_member = {
             'weight': 1,
             'enabled': True,
             'subnet_id': None,
-            'operating_status': constants.OFFLINE
+            'operating_status': constants.OFFLINE,
+            'project_id': self._project_id
         }
         expected_member.update(create_member)
         return create_member, expected_member
@@ -736,15 +759,17 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'type': constants.HEALTH_MONITOR_PING,
             'delay': 1,
             'timeout': 1,
-            'fall_threshold': 1,
-            'rise_threshold': 1,
-            'project_id': self._project_id
+            'max_retries_down': 1,
+            'max_retries': 1
         }
         expected_hm = {
             'http_method': 'GET',
             'url_path': '/',
             'expected_codes': '200',
-            'enabled': True
+            'admin_state_up': True,
+            'project_id': self._project_id,
+            'provisioning_status': constants.PENDING_CREATE,
+            'operating_status': constants.OFFLINE
         }
         expected_hm.update(create_hm)
         return create_hm, expected_hm
@@ -758,41 +783,44 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         expected_sni_containers.sort()
         return create_sni_containers, expected_sni_containers
 
-    def _get_l7policies_bodies(self, create_pool=None, expected_pool=None,
+    def _get_l7policies_bodies(self,
+                               create_pool_name=None, create_pool_id=None,
                                create_l7rules=None, expected_l7rules=None):
         create_l7policies = []
-        if create_pool:
+        if create_pool_name:
             create_l7policy = {
                 'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
-                'redirect_pool': create_pool,
+                'redirect_pool': {'name': create_pool_name},
                 'position': 1,
-                'enabled': False
+                'admin_state_up': False
             }
         else:
             create_l7policy = {
                 'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
                 'redirect_url': 'http://127.0.0.1/',
                 'position': 1,
-                'enabled': False
+                'admin_state_up': False
             }
         create_l7policies.append(create_l7policy)
         expected_l7policy = {
-            'name': None,
-            'description': None,
+            'name': '',
+            'description': '',
             'redirect_url': None,
-            'l7rules': []
+            'rules': [],
+            'project_id': self._project_id,
+            'provisioning_status': constants.PENDING_CREATE,
+            'operating_status': constants.OFFLINE
         }
         expected_l7policy.update(create_l7policy)
+        expected_l7policy.pop('redirect_pool', None)
         expected_l7policies = []
-        if expected_pool:
-            if create_pool.get('id'):
-                expected_l7policy['redirect_pool_id'] = create_pool.get('id')
-            expected_l7policy['redirect_pool'] = expected_pool
+        if not create_pool_name:
+            expected_l7policy['redirect_pool_id'] = create_pool_id
         expected_l7policies.append(expected_l7policy)
         if expected_l7rules:
-            expected_l7policies[0]['l7rules'] = expected_l7rules
+            expected_l7policies[0]['rules'] = expected_l7rules
         if create_l7rules:
-            create_l7policies[0]['l7rules'] = create_l7rules
+            create_l7policies[0]['rules'] = create_l7rules
         return create_l7policies, expected_l7policies
 
     def _get_l7rules_bodies(self, value="localhost"):
@@ -800,15 +828,18 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'type': constants.L7RULE_TYPE_HOST_NAME,
             'compare_type': constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
             'value': value,
-            'invert': False
+            'invert': False,
+            'admin_state_up': True
         }]
         expected_l7rules = [{
-            'key': None
+            'key': None,
+            'project_id': self._project_id,
+            'provisioning_status': constants.PENDING_CREATE,
+            'operating_status': constants.OFFLINE
         }]
         expected_l7rules[0].update(create_l7rules[0])
         return create_l7rules, expected_l7rules
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_with_one_listener(self):
         create_listener, expected_listener = self._get_listener_bodies()
         create_lb, expected_lb = self._get_lb_bodies([create_listener],
@@ -818,151 +849,139 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_with_many_listeners(self):
         create_listener1, expected_listener1 = self._get_listener_bodies()
         create_listener2, expected_listener2 = self._get_listener_bodies(
-            name='listener2', protocol_port=81
-        )
+            name='listener2', protocol_port=81)
         create_lb, expected_lb = self._get_lb_bodies(
             [create_listener1, create_listener2],
             [expected_listener1, expected_listener2])
-        response = self.post(self.LBS_PATH, create_lb)
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_with_one_listener_one_pool(self):
         create_pool, expected_pool = self._get_pool_bodies()
         create_listener, expected_listener = self._get_listener_bodies(
-            create_default_pool=create_pool,
-            expected_default_pool=expected_pool
-        )
-        create_lb, expected_lb = self._get_lb_bodies([create_listener],
-                                                     [expected_listener])
-        response = self.post(self.LBS_PATH, create_lb)
+            create_default_pool_name=create_pool['name'])
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_with_many_listeners_one_pool(self):
         create_pool1, expected_pool1 = self._get_pool_bodies()
         create_pool2, expected_pool2 = self._get_pool_bodies(name='pool2')
         create_listener1, expected_listener1 = self._get_listener_bodies(
-            create_default_pool=create_pool1,
-            expected_default_pool=expected_pool1
-        )
+            create_default_pool_name=create_pool1['name'])
         create_listener2, expected_listener2 = self._get_listener_bodies(
-            create_default_pool=create_pool2,
-            expected_default_pool=expected_pool2,
-            name='listener2', protocol_port=81
-        )
+            create_default_pool_name=create_pool2['name'],
+            name='listener2', protocol_port=81)
         create_lb, expected_lb = self._get_lb_bodies(
-            [create_listener1, create_listener2],
-            [expected_listener1, expected_listener2])
-        response = self.post(self.LBS_PATH, create_lb)
+            create_listeners=[create_listener1, create_listener2],
+            expected_listeners=[expected_listener1, expected_listener2],
+            create_pools=[create_pool1, create_pool2])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_with_one_listener_one_member(self):
         create_member, expected_member = self._get_member_bodies()
         create_pool, expected_pool = self._get_pool_bodies(
             create_members=[create_member],
             expected_members=[expected_member])
         create_listener, expected_listener = self._get_listener_bodies(
-            create_default_pool=create_pool,
-            expected_default_pool=expected_pool)
-        create_lb, expected_lb = self._get_lb_bodies([create_listener],
-                                                     [expected_listener])
-        response = self.post(self.LBS_PATH, create_lb)
+            create_default_pool_name=create_pool['name'])
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_with_one_listener_one_hm(self):
         create_hm, expected_hm = self._get_hm_bodies()
         create_pool, expected_pool = self._get_pool_bodies(
             create_hm=create_hm,
             expected_hm=expected_hm)
         create_listener, expected_listener = self._get_listener_bodies(
-            create_default_pool=create_pool,
-            expected_default_pool=expected_pool)
-        create_lb, expected_lb = self._get_lb_bodies([create_listener],
-                                                     [expected_listener])
-        response = self.post(self.LBS_PATH, create_lb)
+            create_default_pool_name=create_pool['name'])
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_with_one_listener_sni_containers(self):
         create_sni_containers, expected_sni_containers = (
             self._get_sni_container_bodies())
         create_listener, expected_listener = self._get_listener_bodies(
             create_sni_containers=create_sni_containers,
             expected_sni_containers=expected_sni_containers)
-        create_lb, expected_lb = self._get_lb_bodies([create_listener],
-                                                     [expected_listener])
-        response = self.post(self.LBS_PATH, create_lb)
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_with_l7policy_redirect_pool_no_rule(self):
         create_pool, expected_pool = self._get_pool_bodies(create_members=[],
                                                            expected_members=[])
         create_l7policies, expected_l7policies = self._get_l7policies_bodies(
-            create_pool=create_pool, expected_pool=expected_pool)
+            create_pool_name=create_pool['name'])
         create_listener, expected_listener = self._get_listener_bodies(
             create_l7policies=create_l7policies,
             expected_l7policies=expected_l7policies)
-        create_lb, expected_lb = self._get_lb_bodies([create_listener],
-                                                     [expected_listener])
-        response = self.post(self.LBS_PATH, create_lb)
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_with_l7policy_redirect_pool_one_rule(self):
         create_pool, expected_pool = self._get_pool_bodies(create_members=[],
                                                            expected_members=[])
         create_l7rules, expected_l7rules = self._get_l7rules_bodies()
         create_l7policies, expected_l7policies = self._get_l7policies_bodies(
-            create_pool=create_pool, expected_pool=expected_pool,
-            create_l7rules=create_l7rules, expected_l7rules=expected_l7rules)
+            create_pool_name=create_pool['name'],
+            create_l7rules=create_l7rules,
+            expected_l7rules=expected_l7rules)
         create_listener, expected_listener = self._get_listener_bodies(
             create_l7policies=create_l7policies,
             expected_l7policies=expected_l7policies)
-        create_lb, expected_lb = self._get_lb_bodies([create_listener],
-                                                     [expected_listener])
-        response = self.post(self.LBS_PATH, create_lb)
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    @testtools.skip('Skip until complete v2 merge')
-    def test_with_l7policy_redirect_pool_bad_rule(self):
-        create_pool, expected_pool = self._get_pool_bodies(create_members=[],
-                                                           expected_members=[])
-        create_l7rules, expected_l7rules = self._get_l7rules_bodies(
-            value="local host")
-        create_l7policies, expected_l7policies = self._get_l7policies_bodies(
-            create_pool=create_pool, expected_pool=expected_pool,
-            create_l7rules=create_l7rules, expected_l7rules=expected_l7rules)
-        create_listener, expected_listener = self._get_listener_bodies(
-            create_l7policies=create_l7policies,
-            expected_l7policies=expected_l7policies)
-        create_lb, expected_lb = self._get_lb_bodies([create_listener],
-                                                     [expected_listener])
-        self.post(self.LBS_PATH, create_lb)
-
-    @testtools.skip('Skip until complete v2 merge')
     def test_with_l7policies_one_redirect_pool_one_rule(self):
         create_pool, expected_pool = self._get_pool_bodies(create_members=[],
                                                            expected_members=[])
         create_l7rules, expected_l7rules = self._get_l7rules_bodies()
         create_l7policies, expected_l7policies = self._get_l7policies_bodies(
-            create_pool=create_pool, expected_pool=expected_pool,
-            create_l7rules=create_l7rules, expected_l7rules=expected_l7rules)
+            create_pool_name=create_pool['name'],
+            create_l7rules=create_l7rules,
+            expected_l7rules=expected_l7rules)
         c_l7policies_url, e_l7policies_url = self._get_l7policies_bodies()
         for policy in c_l7policies_url:
             policy['position'] = 2
@@ -973,20 +992,22 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         create_listener, expected_listener = self._get_listener_bodies(
             create_l7policies=create_l7policies,
             expected_l7policies=expected_l7policies)
-        create_lb, expected_lb = self._get_lb_bodies([create_listener],
-                                                     [expected_listener])
-        response = self.post(self.LBS_PATH, create_lb)
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_with_l7policies_redirect_pools_no_rules(self):
         create_pool, expected_pool = self._get_pool_bodies()
         create_l7policies, expected_l7policies = self._get_l7policies_bodies(
-            create_pool=create_pool, expected_pool=expected_pool)
-        r_create_pool, r_expected_pool = self._get_pool_bodies()
+            create_pool_name=create_pool['name'])
+        r_create_pool, r_expected_pool = self._get_pool_bodies(name='pool2')
         c_l7policies_url, e_l7policies_url = self._get_l7policies_bodies(
-            create_pool=r_create_pool, expected_pool=r_expected_pool)
+            create_pool_name=r_create_pool['name'])
         for policy in c_l7policies_url:
             policy['position'] = 2
             create_l7policies.append(policy)
@@ -996,14 +1017,37 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         create_listener, expected_listener = self._get_listener_bodies(
             create_l7policies=create_l7policies,
             expected_l7policies=expected_l7policies)
-        create_lb, expected_lb = self._get_lb_bodies([create_listener],
-                                                     [expected_listener])
-        response = self.post(self.LBS_PATH, create_lb)
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool, r_create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    @testtools.skip('Skip until complete v2 merge')
-    def test_with_one_of_everything(self):
+    def test_with_l7policy_redirect_pool_bad_rule(self):
+        create_pool, expected_pool = self._get_pool_bodies(create_members=[],
+                                                           expected_members=[])
+        create_l7rules, expected_l7rules = self._get_l7rules_bodies(
+            value="local host")
+        create_l7policies, expected_l7policies = self._get_l7policies_bodies(
+            create_pool_name=create_pool['name'],
+            create_l7rules=create_l7rules,
+            expected_l7rules=expected_l7rules)
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_l7policies=create_l7policies,
+            expected_l7policies=expected_l7policies)
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body, status=400)
+        self.assertIn('L7Rule: Invalid characters',
+                      response.json.get('faultstring'))
+
+    def _test_with_one_of_everything_helper(self):
         create_member, expected_member = self._get_member_bodies()
         create_hm, expected_hm = self._get_hm_bodies()
         create_pool, expected_pool = self._get_pool_bodies(
@@ -1021,27 +1065,106 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             create_members=[r_create_member],
             expected_members=[r_expected_member])
         create_l7policies, expected_l7policies = self._get_l7policies_bodies(
-            create_pool=r_create_pool, expected_pool=r_expected_pool,
-            create_l7rules=create_l7rules, expected_l7rules=expected_l7rules)
+            create_pool_name=r_create_pool['name'],
+            create_l7rules=create_l7rules,
+            expected_l7rules=expected_l7rules)
         create_listener, expected_listener = self._get_listener_bodies(
-            create_default_pool=create_pool,
-            expected_default_pool=expected_pool,
+            create_default_pool_name=create_pool['name'],
             create_l7policies=create_l7policies,
             expected_l7policies=expected_l7policies,
             create_sni_containers=create_sni_containers,
             expected_sni_containers=expected_sni_containers)
-        create_lb, expected_lb = self._get_lb_bodies([create_listener],
-                                                     [expected_listener])
-        response = self.post(self.LBS_PATH, create_lb)
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        return body, expected_lb
+
+    def test_with_one_of_everything(self):
+        body, expected_lb = self._test_with_one_of_everything_helper()
+        response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    @testtools.skip('Skip until complete v2 merge')
     def test_db_create_failure(self):
         create_listener, expected_listener = self._get_listener_bodies()
         create_lb, _ = self._get_lb_bodies([create_listener],
                                            [expected_listener])
+        body = self._build_body(create_lb)
         with mock.patch('octavia.db.repositories.Repositories.'
-                        'create_load_balancer_tree') as repo_mock:
+                        'create_load_balancer_and_vip') as repo_mock:
             repo_mock.side_effect = Exception('I am a DB Error')
-            self.post(self.LBS_PATH, create_lb, status=500)
+            self.post(self.LBS_PATH, body, status=500)
+
+    def test_pool_names_not_unique(self):
+        create_pool1, expected_pool1 = self._get_pool_bodies()
+        create_pool2, expected_pool2 = self._get_pool_bodies()
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_default_pool_name=create_pool1['name'])
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool1, create_pool2])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body, status=400)
+        self.assertIn("Pool names must be unique",
+                      response.json.get('faultstring'))
+
+    def test_pool_names_must_have_specs(self):
+        create_pool, expected_pool = self._get_pool_bodies()
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_default_pool_name="my_nonexistent_pool")
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body, status=400)
+        self.assertIn("referenced but no full definition",
+                      response.json.get('faultstring'))
+
+    def test_pool_mandatory_attributes(self):
+        create_pool, expected_pool = self._get_pool_bodies()
+        create_pool.pop('protocol')
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_default_pool_name=create_pool['name'])
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body, status=400)
+        self.assertIn("missing required attribute: protocol",
+                      response.json.get('faultstring'))
+
+    def test_create_over_quota_lb(self):
+        body, _ = self._test_with_one_of_everything_helper()
+        self.start_quota_mock(data_models.LoadBalancer)
+        self.post(self.LBS_PATH, body, status=403)
+
+    def test_create_over_quota_pools(self):
+        body, _ = self._test_with_one_of_everything_helper()
+        self.start_quota_mock(data_models.Pool)
+        self.post(self.LBS_PATH, body, status=403)
+
+    def test_create_over_quota_listeners(self):
+        body, _ = self._test_with_one_of_everything_helper()
+        self.start_quota_mock(data_models.Listener)
+        self.post(self.LBS_PATH, body, status=403)
+
+    def test_create_over_quota_members(self):
+        body, _ = self._test_with_one_of_everything_helper()
+        self.start_quota_mock(data_models.Member)
+        self.post(self.LBS_PATH, body, status=403)
+
+    def test_create_over_quota_hms(self):
+        body, _ = self._test_with_one_of_everything_helper()
+        self.start_quota_mock(data_models.HealthMonitor)
+        self.post(self.LBS_PATH, body, status=403)
+
+    def test_create_over_quota_sanity_check(self):
+        # This one should create, as we don't check quotas on L7Policies
+        body, _ = self._test_with_one_of_everything_helper()
+        self.start_quota_mock(data_models.L7Policy)
+        self.post(self.LBS_PATH, body)

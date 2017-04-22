@@ -24,10 +24,6 @@ class BaseHealthMonitorType(types.BaseType):
                           'max_retries_down': 'fall_threshold'}
 
 
-class MinimalPool(types.BaseType):
-    id = wtypes.wsattr(wtypes.UuidType())
-
-
 class HealthMonitorResponse(BaseHealthMonitorType):
     """Defines which attributes are to be shown on any response."""
     id = wtypes.wsattr(wtypes.UuidType())
@@ -42,7 +38,7 @@ class HealthMonitorResponse(BaseHealthMonitorType):
     expected_codes = wtypes.wsattr(wtypes.text)
     admin_state_up = wtypes.wsattr(bool)
     project_id = wtypes.wsattr(wtypes.StringType())
-    pools = wtypes.wsattr([MinimalPool])
+    pools = wtypes.wsattr([types.IdOnlyType])
     provisioning_status = wtypes.wsattr(wtypes.StringType())
     operating_status = wtypes.wsattr(wtypes.StringType())
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
@@ -52,10 +48,19 @@ class HealthMonitorResponse(BaseHealthMonitorType):
     def from_data_model(cls, data_model, children=False):
         healthmonitor = super(HealthMonitorResponse, cls).from_data_model(
             data_model, children=children)
-        healthmonitor.pools = [
-            MinimalPool.from_data_model(data_model.pool)
-        ]
+
+        if cls._full_response():
+            del healthmonitor.pools
+        else:
+            healthmonitor.pools = [
+                types.IdOnlyType.from_data_model(data_model.pool)]
         return healthmonitor
+
+
+class HealthMonitorFullResponse(HealthMonitorResponse):
+    @classmethod
+    def _full_response(cls):
+        return True
 
 
 class HealthMonitorRootResponse(types.BaseType):
@@ -121,3 +126,30 @@ class HealthMonitorPUT(BaseHealthMonitorType):
 
 class HealthMonitorRootPUT(types.BaseType):
     healthmonitor = wtypes.wsattr(HealthMonitorPUT)
+
+
+class HealthMonitorSingleCreate(BaseHealthMonitorType):
+    """Defines mandatory and optional attributes of a POST request."""
+    name = wtypes.wsattr(wtypes.StringType(max_length=255))
+    type = wtypes.wsattr(
+        wtypes.Enum(str, *constants.SUPPORTED_HEALTH_MONITOR_TYPES),
+        mandatory=True)
+    delay = wtypes.wsattr(wtypes.IntegerType(minimum=0), mandatory=True)
+    timeout = wtypes.wsattr(wtypes.IntegerType(minimum=0), mandatory=True)
+    max_retries_down = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_HM_RETRIES,
+                           maximum=constants.MAX_HM_RETRIES), default=3)
+    max_retries = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_HM_RETRIES,
+                           maximum=constants.MAX_HM_RETRIES),
+        mandatory=True)
+    http_method = wtypes.wsattr(
+        wtypes.Enum(str, *constants.SUPPORTED_HEALTH_MONITOR_HTTP_METHODS),
+        default=constants.HEALTH_MONITOR_HTTP_DEFAULT_METHOD)
+    url_path = wtypes.wsattr(
+        types.URLType(require_scheme=False),
+        default=constants.HEALTH_MONITOR_DEFAULT_URL_PATH)
+    expected_codes = wtypes.wsattr(
+        wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'),
+        default=constants.HEALTH_MONITOR_DEFAULT_EXPECTED_CODES)
+    admin_state_up = wtypes.wsattr(bool, default=True)

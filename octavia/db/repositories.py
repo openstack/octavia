@@ -262,7 +262,8 @@ class Repositories(object):
                                  provisioning_status=lb_prov_status)
         return success
 
-    def check_quota_met(self, session, lock_session, _class, project_id):
+    def check_quota_met(self, session, lock_session, _class, project_id,
+                        count=1):
         """Checks and updates object quotas.
 
         This method makes sure the project has available quota
@@ -273,6 +274,7 @@ class Repositories(object):
         :param lock_session: Locking database session (autocommit=False)
         :param _class: Data model object requesting quota
         :param project_id: Project ID requesting quota
+        :param count: Number of objects we're going to create (default=1)
         :returns: True if quota is met, False if quota was available
         """
         LOG.debug('Checking quota for project: {proj} object: {obj}'.format(
@@ -312,16 +314,16 @@ class Repositories(object):
                     lb_count = session.query(models.LoadBalancer).filter(
                         models.LoadBalancer.project_id == project_id,
                         models.LoadBalancer.provisioning_status !=
-                        consts.DELETED).count() + 1
+                        consts.DELETED).count() + count
                 else:
-                    lb_count = quotas.in_use_load_balancer + 1
+                    lb_count = quotas.in_use_load_balancer + count
                 # Decide if the quota is met
                 if lb_count <= lb_quota or lb_quota == consts.QUOTA_UNLIMITED:
                     quotas.in_use_load_balancer = lb_count
                     return False
                 else:
                     return True
-            if _class == data_models.Listener:
+            elif _class == data_models.Listener:
                 # Decide which quota to use
                 if quotas.listener is None:
                     listener_quota = CONF.quotas.default_listener_quota
@@ -333,9 +335,9 @@ class Repositories(object):
                     listener_count = session.query(models.Listener).filter(
                         models.Listener.project_id == project_id,
                         models.Listener.provisioning_status !=
-                        consts.DELETED).count() + 1
+                        consts.DELETED).count() + count
                 else:
-                    listener_count = quotas.in_use_listener + 1
+                    listener_count = quotas.in_use_listener + count
                 # Decide if the quota is met
                 if (listener_count <= listener_quota or
                         listener_quota == consts.QUOTA_UNLIMITED):
@@ -343,7 +345,7 @@ class Repositories(object):
                     return False
                 else:
                     return True
-            if _class == data_models.Pool:
+            elif _class == data_models.Pool:
                 # Decide which quota to use
                 if quotas.pool is None:
                     pool_quota = CONF.quotas.default_pool_quota
@@ -355,9 +357,9 @@ class Repositories(object):
                     pool_count = session.query(models.Pool).filter(
                         models.Pool.project_id == project_id,
                         models.Pool.provisioning_status !=
-                        consts.DELETED).count() + 1
+                        consts.DELETED).count() + count
                 else:
-                    pool_count = quotas.in_use_pool + 1
+                    pool_count = quotas.in_use_pool + count
                 # Decide if the quota is met
                 if (pool_count <= pool_quota or
                         pool_quota == consts.QUOTA_UNLIMITED):
@@ -365,7 +367,7 @@ class Repositories(object):
                     return False
                 else:
                     return True
-            if _class == data_models.HealthMonitor:
+            elif _class == data_models.HealthMonitor:
                 # Decide which quota to use
                 if quotas.health_monitor is None:
                     hm_quota = CONF.quotas.default_health_monitor_quota
@@ -377,9 +379,9 @@ class Repositories(object):
                     hm_count = session.query(models.HealthMonitor).filter(
                         models.HealthMonitor.project_id == project_id,
                         models.HealthMonitor.provisioning_status !=
-                        consts.DELETED).count() + 1
+                        consts.DELETED).count() + count
                 else:
-                    hm_count = quotas.in_use_health_monitor + 1
+                    hm_count = quotas.in_use_health_monitor + count
                 # Decide if the quota is met
                 if (hm_count <= hm_quota or
                         hm_quota == consts.QUOTA_UNLIMITED):
@@ -387,7 +389,7 @@ class Repositories(object):
                     return False
                 else:
                     return True
-            if _class == data_models.Member:
+            elif _class == data_models.Member:
                 # Decide which quota to use
                 if quotas.member is None:
                     member_quota = CONF.quotas.default_member_quota
@@ -399,9 +401,9 @@ class Repositories(object):
                     member_count = session.query(models.Member).filter(
                         models.Member.project_id == project_id,
                         models.Member.provisioning_status !=
-                        consts.DELETED).count() + 1
+                        consts.DELETED).count() + count
                 else:
-                    member_count = quotas.in_use_member + 1
+                    member_count = quotas.in_use_member + count
                 # Decide if the quota is met
                 if (member_count <= member_quota or
                         member_quota == consts.QUOTA_UNLIMITED):
