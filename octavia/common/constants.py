@@ -357,6 +357,7 @@ KEEPALIVED_JINJA2_SYSVINIT = 'keepalived.sysvinit.j2'
 CHECK_SCRIPT_CONF = 'keepalived_check_script.conf.j2'
 
 PLUGGED_INTERFACES = '/var/lib/octavia/plugged_interfaces'
+HAPROXY_USER_GROUP_CFG = '/var/lib/octavia/haproxy-default-user-group.conf'
 AMPHORA_NAMESPACE = 'amphora-haproxy'
 
 # List of HTTP headers which are supported for insertion

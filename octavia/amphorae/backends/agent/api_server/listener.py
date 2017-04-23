@@ -13,6 +13,7 @@
 # under the License.
 
 import hashlib
+import io
 import json
 import logging
 import os
@@ -23,6 +24,7 @@ import subprocess
 
 import flask
 import jinja2
+from oslo_config import cfg
 import six
 from werkzeug import exceptions
 
@@ -35,6 +37,8 @@ from octavia.i18n import _LE
 
 LOG = logging.getLogger(__name__)
 BUFFER = 100
+
+CONF = cfg.CONF
 
 UPSTART_CONF = 'upstart.conf.j2'
 SYSVINIT_CONF = 'sysvinit.conf.j2'
@@ -107,15 +111,27 @@ class Listener(object):
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         # mode 00600
         mode = stat.S_IRUSR | stat.S_IWUSR
-        with os.fdopen(os.open(name, flags, mode), 'wb') as file:
+        b = stream.read(BUFFER)
+        s_io = io.StringIO()
+        while b:
+            # Write haproxy configuration to StringIO
+            s_io.write(b.decode('utf8'))
             b = stream.read(BUFFER)
-            while (b):
-                file.write(b)
-                b = stream.read(BUFFER)
+
+        # Since haproxy user_group is now auto-detected by the amphora agent,
+        # remove it from haproxy configuration in case it was provided
+        # by an older Octavia controller. This is needed in order to prevent
+        # a duplicate entry for 'group' in haproxy configuration, which will
+        # result an error when haproxy starts.
+        new_config = re.sub(r"\s+group\s.+", "", s_io.getvalue())
+
+        with os.fdopen(os.open(name, flags, mode), 'w') as file:
+            file.write(new_config)
 
         # use haproxy to check the config
-        cmd = "haproxy -c -L {peer} -f {config_file}".format(config_file=name,
-                                                             peer=peer_name)
+        cmd = "haproxy -c -L {peer} -f {config_file} -f {haproxy_ug}".format(
+            config_file=name, peer=peer_name,
+            haproxy_ug=consts.HAPROXY_USER_GROUP_CFG)
 
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
@@ -172,6 +188,7 @@ class Listener(object):
                     haproxy_pid=util.pid_path(listener_id),
                     haproxy_cmd=util.CONF.haproxy_amphora.haproxy_cmd,
                     haproxy_cfg=util.config_path(listener_id),
+                    haproxy_user_group_cfg=consts.HAPROXY_USER_GROUP_CFG,
                     respawn_count=util.CONF.haproxy_amphora.respawn_count,
                     respawn_interval=(util.CONF.haproxy_amphora.
                                       respawn_interval),

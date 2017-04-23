@@ -1,0 +1,7 @@
+---
+features:
+  - The amphora haproxy user_group setting is now automatically detected for
+    Ubuntu, CentOS, Fedora, or RHEL based amphora.
+deprecations:
+  - haproxy user_group is no longer being used. it is now auto-detected for
+    Ubuntu, CentOS, Fedora and RHEL based amphora images.

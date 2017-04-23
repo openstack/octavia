@@ -14,5 +14,5 @@ ln -s /bin/amphora-agent /usr/local/bin/amphora-agent || true
 mkdir /etc/octavia
 # we assume certs, etc will come in through the config drive
 mkdir /etc/octavia/certs
-mkdir /var/lib/octavia
+mkdir -p /var/lib/octavia
 

@@ -31,11 +31,13 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 PIDFILE={{ haproxy_pid }}
 CONFIG={{ haproxy_cfg }}
 HAPROXY={{ haproxy_cmd }}
+USER_GROUP_CONF_PATH={{ haproxy_user_group_cfg }}
+
 EXTRAOPTS=
 ENABLED=1
 
 test -x $HAPROXY || exit 0
-test -f "$CONFIG" || exit 0
+test -f "$CONFIG" -f "$USER_GROUP_CONF_PATH" || exit 0
 
 if [ -e /etc/default/haproxy ]; then
     . /etc/default/haproxy
@@ -66,7 +68,7 @@ haproxy_start()
     {%- endif %}
 
     start-stop-daemon --start --pidfile "$PIDFILE" \
-        --exec $HAPROXY -- -f "$CONFIG" -D -p "$PIDFILE" \
+        --exec $HAPROXY -- -f "$CONFIG" -f "$USER_GROUP_CONF_PATH" -D -p "$PIDFILE" \
         $EXTRAOPTS || return 2
     return 0
 }
@@ -86,7 +88,7 @@ haproxy_stop()
 
 haproxy_reload()
 {
-    $HAPROXY -f "$CONFIG" -p $PIDFILE -D $EXTRAOPTS -sf $(cat $PIDFILE) \
+    $HAPROXY -f "$CONFIG" -f "$USER_GROUP_CONF_PATH" -p $PIDFILE -D $EXTRAOPTS -sf $(cat $PIDFILE) \
         || return 2
     return 0
 }
@@ -95,7 +97,7 @@ haproxy_checkconf()
 {
     rcode=0
 
-    $HAPROXY -c -f "$CONFIG"
+    $HAPROXY -c -f "$CONFIG" -f "$USER_GROUP_CONF_PATH"
     if [ $? -ne 0 ]; then
         rcode=1
     fi

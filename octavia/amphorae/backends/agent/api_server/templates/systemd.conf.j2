@@ -7,7 +7,7 @@ Wants=syslog.service
 
 [Service]
 EnvironmentFile=-/etc/default/haproxy
-ExecStartPre=/usr/sbin/haproxy -f {{ haproxy_cfg }} -c -q
+ExecStartPre=/usr/sbin/haproxy -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }} -c -q
 # Re-add the namespace
 ExecStartPre=-/sbin/ip netns add {{ amphora_nsname }}
 # Load the system sysctl into the new namespace
@@ -23,8 +23,8 @@ ExecStartPre=-/sbin/ip netns exec {{ amphora_nsname }} ifup -a
 ExecStartPre=-/bin/awk '{system("/sbin/ip netns exec amphora-haproxy ifup " $2)}' /var/lib/octavia/plugged_interfaces
 {%- endif %}
 #
-ExecStart=/sbin/ip netns exec {{ amphora_nsname }} /usr/sbin/haproxy-systemd-wrapper -f {{ haproxy_cfg }} -p {{ haproxy_pid }} -L {{ peer_name }} $EXTRAOPTS
-ExecReload=/usr/sbin/haproxy -c -f {{ haproxy_cfg }}
+ExecStart=/sbin/ip netns exec {{ amphora_nsname }} /usr/sbin/haproxy-systemd-wrapper -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }} -p {{ haproxy_pid }} -L {{ peer_name }} $EXTRAOPTS
+ExecReload=/usr/sbin/haproxy -c -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }}
 ExecReload=/bin/kill -USR2 $MAINPID
 KillMode=mixed
 Restart=always
