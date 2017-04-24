@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import six
+
 from oslo_utils import excutils
 
 
@@ -31,8 +33,7 @@ class AmphoraDriverError(Exception):
                     super(AmphoraDriverError, self).__init__(self.message)
 
     def __unicode__(self):
-
-        return unicode(self.msg)
+        return six.text_type(self.msg)
 
     @staticmethod
     def use_fatal_exceptions():
