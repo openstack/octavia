@@ -46,6 +46,7 @@ from octavia.tests.tempest.v1.clients import listeners_client
 from octavia.tests.tempest.v1.clients import load_balancers_client
 from octavia.tests.tempest.v1.clients import members_client
 from octavia.tests.tempest.v1.clients import pools_client
+from octavia.tests.tempest.v2.clients import quotas_client
 
 config = config.CONF
 
@@ -87,6 +88,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
         self.health_monitors_client = (
             health_monitors_client.HealthMonitorsClient(
                 *self.client_args))
+        self.quotas_client = quotas_client.QuotasClient(*self.client_args)
 
         # admin network client needed for assigning octavia port to flip
         admin_manager = credentials_factory.AdminManager()
@@ -480,6 +482,36 @@ class BaseTestCase(manager.NetworkScenarioTest):
             security_groups=[self.security_group['id']])
         return lb_id
 
+    def _create_load_balancer_over_quota(self):
+        """Attempt to create a load balancer over quota.
+
+        Creates two load balancers one after the other expecting
+        the second create to exceed the configured quota.
+
+        :returns: Response body from the request
+        """
+        self.create_lb_kwargs = {
+            'vip': {'subnet_id': self.subnet['id']},
+            'project_id': self.load_balancers_client.tenant_id}
+        self.load_balancer = self.load_balancers_client.create_load_balancer(
+            **self.create_lb_kwargs)
+        lb_id = self.load_balancer['id']
+        self.addCleanup(self._cleanup_load_balancer, lb_id)
+
+        self.create_lb_kwargs = {
+            'vip': {'subnet_id': self.subnet['id']},
+            'project_id': self.load_balancers_client.tenant_id}
+        lb_client = self.load_balancers_client
+        lb_client.create_load_balancer_over_quota(
+            **self.create_lb_kwargs)
+
+        LOG.info(('Waiting for lb status on create load balancer id: {0}'
+                  .format(lb_id)))
+        self.load_balancer = self._wait_for_load_balancer_status(
+            load_balancer_id=lb_id,
+            provisioning_status='ACTIVE',
+            operating_status='ONLINE')
+
     def _wait_for_load_balancer_status(self, load_balancer_id,
                                        provisioning_status='ACTIVE',
                                        operating_status='ONLINE',
@@ -797,3 +829,77 @@ class BaseTestCase(manager.NetworkScenarioTest):
                       "output {2}, error {3}").format(cmd, proc.returncode,
                                                       stdout, stderr))
         return stdout
+
+    def _set_quotas(self, project_id=None, load_balancer=20, listener=20,
+                    pool=20, health_monitor=20, member=20):
+        if not project_id:
+            project_id = self.networks_client.tenant_id
+        body = {'quota': {
+            'load_balancer': load_balancer, 'listener': listener,
+            'pool': pool, 'health_monitor': health_monitor, 'member': member}}
+        return self.quotas_client.update_quotas(project_id, **body)
+
+    def _create_load_balancer_tree(self, ip_version=4, cleanup=True):
+        # TODO(ptoohill): remove or null out project ID when Octavia supports
+        # keystone auth and automatically populates it for us.
+        project_id = self.networks_client.tenant_id
+
+        create_members = self._create_members_kwargs(self.subnet['id'])
+        create_pool = {'project_id': project_id,
+                       'lb_algorithm': 'ROUND_ROBIN',
+                       'protocol': 'HTTP',
+                       'members': create_members}
+        create_listener = {'project_id': project_id,
+                           'protocol': 'HTTP',
+                           'protocol_port': 80,
+                           'default_pool': create_pool}
+        create_lb = {'project_id': project_id,
+                     'vip': {'subnet_id': self.subnet['id']},
+                     'listeners': [create_listener]}
+
+        # Set quotas back and finish the test
+        self._set_quotas(project_id=project_id)
+        self.load_balancer = (self.load_balancers_client
+                              .create_load_balancer_graph(create_lb))
+
+        load_balancer_id = self.load_balancer['id']
+        if cleanup:
+            self.addCleanup(self._cleanup_load_balancer, load_balancer_id)
+        LOG.info(('Waiting for lb status on create load balancer id: {0}'
+                  .format(load_balancer_id)))
+        self.load_balancer = self._wait_for_load_balancer_status(
+            load_balancer_id)
+
+        self.vip_ip = self.load_balancer['vip'].get('ip_address')
+
+        # if the ipv4 is used for lb, then fetch the right values from
+        # tempest.conf file
+        if ip_version == 4:
+            if (config.network.public_network_id and
+                    not config.network.project_networks_reachable):
+                load_balancer = self.load_balancer
+                self._assign_floating_ip_to_lb_vip(load_balancer)
+                self.vip_ip = self.floating_ips[
+                    load_balancer['id']][0]['floating_ip_address']
+
+        # Currently the ovs-agent is not enforcing security groups on the
+        # vip port - see https://bugs.launchpad.net/neutron/+bug/1163569
+        # However the linuxbridge-agent does, and it is necessary to add a
+        # security group with a rule that allows tcp port 80 to the vip port.
+        self.ports_client_admin.update_port(
+            self.load_balancer['vip']['port_id'],
+            security_groups=[self.security_group['id']])
+
+    def _create_members_kwargs(self, subnet_id=None):
+        """Create one or more Members
+
+        In case there is only one server, create both members with the same ip
+        but with different ports to listen on.
+        """
+        create_member_kwargs = []
+        for server_id, ip in six.iteritems(self.server_fixed_ips):
+            create_member_kwargs.append({'ip_address': ip,
+                                         'protocol_port': 80,
+                                         'weight': 50,
+                                         'subnet_id': subnet_id})
+        return create_member_kwargs
