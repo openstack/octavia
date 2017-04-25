@@ -23,6 +23,11 @@ export DEVSTACK_LOCAL_CONFIG+="
 enable_plugin barbican https://git.openstack.org/openstack/barbican
 "
 
+# Allow testing against diskimage-builder changes with depends-on
+export DEVSTACK_LOCAL_CONFIG+="
+LIBS_FROM_GIT+=diskimage-builder
+"
+
 # Sort out our gate args
 . $(dirname "$0")/decode_args.sh
 
