@@ -35,7 +35,7 @@ core_opts = [
               help=_("The host IP to bind to")),
     cfg.PortOpt('bind_port', default=9876,
                 help=_("The port to bind to")),
-    cfg.StrOpt('auth_strategy', default=constants.NOAUTH,
+    cfg.StrOpt('auth_strategy', default=constants.KEYSTONE,
                choices=[constants.NOAUTH,
                         constants.KEYSTONE,
                         constants.TESTING],
