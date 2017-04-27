@@ -20,6 +20,13 @@ function octavia_install {
     fi
 }
 
+function octaviaclient_install {
+    if use_library_from_git "python-octaviaclient"; then
+        git_clone_by_name "python-octaviaclient"
+        setup_dev_lib "python-octaviaclient"
+    fi
+}
+
 function install_diskimage_builder {
     if use_library_from_git "diskimage-builder"; then
         GITREPO["diskimage-builder"]=$DISKIMAGE_BUILDER_REPO_URL
@@ -457,6 +464,7 @@ if is_service_enabled $OCTAVIA; then
         # Perform installation of service source
         echo_summary "Installing octavia"
         octavia_install
+        octaviaclient_install
 
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
         # Configure after the other layer 1 and 2 services have been configured

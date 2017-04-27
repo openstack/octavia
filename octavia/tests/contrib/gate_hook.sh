@@ -15,18 +15,12 @@ function load_conf_hook {
 }
 
 # Work around a devstack issue:https://review.openstack.org/#/c/435106
-export DEVSTACK_LOCAL_CONFIG+="
-DEFAULT_IMAGE_NAME=cirros-0.3.5-x86_64-disk
-"
+export DEVSTACK_LOCAL_CONFIG+=$'\n'"DEFAULT_IMAGE_NAME=cirros-0.3.5-x86_64-disk"$'\n'
 
-export DEVSTACK_LOCAL_CONFIG+="
-enable_plugin barbican https://git.openstack.org/openstack/barbican
-"
+export DEVSTACK_LOCAL_CONFIG+=$'\n'"enable_plugin barbican https://git.openstack.org/openstack/barbican"$'\n'
 
 # Allow testing against diskimage-builder changes with depends-on
-export DEVSTACK_LOCAL_CONFIG+="
-LIBS_FROM_GIT+=diskimage-builder
-"
+export DEVSTACK_LOCAL_CONFIG+=$'\n'"LIBS_FROM_GIT+=,diskimage-builder"$'\n'
 
 # Sort out our gate args
 . $(dirname "$0")/decode_args.sh
@@ -43,38 +37,31 @@ function _setup_octavia_multinode {
     # OCTAVIA_CONTROLLER_IP_PORT_LIST are the ips inside the
     # lb-mgmt network that the amphoras reach via heartbeats
     COMMON_MULTINODE_CONFIG="
-        OCTAVIA_USE_PREGENERATED_CERTS=True
-        OCTAVIA_USE_PREGENERATED_SSH_KEY=True
-        OCTAVIA_CONTROLLER_IP_PORT_LIST=192.168.0.3:5555,192.168.0.4:5555
+OCTAVIA_USE_PREGENERATED_CERTS=True
+OCTAVIA_USE_PREGENERATED_SSH_KEY=True
+OCTAVIA_CONTROLLER_IP_PORT_LIST=192.168.0.3:5555,192.168.0.4:5555
 
-        # Embedded fix for devstack bug/1629133 , this line can be removed once
-        # that bug is fixed
-        SUBNETPOOL_PREFIX_V4=10.0.0.0/16
-    "
+# Embedded fix for devstack bug/1629133 , this line can be removed once
+# that bug is fixed
+SUBNETPOOL_PREFIX_V4=10.0.0.0/16"$'\n'
 
     export DEVSTACK_LOCAL_CONFIG+="$COMMON_MULTINODE_CONFIG
-        OCTAVIA_NODE=main
-        OCTAVIA_NODES=main:$PRIMARY_NODE_IP,second:$SUBNODE_IP
-        enable_service o-api-ha
-        OCTAVIA_MGMT_PORT_IP=192.168.0.3
-    "
+OCTAVIA_NODE=main
+OCTAVIA_NODES=main:$PRIMARY_NODE_IP,second:$SUBNODE_IP
+enable_service o-api-ha
+OCTAVIA_MGMT_PORT_IP=192.168.0.3"$'\n'
 
     export DEVSTACK_SUBNODE_CONFIG+="$COMMON_MULTINODE_CONFIG
-        OCTAVIA_NODE=second
-        enable_plugin octavia https://git.openstack.org/openstack/octavia
-        OCTAVIA_MGMT_PORT_IP=192.168.0.4
-    "
+OCTAVIA_NODE=second
+enable_plugin octavia https://git.openstack.org/openstack/octavia
+OCTAVIA_MGMT_PORT_IP=192.168.0.4"$'\n'
 }
 
 function _setup_octavia {
-    export DEVSTACK_LOCAL_CONFIG+="
-        enable_plugin octavia https://git.openstack.org/openstack/octavia
-        "
+    export DEVSTACK_LOCAL_CONFIG+=$'\n'"enable_plugin octavia https://git.openstack.org/openstack/octavia"$'\n'
     # Use infra's cached version of the file
     if [ -f /opt/stack/new/devstack/files/get-pip.py ]; then
-            export DEVSTACK_LOCAL_CONFIG+="
-        DIB_REPOLOCATION_pip_and_virtualenv=file:///opt/stack/new/devstack/files/get-pip.py
-        "
+            export DEVSTACK_LOCAL_CONFIG+=$'\n'"DIB_REPOLOCATION_pip_and_virtualenv=file:///opt/stack/new/devstack/files/get-pip.py"$'\n'
     fi
     if [ "$testenv" != "apiv1" ]; then
         ENABLED_SERVICES+="octavia,o-cw,o-hk,o-hm,o-api,"
@@ -116,9 +103,7 @@ case "$testtype" in
         ENABLED_SERVICES+="-s-account,-s-container,-s-object,-s-proxy,"
 
         if [ "$testenv" != "scenario" ]; then
-            export DEVSTACK_LOCAL_CONFIG+="
-        DISABLE_AMP_IMAGE_BUILD=True
-        "
+            export DEVSTACK_LOCAL_CONFIG+=$'\n'"DISABLE_AMP_IMAGE_BUILD=True"$'\n'
             # Not needed for API tests
             ENABLED_SERVICES+="-horizon,-ceilometer-acentral,-ceilometer-acompute,"
             ENABLED_SERVICES+="-ceilometer-alarm-evaluator,-ceilometer-alarm-notifier,"
@@ -127,9 +112,7 @@ case "$testtype" in
         fi
 
         if [ "$lbaasdriver" = "namespace" ]; then
-            export DEVSTACK_LOCAL_CONFIG+="
-        NEUTRON_LBAAS_SERVICE_PROVIDERV2=LOADBALANCERV2:Haproxy:neutron_lbaas.drivers.haproxy.plugin_driver.HaproxyOnHostPluginDriver:default
-    "
+            export DEVSTACK_LOCAL_CONFIG+=$'\n'"NEUTRON_LBAAS_SERVICE_PROVIDERV2=LOADBALANCERV2:Haproxy:neutron_lbaas.drivers.haproxy.plugin_driver.HaproxyOnHostPluginDriver:default"$'\n'
         fi
 
         if [ "$lbaasdriver" = "octavia" ]; then

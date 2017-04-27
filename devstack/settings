@@ -71,6 +71,11 @@ OCTAVIA_HEALTHMANAGER="o-hm"
 OCTAVIA_SERVICE="octavia"
 OCTAVIA_API_HAPROXY="o-api-ha"
 
+# Client settings
+GITREPO["python-octaviaclient"]=${OCTAVIACLIENT_REPO:-${GIT_BASE}/openstack/python-octaviaclient.git}
+GITBRANCH["python-octaviaclient"]=${OCTAVIACLIENT_BRANCH:-master}
+GITDIR["python-octaviaclient"]=$DEST/python-octaviaclient
+
 NEUTRON_LBAAS_DIR=$DEST/neutron-lbaas
 NEUTRON_LBAAS_CONF=$NEUTRON_CONF_DIR/neutron_lbaas.conf
 OCTAVIA_SERVICE_PROVIDER=${OCTAVIA_SERVICE_PROVIDER:-"LOADBALANCERV2:Octavia:neutron_lbaas.drivers.octavia.driver.OctaviaDriver:default"}
