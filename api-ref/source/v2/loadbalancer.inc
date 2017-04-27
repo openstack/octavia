@@ -375,7 +375,7 @@ Remove a load balancer
 Removes a load balancer and its associated configuration from the project.
 
 The API immediately purges any and all configuration data, depending on the
-configuration settings.. You cannot recover it.
+configuration settings. You cannot recover it.
 
 .. rest_status_code:: success ../http-status.yaml
 

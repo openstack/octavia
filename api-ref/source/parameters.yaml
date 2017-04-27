@@ -1,6 +1,12 @@
 ###############################################################################
 # Path fields
 ###############################################################################
+path-listener-id:
+  description: |
+    The ID of the listener to query.
+  in: path
+  required: true
+  type: string
 path-loadbalancer-id:
   description: |
     The ID of the load balancer to query.
@@ -112,11 +118,51 @@ bytes_out:
   in: body
   required: true
   type: integer
+connection_limit:
+  description: |
+    The maximum number of connections permitted for this listener. Default value is -1 which represents infinite connections.
+  in: body
+  required: true
+  type: integer
+connection_limit-optional:
+  description: |
+    The maximum number of connections permitted for this listener. Default value is -1 which represents infinite connections.
+  in: body
+  required: false
+  type: integer
 created_at:
   description: |
     The UTC date and timestamp when the resource was created.
   in: body
   required: true
+  type: string
+default_pool_id:
+  description: |
+    The ID of the pool used by the listener if no L7 policies match.
+  in: body
+  required: true
+  type: string
+default_pool_id-optional:
+  description: |
+    The ID of the pool used by the listener if no L7 policies match.
+  in: body
+  required: false
+  type: string
+default_tls_container_ref:
+  description: |
+    The URI to the `key manager service
+    <https://docs.openstack.org/developer/barbican/>`__ secrets container
+    containing the certificate and key for ``TERMINATED_TLS`` listeners.
+  in: body
+  required: true
+  type: string
+default_tls_container_ref-optional:
+  description: |
+    The URI to the `key manager service
+    <https://docs.openstack.org/developer/barbican/>`__ secrets container
+    containing the certificate and key for ``TERMINATED_TLS`` listeners.
+  in: body
+  required: false
   type: string
 description:
   description: |
@@ -154,9 +200,37 @@ id:
   in: body
   required: true
   type: string
+insert_headers:
+  description: |
+    A dictionary of optional headers to insert into the request before it is
+    sent to the backend ``member``. See :ref:`header_insertions`. Both keys
+    and values are always specified as strings.
+  in: body
+  required: true
+  type: object
+insert_headers-optional:
+  description: |
+    A dictionary of optional headers to insert into the request before it is
+    sent to the backend ``member``. See :ref:`header_insertions`. Both keys
+    and values are always specified as strings.
+  in: body
+  required: false
+  type: object
+l7policies-optional:
+  description: |
+    A list of L7 policy objects.
+  in: body
+  required: true
+  type: array
 l7policies-status-object-list:
   description: |
     A list of L7 policy status objects.
+  in: body
+  required: true
+  type: array
+l7policy-ids:
+  description: |
+    A list of L7 policy IDs.
   in: body
   required: true
   type: array
@@ -166,6 +240,18 @@ l7rules-status-object-list:
   in: body
   required: true
   type: array
+listener:
+  description: |
+    A listener object.
+  in: body
+  required: true
+  type: object
+listener-id:
+  description: |
+    The ID of the listener.
+  in: body
+  required: true
+  type: string
 listeners:
   description: |
     The associated listener IDs, if any.
@@ -196,6 +282,12 @@ loadbalancer-id:
   in: body
   required: true
   type: string
+loadbalancer-ids:
+  description: |
+    A list of load balancer IDs.
+  in: body
+  required: true
+  type: array
 loadbalancer-status:
   description: |
     A load balancer status object.
@@ -232,6 +324,12 @@ operating_status:
   in: body
   required: true
   type: string
+pool-optional:
+  description: |
+    A pool object.
+  in: body
+  required: false
+  type: object
 pools-status-list:
   description: |
     The list of pools status objects.
@@ -256,6 +354,18 @@ project_id-optional:
   in: body
   required: false
   type: string
+project_id-optional-deprecated:
+  description: |
+    The ID of the project owning this resource. (deprecated)
+  in: body
+  required: false
+  type: string
+protocol:
+  description: |
+    The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``TCP``, or ``TERMINATED_HTTPS``.
+  in: body
+  required: true
+  type: integer
 protocol_port:
   description: |
     The protocol port number for the resource.
@@ -286,6 +396,24 @@ request_errors:
   in: body
   required: true
   type: integer
+sni_container_refs:
+  description: |
+    A list of URIs to the `key manager service
+    <https://docs.openstack.org/developer/barbican/>`__ secrets containers
+    containing the certificates and keys for ``TERMINATED_TLS`` the listener
+    using Server Name Indication.
+  in: body
+  required: true
+  type: array
+sni_container_refs-optional:
+  description: |
+    A list of URIs to the `key manager service
+    <https://docs.openstack.org/developer/barbican/>`__ secrets containers
+    containing the certificates and keys for ``TERMINATED_TLS`` the listener
+    using Server Name Indication.
+  in: body
+  required: false
+  type: array
 stats:
   description: |
     A statistics object.
@@ -374,3 +502,19 @@ vip_subnet_id-optional:
   in: body
   required: false
   type: string
+x_forwarded_for:
+  description: |
+    When ``true`` a ``X-Forwarded-For`` header is inserted into the request
+    to the backend ``member`` that specifies the client (source) IP address.
+    The default is ``false``.
+  in: body
+  required: false
+  type: boolean
+x_forwarded_port:
+  description: |
+    When ``true`` a ``X-Forwarded-Port`` header is inserted into the request
+    to the backend ``member`` that specifies the listener port the request
+    was received on. The default is ``false``.
+  in: body
+  required: false
+  type: boolean

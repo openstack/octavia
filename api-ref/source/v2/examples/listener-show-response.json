@@ -1,0 +1,36 @@
+{
+    "listener": {
+        "description": "A great TLS listener",
+        "admin_state_up": true,
+        "tenant_id": "e3cd678b11784734bc366148aa37580e",
+        "project_id": "e3cd678b11784734bc366148aa37580e",
+        "protocol": "TERMINATED_HTTPS",
+        "protocol_port": 443,
+        "provisioning_status": "ACTIVE",
+        "default_tls_container_ref": "http://198.51.100.10:9311/v1/containers/a570068c-d295-4780-91d4-3046a325db51",
+        "loadbalancers": [
+            {
+                "id": "607226db-27ef-4d41-ae89-f2a800e9c2db"
+            }
+        ],
+        "insert_headers": {
+            "X-Forwarded-Port": "true",
+            "X-Forwarded-For": "true"
+        },
+        "created_at": "2017-02-28T00:42:44",
+        "updated_at": "2017-02-28T00:44:30",
+        "id": "023f2e34-7806-443b-bfae-16c324569a3d",
+        "operating_status": "ONLINE",
+        "default_pool_id": "ddb2b28f-89e9-45d3-a329-a359c3e39e4a",
+        "sni_container_refs": [
+            "http://198.51.100.10:9311/v1/containers/a570068c-d295-4780-91d4-3046a325db51",
+            "http://198.51.100.10:9311/v1/containers/aaebb31e-7761-4826-8cb4-2b829caca3ee"
+        ],
+        "l7policies": [
+            {
+                "id": "5e618272-339d-4a80-8d14-dbc093091bb1"
+            }
+        ],
+        "name": "great_tls_listener"
+    }
+}

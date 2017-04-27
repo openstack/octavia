@@ -1,0 +1,18 @@
+{
+    "listener": {
+        "description": "An updated great TLS listener",
+        "admin_state_up": true,
+        "connection_limit": 200,
+        "name": "great_updated_tls_listener",
+        "default_pool_id": "ddb2b28f-89e9-45d3-a329-a359c3e39e4a",
+        "insert_headers": {
+            "X-Forwarded-For": "false",
+            "X-Forwarded-Port": "true"
+        },
+        "default_tls_container_ref": "http://198.51.100.10:9311/v1/containers/a570068c-d295-4780-91d4-3046a325db51",
+        "sni_container_refs": [
+            "http://198.51.100.10:9311/v1/containers/a570068c-d295-4780-91d4-3046a325db51",
+            "http://198.51.100.10:9311/v1/containers/aaebb31e-7761-4826-8cb4-2b829caca3ee"
+        ]
+    }
+}
