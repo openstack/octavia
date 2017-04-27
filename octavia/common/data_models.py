@@ -316,7 +316,7 @@ class Member(BaseDataModel):
                  protocol_port=None, weight=None, enabled=None,
                  subnet_id=None, operating_status=None, pool=None,
                  created_at=None, updated_at=None, provisioning_status=None,
-                 name=None):
+                 name=None, monitor_address=None, monitor_port=None):
         self.id = id
         self.project_id = project_id
         self.pool_id = pool_id
@@ -331,6 +331,8 @@ class Member(BaseDataModel):
         self.updated_at = updated_at
         self.provisioning_status = provisioning_status
         self.name = name
+        self.monitor_address = monitor_address
+        self.monitor_port = monitor_port
 
     def delete(self):
         for mem in self.pool.members:

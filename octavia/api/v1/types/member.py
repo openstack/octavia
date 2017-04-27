@@ -15,6 +15,7 @@
 from wsme import types as wtypes
 
 from octavia.api.common import types as base
+from octavia.common import constants
 
 
 class MemberResponse(base.BaseType):
@@ -29,6 +30,8 @@ class MemberResponse(base.BaseType):
     project_id = wtypes.wsattr(wtypes.StringType())
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
+    monitor_address = wtypes.wsattr(base.IPAddressType())
+    monitor_port = wtypes.wsattr(wtypes.IntegerType())
 
 
 class MemberPOST(base.BaseType):
@@ -41,6 +44,10 @@ class MemberPOST(base.BaseType):
     subnet_id = wtypes.wsattr(wtypes.UuidType())
     # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
+    monitor_port = wtypes.wsattr(wtypes.IntegerType(
+        minimum=constants.MIN_PORT_NUMBER, maximum=constants.MAX_PORT_NUMBER),
+        default=None)
+    monitor_address = wtypes.wsattr(base.IPAddressType(), default=None)
 
 
 class MemberPUT(base.BaseType):
@@ -48,3 +55,6 @@ class MemberPUT(base.BaseType):
     protocol_port = wtypes.wsattr(wtypes.IntegerType())
     enabled = wtypes.wsattr(bool)
     weight = wtypes.wsattr(wtypes.IntegerType())
+    monitor_address = wtypes.wsattr(base.IPAddressType())
+    monitor_port = wtypes.wsattr(wtypes.IntegerType(
+        minimum=constants.MIN_PORT_NUMBER, maximum=constants.MAX_PORT_NUMBER))

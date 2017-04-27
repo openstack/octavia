@@ -271,7 +271,9 @@ class JinjaTemplater(object):
             'weight': member.weight,
             'enabled': member.enabled,
             'subnet_id': member.subnet_id,
-            'operating_status': member.operating_status
+            'operating_status': member.operating_status,
+            'monitor_address': member.monitor_address,
+            'monitor_port': member.monitor_port
         }
 
     def _transform_health_monitor(self, monitor):

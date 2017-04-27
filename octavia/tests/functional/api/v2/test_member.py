@@ -171,6 +171,28 @@ class TestMember(base.BaseAPITest):
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=self.pool_with_listener_id, member_id=api_member.get('id'))
 
+    def test_create_with_monitor_address_and_port(self):
+        api_member = self.create_member(
+            self.pool_with_listener_id, '10.0.0.1', 80,
+            monitor_address='192.0.2.3',
+            monitor_port=80).get(self.root_tag)
+        self.assertEqual('10.0.0.1', api_member['address'])
+        self.assertEqual(80, api_member['protocol_port'])
+        self.assertEqual('192.0.2.3', api_member['monitor_address'])
+        self.assertEqual(80, api_member['monitor_port'])
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_with_listener_id, member_id=api_member.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            member_prov_status=constants.PENDING_CREATE,
+            member_op_status=constants.NO_MONITOR)
+        self.set_lb_status(self.lb_id)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_with_listener_id, member_id=api_member.get('id'))
+
     @testtools.skip("Enable this with v2 Health Monitor patch")
     def test_create_with_health_monitor(self):
         self.create_health_monitor_with_listener(

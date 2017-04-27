@@ -1347,6 +1347,10 @@ Pool Members
 +------------------+---------+------------------------------------+
 | operating_status | String  | Network status of the pool member  |
 +------------------+---------+------------------------------------+
+| monitor_address  | String  | IP address of the member monitor   |
++------------------+---------+------------------------------------+
+| monitor_port     | String  | Port for the member to monitor     |
++------------------+---------+------------------------------------+
 
 List Members
 ************
@@ -1378,7 +1382,9 @@ Retrieve a list of pool members.
            "weight": 10,
            "subnet_id": "6fd8cb41-f56d-49f0-bf19-db3dbf3191dc",
            "enabled": true,
-           "operating_status": "ONLINE"
+           "operating_status": "ONLINE",
+           "monitor_address": "10.0.0.2",
+           "monitor_port": 80
         }
      ]
 
@@ -1411,7 +1417,9 @@ Retrieve details of a pool member.
         "weight": 10,
         "subnet_id": "9e58c7ae-9da2-45f2-9a2a-97e39d3ad69e",
         "enabled": true,
-        "operating_status": "ONLINE"
+        "operating_status": "ONLINE",
+        "monitor_address": "10.0.0.2",
+        "monitor_port": 80
     }
 
 Create Member
@@ -1436,19 +1444,23 @@ Create a pool member.
 
 |
 
-+---------------+----------+
-| Parameters    | Required |
-+===============+==========+
-| ip_address    | yes      |
-+---------------+----------+
-| protocol_port | yes      |
-+---------------+----------+
-| weight        | yes      |
-+---------------+----------+
-| subnet_id     | no       |
-+---------------+----------+
-| enabled       | no       |
-+---------------+----------+
++----------------+----------+
+| Parameters     | Required |
++================+==========+
+| ip_address     | yes      |
++----------------+----------+
+| protocol_port  | yes      |
++----------------+----------+
+| weight         | yes      |
++----------------+----------+
+| subnet_id      | no       |
++----------------+----------+
+| enabled        | no       |
++----------------+----------+
+| monitor_address| no       |
++----------------+----------+
+| monitor_port   | no       |
++----------------+----------+
 
 **Request Example**::
 
@@ -1457,7 +1469,9 @@ Create a pool member.
         "protocol_port": 80,
         "weight": 10,
         "subnet_id": "f9c3a146-a3e3-406d-9f38-e7cd1847a670",
-        "enabled": true
+        "enabled": true,
+        "monitor_address": "10.0.0.2",
+        "monitor_port": 80
     }
 
 **Response Example**::
@@ -1469,7 +1483,9 @@ Create a pool member.
         "weight": 10,
         "subnet_id": "f9c3a146-a3e3-406d-9f38-e7cd1847a670",
         "enabled": true,
-        "operating_status": "ONLINE"
+        "operating_status": "ONLINE",
+        "monitor_address": "10.0.0.2",
+        "monitor_port": 80
     }
 
 Update Member
@@ -1494,22 +1510,28 @@ Modify mutable attributes of a pool member.
 
 |
 
-+---------------+----------+
-| Parameters    | Required |
-+===============+==========+
-| protocol_port | no       |
-+---------------+----------+
-| weight        | no       |
-+---------------+----------+
-| enabled       | no       |
-+---------------+----------+
++-----------------+----------+
+| Parameters      | Required |
++=================+==========+
+| protocol_port   | no       |
++-----------------+----------+
+| weight          | no       |
++-----------------+----------+
+| enabled         | no       |
++-----------------+----------+
+| monitor_address | no       |
++-----------------+----------+
+| monitor_port    | no       |
++-----------------+----------+
 
 **Request Example**::
 
     {
         "protocol_port": 80,
         "weight": 10,
-        "enabled": true
+        "enabled": true,
+        "monitor_address": "10.0.0.2",
+        "monitor_port": 80
     }
 
 **Response Example**::
@@ -1521,7 +1543,9 @@ Modify mutable attributes of a pool member.
         "weight": 10,
         "subnet_id": "c91661f3-3831-4799-9c2c-681554196d62",
         "enabled": true,
-        "operating_status": "ONLINE"
+        "operating_status": "ONLINE",
+        "monitor_address": "10.0.0.2",
+        "monitor_port": 80
     }
 
 Delete Member

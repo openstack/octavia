@@ -177,6 +177,8 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
     ip_address = sa.Column('ip_address', sa.String(64), nullable=False)
     protocol_port = sa.Column(sa.Integer, nullable=False)
     weight = sa.Column(sa.Integer, nullable=True)
+    monitor_address = sa.Column(sa.String(64), nullable=True)
+    monitor_port = sa.Column(sa.Integer, nullable=True)
     provisioning_status = sa.Column(
         sa.String(16),
         sa.ForeignKey("provisioning_status.name",

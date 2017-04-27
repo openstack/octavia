@@ -141,9 +141,20 @@ frontend {{ listener.id }}
 
 {% macro member_macro(constants, pool, member) %}
     {% if pool.health_monitor and pool.health_monitor.enabled %}
-        {% set hm_opt = " check inter %ds fall %d rise %d"|format(
+        {% if member.monitor_address %}
+            {% set monitor_addr_opt = " addr %s"|format(member.monitor_address) %}
+        {% else %}
+            {% set monitor_addr_opt = "" %}
+        {% endif %}
+        {% if member.monitor_port %}
+            {% set monitor_port_opt = " port %s"|format(member.monitor_port) %}
+        {% else %}
+            {% set monitor_port_opt = "" %}
+        {% endif %}
+        {% set hm_opt = " check inter %ds fall %d rise %d%s%s"|format(
             pool.health_monitor.delay, pool.health_monitor.fall_threshold,
-            pool.health_monitor.rise_threshold) %}
+            pool.health_monitor.rise_threshold, monitor_addr_opt,
+            monitor_port_opt) %}
     {% else %}
         {% set hm_opt = "" %}
     {% endif %}

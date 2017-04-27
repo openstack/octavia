@@ -176,6 +176,31 @@ class TestMember(base.BaseAPITest):
                                             self.listener.get('id'),
                                             constants.ACTIVE, constants.ONLINE)
 
+    def test_create_with_monitor_address_and_port(self):
+        api_member = self.create_member_with_listener(
+            self.lb.get('id'), self.listener.get('id'),
+            self.pool.get('id'), '10.0.0.1', 80,
+            monitor_address='192.0.2.2',
+            monitor_port=9090)
+        self.assertEqual('10.0.0.1', api_member.get('ip_address'))
+        self.assertEqual(80, api_member.get('protocol_port'))
+        self.assertEqual('192.0.2.2', api_member.get('monitor_address'))
+        self.assertEqual(9090, api_member.get('monitor_port'))
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.PENDING_UPDATE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.PENDING_UPDATE,
+                                            constants.ONLINE)
+        self.set_lb_status(self.lb.get('id'))
+        self.assert_correct_lb_status(self.lb.get('id'),
+                                      constants.ACTIVE,
+                                      constants.ONLINE)
+        self.assert_correct_listener_status(self.lb.get('id'),
+                                            self.listener.get('id'),
+                                            constants.ACTIVE, constants.ONLINE)
+
     def test_duplicate_create(self):
         member = {'ip_address': '10.0.0.1', 'protocol_port': 80,
                   'project_id': self.project_id}
