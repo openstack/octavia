@@ -30,7 +30,7 @@ class ConsumerService(cotyledon.Service):
         self.conf = conf
         self.topic = conf.oslo_messaging.topic
         self.server = conf.host
-        self.endpoints = [endpoint.Endpoint()]
+        self.endpoints = []
         self.access_policy = dispatcher.DefaultRPCAccessPolicy
         self.message_listener = None
 
@@ -39,6 +39,7 @@ class ConsumerService(cotyledon.Service):
         transport = messaging.get_transport(self.conf)
         target = messaging.Target(topic=self.topic, server=self.server,
                                   fanout=False)
+        self.endpoints = [endpoint.Endpoint()]
         self.message_listener = messaging.get_rpc_server(
             transport, target, self.endpoints,
             executor='threading', access_policy=self.access_policy)
@@ -53,4 +54,11 @@ class ConsumerService(cotyledon.Service):
                     _LI('Consumer successfully stopped.  Waiting for final '
                         'messages to be processed...'))
                 self.message_listener.wait()
+        if self.endpoints:
+            LOG.info(_LI('Shutting down endpoint worker executors...'))
+            for e in self.endpoints:
+                try:
+                    e.worker.executor.shutdown()
+                except AttributeError:
+                    pass
         super(ConsumerService, self).terminate()
