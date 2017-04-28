@@ -18,9 +18,10 @@ Common classes for Barbican certificate handling
 """
 
 import abc
+import six
 
 from barbicanclient import client as barbican_client
-import six
+from oslo_utils import encodeutils
 
 from octavia.certificates.common import cert
 from octavia.common.tls_utils import cert_parser
@@ -39,21 +40,25 @@ class BarbicanCert(cert.Cert):
 
     def get_certificate(self):
         if self._cert_container.certificate:
-            return self._cert_container.certificate.payload
+            return encodeutils.to_utf8(
+                self._cert_container.certificate.payload)
 
     def get_intermediates(self):
         if self._cert_container.intermediates:
-            intermediates = self._cert_container.intermediates.payload
+            intermediates = encodeutils.to_utf8(
+                self._cert_container.intermediates.payload)
             return [imd for imd in cert_parser.get_intermediates_pems(
                 intermediates)]
 
     def get_private_key(self):
         if self._cert_container.private_key:
-            return self._cert_container.private_key.payload
+            return encodeutils.to_utf8(
+                self._cert_container.private_key.payload)
 
     def get_private_key_passphrase(self):
         if self._cert_container.private_key_passphrase:
-            return self._cert_container.private_key_passphrase.payload
+            return encodeutils.to_utf8(
+                self._cert_container.private_key_passphrase.payload)
 
 
 @six.add_metaclass(abc.ABCMeta)
