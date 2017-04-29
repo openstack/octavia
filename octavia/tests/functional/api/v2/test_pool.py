@@ -798,7 +798,8 @@ class TestPool(base.BaseAPITest):
                     status=409)
 
     def test_create_when_lb_pending_delete(self):
-        self.delete(self.LB_PATH.format(lb_id=self.lb_id))
+        self.delete(self.LB_PATH.format(lb_id=self.lb_id),
+                    params={'cascade': "true"})
         new_pool = {
             'loadbalancer_id': self.lb_id,
             'listener_id': self.listener_id,
@@ -814,7 +815,8 @@ class TestPool(base.BaseAPITest):
             constants.LB_ALGORITHM_ROUND_ROBIN,
             listener_id=self.listener_id).get(self.root_tag)
         self.set_lb_status(self.lb_id)
-        self.delete(self.LB_PATH.format(lb_id=self.lb_id))
+        self.delete(self.LB_PATH.format(lb_id=self.lb_id),
+                    params={'cascade': "true"})
         new_pool = {'admin_state_up': False}
         self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
                  self._build_body(new_pool), status=409)
@@ -826,6 +828,7 @@ class TestPool(base.BaseAPITest):
             constants.LB_ALGORITHM_ROUND_ROBIN,
             listener_id=self.listener_id).get(self.root_tag)
         self.set_lb_status(self.lb_id)
-        self.delete(self.LB_PATH.format(lb_id=self.lb_id))
+        self.delete(self.LB_PATH.format(lb_id=self.lb_id),
+                    params={'cascade': "true"})
         self.delete(self.POOL_PATH.format(pool_id=api_pool.get('id')),
                     status=409)

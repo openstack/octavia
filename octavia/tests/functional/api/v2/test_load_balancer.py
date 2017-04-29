@@ -580,6 +580,54 @@ class TestLoadBalancer(base.BaseAPITest):
                          api_lb.get('operational_status'))
         self.assert_final_lb_statuses(api_lb.get('id'), delete=True)
 
+    def test_delete_fails_with_pool(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       description='desc1').get(self.root_tag)
+        lb_id = lb.get('id')
+        self.set_lb_status(lb_id)
+        self.create_pool(
+            lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.set_lb_status(lb_id)
+        self.delete(self.LB_PATH.format(lb_id=lb_id), status=400)
+
+    def test_delete_fails_with_listener(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       description='desc1').get(self.root_tag)
+        lb_id = lb.get('id')
+        self.set_lb_status(lb_id)
+        self.create_listener(constants.PROTOCOL_HTTP, 80, lb_id)
+        self.set_lb_status(lb_id)
+        self.delete(self.LB_PATH.format(lb_id=lb_id), status=400)
+
+    def test_cascade_delete(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       description='desc1').get(self.root_tag)
+        lb_id = lb.get('id')
+        self.set_lb_status(lb_id)
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb_id).get('listener')
+        listener_id = listener.get('id')
+        self.set_lb_status(lb_id)
+        self.create_pool(
+            lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=listener_id)
+        self.set_lb_status(lb_id)
+        self.delete(self.LB_PATH.format(lb_id=lb_id),
+                    params={'cascade': "true"})
+
     def test_delete_bad_lb_id(self):
         path = self.LB_PATH.format(lb_id='bad_uuid')
         self.delete(path, status=404)

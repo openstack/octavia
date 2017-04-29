@@ -496,7 +496,8 @@ class TestL7Rule(base.BaseAPITest):
             constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
             '/api').get(self.root_tag)
         self.set_lb_status(self.lb_id)
-        self.delete(self.LB_PATH.format(lb_id=self.lb_id))
+        self.delete(self.LB_PATH.format(lb_id=self.lb_id),
+                    params={'cascade': "true"})
         new_l7rule = {'type': constants.L7RULE_TYPE_HEADER,
                       'compare_type':
                           constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
@@ -511,7 +512,8 @@ class TestL7Rule(base.BaseAPITest):
             constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
             '/api').get(self.root_tag)
         self.set_lb_status(self.lb_id)
-        self.delete(self.LB_PATH.format(lb_id=self.lb_id))
+        self.delete(self.LB_PATH.format(lb_id=self.lb_id),
+                    params={'cascade': "true"})
         new_l7rule = {'type': constants.L7RULE_TYPE_COOKIE,
                       'compare_type':
                           constants.L7RULE_COMPARE_TYPE_ENDS_WITH,
@@ -526,6 +528,7 @@ class TestL7Rule(base.BaseAPITest):
             constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
             '/api').get(self.root_tag)
         self.set_lb_status(self.lb_id)
-        self.delete(self.LB_PATH.format(lb_id=self.lb_id))
+        self.delete(self.LB_PATH.format(lb_id=self.lb_id),
+                    params={'cascade': "true"})
         self.delete(self.l7rule_path.format(l7rule_id=l7rule.get('id')),
                     status=409)

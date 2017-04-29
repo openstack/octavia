@@ -110,9 +110,17 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     def _build_body(self, json):
         return {self.root_tag: json}
 
-    def delete(self, path, headers=None, status=204, expect_errors=False):
+    def delete(self, path, headers=None, params=None, status=204,
+               expect_errors=False):
         headers = headers or {}
+        params = params or {}
         full_path = self._get_full_path(path)
+        param_string = ""
+        for k, v in params.items():
+            param_string += "{key}={value}&".format(key=k, value=v)
+        if param_string:
+            full_path = "{path}?{params}".format(
+                path=full_path, params=param_string.rstrip("&"))
         response = self.app.delete(full_path,
                                    headers=headers,
                                    status=status,

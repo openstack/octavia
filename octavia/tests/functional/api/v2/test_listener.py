@@ -586,17 +586,19 @@ class TestListener(base.BaseAPITest):
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1', description='desc1',
                                        admin_state_up=False)
-        self.set_lb_status(lb['loadbalancer']['id'])
+        lb_id = lb['loadbalancer'].get('id')
+        self.set_lb_status(lb_id)
         lb_listener = {'name': 'listener1', 'description': 'desc1',
                        'admin_state_up': False,
                        'protocol': constants.PROTOCOL_HTTP,
                        'protocol_port': 80, 'connection_limit': 10,
-                       'loadbalancer_id': lb['loadbalancer']['id']}
+                       'loadbalancer_id': lb_id}
         body = self._build_body(lb_listener)
         api_listener = self.post(
-            self.LISTENERS_PATH, body).json['listener']
-        self.set_lb_status(lb['loadbalancer']['id'])
-        self.delete(self.LB_PATH.format(lb_id=lb['loadbalancer']['id']))
+            self.LISTENERS_PATH, body).json.get(self.root_tag)
+        self.set_lb_status(lb_id)
+        self.delete(self.LB_PATH.format(lb_id=lb_id),
+                    params={'cascade': "true"})
         lb_listener_put = {'name': 'listener1_updated'}
         body = self._build_body(lb_listener_put)
         listener_path = self.LISTENER_PATH.format(
@@ -607,17 +609,19 @@ class TestListener(base.BaseAPITest):
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1', description='desc1',
                                        admin_state_up=False)
-        self.set_lb_status(lb['loadbalancer']['id'])
+        lb_id = lb['loadbalancer'].get('id')
+        self.set_lb_status(lb_id)
         lb_listener = {'name': 'listener1', 'description': 'desc1',
                        'admin_state_up': False,
                        'protocol': constants.PROTOCOL_HTTP,
                        'protocol_port': 80, 'connection_limit': 10,
-                       'loadbalancer_id': lb['loadbalancer']['id']}
+                       'loadbalancer_id': lb_id}
         body = self._build_body(lb_listener)
         api_listener = self.post(
-            self.LISTENERS_PATH, body).json['listener']
-        self.set_lb_status(lb['loadbalancer']['id'])
-        self.delete(self.LB_PATH.format(lb_id=lb['loadbalancer']['id']))
+            self.LISTENERS_PATH, body).json.get(self.root_tag)
+        self.set_lb_status(lb_id)
+        self.delete(self.LB_PATH.format(lb_id=lb_id),
+                    params={'cascade': "true"})
         listener_path = self.LISTENER_PATH.format(
             listener_id=api_listener['id'])
         self.delete(listener_path, status=409)
