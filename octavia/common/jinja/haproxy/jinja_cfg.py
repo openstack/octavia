@@ -26,6 +26,7 @@ PROTOCOL_MAP = {
     constants.PROTOCOL_TCP: 'tcp',
     constants.PROTOCOL_HTTP: 'http',
     constants.PROTOCOL_HTTPS: 'tcp',
+    constants.PROTOCOL_PROXY: 'proxy',
     constants.PROTOCOL_TERMINATED_HTTPS: 'http'
 }
 

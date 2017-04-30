@@ -398,9 +398,11 @@ def sample_vip_tuple():
 def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                           persistence_type=None, persistence_cookie=None,
                           tls=False, sni=False, peer_port=None, topology=None,
-                          l7=False, enabled=True, insert_headers=None):
+                          l7=False, enabled=True, insert_headers=None,
+                          be_proto=None):
     proto = 'HTTP' if proto is None else proto
-    be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
+    if be_proto is None:
+        be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
     topology = 'SINGLE' if topology is None else topology
     port = '443' if proto is 'HTTPS' or proto is 'TERMINATED_HTTPS' else '80'
     peer_port = 1024 if peer_port is None else peer_port

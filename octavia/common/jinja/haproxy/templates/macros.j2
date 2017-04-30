@@ -153,15 +153,24 @@ frontend {{ listener.id }}
     {% else %}
         {% set persistence_opt = "" %}
     {% endif %}
-    {{ "server %s %s:%d weight %s%s%s"|e|format(
+    {% if pool.protocol.lower() == constants.PROTOCOL_PROXY.lower() %}
+        {% set proxy_protocol_opt = " send-proxy" %}
+    {% else %}
+        {% set proxy_protocol_opt = "" %}
+    {% endif %}
+    {{ "server %s %s:%d weight %s%s%s%s"|e|format(
         member.id, member.address, member.protocol_port, member.weight,
-        hm_opt, persistence_opt)|trim() }}
+        hm_opt, persistence_opt, proxy_protocol_opt)|trim() }}
 {% endmacro %}
 
 
 {% macro backend_macro(constants, listener, pool) %}
 backend {{ pool.id }}
+    {% if pool.protocol.lower() == constants.PROTOCOL_PROXY.lower() %}
+    mode {{ listener.protocol_mode }}
+    {% else %}
     mode {{ pool.protocol }}
+    {% endif %}
     balance {{ pool.lb_algorithm }}
     {% if pool.session_persistence %}
         {% if (pool.session_persistence.type ==
