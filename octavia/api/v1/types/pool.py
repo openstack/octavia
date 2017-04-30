@@ -36,7 +36,7 @@ class SessionPersistencePOST(base.BaseType):
 class SessionPersistencePUT(base.BaseType):
     """Defines attributes that are acceptable of a PUT request."""
     type = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_SP_TYPES))
-    cookie_name = wtypes.wsattr(wtypes.text)
+    cookie_name = wtypes.wsattr(wtypes.text, default=None)
 
 
 class PoolResponse(base.BaseType):
