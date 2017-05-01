@@ -34,18 +34,13 @@ class L7RuleResponse(BaseL7Type):
     operating_status = wtypes.wsattr(wtypes.StringType())
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
-    # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType())
-    # TODO(johnsom) Remove after deprecation (R series)
-    tenant_id = wtypes.wsattr(wtypes.StringType())
     admin_state_up = wtypes.wsattr(bool)
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
         rule = super(L7RuleResponse, cls).from_data_model(
             data_model, children=children)
-        rule.tenant_id = data_model.project_id
-
         return rule
 
 

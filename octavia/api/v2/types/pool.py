@@ -70,10 +70,7 @@ class PoolResponse(BasePoolType):
     protocol = wtypes.wsattr(wtypes.text)
     lb_algorithm = wtypes.wsattr(wtypes.text)
     session_persistence = wtypes.wsattr(SessionPersistenceResponse)
-    # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType())
-    # TODO(johnsom) Remove after deprecation (R series)
-    tenant_id = wtypes.wsattr(wtypes.StringType())
     loadbalancers = wtypes.wsattr([MinimalLoadBalancer])
     listeners = wtypes.wsattr([MinimalListener])
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
@@ -85,7 +82,6 @@ class PoolResponse(BasePoolType):
     def from_data_model(cls, data_model, children=False):
         pool = super(PoolResponse, cls).from_data_model(
             data_model, children=children)
-        pool.tenant_id = pool.project_id
         if data_model.session_persistence:
             pool.session_persistence = (
                 SessionPersistenceResponse.from_data_model(

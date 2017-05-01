@@ -1,0 +1,5 @@
+---
+deprecations:
+  - |
+    Finally completely remove tenant_id, as it was deprecated along with the
+    keystone v2 API in Mitaka, which means we're free of it in Pike!

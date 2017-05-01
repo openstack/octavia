@@ -34,10 +34,7 @@ class MemberResponse(BaseMemberType):
     protocol_port = wtypes.wsattr(wtypes.IntegerType())
     weight = wtypes.wsattr(wtypes.IntegerType())
     subnet_id = wtypes.wsattr(wtypes.UuidType())
-    # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType())
-    # TODO(johnsom) Remove after deprecation (R series)
-    tenant_id = wtypes.wsattr(wtypes.StringType())
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
 
@@ -45,7 +42,6 @@ class MemberResponse(BaseMemberType):
     def from_data_model(cls, data_model, children=False):
         member = super(MemberResponse, cls).from_data_model(
             data_model, children=children)
-        member.tenant_id = data_model.project_id
         if not member.name:
             member.name = ""
 

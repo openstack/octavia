@@ -34,10 +34,7 @@ class L7PolicyResponse(BaseL7PolicyType):
     provisioning_status = wtypes.wsattr(wtypes.StringType())
     operating_status = wtypes.wsattr(wtypes.StringType())
     admin_state_up = wtypes.wsattr(bool)
-    # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType())
-    # TODO(johnsom) Remove after deprecation (R series)
-    tenant_id = wtypes.wsattr(wtypes.StringType())
     action = wtypes.wsattr(wtypes.StringType())
     listener_id = wtypes.wsattr(wtypes.UuidType())
     redirect_pool_id = wtypes.wsattr(wtypes.UuidType())
@@ -51,7 +48,6 @@ class L7PolicyResponse(BaseL7PolicyType):
     def from_data_model(cls, data_model, children=False):
         policy = super(L7PolicyResponse, cls).from_data_model(
             data_model, children=children)
-        policy.tenant_id = data_model.project_id
         if not policy.name:
             policy.name = ""
         if not policy.description:

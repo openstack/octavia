@@ -46,10 +46,7 @@ class ListenerResponse(BaseListenerType):
     connection_limit = wtypes.wsattr(wtypes.IntegerType())
     default_tls_container_ref = wtypes.wsattr(wtypes.StringType())
     sni_container_refs = [wtypes.StringType()]
-    # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType())
-    # TODO(johnsom) Remove after deprecation (R series)
-    tenant_id = wtypes.wsattr(wtypes.StringType())
     default_pool_id = wtypes.wsattr(wtypes.UuidType())
     l7policies = wtypes.wsattr([MinimalL7Policy])
     insert_headers = wtypes.wsattr(wtypes.DictType(str, str))
@@ -61,7 +58,6 @@ class ListenerResponse(BaseListenerType):
     def from_data_model(cls, data_model, children=False):
         listener = super(ListenerResponse, cls).from_data_model(
             data_model, children=children)
-        listener.tenant_id = data_model.project_id
 
         listener.sni_container_refs = [
             sni_c.tls_container_id for sni_c in data_model.sni_containers]

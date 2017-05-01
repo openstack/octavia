@@ -306,7 +306,7 @@ class TestPool(base.BaseAPITest):
             constants.PROTOCOL_HTTP,
             constants.LB_ALGORITHM_ROUND_ROBIN,
             **optionals).get(self.root_tag)
-        self.assertEqual(self.project_id, api_pool.get('tenant_id'))
+        self.assertEqual(self.project_id, api_pool.get('project_id'))
 
     def test_bad_create(self):
         pool = {'name': 'test1'}
