@@ -18,7 +18,7 @@ Listen %OCTAVIA_SERVICE_PORT%
 
 <VirtualHost *:%OCTAVIA_SERVICE_PORT%>
 
-    WSGIDaemonProcess octavia-wsgi processes=%APIWORKERS% threads=1 display-name=%{GROUP} %VIRTUALENV%
+    WSGIDaemonProcess octavia-wsgi processes=%APIWORKERS% threads=1 user=%USER% display-name=%{GROUP} %VIRTUALENV%
     WSGIProcessGroup octavia-wsgi
     WSGIScriptAlias / /usr/local/bin/octavia-wsgi
     WSGIApplicationGroup %{GLOBAL}

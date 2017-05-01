@@ -112,6 +112,7 @@ function _configure_octavia_apache_wsgi {
     sudo cp ${OCTAVIA_DIR}/devstack/files/wsgi/octavia-api.template $octavia_apache_conf
     sudo sed -e "
         s|%OCTAVIA_SERVICE_PORT%|$octavia_api_port|g;
+        s|%USER%|$APACHE_USER|g;
         s|%APACHE_NAME%|$APACHE_NAME|g;
         s|%SSLENGINE%|$octavia_ssl|g;
         s|%SSLCERTFILE%|$octavia_certfile|g;
@@ -138,7 +139,7 @@ function _stop_octavia_apache_wsgi {
 }
 
 function create_octavia_accounts {
-    create_service_user "octavia"
+    create_service_user $OCTAVIA
 
     local octavia_service=$(get_or_create_service "octavia" \
         "load-balancer" "Octavia Load Balancing Service")
@@ -177,7 +178,6 @@ function octavia_configure {
     iniset $OCTAVIA_CONF service_auth project_name $OCTAVIA_PROJECT_NAME
     iniset $OCTAVIA_CONF service_auth project_domain_name $OCTAVIA_PROJECT_DOMAIN_NAME
     iniset $OCTAVIA_CONF service_auth cafile $SSL_BUNDLE_FILE
-    iniset $OCTAVIA_CONF service_auth signing_dir $signing_dir
     iniset $OCTAVIA_CONF service_auth memcached_servers $SERVICE_HOST:11211
 
     # Setting other required default options
@@ -516,7 +516,7 @@ function octavia_cleanup {
 # create_octavia_cache_dir() - Part of the configure_octavia() process
 function create_octavia_cache_dir {
     # Create cache dir
-    sudo install -d -o $STACK_USER $OCTAVIA_AUTH_CACHE_DIR
+    sudo install -d -o $APACHE_USER $OCTAVIA_AUTH_CACHE_DIR
     rm -f $OCTAVIA_AUTH_CACHE_DIR/*
 }
 

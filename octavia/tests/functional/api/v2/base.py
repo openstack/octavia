@@ -69,6 +69,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.conf.config(api_handler='simulated_handler')
         self.conf.config(group="controller_worker",
                          network_driver='network_noop_driver')
+        self.conf.config(auth_strategy=constants.NOAUTH)
         self.lb_repo = repositories.LoadBalancerRepository()
         self.listener_repo = repositories.ListenerRepository()
         self.listener_stats_repo = repositories.ListenerStatisticsRepository()
