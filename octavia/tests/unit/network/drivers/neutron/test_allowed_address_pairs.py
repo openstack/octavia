@@ -120,7 +120,10 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         }
         list_security_groups.return_value = security_groups
         self.driver.deallocate_vip(vip)
-        delete_port.assert_called_with(vip.port_id)
+        calls = [mock.call(vip.port_id)]
+        for amp in lb.amphorae:
+            calls.append(mock.call(amp.vrrp_port_id))
+        delete_port.assert_has_calls(calls, any_order=True)
         delete_sec_grp.assert_called_once_with(sec_grp_id)
 
     def test_deallocate_vip_no_sec_group(self):
