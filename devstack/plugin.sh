@@ -463,6 +463,14 @@ function octavia_start {
 
 function octavia_stop {
     # octavia-specific stop actions
+    if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
+        _stop_octavia_apache_wsgi
+    else
+        stop_process $OCTAVIA_API
+    fi
+    stop_process $OCTAVIA_CONSUMER
+    stop_process $OCTAVIA_HOUSEKEEPER
+    stop_process $OCTAVIA_HEALTHMANAGER
 
     # Kill dhclient process started for o-hm0 interface
     pids=$(ps aux | awk '/o-hm0/ { print $2 }')
@@ -471,9 +479,6 @@ function octavia_stop {
         if ip link show o-hm0 ; then
             sudo ip link del o-hm0
         fi
-    fi
-    if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
-        _stop_octavia_apache_wsgi
     fi
 }
 
