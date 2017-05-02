@@ -21,7 +21,9 @@ iface {{ interface }} inet{{ '6' if vrrp_ipv6 }} static
 address {{ vrrp_ip }}
 broadcast {{ broadcast }}
 netmask {{ netmask }}
+{%- if gateway %}
 gateway {{ gateway }}
+{%- endif %}
 {%- if mtu %}
 mtu {{ mtu }}
 {%- endif %}
