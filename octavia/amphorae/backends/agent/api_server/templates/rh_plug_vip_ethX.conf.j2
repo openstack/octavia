@@ -26,7 +26,9 @@ IPV6INIT="yes"
 IPV6_DEFROUTE="yes"
 IPV6_AUTOCONF="no"
 IPV6ADDR="{{ vrrp_ip }}/{{ prefix }}"
+{%- if gateway %}
 IPV6_DEFAULTGW="{{ gateway }}"
+{%- endif %}
 {%- if mtu %}
 IPV6_MTU="{{ mtu }}"
 {%- endif %}
@@ -34,7 +36,9 @@ IPV6_MTU="{{ mtu }}"
 BOOTPROTO="static"
 IPADDR="{{ vrrp_ip }}"
 NETMASK="{{ netmask }}"
+{%- if gateway %}
 GATEWAY="{{ gateway }}"
+{%- endif %}
 MTU="{{ mtu }}"
 {%- endif %} {# end if vrrp_ipv6 #}
 {%- else %} {# not vrrp_ip #}
