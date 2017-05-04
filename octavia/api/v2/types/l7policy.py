@@ -72,8 +72,6 @@ class L7PolicyPOST(BaseL7PolicyType):
     admin_state_up = wtypes.wsattr(bool, default=True)
     # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
-    # TODO(johnsom) Remove after deprecation (R series)
-    tenant_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     action = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_L7POLICY_ACTIONS),
         mandatory=True)

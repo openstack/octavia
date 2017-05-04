@@ -93,8 +93,6 @@ class HealthMonitorPOST(BaseHealthMonitorType):
     admin_state_up = wtypes.wsattr(bool, default=True)
     # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
-    # TODO(johnsom) Remove after deprecation (R series)
-    tenant_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     pool_id = wtypes.wsattr(wtypes.UuidType(), mandatory=True)
 
 

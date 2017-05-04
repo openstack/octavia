@@ -52,14 +52,13 @@ class PoolsController(base.BaseController):
         result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
         return pool_types.PoolRootResponse(pool=result)
 
-    @wsme_pecan.wsexpose(pool_types.PoolsRootResponse, wtypes.text,
-                         wtypes.text)
-    def get_all(self, tenant_id=None, project_id=None):
+    @wsme_pecan.wsexpose(pool_types.PoolsRootResponse, wtypes.text)
+    def get_all(self, project_id=None):
         """Lists all pools."""
         context = pecan.request.context.get('octavia_context')
         if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
-            if project_id or tenant_id:
-                project_id = {'project_id': project_id or tenant_id}
+            if project_id:
+                project_id = {'project_id': project_id}
             else:
                 project_id = {}
         else:

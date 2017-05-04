@@ -52,17 +52,13 @@ class LoadBalancersController(base.BaseController):
                                           lb_types.LoadBalancerResponse)
         return lb_types.LoadBalancerRootResponse(loadbalancer=result)
 
-    @wsme_pecan.wsexpose(lb_types.LoadBalancersRootResponse, wtypes.text,
-                         wtypes.text)
-    def get_all(self, tenant_id=None, project_id=None):
+    @wsme_pecan.wsexpose(lb_types.LoadBalancersRootResponse, wtypes.text)
+    def get_all(self, project_id=None):
         """Lists all load balancers."""
-        # NOTE(blogan): tenant_id and project_id are optional query parameters
-        # tenant_id and project_id are the same thing.  tenant_id will be kept
-        # around for a long amount of time.
         context = pecan.request.context.get('octavia_context')
         if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
-            if project_id or tenant_id:
-                project_id = {'project_id': project_id or tenant_id}
+            if project_id:
+                project_id = {'project_id': project_id}
             else:
                 project_id = {}
         else:
@@ -117,8 +113,6 @@ class LoadBalancersController(base.BaseController):
         if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
             if load_balancer.project_id:
                 project_id = load_balancer.project_id
-            elif load_balancer.tenant_id:
-                project_id = load_balancer.tenant_id
 
         if not project_id:
             raise exceptions.ValidationException(detail=_(
