@@ -223,6 +223,50 @@ def check_raised_localized_exceptions(logical_line, filename):
             yield (logical_line.index(exception_msg), msg)
 
 
+def check_no_basestring(logical_line):
+    """O343 - basestring is not Python3-compatible.
+
+    :param logical_line: The logical line to check.
+    :returns: None if the logical line passes the check, otherwise a tuple
+    is yielded that contains the offending index in logical line and a
+    message describe the check validation failure.
+    """
+    if re.search(r"\bbasestring\b", logical_line):
+        msg = ("O343: basestring is not Python3-compatible, use "
+               "six.string_types instead.")
+        yield(0, msg)
+
+
+def check_python3_no_iteritems(logical_line):
+    """O344 - Use dict.items() instead of dict.iteritems().
+
+    :param logical_line: The logical line to check.
+    :returns: None if the logical line passes the check, otherwise a tuple
+    is yielded that contains the offending index in logical line and a
+    message describe the check validation failure.
+    """
+    if re.search(r".*\.iteritems\(\)", logical_line):
+        msg = ("O344: Use dict.items() instead of dict.iteritems() to be "
+               "compatible with both Python 2 and Python 3. In Python 2, "
+               "dict.items() may be inefficient for very large dictionaries. "
+               "If you can prove that you need the optimization of an "
+               "iterator for Python 2, then you can use six.iteritems(dict).")
+        yield(0, msg)
+
+
+def check_no_eventlet_imports(logical_line):
+    """O345 - Usage of Python eventlet module not allowed.
+
+    :param logical_line: The logical line to check.
+    :returns: None if the logical line passes the check, otherwise a tuple
+    is yielded that contains the offending index in logical line and a
+    message describe the check validation failure.
+    """
+    if re.match(r'(import|from)\s+[(]?eventlet', logical_line):
+        msg = 'O345 Usage of Python eventlet module not allowed'
+        yield logical_line.index('eventlet'), msg
+
+
 def factory(register):
     register(assert_true_instance)
     register(assert_equal_or_not_none)
@@ -235,3 +279,6 @@ def factory(register):
     register(no_log_warn)
     register(no_xrange)
     register(check_raised_localized_exceptions)
+    register(check_no_basestring)
+    register(check_python3_no_iteritems)
+    register(check_no_eventlet_imports)
