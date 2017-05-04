@@ -41,10 +41,7 @@ class HealthMonitorResponse(BaseHealthMonitorType):
     url_path = wtypes.wsattr(wtypes.text)
     expected_codes = wtypes.wsattr(wtypes.text)
     admin_state_up = wtypes.wsattr(bool)
-    # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType())
-    # TODO(johnsom) Remove after deprecation (R series)
-    tenant_id = wtypes.wsattr(wtypes.StringType())
     pools = wtypes.wsattr([MinimalPool])
     provisioning_status = wtypes.wsattr(wtypes.StringType())
     operating_status = wtypes.wsattr(wtypes.StringType())
@@ -55,7 +52,6 @@ class HealthMonitorResponse(BaseHealthMonitorType):
     def from_data_model(cls, data_model, children=False):
         healthmonitor = super(HealthMonitorResponse, cls).from_data_model(
             data_model, children=children)
-        healthmonitor.tenant_id = data_model.project_id
         healthmonitor.pools = [
             MinimalPool.from_data_model(data_model.pool)
         ]

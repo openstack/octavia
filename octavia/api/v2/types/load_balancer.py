@@ -39,7 +39,6 @@ class LoadBalancerResponse(BaseLoadBalancerType):
     operating_status = wtypes.wsattr(wtypes.StringType())
     admin_state_up = wtypes.wsattr(bool)
     project_id = wtypes.wsattr(wtypes.StringType())
-    tenant_id = wtypes.wsattr(wtypes.StringType())
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
     vip_address = wtypes.wsattr(types.IPAddressType())
@@ -60,7 +59,6 @@ class LoadBalancerResponse(BaseLoadBalancerType):
             result.vip_network_id = data_model.vip.network_id
         result.listeners = [
             MinimalListener.from_data_model(i) for i in data_model.listeners]
-        result.tenant_id = data_model.project_id
         if not result.description:
             result.description = ""
         if not result.name:
