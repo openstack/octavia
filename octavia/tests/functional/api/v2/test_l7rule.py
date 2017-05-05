@@ -50,6 +50,21 @@ class TestL7Rule(base.BaseAPITest):
             l7rule_id=l7rule.get('id'))).json.get(self.root_tag)
         self.assertEqual(l7rule, response)
 
+    def test_get_hides_deleted(self):
+        api_l7rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+
+        response = self.get(self.l7rules_path)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.l7rule_repo, api_l7rule.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.l7rules_path)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
+
     def test_get_bad_parent_policy(self):
         bad_path = (self.L7RULES_PATH.format(
             lb_id=self.lb_id, listener_id=self.listener_id,

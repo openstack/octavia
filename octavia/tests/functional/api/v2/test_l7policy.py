@@ -51,6 +51,20 @@ class TestL7Policy(base.BaseAPITest):
             l7policy_id=api_l7policy.get('id'))).json.get(self.root_tag)
         self.assertEqual(api_l7policy, response)
 
+    def test_get_hides_deleted(self):
+        api_l7policy = self.create_l7policy(
+            self.listener_id,
+            constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
+
+        response = self.get(self.L7POLICIES_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.l7policy_repo, api_l7policy.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.L7POLICIES_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
+
     def test_bad_get(self):
         self.get(self.L7POLICY_PATH.format(
             l7policy_id=uuidutils.generate_uuid()), status=404)

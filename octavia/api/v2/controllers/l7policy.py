@@ -64,7 +64,7 @@ class L7PolicyController(base.BaseController):
         else:
             project_id = {'project_id': context.project_id}
         db_l7policies = self.repositories.l7policy.get_all(
-            context.session, **project_id)
+            context.session, show_deleted=False, **project_id)
         result = self._convert_db_to_type(db_l7policies,
                                           [l7policy_types.L7PolicyResponse])
         return l7policy_types.L7PoliciesRootResponse(l7policies=result)

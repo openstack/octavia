@@ -61,6 +61,22 @@ class TestPool(base.BaseAPITest):
         response.pop('updated_at')
         self.assertEqual(api_pool, response)
 
+    def test_get_hides_deleted(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+
+        response = self.get(self.POOLS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.pool_repo, api_pool.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.POOLS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
+
     def test_bad_get(self):
         self.get(self.POOL_PATH.format(pool_id=uuidutils.generate_uuid()),
                  status=404)

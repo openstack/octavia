@@ -138,17 +138,24 @@ class TestListener(base.BaseAPITest):
 
     def test_get(self):
         listener = self.create_listener(
-            constants.PROTOCOL_HTTP, 80, self.lb_id)
-        listener_path = self.listener_path
-        response = self.get(listener_path.format(
-                            listener_id=listener['listener']['id']))
-        api_lb = response.json['listener']
-        expected = {'name': None, 'description': None, 'admin_state_up': True,
-                    'operating_status': constants.OFFLINE,
-                    'provisioning_status': constants.PENDING_CREATE,
-                    'connection_limit': None}
-        listener.update(expected)
-        self.assertEqual(listener['listener'], api_lb)
+            constants.PROTOCOL_HTTP, 80, self.lb_id).get(self.root_tag)
+        response = self.get(self.listener_path.format(
+            listener_id=listener['id']))
+        api_listener = response.json.get(self.root_tag)
+        self.assertEqual(listener, api_listener)
+
+    def test_get_hides_deleted(self):
+        api_listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, self.lb_id).get(self.root_tag)
+
+        response = self.get(self.LISTENERS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.listener_repo, api_listener.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.LISTENERS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
 
     def test_get_bad_listener_id(self):
         listener_path = self.listener_path
