@@ -86,7 +86,6 @@ class LoadBalancerPOST(BaseLoadBalancerType):
     vip_subnet_id = wtypes.wsattr(wtypes.UuidType())
     vip_network_id = wtypes.wsattr(wtypes.UuidType())
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
-    tenant_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     listeners = wtypes.wsattr([listener.ListenerPOST], default=[])
 
 

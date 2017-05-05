@@ -88,9 +88,7 @@ class TestQuotas(base.BaseAPITest):
         quota_list = response.json
 
         quota1['project_id'] = project_id1
-        quota1['tenant_id'] = project_id1
         quota2['project_id'] = project_id2
-        quota2['tenant_id'] = project_id2
         expected = {'quotas': [quota1, quota2]}
         self.assertEqual(expected, quota_list)
 

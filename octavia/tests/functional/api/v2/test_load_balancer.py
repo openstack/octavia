@@ -232,15 +232,9 @@ class TestLoadBalancer(base.BaseAPITest):
         lb_json = {'vip_subnet_id': 'HI'}
         self.post(self.LBS_PATH, lb_json, status=400)
 
-    def test_create_with_tenant_id(self):
-        tenant_id = uuidutils.generate_uuid()
-        api_lb = self.test_create(tenant_id=tenant_id, project_id=None)
-        self.assertEqual(tenant_id, api_lb.get('project_id'))
-
-    def test_create_with_project_and_tenant_id(self):
+    def test_create_with_project_id(self):
         project_id = uuidutils.generate_uuid()
-        api_lb = self.test_create(tenant_id=uuidutils.generate_uuid(),
-                                  project_id=project_id)
+        api_lb = self.test_create(project_id=project_id)
         self.assertEqual(project_id, api_lb.get('project_id'))
 
     def test_get_all_admin(self):

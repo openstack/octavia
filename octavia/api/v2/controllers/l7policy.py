@@ -51,14 +51,13 @@ class L7PolicyController(base.BaseController):
                                           l7policy_types.L7PolicyResponse)
         return l7policy_types.L7PolicyRootResponse(l7policy=result)
 
-    @wsme_pecan.wsexpose(l7policy_types.L7PoliciesRootResponse, wtypes.text,
-                         wtypes.text)
-    def get_all(self, tenant_id=None, project_id=None):
+    @wsme_pecan.wsexpose(l7policy_types.L7PoliciesRootResponse, wtypes.text)
+    def get_all(self, project_id=None):
         """Lists all l7policies of a listener."""
         context = pecan.request.context.get('octavia_context')
         if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
-            if project_id or tenant_id:
-                project_id = {'project_id': project_id or tenant_id}
+            if project_id:
+                project_id = {'project_id': project_id}
             else:
                 project_id = {}
         else:

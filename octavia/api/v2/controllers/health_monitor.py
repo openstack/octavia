@@ -62,16 +62,15 @@ class HealthMonitorController(base.BaseController):
             db_hm, hm_types.HealthMonitorResponse)
         return hm_types.HealthMonitorRootResponse(healthmonitor=result)
 
-    @wsme_pecan.wsexpose(hm_types.HealthMonitorsRootResponse, wtypes.text,
-                         wtypes.text)
-    def get_all(self, tenant_id=None, project_id=None):
+    @wsme_pecan.wsexpose(hm_types.HealthMonitorsRootResponse, wtypes.text)
+    def get_all(self, project_id=None):
         """Gets a single health monitor's details."""
         # NOTE(blogan): since a pool can only have one health monitor
         # we are using the get_all method to only get the single health monitor
         context = pecan.request.context.get('octavia_context')
         if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
-            if project_id or tenant_id:
-                project_id = {'project_id': project_id or tenant_id}
+            if project_id:
+                project_id = {'project_id': project_id}
             else:
                 project_id = {}
         else:

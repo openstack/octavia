@@ -63,14 +63,13 @@ class ListenersController(base.BaseController):
                                           listener_types.ListenerResponse)
         return listener_types.ListenerRootResponse(listener=result)
 
-    @wsme_pecan.wsexpose(listener_types.ListenersRootResponse,
-                         wtypes.text, wtypes.text)
-    def get_all(self, tenant_id=None, project_id=None):
+    @wsme_pecan.wsexpose(listener_types.ListenersRootResponse, wtypes.text)
+    def get_all(self, project_id=None):
         """Lists all listeners."""
         context = pecan.request.context.get('octavia_context')
         if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
-            if project_id or tenant_id:
-                project_id = {'project_id': project_id or tenant_id}
+            if project_id:
+                project_id = {'project_id': project_id}
             else:
                 project_id = {}
         else:

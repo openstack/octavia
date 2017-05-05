@@ -47,7 +47,6 @@ class QuotaResponse(base.BaseType):
 class QuotaAllBase(base.BaseType):
     """Wrapper object for get all quotas responses."""
     project_id = wtypes.wsattr(wtypes.StringType())
-    tenant_id = wtypes.wsattr(wtypes.StringType())
     load_balancer = wtypes.wsattr(wtypes.IntegerType())
     listener = wtypes.wsattr(wtypes.IntegerType())
     member = wtypes.wsattr(wtypes.IntegerType())
@@ -58,7 +57,6 @@ class QuotaAllBase(base.BaseType):
     def from_data_model(cls, data_model, children=False):
         quotas = super(QuotaAllBase, cls).from_data_model(
             data_model, children=children)
-        quotas.tenant_id = quotas.project_id
         return quotas
 
 
