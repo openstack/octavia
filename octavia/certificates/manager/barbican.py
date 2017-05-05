@@ -23,8 +23,6 @@ from stevedore import driver as stevedore_driver
 
 from octavia.certificates.common import barbican as barbican_common
 from octavia.certificates.manager import cert_mgr
-from octavia.i18n import _LE, _LI, _LW
-
 
 LOG = logging.getLogger(__name__)
 
@@ -57,9 +55,8 @@ class BarbicanCertManager(cert_mgr.CertManager):
         """
         connection = self.auth.get_barbican_client(project_id)
 
-        LOG.info(_LI(
-            "Storing certificate container '{0}' in Barbican."
-        ).format(name))
+        LOG.info("Storing certificate container '{0}' in "
+                 "Barbican.".format(name))
 
         certificate_secret = None
         private_key_secret = None
@@ -106,18 +103,14 @@ class BarbicanCertManager(cert_mgr.CertManager):
                     old_ref = i.secret_ref
                     try:
                         i.delete()
-                        LOG.info(_LI(
-                            "Deleted secret {0} ({1}) during rollback."
-                        ).format(i.name, old_ref))
+                        LOG.info("Deleted secret {0} ({1}) during "
+                                 "rollback.".format(i.name, old_ref))
                     except Exception:
-                        LOG.warning(_LW(
-                            "Failed to delete {0} ({1}) during rollback. This "
-                            "might not be a problem."
-                        ).format(i.name, old_ref))
+                        LOG.warning("Failed to delete {0} ({1}) during "
+                                    "rollback. This might not be a "
+                                    "problem.".format(i.name, old_ref))
             with excutils.save_and_reraise_exception():
-                LOG.error(_LE(
-                    "Error storing certificate data: {0}"
-                ).format(str(e)))
+                LOG.error("Error storing certificate data: {0}".format(str(e)))
 
     def get_cert(self, project_id, cert_ref, resource_ref=None,
                  check_only=False, service_name='Octavia'):
@@ -134,9 +127,8 @@ class BarbicanCertManager(cert_mgr.CertManager):
         """
         connection = self.auth.get_barbican_client(project_id)
 
-        LOG.info(_LI(
-            "Loading certificate container {0} from Barbican."
-        ).format(cert_ref))
+        LOG.info("Loading certificate container {0} from "
+                 "Barbican.".format(cert_ref))
         try:
             if check_only:
                 cert_container = connection.containers.get(
@@ -151,9 +143,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
             return barbican_common.BarbicanCert(cert_container)
         except Exception as e:
             with excutils.save_and_reraise_exception():
-                LOG.error(_LE(
-                    "Error getting {0}: {1}"
-                ).format(cert_ref, str(e)))
+                LOG.error("Error getting {0}: {1}".format(cert_ref, str(e)))
 
     def delete_cert(self, project_id, cert_ref, resource_ref=None,
                     service_name='Octavia'):
@@ -167,9 +157,8 @@ class BarbicanCertManager(cert_mgr.CertManager):
         """
         connection = self.auth.get_barbican_client(project_id)
 
-        LOG.info(_LI(
-            "Deregistering as a consumer of {0} in Barbican."
-        ).format(cert_ref))
+        LOG.info("Deregistering as a consumer of {0} in "
+                 "Barbican.".format(cert_ref))
         try:
             connection.containers.remove_consumer(
                 container_ref=cert_ref,
@@ -178,6 +167,5 @@ class BarbicanCertManager(cert_mgr.CertManager):
             )
         except Exception as e:
             with excutils.save_and_reraise_exception():
-                LOG.error(_LE(
-                    "Error deregistering as a consumer of {0}: {1}"
-                ).format(cert_ref, str(e)))
+                LOG.error("Error deregistering as a consumer of {0}: "
+                          "{1}".format(cert_ref, str(e)))

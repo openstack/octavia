@@ -25,7 +25,6 @@ import oslo_messaging as messaging
 
 from octavia.common import constants
 from octavia.common import utils
-from octavia.i18n import _LI
 from octavia import version
 
 LOG = logging.getLogger(__name__)
@@ -522,4 +521,4 @@ def setup_logging(conf):
     """
     product_name = "octavia"
     logging.setup(conf, product_name)
-    LOG.info(_LI("Logging enabled!"))
+    LOG.info("Logging enabled!")

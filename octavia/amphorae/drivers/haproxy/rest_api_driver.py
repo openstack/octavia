@@ -32,7 +32,6 @@ from octavia.common import constants as consts
 from octavia.common.jinja.haproxy import jinja_cfg
 from octavia.common.tls_utils import cert_parser
 from octavia.common import utils
-from octavia.i18n import _LE, _LW
 
 LOG = logging.getLogger(__name__)
 API_VERSION = consts.API_VERSION
@@ -135,9 +134,9 @@ class HaproxyAmphoraLoadBalancerDriver(
                                      load_balancer.vip.ip_address,
                                      net_info)
             except exc.Conflict:
-                LOG.warning(_LW('VIP with MAC {mac} already exists on '
-                                'amphora, skipping post_vip_plug').format(
-                    mac=port.mac_address))
+                LOG.warning(('VIP with MAC {mac} already exists on '
+                            'amphora, skipping post_vip_plug').format(
+                                mac=port.mac_address))
 
     def post_network_plug(self, amphora, port):
         fixed_ips = []
@@ -155,9 +154,9 @@ class HaproxyAmphoraLoadBalancerDriver(
         try:
             self.client.plug_network(amphora, port_info)
         except exc.Conflict:
-            LOG.warning(_LW('Network with MAC {mac} already exists on '
-                            'amphora, skipping post_network_plug').format(
-                mac=port.mac_address))
+            LOG.warning(('Network with MAC {mac} already exists on '
+                        'amphora, skipping post_network_plug').format(
+                            mac=port.mac_address))
 
     def get_vrrp_interface(self, amphora):
         return self.client.get_interface(amphora, amphora.vrrp_ip)['interface']
@@ -288,12 +287,12 @@ class AmphoraAPIClient(object):
                 return r
             except (requests.ConnectionError, requests.Timeout) as e:
                 exception = e
-                LOG.warning(_LW("Could not connect to instance. Retrying."))
+                LOG.warning("Could not connect to instance. Retrying.")
                 time.sleep(CONF.haproxy_amphora.connection_retry_interval)
 
-        LOG.error(_LE("Connection retries (currently set to %(max_retries)s) "
-                      "exhausted.  The amphora is unavailable. Reason: "
-                      "%(exception)s"),
+        LOG.error("Connection retries (currently set to %(max_retries)s) "
+                  "exhausted.  The amphora is unavailable. Reason: "
+                  "%(exception)s",
                   {'max_retries': CONF.haproxy_amphora.connection_max_retries,
                    'exception': exception})
         raise driver_except.TimeOutException()

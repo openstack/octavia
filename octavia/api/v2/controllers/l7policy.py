@@ -30,7 +30,6 @@ from octavia.common import exceptions
 from octavia.common import validate
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
-from octavia.i18n import _LI
 
 
 CONF = cfg.CONF
@@ -76,8 +75,8 @@ class L7PolicyController(base.BaseController):
                 session, lb_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE,
                 listener_ids=listener_ids):
-            LOG.info(_LI("L7Policy cannot be created or modified because the "
-                         "Load Balancer is in an immutable state"))
+            LOG.info("L7Policy cannot be created or modified because the "
+                     "Load Balancer is in an immutable state")
             raise exceptions.ImmutableObject(resource='Load Balancer',
                                              id=lb_id)
 
@@ -112,7 +111,7 @@ class L7PolicyController(base.BaseController):
 
     def _send_l7policy_to_handler(self, session, db_l7policy, lb_id):
         try:
-            LOG.info(_LI("Sending Creation of L7Policy %s to handler"),
+            LOG.info("Sending Creation of L7Policy %s to handler",
                      db_l7policy.id)
             self.handler.create(db_l7policy)
         except Exception:
@@ -203,7 +202,7 @@ class L7PolicyController(base.BaseController):
             provisioning_status=constants.PENDING_UPDATE)
 
         try:
-            LOG.info(_LI("Sending Update of L7Policy %s to handler"), id)
+            LOG.info("Sending Update of L7Policy %s to handler", id)
             self.handler.update(
                 db_l7policy, sanitized_l7policy)
         except Exception:
@@ -236,7 +235,7 @@ class L7PolicyController(base.BaseController):
             provisioning_status=constants.PENDING_DELETE)
 
         try:
-            LOG.info(_LI("Sending Deletion of L7Policy %s to handler"),
+            LOG.info("Sending Deletion of L7Policy %s to handler",
                      db_l7policy.id)
             self.handler.delete(db_l7policy)
         except Exception:
@@ -267,7 +266,7 @@ class L7PolicyController(base.BaseController):
             db_l7policy = self.repositories.l7policy.get(
                 context.session, id=l7policy_id)
             if not db_l7policy:
-                LOG.info(_LI("L7Policy %s not found."), l7policy_id)
+                LOG.info("L7Policy %s not found.", l7policy_id)
                 raise exceptions.NotFound(
                     resource='L7Policy', id=l7policy_id)
             return l7rule.L7RuleController(

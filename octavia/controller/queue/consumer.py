@@ -18,7 +18,6 @@ import oslo_messaging as messaging
 from oslo_messaging.rpc import dispatcher
 
 from octavia.controller.queue import endpoint
-from octavia.i18n import _LI
 
 LOG = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ class ConsumerService(cotyledon.Service):
         self.message_listener = None
 
     def run(self):
-        LOG.info(_LI('Starting consumer...'))
+        LOG.info('Starting consumer...')
         transport = messaging.get_transport(self.conf)
         target = messaging.Target(topic=self.topic, server=self.server,
                                   fanout=False)
@@ -47,15 +46,14 @@ class ConsumerService(cotyledon.Service):
 
     def terminate(self, graceful=False):
         if self.message_listener:
-            LOG.info(_LI('Stopping consumer...'))
+            LOG.info('Stopping consumer...')
             self.message_listener.stop()
             if graceful:
-                LOG.info(
-                    _LI('Consumer successfully stopped.  Waiting for final '
-                        'messages to be processed...'))
+                LOG.info('Consumer successfully stopped.  Waiting for final '
+                         'messages to be processed...')
                 self.message_listener.wait()
         if self.endpoints:
-            LOG.info(_LI('Shutting down endpoint worker executors...'))
+            LOG.info('Shutting down endpoint worker executors...')
             for e in self.endpoints:
                 try:
                     e.worker.executor.shutdown()

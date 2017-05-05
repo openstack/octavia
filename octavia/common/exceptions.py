@@ -22,8 +22,6 @@ import six
 from oslo_utils import excutils
 from webob import exc
 
-from octavia.i18n import _LE
-
 
 class OctaviaException(Exception):
     """Base Octavia Exception.
@@ -167,7 +165,7 @@ class ComputeBuildException(OctaviaException):
 
 
 class ComputeBuildQueueTimeoutException(OctaviaException):
-    message = _LE('Failed to get an amphora build slot.')
+    message = _('Failed to get an amphora build slot.')
 
 
 class ComputeDeleteException(OctaviaException):

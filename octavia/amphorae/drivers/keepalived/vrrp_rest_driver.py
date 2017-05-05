@@ -18,7 +18,6 @@ import six
 from octavia.amphorae.drivers import driver_base as driver_base
 from octavia.amphorae.drivers.keepalived.jinja import jinja_cfg
 from octavia.common import constants
-from octavia.i18n import _LI
 
 LOG = logging.getLogger(__name__)
 API_VERSION = constants.API_VERSION
@@ -53,7 +52,7 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
 
         :param loadbalancer: loadbalancer object
         """
-        LOG.info(_LI("Stop loadbalancer %s amphora VRRP Service."),
+        LOG.info("Stop loadbalancer %s amphora VRRP Service.",
                  loadbalancer.id)
 
         for amp in six.moves.filter(
@@ -67,7 +66,7 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
 
         :param loadbalancer: loadbalancer object
         """
-        LOG.info(_LI("Start loadbalancer %s amphora VRRP Service."),
+        LOG.info("Start loadbalancer %s amphora VRRP Service.",
                  loadbalancer.id)
 
         for amp in six.moves.filter(
@@ -82,7 +81,7 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
 
         :param loadbalancer: loadbalancer object
         """
-        LOG.info(_LI("Reload loadbalancer %s amphora VRRP Service."),
+        LOG.info("Reload loadbalancer %s amphora VRRP Service.",
                  loadbalancer.id)
 
         for amp in six.moves.filter(

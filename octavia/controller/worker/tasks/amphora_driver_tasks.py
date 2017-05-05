@@ -25,7 +25,6 @@ from octavia.common import constants
 from octavia.controller.worker import task_utils as task_utilities
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
-from octavia.i18n import _LE, _LW
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -59,7 +58,7 @@ class ListenersUpdate(BaseAmphoraTask):
     def revert(self, loadbalancer, *args, **kwargs):
         """Handle failed listeners updates."""
 
-        LOG.warning(_LW("Reverting listeners updates."))
+        LOG.warning("Reverting listeners updates.")
 
         for listener in loadbalancer.listeners:
             self.task_utils.mark_listener_prov_status_error(listener.id)
@@ -78,7 +77,7 @@ class ListenerStop(BaseAmphoraTask):
     def revert(self, listener, *args, **kwargs):
         """Handle a failed listener stop."""
 
-        LOG.warning(_LW("Reverting listener stop."))
+        LOG.warning("Reverting listener stop.")
 
         self.task_utils.mark_listener_prov_status_error(listener.id)
 
@@ -96,7 +95,7 @@ class ListenerStart(BaseAmphoraTask):
     def revert(self, listener, *args, **kwargs):
         """Handle a failed listener start."""
 
-        LOG.warning(_LW("Reverting listener start."))
+        LOG.warning("Reverting listener start.")
 
         self.task_utils.mark_listener_prov_status_error(listener.id)
 
@@ -115,7 +114,7 @@ class ListenersStart(BaseAmphoraTask):
     def revert(self, listeners, *args, **kwargs):
         """Handle failed listeners starts."""
 
-        LOG.warning(_LW("Reverting listeners starts."))
+        LOG.warning("Reverting listeners starts.")
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_error(listener.id)
 
@@ -133,7 +132,7 @@ class ListenerDelete(BaseAmphoraTask):
     def revert(self, listener, *args, **kwargs):
         """Handle a failed listener delete."""
 
-        LOG.warning(_LW("Reverting listener delete."))
+        LOG.warning("Reverting listener delete.")
 
         self.task_utils.mark_listener_prov_status_error(listener.id)
 
@@ -166,7 +165,7 @@ class AmphoraFinalize(BaseAmphoraTask):
         """Handle a failed amphora finalize."""
         if isinstance(result, failure.Failure):
             return
-        LOG.warning(_LW("Reverting amphora finalize."))
+        LOG.warning("Reverting amphora finalize.")
         self.task_utils.mark_amphora_status_error(amphora.id)
 
 
@@ -185,7 +184,7 @@ class AmphoraPostNetworkPlug(BaseAmphoraTask):
         """Handle a failed post network plug."""
         if isinstance(result, failure.Failure):
             return
-        LOG.warning(_LW("Reverting post network plug."))
+        LOG.warning("Reverting post network plug.")
         self.task_utils.mark_amphora_status_error(amphora.id)
 
 
@@ -203,7 +202,7 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
         """Handle a failed post network plug."""
         if isinstance(result, failure.Failure):
             return
-        LOG.warning(_LW("Reverting post network plug."))
+        LOG.warning("Reverting post network plug.")
         for amphora in six.moves.filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
@@ -224,7 +223,7 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
         """Handle a failed amphora vip plug notification."""
         if isinstance(result, failure.Failure):
             return
-        LOG.warning(_LW("Reverting post vip plug."))
+        LOG.warning("Reverting post vip plug.")
         self.task_utils.mark_amphora_status_error(amphora.id)
         self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
 
@@ -244,7 +243,7 @@ class AmphoraePostVIPPlug(BaseAmphoraTask):
         """Handle a failed amphora vip plug notification."""
         if isinstance(result, failure.Failure):
             return
-        LOG.warning(_LW("Reverting amphorae post vip plug."))
+        LOG.warning("Reverting amphorae post vip plug.")
         self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
 
 
@@ -266,12 +265,12 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
         for amp in six.moves.filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
-                    # Currently this is supported only with REST Driver
-                    interface = self.amphora_driver.get_vrrp_interface(amp)
-                    self.amphora_repo.update(db_apis.get_session(), amp.id,
-                                             vrrp_interface=interface)
-                    amps.append(self.amphora_repo.get(db_apis.get_session(),
-                                                      id=amp.id))
+            # Currently this is supported only with REST Driver
+            interface = self.amphora_driver.get_vrrp_interface(amp)
+            self.amphora_repo.update(db_apis.get_session(), amp.id,
+                                     vrrp_interface=interface)
+            amps.append(self.amphora_repo.get(db_apis.get_session(),
+                                              id=amp.id))
         loadbalancer.amphorae = amps
         return loadbalancer
 
@@ -279,7 +278,7 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
         """Handle a failed amphora vip plug notification."""
         if isinstance(result, failure.Failure):
             return
-        LOG.warning(_LW("Reverting Get Amphora VRRP Interface."))
+        LOG.warning("Reverting Get Amphora VRRP Interface.")
         for amp in six.moves.filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
@@ -288,10 +287,9 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
                 self.amphora_repo.update(db_apis.get_session(), amp.id,
                                          vrrp_interface=None)
             except Exception as e:
-                LOG.error(_LE("Failed to update amphora %(amp)s "
-                              "VRRP interface to None due to: "
-                              "%(except)s"), {'amp': amp.id,
-                                              'except': e})
+                LOG.error("Failed to update amphora %(amp)s "
+                          "VRRP interface to None due to: %(except)s",
+                          {'amp': amp.id, 'except': e})
 
 
 class AmphoraVRRPUpdate(BaseAmphoraTask):

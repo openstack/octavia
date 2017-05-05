@@ -28,7 +28,6 @@ from octavia.common import exceptions
 from octavia.common import validate
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
-from octavia.i18n import _LI
 
 
 LOG = logging.getLogger(__name__)
@@ -69,8 +68,8 @@ class L7RuleController(base.BaseController):
                 session, load_balancer_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE,
                 listener_ids=[listener_id], l7policy_id=self.l7policy_id):
-            LOG.info(_LI("L7Rule cannot be created or modified because the "
-                         "Load Balancer is in an immutable state"))
+            LOG.info("L7Rule cannot be created or modified because the "
+                     "Load Balancer is in an immutable state")
             raise exceptions.ImmutableObject(resource='Load Balancer',
                                              id=load_balancer_id)
 
@@ -111,8 +110,7 @@ class L7RuleController(base.BaseController):
 
     def _send_l7rule_to_handler(self, session, db_l7rule):
         try:
-            LOG.info(_LI("Sending Creation of L7Rule %s to handler"),
-                     db_l7rule.id)
+            LOG.info("Sending Creation of L7Rule %s to handler", db_l7rule.id)
             self.handler.create(db_l7rule)
         except Exception:
             with excutils.save_and_reraise_exception(
@@ -185,7 +183,7 @@ class L7RuleController(base.BaseController):
             provisioning_status=constants.PENDING_UPDATE)
 
         try:
-            LOG.info(_LI("Sending Update of L7Rule %s to handler"), id)
+            LOG.info("Sending Update of L7Rule %s to handler", id)
             self.handler.update(db_l7rule, l7rule)
         except Exception:
             with excutils.save_and_reraise_exception(
@@ -212,8 +210,7 @@ class L7RuleController(base.BaseController):
             provisioning_status=constants.PENDING_DELETE)
 
         try:
-            LOG.info(_LI("Sending Deletion of L7Rule %s to handler"),
-                     db_l7rule.id)
+            LOG.info("Sending Deletion of L7Rule %s to handler", db_l7rule.id)
             self.handler.delete(db_l7rule)
         except Exception:
             with excutils.save_and_reraise_exception(

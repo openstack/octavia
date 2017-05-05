@@ -27,7 +27,6 @@ from octavia.common import constants
 from octavia.common import exceptions
 from octavia.common.jinja import user_data_jinja_cfg
 from octavia.controller.worker import amphora_rate_limit
-from octavia.i18n import _LE, _LW
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -101,7 +100,7 @@ class ComputeCreate(BaseComputeTask):
             return compute_id
 
         except Exception:
-            LOG.exception(_LE("Compute create for amphora id: %s failed"),
+            LOG.exception("Compute create for amphora id: %s failed",
                           amphora_id)
             raise
 
@@ -113,13 +112,13 @@ class ComputeCreate(BaseComputeTask):
         if isinstance(result, failure.Failure):
             return
         compute_id = result
-        LOG.warning(_LW("Reverting compute create for amphora with id"
-                        "%(amp)s and compute id: %(comp)s"),
+        LOG.warning("Reverting compute create for amphora with id"
+                    "%(amp)s and compute id: %(comp)s",
                     {'amp': amphora_id, 'comp': compute_id})
         try:
             self.compute.delete(compute_id)
         except Exception:
-            LOG.exception(_LE("Reverting compute create failed"))
+            LOG.exception("Reverting compute create failed")
 
 
 class CertComputeCreate(ComputeCreate):
@@ -157,7 +156,7 @@ class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
             try:
                 self.compute.delete(amp.compute_id)
             except Exception:
-                LOG.exception(_LE("Compute delete for amphora id: %s failed"),
+                LOG.exception("Compute delete for amphora id: %s failed",
                               amp.id)
                 raise
 
@@ -169,7 +168,7 @@ class ComputeDelete(BaseComputeTask):
         try:
             self.compute.delete(amphora.compute_id)
         except Exception:
-            LOG.exception(_LE("Compute delete for amphora id: %s failed"),
+            LOG.exception("Compute delete for amphora id: %s failed",
                           amphora.id)
             raise
 
@@ -219,14 +218,14 @@ class NovaServerGroupCreate(BaseComputeTask):
         :param result: here it refers to server group id
         """
         server_group_id = result
-        LOG.warning(_LW("Reverting server group create with id:%s"),
+        LOG.warning("Reverting server group create with id:%s",
                     server_group_id)
         try:
             self.compute.delete_server_group(server_group_id)
         except Exception as e:
-            LOG.error(_LE("Failed to delete server group.  Resources may "
-                          "still be in use for server group: %(sg)s due to "
-                          "error: %(except)s"),
+            LOG.error("Failed to delete server group.  Resources may "
+                      "still be in use for server group: %(sg)s due to "
+                      "error: %(except)s",
                       {'sg': server_group_id, 'except': e})
 
 

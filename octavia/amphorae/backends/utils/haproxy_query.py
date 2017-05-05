@@ -48,7 +48,7 @@ class HAProxyQuery(object):
         try:
             sock.connect(self.socket)
         except socket.error:
-            raise Exception("HAProxy '{0}' query failed.".format(query))
+            raise Exception(_("HAProxy '{0}' query failed.").format(query))
 
         try:
             sock.send(six.b(query + '\n'))

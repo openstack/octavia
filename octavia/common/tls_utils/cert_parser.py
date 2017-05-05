@@ -26,8 +26,6 @@ import six
 
 from octavia.common import data_models as data_models
 import octavia.common.exceptions as exceptions
-from octavia.i18n import _LE
-
 
 X509_BEG = b'-----BEGIN CERTIFICATE-----'
 X509_END = b'-----END CERTIFICATE-----'
@@ -81,7 +79,7 @@ def _read_private_key(private_key_pem, passphrase=None):
         return serialization.load_pem_private_key(private_key_pem, passphrase,
                                                   backends.default_backend())
     except Exception:
-        LOG.exception(_LE("Passphrase required."))
+        LOG.exception("Passphrase required.")
         raise exceptions.NeedsPassphrase
 
 
@@ -162,7 +160,7 @@ def _parse_pkcs7_bundle(pkcs7):
                 for cert in _get_certs_from_pkcs7_substrate(substrate):
                     yield cert
         except Exception:
-            LOG.exception(_LE('Unreadable Certificate.'))
+            LOG.exception('Unreadable Certificate.')
             raise exceptions.UnreadableCert
 
     # If no PEM encoding, assume this is DER encoded and try to decode
@@ -221,10 +219,10 @@ def _get_certs_from_pkcs7_substrate(substrate):
                                             asn1Spec=rfc2315.ContentInfo())
         contentType = contentInfo.getComponentByName('contentType')
     except Exception:
-        LOG.exception(_LE('Unreadable Certificate.'))
+        LOG.exception('Unreadable Certificate.')
         raise exceptions.UnreadableCert
     if contentType != rfc2315.signedData:
-        LOG.exception(_LE('Unreadable Certificate.'))
+        LOG.exception('Unreadable Certificate.')
         raise exceptions.UnreadableCert
 
     try:
@@ -232,7 +230,7 @@ def _get_certs_from_pkcs7_substrate(substrate):
             contentInfo.getComponentByName('content'),
             asn1Spec=rfc2315.SignedData())
     except Exception:
-        LOG.exception(_LE('Unreadable Certificate.'))
+        LOG.exception('Unreadable Certificate.')
         raise exceptions.UnreadableCert
 
     for cert in content.getComponentByName('certificates'):
@@ -269,7 +267,7 @@ def get_host_names(certificate):
 
         return host_names
     except Exception:
-        LOG.exception(_LE('Unreadable Certificate.'))
+        LOG.exception('Unreadable Certificate.')
         raise exceptions.UnreadableCert
 
 
@@ -284,7 +282,7 @@ def get_cert_expiration(certificate_pem):
                                               backends.default_backend())
         return cert.not_valid_after
     except Exception:
-        LOG.exception(_LE('Unreadable Certificate.'))
+        LOG.exception('Unreadable Certificate.')
         raise exceptions.UnreadableCert
 
 
@@ -300,7 +298,7 @@ def _get_x509_from_pem_bytes(certificate_pem):
         x509cert = x509.load_pem_x509_certificate(certificate_pem,
                                                   backends.default_backend())
     except Exception:
-        LOG.exception(_LE('Unreadable Certificate.'))
+        LOG.exception('Unreadable Certificate.')
         raise exceptions.UnreadableCert
     return x509cert
 
@@ -315,7 +313,7 @@ def _get_x509_from_der_bytes(certificate_der):
         x509cert = x509.load_der_x509_certificate(certificate_der,
                                                   backends.default_backend())
     except Exception:
-        LOG.exception(_LE('Unreadable Certificate.'))
+        LOG.exception('Unreadable Certificate.')
         raise exceptions.UnreadableCert
     return x509cert
 

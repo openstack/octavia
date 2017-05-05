@@ -13,7 +13,6 @@ Octavia Specific Commandments
 - [O318] Change assert(Not)Equal(A, None) or assert(Not)Equal(None, A)
   by optimal assert like assertIs(Not)None(A).
 - [O319] Validate that debug level logs are not translated.
-- [O320] Validate that LOG messages, except debug ones, have translations
 - [O321] Validate that jsonutils module is used instead of json
 - [O322] Don't use author tags
 - [O323] Change assertEqual(True, A) or assertEqual(False, A) to the more
@@ -24,6 +23,8 @@ Octavia Specific Commandments
   specific assertIn/NotIn(A, B)
 - [O339] LOG.warn() is not allowed. Use LOG.warning()
 - [O340] Don't use xrange()
+- [O341] Don't translate logs.
+- [0342] Exception messages should be translated
 
 Creating Unit Tests
 -------------------

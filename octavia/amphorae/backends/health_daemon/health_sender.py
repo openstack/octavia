@@ -18,7 +18,6 @@ from oslo_config import cfg
 from oslo_log import log as logging
 
 from octavia.amphorae.backends.health_daemon import status_message
-from octavia.i18n import _LE
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -39,9 +38,8 @@ class UDPStatusSender(object):
             try:
                 ip, port = ipport.rsplit(':', 1)
             except ValueError:
-                LOG.error(_LE("Invalid ip and port '%s' in "
-                              "health_manager controller_ip_port_list"),
-                          ipport)
+                LOG.error("Invalid ip and port '%s' in health_manager "
+                          "controller_ip_port_list", ipport)
                 break
             self.update(ip, port)
         self.v4sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -62,8 +60,7 @@ class UDPStatusSender(object):
         # dest = (family, socktype, proto, canonname, sockaddr)
         # e.g. 0 = sock family, 4 = sockaddr - what we actually need
         if addrinfo is None:
-            LOG.error(_LE('No controller address found. '
-                          'Unable to send heartbeat.'))
+            LOG.error('No controller address found. Unable to send heartbeat.')
             return
         try:
             if addrinfo[0] == socket.AF_INET:

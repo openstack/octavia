@@ -19,7 +19,6 @@ from oslo_policy import policy as oslo_policy
 from oslo_utils import excutils
 
 from octavia.common import exceptions
-from octavia.i18n import _LE
 from octavia import policies
 
 
@@ -93,7 +92,7 @@ class Policy(oslo_policy.Enforcer):
                 action, target, credentials, do_raise=do_raise, exc=exc)
         except oslo_policy.PolicyNotRegistered:
             with excutils.save_and_reraise_exception():
-                LOG.exception(_LE('Policy not registered'))
+                LOG.exception('Policy not registered')
         except Exception:
             credentials.pop('auth_token', None)
             with excutils.save_and_reraise_exception():

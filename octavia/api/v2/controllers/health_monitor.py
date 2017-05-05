@@ -29,7 +29,6 @@ from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
-from octavia.i18n import _LI
 
 
 CONF = cfg.CONF
@@ -47,7 +46,7 @@ class HealthMonitorController(base.BaseController):
         db_hm = self.repositories.health_monitor.get(
             session, id=hm_id)
         if not db_hm:
-            LOG.info(_LI("Health Monitor %s was not found"), hm_id)
+            LOG.info("Health Monitor %s was not found", hm_id)
             raise exceptions.NotFound(
                 resource=data_models.HealthMonitor._name(),
                 id=hm_id)
@@ -100,8 +99,8 @@ class HealthMonitorController(base.BaseController):
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE,
                 listener_ids=self._get_affected_listener_ids(session, hm),
                 pool_id=hm.pool_id):
-            LOG.info(_LI("Health Monitor cannot be created or modified "
-                         "because the Load Balancer is in an immutable state"))
+            LOG.info("Health Monitor cannot be created or modified because "
+                     "the Load Balancer is in an immutable state")
             raise exceptions.ImmutableObject(resource='Load Balancer',
                                              id=load_balancer_id)
 
@@ -136,7 +135,7 @@ class HealthMonitorController(base.BaseController):
 
     def _send_hm_to_handler(self, session, db_hm):
         try:
-            LOG.info(_LI("Sending Creation of Health Monitor %s to handler"),
+            LOG.info("Sending Creation of Health Monitor %s to handler",
                      db_hm.id)
             self.handler.create(db_hm)
         except Exception:
@@ -191,8 +190,8 @@ class HealthMonitorController(base.BaseController):
             provisioning_status=constants.PENDING_UPDATE)
 
         try:
-            LOG.info(_LI("Sending Update of Health Monitor for Pool %s to "
-                         "handler"), id)
+            LOG.info("Sending Update of Health Monitor for Pool %s to "
+                     "handler", id)
             self.handler.update(db_hm, health_monitor)
         except Exception:
             with excutils.save_and_reraise_exception(
@@ -220,8 +219,8 @@ class HealthMonitorController(base.BaseController):
             provisioning_status=constants.PENDING_DELETE)
 
         try:
-            LOG.info(_LI("Sending Deletion of Health Monitor for Pool %s to "
-                         "handler"), id)
+            LOG.info("Sending Deletion of Health Monitor for Pool %s to "
+                     "handler", id)
             self.handler.delete(db_hm)
         except Exception:
             with excutils.save_and_reraise_exception(

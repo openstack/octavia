@@ -29,8 +29,6 @@ from octavia.common import constants
 from octavia.common import data_models
 from octavia.db import api as db_api
 import octavia.db.repositories as repos
-from octavia.i18n import _LI
-
 
 LOG = logging.getLogger(__name__)
 ASYNC_TIME = 1
@@ -51,7 +49,7 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
 
     def member_controller(member, delete=False, update=False, create=False):
         time.sleep(ASYNC_TIME)
-        LOG.info(_LI("Simulating controller operation for member..."))
+        LOG.info("Simulating controller operation for member...")
 
         db_mem = None
         if delete:
@@ -83,12 +81,12 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
                                   member.pool.load_balancer.id,
                                   operating_status=constants.ONLINE,
                                   provisioning_status=constants.ACTIVE)
-        LOG.info(_LI("Simulated Controller Handler Thread Complete"))
+        LOG.info("Simulated Controller Handler Thread Complete")
 
     def l7policy_controller(l7policy, delete=False, update=False,
                             create=False):
         time.sleep(ASYNC_TIME)
-        LOG.info(_LI("Simulating controller operation for l7policy..."))
+        LOG.info("Simulating controller operation for l7policy...")
 
         db_l7policy = None
         if delete:
@@ -110,11 +108,11 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
                                       db_l7policy.listener.load_balancer.id,
                                       operating_status=constants.ONLINE,
                                       provisioning_status=constants.ACTIVE)
-        LOG.info(_LI("Simulated Controller Handler Thread Complete"))
+        LOG.info("Simulated Controller Handler Thread Complete")
 
     def l7rule_controller(l7rule, delete=False, update=False, create=False):
         time.sleep(ASYNC_TIME)
-        LOG.info(_LI("Simulating controller operation for l7rule..."))
+        LOG.info("Simulating controller operation for l7rule...")
 
         db_l7rule = None
         if delete:
@@ -135,12 +133,12 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
                                       listener.load_balancer.id,
                                       operating_status=constants.ONLINE,
                                       provisioning_status=constants.ACTIVE)
-        LOG.info(_LI("Simulated Controller Handler Thread Complete"))
+        LOG.info("Simulated Controller Handler Thread Complete")
 
     def health_monitor_controller(health_monitor, delete=False, update=False,
                                   create=False):
         time.sleep(ASYNC_TIME)
-        LOG.info(_LI("Simulating controller operation for health monitor..."))
+        LOG.info("Simulating controller operation for health monitor...")
 
         db_hm = None
         if delete:
@@ -182,11 +180,11 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
             health_monitor.pool.load_balancer.id,
             operating_status=constants.ONLINE,
             provisioning_status=constants.ACTIVE)
-        LOG.info(_LI("Simulated Controller Handler Thread Complete"))
+        LOG.info("Simulated Controller Handler Thread Complete")
 
     def pool_controller(pool, delete=False, update=False, create=False):
         time.sleep(ASYNC_TIME)
-        LOG.info(_LI("Simulating controller operation for pool..."))
+        LOG.info("Simulating controller operation for pool...")
 
         db_pool = None
         if delete:
@@ -218,12 +216,12 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
                                   pool.load_balancer.id,
                                   operating_status=constants.ONLINE,
                                   provisioning_status=constants.ACTIVE)
-        LOG.info(_LI("Simulated Controller Handler Thread Complete"))
+        LOG.info("Simulated Controller Handler Thread Complete")
 
     def listener_controller(listener, delete=False, update=False,
                             create=False):
         time.sleep(ASYNC_TIME)
-        LOG.info(_LI("Simulating controller operation for listener..."))
+        LOG.info("Simulating controller operation for listener...")
 
         if delete:
             repo.listener.update(db_api.get_session(), listener.id,
@@ -244,12 +242,12 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
                                   listener.load_balancer.id,
                                   operating_status=constants.ONLINE,
                                   provisioning_status=constants.ACTIVE)
-        LOG.info(_LI("Simulated Controller Handler Thread Complete"))
+        LOG.info("Simulated Controller Handler Thread Complete")
 
     def loadbalancer_controller(loadbalancer, delete=False, update=False,
                                 create=False):
         time.sleep(ASYNC_TIME)
-        LOG.info(_LI("Simulating controller operation for loadbalancer..."))
+        LOG.info("Simulating controller operation for loadbalancer...")
 
         if delete:
             repo.load_balancer.update(
@@ -266,7 +264,7 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
             repo.load_balancer.update(db_api.get_session(), id=loadbalancer.id,
                                       operating_status=constants.ONLINE,
                                       provisioning_status=constants.ACTIVE)
-        LOG.info(_LI("Simulated Controller Handler Thread Complete"))
+        LOG.info("Simulated Controller Handler Thread Complete")
 
     controller = loadbalancer_controller
     if isinstance(data_model, data_models.Member):
@@ -294,22 +292,19 @@ class InvalidHandlerInputObject(Exception):
 class LoadBalancerHandler(abstract_handler.BaseObjectHandler):
 
     def create(self, load_balancer_id):
-        LOG.info(_LI("%(entity)s handling the creation of "
-                     "load balancer %(id)s"),
+        LOG.info("%(entity)s handling the creation of load balancer %(id)s",
                  {"entity": self.__class__.__name__, "id": load_balancer_id})
         simulate_controller(load_balancer_id, create=True)
 
     def update(self, old_lb, load_balancer):
         validate_input(data_models.LoadBalancer, load_balancer)
-        LOG.info(_LI("%(entity)s handling the update of "
-                     "load balancer %(id)s"),
+        LOG.info("%(entity)s handling the update of load balancer %(id)s",
                  {"entity": self.__class__.__name__, "id": old_lb.id})
         load_balancer.id = old_lb.id
         simulate_controller(load_balancer, update=True)
 
     def delete(self, load_balancer_id):
-        LOG.info(_LI("%(entity)s handling the deletion of "
-                     "load balancer %(id)s"),
+        LOG.info("%(entity)s handling the deletion of load balancer %(id)s",
                  {"entity": self.__class__.__name__, "id": load_balancer_id})
         simulate_controller(load_balancer_id, delete=True)
 
@@ -317,19 +312,19 @@ class LoadBalancerHandler(abstract_handler.BaseObjectHandler):
 class ListenerHandler(abstract_handler.BaseObjectHandler):
 
     def create(self, listener_id):
-        LOG.info(_LI("%(entity)s handling the creation of listener %(id)s"),
+        LOG.info("%(entity)s handling the creation of listener %(id)s",
                  {"entity": self.__class__.__name__, "id": listener_id})
         simulate_controller(listener_id, create=True)
 
     def update(self, old_listener, listener):
         validate_input(data_models.Listener, listener)
-        LOG.info(_LI("%(entity)s handling the update of listener %(id)s"),
+        LOG.info("%(entity)s handling the update of listener %(id)s",
                  {"entity": self.__class__.__name__, "id": old_listener.id})
         listener.id = old_listener.id
         simulate_controller(listener, update=True)
 
     def delete(self, listener_id):
-        LOG.info(_LI("%(entity)s handling the deletion of listener %(id)s"),
+        LOG.info("%(entity)s handling the deletion of listener %(id)s",
                  {"entity": self.__class__.__name__, "id": listener_id})
         simulate_controller(listener_id, delete=True)
 
@@ -337,19 +332,19 @@ class ListenerHandler(abstract_handler.BaseObjectHandler):
 class PoolHandler(abstract_handler.BaseObjectHandler):
 
     def create(self, pool_id):
-        LOG.info(_LI("%(entity)s handling the creation of pool %(id)s"),
+        LOG.info("%(entity)s handling the creation of pool %(id)s",
                  {"entity": self.__class__.__name__, "id": pool_id})
         simulate_controller(pool_id, create=True)
 
     def update(self, old_pool, pool):
         validate_input(data_models.Pool, pool)
-        LOG.info(_LI("%(entity)s handling the update of pool %(id)s"),
+        LOG.info("%(entity)s handling the update of pool %(id)s",
                  {"entity": self.__class__.__name__, "id": old_pool.id})
         pool.id = old_pool.id
         simulate_controller(pool, update=True)
 
     def delete(self, pool_id):
-        LOG.info(_LI("%(entity)s handling the deletion of pool %(id)s"),
+        LOG.info("%(entity)s handling the deletion of pool %(id)s",
                  {"entity": self.__class__.__name__, "id": pool_id})
         simulate_controller(pool_id, delete=True)
 
@@ -357,23 +352,23 @@ class PoolHandler(abstract_handler.BaseObjectHandler):
 class HealthMonitorHandler(abstract_handler.BaseObjectHandler):
 
     def create(self, pool_id):
-        LOG.info(_LI("%(entity)s handling the creation of health monitor "
-                     "on pool  %(id)s"),
+        LOG.info("%(entity)s handling the creation of health monitor "
+                 "on pool  %(id)s",
                  {"entity": self.__class__.__name__, "id": pool_id})
         simulate_controller(pool_id, create=True)
 
     def update(self, old_health_monitor, health_monitor):
         validate_input(data_models.HealthMonitor, health_monitor)
-        LOG.info(_LI("%(entity)s handling the update of health monitor "
-                     "on pool %(id)s"),
+        LOG.info("%(entity)s handling the update of health monitor "
+                 "on pool %(id)s",
                  {"entity": self.__class__.__name__,
                   "id": old_health_monitor.pool_id})
         health_monitor.pool_id = old_health_monitor.pool_id
         simulate_controller(health_monitor, update=True)
 
     def delete(self, pool_id):
-        LOG.info(_LI("%(entity)s handling the deletion of health monitor "
-                     "on pool %(id)s"),
+        LOG.info("%(entity)s handling the deletion of health monitor "
+                 "on pool %(id)s",
                  {"entity": self.__class__.__name__, "id": pool_id})
         simulate_controller(pool_id, delete=True)
 
@@ -381,19 +376,19 @@ class HealthMonitorHandler(abstract_handler.BaseObjectHandler):
 class MemberHandler(abstract_handler.BaseObjectHandler):
 
     def create(self, member_id):
-        LOG.info(_LI("%(entity)s handling the creation of member %(id)s"),
+        LOG.info("%(entity)s handling the creation of member %(id)s",
                  {"entity": self.__class__.__name__, "id": member_id})
         simulate_controller(member_id, create=True)
 
     def update(self, old_member, member):
         validate_input(data_models.Member, member)
-        LOG.info(_LI("%(entity)s handling the update of member %(id)s"),
+        LOG.info("%(entity)s handling the update of member %(id)s",
                  {"entity": self.__class__.__name__, "id": old_member.id})
         member.id = old_member.id
         simulate_controller(member, update=True)
 
     def delete(self, member_id):
-        LOG.info(_LI("%(entity)s handling the deletion of member %(id)s"),
+        LOG.info("%(entity)s handling the deletion of member %(id)s",
                  {"entity": self.__class__.__name__, "id": member_id})
         simulate_controller(member_id, delete=True)
 
@@ -401,19 +396,19 @@ class MemberHandler(abstract_handler.BaseObjectHandler):
 class L7PolicyHandler(abstract_handler.BaseObjectHandler):
 
     def create(self, l7policy_id):
-        LOG.info(_LI("%(entity)s handling the creation of l7policy %(id)s"),
+        LOG.info("%(entity)s handling the creation of l7policy %(id)s",
                  {"entity": self.__class__.__name__, "id": l7policy_id})
         simulate_controller(l7policy_id, create=True)
 
     def update(self, old_l7policy, l7policy):
         validate_input(data_models.L7Policy, l7policy)
-        LOG.info(_LI("%(entity)s handling the update of l7policy %(id)s"),
+        LOG.info("%(entity)s handling the update of l7policy %(id)s",
                  {"entity": self.__class__.__name__, "id": old_l7policy.id})
         l7policy.id = old_l7policy.id
         simulate_controller(l7policy, update=True)
 
     def delete(self, l7policy_id):
-        LOG.info(_LI("%(entity)s handling the deletion of l7policy %(id)s"),
+        LOG.info("%(entity)s handling the deletion of l7policy %(id)s",
                  {"entity": self.__class__.__name__, "id": l7policy_id})
         simulate_controller(l7policy_id, delete=True)
 
@@ -421,19 +416,19 @@ class L7PolicyHandler(abstract_handler.BaseObjectHandler):
 class L7RuleHandler(abstract_handler.BaseObjectHandler):
 
     def create(self, l7rule):
-        LOG.info(_LI("%(entity)s handling the creation of l7rule %(id)s"),
+        LOG.info("%(entity)s handling the creation of l7rule %(id)s",
                  {"entity": self.__class__.__name__, "id": l7rule.id})
         simulate_controller(l7rule, create=True)
 
     def update(self, old_l7rule, l7rule):
         validate_input(data_models.L7Rule, l7rule)
-        LOG.info(_LI("%(entity)s handling the update of l7rule %(id)s"),
+        LOG.info("%(entity)s handling the update of l7rule %(id)s",
                  {"entity": self.__class__.__name__, "id": old_l7rule.id})
         l7rule.id = old_l7rule.id
         simulate_controller(l7rule, update=True)
 
     def delete(self, l7rule):
-        LOG.info(_LI("%(entity)s handling the deletion of l7rule %(id)s"),
+        LOG.info("%(entity)s handling the deletion of l7rule %(id)s",
                  {"entity": self.__class__.__name__, "id": l7rule.id})
         simulate_controller(l7rule, delete=True)
 

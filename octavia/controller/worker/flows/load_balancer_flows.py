@@ -30,8 +30,6 @@ from octavia.controller.worker.tasks import database_tasks
 from octavia.controller.worker.tasks import lifecycle_tasks
 from octavia.controller.worker.tasks import model_tasks
 from octavia.controller.worker.tasks import network_tasks
-from octavia.i18n import _LE
-
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -63,8 +61,8 @@ class LoadBalancerFlows(object):
         elif topology == constants.TOPOLOGY_SINGLE:
             lb_create_flow.add(*self._create_single_topology())
         else:
-            LOG.error(_LE("Unknown topology: %s.  Unable to build load "
-                          "balancer."), topology)
+            LOG.error("Unknown topology: %s.  Unable to build load balancer.",
+                      topology)
             raise exceptions.InvalidTopology(topology=topology)
 
         post_amp_prefix = constants.POST_LB_AMP_ASSOCIATION_SUBFLOW

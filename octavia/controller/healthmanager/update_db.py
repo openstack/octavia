@@ -25,8 +25,6 @@ from octavia.controller.healthmanager import update_serializer
 from octavia.controller.queue import event_queue
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
-from octavia.i18n import _LE, _LW
-
 
 LOG = logging.getLogger(__name__)
 
@@ -107,10 +105,9 @@ class UpdateHealthDb(object):
                                              last_update=(datetime.
                                                           datetime.utcnow()))
         else:
-            LOG.warning(_LW('Amphora %(id)s health message reports %(found)i '
-                            'listeners when %(expected)i expected'),
-                        {'id': health['id'],
-                         'found': len(listeners),
+            LOG.warning('Amphora %(id)s health message reports %(found)i '
+                        'listeners when %(expected)i expected',
+                        {'id': health['id'], 'found': len(listeners),
                          'expected': expected_listener_count})
 
         # We got a heartbeat so lb is healthy until proven otherwise
@@ -129,8 +126,8 @@ class UpdateHealthDb(object):
                 if lb_status == constants.ONLINE:
                     lb_status = constants.DEGRADED
             else:
-                LOG.warning(_LW('Listener %(list)s reported status of '
-                                '%(status)s'), {'list': listener_id,
+                LOG.warning(('Listener %(list)s reported status of '
+                            '%(status)s'), {'list': listener_id,
                             'status': listener.get('status')})
 
             try:
@@ -140,7 +137,7 @@ class UpdateHealthDb(object):
                         listener_id, listener_status
                     )
             except sqlalchemy.orm.exc.NoResultFound:
-                LOG.error(_LE("Listener %s is not in DB"), listener_id)
+                LOG.error("Listener %s is not in DB", listener_id)
 
             pools = listener['pools']
             for pool_id, pool in pools.items():
@@ -154,8 +151,8 @@ class UpdateHealthDb(object):
                     pool_status = constants.ERROR
                     lb_status = constants.ERROR
                 else:
-                    LOG.warning(_LW('Pool %(pool)s reported status of '
-                                    '%(status)s'), {'pool': pool_id,
+                    LOG.warning(('Pool %(pool)s reported status of '
+                                '%(status)s'), {'pool': pool_id,
                                 'status': pool.get('status')})
 
                 members = pool['members']
@@ -173,9 +170,9 @@ class UpdateHealthDb(object):
                     elif status == constants.NO_CHECK:
                         member_status = constants.NO_MONITOR
                     else:
-                        LOG.warning(_LW('Member %(mem)s reported status of '
-                                        '%(status)s'), {'mem': member_id,
-                                    'status': status})
+                        LOG.warning('Member %(mem)s reported status of '
+                                    '%(status)s', {'mem': member_id,
+                                                   'status': status})
 
                     try:
                         if member_status is not None:
@@ -184,8 +181,8 @@ class UpdateHealthDb(object):
                                 member_id, member_status
                             )
                     except sqlalchemy.orm.exc.NoResultFound:
-                        LOG.error(_LE("Member %s is not able to update "
-                                      "in DB"), member_id)
+                        LOG.error("Member %s is not able to update "
+                                  "in DB", member_id)
 
                 try:
                     if pool_status is not None:
@@ -194,7 +191,7 @@ class UpdateHealthDb(object):
                             pool_id, pool_status
                         )
                 except sqlalchemy.orm.exc.NoResultFound:
-                    LOG.error(_LE("Pool %s is not in DB"), pool_id)
+                    LOG.error("Pool %s is not in DB", pool_id)
 
         # Update the load balancer status last
         # TODO(sbalukoff): This logic will need to be adjusted if we
@@ -208,7 +205,7 @@ class UpdateHealthDb(object):
                     constants.LOADBALANCER, lb_id, lb_status
                 )
             except sqlalchemy.orm.exc.NoResultFound:
-                LOG.error(_LE("Load balancer %s is not in DB"), lb_id)
+                LOG.error("Load balancer %s is not in DB", lb_id)
 
 
 class UpdateStatsDb(stats.StatsMixin):

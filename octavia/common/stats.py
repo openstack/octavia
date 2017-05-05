@@ -17,8 +17,6 @@ import logging
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.db import repositories as repo
-from octavia.i18n import _LW
-
 
 LOG = logging.getLogger(__name__)
 
@@ -36,9 +34,8 @@ class StatsMixin(object):
         db_ls = self.listener_stats_repo.get_all(
             session, listener_id=listener_id)
         if not db_ls:
-            LOG.warning(
-                _LW("Listener Statistics for Listener %s was not found"),
-                listener_id)
+            LOG.warning("Listener Statistics for Listener %s was not found",
+                        listener_id)
 
         statistics = data_models.ListenerStatistics(listener_id=listener_id)
 
