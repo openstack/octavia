@@ -76,7 +76,7 @@ class HealthMonitorController(base.BaseController):
         else:
             project_id = {'project_id': context.project_id}
         db_hm = self.repositories.health_monitor.get_all(
-            context.session, **project_id)
+            context.session, show_deleted=False, **project_id)
         result = self._convert_db_to_type(
             db_hm, [hm_types.HealthMonitorResponse])
         return hm_types.HealthMonitorsRootResponse(healthmonitors=result)

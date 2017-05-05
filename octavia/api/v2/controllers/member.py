@@ -55,7 +55,7 @@ class MembersController(base.BaseController):
         """Lists all pool members of a pool."""
         context = pecan.request.context.get('octavia_context')
         db_members = self.repositories.member.get_all(
-            context.session, pool_id=self.pool_id)
+            context.session, show_deleted=False, pool_id=self.pool_id)
         result = self._convert_db_to_type(
             db_members, [member_types.MemberResponse])
         return member_types.MembersRootResponse(members=result)

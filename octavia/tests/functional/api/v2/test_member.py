@@ -64,6 +64,19 @@ class TestMember(base.BaseAPITest):
         self.assertEqual(api_member, response)
         self.assertEqual(api_member.get('name'), '')
 
+    def test_get_hides_deleted(self):
+        api_member = self.create_member(
+            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+
+        response = self.get(self.members_path)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.member_repo, api_member.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.members_path)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
+
     def test_bad_get(self):
         self.get(self.member_path.format(member_id=uuidutils.generate_uuid()),
                  status=404)

@@ -253,9 +253,9 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     def _set_lb_and_children_statuses(self, lb_id, prov_status, op_status,
                                       autodetect=True):
-        self.lb_repo.update(db_api.get_session(), lb_id,
-                            provisioning_status=prov_status,
-                            operating_status=op_status)
+        self.set_object_status(self.lb_repo, lb_id,
+                               provisioning_status=prov_status,
+                               operating_status=op_status)
         lb_listeners = self.listener_repo.get_all(db_api.get_session(),
                                                   load_balancer_id=lb_id)
         for listener in lb_listeners:
@@ -264,9 +264,9 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                 listener_prov = constants.DELETED
             else:
                 listener_prov = prov_status
-            self.listener_repo.update(db_api.get_session(), listener.id,
-                                      provisioning_status=listener_prov,
-                                      operating_status=op_status)
+            self.set_object_status(self.listener_repo, listener.id,
+                                   provisioning_status=listener_prov,
+                                   operating_status=op_status)
             lb_l7policies = self.l7policy_repo.get_all(db_api.get_session(),
                                                        listener_id=listener.id)
             for l7policy in lb_l7policies:
@@ -275,9 +275,9 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                     l7policy_prov = constants.DELETED
                 else:
                     l7policy_prov = prov_status
-                self.l7policy_repo.update(db_api.get_session(), l7policy.id,
-                                          provisioning_status=l7policy_prov,
-                                          operating_status=op_status)
+                self.set_object_status(self.l7policy_repo, l7policy.id,
+                                       provisioning_status=l7policy_prov,
+                                       operating_status=op_status)
                 l7rules = self.l7rule_repo.get_all(db_api.get_session(),
                                                    l7policy_id=l7policy.id)
                 for l7rule in l7rules:
@@ -286,9 +286,9 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                         l7rule_prov = constants.DELETED
                     else:
                         l7rule_prov = prov_status
-                    self.l7rule_repo.update(db_api.get_session(), l7rule.id,
-                                            provisioning_status=l7rule_prov,
-                                            operating_status=op_status)
+                    self.set_object_status(self.l7rule_repo, l7rule.id,
+                                           provisioning_status=l7rule_prov,
+                                           operating_status=op_status)
         lb_pools = self.pool_repo.get_all(db_api.get_session(),
                                           load_balancer_id=lb_id)
         for pool in lb_pools:
@@ -297,28 +297,28 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                 pool_prov = constants.DELETED
             else:
                 pool_prov = prov_status
-            self.pool_repo.update(db_api.get_session(), pool.id,
-                                  provisioning_status=pool_prov,
-                                  operating_status=op_status)
+            self.set_object_status(self.pool_repo, pool.id,
+                                   provisioning_status=pool_prov,
+                                   operating_status=op_status)
             for member in pool.members:
                 if autodetect and (member.provisioning_status ==
                                    constants.PENDING_DELETE):
                     member_prov = constants.DELETED
                 else:
                     member_prov = prov_status
-                self.member_repo.update(db_api.get_session(), member.id,
-                                        provisioning_status=member_prov,
-                                        operating_status=op_status)
+                self.set_object_status(self.member_repo, member.id,
+                                       provisioning_status=member_prov,
+                                       operating_status=op_status)
             if pool.health_monitor:
                 if autodetect and (pool.health_monitor.provisioning_status ==
                                    constants.PENDING_DELETE):
                     hm_prov = constants.DELETED
                 else:
                     hm_prov = prov_status
-                self.health_monitor_repo.update(db_api.get_session(),
-                                                pool.health_monitor.id,
-                                                provisioning_status=hm_prov,
-                                                operating_status=op_status)
+                self.set_object_status(self.health_monitor_repo,
+                                       pool.health_monitor.id,
+                                       provisioning_status=hm_prov,
+                                       operating_status=op_status)
 
     def set_lb_status(self, lb_id, status=None):
         explicit_status = True if status is not None else False
@@ -334,6 +334,13 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self._set_lb_and_children_statuses(lb_id, status, op_status,
                                            autodetect=not explicit_status)
         return self.get(self.LB_PATH.format(lb_id=lb_id)).json
+
+    @staticmethod
+    def set_object_status(repo, id_, provisioning_status=constants.ACTIVE,
+                          operating_status=constants.ONLINE):
+        repo.update(db_api.get_session(), id_,
+                    provisioning_status=provisioning_status,
+                    operating_status=operating_status)
 
     def assert_final_lb_statuses(self, lb_id, delete=False):
         expected_prov_status = constants.ACTIVE

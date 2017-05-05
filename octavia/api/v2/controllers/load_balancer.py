@@ -64,7 +64,7 @@ class LoadBalancersController(base.BaseController):
         else:
             project_id = {'project_id': context.project_id}
         load_balancers = self.repositories.load_balancer.get_all(
-            context.session, **project_id)
+            context.session, show_deleted=False, **project_id)
         result = self._convert_db_to_type(load_balancers,
                                           [lb_types.LoadBalancerResponse])
         return lb_types.LoadBalancersRootResponse(loadbalancers=result)

@@ -60,6 +60,20 @@ class TestHealthMonitor(base.BaseAPITest):
         response.pop('updated_at')
         self.assertEqual(api_hm, response)
 
+    def test_get_hides_deleted(self):
+        api_hm = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1).get(self.root_tag)
+
+        response = self.get(self.HMS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.health_monitor_repo, api_hm.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.HMS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
+
     def test_bad_get(self):
         self.get(self.HM_PATH.format(
             healthmonitor_id=uuidutils.generate_uuid()), status=404)

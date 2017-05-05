@@ -63,7 +63,7 @@ class PoolsController(base.BaseController):
         else:
             project_id = {'project_id': context.project_id}
         db_pools = self.repositories.pool.get_all(
-            context.session, **project_id)
+            context.session, show_deleted=False, **project_id)
         result = self._convert_db_to_type(db_pools, [pool_types.PoolResponse])
         return pool_types.PoolsRootResponse(pools=result)
 

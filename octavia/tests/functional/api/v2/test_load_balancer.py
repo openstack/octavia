@@ -344,6 +344,19 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(network.id, response.get('vip_network_id'))
         self.assertEqual(port.id, response.get('vip_port_id'))
 
+    def test_get_hides_deleted(self):
+        api_lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get(self.root_tag)
+
+        response = self.get(self.LBS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.lb_repo, api_lb.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.LBS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
+
     def test_get_bad_lb_id(self):
         path = self.LB_PATH.format(lb_id='SEAN-CONNERY')
         self.get(path, status=404)

@@ -109,7 +109,12 @@ class BaseRepository(object):
         :param filters: Filters to decide which entities should be retrieved.
         :returns: [octavia.common.data_model]
         """
-        model_list = session.query(self.model_class).filter_by(**filters).all()
+        deleted = filters.pop('show_deleted', True)
+        model_list = session.query(self.model_class).filter_by(**filters)
+        if not deleted:
+            model_list = model_list.filter(
+                self.model_class.provisioning_status != consts.DELETED)
+        model_list = model_list.all()
         data_model_list = [model.to_data_model() for model in model_list]
         return data_model_list
 
@@ -1143,8 +1148,13 @@ class L7PolicyRepository(BaseRepository):
                              listener.load_balancer_id, listener.project_id)
 
     def get_all(self, session, **filters):
-        l7policy_list = session.query(self.model_class).filter_by(
-            **filters).order_by(self.model_class.position).all()
+        deleted = filters.pop('show_deleted', True)
+        l7policy_list = session.query(self.model_class).filter_by(**filters)
+        if not deleted:
+            l7policy_list = l7policy_list.filter(
+                self.model_class.provisioning_status != consts.DELETED)
+
+        l7policy_list = l7policy_list.order_by(self.model_class.position).all()
         data_model_list = [p.to_data_model() for p in l7policy_list]
         return data_model_list
 
