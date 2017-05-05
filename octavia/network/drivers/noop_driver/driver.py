@@ -108,7 +108,17 @@ class NoopManager(object):
         LOG.debug("Network %s no-op, get_network network_id %s",
                   self.__class__.__name__, network_id)
         self.networkconfigconfig[network_id] = (network_id, 'get_network')
-        return network_models.Network(id=uuidutils.generate_uuid())
+        network = network_models.Network(id=uuidutils.generate_uuid())
+
+        class ItIsInsideMe(object):
+            def __contains__(self, item):
+                return True
+
+            def __iter__(self):
+                yield uuidutils.generate_uuid()
+
+        network.subnets = ItIsInsideMe()
+        return network
 
     def get_subnet(self, subnet_id):
         LOG.debug("Subnet %s no-op, get_subnet subnet_id %s",
