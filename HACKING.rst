@@ -25,6 +25,9 @@ Octavia Specific Commandments
 - [O340] Don't use xrange()
 - [O341] Don't translate logs.
 - [0342] Exception messages should be translated
+- [O343] Python 3: do not use basestring.
+- [O344] Python 3: do not use dict.iteritems.
+- [O345] Usage of Python eventlet module not allowed
 
 Creating Unit Tests
 -------------------
