@@ -334,12 +334,20 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             port = self.get_port(load_balancer.vip.port_id)
             return self._port_to_vip(port, load_balancer)
 
+        fixed_ip = {}
+        if load_balancer.vip.subnet_id:
+            fixed_ip['subnet_id'] = load_balancer.vip.subnet_id
+        if load_balancer.vip.ip_address:
+            fixed_ip['ip_address'] = load_balancer.vip.ip_address
         # It can be assumed that network_id exists
         port = {'port': {'name': 'octavia-lb-' + load_balancer.id,
                          'network_id': load_balancer.vip.network_id,
                          'admin_state_up': False,
                          'device_id': 'lb-{0}'.format(load_balancer.id),
                          'device_owner': OCTAVIA_OWNER}}
+
+        if fixed_ip:
+            port['port']['fixed_ips'] = [fixed_ip]
         try:
             new_port = self.neutron_client.create_port(port)
         except Exception:
