@@ -22,12 +22,13 @@ Introduction
 This document gives several examples of common L7 load balancer usage. For a
 description of L7 load balancing see: :doc:`l7`
 
-For the puposes of this guide we assume that the neutron command-line interface
-is going to be used to configure all features of Neutron LBaaS with an Octavia
-back-end. Also, in order to keep these examples short, we assume that many
-non-L7 configuration tasks (such as deploying loadbalancers, listeners, pools,
-members, healthmonitors, etc.) have already been accomplished. A description
-of the starting conditions is given in each example below.
+For the purposes of this guide we assume that the neutron command-line
+interface is going to be used to configure all features of Neutron LBaaS with
+an Octavia back-end. Also, in order to keep these examples short, we assume
+that many non-L7 configuration tasks (such as deploying loadbalancers,
+listeners, pools, members, healthmonitors, etc.) have already been
+accomplished. A description of the starting conditions is given in each example
+below.
 
 
 Examples

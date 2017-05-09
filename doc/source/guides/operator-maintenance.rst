@@ -14,7 +14,7 @@
       under the License.
 
 ======================================
-Operator Maintenace  Guide
+Operator Maintenance  Guide
 ======================================
 This document is intended for operators. For a developer guide see the
 :doc:`dev-quick-start` in this documentation repository. For an end-user
@@ -25,7 +25,7 @@ Monitoring
 ==========
 
 
-Montioring Load Balancer Amphora
+Monitoring Load Balancer Amphora
 --------------------------------
 Octavia will monitor the load balancing amphorae itself and initiate failovers
 and/or replacements if they malfunction. Therefore, most installations won't
@@ -211,11 +211,11 @@ Best Practices/Optimizations
 ----------------------------
 
 To speed up the failovers, the spare pool can be temporarily increased to
-accomodate the rapid failover of the amphora. In this case after the
+accommodate the rapid failover of the amphora. In this case after the
 new image has been loaded into glance, shut down or initiate a failover of the
 amphora in the spare pool. They can be found, for instance, by looking for the
-servers in ``openstack server list --all`` who only have an ip on the mangement
-network assigned but not any tenant network. Alternatively, use this
+servers in ``openstack server list --all`` who only have an ip on the
+management network assigned but not any tenant network. Alternatively, use this
 database query:
 
 
@@ -249,7 +249,7 @@ initiated this might crowd out other operations.
     In Pike a failover command is being added to the API which allows to failover
     a load balancer's amphora while taking care of the intricacies of different
     topologies and prioritizes administrative failovers behind other operations.
-    This function should be used instead of the ones descrived above once it
+    This function should be used instead of the ones described above once it
     becomes available.
 
 Rotating Cryptographic Certificates

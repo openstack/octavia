@@ -12,14 +12,14 @@ Vip QoS Policy Application
 Problem description
 ===================
 For real cases, the bandwidth of vip should be limited, because the upstream
-network resource is provided by the ISP or other orgnizations. That means it is
-not free. The openstack provider or users should pay for the limited bandwidth,
-for example, users buy the 50M bandwidth from ISP for openstack environment to
-access Internet, also it will be used for the connection outside of openstack
-to access the servers in openstack. And the servers are behind LoadBalance VIP.
-We cannot offer the whole bandwidth to the servers, as maybe there also are the
-VMs want to access the external network. So we should take a bandwidth
-limitation towards vip port.
+network resource is provided by the ISP or other organizations. That means it
+is not free. The openstack provider or users should pay for the limited
+bandwidth, for example, users buy the 50M bandwidth from ISP for openstack
+environment to access Internet, also it will be used for the connection outside
+of openstack to access the servers in openstack. And the servers are behind
+LoadBalance VIP. We cannot offer the whole bandwidth to the servers, as maybe
+there also are the VMs want to access the external network. So we should take a
+bandwidth limitation towards vip port.
 
 Also, if the upstream network resource had been used up mostly, we still want
 the backend servers behind loadbalancer are accessible and stable. The min

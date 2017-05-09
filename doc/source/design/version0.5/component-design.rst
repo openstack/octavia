@@ -161,7 +161,7 @@ driver.
 
 It should be noted that in later releases of Octavia, the controller functions
 will be split across several components. At this stage we are less concerned
-with how this internal communcation will happen, and are most concerned with
+with how this internal communication will happen, and are most concerned with
 ensuring communication with amphorae, the amphora LB driver, and the Network
 driver are all made as perfect as possible.
 
@@ -404,7 +404,7 @@ Option 2: "True Active / Standby"
 
 * In this topology, both amphorae need to be colocated on the same subnet.
   As such a "spares pool" doesn't make sense for this type of layout, unless
-  all spares are on the same mamangement network with the active nodes.
+  all spares are on the same management network with the active nodes.
 
 We considered also supporting "Single node" topology, but this turns out to be
 the same thing as option 1 above with a spares pool size of zero.

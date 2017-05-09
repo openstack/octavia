@@ -77,7 +77,7 @@ description of these terms.
     Layer 7 Rule
         Single logical expression used to match a condition present in a given
         HTTP or terminated HTTPS request. L7 rules typically match against
-        a specific header or part of the URI and are used in conjuncion with
+        a specific header or part of the URI and are used in conjunction with
         L7 policies to accomplish L7 switching. An L7 rule is associated with
         exactly one L7 policy.
 

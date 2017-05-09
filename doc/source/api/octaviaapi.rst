@@ -2238,7 +2238,7 @@ Modify a project's quotas.
 Delete Quota
 ************
 
-Delete a project's quota, reseting it to the configured default quotas.
+Delete a project's quota, resetting it to the configured default quotas.
 
 +----------------+-----------------------------------------------------------+
 | Request Type   | ``DELETE``                                                |
