@@ -74,6 +74,7 @@ class L7PolicyRootResponse(types.BaseType):
 
 class L7PoliciesRootResponse(types.BaseType):
     l7policies = wtypes.wsattr([L7PolicyResponse])
+    l7policies_links = wtypes.wsattr([types.PageType])
 
 
 class L7PolicyPOST(BaseL7PolicyType):

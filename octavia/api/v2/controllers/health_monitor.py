@@ -62,10 +62,12 @@ class HealthMonitorController(base.BaseController):
             db_hm, hm_types.HealthMonitorResponse)
         return hm_types.HealthMonitorRootResponse(healthmonitor=result)
 
-    @wsme_pecan.wsexpose(hm_types.HealthMonitorsRootResponse, wtypes.text)
+    @wsme_pecan.wsexpose(hm_types.HealthMonitorsRootResponse, wtypes.text,
+                         ignore_extra_args=True)
     def get_all(self, project_id=None):
         """Gets all health monitors."""
-        context = pecan.request.context.get('octavia_context')
+        pcontext = pecan.request.context
+        context = pcontext.get('octavia_context')
         if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
             if project_id:
                 project_id = {'project_id': project_id}
@@ -73,11 +75,14 @@ class HealthMonitorController(base.BaseController):
                 project_id = {}
         else:
             project_id = {'project_id': context.project_id}
-        db_hm = self.repositories.health_monitor.get_all(
-            context.session, show_deleted=False, **project_id)
+        db_hm, links = self.repositories.health_monitor.get_all(
+            context.session, show_deleted=False,
+            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+            **project_id)
         result = self._convert_db_to_type(
             db_hm, [hm_types.HealthMonitorResponse])
-        return hm_types.HealthMonitorsRootResponse(healthmonitors=result)
+        return hm_types.HealthMonitorsRootResponse(
+            healthmonitors=result, healthmonitors_links=links)
 
     def _get_affected_listener_ids(self, session, hm):
         """Gets a list of all listeners this request potentially affects."""

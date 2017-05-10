@@ -20,6 +20,8 @@ import pecan
 import pecan.testing
 
 from octavia.api import config as pconfig
+# needed for tests to function when run independently:
+from octavia.common import config  # noqa: F401
 from octavia.common import constants
 from octavia.db import api as db_api
 from octavia.db import repositories
@@ -255,8 +257,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.lb_repo.update(db_api.get_session(), lb_id,
                             provisioning_status=prov_status,
                             operating_status=op_status)
-        lb_listeners = self.listener_repo.get_all(db_api.get_session(),
-                                                  load_balancer_id=lb_id)
+        lb_listeners, _ = self.listener_repo.get_all(
+            db_api.get_session(), load_balancer_id=lb_id)
         for listener in lb_listeners:
             for pool in listener.pools:
                 self.pool_repo.update(db_api.get_session(), pool.id,

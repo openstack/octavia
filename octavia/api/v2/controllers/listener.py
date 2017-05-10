@@ -64,10 +64,12 @@ class ListenersController(base.BaseController):
                                           listener_types.ListenerResponse)
         return listener_types.ListenerRootResponse(listener=result)
 
-    @wsme_pecan.wsexpose(listener_types.ListenersRootResponse, wtypes.text)
+    @wsme_pecan.wsexpose(listener_types.ListenersRootResponse, wtypes.text,
+                         ignore_extra_args=True)
     def get_all(self, project_id=None):
         """Lists all listeners."""
-        context = pecan.request.context.get('octavia_context')
+        pcontext = pecan.request.context
+        context = pcontext.get('octavia_context')
         if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
             if project_id:
                 project_id = {'project_id': project_id}
@@ -75,11 +77,14 @@ class ListenersController(base.BaseController):
                 project_id = {}
         else:
             project_id = {'project_id': context.project_id}
-        db_listeners = self.repositories.listener.get_all(
-            context.session, show_deleted=False, **project_id)
-        result = self._convert_db_to_type(db_listeners,
-                                          [listener_types.ListenerResponse])
-        return listener_types.ListenersRootResponse(listeners=result)
+        db_listeners, links = self.repositories.listener.get_all(
+            context.session, show_deleted=False,
+            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+            **project_id)
+        result = self._convert_db_to_type(
+            db_listeners, [listener_types.ListenerResponse])
+        return listener_types.ListenersRootResponse(
+            listeners=result, listeners_links=links)
 
     def _test_lb_and_listener_statuses(
             self, session, lb_id, id=None,

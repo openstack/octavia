@@ -50,14 +50,16 @@ class LoadBalancersController(base.BaseController):
         """Gets a single load balancer's details."""
         context = pecan.request.context.get('octavia_context')
         load_balancer = self._get_db_lb(context.session, id)
-        result = self._convert_db_to_type(load_balancer,
-                                          lb_types.LoadBalancerResponse)
+        result = self._convert_db_to_type(
+            load_balancer, lb_types.LoadBalancerResponse)
         return lb_types.LoadBalancerRootResponse(loadbalancer=result)
 
-    @wsme_pecan.wsexpose(lb_types.LoadBalancersRootResponse, wtypes.text)
+    @wsme_pecan.wsexpose(lb_types.LoadBalancersRootResponse, wtypes.text,
+                         ignore_extra_args=True)
     def get_all(self, project_id=None):
         """Lists all load balancers."""
-        context = pecan.request.context.get('octavia_context')
+        pcontext = pecan.request.context
+        context = pcontext.get('octavia_context')
         if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
             if project_id:
                 project_id = {'project_id': project_id}
@@ -65,11 +67,14 @@ class LoadBalancersController(base.BaseController):
                 project_id = {}
         else:
             project_id = {'project_id': context.project_id}
-        load_balancers = self.repositories.load_balancer.get_all(
-            context.session, show_deleted=False, **project_id)
-        result = self._convert_db_to_type(load_balancers,
-                                          [lb_types.LoadBalancerResponse])
-        return lb_types.LoadBalancersRootResponse(loadbalancers=result)
+        load_balancers, links = self.repositories.load_balancer.get_all(
+            context.session, show_deleted=False,
+            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+            **project_id)
+        result = self._convert_db_to_type(
+            load_balancers, [lb_types.LoadBalancerResponse])
+        return lb_types.LoadBalancersRootResponse(
+            loadbalancers=result, loadbalancers_links=links)
 
     def _test_lb_status(self, session, id, lb_status=constants.PENDING_UPDATE):
         """Verify load balancer is in a mutable state."""

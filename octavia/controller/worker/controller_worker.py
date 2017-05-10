@@ -316,7 +316,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         """
         lb = self._lb_repo.get(db_apis.get_session(),
                                id=load_balancer_id)
-        listeners = self._listener_repo.get_all(
+        listeners, _ = self._listener_repo.get_all(
             db_apis.get_session(),
             load_balancer_id=load_balancer_id)
 

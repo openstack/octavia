@@ -102,21 +102,31 @@ class BaseRepository(object):
             return
         return model.to_data_model()
 
-    def get_all(self, session, **filters):
+    def get_all(self, session, pagination_helper=None, **filters):
+
         """Retrieves a list of entities from the database.
 
         :param session: A Sql Alchemy database session.
+        :param pagination_helper: Helper to apply pagination and sorting.
         :param filters: Filters to decide which entities should be retrieved.
         :returns: [octavia.common.data_model]
         """
         deleted = filters.pop('show_deleted', True)
-        model_list = session.query(self.model_class).filter_by(**filters)
+        query = session.query(self.model_class).filter_by(**filters)
+
         if not deleted:
-            model_list = model_list.filter(
+            query = query.filter(
                 self.model_class.provisioning_status != consts.DELETED)
-        model_list = model_list.all()
+
+        if pagination_helper:
+            model_list, links = pagination_helper.apply(
+                query, self.model_class)
+        else:
+            links = None
+            model_list = query.all()
+
         data_model_list = [model.to_data_model() for model in model_list]
-        return data_model_list
+        return data_model_list, links
 
     def exists(self, session, id):
         """Determines whether an entity exists in the database by its id.
@@ -1149,16 +1159,24 @@ class L7PolicyRepository(BaseRepository):
             self._pool_check(session, l7policy.redirect_pool_id,
                              listener.load_balancer_id, listener.project_id)
 
-    def get_all(self, session, **filters):
+    def get_all(self, session, pagination_helper=None, **filters):
         deleted = filters.pop('show_deleted', True)
-        l7policy_list = session.query(self.model_class).filter_by(**filters)
+        query = session.query(self.model_class).filter_by(
+            **filters)
+
         if not deleted:
-            l7policy_list = l7policy_list.filter(
+            query = query.filter(
                 self.model_class.provisioning_status != consts.DELETED)
 
-        l7policy_list = l7policy_list.order_by(self.model_class.position).all()
-        data_model_list = [p.to_data_model() for p in l7policy_list]
-        return data_model_list
+        if pagination_helper:
+            model_list, links = pagination_helper.apply(
+                query, self.model_class)
+        else:
+            links = None
+            model_list = query.order_by(self.model_class.position).all()
+
+        data_model_list = [model.to_data_model() for model in model_list]
+        return data_model_list, links
 
     def update(self, session, id, **model_kwargs):
         with session.begin(subtransactions=True):

@@ -108,7 +108,7 @@ class TestDatabaseCleanup(base.TestCase):
                                   lb_network_ip=self.FAKE_IP,
                                   vrrp_ip=self.FAKE_IP,
                                   ha_ip=self.FAKE_IP)
-        self.amp_repo.get_all.return_value = [amphora]
+        self.amp_repo.get_all.return_value = ([amphora], None)
         self.amp_health_repo.check_amphora_expired.return_value = True
         self.dbclean.delete_old_amphorae()
         self.assertTrue(self.amp_repo.get_all.called)
@@ -126,7 +126,7 @@ class TestDatabaseCleanup(base.TestCase):
                                   lb_network_ip=self.FAKE_IP,
                                   vrrp_ip=self.FAKE_IP,
                                   ha_ip=self.FAKE_IP)
-        self.amp_repo.get_all.return_value = [amphora]
+        self.amp_repo.get_all.return_value = ([amphora], None)
         self.amp_health_repo.check_amphora_expired.return_value = False
         self.dbclean.delete_old_amphorae()
         self.assertTrue(self.amp_repo.get_all.called)
@@ -146,7 +146,7 @@ class TestDatabaseCleanup(base.TestCase):
         for expired_status in [True, False]:
             lb_repo = mock.MagicMock()
             self.dbclean.lb_repo = lb_repo
-            lb_repo.get_all.return_value = [load_balancer]
+            lb_repo.get_all.return_value = ([load_balancer], None)
             lb_repo.check_load_balancer_expired.return_value = (
                 expired_status)
             self.dbclean.cleanup_load_balancers()

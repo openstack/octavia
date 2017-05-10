@@ -49,15 +49,19 @@ class L7RuleController(base.BaseController):
                                           l7rule_types.L7RuleResponse)
         return l7rule_types.L7RuleRootResponse(rule=result)
 
-    @wsme_pecan.wsexpose(l7rule_types.L7RulesRootResponse, wtypes.text)
+    @wsme_pecan.wsexpose(l7rule_types.L7RulesRootResponse, wtypes.text,
+                         ignore_extra_args=True)
     def get_all(self):
         """Lists all l7rules of a l7policy."""
-        context = pecan.request.context.get('octavia_context')
-        db_l7rules = self.repositories.l7rule.get_all(
-            context.session, show_deleted=False, l7policy_id=self.l7policy_id)
-        result = self._convert_db_to_type(db_l7rules,
-                                          [l7rule_types.L7RuleResponse])
-        return l7rule_types.L7RulesRootResponse(rules=result)
+        pcontext = pecan.request.context
+        context = pcontext.get('octavia_context')
+        db_l7rules, links = self.repositories.l7rule.get_all(
+            context.session, show_deleted=False, l7policy_id=self.l7policy_id,
+            pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
+        result = self._convert_db_to_type(
+            db_l7rules, [l7rule_types.L7RuleResponse])
+        return l7rule_types.L7RulesRootResponse(
+            rules=result, rules_links=links)
 
     def _test_lb_listener_policy_statuses(self, session):
         """Verify load balancer is in a mutable state."""

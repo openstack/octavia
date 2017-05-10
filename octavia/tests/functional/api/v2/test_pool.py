@@ -206,6 +206,91 @@ class TestPool(base.BaseAPITest):
         self.assertEqual(1, len(response))
         self.assertEqual(api_pool.get('id'), response[0].get('id'))
 
+    def test_get_all_sorted(self):
+        self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool1')
+        self.set_lb_status(lb_id=self.lb_id)
+        self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool2')
+        self.set_lb_status(lb_id=self.lb_id)
+        self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool3')
+        self.set_lb_status(lb_id=self.lb_id)
+
+        response = self.get(self.POOLS_PATH,
+                            params={'sort': 'name:desc'})
+        pools_desc = response.json.get(self.root_tag_list)
+        response = self.get(self.POOLS_PATH,
+                            params={'sort': 'name:asc'})
+        pools_asc = response.json.get(self.root_tag_list)
+
+        self.assertEqual(3, len(pools_desc))
+        self.assertEqual(3, len(pools_asc))
+
+        pool_id_names_desc = [(pool.get('id'), pool.get('name'))
+                              for pool in pools_desc]
+        pool_id_names_asc = [(pool.get('id'), pool.get('name'))
+                             for pool in pools_asc]
+        self.assertEqual(pool_id_names_asc,
+                         list(reversed(pool_id_names_desc)))
+
+    def test_get_all_limited(self):
+        self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool1')
+        self.set_lb_status(lb_id=self.lb_id)
+        self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool2')
+        self.set_lb_status(lb_id=self.lb_id)
+        self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool3')
+        self.set_lb_status(lb_id=self.lb_id)
+
+        # First two -- should have 'next' link
+        first_two = self.get(self.POOLS_PATH, params={'limit': 2}).json
+        objs = first_two[self.root_tag_list]
+        links = first_two[self.root_tag_links]
+        self.assertEqual(2, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('next', links[0]['rel'])
+
+        # Third + off the end -- should have previous link
+        third = self.get(self.POOLS_PATH, params={
+            'limit': 2,
+            'marker': first_two[self.root_tag_list][1]['id']}).json
+        objs = third[self.root_tag_list]
+        links = third[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('previous', links[0]['rel'])
+
+        # Middle -- should have both links
+        middle = self.get(self.POOLS_PATH, params={
+            'limit': 1,
+            'marker': first_two[self.root_tag_list][0]['id']}).json
+        objs = middle[self.root_tag_list]
+        links = middle[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(2, len(links))
+        self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
+
     def test_empty_get_all(self):
         response = self.get(self.POOLS_PATH).json.get(self.root_tag_list)
         self.assertIsInstance(response, list)

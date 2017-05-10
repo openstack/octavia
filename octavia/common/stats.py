@@ -31,7 +31,7 @@ class StatsMixin(object):
 
     def get_listener_stats(self, session, listener_id):
         """Gets the listener statistics data_models object."""
-        db_ls = self.listener_stats_repo.get_all(
+        db_ls, _ = self.listener_stats_repo.get_all(
             session, listener_id=listener_id)
         if not db_ls:
             LOG.warning("Listener Statistics for Listener %s was not found",

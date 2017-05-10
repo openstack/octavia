@@ -271,6 +271,11 @@ class MissingProjectID(OctaviaException):
     message = _('Missing project ID in request where one is required.')
 
 
+class MissingAPIProjectID(APIException):
+    message = _('Missing project ID in request where one is required.')
+    code = 400
+
+
 class InvalidSubresource(APIException):
     msg = _('%(resource)s %(id)s not found.')
     code = 400
@@ -278,4 +283,24 @@ class InvalidSubresource(APIException):
 
 class ValidationException(APIException):
     msg = _('Validation failure: %(detail)s')
+    code = 400
+
+
+class InvalidSortKey(APIException):
+    msg = _("Supplied sort key '%(key)s' is not valid.")
+    code = 400
+
+
+class InvalidSortDirection(APIException):
+    msg = _("Supplied sort direction '%(key)s' is not valid.")
+    code = 400
+
+
+class InvalidMarker(APIException):
+    msg = _("Supplied pagination marker '%(key)s' is not valid.")
+    code = 400
+
+
+class InvalidLimit(APIException):
+    msg = _("Supplied pagination limit '%(key)s' is not valid.")
     code = 400

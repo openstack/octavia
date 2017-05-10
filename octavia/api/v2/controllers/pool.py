@@ -31,6 +31,7 @@ from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
+from octavia.i18n import _
 
 
 CONF = cfg.CONF
@@ -51,10 +52,12 @@ class PoolsController(base.BaseController):
         result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
         return pool_types.PoolRootResponse(pool=result)
 
-    @wsme_pecan.wsexpose(pool_types.PoolsRootResponse, wtypes.text)
+    @wsme_pecan.wsexpose(pool_types.PoolsRootResponse, wtypes.text,
+                         ignore_extra_args=True)
     def get_all(self, project_id=None):
         """Lists all pools."""
-        context = pecan.request.context.get('octavia_context')
+        pcontext = pecan.request.context
+        context = pcontext.get('octavia_context')
         if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
             if project_id:
                 project_id = {'project_id': project_id}
@@ -62,10 +65,12 @@ class PoolsController(base.BaseController):
                 project_id = {}
         else:
             project_id = {'project_id': context.project_id}
-        db_pools = self.repositories.pool.get_all(
-            context.session, show_deleted=False, **project_id)
+        db_pools, links = self.repositories.pool.get_all(
+            context.session, show_deleted=False,
+            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+            **project_id)
         result = self._convert_db_to_type(db_pools, [pool_types.PoolResponse])
-        return pool_types.PoolsRootResponse(pools=result)
+        return pool_types.PoolsRootResponse(pools=result, pools_links=links)
 
     def _get_affected_listener_ids(self, pool):
         """Gets a list of all listeners this request potentially affects."""

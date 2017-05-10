@@ -45,7 +45,8 @@ class TestStatsMixin(base.TestCase):
             total_connections=random.randrange(1000000000),
             request_errors=random.randrange(1000000000))
 
-        self.sm.listener_stats_repo.get_all.return_value = [self.fake_stats]
+        self.sm.listener_stats_repo.get_all.return_value = ([self.fake_stats],
+                                                            None)
 
         self.repo_amphora = mock.MagicMock()
         self.sm.repo_amphora = self.repo_amphora

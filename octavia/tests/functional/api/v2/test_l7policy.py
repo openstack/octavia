@@ -209,6 +209,83 @@ class TestL7Policy(base.BaseAPITest):
         self.assertIn((api_l7p_c.get('id'), api_l7p_c.get('action')),
                       policy_id_actions)
 
+    def test_get_all_sorted(self):
+        self.create_l7policy(
+            self.listener_id, constants.L7POLICY_ACTION_REJECT,
+            name='policy3').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7policy(
+            self.listener_id, constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            position=2, redirect_pool_id=self.pool_id,
+            name='policy2').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7policy(
+            self.listener_id, constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            redirect_url='http://localhost/',
+            name='policy1').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        response = self.get(self.L7POLICIES_PATH,
+                            params={'sort': 'position:desc'})
+        policies_desc = response.json.get(self.root_tag_list)
+        response = self.get(self.L7POLICIES_PATH,
+                            params={'sort': 'position:asc'})
+        policies_asc = response.json.get(self.root_tag_list)
+
+        self.assertEqual(3, len(policies_desc))
+        self.assertEqual(3, len(policies_asc))
+
+        policy_id_names_desc = [(policy.get('id'), policy.get('position'))
+                                for policy in policies_desc]
+        policy_id_names_asc = [(policy.get('id'), policy.get('position'))
+                               for policy in policies_asc]
+        self.assertEqual(policy_id_names_asc,
+                         list(reversed(policy_id_names_desc)))
+
+    def test_get_all_limited(self):
+        self.create_l7policy(
+            self.listener_id, constants.L7POLICY_ACTION_REJECT,
+            name='policy1').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7policy(
+            self.listener_id, constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            position=2, redirect_pool_id=self.pool_id,
+            name='policy2').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7policy(
+            self.listener_id, constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            redirect_url='http://localhost/',
+            name='policy3').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        # First two -- should have 'next' link
+        first_two = self.get(self.L7POLICIES_PATH, params={'limit': 2}).json
+        objs = first_two[self.root_tag_list]
+        links = first_two[self.root_tag_links]
+        self.assertEqual(2, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('next', links[0]['rel'])
+
+        # Third + off the end -- should have previous link
+        third = self.get(self.L7POLICIES_PATH, params={
+            'limit': 2,
+            'marker': first_two[self.root_tag_list][1]['id']}).json
+        objs = third[self.root_tag_list]
+        links = third[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(1, len(links))
+        self.assertEqual('previous', links[0]['rel'])
+
+        # Middle -- should have both links
+        middle = self.get(self.L7POLICIES_PATH, params={
+            'limit': 1,
+            'marker': first_two[self.root_tag_list][0]['id']}).json
+        objs = middle[self.root_tag_list]
+        links = middle[self.root_tag_links]
+        self.assertEqual(1, len(objs))
+        self.assertEqual(2, len(links))
+        self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
+
     def test_empty_get_all(self):
         response = self.get(self.L7POLICIES_PATH).json.get(self.root_tag_list)
         self.assertIsInstance(response, list)

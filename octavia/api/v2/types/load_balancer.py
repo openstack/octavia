@@ -99,6 +99,7 @@ class LoadBalancerFullRootResponse(LoadBalancerRootResponse):
 
 class LoadBalancersRootResponse(types.BaseType):
     loadbalancers = wtypes.wsattr([LoadBalancerResponse])
+    loadbalancers_links = wtypes.wsattr([types.PageType])
 
 
 class LoadBalancerPOST(BaseLoadBalancerType):

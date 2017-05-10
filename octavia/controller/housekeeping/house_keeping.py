@@ -69,7 +69,7 @@ class DatabaseCleanup(object):
             seconds=CONF.house_keeping.amphora_expiry_age)
 
         session = db_api.get_session()
-        amphora = self.amp_repo.get_all(session, status=constants.DELETED)
+        amphora, _ = self.amp_repo.get_all(session, status=constants.DELETED)
 
         for amp in amphora:
             if self.amp_health_repo.check_amphora_expired(session, amp.id,
@@ -84,7 +84,7 @@ class DatabaseCleanup(object):
             seconds=CONF.house_keeping.load_balancer_expiry_age)
 
         session = db_api.get_session()
-        load_balancers = self.lb_repo.get_all(
+        load_balancers, _ = self.lb_repo.get_all(
             session, provisioning_status=constants.DELETED)
 
         for lb in load_balancers:

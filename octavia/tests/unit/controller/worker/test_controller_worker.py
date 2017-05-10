@@ -631,7 +631,7 @@ class TestControllerWorker(base.TestCase):
                 'LoadBalancerFlows.get_update_load_balancer_flow',
                 return_value=_flow_mock)
     @mock.patch('octavia.db.repositories.ListenerRepository.get_all',
-                return_value=[_listener_mock])
+                return_value=([_listener_mock], None))
     def test_update_load_balancer(self,
                                   mock_listener_repo_get_all,
                                   mock_get_update_lb_flow,

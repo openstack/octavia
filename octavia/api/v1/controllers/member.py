@@ -49,12 +49,16 @@ class MembersController(base.BaseController):
         db_member = self._get_db_member(context.session, id)
         return self._convert_db_to_type(db_member, member_types.MemberResponse)
 
-    @wsme_pecan.wsexpose([member_types.MemberResponse])
+    @wsme_pecan.wsexpose([member_types.MemberResponse], ignore_extra_args=True)
     def get_all(self):
         """Lists all pool members of a pool."""
-        context = pecan.request.context.get('octavia_context')
-        db_members = self.repositories.member.get_all(
-            context.session, pool_id=self.pool_id)
+        pcontext = pecan.request.context
+        context = pcontext.get('octavia_context')
+
+        db_members, _ = self.repositories.member.get_all(
+            context.session,
+            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+            pool_id=self.pool_id)
         return self._convert_db_to_type(db_members,
                                         [member_types.MemberResponse])
 
