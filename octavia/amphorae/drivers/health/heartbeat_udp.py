@@ -163,6 +163,7 @@ class UDPStatusGetter(object):
 
         """
         (data, srcaddr) = self.sock.recvfrom(UDP_MAX_SIZE)
+        LOG.debug("Received packet from {}".format(srcaddr))
         obj = status_message.unwrap_envelope(data, self.key)
         return obj, srcaddr
 
