@@ -113,11 +113,14 @@ class TestNetworkTasks(base.TestCase):
         self.assertEqual({self.amphora_mock.id: ndm},
                          net.execute(self.load_balancer_mock))
 
-        vip_subnet_call = mock.call(self.vip_mock.subnet_id)
+        vrrp_port_call = mock.call(self.amphora_mock.vrrp_port_id)
+        mock_driver.get_port.assert_has_calls([vrrp_port_call])
+        # For some reason we call calculate_delta three times?
+        self.assertEqual(3, mock_driver.get_port.call_count)
+
         member_subnet_call = mock.call(member_mock.subnet_id)
-        mock_driver.get_subnet.assert_has_calls([vip_subnet_call,
-                                                 member_subnet_call])
-        self.assertEqual(2, mock_driver.get_subnet.call_count)
+        mock_driver.get_subnet.assert_has_calls([member_subnet_call])
+        self.assertEqual(1, mock_driver.get_subnet.call_count)
 
         mock_driver.get_plugged_networks.return_value = _interface(2)
         self.assertEqual(empty_deltas, net.execute(self.load_balancer_mock))

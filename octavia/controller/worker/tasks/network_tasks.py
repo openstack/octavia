@@ -47,8 +47,8 @@ class CalculateAmphoraDelta(BaseNetworkTask):
 
         # Figure out what networks we want
         # seed with lb network(s)
-        subnet = self.network_driver.get_subnet(loadbalancer.vip.subnet_id)
-        desired_network_ids = {subnet.network_id}.union(
+        vrrp_port = self.network_driver.get_port(amphora.vrrp_port_id)
+        desired_network_ids = {vrrp_port.network_id}.union(
             CONF.controller_worker.amp_boot_network_list)
 
         for pool in loadbalancer.pools:
