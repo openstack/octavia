@@ -579,7 +579,8 @@ class TestL7Policy(base.BaseAPITest):
                     status=409)
 
     def test_create_when_lb_pending_delete(self):
-        self.delete(self.LB_PATH.format(lb_id=self.lb_id))
+        self.delete(self.LB_PATH.format(lb_id=self.lb_id),
+                    params={'cascade': "true"})
         new_l7policy = {
             'listener_id': self.listener_id,
             'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
@@ -592,7 +593,8 @@ class TestL7Policy(base.BaseAPITest):
                                         constants.L7POLICY_ACTION_REJECT,
                                         ).get(self.root_tag)
         self.set_lb_status(self.lb_id)
-        self.delete(self.LB_PATH.format(lb_id=self.lb_id))
+        self.delete(self.LB_PATH.format(lb_id=self.lb_id),
+                    params={'cascade': "true"})
         new_l7policy = {
             'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
             'redirect_url': 'http://www.example.com'}
@@ -605,7 +607,8 @@ class TestL7Policy(base.BaseAPITest):
                                         constants.L7POLICY_ACTION_REJECT,
                                         ).get(self.root_tag)
         self.set_lb_status(self.lb_id)
-        self.delete(self.LB_PATH.format(lb_id=self.lb_id))
+        self.delete(self.LB_PATH.format(lb_id=self.lb_id),
+                    params={'cascade': "true"})
         self.delete(self.L7POLICY_PATH.format(
                     l7policy_id=l7policy.get('id')),
                     status=409)

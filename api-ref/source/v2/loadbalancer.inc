@@ -203,12 +203,12 @@ Creating a Fully Populated Load Balancer
 ----------------------------------------
 
 You can configure all documented features of the load balancer at
-creation time by specifying the additional elements or attributes in the
-request.
+creation time by specifying the additional elements or attributes
+in the request.
 
 Note: all pools must have names, and must only be fully defined once. To
 reference a pool from multiple objects, supply the pool name only for all
-subsequent references..
+subsequent references.
 
 Request Example
 ---------------
@@ -378,6 +378,9 @@ Remove a load balancer
 
 Removes a load balancer and its associated configuration from the project.
 
+The optional parameter ``cascade`` when defined as ``true`` will delete all
+child objects of the load balancer.
+
 The API immediately purges any and all configuration data, depending on the
 configuration settings. You cannot recover it.
 
@@ -399,6 +402,7 @@ Request
 
 .. rest_parameters:: ../parameters.yaml
 
+   - cascade: cascade-delete
    - loadbalancer_id: path-loadbalancer-id
 
 Curl Example

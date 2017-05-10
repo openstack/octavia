@@ -555,7 +555,8 @@ class TestHealthMonitor(base.BaseAPITest):
                     status=409)
 
     def test_create_when_lb_pending_delete(self):
-        self.delete(self.LB_PATH.format(lb_id=self.lb_id))
+        self.delete(self.LB_PATH.format(lb_id=self.lb_id),
+                    params={'cascade': "true"})
         self.create_health_monitor(
             self.pool_id,
             constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1, status=409)
@@ -565,7 +566,8 @@ class TestHealthMonitor(base.BaseAPITest):
             self.pool_id, constants.HEALTH_MONITOR_HTTP,
             1, 1, 1, 1).get(self.root_tag)
         self.set_lb_status(self.lb_id)
-        self.delete(self.LB_PATH.format(lb_id=self.lb_id))
+        self.delete(self.LB_PATH.format(lb_id=self.lb_id),
+                    params={'cascade': "true"})
         new_hm = {'max_retries': 2}
         self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
                  body=self._build_body(new_hm), status=409)
@@ -575,6 +577,7 @@ class TestHealthMonitor(base.BaseAPITest):
             self.pool_id, constants.HEALTH_MONITOR_HTTP,
             1, 1, 1, 1).get(self.root_tag)
         self.set_lb_status(self.lb_id)
-        self.delete(self.LB_PATH.format(lb_id=self.lb_id))
+        self.delete(self.LB_PATH.format(lb_id=self.lb_id),
+                    params={'cascade': "true"})
         self.delete(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
                     status=409)

@@ -81,13 +81,16 @@ class PoolFlows(object):
         # health monitor should cascade
         # members should cascade
         delete_pool_flow.add(database_tasks.MarkPoolPendingDeleteInDB(
+            name='mark_pool_pending_delete_in_db_' + name,
             requires=constants.POOL,
             rebind={constants.POOL: name}))
         delete_pool_flow.add(database_tasks.CountPoolChildrenForQuota(
+            name='count_pool_children_for_quota_' + name,
             requires=constants.POOL,
             provides=constants.POOL_CHILD_COUNT,
             rebind={constants.POOL: name}))
         delete_pool_flow.add(model_tasks.DeleteModelObject(
+            name='delete_model_object_' + name,
             rebind={constants.OBJECT: name}))
         delete_pool_flow.add(database_tasks.DeletePoolInDB(
             name='delete_pool_in_db_' + name,

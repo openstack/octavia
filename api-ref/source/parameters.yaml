@@ -1,6 +1,12 @@
 ###############################################################################
 # Path fields
 ###############################################################################
+cascade-delete:
+  description: |
+    If ``true`` will delete all child objects of the load balancer.
+  in: path
+  required: false
+  type: boolean
 path-listener-id:
   description: |
     The ID of the listener to query.

@@ -17,6 +17,7 @@ from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
+from oslo_utils import strutils
 import pecan
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
@@ -323,12 +324,18 @@ class LoadBalancersController(base.BaseController):
         result = self._convert_db_to_type(db_lb, lb_types.LoadBalancerResponse)
         return lb_types.LoadBalancerRootResponse(loadbalancer=result)
 
-    def _delete(self, id, cascade=False):
+    @wsme_pecan.wsexpose(None, wtypes.text, wtypes.text, status_code=204)
+    def delete(self, id, cascade=False):
         """Deletes a load balancer."""
         context = pecan.request.context.get('octavia_context')
+        cascade = strutils.bool_from_string(cascade)
         db_lb = self._get_db_lb(context.session, id)
         self._test_lb_status(context.session, id,
                              lb_status=constants.PENDING_DELETE)
+        if (db_lb.listeners or db_lb.pools) and not cascade:
+            msg = _("Cannot delete Load Balancer %s - it has children") % id
+            LOG.warning(msg)
+            raise exceptions.ValidationException(detail=msg)
 
         try:
             LOG.info("Sending deleted Load Balancer %s to the handler",
@@ -341,8 +348,3 @@ class LoadBalancersController(base.BaseController):
                     provisioning_status=constants.ERROR)
         result = self._convert_db_to_type(db_lb, lb_types.LoadBalancerResponse)
         return lb_types.LoadBalancersRootResponse(loadbalancer=result)
-
-    @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
-    def delete(self, id):
-        """Deletes a load balancer."""
-        return self._delete(id)
