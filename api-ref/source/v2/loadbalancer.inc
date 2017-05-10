@@ -203,8 +203,12 @@ Creating a Fully Populated Load Balancer
 ----------------------------------------
 
 You can configure all documented features of the load balancer at
-creation time by specifying the additional elements or attributes
-in the request.
+creation time by specifying the additional elements or attributes in the
+request.
+
+Note: all pools must have names, and must only be fully defined once. To
+reference a pool from multiple objects, supply the pool name only for all
+subsequent references..
 
 Request Example
 ---------------

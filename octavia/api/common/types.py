@@ -62,6 +62,10 @@ class URLType(wtypes.UserType):
 
 class BaseType(wtypes.Base):
     @classmethod
+    def _full_response(cls):
+        return False
+
+    @classmethod
     def from_data_model(cls, data_model, children=False):
         """Converts data_model to Octavia WSME type.
 
@@ -135,3 +139,11 @@ class BaseType(wtypes.Base):
                 attr_name = renamed
             ret_dict[attr_name] = value
         return ret_dict
+
+
+class IdOnlyType(BaseType):
+    id = wtypes.wsattr(wtypes.UuidType(), mandatory=True)
+
+
+class NameOnlyType(BaseType):
+    name = wtypes.wsattr(wtypes.StringType(max_length=255), mandatory=True)

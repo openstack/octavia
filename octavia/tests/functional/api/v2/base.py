@@ -82,9 +82,6 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         patcher = mock.patch('octavia.api.handlers.controller_simulator.'
                              'handler.SimulatedControllerHandler')
         self.handler_mock = patcher.start()
-        self.check_quota_met_true_mock = mock.patch(
-            'octavia.db.repositories.Repositories.check_quota_met',
-            return_value=True)
         self.app = self._make_app()
         self.project_id = uuidutils.generate_uuid()
 
@@ -93,6 +90,15 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
             pecan.set_config({}, overwrite=True)
 
         self.addCleanup(reset_pecan)
+
+    def start_quota_mock(self, object_type):
+        def mock_quota(session, lock_session, _class, project_id, count=1):
+            return _class == object_type
+        check_quota_met_true_mock = mock.patch(
+            'octavia.db.repositories.Repositories.check_quota_met',
+            side_effect=mock_quota)
+        check_quota_met_true_mock.start()
+        self.addCleanup(check_quota_met_true_mock.stop)
 
     def _make_app(self):
         return pecan.testing.load_test_app({'app': pconfig.app,

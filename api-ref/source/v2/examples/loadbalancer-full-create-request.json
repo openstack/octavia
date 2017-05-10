@@ -24,11 +24,11 @@
                     },
                     "members": [
                         {
-                            "ip_address": "'192.0.2.16'",
+                            "address": "192.0.2.16",
                             "protocol_port": 80
                         },
                         {
-                            "ip_address": "'192.0.2.19'",
+                            "address": "192.0.2.19",
                             "protocol_port": 80
                         }
                     ]
@@ -69,11 +69,11 @@
                 },
                 "members": [
                     {
-                        "ip_address": "'192.0.2.16'",
+                        "address": "192.0.2.51",
                         "protocol_port": 80
                     },
                     {
-                        "ip_address": "'192.0.2.19'",
+                        "address": "192.0.2.52",
                         "protocol_port": 80
                     }
                 ]

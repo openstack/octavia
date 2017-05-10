@@ -44,6 +44,12 @@ class L7RuleResponse(BaseL7Type):
         return rule
 
 
+class L7RuleFullResponse(L7RuleResponse):
+    @classmethod
+    def _full_response(cls):
+        return True
+
+
 class L7RuleRootResponse(types.BaseType):
     rule = wtypes.wsattr(L7RuleResponse)
 
@@ -55,12 +61,10 @@ class L7RulesRootResponse(types.BaseType):
 class L7RulePOST(BaseL7Type):
     """Defines mandatory and optional attributes of a POST request."""
     type = wtypes.wsattr(
-        wtypes.Enum(str,
-                    *constants.SUPPORTED_L7RULE_TYPES),
+        wtypes.Enum(str, *constants.SUPPORTED_L7RULE_TYPES),
         mandatory=True)
     compare_type = wtypes.wsattr(
-        wtypes.Enum(str,
-                    *constants.SUPPORTED_L7RULE_COMPARE_TYPES),
+        wtypes.Enum(str, *constants.SUPPORTED_L7RULE_COMPARE_TYPES),
         mandatory=True)
     key = wtypes.wsattr(wtypes.StringType(max_length=255))
     value = wtypes.wsattr(wtypes.StringType(max_length=255), mandatory=True)
@@ -90,3 +94,17 @@ class L7RulePUT(BaseL7Type):
 
 class L7RuleRootPUT(types.BaseType):
     rule = wtypes.wsattr(L7RulePUT)
+
+
+class L7RuleSingleCreate(BaseL7Type):
+    """Defines mandatory and optional attributes of a POST request."""
+    type = wtypes.wsattr(
+        wtypes.Enum(str, *constants.SUPPORTED_L7RULE_TYPES),
+        mandatory=True)
+    compare_type = wtypes.wsattr(
+        wtypes.Enum(str, *constants.SUPPORTED_L7RULE_COMPARE_TYPES),
+        mandatory=True)
+    key = wtypes.wsattr(wtypes.StringType(max_length=255))
+    value = wtypes.wsattr(wtypes.StringType(max_length=255), mandatory=True)
+    invert = wtypes.wsattr(bool, default=False)
+    admin_state_up = wtypes.wsattr(bool, default=True)

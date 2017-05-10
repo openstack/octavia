@@ -174,6 +174,14 @@ class MembersController(base.BaseController):
 
         return self._send_member_to_handler(context.session, db_member)
 
+    def _graph_create(self, lock_session, member_dict):
+        pool = self.repositories.pool.get(lock_session, id=self.pool_id)
+        member_dict = db_prepare.create_member(
+            member_dict, self.pool_id, bool(pool.health_monitor))
+        db_member = self._validate_create_member(lock_session, member_dict)
+
+        return db_member
+
     @wsme_pecan.wsexpose(member_types.MemberRootResponse,
                          wtypes.text, body=member_types.MemberRootPUT,
                          status_code=200)

@@ -172,6 +172,23 @@ class L7PolicyController(base.BaseController):
         return self._send_l7policy_to_handler(context.session, db_l7policy,
                                               lb_id=load_balancer_id)
 
+    def _graph_create(self, lock_session, policy_dict):
+        load_balancer_id = policy_dict.pop('load_balancer_id', None)
+        listener_id = policy_dict['listener_id']
+        policy_dict = db_prepare.create_l7policy(
+            policy_dict, load_balancer_id, listener_id)
+        rules = policy_dict.pop('l7rules', []) or []
+        db_policy = self._validate_create_l7policy(lock_session, policy_dict)
+
+        new_rules = []
+        for r in rules:
+            r['project_id'] = db_policy.project_id
+            new_rules.append(
+                l7rule.L7RuleController(db_policy.id)._graph_create(
+                    lock_session, r))
+
+        return db_policy
+
     @wsme_pecan.wsexpose(l7policy_types.L7PolicyRootResponse,
                          wtypes.text, body=l7policy_types.L7PolicyRootPUT,
                          status_code=200)

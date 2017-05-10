@@ -140,14 +140,6 @@ class L7RuleController(base.BaseController):
         self._check_l7policy_max_rules(context.session)
 
         lock_session = db_api.get_session(autocommit=False)
-        if self.repositories.check_quota_met(
-                context.session,
-                lock_session,
-                data_models.L7Rule,
-                l7rule.project_id):
-            lock_session.rollback()
-            raise exceptions.QuotaException
-
         l7rule_dict = db_prepare.create_l7rule(
             l7rule.to_dict(render_unsets=True), self.l7policy_id)
         try:
@@ -160,6 +152,16 @@ class L7RuleController(base.BaseController):
                 lock_session.rollback()
 
         return self._send_l7rule_to_handler(context.session, db_l7rule)
+
+    def _graph_create(self, lock_session, rule_dict):
+        try:
+            validate.l7rule_data(l7rule_types.L7RulePOST(**rule_dict))
+        except Exception as e:
+            raise exceptions.L7RuleValidation(error=e)
+        rule_dict = db_prepare.create_l7rule(rule_dict, self.l7policy_id)
+        db_rule = self._validate_create_l7rule(lock_session, rule_dict)
+
+        return db_rule
 
     @wsme_pecan.wsexpose(l7rule_types.L7RuleRootResponse,
                          wtypes.text, body=l7rule_types.L7RuleRootPUT,
