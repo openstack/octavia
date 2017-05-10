@@ -39,7 +39,7 @@ VALIDITY_DAYS=${3:-18250} # defaults to 50 years
 echo $CERT_DIR
 
 
-mkdir $CERT_DIR
+mkdir -p $CERT_DIR
 cd $CERT_DIR
 mkdir newcerts private
 chmod 700 private
