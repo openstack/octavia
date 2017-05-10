@@ -91,6 +91,7 @@ class TestNovaClient(base.TestCase):
 
     def setUp(self):
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf = conf
         self.net_name = "lb-mgmt-net"
         conf.config(group="networking", lb_network_name=self.net_name)
         conf.config(group="controller_worker",
@@ -203,6 +204,33 @@ class TestNovaClient(base.TestCase):
         self.manager.build(name="b" * 50, image_id=1)
         self.assertEqual(
             15, len(self.manager.manager.create.call_args[1]['name']))
+
+    def test_build_with_default_boot_network(self):
+        self.conf.config(group="controller_worker",
+                         amp_boot_network_list='')
+        amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
+                                        key_name=1,
+                                        sec_groups=1,
+                                        network_ids=None,
+                                        port_ids=[2],
+                                        user_data='Blah',
+                                        config_drive_files='Files Blah')
+
+        self.assertEqual(self.amphora.compute_id, amphora_id)
+
+        self.manager.manager.create.assert_called_with(
+            name="amphora_name",
+            nics=[{'port-id': 2}],
+            image=1,
+            flavor=1,
+            key_name=1,
+            security_groups=1,
+            files='Files Blah',
+            userdata='Blah',
+            config_drive=True,
+            scheduler_hints=None,
+            availability_zone=None
+        )
 
     def test_bad_build(self):
         self.manager.manager.create.side_effect = Exception
