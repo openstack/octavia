@@ -166,6 +166,33 @@ class TestNovaClient(base.TestCase):
             config_drive=True,
             scheduler_hints=None)
 
+    def test_build_with_default_boot_network(self):
+        CONF.set_override(group='controller_worker',
+                          name='amp_boot_network_list',
+                          override='', enforce_type=True)
+        amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
+                                        key_name=1,
+                                        sec_groups=1,
+                                        network_ids=None,
+                                        port_ids=[2],
+                                        user_data='Blah',
+                                        config_drive_files='Files Blah')
+
+        self.assertEqual(self.amphora.compute_id, amphora_id)
+
+        self.manager.manager.create.assert_called_with(
+            name="amphora_name",
+            nics=[{'port-id': 2}],
+            image=1,
+            flavor=1,
+            key_name=1,
+            security_groups=1,
+            files='Files Blah',
+            userdata='Blah',
+            config_drive=True,
+            scheduler_hints=None
+        )
+
     def test_bad_build(self):
         self.manager.manager.create.side_effect = Exception
         self.assertRaises(exceptions.ComputeBuildException, self.manager.build)

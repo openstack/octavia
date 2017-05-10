@@ -208,9 +208,15 @@ class VirtualMachineManager(compute_base.ComputeBase):
 
         try:
             inf_list = nova_response.interface_list()
+            no_boot_networks = (
+                not CONF.controller_worker.amp_boot_network_list)
             for interface in inf_list:
                 net_id = interface.net_id
-                if net_id in CONF.controller_worker.amp_boot_network_list:
+                is_boot_network = (
+                    net_id in CONF.controller_worker.amp_boot_network_list)
+                # Pick the first fixed_ip if this is a boot network or if
+                # there are no boot networks configured (use default network)
+                if is_boot_network or no_boot_networks:
                     lb_network_ip = interface.fixed_ips[0]['ip_address']
                     break
                 elif net_id == CONF.controller_worker.amp_network:
