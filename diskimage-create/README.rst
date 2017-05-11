@@ -179,7 +179,6 @@ and Sahara teams.  Thank you to everyone that worked on them for providing a
 great foundation for creating Octavia Amphora images.
 
     | https://github.com/openstack/diskimage-builder
-    | https://github.com/openstack/diskimage-builder/blob/master/docs/docker.md
     | https://github.com/openstack/tripleo-image-elements
     | https://github.com/openstack/sahara-image-elements
 
