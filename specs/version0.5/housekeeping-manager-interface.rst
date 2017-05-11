@@ -152,7 +152,7 @@ Performance Impact
 ------------------
 
 The housekeeping_interval and spare_pool_size parameters will be
-adjustible by the operator in order to balance resource usage against
+adjustable by the operator in order to balance resource usage against
 performance.
 
 
@@ -160,7 +160,7 @@ Developer impact
 ----------------
 
 Developers of other modules need to be aware that amphorae may be
-created, deleted, or saved for diagonsis by this daemon.
+created, deleted, or saved for diagnosis by this daemon.
 
 
 Implementation

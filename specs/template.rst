@@ -283,7 +283,7 @@ Note that the schema should be defined as restrictively as
 possible. Parameters which are required should be marked as such and
 only under exceptional circumstances should additional parameters
 which are not defined in the schema be permitted (eg
-additionaProperties should be False).
+additionalProperties should be False).
 
 Reuse of existing predefined parameter types such as regexps for
 passwords and user defined names is highly encouraged.

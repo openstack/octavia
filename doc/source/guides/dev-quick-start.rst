@@ -138,7 +138,7 @@ Production Deployment Walkthrough
 Create Octavia User
 ___________________
 By default Octavia will use the 'neutron' user for keystone authentication, and
-the admin user for interactions with all other serivces. However, it doesn't
+the admin user for interactions with all other services. However, it doesn't
 actually share neutron's database or otherwise access Neutron outside of
 Neutron's API, so a dedicated 'octavia' keystone user should generally be
 created for Octavia to use.
@@ -272,7 +272,7 @@ bi-directional certificate-based authentication in order to authenticate and
 encrypt communication. You must therefore create appropriate TLS certificates
 which will be used for key signing, authentication, and encryption. There is a
 helper script to do this in this repository under:
-``bin/create_certficiates.sh``
+``bin/create_certificates.sh``
 
 Please note that certificates created with this helper script may not meet your
 organization's security policies, since they are self-signed certificates with
