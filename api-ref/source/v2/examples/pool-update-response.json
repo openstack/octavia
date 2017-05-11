@@ -10,7 +10,7 @@
             }
         ],
         "created_at": "2017-05-10T18:14:44",
-        "provisioning_status": "ACTIVE",
+        "provisioning_status": "PENDING_UPDATE",
         "updated_at": "2017-05-10T23:08:12",
         "session_persistence": {
             "cookie_name": null,

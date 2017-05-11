@@ -1,0 +1,1 @@
+curl -X PUT -H "Content-Type: application/json" -H "X-Auth-Token: <token>" -d '{"member":{"name":"web-server-1-2","weight":"0","admin_state_up":"true","monitor_address":"192.0.2.40","monitor_port":8888}}' http://198.51.100.10:9876/v2.0/lbaas/pools/4029d267-3983-4224-a3d0-afb3fe16a2cd/members/957a1ace-1bd2-449b-8455-820b6e4b63f3

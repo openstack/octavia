@@ -275,6 +275,7 @@ Request
 
 .. rest_parameters:: ../parameters.yaml
 
+   - fields: fields
    - pool_id: path-pool-id
 
 Curl Example

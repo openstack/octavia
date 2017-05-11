@@ -247,6 +247,7 @@ Request
 
 .. rest_parameters:: ../parameters.yaml
 
+   - fields: fields
    - loadbalancer_id: path-loadbalancer-id
 
 Curl Example

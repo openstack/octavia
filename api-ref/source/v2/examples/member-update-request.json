@@ -1,0 +1,9 @@
+{
+    "member": {
+        "name": "web-server-1-2",
+        "weight": "0",
+        "admin_state_up": "true",
+        "monitor_address": "192.0.2.40",
+        "monitor_port": 8888
+    }
+}
