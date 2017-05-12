@@ -1,6 +1,6 @@
 .. -*- rst -*-
 
-List listeners
+List Listeners
 ==============
 
 .. rest_method:: GET /v2.0/lbaas/listeners
@@ -63,6 +63,7 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
+   - updated_at: updated_at
 
 Response Example
 ----------------
@@ -143,6 +144,7 @@ Request
    - protocol: protocol
    - protocol_port: protocol_port
    - sni_container_refs: sni_container_refs-optional
+   - updated_at: updated_at
 
 .. _header_insertions:
 
@@ -204,6 +206,7 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
+   - updated_at: updated_at
 
 Response Example
 ----------------
@@ -272,6 +275,7 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
+   - updated_at: updated_at
 
 Response Example
 ----------------
@@ -279,7 +283,7 @@ Response Example
 .. literalinclude:: examples/listener-show-response.json
    :language: javascript
 
-Update a listener
+Update a Listener
 =================
 
 .. rest_method:: PUT /v2.0/lbaas/listeners/{listener_id}
@@ -357,6 +361,7 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
+   - updated_at: updated_at
 
 Response Example
 ----------------
@@ -364,7 +369,7 @@ Response Example
 .. literalinclude:: examples/listener-update-response.json
    :language: javascript
 
-Remove a listener
+Remove a Listener
 =================
 
 .. rest_method:: DELETE /v2.0/lbaas/listeners/{listener_id}
@@ -405,7 +410,7 @@ Response
 
 There is no body content for the response of a successful DELETE request.
 
-Get listener statistics
+Get Listener statistics
 =======================
 
 .. rest_method:: GET /v2.0/lbaas/listeners/{listener_id}/stats

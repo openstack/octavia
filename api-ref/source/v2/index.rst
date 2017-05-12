@@ -30,3 +30,8 @@ Pools
 Members
 -------
 .. include:: member.inc
+
+--------------
+Health Monitor
+--------------
+.. include:: healthmonitor.inc

@@ -1,6 +1,6 @@
 .. -*- rst -*-
 
-List members
+List Members
 ============
 
 .. rest_method:: GET /v2.0/lbaas/pools/{pool_id}/members
@@ -49,7 +49,6 @@ Response Parameters
    - address: address-member
    - admin_state_up: admin_state_up
    - created_at: created_at
-   - description: description
    - id: member-id
    - monitor_address: monitor_address
    - monitor_port: monitor_port
@@ -59,6 +58,7 @@ Response Parameters
    - protocol_port: protocol_port-member
    - provisioning_status: provisioning_status
    - subnet_id: subnet_id
+   - updated_at: updated_at
    - weight: weight
 
 Response Example
@@ -144,7 +144,6 @@ Request
 
    - admin_state_up: admin_state_up-default-optional
    - address: address
-   - description: description-optional
    - monitor_address: monitor_address-optional
    - monitor_port: monitor_port-optional
    - name: name-optional
@@ -174,7 +173,6 @@ Response Parameters
    - address: address-member
    - admin_state_up: admin_state_up
    - created_at: created_at
-   - description: description
    - id: member-id
    - monitor_address: monitor_address
    - monitor_port: monitor_port
@@ -184,6 +182,7 @@ Response Parameters
    - protocol_port: protocol_port-member
    - provisioning_status: provisioning_status
    - subnet_id: subnet_id
+   - updated_at: updated_at
    - weight: weight
 
 Response Example
@@ -239,7 +238,6 @@ Response Parameters
    - address: address-member
    - admin_state_up: admin_state_up
    - created_at: created_at
-   - description: description
    - id: member-id
    - monitor_address: monitor_address
    - monitor_port: monitor_port
@@ -249,6 +247,7 @@ Response Parameters
    - protocol_port: protocol_port-member
    - provisioning_status: provisioning_status
    - subnet_id: subnet_id
+   - updated_at: updated_at
    - weight: weight
 
 Response Example
@@ -257,7 +256,7 @@ Response Example
 .. literalinclude:: examples/member-show-response.json
    :language: javascript
 
-Update a member
+Update a Member
 ===============
 
 .. rest_method:: PUT /v2.0/lbaas/pools/{pool_id}/members/{member_id}
@@ -322,7 +321,6 @@ Response Parameters
    - address: address-member
    - admin_state_up: admin_state_up
    - created_at: created_at
-   - description: description
    - id: member-id
    - monitor_address: monitor_address
    - monitor_port: monitor_port
@@ -332,6 +330,7 @@ Response Parameters
    - protocol_port: protocol_port-member
    - provisioning_status: provisioning_status
    - subnet_id: subnet_id
+   - updated_at: updated_at
    - weight: weight
 
 Response Example
@@ -340,7 +339,7 @@ Response Example
 .. literalinclude:: examples/member-update-response.json
    :language: javascript
 
-Remove a member
+Remove a Member
 =================
 
 .. rest_method:: DELETE /v2.0/lbaas/pools/{pool_id}/members/{member_id}
@@ -381,4 +380,3 @@ Response
 --------
 
 There is no body content for the response of a successful DELETE request.
-

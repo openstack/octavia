@@ -1,6 +1,6 @@
 .. -*- rst -*-
 
-List load balancers
+List Load Balancers
 ===================
 
 .. rest_method:: GET /v2.0/lbaas/loadbalancers
@@ -58,6 +58,7 @@ Response Parameters
    - project_id: project_id
    - provider: provider
    - provisioning_status: provisioning_status
+   - updated_at: updated_at
    - vip_address: vip_address
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
@@ -69,7 +70,7 @@ Response Example
 .. literalinclude:: examples/loadbalancers-list-response.json
    :language: javascript
 
-Create a load balancer
+Create a Load Balancer
 ======================
 
 .. rest_method:: POST /v2.0/lbaas/loadbalancers
@@ -184,6 +185,7 @@ Response Parameters
    - project_id: project_id
    - provider: provider
    - provisioning_status: provisioning_status
+   - updated_at: updated_at
    - vip_address: vip_address
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
@@ -218,7 +220,7 @@ Response Example
 .. literalinclude:: examples/loadbalancer-full-create-response.json
    :language: javascript
 
-Show load balancer details
+Show Load Balancer details
 ==========================
 
 .. rest_method:: GET /v2.0/lbaas/loadbalancers/{loadbalancer_id}
@@ -274,6 +276,7 @@ Response Parameters
    - project_id: project_id
    - provider: provider
    - provisioning_status: provisioning_status
+   - updated_at: updated_at
    - vip_address: vip_address
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
@@ -285,7 +288,7 @@ Response Example
 .. literalinclude:: examples/loadbalancer-show-response.json
    :language: javascript
 
-Update a load balancer
+Update a Load Balancer
 ======================
 
 .. rest_method:: PUT /v2.0/lbaas/loadbalancers/{loadbalancer_id}
@@ -355,6 +358,7 @@ Response Parameters
    - project_id: project_id
    - provider: provider
    - provisioning_status: provisioning_status
+   - updated_at: updated_at
    - vip_address: vip_address
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
@@ -366,7 +370,7 @@ Response Example
 .. literalinclude:: examples/loadbalancer-update-response.json
    :language: javascript
 
-Remove a load balancer
+Remove a Load Balancer
 ======================
 
 .. rest_method:: DELETE /v2.0/lbaas/loadbalancers/{loadbalancer_id}
@@ -411,7 +415,7 @@ Response
 
 There is no body content for the response of a successful DELETE request.
 
-Get load balancer statistics
+Get Load Balancer statistics
 ============================
 
 .. rest_method:: GET /v2.0/lbaas/loadbalancers/{loadbalancer_id}/stats
@@ -469,7 +473,7 @@ Response Example
 .. literalinclude:: examples/loadbalancer-stats-response.json
    :language: javascript
 
-Get the load balancer status tree
+Get the Load Balancer status tree
 =================================
 
 .. rest_method:: GET /v2.0/lbaas/loadbalancers/{loadbalancer_id}/status

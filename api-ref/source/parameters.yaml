@@ -1,12 +1,12 @@
 ###############################################################################
 # Path fields
 ###############################################################################
-cascade-delete:
+path-healthmonitor-id:
   description: |
-    If ``true`` will delete all child objects of the load balancer.
+    The ID of the health monitor to query.
   in: path
-  required: false
-  type: boolean
+  required: true
+  type: string
 path-listener-id:
   description: |
     The ID of the listener to query.
@@ -34,6 +34,12 @@ path-pool-id:
 ###############################################################################
 # Query fields
 ###############################################################################
+cascade-delete:
+  description: |
+    If ``true`` will delete all child objects of the load balancer.
+  in: query
+  required: false
+  type: boolean
 fields:
   description: |
     The fields that you want the server to return.
@@ -206,18 +212,136 @@ flavor-id-optional:
   in: body
   required: false
   type: string
+healthmonitor-delay:
+  description: |
+    The time, in seconds, between sending probes to members.
+  in: body
+  required: true
+  type: integer
+healthmonitor-delay-optional:
+  description: |
+    The time, in seconds, between sending probes to members.
+  in: body
+  required: false
+  type: integer
+healthmonitor-expected_codes:
+  description: |
+    The list of HTTP status codes expected in response from the member to
+    declare it healthy. Specify one of the following values:
+
+    - A single value, such as ``200``
+    - A list, such as ``200, 202``
+    - A range, such as ``200-204``
+  in: body
+  required: true
+  type: string
+healthmonitor-expected_codes-optional:
+  description: |
+    The list of HTTP status codes expected in response from the member to
+    declare it healthy. Specify one of the following values:
+
+    - A single value, such as ``200``
+    - A list, such as ``200, 202``
+    - A range, such as ``200-204``
+
+    The default is 200.
+  in: body
+  required: false
+  type: string
+healthmonitor-http_method:
+  description: |
+    The HTTP method that the health monitor uses for requests. One of
+    ``CONNECT``, ``DELETE``, ``GET``, ``HEAD``, ``OPTIONS``, ``PATCH``,
+    ``POST``, ``PUT``, or ``TRACE``.
+  in: body
+  required: true
+  type: string
+healthmonitor-http_method-optional:
+  description: |
+    The HTTP method that the health monitor uses for requests. One of
+    ``CONNECT``, ``DELETE``, ``GET``, ``HEAD``, ``OPTIONS``, ``PATCH``,
+    ``POST``, ``PUT``, or ``TRACE``. The default is ``GET``.
+  in: body
+  required: false
+  type: string
 healthmonitor-id:
   description: |
     The associated health monitor ID.
   in: body
   required: true
   type: string
+healthmonitor-max-retries:
+  description: |
+    The number of successful checks before changing the ``operating status``
+    of the member to ``ONLINE``. A valid value is from ``1`` to ``10``.
+  in: body
+  required: true
+  type: integer
+healthmonitor-max-retries-down:
+  description: |
+    The number of allowed check failures before changing the ``operating
+    status`` of the member to ``ERROR``. A valid value is from ``1`` to ``10``.
+  in: body
+  required: true
+  type: integer
+healthmonitor-max-retries-down-optional:
+  description: |
+    The number of allowed check failures before changing the ``operating
+    status`` of the member to ``ERROR``. A valid value is from ``1`` to ``10``.
+    The default is ``3``.
+  in: body
+  required: false
+  type: integer
+healthmonitor-max-retries-optional:
+  description: |
+    The number of successful checks before changing the ``operating status``
+    of the member to ``ONLINE``. A valid value is from ``1`` to ``10``.
+  in: body
+  required: false
+  type: integer
 healthmonitor-status:
   description: |
     The associated health monitor status object.
   in: body
   required: true
   type: object
+healthmonitor-timeout:
+  description: |
+    The maximum time, in seconds, that a monitor waits to connect before it
+    times out. This value must be less than the delay value.
+  in: body
+  required: true
+  type: integer
+healthmonitor-timeout-optional:
+  description: |
+    The maximum time, in seconds, that a monitor waits to connect before it
+    times out. This value must be less than the delay value.
+  in: body
+  required: false
+  type: integer
+healthmonitor-type:
+  description: |
+    The type of health monitor.  One of ``HTTP``, ``HTTPS``, ``PING``, or
+    ``TCP``.
+  in: body
+  required: true
+  type: string
+healthmonitor-url_path:
+  description: |
+    The HTTP URL path of the request sent by the monitor to test the health of
+    a backend member. Must be a string that begins with a forward slash
+    (``/``).
+  in: body
+  required: true
+  type: string
+healthmonitor-url_path-optional:
+  description: |
+    The HTTP URL path of the request sent by the monitor to test the health of
+    a backend member. Must be a string that begins with a forward slash
+    (``/``). The default URL path is ``/``.
+  in: body
+  required: false
+  type: string
 id:
   description: |
     The ID of the resource.
