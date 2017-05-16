@@ -160,9 +160,6 @@ class HaproxyAmphoraLoadBalancerDriver(
                         'amphora, skipping post_network_plug').format(
                             mac=port.mac_address))
 
-    def get_vrrp_interface(self, amphora):
-        return self.client.get_interface(amphora, amphora.vrrp_ip)['interface']
-
     def _process_tls_certificates(self, listener):
         """Processes TLS data from the listener.
 

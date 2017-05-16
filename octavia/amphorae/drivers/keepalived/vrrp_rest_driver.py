@@ -89,3 +89,6 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
                 loadbalancer.amphorae):
 
             self.client.reload_vrrp(amp)
+
+    def get_vrrp_interface(self, amphora):
+        return self.client.get_interface(amphora, amphora.vrrp_ip)['interface']
