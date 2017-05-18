@@ -594,6 +594,7 @@ class TestLoadBalancer(base.BaseAPITest):
             constants.LB_ALGORITHM_ROUND_ROBIN)
         self.set_lb_status(lb_id)
         self.delete(self.LB_PATH.format(lb_id=lb_id), status=400)
+        self.assert_correct_status(lb_id=lb_id)
 
     def test_delete_fails_with_listener(self):
         project_id = uuidutils.generate_uuid()
@@ -606,6 +607,7 @@ class TestLoadBalancer(base.BaseAPITest):
         self.create_listener(constants.PROTOCOL_HTTP, 80, lb_id)
         self.set_lb_status(lb_id)
         self.delete(self.LB_PATH.format(lb_id=lb_id), status=400)
+        self.assert_correct_status(lb_id=lb_id)
 
     def test_cascade_delete(self):
         project_id = uuidutils.generate_uuid()

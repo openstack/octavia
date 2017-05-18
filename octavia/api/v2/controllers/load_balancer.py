@@ -330,21 +330,22 @@ class LoadBalancersController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         cascade = strutils.bool_from_string(cascade)
         db_lb = self._get_db_lb(context.session, id)
-        self._test_lb_status(context.session, id,
-                             lb_status=constants.PENDING_DELETE)
-        if (db_lb.listeners or db_lb.pools) and not cascade:
-            msg = _("Cannot delete Load Balancer %s - it has children") % id
-            LOG.warning(msg)
-            raise exceptions.ValidationException(detail=msg)
+        with db_api.get_lock_session() as lock_session:
+            self._test_lb_status(lock_session, id,
+                                 lb_status=constants.PENDING_DELETE)
+            if (db_lb.listeners or db_lb.pools) and not cascade:
+                msg = _("Cannot delete Load Balancer %s - "
+                        "it has children") % id
+                LOG.warning(msg)
+                raise exceptions.ValidationException(detail=msg)
 
         try:
-            LOG.info("Sending deleted Load Balancer %s to the handler",
-                     db_lb.id)
+            LOG.info("Sending deleted Load Balancer %s to the handler", id)
             self.handler.delete(db_lb, cascade)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.load_balancer.update(
-                    context.session, db_lb.id,
+                    context.session, id,
                     provisioning_status=constants.ERROR)
         result = self._convert_db_to_type(db_lb, lb_types.LoadBalancerResponse)
         return lb_types.LoadBalancersRootResponse(loadbalancer=result)
