@@ -31,9 +31,9 @@ class TestHAproxyVRRPCheckCMD(base.TestCase):
         recv_mock.side_effect = [b'1', Exception('BREAK')]
         socket_mock.recv = recv_mock
 
-        self.assertRaisesRegexp(Exception, 'BREAK',
-                                haproxy_vrrp_check.health_check,
-                                '10.0.0.1')
+        self.assertRaisesRegex(Exception, 'BREAK',
+                               haproxy_vrrp_check.health_check,
+                               '10.0.0.1')
 
     @mock.patch('octavia.cmd.haproxy_vrrp_check.health_check')
     @mock.patch('sys.argv')

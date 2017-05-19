@@ -80,9 +80,9 @@ class QueryTestCase(base.TestCase):
         sock.recv.assert_called_with(1024)
         self.assertTrue(sock.close.called)
 
-        self.assertRaisesRegexp(Exception,
-                                'HAProxy \'test\' query failed.',
-                                self.q._query, 'test')
+        self.assertRaisesRegex(Exception,
+                               'HAProxy \'test\' query failed.',
+                               self.q._query, 'test')
 
     def test_get_pool_status(self):
         query_mock = mock.Mock()
