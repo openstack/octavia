@@ -2463,26 +2463,27 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
 
-    def create_health_monitor(self, pool_id):
+    def create_health_monitor(self, hm_id, pool_id):
         health_monitor = self.hm_repo.create(
-            self.session, type=constants.HEALTH_MONITOR_HTTP,
+            self.session, type=constants.HEALTH_MONITOR_HTTP, id=hm_id,
             pool_id=pool_id, delay=1, timeout=1, fall_threshold=1,
             rise_threshold=1, http_method="POST",
             url_path="http://localhost:80/index.php",
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             expected_codes="200", enabled=True)
+        self.assertEqual(hm_id, health_monitor.id)
         return health_monitor
 
     def test_get(self):
-        hm = self.create_health_monitor(self.pool.id)
-        new_hm = self.hm_repo.get(self.session, pool_id=hm.pool_id)
+        hm = self.create_health_monitor(self.FAKE_UUID_3, self.pool.id)
+        new_hm = self.hm_repo.get(self.session, id=hm.id)
         self.assertIsInstance(new_hm, models.HealthMonitor)
         self.assertEqual(hm, new_hm)
 
     def test_create(self):
-        hm = self.create_health_monitor(self.pool.id)
-        new_hm = self.hm_repo.get(self.session, pool_id=hm.pool_id)
+        hm = self.create_health_monitor(self.FAKE_UUID_3, self.pool.id)
+        new_hm = self.hm_repo.get(self.session, id=hm.id)
         self.assertEqual(constants.HEALTH_MONITOR_HTTP, new_hm.type)
         self.assertEqual(self.pool.id, new_hm.pool_id)
         self.assertEqual(1, new_hm.delay)
@@ -2496,15 +2497,16 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
 
     def test_update(self):
         delay_change = 2
-        hm = self.create_health_monitor(self.pool.id)
-        self.hm_repo.update(self.session, hm.pool.id, delay=delay_change)
-        new_hm = self.hm_repo.get(self.session, pool_id=hm.pool_id)
+        hm = self.create_health_monitor(self.FAKE_UUID_3, self.pool.id)
+        self.hm_repo.update(
+            self.session, hm.id, delay=delay_change)
+        new_hm = self.hm_repo.get(self.session, id=hm.id)
         self.assertEqual(delay_change, new_hm.delay)
 
     def test_delete(self):
-        hm = self.create_health_monitor(self.pool.id)
-        self.hm_repo.delete(self.session, pool_id=hm.pool_id)
-        self.assertIsNone(self.hm_repo.get(self.session, pool_id=hm.pool_id))
+        hm = self.create_health_monitor(self.FAKE_UUID_3, self.pool.id)
+        self.hm_repo.delete(self.session, id=hm.id)
+        self.assertIsNone(self.hm_repo.get(self.session, id=hm.id))
         new_pool = self.pool_repo.get(self.session, id=self.pool.id)
         self.assertIsNotNone(new_pool)
         self.assertIsNone(new_pool.health_monitor)

@@ -703,19 +703,6 @@ class VipRepository(BaseRepository):
 class HealthMonitorRepository(BaseRepository):
     model_class = models.HealthMonitor
 
-    def create(self, session, **model_kwargs):
-        with session.begin(subtransactions=True):
-            model_kwargs['id'] = model_kwargs['pool_id']
-            model = self.model_class(**model_kwargs)
-            session.add(model)
-        return model.to_data_model()
-
-    def update(self, session, pool_id, **model_kwargs):
-        """Updates a health monitor entity in the database by pool_id."""
-        with session.begin(subtransactions=True):
-            session.query(self.model_class).filter_by(
-                pool_id=pool_id).update(model_kwargs)
-
 
 class SessionPersistenceRepository(BaseRepository):
     model_class = models.SessionPersistence

@@ -35,6 +35,7 @@ SERVER_GROUP_ID = uuidutils.generate_uuid()
 LB_NET_IP = '192.0.2.2'
 LISTENER_ID = uuidutils.generate_uuid()
 POOL_ID = uuidutils.generate_uuid()
+HM_ID = uuidutils.generate_uuid()
 MEMBER_ID = uuidutils.generate_uuid()
 PORT_ID = uuidutils.generate_uuid()
 SUBNET_ID = uuidutils.generate_uuid()
@@ -129,6 +130,7 @@ class TestDatabaseTasks(base.TestCase):
     def setUp(self):
 
         self.health_mon_mock = mock.MagicMock()
+        self.health_mon_mock.id = HM_ID
         self.health_mon_mock.pool_id = POOL_ID
 
         self.listener_mock = mock.MagicMock()
@@ -142,6 +144,7 @@ class TestDatabaseTasks(base.TestCase):
 
         self.pool_mock = mock.MagicMock()
         self.pool_mock.id = POOL_ID
+        self.pool_mock.health_monitor = self.health_mon_mock
 
         self.l7policy_mock = mock.MagicMock()
         self.l7policy_mock.id = L7POLICY_ID
@@ -213,9 +216,11 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             id=LISTENER_ID)
 
+    @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.delete')
     def test_delete_health_monitor_in_db(self,
                                          mock_health_mon_repo_delete,
+                                         mock_health_mon_repo_update,
                                          mock_generate_uuid,
                                          mock_LOG,
                                          mock_get_session,
@@ -225,29 +230,31 @@ class TestDatabaseTasks(base.TestCase):
                                          mock_amphora_repo_delete):
 
         delete_health_mon = database_tasks.DeleteHealthMonitorInDB()
-        delete_health_mon.execute(POOL_ID)
+        delete_health_mon.execute(self.health_mon_mock)
 
         repo.HealthMonitorRepository.delete.assert_called_once_with(
-            'TEST',
-            pool_id=POOL_ID)
+            'TEST', id=HM_ID)
 
         # Test the revert
-
         mock_health_mon_repo_delete.reset_mock()
-        delete_health_mon.revert(POOL_ID)
+        delete_health_mon.revert(self.health_mon_mock)
+
+        repo.HealthMonitorRepository.update.assert_called_once_with(
+            'TEST', id=HM_ID, provisioning_status=constants.ERROR)
 
         # Test Not Found Exception
         mock_health_mon_repo_delete.reset_mock()
         mock_health_mon_repo_delete.side_effect = [exc.NoResultFound()]
-        delete_health_mon.execute(POOL_ID)
+        delete_health_mon.execute(self.health_mon_mock)
 
         repo.HealthMonitorRepository.delete.assert_called_once_with(
-            'TEST',
-            pool_id=POOL_ID)
+            'TEST', id=HM_ID)
 
+    @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.delete')
     def test_delete_health_monitor_in_db_by_pool(self,
                                                  mock_health_mon_repo_delete,
+                                                 mock_health_mon_repo_update,
                                                  mock_generate_uuid,
                                                  mock_LOG,
                                                  mock_get_session,
@@ -261,12 +268,14 @@ class TestDatabaseTasks(base.TestCase):
 
         repo.HealthMonitorRepository.delete.assert_called_once_with(
             'TEST',
-            pool_id=POOL_ID)
+            id=HM_ID)
 
         # Test the revert
-
         mock_health_mon_repo_delete.reset_mock()
         delete_health_mon.revert(self.pool_mock)
+
+        repo.HealthMonitorRepository.update.assert_called_once_with(
+            'TEST', id=HM_ID, provisioning_status=constants.ERROR)
 
 # TODO(johnsom) fix once provisioning status added
 #        repo.HealthMonitorRepository.update.assert_called_once_with(
@@ -1357,7 +1366,7 @@ class TestDatabaseTasks(base.TestCase):
 
         repo.HealthMonitorRepository.update.assert_called_once_with(
             'TEST',
-            POOL_ID,
+            HM_ID,
             delay=1, timeout=2)
 
         # Test the revert
@@ -1367,7 +1376,7 @@ class TestDatabaseTasks(base.TestCase):
 # TODO(johnsom) fix this to set the upper ojects to ERROR
         repo.HealthMonitorRepository.update.assert_called_once_with(
             'TEST',
-            POOL_ID,
+            HM_ID,
             enabled=0)
 
         # Test the revert with exception
@@ -1378,7 +1387,7 @@ class TestDatabaseTasks(base.TestCase):
 # TODO(johnsom) fix this to set the upper ojects to ERROR
         repo.HealthMonitorRepository.update.assert_called_once_with(
             'TEST',
-            POOL_ID,
+            HM_ID,
             enabled=0)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
@@ -1846,7 +1855,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_health_mon_repo_update.assert_called_once_with(
             'TEST',
-            POOL_ID,
+            HM_ID,
             operating_status=constants.ONLINE,
             provisioning_status=constants.ACTIVE)
 
@@ -1856,7 +1865,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_health_mon_repo_update.assert_called_once_with(
             'TEST',
-            pool_id=POOL_ID,
+            id=HM_ID,
             provisioning_status=constants.ERROR)
 
         # Test the revert with exception
@@ -1866,7 +1875,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_health_mon_repo_update.assert_called_once_with(
             'TEST',
-            pool_id=POOL_ID,
+            id=HM_ID,
             provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
@@ -1887,7 +1896,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_health_mon_repo_update.assert_called_once_with(
             'TEST',
-            POOL_ID,
+            HM_ID,
             provisioning_status=constants.PENDING_CREATE)
 
         # Test the revert
@@ -1896,7 +1905,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_health_mon_repo_update.assert_called_once_with(
             'TEST',
-            pool_id=POOL_ID,
+            id=HM_ID,
             provisioning_status=constants.ERROR)
 
         # Test the revert with exception
@@ -1906,7 +1915,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_health_mon_repo_update.assert_called_once_with(
             'TEST',
-            pool_id=POOL_ID,
+            id=HM_ID,
             provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
@@ -1927,7 +1936,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_health_mon_repo_update.assert_called_once_with(
             'TEST',
-            POOL_ID,
+            HM_ID,
             provisioning_status=constants.PENDING_DELETE)
 
         # Test the revert
@@ -1936,7 +1945,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_health_mon_repo_update.assert_called_once_with(
             'TEST',
-            pool_id=POOL_ID,
+            id=HM_ID,
             provisioning_status=constants.ERROR)
 
         # Test the revert with exception
@@ -1946,7 +1955,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_health_mon_repo_update.assert_called_once_with(
             'TEST',
-            pool_id=POOL_ID,
+            id=HM_ID,
             provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
@@ -1967,7 +1976,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_health_mon_repo_update.assert_called_once_with(
             'TEST',
-            POOL_ID,
+            HM_ID,
             provisioning_status=constants.PENDING_UPDATE)
 
         # Test the revert
@@ -1976,7 +1985,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_health_mon_repo_update.assert_called_once_with(
             'TEST',
-            pool_id=POOL_ID,
+            id=HM_ID,
             provisioning_status=constants.ERROR)
 
         # Test the revert with exception
@@ -1986,7 +1995,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_health_mon_repo_update.assert_called_once_with(
             'TEST',
-            pool_id=POOL_ID,
+            id=HM_ID,
             provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.L7PolicyRepository.update')
