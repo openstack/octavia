@@ -315,6 +315,10 @@ if [ "$AMP_BASEOS" = "ubuntu" ]; then
     AMP_element_sequence="$AMP_element_sequence no-resolvconf"
     AMP_element_sequence="$AMP_element_sequence amphora-agent-ubuntu"
     AMP_element_sequence="$AMP_element_sequence keepalived-octavia-ubuntu"
+elif [ "$AMP_BASEOS" = "rhel" ]; then
+    AMP_element_sequence="$AMP_element_sequence no-resolvconf"
+    AMP_element_sequence="$AMP_element_sequence amphora-agent-rhel"
+    AMP_element_sequence="$AMP_element_sequence keepalived-octavia"
 else
     AMP_element_sequence="$AMP_element_sequence no-resolvconf"
     AMP_element_sequence="$AMP_element_sequence amphora-agent"
