@@ -35,7 +35,7 @@ SCREEN_LOGDIR=/opt/stack/logs
 # Pre-requisite
 ENABLED_SERVICES=key,rabbit,mysql
 # Nova
-ENABLED_SERVICES+=,n-api,n-crt,n-obj,n-cpu,n-cond,n-sch
+ENABLED_SERVICES+=,n-api,n-obj,n-cpu,n-cond,n-sch
 # Glance
 ENABLED_SERVICES+=,g-api,g-reg
 # Neutron
