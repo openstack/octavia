@@ -62,6 +62,26 @@ def upgrade():
         u'operating_status', [u'operating_status'], [u'name']
     )
 
+    op.drop_constraint('fk_health_monitor_provisioning_status_name',
+                       'health_monitor',
+                       type_='foreignkey')
+
+    op.drop_constraint('fk_l7policy_provisioning_status_name',
+                       'l7policy',
+                       type_='foreignkey')
+
+    op.drop_constraint('fk_l7rule_provisioning_status_name',
+                       'l7rule',
+                       type_='foreignkey')
+
+    op.drop_constraint('fk_member_provisioning_status_name',
+                       'member',
+                       type_='foreignkey')
+
+    op.drop_constraint('fk_pool_provisioning_status_name',
+                       'pool',
+                       type_='foreignkey')
+
     # provisioning_status was mistakenly added as nullable, the fix is similar
     op.alter_column(u'l7policy', u'provisioning_status', nullable=False,
                     existing_type=sa.String(16),
@@ -94,3 +114,28 @@ def upgrade():
                     server_default=constants.ACTIVE)
     op.alter_column(u'l7rule', u'provisioning_status',
                     existing_type=sa.String(16), server_default=None)
+
+    op.create_foreign_key(
+        u'fk_health_monitor_provisioning_status_name', u'health_monitor',
+        u'provisioning_status', [u'provisioning_status'], [u'name']
+    )
+
+    op.create_foreign_key(
+        u'fk_l7policy_provisioning_status_name', u'l7policy',
+        u'provisioning_status', [u'provisioning_status'], [u'name']
+    )
+
+    op.create_foreign_key(
+        u'fk_l7rule_provisioning_status_name', u'l7rule',
+        u'provisioning_status', [u'provisioning_status'], [u'name']
+    )
+
+    op.create_foreign_key(
+        u'fk_member_provisioning_status_name', u'member',
+        u'provisioning_status', [u'provisioning_status'], [u'name']
+    )
+
+    op.create_foreign_key(
+        u'fk_pool_provisioning_status_name', u'pool',
+        u'provisioning_status', [u'provisioning_status'], [u'name']
+    )
