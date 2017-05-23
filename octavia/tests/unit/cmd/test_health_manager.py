@@ -35,8 +35,8 @@ class TestHealthManagerCMD(base.TestCase):
         getter_mock.check = check_mock
         getter_mock.check.side_effect = [None, Exception('break')]
         mock_getter.return_value = getter_mock
-        self.assertRaisesRegexp(Exception, 'break',
-                                health_manager.hm_listener)
+        self.assertRaisesRegex(Exception, 'break',
+                               health_manager.hm_listener)
         mock_getter.assert_called_once_with(mock_health(), mock_stats())
         self.assertEqual(2, getter_mock.check.call_count)
 
@@ -48,8 +48,8 @@ class TestHealthManagerCMD(base.TestCase):
         hm_mock.health_check = health_check_mock
         hm_mock.health_check.side_effect = [None, Exception('break')]
         mock_health.return_value = hm_mock
-        self.assertRaisesRegexp(Exception, 'break',
-                                health_manager.hm_health_check)
+        self.assertRaisesRegex(Exception, 'break',
+                               health_manager.hm_health_check)
         mock_health.assert_called_once_with()
         self.assertEqual(2, hm_mock.health_check.call_count)
 

@@ -37,8 +37,8 @@ class TestHouseKeepingCMD(base.TestCase):
         spare_amp_thread_event_mock.is_set.side_effect = [False,
                                                           Exception('break')]
 
-        self.assertRaisesRegexp(Exception, 'break',
-                                house_keeping.spare_amphora_check)
+        self.assertRaisesRegex(Exception, 'break',
+                               house_keeping.spare_amphora_check)
 
         mock_SpareAmphora.assert_called_once_with()
         self.assertEqual(1, spare_amp_mock.spare_check.call_count)
@@ -57,7 +57,7 @@ class TestHouseKeepingCMD(base.TestCase):
         db_cleanup_event_mock.is_set = mock.MagicMock()
         db_cleanup_event_mock.is_set.side_effect = [False, Exception('break')]
 
-        self.assertRaisesRegexp(Exception, 'break', house_keeping.db_cleanup)
+        self.assertRaisesRegex(Exception, 'break', house_keeping.db_cleanup)
 
         mock_DatabaseCleanup.assert_called_once_with()
         self.assertEqual(1, db_cleanup.delete_old_amphorae.call_count)
@@ -80,8 +80,8 @@ class TestHouseKeepingCMD(base.TestCase):
         cert_rotate_event_mock.is_set = mock.MagicMock()
         cert_rotate_event_mock.is_set.side_effect = [False, Exception('break')]
 
-        self.assertRaisesRegexp(Exception, 'break',
-                                house_keeping.cert_rotation)
+        self.assertRaisesRegex(Exception, 'break',
+                               house_keeping.cert_rotation)
 
         mock_CertRotation.assert_called_once_with()
         self.assertEqual(1, cert_rotate_mock.rotate.call_count)
@@ -134,7 +134,7 @@ class TestHouseKeepingCMD(base.TestCase):
 
         # mock the time.sleep() in the while loop
         sleep_time.side_effect = [True, Exception('break')]
-        self.assertRaisesRegexp(Exception, 'break', house_keeping.main)
+        self.assertRaisesRegex(Exception, 'break', house_keeping.main)
 
         spare_amp_thread_mock.start.assert_called_once_with()
         db_cleanup_thread_mock.start.assert_called_once_with()

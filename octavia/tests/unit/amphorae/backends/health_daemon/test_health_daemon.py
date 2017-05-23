@@ -169,8 +169,8 @@ class TestHealthDaemon(base.TestCase):
         mock_build_msg.side_effect = ['TEST', Exception('break')]
 
         test_queue = queue.Queue()
-        self.assertRaisesRegexp(Exception, 'break',
-                                health_daemon.run_sender, test_queue)
+        self.assertRaisesRegex(Exception, 'break',
+                               health_daemon.run_sender, test_queue)
 
         sender_mock.dosend.assert_called_once_with('TEST')
 
@@ -178,8 +178,8 @@ class TestHealthDaemon(base.TestCase):
         mock_build_msg.reset_mock()
         mock_build_msg.side_effect = ['TEST', Exception('break')]
         test_queue.put('reload')
-        self.assertRaisesRegexp(Exception, 'break',
-                                health_daemon.run_sender, test_queue)
+        self.assertRaisesRegex(Exception, 'break',
+                               health_daemon.run_sender, test_queue)
         mock_reload_cfg.assert_called_once_with()
 
         # Test the shutdown path
@@ -195,8 +195,8 @@ class TestHealthDaemon(base.TestCase):
         mock_build_msg.reset_mock()
         mock_build_msg.side_effect = ['TEST', Exception('break')]
         test_queue.put('bogus')
-        self.assertRaisesRegexp(Exception, 'break',
-                                health_daemon.run_sender, test_queue)
+        self.assertRaisesRegex(Exception, 'break',
+                               health_daemon.run_sender, test_queue)
 
     @mock.patch('octavia.amphorae.backends.utils.haproxy_query.HAProxyQuery')
     def test_get_stats(self, mock_query):
