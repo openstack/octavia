@@ -14,7 +14,7 @@
                             "healthmonitor": {
                                 "type": "HTTP",
                                 "id": "0b608787-ea2d-48c7-89a1-8b8c24fa3b17",
-                                "name": "HTTP_health_monitor",
+                                "name": "HTTP_healthmonitor",
                                 "provisioning_status": "ACTIVE"
                             },
                             "members": [
@@ -73,7 +73,7 @@
                     "healthmonitor": {
                         "type": "HTTP",
                         "id": "0b608787-ea2d-48c7-89a1-8b8c24fa3b17",
-                        "name": "HTTP_health_monitor",
+                        "name": "HTTP_healthmonitor",
                         "provisioning_status": "ACTIVE"
                     },
                     "members": [

@@ -834,7 +834,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         if create_members:
             create_pool['members'] = create_members
         if create_hm:
-            create_pool['health_monitor'] = create_hm
+            create_pool['healthmonitor'] = create_hm
         expected_pool = {
             'description': None,
             'session_persistence': None,
@@ -848,7 +848,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         if expected_members:
             expected_pool['members'] = expected_members
         if expected_hm:
-            expected_pool['health_monitor'] = expected_hm
+            expected_pool['healthmonitor'] = expected_hm
         return create_pool, expected_pool
 
     def _get_member_bodies(self, protocol_port=80):
