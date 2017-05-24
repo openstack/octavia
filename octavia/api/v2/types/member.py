@@ -44,9 +44,6 @@ class MemberResponse(BaseMemberType):
     def from_data_model(cls, data_model, children=False):
         member = super(MemberResponse, cls).from_data_model(
             data_model, children=children)
-        if not member.name:
-            member.name = ""
-
         return member
 
 

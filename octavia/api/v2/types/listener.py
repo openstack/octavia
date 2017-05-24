@@ -65,11 +65,6 @@ class ListenerResponse(BaseListenerType):
         listener.l7policies = [
             l7policy_type.from_data_model(i) for i in data_model.l7policies]
 
-        if not listener.description:
-            listener.description = ""
-        if not listener.name:
-            listener.name = ""
-
         return listener
 
 
