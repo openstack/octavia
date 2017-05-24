@@ -226,7 +226,7 @@ l7policies-optional:
   description: |
     A list of L7 policy objects.
   in: body
-  required: true
+  required: false
   type: array
 l7policies-status-object-list:
   description: |
