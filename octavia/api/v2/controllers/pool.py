@@ -58,8 +58,8 @@ class PoolsController(base.BaseController):
         return pool_types.PoolRootResponse(pool=result)
 
     @wsme_pecan.wsexpose(pool_types.PoolsRootResponse, wtypes.text,
-                         ignore_extra_args=True)
-    def get_all(self, project_id=None):
+                         [wtypes.text], ignore_extra_args=True)
+    def get_all(self, project_id=None, fields=None):
         """Lists all pools."""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
@@ -71,6 +71,8 @@ class PoolsController(base.BaseController):
             pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
             **query_filter)
         result = self._convert_db_to_type(db_pools, [pool_types.PoolResponse])
+        if fields is not None:
+            result = self._filter_fields(result, fields)
         return pool_types.PoolsRootResponse(pools=result, pools_links=links)
 
     def _get_affected_listener_ids(self, pool):

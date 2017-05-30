@@ -280,6 +280,44 @@ class TestMember(base.BaseAPITest):
         self.assertEqual(2, len(links))
         self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
 
+    def test_get_all_fields_filter(self):
+        self.create_member(self.pool_id, '10.0.0.1', 80, name='member1')
+        self.set_lb_status(self.lb_id)
+        self.create_member(self.pool_id, '10.0.0.2', 80, name='member2')
+        self.set_lb_status(self.lb_id)
+        self.create_member(self.pool_id, '10.0.0.3', 80, name='member3')
+        self.set_lb_status(self.lb_id)
+
+        members = self.get(self.members_path, params={
+            'fields': ['id', 'project_id']}).json
+        for member in members['members']:
+            self.assertIn(u'id', member.keys())
+            self.assertIn(u'project_id', member.keys())
+            self.assertNotIn(u'description', member.keys())
+
+    def test_get_all_filter(self):
+        mem1 = self.create_member(self.pool_id,
+                                  '10.0.0.1',
+                                  80,
+                                  name='member1').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_member(self.pool_id,
+                           '10.0.0.2',
+                           80,
+                           name='member2').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_member(self.pool_id,
+                           '10.0.0.3',
+                           80,
+                           name='member3').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        members = self.get(self.members_path, params={
+            'id': mem1['id']}).json
+        self.assertEqual(1, len(members['members']))
+        self.assertEqual(mem1['id'],
+                         members['members'][0]['id'])
+
     def test_empty_get_all(self):
         response = self.get(self.members_path).json.get(self.root_tag_list)
         self.assertIsInstance(response, list)

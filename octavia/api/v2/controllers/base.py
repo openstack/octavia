@@ -44,7 +44,7 @@ class BaseController(rest.RestController):
         """Converts a data model into an Octavia WSME type
 
         :param db_entity: data model to convert
-        :param to_type: converts db_entity to this time
+        :param to_type: converts db_entity to this type
         """
         if isinstance(to_type, list):
             to_type = to_type[0]
@@ -174,3 +174,18 @@ class BaseController(rest.RestController):
             rbac_obj=self.RBAC_TYPE, action=action)
         target = {'project_id': project_id}
         context.policy.authorize(action, target)
+
+    def _filter_fields(self, object_list, fields):
+        if CONF.allow_field_selection:
+            for index, obj in enumerate(object_list):
+                members = self._get_attrs(obj)
+                for member in members:
+                    if member not in fields:
+                        delattr(object_list[index], member)
+        return object_list
+
+    @staticmethod
+    def _get_attrs(obj):
+        attrs = [attr for attr in dir(obj) if not callable(
+            getattr(obj, attr)) and not attr.startswith("_")]
+        return attrs

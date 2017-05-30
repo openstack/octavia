@@ -61,8 +61,8 @@ class LoadBalancersController(base.BaseController):
         return lb_types.LoadBalancerRootResponse(loadbalancer=result)
 
     @wsme_pecan.wsexpose(lb_types.LoadBalancersRootResponse, wtypes.text,
-                         ignore_extra_args=True)
-    def get_all(self, project_id=None):
+                         [wtypes.text], ignore_extra_args=True)
+    def get_all(self, project_id=None, fields=None):
         """Lists all load balancers."""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
@@ -75,6 +75,8 @@ class LoadBalancersController(base.BaseController):
             **query_filter)
         result = self._convert_db_to_type(
             load_balancers, [lb_types.LoadBalancerResponse])
+        if fields is not None:
+            result = self._filter_fields(result, fields)
         return lb_types.LoadBalancersRootResponse(
             loadbalancers=result, loadbalancers_links=links)
 

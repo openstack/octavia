@@ -291,6 +291,54 @@ class TestL7Rule(base.BaseAPITest):
         self.assertEqual(2, len(links))
         self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
 
+    def test_get_all_fields_filter(self):
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_COOKIE,
+            constants.L7RULE_COMPARE_TYPE_CONTAINS, 'some-value',
+            key='some-cookie').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_HOST_NAME,
+            constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            'www.example.com').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        l7rus = self.get(self.l7rules_path, params={
+            'fields': ['id', 'project_id']}).json
+        for l7ru in l7rus['rules']:
+            self.assertIn(u'id', l7ru.keys())
+            self.assertIn(u'project_id', l7ru.keys())
+            self.assertNotIn(u'description', l7ru.keys())
+
+    def test_get_all_filter(self):
+        ru1 = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_COOKIE,
+            constants.L7RULE_COMPARE_TYPE_CONTAINS, 'some-value',
+            key='some-cookie').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_HOST_NAME,
+            constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            'www.example.com').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        l7rus = self.get(self.l7rules_path, params={
+            'id': ru1['id']}).json
+
+        self.assertEqual(1, len(l7rus['rules']))
+        self.assertEqual(ru1['id'],
+                         l7rus['rules'][0]['id'])
+
     def test_empty_get_all(self):
         response = self.get(self.l7rules_path).json.get(self.root_tag_list)
         self.assertIsInstance(response, list)

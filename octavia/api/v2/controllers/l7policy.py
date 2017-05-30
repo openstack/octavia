@@ -57,8 +57,8 @@ class L7PolicyController(base.BaseController):
         return l7policy_types.L7PolicyRootResponse(l7policy=result)
 
     @wsme_pecan.wsexpose(l7policy_types.L7PoliciesRootResponse, wtypes.text,
-                         ignore_extra_args=True)
-    def get_all(self, project_id=None):
+                         [wtypes.text], ignore_extra_args=True)
+    def get_all(self, project_id=None, fields=None):
         """Lists all l7policies of a listener."""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
@@ -71,6 +71,8 @@ class L7PolicyController(base.BaseController):
             **query_filter)
         result = self._convert_db_to_type(
             db_l7policies, [l7policy_types.L7PolicyResponse])
+        if fields is not None:
+            result = self._filter_fields(result, fields)
         return l7policy_types.L7PoliciesRootResponse(
             l7policies=result, l7policies_links=links)
 

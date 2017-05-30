@@ -450,6 +450,59 @@ class TestPool(base.BaseAPITest):
         self.assertEqual(2, len(links))
         self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
 
+    def test_get_all_fields_filter(self):
+        self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool1')
+        self.set_lb_status(lb_id=self.lb_id)
+        self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool2')
+        self.set_lb_status(lb_id=self.lb_id)
+        self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool3')
+        self.set_lb_status(lb_id=self.lb_id)
+
+        pools = self.get(self.POOLS_PATH, params={
+            'fields': ['id', 'project_id']}).json
+        for pool in pools['pools']:
+            self.assertIn(u'id', pool.keys())
+            self.assertIn(u'project_id', pool.keys())
+            self.assertNotIn(u'description', pool.keys())
+
+    def test_get_all_filter(self):
+        po1 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool1').get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool2').get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool3').get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+
+        pools = self.get(self.POOLS_PATH, params={
+            'id': po1['id']}).json
+        self.assertEqual(1, len(pools['pools']))
+        self.assertEqual(po1['id'],
+                         pools['pools'][0]['id'])
+
     def test_empty_get_all(self):
         response = self.get(self.POOLS_PATH).json.get(self.root_tag_list)
         self.assertIsInstance(response, list)

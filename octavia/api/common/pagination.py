@@ -49,6 +49,7 @@ class PaginationHelper(object):
         self.limit = self._parse_limit(params)
         self.sort_keys = self._parse_sort_keys(params)
         self.params = params
+        self.filters = None
 
     @staticmethod
     def _parse_limit(params):
@@ -184,12 +185,25 @@ class PaginationHelper(object):
         Typically, the id of the last row is used as the client-facing
         pagination marker, then the actual marker object must be fetched from
         the db and passed in to us as marker.
-        :param query: the query object to which we should add paging/sorting
+        :param query: the query object to which we should add
+        paging/sorting/filtering
         :param model: the ORM model class
 
         :rtype: sqlalchemy.orm.query.Query
-        :returns: The query with sorting/pagination added.
+        :returns: The query with sorting/pagination/filtering added.
         """
+
+        # Add filtering
+        if CONF.allow_filtering:
+            filter_attrs = [attr for attr in dir(
+                model.__v2_wsme__
+            ) if not callable(
+                getattr(model.__v2_wsme__, attr)
+            ) and not attr.startswith("_")]
+            self.filters = {k: v for (k, v) in self.params.items()
+                            if k in filter_attrs}
+
+            query = model.apply_filter(query, model, self.filters)
 
         # Add sorting
         if CONF.allow_sorting:
@@ -263,7 +277,9 @@ class PaginationHelper(object):
                 query = query.limit(self.limit)
 
         model_list = query.all()
+
         links = None
         if CONF.allow_pagination:
             links = self._make_links(model_list)
+
         return model_list, links

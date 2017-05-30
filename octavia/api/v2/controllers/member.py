@@ -56,8 +56,8 @@ class MembersController(base.BaseController):
         return member_types.MemberRootResponse(member=result)
 
     @wsme_pecan.wsexpose(member_types.MembersRootResponse, wtypes.text,
-                         ignore_extra_args=True)
-    def get_all(self):
+                         [wtypes.text], ignore_extra_args=True)
+    def get_all(self, fields=None):
         """Lists all pool members of a pool."""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
@@ -76,6 +76,8 @@ class MembersController(base.BaseController):
             pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
         result = self._convert_db_to_type(
             db_members, [member_types.MemberResponse])
+        if fields is not None:
+            result = self._filter_fields(result, fields)
         return member_types.MembersRootResponse(
             members=result, members_links=links)
 

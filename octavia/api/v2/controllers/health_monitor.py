@@ -68,8 +68,8 @@ class HealthMonitorController(base.BaseController):
         return hm_types.HealthMonitorRootResponse(healthmonitor=result)
 
     @wsme_pecan.wsexpose(hm_types.HealthMonitorsRootResponse, wtypes.text,
-                         ignore_extra_args=True)
-    def get_all(self, project_id=None):
+                         [wtypes.text], ignore_extra_args=True)
+    def get_all(self, project_id=None, fields=None):
         """Gets all health monitors."""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
@@ -82,6 +82,8 @@ class HealthMonitorController(base.BaseController):
             **query_filter)
         result = self._convert_db_to_type(
             db_hm, [hm_types.HealthMonitorResponse])
+        if fields is not None:
+            result = self._filter_fields(result, fields)
         return hm_types.HealthMonitorsRootResponse(
             healthmonitors=result, healthmonitors_links=links)
 

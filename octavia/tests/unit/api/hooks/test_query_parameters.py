@@ -38,7 +38,8 @@ class TestPaginationHelper(base.TestCase):
         self.assertEqual(DEFAULT_SORTS, helper.sort_keys)
         self.assertIsNone(helper.marker)
         self.assertEqual(1000, helper.limit)
-        query_mock.order_by().order_by().limit.assert_called_with(1000)
+        query_mock.order_by().order_by().limit.assert_called_with(
+            1000)
 
     def test_sort_empty(self):
         sort_params = ""
@@ -90,7 +91,36 @@ class TestPaginationHelper(base.TestCase):
         query_mock = mock.MagicMock()
 
         helper.apply(query_mock, models.LoadBalancer)
-        query_mock.order_by().order_by().limit.assert_called_with(limit)
+        query_mock.order_by().order_by().limit.assert_called_with(
+            limit)
+
+    @mock.patch('octavia.api.common.pagination.request')
+    def test_filter_correct_params(self, request_mock):
+        params = {'id': 'fake_id'}
+        helper = pagination.PaginationHelper(params)
+        query_mock = mock.MagicMock()
+
+        helper.apply(query_mock, models.LoadBalancer)
+        self.assertEqual(params, helper.filters)
+
+    @mock.patch('octavia.api.common.pagination.request')
+    def test_filter_mismatched_params(self, request_mock):
+        params = {'id': 'fake_id', 'fields': 'id'}
+        filters = {'id': 'fake_id'}
+        helper = pagination.PaginationHelper(params)
+        query_mock = mock.MagicMock()
+
+        helper.apply(query_mock, models.LoadBalancer)
+        self.assertEqual(filters, helper.filters)
+
+    @mock.patch('octavia.api.common.pagination.request')
+    def test_fields_not_passed(self, request_mock):
+        params = {'fields': 'id'}
+        helper = pagination.PaginationHelper(params)
+        query_mock = mock.MagicMock()
+
+        helper.apply(query_mock, models.LoadBalancer)
+        self.assertEqual({}, helper.filters)
 
     @mock.patch('octavia.api.common.pagination.request')
     def test_make_links_next(self, request_mock):

@@ -45,6 +45,10 @@ core_opts = [
                 help=_("Allow the usage of the pagination")),
     cfg.BoolOpt('allow_sorting', default=True,
                 help=_("Allow the usage of the sorting")),
+    cfg.BoolOpt('allow_filtering', default=True,
+                help=_("Allow the usage of filtering")),
+    cfg.BoolOpt('allow_field_selection', default=True,
+                help=_("Allow the usage of field selection")),
     cfg.StrOpt('pagination_max_limit',
                default=str(constants.DEFAULT_PAGE_SIZE),
                help=_("The maximum number of items returned in a single "

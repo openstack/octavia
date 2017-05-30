@@ -23,6 +23,7 @@ from octavia.common import constants
 class BaseListenerType(types.BaseType):
     _type_to_model_map = {'admin_state_up': 'enabled',
                           'default_tls_container_ref': 'tls_certificate_id'}
+    _child_map = {}
 
 
 class ListenerResponse(BaseListenerType):

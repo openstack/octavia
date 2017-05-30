@@ -13,6 +13,7 @@
 #    under the License.
 
 from oslo_db.sqlalchemy import models
+from oslo_utils import strutils
 from oslo_utils import uuidutils
 import sqlalchemy as sa
 from sqlalchemy.ext import declarative
@@ -101,6 +102,28 @@ class OctaviaBase(models.ModelBase):
                     elif not isinstance(item, OctaviaBase):
                         listref.append(item)
         return dm_self
+
+    @staticmethod
+    def apply_filter(query, model, filters):
+        translated_filters = {}
+        child_map = {}
+        # Convert admin_state_up to proper type
+        if 'admin_state_up' in filters:
+            filters['admin_state_up'] = strutils.bool_from_string(
+                filters['admin_state_up'])
+        for attr, name_map in model.__v2_wsme__._child_map.items():
+            for k, v in name_map.items():
+                if v in filters:
+                    child_map[attr] = {k: filters.pop(v)}
+        for k, v in model.__v2_wsme__._type_to_model_map.items():
+            if k in filters:
+                translated_filters[v] = filters.pop(k)
+        translated_filters.update(filters)
+        if translated_filters:
+            query = query.filter_by(**translated_filters)
+        for k, v in child_map.items():
+            query = query.join(getattr(model, k)).filter_by(**v)
+        return query
 
 
 class LookupTableMixin(object):

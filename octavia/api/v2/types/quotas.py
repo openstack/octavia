@@ -53,6 +53,9 @@ class QuotaAllBase(base.BaseType):
     pool = wtypes.wsattr(wtypes.IntegerType())
     health_monitor = wtypes.wsattr(wtypes.IntegerType())
 
+    _type_to_model_map = {}
+    _child_map = {}
+
     @classmethod
     def from_data_model(cls, data_model, children=False):
         quotas = super(QuotaAllBase, cls).from_data_model(

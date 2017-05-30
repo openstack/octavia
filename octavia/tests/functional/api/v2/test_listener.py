@@ -303,6 +303,50 @@ class TestListener(base.BaseAPITest):
         self.assertEqual(2, len(links))
         self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
 
+    def test_get_all_fields_filter(self):
+        self.create_listener(constants.PROTOCOL_HTTP, 80,
+                             self.lb_id,
+                             name='listener1')
+        self.set_lb_status(self.lb_id)
+        self.create_listener(constants.PROTOCOL_HTTP, 81,
+                             self.lb_id,
+                             name='listener2')
+        self.set_lb_status(self.lb_id)
+        self.create_listener(constants.PROTOCOL_HTTP, 82,
+                             self.lb_id,
+                             name='listener3')
+        self.set_lb_status(self.lb_id)
+
+        lis = self.get(self.LISTENERS_PATH, params={
+            'fields': ['id', 'project_id']}).json
+        for li in lis['listeners']:
+            self.assertIn(u'id', li.keys())
+            self.assertIn(u'project_id', li.keys())
+            self.assertNotIn(u'description', li.keys())
+
+    def test_get_all_filter(self):
+        li1 = self.create_listener(constants.PROTOCOL_HTTP,
+                                   80,
+                                   self.lb_id,
+                                   name='listener1').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_listener(constants.PROTOCOL_HTTP,
+                             81,
+                             self.lb_id,
+                             name='listener2').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_listener(constants.PROTOCOL_HTTP,
+                             82,
+                             self.lb_id,
+                             name='listener3').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        lis = self.get(self.LISTENERS_PATH, params={
+            'id': li1['id']}).json
+        self.assertEqual(1, len(lis['listeners']))
+        self.assertEqual(li1['id'],
+                         lis['listeners'][0]['id'])
+
     def test_get(self):
         listener = self.create_listener(
             constants.PROTOCOL_HTTP, 80, self.lb_id).get(self.root_tag)

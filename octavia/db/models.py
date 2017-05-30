@@ -20,6 +20,14 @@ from sqlalchemy import orm
 from sqlalchemy.orm import validates
 from sqlalchemy.sql import func
 
+from octavia.api.v2.types import health_monitor
+from octavia.api.v2.types import l7policy
+from octavia.api.v2.types import l7rule
+from octavia.api.v2.types import listener
+from octavia.api.v2.types import load_balancer
+from octavia.api.v2.types import member
+from octavia.api.v2.types import pool
+from octavia.api.v2.types import quotas
 from octavia.common import data_models
 from octavia.db import base_models
 
@@ -164,6 +172,9 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
     __data_model__ = data_models.Member
 
     __tablename__ = "member"
+
+    __v2_wsme__ = member.MemberResponse
+
     __table_args__ = (
         sa.UniqueConstraint('pool_id', 'ip_address', 'protocol_port',
                             name='uq_member_pool_id_address_protocol_port'),
@@ -202,6 +213,8 @@ class HealthMonitor(base_models.BASE, base_models.IdMixin,
     __data_model__ = data_models.HealthMonitor
 
     __tablename__ = "health_monitor"
+
+    __v2_wsme__ = health_monitor.HealthMonitorResponse
 
     type = sa.Column(
         sa.String(36),
@@ -242,6 +255,8 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
     __data_model__ = data_models.Pool
 
     __tablename__ = "pool"
+
+    __v2_wsme__ = pool.PoolResponse
 
     description = sa.Column(sa.String(255), nullable=True)
     protocol = sa.Column(
@@ -297,6 +312,8 @@ class LoadBalancer(base_models.BASE, base_models.IdMixin,
     __data_model__ = data_models.LoadBalancer
 
     __tablename__ = "load_balancer"
+
+    __v2_wsme__ = load_balancer.LoadBalancerResponse
 
     description = sa.Column(sa.String(255), nullable=True)
     provisioning_status = sa.Column(
@@ -371,6 +388,9 @@ class Listener(base_models.BASE, base_models.IdMixin,
     __data_model__ = data_models.Listener
 
     __tablename__ = "listener"
+
+    __v2_wsme__ = listener.ListenerResponse
+
     __table_args__ = (
         sa.UniqueConstraint('load_balancer_id', 'protocol_port',
                             name='uq_listener_load_balancer_id_protocol_port'),
@@ -508,6 +528,8 @@ class L7Rule(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
 
     __tablename__ = "l7rule"
 
+    __v2_wsme__ = l7rule.L7RuleResponse
+
     l7policy_id = sa.Column(
         sa.String(36),
         sa.ForeignKey("l7policy.id", name="fk_l7rule_l7policy_id"),
@@ -550,6 +572,8 @@ class L7Policy(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
     __data_model__ = data_models.L7Policy
 
     __tablename__ = "l7policy"
+
+    __v2_wsme__ = l7policy.L7PolicyResponse
 
     description = sa.Column(sa.String(255), nullable=True)
     listener_id = sa.Column(
@@ -600,6 +624,8 @@ class Quotas(base_models.BASE):
     __data_model__ = data_models.Quotas
 
     __tablename__ = "quotas"
+
+    __v2_wsme__ = quotas.QuotaAllBase
 
     project_id = sa.Column(sa.String(36), primary_key=True)
     health_monitor = sa.Column(sa.Integer(), nullable=True)

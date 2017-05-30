@@ -55,8 +55,8 @@ class L7RuleController(base.BaseController):
         return l7rule_types.L7RuleRootResponse(rule=result)
 
     @wsme_pecan.wsexpose(l7rule_types.L7RulesRootResponse, wtypes.text,
-                         ignore_extra_args=True)
-    def get_all(self):
+                         [wtypes.text], ignore_extra_args=True)
+    def get_all(self, fields=None):
         """Lists all l7rules of a l7policy."""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
@@ -74,6 +74,8 @@ class L7RuleController(base.BaseController):
             pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
         result = self._convert_db_to_type(
             db_l7rules, [l7rule_types.L7RuleResponse])
+        if fields is not None:
+            result = self._filter_fields(result, fields)
         return l7rule_types.L7RulesRootResponse(
             rules=result, rules_links=links)
 

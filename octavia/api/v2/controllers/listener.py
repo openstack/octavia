@@ -70,8 +70,8 @@ class ListenersController(base.BaseController):
         return listener_types.ListenerRootResponse(listener=result)
 
     @wsme_pecan.wsexpose(listener_types.ListenersRootResponse, wtypes.text,
-                         ignore_extra_args=True)
-    def get_all(self, project_id=None):
+                         [wtypes.text], ignore_extra_args=True)
+    def get_all(self, project_id=None, fields=None):
         """Lists all listeners."""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
@@ -84,6 +84,8 @@ class ListenersController(base.BaseController):
             **query_filter)
         result = self._convert_db_to_type(
             db_listeners, [listener_types.ListenerResponse])
+        if fields is not None:
+            result = self._filter_fields(result, fields)
         return listener_types.ListenersRootResponse(
             listeners=result, listeners_links=links)
 

@@ -25,6 +25,11 @@ class BaseLoadBalancerType(types.BaseType):
                           'vip_port_id': 'vip.port_id',
                           'vip_network_id': 'vip.network_id',
                           'admin_state_up': 'enabled'}
+    _child_map = {'vip': {
+        'ip_address': 'vip_address',
+        'subnet_id': 'vip_subnet_id',
+        'port_id': 'vip_port_id',
+        'network_id': 'vip_network_id'}}
 
 
 class LoadBalancerResponse(BaseLoadBalancerType):

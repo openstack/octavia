@@ -21,6 +21,7 @@ from octavia.common import constants
 class BaseMemberType(types.BaseType):
     _type_to_model_map = {'admin_state_up': 'enabled',
                           'address': 'ip_address'}
+    _child_map = {}
 
 
 class MemberResponse(BaseMemberType):
