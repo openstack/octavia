@@ -93,7 +93,6 @@ class TestNovaClient(base.TestCase):
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.conf = conf
         self.net_name = "lb-mgmt-net"
-        conf.config(group="networking", lb_network_name=self.net_name)
         conf.config(group="controller_worker",
                     amp_boot_network_list=['1', '2'])
         self.conf = conf
