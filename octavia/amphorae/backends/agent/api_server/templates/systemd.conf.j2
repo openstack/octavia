@@ -3,6 +3,7 @@ Description=HAProxy Load Balancer
 Documentation=man:haproxy(1)
 Documentation=file:/usr/share/doc/haproxy/configuration.txt.gz
 After=network.target syslog.service
+Before=octavia-keepalived.service
 Wants=syslog.service
 
 [Service]
