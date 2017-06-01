@@ -13,7 +13,7 @@
                     "name": "rr_pool",
                     "protocol": "HTTP",
                     "lb_algorithm": "ROUND_ROBIN",
-                    "health_monitor": {
+                    "healthmonitor": {
                         "type": "HTTP",
                         "delay": "3",
                         "expected_codes": "200,201,202",
@@ -61,7 +61,7 @@
                 "name": "https_pool",
                 "protocol": "HTTPS",
                 "lb_algorithm": "ROUND_ROBIN",
-                "health_monitor": {
+                "healthmonitor": {
                     "type": "HTTPS",
                     "delay": "3",
                     "max_retries": 2,

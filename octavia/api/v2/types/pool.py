@@ -40,7 +40,8 @@ class SessionPersistencePUT(types.BaseType):
 
 
 class BasePoolType(types.BaseType):
-    _type_to_model_map = {'admin_state_up': 'enabled'}
+    _type_to_model_map = {'admin_state_up': 'enabled',
+                          'healthmonitor': 'health_monitor'}
 
 
 class PoolResponse(BasePoolType):
@@ -59,7 +60,7 @@ class PoolResponse(BasePoolType):
     listeners = wtypes.wsattr([types.IdOnlyType])
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
-    health_monitor_id = wtypes.wsattr(wtypes.UuidType())
+    healthmonitor_id = wtypes.wsattr(wtypes.UuidType())
     members = wtypes.wsattr([types.IdOnlyType])
 
     @classmethod
@@ -74,8 +75,8 @@ class PoolResponse(BasePoolType):
         if cls._full_response():
             del pool.loadbalancers
             member_model = member.MemberFullResponse
-            if pool.health_monitor:
-                pool.health_monitor = (
+            if pool.healthmonitor:
+                pool.healthmonitor = (
                     health_monitor.HealthMonitorFullResponse
                     .from_data_model(data_model.health_monitor))
         else:
@@ -85,6 +86,8 @@ class PoolResponse(BasePoolType):
             else:
                 pool.loadbalancers = []
             member_model = types.IdOnlyType
+            if data_model.health_monitor:
+                pool.healthmonitor_id = data_model.health_monitor.id
 
         pool.listeners = [
             types.IdOnlyType.from_data_model(i) for i in data_model.listeners]
@@ -100,7 +103,7 @@ class PoolFullResponse(PoolResponse):
         return True
 
     members = wtypes.wsattr([member.MemberFullResponse])
-    health_monitor = wtypes.wsattr(health_monitor.HealthMonitorFullResponse)
+    healthmonitor = wtypes.wsattr(health_monitor.HealthMonitorFullResponse)
 
 
 class PoolRootResponse(types.BaseType):
@@ -127,7 +130,7 @@ class PoolPOST(BasePoolType):
     session_persistence = wtypes.wsattr(SessionPersistencePOST)
     # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
-    health_monitor = wtypes.wsattr(health_monitor.HealthMonitorSingleCreate)
+    healthmonitor = wtypes.wsattr(health_monitor.HealthMonitorSingleCreate)
     members = wtypes.wsattr([member.MemberSingleCreate])
 
 
@@ -158,5 +161,5 @@ class PoolSingleCreate(BasePoolType):
     lb_algorithm = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_LB_ALGORITHMS))
     session_persistence = wtypes.wsattr(SessionPersistencePOST)
-    health_monitor = wtypes.wsattr(health_monitor.HealthMonitorSingleCreate)
+    healthmonitor = wtypes.wsattr(health_monitor.HealthMonitorSingleCreate)
     members = wtypes.wsattr([member.MemberSingleCreate])

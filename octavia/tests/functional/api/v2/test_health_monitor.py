@@ -385,6 +385,15 @@ class TestHealthMonitor(base.BaseAPITest):
         self.assertEqual('/', api_hm.get('url_path'))
         self.assertEqual('200', api_hm.get('expected_codes'))
 
+    def test_pool_returns_hm_id(self):
+        api_hm = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        pool = self.get(self.POOL_PATH.format(
+            pool_id=self.pool_id)).json.get("pool")
+        self.assertEqual(pool.get('healthmonitor_id'), api_hm.get('id'))
+
     # TODO(rm_work) Remove after deprecation of project_id in POST (R series)
     def test_create_with_project_id_is_ignored(self):
         pid = uuidutils.generate_uuid()
