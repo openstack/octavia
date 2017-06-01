@@ -84,6 +84,8 @@ class BaseType(wtypes.Base):
                 for child_key, child_value in value.items():
                     if '.'.join([key, child_key]) in dm_to_type_map:
                         new_dict['_'.join([key, child_key])] = child_value
+            elif key in ['name', 'description'] and value is None:
+                new_dict[key] = ''
             else:
                 if key in dm_to_type_map:
                     new_dict[dm_to_type_map[key]] = value

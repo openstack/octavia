@@ -68,10 +68,6 @@ class LoadBalancerResponse(BaseLoadBalancerType):
         result.pools = [
             pool_model.from_data_model(i) for i in data_model.pools]
 
-        if not result.description:
-            result.description = ""
-        if not result.name:
-            result.name = ""
         if not result.flavor:
             result.flavor = ""
         if not result.provider:

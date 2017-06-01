@@ -46,10 +46,6 @@ class L7PolicyResponse(BaseL7PolicyType):
     def from_data_model(cls, data_model, children=False):
         policy = super(L7PolicyResponse, cls).from_data_model(
             data_model, children=children)
-        if not policy.name:
-            policy.name = ""
-        if not policy.description:
-            policy.description = ""
 
         if cls._full_response():
             rule_model = l7rule.L7RuleFullResponse
