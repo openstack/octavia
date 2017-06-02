@@ -18,7 +18,7 @@ DAEMON="ip netns exec {{ amphora_nsname }} {{ keepalived_cmd }}"
 NAME=octavia-keepalived
 DESC=octavia-keepalived
 TMPFILES="/tmp/.vrrp /tmp/.healthcheckers"
-DAEMON_ARGS="-D -d -f {{ keepalived_cfg }}"
+DAEMON_ARGS="-D -d -f {{ keepalived_cfg }} -p {{ keepalived_pid }}"
 
 #includes lsb functions
 . /lib/lsb/init-functions
@@ -36,7 +36,7 @@ case "$1" in
 	do
        		test -e $file && test ! -L $file && rm $file
 	done
-	if start-stop-daemon --start --quiet --pidfile /var/run/$NAME.pid \
+	if start-stop-daemon --start --quiet --pidfile {{ keepalived_pid }} \
                --exec $DAEMON -- $DAEMON_ARGS; then
 		log_end_msg 0
 	else
@@ -45,7 +45,7 @@ case "$1" in
        ;;
   stop)
 	log_daemon_msg "Stopping $DESC" "$NAME"
-	if start-stop-daemon --oknodo --stop --quiet --pidfile /var/run/$NAME.pid \
+	if start-stop-daemon --oknodo --stop --quiet --pidfile {{ keepalived_pid }} \
         	--exec $DAEMON; then
 		log_end_msg 0
 	else
@@ -55,7 +55,7 @@ case "$1" in
   reload|force-reload)
 	log_action_begin_msg "Reloading $DESC configuration..."
       	if start-stop-daemon --stop --quiet --signal 1 --pidfile \
-               /var/run/$NAME.pid --exec $DAEMON; then
+               {{ keepalived_pid }} --exec $DAEMON; then
 	       log_end_msg 0
 	else
 		log_action_end_msg 1
@@ -65,10 +65,10 @@ case "$1" in
   	log_action_begin_msg "Restarting $DESC" "$NAME"
 
        	start-stop-daemon --stop --quiet --pidfile \
-		/var/run/$NAME.pid --exec $DAEMON || true
+		{{ keepalived_pid }} --exec $DAEMON || true
        sleep 1
        if start-stop-daemon --start --quiet --pidfile \
-               /var/run/$NAME.pid --exec $DAEMON -- $DAEMON_ARGS; then
+               {{ keepalived_pid }} --exec $DAEMON -- $DAEMON_ARGS; then
 	       log_end_msg 0
 	else
 		log_end_msg 1

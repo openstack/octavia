@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import errno
 import os
 import time
 
@@ -49,9 +50,48 @@ def list_sock_stat_files(hadir=None):
 def run_sender(cmd_queue):
     LOG.info('Health Manager Sender starting.')
     sender = health_sender.UDPStatusSender()
+
+    keepalived_cfg_path = util.keepalived_cfg_path()
+    keepalived_pid_path = util.keepalived_pid_path()
+
     while True:
-        message = build_stats_message()
-        sender.dosend(message)
+
+        try:
+            # If the keepalived config file is present check
+            # that it is running, otherwise don't send the health
+            # heartbeat
+            if os.path.isfile(keepalived_cfg_path):
+                # Is there a pid file for keepalived?
+                with open(keepalived_pid_path, 'r') as pid_file:
+                    pid = int(pid_file.readline())
+                os.kill(pid, 0)
+
+            message = build_stats_message()
+            sender.dosend(message)
+
+        except IOError as e:
+            # Missing PID file, skip health heartbeat
+            if e.errno == errno.ENOENT:
+                LOG.error('Missing keepalived PID file {0}, skipping '
+                          'health heartbeat.'.format(keepalived_pid_path))
+            else:
+                LOG.error('Failed to check keepalived and haproxy status '
+                          'due to exception {0}, skipping health '
+                          'heartbeat.'.format(str(e)))
+        except OSError as e:
+            # Keepalived is not running, skip health heartbeat
+            if e.errno == errno.ESRCH:
+                LOG.error('Keepalived is configured but not running, skipping '
+                          'health heartbeat.'.format(keepalived_pid_path))
+            else:
+                LOG.error('Failed to check keepalived and haproxy status '
+                          'due to exception {0}, skipping health '
+                          'heartbeat.'.format(str(e)))
+        except Exception as e:
+            LOG.error('Failed to check keepalived and haproxy status '
+                      'due to exception {0}, skipping health '
+                      'heartbeat.'.format(str(e)))
+
         try:
             cmd = cmd_queue.get_nowait()
             if cmd is 'reload':

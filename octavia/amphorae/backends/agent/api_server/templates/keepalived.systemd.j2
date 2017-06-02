@@ -6,8 +6,9 @@ Wants=network-online.target
 [Service]
 Type=forking
 KillMode=process
-ExecStart=/sbin/ip netns exec {{ amphora_nsname }} {{ keepalived_cmd }} -D -d -f {{ keepalived_cfg }}
+ExecStart=/sbin/ip netns exec {{ amphora_nsname }} {{ keepalived_cmd }} -D -d -f {{ keepalived_cfg }} -p {{ keepalived_pid }}
 ExecReload=/bin/kill -HUP $MAINPID
+PIDFile={{ keepalived_pid }}
 
 [Install]
 WantedBy=multi-user.target
