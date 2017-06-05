@@ -283,3 +283,11 @@ class VRRPDriverMixin(object):
         :param loadbalancer: loadbalancer object
         """
         pass
+
+    @abc.abstractmethod
+    def get_vrrp_interface(self, amphora):
+        """Get the VRRP interface object for a specific amphora
+
+        :param amphora: amphora object
+        """
+        pass

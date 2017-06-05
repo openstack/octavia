@@ -99,7 +99,9 @@ class NoopManager(object):
                                                     'update_amp_cert_file')
 
 
-class NoopAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
+class NoopAmphoraLoadBalancerDriver(
+    driver_base.AmphoraLoadBalancerDriver,
+        driver_base.VRRPDriverMixin):
     def __init__(self):
         super(NoopAmphoraLoadBalancerDriver, self).__init__()
         self.driver = NoopManager()
@@ -144,3 +146,18 @@ class NoopAmphoraLoadBalancerDriver(driver_base.AmphoraLoadBalancerDriver):
     def upload_cert_amp(self, amphora, pem_file):
 
         self.driver.upload_cert_amp(amphora, pem_file)
+
+    def update_vrrp_conf(self, loadbalancer):
+        pass
+
+    def stop_vrrp_service(self, loadbalancer):
+        pass
+
+    def start_vrrp_service(self, loadbalancer):
+        pass
+
+    def reload_vrrp_service(self, loadbalancer):
+        pass
+
+    def get_vrrp_interface(self, amphora):
+        pass
