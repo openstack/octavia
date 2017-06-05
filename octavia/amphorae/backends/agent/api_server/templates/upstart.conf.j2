@@ -45,7 +45,7 @@ pre-start script
     {%- if HasIFUPAll %}
     ip netns exec {{ amphora_nsname }} ifup -a || true
     {%- else %}
-    awk '{system("/sbin/ip netns exec amphora-haproxy ifup " $2)}' /var/lib/octavia/plugged_interfaces || true
+    awk '{system("/sbin/ip netns exec {{ amphora_nsname }} ifup " $2)}' /var/lib/octavia/plugged_interfaces || true
     {%- endif %}
 
 end script

@@ -20,7 +20,7 @@ ExecStartPre=-/bin/sh -c '/sbin/ip link | awk \'{getline n; print $0,n}\' | awk 
 {%- if HasIFUPAll %}
 ExecStartPre=-/sbin/ip netns exec {{ amphora_nsname }} ifup -a
 {%- else %}
-ExecStartPre=-/bin/awk '{system("/sbin/ip netns exec amphora-haproxy ifup " $2)}' /var/lib/octavia/plugged_interfaces
+ExecStartPre=-/bin/awk '{system("/sbin/ip netns exec {{ amphora_nsname }} ifup " $2)}' /var/lib/octavia/plugged_interfaces
 {%- endif %}
 #
 ExecStart=/sbin/ip netns exec {{ amphora_nsname }} /usr/sbin/haproxy-systemd-wrapper -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }} -p {{ haproxy_pid }} -L {{ peer_name }} $EXTRAOPTS
