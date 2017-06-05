@@ -19,6 +19,12 @@ path-loadbalancer-id:
   in: path
   required: true
   type: string
+path-member-id:
+  description: |
+    The ID of the member to query.
+  in: path
+  required: true
+  type: string
 path-pool-id:
   description: |
     The ID of the pool to query.
@@ -65,6 +71,12 @@ active_connections:
 address:
   description: |
     The IP address of the resource.
+  in: body
+  required: true
+  type: string
+address-member:
+  description: |
+    The IP address of the backend member server.
   in: body
   required: true
   type: string
@@ -344,6 +356,12 @@ loadbalancers:
   in: body
   required: true
   type: array
+member-id:
+  description: |
+    The ID of the member.
+  in: body
+  required: true
+  type: string
 member-ids:
   description: |
     A list of member IDs.
@@ -356,6 +374,34 @@ members-status-object-list:
   in: body
   required: true
   type: array
+monitor_address:
+  description: |
+    An alternate IP address used for health monitoring a backend member.
+    Default is ``null`` which monitors the member ``address``.
+  in: body
+  required: true
+  type: string
+monitor_address-optional:
+  description: |
+    An alternate IP address used for health monitoring a backend member.
+    Default is ``null`` which monitors the member ``address``.
+  in: body
+  required: false
+  type: string
+monitor_port:
+  description: |
+    An alternate protocol port used for health monitoring a backend member.
+    Default is ``null`` which monitors the member ``protocol_port``.
+  in: body
+  required: true
+  type: integer
+monitor_port-optional:
+  description: |
+    An alternate protocol port used for health monitoring a backend member.
+    Default is ``null`` which monitors the member ``protocol_port``.
+  in: body
+  required: false
+  type: integer
 name:
   description: |
     Human-readable name of the resource.
@@ -431,6 +477,12 @@ protocol-pools:
 protocol_port:
   description: |
     The protocol port number for the resource.
+  in: body
+  required: true
+  type: integer
+protocol_port-member:
+  description: |
+    The protocol port number the backend member server is listening on.
   in: body
   required: true
   type: integer
@@ -519,6 +571,18 @@ statuses:
   in: body
   required: true
   type: object
+subnet_id:
+  description: |
+    The subnet ID the member service is accessible from.
+  in: body
+  required: true
+  type: string
+subnet_id-optional:
+  description: |
+    The subnet ID the member service is accessible from.
+  in: body
+  required: false
+  type: string
 total_connections:
   description: |
     The total connections handled.
@@ -588,6 +652,28 @@ vip_subnet_id-optional:
   in: body
   required: false
   type: string
+weight:
+  description: |
+    The weight of a member determines the portion of requests or connections it
+    services compared to the other members of the pool. For example, a member
+    with a weight of 10 receives five times as many requests as a member with a
+    weight of 2. A value of 0 means the member does not receive new connections
+    but continues to service existing connections. A valid value is
+    from ``0`` to ``256``. Default is ``1``.
+  in: body
+  required: true
+  type: integer
+weight-optional:
+  description: |
+    The weight of a member determines the portion of requests or connections it
+    services compared to the other members of the pool. For example, a member
+    with a weight of 10 receives five times as many requests as a member with a
+    weight of 2. A value of 0 means the member does not receive new connections
+    but continues to service existing connections. A valid value is
+    from ``0`` to ``256``. Default is ``1``.
+  in: body
+  required: false
+  type: integer
 x_forwarded_for:
   description: |
     When ``true`` a ``X-Forwarded-For`` header is inserted into the request

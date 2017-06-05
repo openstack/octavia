@@ -1,0 +1,18 @@
+{
+    "member": {
+        "monitor_port": 8080,
+        "project_id": "e3cd678b11784734bc366148aa37580e",
+        "name": "web-server-1",
+        "weight": 20,
+        "admin_state_up": true,
+        "subnet_id": "bbb35f84-35cc-4b2f-84c2-a6a29bba68aa",
+        "created_at": "2017-05-11T17:21:34",
+        "provisioning_status": "ACTIVE",
+        "monitor_address": null,
+        "updated_at": "2017-05-11T17:21:37",
+        "address": "192.0.2.16",
+        "protocol_port": 80,
+        "id": "957a1ace-1bd2-449b-8455-820b6e4b63f3",
+        "operating_status": "NO_MONITOR"
+    }
+}

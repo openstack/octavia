@@ -240,6 +240,7 @@ Request
 
 .. rest_parameters:: ../parameters.yaml
 
+   - fields: fields
    - listener_id: path-listener-id
 
 Curl Example

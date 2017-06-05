@@ -1,0 +1,11 @@
+{
+    "member": {
+        "name": "web-server-1",
+        "weight": "20",
+        "admin_state_up": true,
+        "subnet_id": "bbb35f84-35cc-4b2f-84c2-a6a29bba68aa",
+        "address": "192.0.2.16",
+        "protocol_port": "80",
+        "monitor_port": 8080
+    }
+}
