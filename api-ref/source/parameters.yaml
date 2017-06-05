@@ -19,6 +19,12 @@ path-loadbalancer-id:
   in: path
   required: true
   type: string
+path-pool-id:
+  description: |
+    The ID of the pool to query.
+  in: path
+  required: true
+  type: string
 ###############################################################################
 # Query fields
 ###############################################################################
@@ -37,12 +43,6 @@ fields:
 project_id_query:
   description: |
     The ID of the project to query.
-  in: query
-  required: false
-  type: string
-tenant_id_query:
-  description: |
-    The ID of the project to query. (deprecated)
   in: query
   required: false
   type: string
@@ -194,9 +194,15 @@ flavor-id-optional:
   in: body
   required: false
   type: string
+healthmonitor-id:
+  description: |
+    The associated health monitor ID.
+  in: body
+  required: true
+  type: string
 healthmonitor-status:
   description: |
-    The associated healthmonitor status object.
+    The associated health monitor status object.
   in: body
   required: true
   type: object
@@ -246,6 +252,20 @@ l7rules-status-object-list:
   in: body
   required: true
   type: array
+lb-algorithm:
+  description: |
+    The load balancing algorithm for the pool. One of ``LEAST_CONNECTIONS``,
+    ``ROUND_ROBIN``, or ``SOURCE_IP``.
+  in: body
+  required: true
+  type: string
+lb-algorithm-optional:
+  description: |
+    The load balancing algorithm for the pool. One of ``LEAST_CONNECTIONS``,
+    ``ROUND_ROBIN``, or ``SOURCE_IP``.
+  in: body
+  required: false
+  type: string
 listener:
   description: |
     A listener object.
@@ -258,6 +278,18 @@ listener-id:
   in: body
   required: true
   type: string
+listener-id-pool-optional:
+  description: |
+    The ID of the listener for the pool. Either ``listener_id`` or ``loadbalancer_id`` must be specified.
+  in: body
+  required: false
+  type: string
+listener-ids:
+  description: |
+    A list of listener IDs.
+  in: body
+  required: true
+  type: array
 listeners:
   description: |
     The associated listener IDs, if any.
@@ -288,6 +320,12 @@ loadbalancer-id:
   in: body
   required: true
   type: string
+loadbalancer-id-pool-optional:
+  description: |
+    The ID of the load balancer for the pool. Either ``listener_id`` or ``loadbalancer_id`` must be specified.
+  in: body
+  required: false
+  type: string
 loadbalancer-ids:
   description: |
     A list of load balancer IDs.
@@ -303,6 +341,12 @@ loadbalancer-status:
 loadbalancers:
   description: |
     A list of ``loadbalancer`` objects.
+  in: body
+  required: true
+  type: array
+member-ids:
+  description: |
+    A list of member IDs.
   in: body
   required: true
   type: array
@@ -327,6 +371,12 @@ name-optional:
 operating_status:
   description: |
     The operating status of the resource. See :ref:`op_status`.
+  in: body
+  required: true
+  type: string
+pool-id:
+  description: |
+    The ID of the pool.
   in: body
   required: true
   type: string
@@ -372,6 +422,12 @@ protocol:
   in: body
   required: true
   type: integer
+protocol-pools:
+  description: |
+    The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``PROXY``, or ``TCP``.
+  in: body
+  required: true
+  type: string
 protocol_port:
   description: |
     The protocol port number for the resource.
@@ -402,6 +458,36 @@ request_errors:
   in: body
   required: true
   type: integer
+session_persistence:
+  description: |
+    A JSON object specifying the session persistence for the pool or ``null``
+    for no session persistence. See :ref:`session_persistence`.  Default is
+    ``null``.
+  in: body
+  required: true
+  type: object
+session_persistence-optional:
+  description: |
+    A JSON object specifying the session persistence for the pool or ``null``
+    for no session persistence. See :ref:`session_persistence`.  Default is
+    ``null``.
+  in: body
+  required: false
+  type: object
+session_persistence_cookie:
+  description: |
+    The name of the cookie to use for session persistence. Only applicable to
+    the ``APP_COOKIE`` session persistence type.
+  in: body
+  required: false
+  type: string
+session_persistence_type:
+  description: |
+    Session persistence type for the pool.  One of ``APP_COOKIE``,
+    ``HTTP_COOKIE``, ``SOURCE_IP``.
+  in: body
+  required: true
+  type: string
 sni_container_refs:
   description: |
     A list of URIs to the `key manager service
@@ -433,12 +519,6 @@ statuses:
   in: body
   required: true
   type: object
-tenant_id:
-  description: |
-    The ID of the project that owns the resource. (deprecated)
-  in: body
-  required: false
-  type: string
 total_connections:
   description: |
     The total connections handled.

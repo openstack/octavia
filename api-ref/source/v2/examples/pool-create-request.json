@@ -1,0 +1,14 @@
+{
+    "pool": {
+        "lb_algorithm": "ROUND_ROBIN",
+        "protocol": "HTTP",
+        "description": "Super Round Robin Pool",
+        "admin_state_up": true,
+        "session_persistence": {
+            "cookie_name": "ChocolateChip",
+            "type": "APP_COOKIE"
+        },
+        "listener_id": "023f2e34-7806-443b-bfae-16c324569a3d",
+        "name": "super-pool"
+    }
+}

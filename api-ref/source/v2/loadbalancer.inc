@@ -33,7 +33,6 @@ Request
 
    - fields: fields
    - project_id: project_id_query
-   - tenant_id: tenant_id_query
 
 Curl Example
 ------------
@@ -59,7 +58,6 @@ Response Parameters
    - project_id: project_id
    - provider: provider
    - provisioning_status: provisioning_status
-   - tenant_id: tenant_id
    - vip_address: vip_address
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
@@ -151,7 +149,6 @@ Request
    - name: name-optional
    - project_id: project_id-optional
    - provider: provider-optional
-   - tenant_id: tenant_id
    - vip_address: vip_address-optional
    - vip_network_id: vip_network_id-optional
    - vip_port_id: vip_port_id-optional
@@ -187,7 +184,6 @@ Response Parameters
    - project_id: project_id
    - provider: provider
    - provisioning_status: provisioning_status
-   - tenant_id: tenant_id
    - vip_address: vip_address
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
@@ -277,7 +273,6 @@ Response Parameters
    - project_id: project_id
    - provider: provider
    - provisioning_status: provisioning_status
-   - tenant_id: tenant_id
    - vip_address: vip_address
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
@@ -359,7 +354,6 @@ Response Parameters
    - project_id: project_id
    - provider: provider
    - provisioning_status: provisioning_status
-   - tenant_id: tenant_id
    - vip_address: vip_address
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id

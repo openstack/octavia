@@ -33,7 +33,6 @@ Request
 
    - fields: fields
    - project_id: project_id_query
-   - tenant_id: tenant_id_query
 
 Curl Example
 ------------
@@ -64,7 +63,6 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
-   - tenant_id: tenant_id
 
 Response Example
 ----------------
@@ -103,7 +101,7 @@ data that is not valid, the service returns the HTTP ``Bad Request
 response body. Validation errors require that you correct the error
 and submit the request again.
 
-Specifying a project_id or tenant_id is deprecated.  The listener will inherit
+Specifying a project_id is deprecated.  The listener will inherit
 the project_id of the parent load balancer.
 
 You can configure all documented features of the listener at creation time by
@@ -125,35 +123,6 @@ provisioning status.
    - 500
    - 503
 
-.. _header_insertions:
-
-Supported HTTP Header Insertions
---------------------------------
-
-HTTP header insertion allows you to insert additional HTTP headers as the
-requests are passed to the backend members.  This allows you to expose
-information that would have otherwise not be visible to the backend members.
-
-The default is to not insert these headers.
-
-.. note::
-   Both the key and the values are always specified as strings when specifying
-   header insertions.
-
-HTTP Header Insertion Object
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. rest_parameters:: ../parameters.yaml
-
-   - X-Forwarded-For: x_forwarded_for
-   - X-Forwarded-Port: x_forwarded_port
-
-HTTP Header Insertion Object Example
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: examples/http-header-insertion-obj.json
-   :language: javascript
-
 Request
 -------
 
@@ -174,7 +143,31 @@ Request
    - protocol: protocol
    - protocol_port: protocol_port
    - sni_container_refs: sni_container_refs-optional
-   - tenant_id: tenant_id
+
+.. _header_insertions:
+
+Supported HTTP Header Insertions
+--------------------------------
+
+.. note::
+   Both the key and the values are always specified as strings when specifying
+   header insertions.
+
+
++------------------+---------+------------------------------------------------+
+| Key              | Value   | Description                                    |
++==================+=========+================================================+
+| X-Forwarded-For  | boolean | When ``true`` a ``X-Forwarded-For`` header is  |
+|                  |         | inserted into the request to the backend       |
+|                  |         | ``member`` that specifies the client IP        |
+|                  |         | address.                                       |
++------------------+---------+------------------------------------------------+
+| X-Forwarded-Port | integer | A ``X-Forwarded-Port`` header is inserted into |
+|                  |         | the request to the backend ``member`` that     |
+|                  |         | specifies the integer provided. Typically this |
+|                  |         | is used to indicate the port the client        |
+|                  |         | connected to on the load balancer.             |
++------------------+---------+------------------------------------------------+
 
 Request Example
 ----------------
@@ -211,7 +204,6 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
-   - tenant_id: tenant_id
 
 Response Example
 ----------------
@@ -279,7 +271,6 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
-   - tenant_id: tenant_id
 
 Response Example
 ----------------
@@ -365,7 +356,6 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
-   - tenant_id: tenant_id
 
 Response Example
 ----------------

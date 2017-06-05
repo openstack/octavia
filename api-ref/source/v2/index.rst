@@ -20,3 +20,8 @@ Load Balancers
 Listeners
 ---------
 .. include:: listener.inc
+
+-----
+Pools
+-----
+.. include:: pool.inc
