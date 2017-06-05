@@ -152,32 +152,32 @@ class DeleteHealthMonitorInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, pool_id):
+    def execute(self, health_mon):
         """Delete the health monitor in DB
 
-        :param pool_id: The id of pool which health monitor should be deleted
+        :param health_mon: The health monitor which should be deleted
         :returns: None
         """
 
-        LOG.debug("DB delete health monitor for pool id: %s ", pool_id)
+        LOG.debug("DB delete health monitor: %s ", health_mon.id)
         try:
-            self.health_mon_repo.delete(db_apis.get_session(), pool_id=pool_id)
+            self.health_mon_repo.delete(db_apis.get_session(),
+                                        id=health_mon.id)
         except exc.NoResultFound:
             # ignore if the HealthMonitor was not found
             pass
 
-    def revert(self, pool_id, *args, **kwargs):
+    def revert(self, health_mon, *args, **kwargs):
         """Mark the health monitor ERROR since the mark active couldn't happen
 
-        :param pool_id: Id of a pool which health monitor couldn't be deleted
+        :param health_mon: The health monitor which couldn't be deleted
         :returns: None
         """
 
         LOG.warning("Reverting mark health monitor delete in DB "
-                    "for health monitor on pool with id %s", pool_id)
-# TODO(johnsom) fix this
-#        self.health_mon_repo.update(db_apis.get_session(), health_mon.id,
-#                                    provisioning_status=constants.ERROR)
+                    "for health monitor with id %s", health_mon.id)
+        self.health_mon_repo.update(db_apis.get_session(), id=health_mon.id,
+                                    provisioning_status=constants.ERROR)
 
 
 class DeleteHealthMonitorInDBByPool(DeleteHealthMonitorInDB):
@@ -192,7 +192,8 @@ class DeleteHealthMonitorInDBByPool(DeleteHealthMonitorInDB):
         :param pool: A pool which health monitor should be deleted.
         :returns: None
         """
-        super(DeleteHealthMonitorInDBByPool, self).execute(pool.id)
+        super(DeleteHealthMonitorInDBByPool, self).execute(
+            pool.health_monitor)
 
     def revert(self, pool, *args, **kwargs):
         """Mark the health monitor ERROR since the mark active couldn't happen
@@ -201,7 +202,7 @@ class DeleteHealthMonitorInDBByPool(DeleteHealthMonitorInDB):
         :returns: None
         """
         super(DeleteHealthMonitorInDBByPool, self).revert(
-            pool.id, *args, **kwargs)
+            pool.health_monitor, *args, **kwargs)
 
 
 class DeleteMemberInDB(BaseDatabaseTask):
@@ -1276,8 +1277,8 @@ class UpdateHealthMonInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for health monitor id: %s ", health_mon.pool_id)
-        self.health_mon_repo.update(db_apis.get_session(), health_mon.pool_id,
+        LOG.debug("Update DB for health monitor id: %s ", health_mon.id)
+        self.health_mon_repo.update(db_apis.get_session(), health_mon.id,
                                     **update_dict)
 
     def revert(self, health_mon, *args, **kwargs):
@@ -1288,16 +1289,16 @@ class UpdateHealthMonInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting update health monitor in DB "
-                    "for health monitor id %s", health_mon.pool_id)
+                    "for health monitor id %s", health_mon.id)
 # TODO(johnsom) fix this to set the upper ojects to ERROR
         try:
             self.health_mon_repo.update(db_apis.get_session(),
-                                        health_mon.pool_id,
+                                        health_mon.id,
                                         enabled=0)
         except Exception as e:
             LOG.error("Failed to update health monitor %(hm)s "
                       "enabled to 0 due to: %(except)s",
-                      {'hm': health_mon.pool_id, 'except': e})
+                      {'hm': health_mon.id, 'except': e})
 
 
 class UpdateListenerInDB(BaseDatabaseTask):
@@ -1625,12 +1626,12 @@ class MarkHealthMonitorActiveInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark ACTIVE in DB for health monitor id: %s",
-                  health_mon.pool_id)
+                  health_mon.id)
 
         op_status = (constants.ONLINE if health_mon.enabled
                      else constants.OFFLINE)
         self.health_mon_repo.update(db_apis.get_session(),
-                                    health_mon.pool_id,
+                                    health_mon.id,
                                     provisioning_status=constants.ACTIVE,
                                     operating_status=op_status)
 
@@ -1642,8 +1643,8 @@ class MarkHealthMonitorActiveInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark health montor ACTIVE in DB "
-                    "for health monitor id %s", health_mon.pool_id)
-        self.task_utils.mark_health_mon_prov_status_error(health_mon.pool_id)
+                    "for health monitor id %s", health_mon.id)
+        self.task_utils.mark_health_mon_prov_status_error(health_mon.id)
 
 
 class MarkHealthMonitorPendingCreateInDB(BaseDatabaseTask):
@@ -1660,9 +1661,9 @@ class MarkHealthMonitorPendingCreateInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING CREATE in DB for health monitor id: %s",
-                  health_mon.pool_id)
+                  health_mon.id)
         self.health_mon_repo.update(db_apis.get_session(),
-                                    health_mon.pool_id,
+                                    health_mon.id,
                                     provisioning_status=(constants.
                                                          PENDING_CREATE))
 
@@ -1674,8 +1675,8 @@ class MarkHealthMonitorPendingCreateInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark health monitor pending create in DB "
-                    "for health monitor id %s", health_mon.pool_id)
-        self.task_utils.mark_health_mon_prov_status_error(health_mon.pool_id)
+                    "for health monitor id %s", health_mon.id)
+        self.task_utils.mark_health_mon_prov_status_error(health_mon.id)
 
 
 class MarkHealthMonitorPendingDeleteInDB(BaseDatabaseTask):
@@ -1692,9 +1693,9 @@ class MarkHealthMonitorPendingDeleteInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING DELETE in DB for health monitor id: %s",
-                  health_mon.pool_id)
+                  health_mon.id)
         self.health_mon_repo.update(db_apis.get_session(),
-                                    health_mon.pool_id,
+                                    health_mon.id,
                                     provisioning_status=(constants.
                                                          PENDING_DELETE))
 
@@ -1706,8 +1707,8 @@ class MarkHealthMonitorPendingDeleteInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark health monitor pending delete in DB "
-                    "for health monitor id %s", health_mon.pool_id)
-        self.task_utils.mark_health_mon_prov_status_error(health_mon.pool_id)
+                    "for health monitor id %s", health_mon.id)
+        self.task_utils.mark_health_mon_prov_status_error(health_mon.id)
 
 
 class MarkHealthMonitorPendingUpdateInDB(BaseDatabaseTask):
@@ -1724,9 +1725,9 @@ class MarkHealthMonitorPendingUpdateInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING UPDATE in DB for health monitor id: %s",
-                  health_mon.pool_id)
+                  health_mon.id)
         self.health_mon_repo.update(db_apis.get_session(),
-                                    health_mon.pool_id,
+                                    health_mon.id,
                                     provisioning_status=(constants.
                                                          PENDING_UPDATE))
 
@@ -1738,8 +1739,8 @@ class MarkHealthMonitorPendingUpdateInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark health monitor pending update in DB "
-                    "for health monitor id %s", health_mon.pool_id)
-        self.task_utils.mark_health_mon_prov_status_error(health_mon.pool_id)
+                    "for health monitor id %s", health_mon.id)
+        self.task_utils.mark_health_mon_prov_status_error(health_mon.id)
 
 
 class MarkL7PolicyActiveInDB(BaseDatabaseTask):

@@ -108,7 +108,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             delete_amp_tf.run()
 
-    def create_health_monitor(self, pool_id):
+    def create_health_monitor(self, health_monitor_id):
         """Creates a health monitor.
 
         :param pool_id: ID of the pool to create a health monitor on
@@ -116,25 +116,24 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :raises NoSuitablePool: Unable to find the node pool
         """
         health_mon = self._health_mon_repo.get(db_apis.get_session(),
-                                               pool_id=pool_id)
+                                               id=health_monitor_id)
 
-        listeners = health_mon.pool.listeners
-        health_mon.pool.health_monitor = health_mon
-        load_balancer = health_mon.pool.load_balancer
+        pool = health_mon.pool
+        listeners = pool.listeners
+        pool.health_monitor = health_mon
+        load_balancer = pool.load_balancer
 
-        create_hm_tf = self._taskflow_load(self._health_monitor_flows.
-                                           get_create_health_monitor_flow(),
-                                           store={constants.HEALTH_MON:
-                                                  health_mon,
-                                                  constants.LISTENERS:
-                                                      listeners,
-                                                  constants.LOADBALANCER:
-                                                      load_balancer})
+        create_hm_tf = self._taskflow_load(
+            self._health_monitor_flows.get_create_health_monitor_flow(),
+            store={constants.HEALTH_MON: health_mon,
+                   constants.POOL: pool,
+                   constants.LISTENERS: listeners,
+                   constants.LOADBALANCER: load_balancer})
         with tf_logging.DynamicLoggingListener(create_hm_tf,
                                                log=LOG):
             create_hm_tf.run()
 
-    def delete_health_monitor(self, pool_id):
+    def delete_health_monitor(self, health_monitor_id):
         """Deletes a health monitor.
 
         :param pool_id: ID of the pool to delete its health monitor
@@ -142,21 +141,23 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :raises HMNotFound: The referenced health monitor was not found
         """
         health_mon = self._health_mon_repo.get(db_apis.get_session(),
-                                               pool_id=pool_id)
+                                               id=health_monitor_id)
 
-        listeners = health_mon.pool.listeners
-        load_balancer = health_mon.pool.load_balancer
+        pool = health_mon.pool
+        listeners = pool.listeners
+        load_balancer = pool.load_balancer
 
         delete_hm_tf = self._taskflow_load(
             self._health_monitor_flows.get_delete_health_monitor_flow(),
-            store={constants.HEALTH_MON: health_mon, constants.POOL_ID:
-                   pool_id, constants.LISTENERS: listeners,
+            store={constants.HEALTH_MON: health_mon,
+                   constants.POOL: pool,
+                   constants.LISTENERS: listeners,
                    constants.LOADBALANCER: load_balancer})
         with tf_logging.DynamicLoggingListener(delete_hm_tf,
                                                log=LOG):
             delete_hm_tf.run()
 
-    def update_health_monitor(self, pool_id, health_monitor_updates):
+    def update_health_monitor(self, health_monitor_id, health_monitor_updates):
         """Updates a health monitor.
 
         :param pool_id: ID of the pool to have it's health monitor updated
@@ -165,22 +166,20 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :raises HMNotFound: The referenced health monitor was not found
         """
         health_mon = self._health_mon_repo.get(db_apis.get_session(),
-                                               pool_id=pool_id)
+                                               id=health_monitor_id)
 
-        listeners = health_mon.pool.listeners
-        health_mon.pool.health_monitor = health_mon
-        load_balancer = health_mon.pool.load_balancer
+        pool = health_mon.pool
+        listeners = pool.listeners
+        pool.health_monitor = health_mon
+        load_balancer = pool.load_balancer
 
-        update_hm_tf = self._taskflow_load(self._health_monitor_flows.
-                                           get_update_health_monitor_flow(),
-                                           store={constants.HEALTH_MON:
-                                                  health_mon,
-                                                  constants.LISTENERS:
-                                                      listeners,
-                                                  constants.LOADBALANCER:
-                                                      load_balancer,
-                                                  constants.UPDATE_DICT:
-                                                      health_monitor_updates})
+        update_hm_tf = self._taskflow_load(
+            self._health_monitor_flows.get_update_health_monitor_flow(),
+            store={constants.HEALTH_MON: health_mon,
+                   constants.POOL: pool,
+                   constants.LISTENERS: listeners,
+                   constants.LOADBALANCER: load_balancer,
+                   constants.UPDATE_DICT: health_monitor_updates})
         with tf_logging.DynamicLoggingListener(update_hm_tf,
                                                log=LOG):
             update_hm_tf.run()

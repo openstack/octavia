@@ -72,7 +72,7 @@ class TestTaskUtils(base.TestCase):
 
         mock_health_mon_repo_update.assert_called_once_with(
             TEST_SESSION,
-            pool_id=self.HEALTH_MON_ID,
+            id=self.HEALTH_MON_ID,
             provisioning_status=constants.ERROR)
 
         # Exception path

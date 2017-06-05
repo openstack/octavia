@@ -63,7 +63,7 @@ class TaskUtils(object):
         """
         try:
             self.health_mon_repo.update(db_apis.get_session(),
-                                        pool_id=health_mon_id,
+                                        id=health_mon_id,
                                         provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update health monitor %(health)s "

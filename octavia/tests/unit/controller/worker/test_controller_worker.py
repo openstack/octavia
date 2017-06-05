@@ -86,16 +86,12 @@ class TestControllerWorker(base.TestCase):
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
-        _health_mon_mock.pool.load_balancer.amphorae = _amphora_mock
-        _health_mon_mock.pool.listeners = [_listener_mock]
-        _health_mon_mock.pool.load_balancer = _load_balancer_mock
-        _health_mon_mock.pool.load_balancer.vip = _vip_mock
-        _listener_mock.load_balancer = _load_balancer_mock
-        _listener_mock.load_balancer.amphorae = _amphora_mock
-        _listener_mock.load_balancer.vip = _vip_mock
         _pool_mock.listeners = [_listener_mock]
         _pool_mock.load_balancer = _load_balancer_mock
-        _pool_mock.load_balancer.vip = _vip_mock
+        _health_mon_mock.pool = _pool_mock
+        _load_balancer_mock.amphorae = _amphora_mock
+        _load_balancer_mock.vip = _vip_mock
+        _listener_mock.load_balancer = _load_balancer_mock
         _member_mock.pool = _pool_mock
         _l7policy_mock.listener = _listener_mock
         _l7rule_mock.l7policy = _l7policy_mock
@@ -103,6 +99,7 @@ class TestControllerWorker(base.TestCase):
         fetch_mock = mock.MagicMock(return_value=AMP_ID)
         _flow_mock.storage.fetch = fetch_mock
 
+        _pool_mock.id = POOL_ID
         _health_mon_mock.pool_id = POOL_ID
         _health_mon_mock.id = HM_ID
 
@@ -204,7 +201,9 @@ class TestControllerWorker(base.TestCase):
                                            constants.LISTENERS:
                                                [_listener_mock],
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock}))
+                                               _load_balancer_mock,
+                                           constants.POOL:
+                                               _pool_mock}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -235,11 +234,12 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with(_flow_mock,
                                     store={constants.HEALTH_MON:
                                            _health_mon_mock,
-                                           constants.POOL_ID: HM_ID,
                                            constants.LISTENERS:
                                                [_listener_mock],
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock}))
+                                               _load_balancer_mock,
+                                           constants.POOL:
+                                               _pool_mock}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -271,6 +271,8 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with(_flow_mock,
                                     store={constants.HEALTH_MON:
                                            _health_mon_mock,
+                                           constants.POOL:
+                                               _pool_mock,
                                            constants.LISTENERS:
                                                [_listener_mock],
                                            constants.LOADBALANCER:

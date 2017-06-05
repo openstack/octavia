@@ -32,7 +32,6 @@ import six
 
 from octavia.api.handlers import abstract_handler
 from octavia.common import constants
-from octavia.common import data_models
 
 cfg.CONF.import_group('oslo_messaging', 'octavia.common.config')
 
@@ -59,11 +58,7 @@ class BaseProducer(abstract_handler.BaseObjectHandler):
         :param model:
         """
         model_id = getattr(model, 'id', None)
-        p_class = self.payload_class
-        if isinstance(model, data_models.HealthMonitor):
-            model_id = model.pool_id
-            p_class = PoolProducer.PAYLOAD_CLASS
-        kw = {"{0}_id".format(p_class): model_id}
+        kw = {"{0}_id".format(self.payload_class): model_id}
         method_name = "create_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
@@ -74,13 +69,9 @@ class BaseProducer(abstract_handler.BaseObjectHandler):
         :param data_model:
         """
         model_id = getattr(data_model, 'id', None)
-        p_class = self.payload_class
-        if isinstance(data_model, data_models.HealthMonitor):
-            model_id = data_model.pool_id
-            p_class = PoolProducer.PAYLOAD_CLASS
         kw = {"{0}_updates".format(self.payload_class):
               updated_model.to_dict(render_unsets=False),
-              "{0}_id".format(p_class): model_id}
+              "{0}_id".format(self.payload_class): model_id}
         method_name = "update_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
@@ -90,11 +81,7 @@ class BaseProducer(abstract_handler.BaseObjectHandler):
         :param data_model:
         """
         model_id = getattr(data_model, 'id', None)
-        p_class = self.payload_class
-        if isinstance(data_model, data_models.HealthMonitor):
-            model_id = data_model.pool_id
-            p_class = PoolProducer.PAYLOAD_CLASS
-        kw = {"{0}_id".format(p_class): model_id}
+        kw = {"{0}_id".format(self.payload_class): model_id}
         method_name = "delete_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
@@ -192,7 +179,7 @@ class ProducerHandler(abstract_handler.BaseHandler):
     """Base class for all QueueProducers.
 
     used to send messages via the Class variables load_balancer, listener,
-    health_monitor, and member.
+    health_monitor, member, l7policy and l7rule.
     """
 
     load_balancer = LoadBalancerProducer()

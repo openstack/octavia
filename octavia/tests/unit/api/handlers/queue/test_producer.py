@@ -153,10 +153,10 @@ class TestProducer(base.TestCase):
 
     def test_update_healthmonitor(self):
         p = producer.HealthMonitorProducer()
-        hm = data_models.HealthMonitor(pool_id=10)
+        hm = data_models.HealthMonitor(id=20, pool_id=10)
         hm_updates = health_monitor.HealthMonitorPUT(enabled=False)
         p.update(hm, hm_updates)
-        kw = {'pool_id': hm.pool_id,
+        kw = {'health_monitor_id': hm.id,
               'health_monitor_updates': hm_updates.to_dict(
                   render_unsets=False)}
         self.mck_client.cast.assert_called_once_with(

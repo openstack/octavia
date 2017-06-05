@@ -77,17 +77,19 @@ class Endpoint(object):
         LOG.info('Deleting pool \'%s\'...', pool_id)
         self.worker.delete_pool(pool_id)
 
-    def create_health_monitor(self, context, pool_id):
-        LOG.info('Creating health monitor on pool \'%s\'...', pool_id)
-        self.worker.create_health_monitor(pool_id)
+    def create_health_monitor(self, context, health_monitor_id):
+        LOG.info('Creating health monitor \'%s\'...', health_monitor_id)
+        self.worker.create_health_monitor(health_monitor_id)
 
-    def update_health_monitor(self, context, pool_id, health_monitor_updates):
-        LOG.info('Updating health monitor on pool \'%s\'...', pool_id)
-        self.worker.update_health_monitor(pool_id, health_monitor_updates)
+    def update_health_monitor(self, context, health_monitor_id,
+                              health_monitor_updates):
+        LOG.info('Updating health monitor \'%s\'...', health_monitor_id)
+        self.worker.update_health_monitor(health_monitor_id,
+                                          health_monitor_updates)
 
-    def delete_health_monitor(self, context, pool_id):
-        LOG.info('Deleting health monitor on pool \'%s\'...', pool_id)
-        self.worker.delete_health_monitor(pool_id)
+    def delete_health_monitor(self, context, health_monitor_id):
+        LOG.info('Deleting health monitor \'%s\'...', health_monitor_id)
+        self.worker.delete_health_monitor(health_monitor_id)
 
     def create_member(self, context, member_id):
         LOG.info('Creating member \'%s\'...' % member_id)
