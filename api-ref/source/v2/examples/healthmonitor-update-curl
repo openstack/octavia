@@ -1,0 +1,1 @@
+curl -X PUT -H "Content-Type: application/json" -H "X-Auth-Token: <token>" -d '{"healthmonitor":{"name":"super-pool-health-monitor-updated","admin_state_up":true,"delay":5,"expected_codes":"200","http_method":"HEAD","timeout":2,"url_path":"/index.html","max_retries":2,"max_retries_down":2}}' http://198.51.100.10:9876/v2.0/lbaas/healthmonitors/8ed3c5ac-6efa-420c-bedb-99ba14e58db5

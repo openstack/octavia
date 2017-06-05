@@ -1,0 +1,25 @@
+{
+    "healthmonitor": {
+        "project_id": "e3cd678b11784734bc366148aa37580e",
+        "name": "super-pool-health-monitor",
+        "admin_state_up": true,
+        "pools": [
+            {
+                "id": "4029d267-3983-4224-a3d0-afb3fe16a2cd"
+            }
+        ],
+        "created_at": "2017-05-11T23:53:47",
+        "provisioning_status": "ACTIVE",
+        "updated_at": "2017-05-11T23:53:47",
+        "delay": 10,
+        "expected_codes": "200",
+        "max_retries": 1,
+        "http_method": "GET",
+        "timeout": 5,
+        "max_retries_down": 3,
+        "url_path": "/",
+        "type": "HTTP",
+        "id": "8ed3c5ac-6efa-420c-bedb-99ba14e58db5",
+        "operating_status": "ONLINE"
+    }
+}

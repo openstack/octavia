@@ -1,0 +1,15 @@
+{
+    "healthmonitor": {
+        "name": "super-pool-health-monitor",
+        "admin_state_up": true,
+        "pool_id": "4029d267-3983-4224-a3d0-afb3fe16a2cd",
+        "delay": "10",
+        "expected_codes": "200",
+        "max_retries": "1",
+        "http_method": "GET",
+        "timeout": "5",
+        "url_path": "/",
+        "type": "HTTP",
+        "max_retries_down": 3
+    }
+}

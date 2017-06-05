@@ -1,0 +1,13 @@
+{
+    "healthmonitor": {
+        "name": "super-pool-health-monitor-updated",
+        "admin_state_up": true,
+        "delay": 5,
+        "expected_codes": "200",
+        "http_method": "HEAD",
+        "timeout": 2,
+        "url_path": "/index.html",
+        "max_retries": 2,
+        "max_retries_down": 2
+    }
+}

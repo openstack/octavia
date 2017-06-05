@@ -1,6 +1,6 @@
 .. -*- rst -*-
 
-List pools
+List Pools
 ==========
 
 .. rest_method:: GET /v2.0/lbaas/pools
@@ -60,6 +60,7 @@ Response Parameters
    - protocol: protocol-pools
    - provisioning_status: provisioning_status
    - session_persistence: session_persistence
+   - updated_at: updated_at
 
 Response Example
 ----------------
@@ -239,6 +240,7 @@ Response Parameters
    - protocol: protocol-pools
    - provisioning_status: provisioning_status
    - session_persistence: session_persistence
+   - updated_at: updated_at
 
 Response Example
 ----------------
@@ -304,6 +306,7 @@ Response Parameters
    - protocol: protocol-pools
    - provisioning_status: provisioning_status
    - session_persistence: session_persistence
+   - updated_at: updated_at
 
 Response Example
 ----------------
@@ -311,7 +314,7 @@ Response Example
 .. literalinclude:: examples/pool-show-response.json
    :language: javascript
 
-Update a pool
+Update a Pool
 =============
 
 .. rest_method:: PUT /v2.0/lbaas/pools/{pool_id}
@@ -383,6 +386,7 @@ Response Parameters
    - protocol: protocol-pools
    - provisioning_status: provisioning_status
    - session_persistence: session_persistence
+   - updated_at: updated_at
 
 Response Example
 ----------------
@@ -390,7 +394,7 @@ Response Example
 .. literalinclude:: examples/pool-update-response.json
    :language: javascript
 
-Remove a pool
+Remove a Pool
 =============
 
 .. rest_method:: DELETE /v2.0/lbaas/pools/{pool_id}
