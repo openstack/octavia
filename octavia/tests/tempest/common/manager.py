@@ -156,9 +156,9 @@ class ScenarioTest(tempest.test.BaseTestCase):
                 # Convert security group names to security group ids
                 # to pass to create_port
                 if 'security_groups' in kwargs:
-                    security_groups = \
+                    security_groups = (
                         clients.security_groups_client.list_security_groups(
-                        ).get('security_groups')
+                        ).get('security_groups'))
                     sec_dict = dict([(s['name'], s['id'])
                                     for s in security_groups])
 
@@ -1235,12 +1235,12 @@ class EncryptionScenarioTest(ScenarioTest):
         super(EncryptionScenarioTest, cls).setup_clients()
         if CONF.volume_feature_enabled.api_v2:
             cls.admin_volume_types_client = cls.os_adm.volume_types_v2_client
-            cls.admin_encryption_types_client =\
-                cls.os_adm.encryption_types_v2_client
+            cls.admin_encryption_types_client = (
+                cls.os_adm.encryption_types_v2_client)
         else:
             cls.admin_volume_types_client = cls.os_adm.volume_types_client
-            cls.admin_encryption_types_client =\
-                cls.os_adm.encryption_types_client
+            cls.admin_encryption_types_client = (
+                cls.os_adm.encryption_types_client)
 
     def create_encryption_type(self, client=None, type_id=None, provider=None,
                                key_size=None, cipher=None,

@@ -95,26 +95,6 @@ def assert_equal_or_not_none(logical_line):
         yield (0, msg)
 
 
-def use_jsonutils(logical_line, filename):
-    msg = "O321: jsonutils.%(fun)s must be used instead of json.%(fun)s"
-
-    # Some files in the tree are not meant to be run from inside Octavia
-    # itself, so we should not complain about them not using jsonutils
-    json_check_skipped_patterns = [
-    ]
-
-    for pattern in json_check_skipped_patterns:
-        if pattern in filename:
-            return
-
-    if "json." in logical_line:
-        json_funcs = ['dumps(', 'dump(', 'loads(', 'load(']
-        for f in json_funcs:
-            pos = logical_line.find('json.%s' % f)
-            if pos != -1:
-                yield (pos, msg % {'fun': f[:-1]})
-
-
 def no_author_tags(physical_line):
     for regex in author_tag_re:
         if regex.match(physical_line):
@@ -267,11 +247,31 @@ def check_no_eventlet_imports(logical_line):
         yield logical_line.index('eventlet'), msg
 
 
+def check_line_continuation_no_backslash(logical_line, tokens):
+    """O346 - Don't use backslashes for line continuation.
+
+    :param logical_line: The logical line to check. Not actually used.
+    :param tokens: List of tokens to check.
+    :returns: None if the tokens don't contain any issues, otherwise a tuple
+    is yielded that contains the offending index in the logical line and a
+    message describe the check validation failure.
+    """
+    backslash = None
+    for token_type, text, start, end, orig_line in tokens:
+        m = re.match(r'.*(\\)\n', orig_line)
+        if m:
+            backslash = (start[0], m.start(1))
+            break
+
+    if backslash is not None:
+        msg = 'O346 Backslash line continuations not allowed'
+        yield backslash, msg
+
+
 def factory(register):
     register(assert_true_instance)
     register(assert_equal_or_not_none)
     register(no_translate_logs)
-    register(use_jsonutils)
     register(no_author_tags)
     register(assert_equal_true_or_false)
     register(no_mutable_default_args)
@@ -282,3 +282,4 @@ def factory(register):
     register(check_no_basestring)
     register(check_python3_no_iteritems)
     register(check_no_eventlet_imports)
+    register(check_line_continuation_no_backslash)

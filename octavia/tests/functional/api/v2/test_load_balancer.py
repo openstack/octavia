@@ -159,10 +159,11 @@ class TestLoadBalancer(base.BaseAPITest):
         lb_json = {'vip_network_id': network.id,
                    'project_id': self.project_id}
         body = self._build_body(lb_json)
-        with mock.patch("octavia.network.drivers.noop_driver.driver"
-                        ".NoopManager.get_network") as mock_get_network, \
-                mock.patch("octavia.network.drivers.noop_driver.driver"
-                           ".NoopManager.get_subnet") as mock_get_subnet:
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_network") as mock_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_subnet") as mock_get_subnet:
             mock_get_network.return_value = network
             mock_get_subnet.side_effect = [subnet1, subnet2]
             response = self.post(self.LBS_PATH, body)
@@ -181,10 +182,11 @@ class TestLoadBalancer(base.BaseAPITest):
         lb_json = {'vip_network_id': network_id,
                    'project_id': self.project_id}
         body = self._build_body(lb_json)
-        with mock.patch("octavia.network.drivers.noop_driver.driver"
-                        ".NoopManager.get_network") as mock_get_network, \
-                mock.patch("octavia.network.drivers.noop_driver.driver"
-                           ".NoopManager.get_subnet") as mock_get_subnet:
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_network") as mock_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_subnet") as mock_get_subnet:
             mock_get_network.return_value = network
             mock_get_subnet.return_value = subnet
             response = self.post(self.LBS_PATH, body)
@@ -205,10 +207,11 @@ class TestLoadBalancer(base.BaseAPITest):
             'vip_network_id': network.id, 'vip_port_id': port.id,
             'admin_state_up': False, 'project_id': self.project_id}
         body = self._build_body(lb_json)
-        with mock.patch("octavia.network.drivers.noop_driver.driver"
-                        ".NoopManager.get_network") as mock_get_network, \
-                mock.patch("octavia.network.drivers.noop_driver.driver"
-                           ".NoopManager.get_port") as mock_get_port:
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_network") as mock_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_port") as mock_get_port:
             mock_get_network.return_value = network
             mock_get_port.return_value = port
             response = self.post(self.LBS_PATH, body)
@@ -380,10 +383,11 @@ class TestLoadBalancer(base.BaseAPITest):
                                          subnets=[subnet])
         port = network_models.Port(id=uuidutils.generate_uuid(),
                                    network_id=network.id)
-        with mock.patch("octavia.network.drivers.noop_driver.driver"
-                        ".NoopManager.get_network") as mock_get_network, \
-                mock.patch("octavia.network.drivers.noop_driver.driver"
-                           ".NoopManager.get_port") as mock_get_port:
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_network") as mock_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_port") as mock_get_port:
             mock_get_network.return_value = network
             mock_get_port.return_value = port
 
