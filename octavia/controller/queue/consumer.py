@@ -35,7 +35,7 @@ class ConsumerService(cotyledon.Service):
 
     def run(self):
         LOG.info('Starting consumer...')
-        transport = messaging.get_transport(self.conf)
+        transport = messaging.get_notification_transport(self.conf)
         target = messaging.Target(topic=self.topic, server=self.server,
                                   fanout=False)
         self.endpoints = [endpoint.Endpoint()]
