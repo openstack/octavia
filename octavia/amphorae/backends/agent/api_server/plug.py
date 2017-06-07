@@ -183,10 +183,9 @@ class Plug(object):
             # Note, eth0 is skipped because that is the VIP interface
             netns_interface = 'eth{0}'.format(len(netns.get_links()))
 
-        LOG.info('Plugged interface {0} will become {1} in the '
-                 'namespace {2}'.format(default_netns_interface,
-                                        netns_interface,
-                                        consts.AMPHORA_NAMESPACE))
+        LOG.info('Plugged interface %s will become %s in the namespace %s',
+                 default_netns_interface, netns_interface,
+                 consts.AMPHORA_NAMESPACE)
         interface_file_path = self._osutils.get_network_interface_file(
             netns_interface)
         self._osutils.write_port_interface_file(

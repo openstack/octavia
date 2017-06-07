@@ -412,9 +412,9 @@ class PlugPorts(BaseNetworkTask):
 
     def execute(self, amphora, ports):
         for port in ports:
-            LOG.debug('Plugging port ID: {port_id} into compute instance: '
-                      '{compute_id}.'.format(port_id=port.id,
-                                             compute_id=amphora.compute_id))
+            LOG.debug('Plugging port ID: %(port_id)s into compute instance: '
+                      '%(compute_id)s.',
+                      {'port_id': port.id, 'compute_id': amphora.compute_id})
             self.network_driver.plug_port(amphora, port)
 
 
@@ -423,9 +423,9 @@ class PlugVIPPort(BaseNetworkTask):
 
     def execute(self, amphora, amphorae_network_config):
         vrrp_port = amphorae_network_config.get(amphora.id).vrrp_port
-        LOG.debug('Plugging VIP VRRP port ID: {port_id} into compute '
-                  'instance: {compute_id}.'.format(
-                      port_id=vrrp_port.id, compute_id=amphora.compute_id))
+        LOG.debug('Plugging VIP VRRP port ID: %(port_id)s into compute '
+                  'instance: %(compute_id)s.',
+                  {'port_id': vrrp_port.id, 'compute_id': amphora.compute_id})
         self.network_driver.plug_port(amphora, vrrp_port)
 
     def revert(self, result, amphora, amphorae_network_config,
@@ -435,14 +435,14 @@ class PlugVIPPort(BaseNetworkTask):
             vrrp_port = amphorae_network_config.get(amphora.id).vrrp_port
             self.network_driver.unplug_port(amphora, vrrp_port)
         except Exception:
-            LOG.warning(('Failed to unplug vrrp port: {port} from amphora: '
-                         '{amp}').format(port=vrrp_port.id, amp=amphora.id))
+            LOG.warning('Failed to unplug vrrp port: %(port)s from amphora: '
+                        '%(amp)s', {'port': vrrp_port.id, 'amp': amphora.id})
 
 
 class WaitForPortDetach(BaseNetworkTask):
     """Task to wait for the neutron ports to detach from an amphora."""
 
     def execute(self, amphora):
-        LOG.debug('Waiting for ports to detach from amphora: '
-                  '{amp_id}.'.format(amp_id=amphora.id))
+        LOG.debug('Waiting for ports to detach from amphora: %(amp_id)s.',
+                  {'amp_id': amphora.id})
         self.network_driver.wait_for_port_detach(amphora)

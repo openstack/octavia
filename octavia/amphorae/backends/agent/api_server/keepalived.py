@@ -107,8 +107,8 @@ class Keepalived(object):
                 subprocess.check_output(init_enable_cmd.split(),
                                         stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                LOG.debug("Failed to enable octavia-keepalived service: "
-                          "%(err)s", {'err': e})
+                LOG.debug('Failed to enable octavia-keepalived service: '
+                          '%(err)s', {'err': e})
                 return flask.make_response(flask.jsonify(dict(
                     message="Error enabling octavia-keepalived service",
                     details=e.output)), 500)
@@ -134,8 +134,7 @@ class Keepalived(object):
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            LOG.debug("Failed to {0} keepalived service: {1}".format(action,
-                                                                     e))
+            LOG.debug('Failed to %s keepalived service: %s', action, e)
             return flask.make_response(flask.jsonify(dict(
                 message="Failed to {0} keepalived service".format(action),
                 details=e.output)), 500)

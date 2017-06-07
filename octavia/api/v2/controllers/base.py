@@ -60,8 +60,8 @@ class BaseController(rest.RestController):
         """Gets an object from the database and returns it."""
         db_obj = repo.get(session, id=id)
         if not db_obj:
-            LOG.exception("{name} {id} not found".format(
-                name=data_model._name(), id=id))
+            LOG.exception('%(name)s %(id)s not found',
+                          {'name': data_model._name(), 'id': id})
             raise exceptions.NotFound(
                 resource=data_model._name(), id=id)
         return db_obj

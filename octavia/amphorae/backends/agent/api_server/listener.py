@@ -148,7 +148,7 @@ class Listener(object):
 
             init_system = util.get_os_init_system()
 
-            LOG.debug('Found init system: {0}'.format(init_system))
+            LOG.debug('Found init system: %s', init_system)
 
             init_path = util.init_path(listener_id, init_system)
 

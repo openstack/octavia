@@ -49,18 +49,20 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
     def _check_extension_enabled(self, extension_alias):
         if extension_alias in self._check_extension_cache:
             status = self._check_extension_cache[extension_alias]
-            LOG.debug('Neutron extension {ext} cached as {status}'.format(
-                ext=extension_alias,
-                status='enabled' if status else 'disabled'))
+            LOG.debug('Neutron extension %(ext)s cached as %(status)s',
+                      {
+                          'ext': extension_alias,
+                          'status': 'enabled' if status else 'disabled'
+                      })
         else:
             try:
                 self.neutron_client.show_extension(extension_alias)
-                LOG.debug('Neutron extension {ext} found enabled'.format(
-                    ext=extension_alias))
+                LOG.debug('Neutron extension %(ext)s found enabled',
+                          {'ext': extension_alias})
                 self._check_extension_cache[extension_alias] = True
             except neutron_client_exceptions.NotFound:
-                LOG.debug('Neutron extension {ext} is not enabled'.format(
-                    ext=extension_alias))
+                LOG.debug('Neutron extension %(ext)s is not enabled',
+                          {'ext': extension_alias})
                 self._check_extension_cache[extension_alias] = False
         return self._check_extension_cache[extension_alias]
 

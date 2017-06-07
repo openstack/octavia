@@ -614,10 +614,13 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.info(("Mark ALLOCATED in DB for amphora: %(amp)s with "
-                 "compute id %(comp)s for load balancer: %(lb)s"),
-                 {"amp": amphora.id, "comp": amphora.compute_id,
-                 "lb": loadbalancer_id})
+        LOG.info('Mark ALLOCATED in DB for amphora: %(amp)s with '
+                 'compute id %(comp)s for load balancer: %(lb)s',
+                 {
+                     'amp': amphora.id,
+                     'comp': amphora.compute_id,
+                     'lb': loadbalancer_id
+                 })
         self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                  status=constants.AMPHORA_ALLOCATED,
                                  compute_id=amphora.compute_id,
@@ -2266,8 +2269,8 @@ class DecrementHealthMonitorQuota(BaseDatabaseTask):
         except Exception:
             with excutils.save_and_reraise_exception():
                 LOG.error('Failed to decrement health monitor quota for '
-                          'project: {proj} the project may have excess '
-                          'quota in use.'.format(proj=health_mon.project_id))
+                          'project: %(proj)s the project may have excess '
+                          'quota in use.', {'proj': health_mon.project_id})
                 lock_session.rollback()
 
     def revert(self, health_mon, result, *args, **kwargs):
@@ -2277,9 +2280,9 @@ class DecrementHealthMonitorQuota(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warning('Reverting decrement quota for health monitor '
-                    'on project {proj} Project quota counts may be '
-                    'incorrect.'.format(proj=health_mon.project_id))
+        LOG.warning('Reverting decrement quota for health monitor on project'
+                    ' %(proj)s Project quota counts may be incorrect.',
+                    {'proj': health_mon.project_id})
 
         # Increment the quota back if this task wasn't the failure
         if not isinstance(result, failure.Failure):
@@ -2324,9 +2327,9 @@ class DecrementListenerQuota(BaseDatabaseTask):
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
-                LOG.error('Failed to decrement listener quota for '
-                          'project: {proj} the project may have excess '
-                          'quota in use.'.format(proj=listener.project_id))
+                LOG.error('Failed to decrement listener quota for project: '
+                          '%(proj)s the project may have excess quota in use.',
+                          {'proj': listener.project_id})
                 lock_session.rollback()
 
     def revert(self, listener, result, *args, **kwargs):
@@ -2336,9 +2339,9 @@ class DecrementListenerQuota(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warning('Reverting decrement quota for listener '
-                    'on project {proj} Project quota counts may be '
-                    'incorrect.'.format(proj=listener.project_id))
+        LOG.warning('Reverting decrement quota for listener on project '
+                    '%(proj)s Project quota counts may be incorrect.',
+                    {'proj': listener.project_id})
 
         # Increment the quota back if this task wasn't the failure
         if not isinstance(result, failure.Failure):
@@ -2384,8 +2387,8 @@ class DecrementLoadBalancerQuota(BaseDatabaseTask):
         except Exception:
             with excutils.save_and_reraise_exception():
                 LOG.error('Failed to decrement load balancer quota for '
-                          'project: {proj} the project may have excess '
-                          'quota in use.'.format(proj=loadbalancer.project_id))
+                          'project: %(proj)s the project may have excess '
+                          'quota in use.', {'proj': loadbalancer.project_id})
                 lock_session.rollback()
 
     def revert(self, loadbalancer, result, *args, **kwargs):
@@ -2395,9 +2398,9 @@ class DecrementLoadBalancerQuota(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warning('Reverting decrement quota for load balancer '
-                    'on project {proj} Project quota counts may be '
-                    'incorrect.'.format(proj=loadbalancer.project_id))
+        LOG.warning('Reverting decrement quota for load balancer on project '
+                    '%(proj)s Project quota counts may be incorrect.',
+                    {'proj': loadbalancer.project_id})
 
         # Increment the quota back if this task wasn't the failure
         if not isinstance(result, failure.Failure):
@@ -2442,9 +2445,9 @@ class DecrementMemberQuota(BaseDatabaseTask):
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
-                LOG.error('Failed to decrement member quota for '
-                          'project: {proj} the project may have excess '
-                          'quota in use.'.format(proj=member.project_id))
+                LOG.error('Failed to decrement member quota for project: '
+                          '%(proj)s the project may have excess quota in use.',
+                          {'proj': member.project_id})
                 lock_session.rollback()
 
     def revert(self, member, result, *args, **kwargs):
@@ -2454,9 +2457,9 @@ class DecrementMemberQuota(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warning('Reverting decrement quota for member '
-                    'on project {proj} Project quota counts may be '
-                    'incorrect.'.format(proj=member.project_id))
+        LOG.warning('Reverting decrement quota for member on project %(proj)s '
+                    'Project quota counts may be incorrect.',
+                    {'proj': member.project_id})
 
         # Increment the quota back if this task wasn't the failure
         if not isinstance(result, failure.Failure):
@@ -2513,9 +2516,9 @@ class DecrementPoolQuota(BaseDatabaseTask):
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
-                LOG.error('Failed to decrement pool quota for '
-                          'project: {proj} the project may have excess '
-                          'quota in use.'.format(proj=pool.project_id))
+                LOG.error('Failed to decrement pool quota for project: '
+                          '%(proj)s the project may have excess quota in use.',
+                          {'proj': pool.project_id})
                 lock_session.rollback()
 
     def revert(self, pool, pool_child_count, result, *args, **kwargs):
@@ -2525,9 +2528,9 @@ class DecrementPoolQuota(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warning('Reverting decrement quota for pool '
-                    'on project {proj} Project quota counts may be '
-                    'incorrect.'.format(proj=pool.project_id))
+        LOG.warning('Reverting decrement quota for pool on project %(proj)s '
+                    'Project quota counts may be incorrect.',
+                    {'proj': pool.project_id})
 
         # Increment the quota back if this task wasn't the failure
         if not isinstance(result, failure.Failure):

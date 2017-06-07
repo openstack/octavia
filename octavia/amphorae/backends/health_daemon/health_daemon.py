@@ -72,25 +72,22 @@ def run_sender(cmd_queue):
         except IOError as e:
             # Missing PID file, skip health heartbeat
             if e.errno == errno.ENOENT:
-                LOG.error('Missing keepalived PID file {0}, skipping '
-                          'health heartbeat.'.format(keepalived_pid_path))
+                LOG.error('Missing keepalived PID file %s, skipping health '
+                          'heartbeat.', keepalived_pid_path)
             else:
-                LOG.error('Failed to check keepalived and haproxy status '
-                          'due to exception {0}, skipping health '
-                          'heartbeat.'.format(str(e)))
+                LOG.error('Failed to check keepalived and haproxy status due '
+                          'to exception %s, skipping health heartbeat.', e)
         except OSError as e:
             # Keepalived is not running, skip health heartbeat
             if e.errno == errno.ESRCH:
-                LOG.error('Keepalived is configured but not running, skipping '
-                          'health heartbeat.'.format(keepalived_pid_path))
+                LOG.error('Keepalived is configured but not running, '
+                          'skipping health heartbeat.')
             else:
-                LOG.error('Failed to check keepalived and haproxy status '
-                          'due to exception {0}, skipping health '
-                          'heartbeat.'.format(str(e)))
+                LOG.error('Failed to check keepalived and haproxy status due '
+                          'to exception %s, skipping health heartbeat.', e)
         except Exception as e:
-            LOG.error('Failed to check keepalived and haproxy status '
-                      'due to exception {0}, skipping health '
-                      'heartbeat.'.format(str(e)))
+            LOG.error('Failed to check keepalived and haproxy status due to '
+                      'exception %s, skipping health heartbeat.', e)
 
         try:
             cmd = cmd_queue.get_nowait()
