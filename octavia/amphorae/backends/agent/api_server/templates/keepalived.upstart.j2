@@ -22,4 +22,4 @@ stop on runlevel [!2345]
 
 respawn
 
-exec /sbin/ip netns exec {{ amphora_nsname }} {{ keepalived_cmd }} -n -D -d -f {{ keepalived_cfg }}
+exec /sbin/ip netns exec {{ amphora_nsname }} {{ keepalived_cmd }} -n -D -d -f {{ keepalived_cfg }} -p {{ keepalived_pid }}

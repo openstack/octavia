@@ -153,6 +153,8 @@ class TestHealthDaemon(base.TestCase):
                           LISTENER_ID2 + '.sock'}
         self.assertEqual(files, expected_files)
 
+    @mock.patch('os.kill')
+    @mock.patch('os.path.isfile')
     @mock.patch('octavia.amphorae.backends.health_daemon.'
                 'health_daemon.time.sleep')
     @mock.patch('oslo_config.cfg.CONF.reload_config_files')
@@ -161,25 +163,31 @@ class TestHealthDaemon(base.TestCase):
     @mock.patch('octavia.amphorae.backends.health_daemon.'
                 'health_sender.UDPStatusSender')
     def test_run_sender(self, mock_UDPStatusSender, mock_build_msg,
-                        mock_reload_cfg, mock_sleep):
+                        mock_reload_cfg, mock_sleep, mock_isfile, mock_kill):
         sender_mock = mock.MagicMock()
         dosend_mock = mock.MagicMock()
         sender_mock.dosend = dosend_mock
         mock_UDPStatusSender.return_value = sender_mock
-        mock_build_msg.side_effect = ['TEST', Exception('break')]
+        mock_build_msg.side_effect = ['TEST']
+
+        mock_isfile.return_value = False
 
         test_queue = queue.Queue()
-        self.assertRaisesRegex(Exception, 'break',
-                               health_daemon.run_sender, test_queue)
+        with mock.patch('time.sleep') as mock_sleep:
+            mock_sleep.side_effect = Exception('break')
+            self.assertRaisesRegex(Exception, 'break',
+                                   health_daemon.run_sender, test_queue)
 
         sender_mock.dosend.assert_called_once_with('TEST')
 
         # Test a reload event
         mock_build_msg.reset_mock()
-        mock_build_msg.side_effect = ['TEST', Exception('break')]
+        mock_build_msg.side_effect = ['TEST']
         test_queue.put('reload')
-        self.assertRaisesRegex(Exception, 'break',
-                               health_daemon.run_sender, test_queue)
+        with mock.patch('time.sleep') as mock_sleep:
+            mock_sleep.side_effect = Exception('break')
+            self.assertRaisesRegex(Exception, 'break',
+                                   health_daemon.run_sender, test_queue)
         mock_reload_cfg.assert_called_once_with()
 
         # Test the shutdown path
@@ -193,10 +201,88 @@ class TestHealthDaemon(base.TestCase):
 
         # Test an unknown command
         mock_build_msg.reset_mock()
-        mock_build_msg.side_effect = ['TEST', Exception('break')]
+        mock_build_msg.side_effect = ['TEST']
         test_queue.put('bogus')
-        self.assertRaisesRegex(Exception, 'break',
-                               health_daemon.run_sender, test_queue)
+        with mock.patch('time.sleep') as mock_sleep:
+            mock_sleep.side_effect = Exception('break')
+            self.assertRaisesRegex(Exception, 'break',
+                                   health_daemon.run_sender, test_queue)
+
+        # Test keepalived config, but no PID
+        mock_build_msg.reset_mock()
+        dosend_mock.reset_mock()
+        mock_isfile.return_value = True
+        with mock.patch('octavia.amphorae.backends.health_daemon.'
+                        'health_daemon.open', mock.mock_open()) as mock_open:
+            mock_open.side_effect = FileNotFoundError
+            test_queue.put('shutdown')
+            health_daemon.run_sender(test_queue)
+            mock_build_msg.assert_not_called()
+            dosend_mock.assert_not_called()
+
+        # Test keepalived config, but PID file error
+        mock_build_msg.reset_mock()
+        dosend_mock.reset_mock()
+        mock_isfile.return_value = True
+        with mock.patch('octavia.amphorae.backends.health_daemon.'
+                        'health_daemon.open', mock.mock_open()) as mock_open:
+            mock_open.side_effect = IOError
+            test_queue.put('shutdown')
+            health_daemon.run_sender(test_queue)
+            mock_build_msg.assert_not_called()
+            dosend_mock.assert_not_called()
+
+        # Test keepalived config, but bogus PID
+        mock_build_msg.reset_mock()
+        dosend_mock.reset_mock()
+        mock_isfile.return_value = True
+        with mock.patch('octavia.amphorae.backends.health_daemon.'
+                        'health_daemon.open',
+                        mock.mock_open(read_data='foo')) as mock_open:
+            test_queue.put('shutdown')
+            health_daemon.run_sender(test_queue)
+            mock_build_msg.assert_not_called()
+            dosend_mock.assert_not_called()
+
+        # Test keepalived config, but not running
+        mock_build_msg.reset_mock()
+        dosend_mock.reset_mock()
+        mock_isfile.return_value = True
+        with mock.patch('octavia.amphorae.backends.health_daemon.'
+                        'health_daemon.open',
+                        mock.mock_open(read_data='999999')) as mock_open:
+            mock_kill.side_effect = ProccessNotFoundError
+            test_queue.put('shutdown')
+            health_daemon.run_sender(test_queue)
+            mock_build_msg.assert_not_called()
+            dosend_mock.assert_not_called()
+
+        # Test keepalived config, but process error
+        mock_build_msg.reset_mock()
+        dosend_mock.reset_mock()
+        mock_isfile.return_value = True
+        with mock.patch('octavia.amphorae.backends.health_daemon.'
+                        'health_daemon.open',
+                        mock.mock_open(read_data='999999')) as mock_open:
+            mock_kill.side_effect = OSError
+            test_queue.put('shutdown')
+            health_daemon.run_sender(test_queue)
+            mock_build_msg.assert_not_called()
+            dosend_mock.assert_not_called()
+
+        # Test with happy keepalive
+        sender_mock.reset_mock()
+        dosend_mock.reset_mock()
+        mock_kill.side_effect = [True]
+        mock_build_msg.reset_mock()
+        mock_build_msg.side_effect = ['TEST', 'TEST']
+        mock_isfile.return_value = True
+        test_queue.put('shutdown')
+        with mock.patch('octavia.amphorae.backends.health_daemon.'
+                        'health_daemon.open',
+                        mock.mock_open(read_data='999999')) as mock_open:
+            health_daemon.run_sender(test_queue)
+        sender_mock.dosend.assert_called_once_with('TEST')
 
     @mock.patch('octavia.amphorae.backends.utils.haproxy_query.HAProxyQuery')
     def test_get_stats(self, mock_query):
@@ -266,3 +352,11 @@ class TestHealthDaemon(base.TestCase):
         msg = health_daemon.build_stats_message()
 
         self.assertEqual(msg['listeners'][LISTENER_ID1]['pools'], {})
+
+
+class FileNotFoundError(IOError):
+    errno = 2
+
+
+class ProccessNotFoundError(OSError):
+    errno = 3
