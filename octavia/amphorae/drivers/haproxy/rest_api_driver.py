@@ -136,9 +136,9 @@ class HaproxyAmphoraLoadBalancerDriver(
                                      load_balancer.vip.ip_address,
                                      net_info)
             except exc.Conflict:
-                LOG.warning(('VIP with MAC {mac} already exists on '
-                            'amphora, skipping post_vip_plug').format(
-                                mac=port.mac_address))
+                LOG.warning('VIP with MAC %(mac)s already exists on amphora, '
+                            'skipping post_vip_plug',
+                            {'mac': port.mac_address})
 
     def post_network_plug(self, amphora, port):
         fixed_ips = []
@@ -156,9 +156,9 @@ class HaproxyAmphoraLoadBalancerDriver(
         try:
             self.client.plug_network(amphora, port_info)
         except exc.Conflict:
-            LOG.warning(('Network with MAC {mac} already exists on '
-                        'amphora, skipping post_network_plug').format(
-                            mac=port.mac_address))
+            LOG.warning('Network with MAC %(mac)s already exists on amphora, '
+                        'skipping post_network_plug',
+                        {'mac': port.mac_address})
 
     def _process_tls_certificates(self, listener):
         """Processes TLS data from the listener.
@@ -253,7 +253,7 @@ class AmphoraAPIClient(object):
         LOG.debug("request url %s", path)
         _request = getattr(self.session, method.lower())
         _url = self._base_url(amp.lb_network_ip) + path
-        LOG.debug("request url " + _url)
+        LOG.debug("request url %s", _url)
         timeout_tuple = (CONF.haproxy_amphora.rest_request_conn_timeout,
                          CONF.haproxy_amphora.rest_request_read_timeout)
         reqargs = {
@@ -276,8 +276,8 @@ class AmphoraAPIClient(object):
                         message="A true SSLContext object is not available"
                     )
                     r = _request(**reqargs)
-                LOG.debug("Connected to amphora. Response: {resp}".format(
-                    resp=r))
+                LOG.debug('Connected to amphora. Response: %(resp)s',
+                          {'resp': r})
                 # Give a 404 response one retry.  Flask/werkzeug is
                 # returning 404 on startup.
                 if r.status_code == 404 and retry_attempt is False:

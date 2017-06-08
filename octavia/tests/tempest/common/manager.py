@@ -900,8 +900,8 @@ class NetworkScenarioTest(ScenarioTest):
                                  "failed  to reach status: {st}"
                          .format(fp=floating_ip, cst=floating_ip['status'],
                                  st=status))
-        LOG.info("FloatingIP: {fp} is at status: {st}"
-                 .format(fp=floating_ip, st=status))
+        LOG.info('FloatingIP: %(fp)s is at status: %(st)s',
+                 {'fp': floating_ip, 'st': status})
 
     def _check_tenant_network_connectivity(self, server,
                                            username,

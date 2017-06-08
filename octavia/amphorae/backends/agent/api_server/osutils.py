@@ -184,8 +184,7 @@ class BaseOS(object):
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            LOG.error('Failed to if up {0} due to '
-                      'error: {1}'.format(interface, str(e)))
+            LOG.error('Failed to if up %s due to error: %s', interface, e)
             raise exceptions.HTTPException(
                 response=flask.make_response(flask.jsonify(dict(
                     message='Error plugging {0}'.format(what),

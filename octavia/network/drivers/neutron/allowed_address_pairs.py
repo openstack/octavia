@@ -94,8 +94,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             new_port = self.neutron_client.create_port(port)
             new_port = utils.convert_port_dict_to_model(new_port)
 
-            LOG.debug('Created vip port: {port_id} for amphora: {amp}'.format(
-                port_id=new_port.id, amp=amphora.id))
+            LOG.debug('Created vip port: %(port_id)s for amphora: %(amp)s',
+                      {'port_id': new_port.id, 'amp': amphora.id})
 
             interface = self.plug_port(amphora, new_port)
         except Exception:
@@ -269,8 +269,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 self.neutron_client.delete_port(amphora.vrrp_port_id)
             except (neutron_client_exceptions.NotFound,
                     neutron_client_exceptions.PortNotFoundClient):
-                LOG.debug('VIP instance port {0} already deleted. '
-                          'Skipping.'.format(amphora.vrrp_port_id))
+                LOG.debug('VIP instance port %s already deleted. Skipping.',
+                          amphora.vrrp_port_id)
 
         try:
             port = self.get_port(vip.port_id)

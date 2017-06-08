@@ -186,8 +186,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
         server = server['server']
         self.servers_keypairs[server['id']] = keypair
 
-        LOG.info(('servers_keypairs looks like this(format): {0}'.format(
-            self.servers_keypairs)))
+        LOG.info('servers_keypairs looks like this(format): %s',
+                 self.servers_keypairs)
 
         if (config.network.public_network_id and not
                 config.network.project_networks_reachable):
@@ -216,11 +216,11 @@ class BaseTestCase(manager.NetworkScenarioTest):
     def _stop_server(self, name):
         for sname, value in six.iteritems(self.servers):
             if sname == name:
-                LOG.info(('STOPPING SERVER: {0}'.format(sname)))
+                LOG.info('STOPPING SERVER: %s', sname)
                 self.servers_client.stop_server(value)
                 waiters.wait_for_server_status(self.servers_client,
                                                value, 'SHUTOFF')
-        LOG.info(('STOPPING SERVER COMPLETED!'))
+        LOG.info('STOPPING SERVER COMPLETED!')
 
     def _start_server(self, name):
         for sname, value in six.iteritems(self.servers):
@@ -287,8 +287,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
         self.assertTrue(self.listener)
         self.addCleanup(self._cleanup_listener, self.listener['id'],
                         load_balancer_id)
-        LOG.info(('Waiting for lb status on create listener id: {0}'.format(
-            self.listener['id'])))
+        LOG.info('Waiting for lb status on create listener id: %s',
+                 self.listener['id'])
         self._wait_for_load_balancer_status(load_balancer_id)
 
         return self.listener
@@ -334,8 +334,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
                                                   **create_pool_kwargs)
         self.assertTrue(self.pool)
         self.addCleanup(self._cleanup_pool, self.pool['id'], load_balancer_id)
-        LOG.info(('Waiting for lb status on create pool id: {0}'.format(
-            self.pool['id'])))
+        LOG.info('Waiting for lb status on create pool id: %s',
+                 self.pool['id'])
         self._wait_for_load_balancer_status(load_balancer_id)
         return self.pool
 
@@ -391,7 +391,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
                     lb_id=load_balancer_id,
                     pool_id=pool_id,
                     **create_member_kwargs)
-                LOG.info(('Waiting for lb status on create member...'))
+                LOG.info('Waiting for lb status on create member...')
                 self._wait_for_load_balancer_status(load_balancer_id)
                 self.members.append(member)
             self.assertTrue(self.members)
@@ -399,8 +399,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
     def _assign_floating_ip_to_lb_vip(self, lb):
         public_network_id = config.network.public_network_id
 
-        LOG.info(('assign_floating_ip_to_lb_vip  lb: {0} type: {1}'.format(
-            lb, type(lb))))
+        LOG.info('assign_floating_ip_to_lb_vip  lb: %s type: %s', lb, type(lb))
         port_id = lb['vip']['port_id']
 
         floating_ip = self._create_floating_ip(
@@ -444,8 +443,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
                                  "failed  to reach status: {st}"
                          .format(fp=floating_ip, cst=floating_ip['status'],
                                  st=status))
-        LOG.info("FloatingIP: {fp} is at status: {st}"
-                 .format(fp=floating_ip, st=status))
+        LOG.info('FloatingIP: %(fp)s is at status: %(st)s',
+                 {'fp': floating_ip, 'st': status})
 
     def _create_load_balancer(self, ip_version=4, persistence_type=None):
         """Create a load balancer.
@@ -462,8 +461,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
             **self.create_lb_kwargs)
         lb_id = self.load_balancer['id']
         self.addCleanup(self._cleanup_load_balancer, lb_id)
-        LOG.info(('Waiting for lb status on create load balancer id: {0}'
-                  .format(lb_id)))
+        LOG.info('Waiting for lb status on create load balancer id: %s', lb_id)
         self.load_balancer = self._wait_for_load_balancer_status(
             load_balancer_id=lb_id,
             provisioning_status='ACTIVE',
@@ -513,8 +511,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
         lb_client.create_load_balancer_over_quota(
             **self.create_lb_kwargs)
 
-        LOG.info(('Waiting for lb status on create load balancer id: {0}'
-                  .format(lb_id)))
+        LOG.info('Waiting for lb status on create load balancer id: %s',
+                 lb_id)
         self.load_balancer = self._wait_for_load_balancer_status(
             load_balancer_id=lb_id,
             provisioning_status='ACTIVE',
@@ -537,9 +535,9 @@ class BaseTestCase(manager.NetworkScenarioTest):
                 else:
                     raise e
 
-            LOG.info(('provisioning_status: {0}  operating_status: {1}'.format(
-                lb.get('provisioning_status'),
-                lb.get('operating_status'))))
+            LOG.info('provisioning_status: %s operating_status: %s',
+                     lb.get('provisioning_status'),
+                     lb.get('operating_status'))
 
             if delete and lb.get('provisioning_status') == 'DELETED':
                 break
@@ -602,11 +600,11 @@ class BaseTestCase(manager.NetworkScenarioTest):
             lambda x: six.b(x) if type(x) == six.text_type else x, members))
         LOG.info(_('Checking all members are balanced...'))
         self._wait_for_http_service(self.vip_ip)
-        LOG.info(_('Connection to {vip} is valid').format(vip=self.vip_ip))
+        LOG.info(_('Connection to %(vip)s is valid'), {'vip': self.vip_ip})
         counters = self._send_concurrent_requests(self.vip_ip)
         for member, counter in six.iteritems(counters):
-            LOG.info(_('Member {member} saw {counter} requests.').format(
-                member=member, counter=counter))
+            LOG.info(_('Member %(member)s saw %(counter)s requests.'),
+                     {'member': member, 'counter': counter})
             self.assertGreater(counter, 0,
                                'Member %s never balanced' % member)
         for member in members:
@@ -624,18 +622,18 @@ class BaseTestCase(manager.NetworkScenarioTest):
     def _wait_for_http_service(self, check_ip, port=80):
         def try_connect(check_ip, port):
             try:
-                LOG.info(('checking connection to ip: {0} port: {1}'.format(
-                    check_ip, port)))
+                LOG.info('checking connection to ip: %s port: %d',
+                         check_ip, port)
                 resp = urllib2.urlopen("http://{0}:{1}/".format(check_ip,
                                                                 port))
                 if resp.getcode() == 200:
                     return True
                 return False
             except IOError as e:
-                LOG.info(('Got IOError in check connection: {0}'.format(e)))
+                LOG.info('Got IOError in check connection: %s', e)
                 return False
             except error.HTTPError as e:
-                LOG.info(('Got HTTPError in check connection: {0}'.format(e)))
+                LOG.info('Got HTTPError in check connection: %s', e)
                 return False
 
         timeout = config.validation.ping_timeout
@@ -660,7 +658,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
             # of success and continue connection tries
             except (error.HTTPError, error.URLError,
                     socket.timeout, socket.error) as e:
-                LOG.info(('Got Error in sending request: {0}'.format(e)))
+                LOG.info('Got Error in sending request: %s', e)
                 continue
         return counters
 
@@ -698,7 +696,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
         for ct in client_threads:
             timeout -= ct.join(timeout)
             if timeout <= 0:
-                LOG.error("Client thread {0} timed out".format(ct.name))
+                LOG.error('Client thread %s timed out', ct.name)
                 return dict()
             for server in list(ct.counters):
                 if server not in total_counters:
@@ -822,9 +820,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
         proc = subprocess.Popen(args, **subprocess_args)
         stdout, stderr = proc.communicate()
         if proc.returncode != 0:
-            LOG.error(("Command {0} returned with exit status {1},"
-                      "output {2}, error {3}").format(cmd, proc.returncode,
-                                                      stdout, stderr))
+            LOG.error('Command %s returned with exit status %s,output %s, '
+                      'error %s', cmd, proc.returncode, stdout, stderr)
         return stdout
 
     def _set_quotas(self, project_id=None, load_balancer=20, listener=20,
@@ -862,8 +859,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
         load_balancer_id = self.load_balancer['id']
         if cleanup:
             self.addCleanup(self._cleanup_load_balancer, load_balancer_id)
-        LOG.info(('Waiting for lb status on create load balancer id: {0}'
-                  .format(load_balancer_id)))
+        LOG.info('Waiting for lb status on create load balancer id: %s',
+                 load_balancer_id)
         self.load_balancer = self._wait_for_load_balancer_status(
             load_balancer_id)
 

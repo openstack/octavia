@@ -287,8 +287,8 @@ class Repositories(object):
         :param count: Number of objects we're going to create (default=1)
         :returns: True if quota is met, False if quota was available
         """
-        LOG.debug('Checking quota for project: {proj} object: {obj}'.format(
-            proj=project_id, obj=str(_class)))
+        LOG.debug('Checking quota for project: %(proj)s object: %(obj)s',
+                  {'proj': project_id, 'obj': _class})
 
         # Under noauth everything is admin, so no quota
         if CONF.auth_strategy == consts.NOAUTH:
@@ -422,8 +422,8 @@ class Repositories(object):
                 else:
                     return True
         except db_exception.DBDeadlock:
-            LOG.warning(('Quota project lock timed out for project: '
-                        '{proj}').format(proj=project_id))
+            LOG.warning('Quota project lock timed out for project: %(proj)s',
+                        {'proj': project_id})
             raise exceptions.ProjectBusyException()
         return False
 
@@ -436,9 +436,9 @@ class Repositories(object):
         :param quantity: Quantity of quota to decrement
         :returns: None
         """
-        LOG.debug('Decrementing quota by: {quant} for project: {proj} '
-                  'object: {obj}'.format(quant=quantity, proj=project_id,
-                                         obj=str(_class)))
+        LOG.debug('Decrementing quota by: %(quant)s for project: %(proj)s '
+                  'object: %(obj)s',
+                  {'quant': quantity, 'proj': project_id, 'obj': _class})
 
         # Lock the project record in the database to block other quota checks
         try:
@@ -446,10 +446,10 @@ class Repositories(object):
                 project_id=project_id).with_for_update().first()
             if not quotas:
                 if not CONF.auth_strategy == consts.NOAUTH:
-                    LOG.error('Quota decrement on {clss} called on project: '
-                              '{proj} with no quota record in the '
-                              'database.'.format(clss=type(_class),
-                                                 proj=project_id))
+                    LOG.error('Quota decrement on %(clss)s called on '
+                              'project: %(proj)s with no quota record in '
+                              'the database.',
+                              {'clss': type(_class), 'proj': project_id})
                 return
             if _class == data_models.LoadBalancer:
                 if (quotas.in_use_load_balancer is not None and
@@ -458,10 +458,10 @@ class Repositories(object):
                         quotas.in_use_load_balancer - quantity)
                 else:
                     if not CONF.auth_strategy == consts.NOAUTH:
-                        LOG.warning('Quota decrement on {clss} called on '
-                                    'project: {proj} that would cause a '
-                                    'negative quota.'.format(clss=type(_class),
-                                                             proj=project_id))
+                        LOG.warning('Quota decrement on %(clss)s called on '
+                                    'project: %(proj)s that would cause a '
+                                    'negative quota.',
+                                    {'clss': type(_class), 'proj': project_id})
             if _class == data_models.Listener:
                 if (quotas.in_use_listener is not None and
                         quotas.in_use_listener > 0):
@@ -469,10 +469,10 @@ class Repositories(object):
                         quotas.in_use_listener - quantity)
                 else:
                     if not CONF.auth_strategy == consts.NOAUTH:
-                        LOG.warning('Quota decrement on {clss} called on '
-                                    'project: {proj} that would cause a '
-                                    'negative quota.'.format(clss=type(_class),
-                                                             proj=project_id))
+                        LOG.warning('Quota decrement on %(clss)s called on '
+                                    'project: %(proj)s that would cause a '
+                                    'negative quota.',
+                                    {'clss': type(_class), 'proj': project_id})
             if _class == data_models.Pool:
                 if (quotas.in_use_pool is not None and
                         quotas.in_use_pool > 0):
@@ -480,10 +480,10 @@ class Repositories(object):
                         quotas.in_use_pool - quantity)
                 else:
                     if not CONF.auth_strategy == consts.NOAUTH:
-                        LOG.warning('Quota decrement on {clss} called on '
-                                    'project: {proj} that would cause a '
-                                    'negative quota.'.format(clss=type(_class),
-                                                             proj=project_id))
+                        LOG.warning('Quota decrement on %(clss)s called on '
+                                    'project: %(proj)s that would cause a '
+                                    'negative quota.',
+                                    {'clss': type(_class), 'proj': project_id})
             if _class == data_models.HealthMonitor:
                 if (quotas.in_use_health_monitor is not None and
                         quotas.in_use_health_monitor > 0):
@@ -491,10 +491,10 @@ class Repositories(object):
                         quotas.in_use_health_monitor - quantity)
                 else:
                     if not CONF.auth_strategy == consts.NOAUTH:
-                        LOG.warning('Quota decrement on {clss} called on '
-                                    'project: {proj} that would cause a '
-                                    'negative quota.'.format(clss=type(_class),
-                                                             proj=project_id))
+                        LOG.warning('Quota decrement on %(clss)s called on '
+                                    'project: %(proj)s that would cause a '
+                                    'negative quota.',
+                                    {'clss': type(_class), 'proj': project_id})
             if _class == data_models.Member:
                 if (quotas.in_use_member is not None and
                         quotas.in_use_member > 0):
@@ -502,13 +502,13 @@ class Repositories(object):
                         quotas.in_use_member - quantity)
                 else:
                     if not CONF.auth_strategy == consts.NOAUTH:
-                        LOG.warning('Quota decrement on {clss} called on '
-                                    'project: {proj} that would cause a '
-                                    'negative quota.'.format(clss=type(_class),
-                                                             proj=project_id))
+                        LOG.warning('Quota decrement on %(clss)s called on '
+                                    'project: %(proj)s that would cause a '
+                                    'negative quota.',
+                                    {'clss': type(_class), 'proj': project_id})
         except db_exception.DBDeadlock:
-            LOG.warning(('Quota project lock timed out for project: '
-                         '{proj}').format(proj=project_id))
+            LOG.warning('Quota project lock timed out for project: %(proj)s',
+                        {'proj': project_id})
             raise exceptions.ProjectBusyException()
 
     def create_load_balancer_tree(self, session, lock_session, lb_dict):
