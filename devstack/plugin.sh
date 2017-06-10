@@ -457,6 +457,10 @@ function octavia_start {
     run_process $OCTAVIA_HOUSEKEEPER  "$OCTAVIA_HOUSEKEEPER_BINARY $OCTAVIA_HOUSEKEEPER_ARGS"
     run_process $OCTAVIA_HEALTHMANAGER  "$OCTAVIA_HEALTHMANAGER_BINARY $OCTAVIA_HEALTHMANAGER_ARGS"
 
+    if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
+        add_load-balancer_roles
+    fi
+
 }
 
 function octavia_stop {
@@ -514,6 +518,14 @@ function octavia_cleanup {
     fi
 
     sudo rm -rf $NOVA_STATE_PATH $NOVA_AUTH_CACHE_DIR
+}
+
+function add_load-balancer_roles {
+    openstack role create load-balancer_observer
+    openstack role create load-balancer_global_observer
+    openstack role create load-balancer_member
+    openstack role create load-balancer_admin
+    openstack role add --user demo --project demo load-balancer_member
 }
 
 # check for service enabled

@@ -40,14 +40,15 @@ class PolicyFileTestCase(base.TestCase):
             self.conf.load_raw_values(
                 group='oslo_policy', policy_file=tmp.name)
 
+            tmp.write('{"example:test": ""}')
+            tmp.flush()
+
             self.context = context.Context('fake', 'fake')
 
             rule = oslo_policy.RuleDefault('example:test', "")
             self.context.policy.register_defaults([rule])
 
             action = "example:test"
-            tmp.write('{"example:test": ""}')
-            tmp.flush()
             self.context.policy.authorize(action, self.target)
 
             tmp.seek(0)
@@ -158,11 +159,21 @@ class PolicyTestCase(base.TestCase):
 
         self.assertTrue(self.context.policy.check_is_admin())
 
+    def test_get_enforcer(self):
+        self.assertTrue(isinstance(policy.get_no_context_enforcer(),
+                                   oslo_policy.Enforcer))
+
 
 class IsAdminCheckTestCase(base.TestCase):
 
     def setUp(self):
         super(IsAdminCheckTestCase, self).setUp()
+
+        self.conf = self.useFixture(oslo_fixture.Config())
+        # diltram: this one must be removed after fixing issue in oslo.config
+        # https://bugs.launchpad.net/oslo.config/+bug/1645868
+        self.conf.conf.__call__(args=[])
+
         self.context = context.Context('fake', 'fake')
 
     def test_init_true(self):
@@ -200,6 +211,12 @@ class AdminRolePolicyTestCase(base.TestCase):
 
     def setUp(self):
         super(AdminRolePolicyTestCase, self).setUp()
+
+        self.conf = self.useFixture(oslo_fixture.Config())
+        # diltram: this one must be removed after fixing issue in oslo.config
+        # https://bugs.launchpad.net/oslo.config/+bug/1645868
+        self.conf.conf.__call__(args=[])
+
         self.context = context.Context('fake', 'fake', roles=['member'])
         self.actions = self.context.policy.get_rules().keys()
         self.target = {}
@@ -211,5 +228,5 @@ class AdminRolePolicyTestCase(base.TestCase):
         """
         for action in self.actions:
             self.assertRaises(
-                oslo_policy.PolicyNotAuthorized, self.context.policy.authorize,
+                exceptions.NotAuthorized, self.context.policy.authorize,
                 action, self.target)

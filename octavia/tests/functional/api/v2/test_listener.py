@@ -15,6 +15,8 @@
 
 import mock
 
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.common import constants
@@ -33,6 +35,7 @@ class TestListener(base.BaseAPITest):
         super(TestListener, self).setUp()
         self.lb = self.create_load_balancer(uuidutils.generate_uuid())
         self.lb_id = self.lb.get('loadbalancer').get('id')
+        self.project_id = self.lb.get('loadbalancer').get('project_id')
         self.set_lb_status(self.lb_id)
         self.listener_path = self.LISTENERS_PATH + '/{listener_id}'
         self.pool = self.create_pool(
@@ -87,8 +90,24 @@ class TestListener(base.BaseAPITest):
         self.conf.config(auth_strategy=constants.KEYSTONE)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                listener3['project_id']):
-            listeners = self.get(
-                self.LISTENERS_PATH).json.get(self.root_tag_list)
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                listeners = self.get(
+                    self.LISTENERS_PATH).json.get(self.root_tag_list)
         self.conf.config(auth_strategy=auth_strategy)
 
         self.assertEqual(1, len(listeners))
@@ -96,6 +115,80 @@ class TestListener(base.BaseAPITest):
                              for l in listeners]
         self.assertIn((listener3.get('id'), listener3.get('protocol_port')),
                       listener_id_ports)
+
+    def test_get_all_non_admin_global_observer(self):
+        project_id = uuidutils.generate_uuid()
+        lb1 = self.create_load_balancer(uuidutils.generate_uuid(),
+                                        name='lb1', project_id=project_id)
+        lb1_id = lb1.get('loadbalancer').get('id')
+        self.set_lb_status(lb1_id)
+        listener1 = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb1_id).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        listener2 = self.create_listener(
+            constants.PROTOCOL_HTTP, 81, lb1_id).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        listener3 = self.create_listener(
+            constants.PROTOCOL_HTTP, 82, lb1_id).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.KEYSTONE)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_global_observer'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                listeners = self.get(self.LISTENERS_PATH)
+                listeners = listeners.json.get(self.root_tag_list)
+        self.conf.config(auth_strategy=auth_strategy)
+
+        self.assertEqual(3, len(listeners))
+        listener_id_ports = [(l.get('id'), l.get('protocol_port'))
+                             for l in listeners]
+        self.assertIn((listener1.get('id'), listener1.get('protocol_port')),
+                      listener_id_ports)
+        self.assertIn((listener2.get('id'), listener2.get('protocol_port')),
+                      listener_id_ports)
+        self.assertIn((listener3.get('id'), listener3.get('protocol_port')),
+                      listener_id_ports)
+
+    def test_get_all_not_authorized(self):
+        project_id = uuidutils.generate_uuid()
+        lb1 = self.create_load_balancer(uuidutils.generate_uuid(),
+                                        name='lb1', project_id=project_id)
+        lb1_id = lb1.get('loadbalancer').get('id')
+        self.set_lb_status(lb1_id)
+        self.create_listener(constants.PROTOCOL_HTTP, 80,
+                             lb1_id)
+        self.set_lb_status(lb1_id)
+        self.create_listener(constants.PROTOCOL_HTTP, 81,
+                             lb1_id)
+        self.set_lb_status(lb1_id)
+        self.create_listener(constants.PROTOCOL_HTTP, 82,
+                             self.lb_id).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.KEYSTONE)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            listeners = self.get(self.LISTENERS_PATH, status=401).json
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, listeners)
 
     def test_get_all_by_project_id(self):
         project1_id = uuidutils.generate_uuid()
@@ -218,6 +311,52 @@ class TestListener(base.BaseAPITest):
         api_listener = response.json.get(self.root_tag)
         self.assertEqual(listener, api_listener)
 
+    def test_get_authorized(self):
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, self.lb_id).get(self.root_tag)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+
+                response = self.get(self.listener_path.format(
+                    listener_id=listener['id']))
+        api_listener = response.json.get(self.root_tag)
+        self.assertEqual(listener, api_listener)
+        self.conf.config(auth_strategy=auth_strategy)
+
+    def test_get_not_authorized(self):
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, self.lb_id).get(self.root_tag)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            response = self.get(self.listener_path.format(
+                listener_id=listener['id']), status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
+
     def test_get_hides_deleted(self):
         api_listener = self.create_listener(
             constants.PROTOCOL_HTTP, 80, self.lb_id).get(self.root_tag)
@@ -268,9 +407,8 @@ class TestListener(base.BaseAPITest):
         self.assertIsNotNone(listener_api.pop('created_at'))
         self.assertIsNone(listener_api.pop('updated_at'))
         self.assertNotEqual(lb_listener, listener_api)
-        self.assert_correct_lb_status(constants.PENDING_UPDATE,
-                                      constants.ONLINE, self.lb_id)
-        self.assert_final_lb_statuses(self.lb_id)
+        self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
+                                      constants.PENDING_UPDATE)
         self.assert_final_listener_statuses(self.lb_id, listener_api.get('id'))
 
     def test_create_duplicate_fails(self):
@@ -353,9 +491,8 @@ class TestListener(base.BaseAPITest):
         self.assertIsNotNone(listener_api.pop('created_at'))
         self.assertIsNone(listener_api.pop('updated_at'))
         self.assertNotEqual(lb_listener, listener_api)
-        self.assert_correct_lb_status(constants.PENDING_UPDATE,
-                                      constants.ONLINE, self.lb_id)
-        self.assert_final_lb_statuses(self.lb_id)
+        self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
+                                      constants.PENDING_UPDATE)
         self.assert_final_listener_statuses(self.lb_id, listener_api['id'])
 
     def test_create_over_quota(self):
@@ -377,6 +514,94 @@ class TestListener(base.BaseAPITest):
             listener_id=api_listener.get('id'),
             listener_prov_status=constants.ERROR,
             listener_op_status=constants.OFFLINE)
+
+    def test_create_authorized(self, **optionals):
+        sni1 = uuidutils.generate_uuid()
+        sni2 = uuidutils.generate_uuid()
+        lb_listener = {'name': 'listener1', 'default_pool_id': None,
+                       'description': 'desc1',
+                       'admin_state_up': False,
+                       'protocol': constants.PROTOCOL_HTTP,
+                       'protocol_port': 80, 'connection_limit': 10,
+                       'default_tls_container_ref': uuidutils.generate_uuid(),
+                       'sni_container_refs': [sni1, sni2],
+                       'insert_headers': {},
+                       'project_id': self.project_id,
+                       'loadbalancer_id': self.lb_id}
+        lb_listener.update(optionals)
+        body = self._build_body(lb_listener)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self.post(self.LISTENERS_PATH, body)
+        self.conf.config(auth_strategy=auth_strategy)
+
+        listener_api = response.json['listener']
+        extra_expects = {'provisioning_status': constants.PENDING_CREATE,
+                         'operating_status': constants.OFFLINE}
+        lb_listener.update(extra_expects)
+        self.assertTrue(uuidutils.is_uuid_like(listener_api.get('id')))
+        for key, value in optionals.items():
+            self.assertEqual(value, lb_listener.get(key))
+        lb_listener['id'] = listener_api.get('id')
+        lb_listener.pop('sni_container_refs')
+        sni_ex = [sni1, sni2]
+        sni_resp = listener_api.pop('sni_container_refs')
+        self.assertEqual(2, len(sni_resp))
+        for sni in sni_resp:
+            self.assertIn(sni, sni_ex)
+        self.assertIsNotNone(listener_api.pop('created_at'))
+        self.assertIsNone(listener_api.pop('updated_at'))
+        self.assertNotEqual(lb_listener, listener_api)
+        self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
+                                      constants.PENDING_UPDATE)
+        self.assert_final_listener_statuses(self.lb_id, listener_api.get('id'))
+
+    def test_create_not_authorized(self, **optionals):
+        sni1 = uuidutils.generate_uuid()
+        sni2 = uuidutils.generate_uuid()
+        lb_listener = {'name': 'listener1', 'default_pool_id': None,
+                       'description': 'desc1',
+                       'admin_state_up': False,
+                       'protocol': constants.PROTOCOL_HTTP,
+                       'protocol_port': 80, 'connection_limit': 10,
+                       'default_tls_container_ref': uuidutils.generate_uuid(),
+                       'sni_container_refs': [sni1, sni2],
+                       'insert_headers': {},
+                       'project_id': self.project_id,
+                       'loadbalancer_id': self.lb_id}
+        lb_listener.update(optionals)
+        body = self._build_body(lb_listener)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            response = self.post(self.LISTENERS_PATH, body, status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
     def test_update_with_bad_handler(self):
         api_listener = self.create_listener(
@@ -437,8 +662,8 @@ class TestListener(base.BaseAPITest):
         self.assertEqual(listener['created_at'], api_listener['created_at'])
         self.assertNotEqual(listener['updated_at'], api_listener['updated_at'])
         self.assertNotEqual(listener, api_listener)
-        self.assert_correct_lb_status(constants.PENDING_UPDATE,
-                                      constants.ONLINE, self.lb_id)
+        self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
+                                      constants.PENDING_UPDATE)
         self.assert_final_listener_statuses(self.lb_id,
                                             api_listener['id'])
 
@@ -460,10 +685,89 @@ class TestListener(base.BaseAPITest):
         listener_path = self.LISTENER_PATH.format(
             listener_id=listener['listener']['id'])
         self.put(listener_path, body, status=404)
-        self.assert_correct_lb_status(constants.ACTIVE, constants.ONLINE,
-                                      self.lb_id)
+        self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
+                                      constants.ACTIVE)
         self.assert_final_listener_statuses(self.lb_id,
                                             listener['listener']['id'])
+
+    def test_update_authorized(self):
+        tls_uuid = uuidutils.generate_uuid()
+        listener = self.create_listener(
+            constants.PROTOCOL_TCP, 80, self.lb_id,
+            name='listener1', description='desc1',
+            admin_state_up=False, connection_limit=10,
+            default_tls_container_ref=tls_uuid,
+            default_pool_id=None).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_listener = {'name': 'listener2', 'admin_state_up': True,
+                        'default_pool_id': self.pool_id}
+        body = self._build_body(new_listener)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['id'])
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                api_listener = self.put(listener_path, body)
+                api_listener = api_listener.json.get(self.root_tag)
+        self.conf.config(auth_strategy=auth_strategy)
+
+        update_expect = {'name': 'listener2', 'admin_state_up': True,
+                         'default_pool_id': self.pool_id,
+                         'provisioning_status': constants.PENDING_UPDATE,
+                         'operating_status': constants.ONLINE}
+        listener.update(update_expect)
+        self.assertEqual(listener['created_at'], api_listener['created_at'])
+        self.assertNotEqual(listener['updated_at'], api_listener['updated_at'])
+        self.assertNotEqual(listener, api_listener)
+        self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
+                                      constants.PENDING_UPDATE)
+        self.assert_final_listener_statuses(self.lb_id,
+                                            api_listener['id'])
+
+    def test_update_not_authorized(self):
+        tls_uuid = uuidutils.generate_uuid()
+        listener = self.create_listener(
+            constants.PROTOCOL_TCP, 80, self.lb_id,
+            name='listener1', description='desc1',
+            admin_state_up=False, connection_limit=10,
+            default_tls_container_ref=tls_uuid,
+            default_pool_id=None).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_listener = {'name': 'listener2', 'admin_state_up': True,
+                        'default_pool_id': self.pool_id}
+        body = self._build_body(new_listener)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['id'])
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+                api_listener = self.put(listener_path, body, status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, api_listener.json)
+        self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
+                                      constants.ACTIVE)
 
     def test_create_listeners_same_port(self):
         listener1 = self.create_listener(constants.PROTOCOL_TCP, 80,
@@ -495,11 +799,76 @@ class TestListener(base.BaseAPITest):
         self.assertIsNone(listener['listener'].pop('updated_at'))
         self.assertIsNotNone(api_listener.pop('updated_at'))
         self.assertNotEqual(listener, api_listener)
-        self.assert_correct_lb_status(constants.PENDING_UPDATE,
-                                      constants.ONLINE, self.lb_id)
-        self.assert_final_lb_statuses(self.lb_id)
+        self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
+                                      constants.PENDING_UPDATE)
         self.assert_final_listener_statuses(self.lb_id, api_listener['id'],
                                             delete=True)
+
+    def test_delete_authorized(self):
+        listener = self.create_listener(constants.PROTOCOL_HTTP, 80,
+                                        self.lb_id)
+        self.set_lb_status(self.lb_id)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener']['id'])
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+
+                self.delete(listener_path)
+        self.conf.config(auth_strategy=auth_strategy)
+
+        response = self.get(listener_path)
+        api_listener = response.json['listener']
+        expected = {'name': None, 'default_pool_id': None,
+                    'description': None, 'admin_state_up': True,
+                    'operating_status': constants.ONLINE,
+                    'provisioning_status': constants.PENDING_DELETE,
+                    'connection_limit': None}
+        listener['listener'].update(expected)
+
+        self.assertIsNone(listener['listener'].pop('updated_at'))
+        self.assertIsNotNone(api_listener.pop('updated_at'))
+        self.assertNotEqual(listener, api_listener)
+        self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
+                                      constants.PENDING_UPDATE)
+        self.assert_final_listener_statuses(self.lb_id, api_listener['id'],
+                                            delete=True)
+
+    def test_delete_not_authorized(self):
+        listener = self.create_listener(constants.PROTOCOL_HTTP, 80,
+                                        self.lb_id)
+        self.set_lb_status(self.lb_id)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener']['id'])
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+                self.delete(listener_path, status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
+                                      constants.ACTIVE)
 
     def test_delete_bad_listener_id(self):
         listener_path = self.LISTENER_PATH.format(listener_id='SEAN-CONNERY')

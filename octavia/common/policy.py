@@ -18,6 +18,7 @@ from oslo_config import cfg
 from oslo_policy import policy as oslo_policy
 from oslo_utils import excutils
 
+from octavia.common import config
 from octavia.common import exceptions
 from octavia import policies
 
@@ -57,7 +58,6 @@ class Policy(oslo_policy.Enforcer):
     def authorize(self, action, target, do_raise=True, exc=None):
         """Verifies that the action is valid on the target in this context.
 
-           :param context: nova context
            :param action: string representing the action to be checked
                this should be colon separated for clarity.
                i.e. ``compute:create_instance``,
@@ -84,6 +84,10 @@ class Policy(oslo_policy.Enforcer):
                do_raise is False.
         """
         credentials = self.context.to_policy_values()
+        # Inject is_admin into the credentials to allow override via
+        # config auth_strategy = constants.NOAUTH
+        credentials['is_admin'] = self.context.is_admin
+
         if not exc:
             exc = exceptions.NotAuthorized
 
@@ -127,3 +131,9 @@ class IsAdminCheck(oslo_policy.Check):
         """Determine whether is_admin matches the requested value."""
 
         return creds['is_admin'] == self.expected
+
+
+# This is used for the oslopolicy-policy-generator tool
+def get_no_context_enforcer():
+    config.init([])
+    return Policy(None)

@@ -14,9 +14,13 @@
 import itertools
 
 from octavia.policies import base
+from octavia.policies import listener
+from octavia.policies import loadbalancer
 
 
 def list_rules():
     return itertools.chain(
         base.list_rules(),
+        loadbalancer.list_rules(),
+        listener.list_rules(),
     )

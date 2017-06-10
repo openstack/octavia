@@ -41,7 +41,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinxcontrib.nwdiag',
               'sphinx.ext.graphviz',
               'oslosphinx',
-              'oslo_config.sphinxext'
+              'oslo_config.sphinxext',
+              'oslo_policy.sphinxpolicygen'
              ]
 
 todo_include_todos = True
@@ -128,6 +129,8 @@ html_theme = 'nature'
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
 #html_favicon = None
+
+html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -278,3 +281,7 @@ epub_copyright = u'2014, OpenStack Octavia Team'
 
 # Allow duplicate toc entries.
 #epub_tocdup = True
+
+# RBAC sample policy file generation
+policy_generator_config_file = '../../etc/policy/octavia-policy-generator.conf'
+sample_policy_basename = '_static/octavia'

@@ -1,0 +1,8 @@
+{
+    "context_is_admin": "role:admin or role:load-balancer_admin",
+    "admin_or_owner": "is_admin:True or project_id:%(project_id)s",
+
+    "load-balancer:read": "rule:admin_or_owner",
+    "load-balancer:read-global": "is_admin:True",
+    "load-balancer:write": "rule:admin_or_owner"
+}
