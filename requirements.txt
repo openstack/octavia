@@ -7,9 +7,9 @@ pecan!=1.0.2,!=1.0.3,!=1.0.4,!=1.2,>=1.0.0 # BSD
 pbr!=2.1.0,>=2.0.0 # Apache-2.0
 SQLAlchemy!=1.1.5,!=1.1.6,!=1.1.7,!=1.1.8,>=1.0.10 # MIT
 Babel!=2.4.0,>=2.3.4 # BSD
-requests!=2.12.2,!=2.13.0,>=2.10.0 # Apache-2.0
+requests>=2.14.2 # Apache-2.0
 rfc3986>=0.3.1 # Apache-2.0
-keystoneauth1>=2.20.0 # Apache-2.0
+keystoneauth1>=2.21.0 # Apache-2.0
 keystonemiddleware>=4.12.0 # Apache-2.0
 python-neutronclient>=6.3.0 # Apache-2.0
 WebOb>=1.7.1 # MIT
@@ -22,15 +22,15 @@ oslo.i18n!=3.15.2,>=2.1.0 # Apache-2.0
 oslo.log>=3.22.0 # Apache-2.0
 oslo.messaging!=5.25.0,>=5.24.2 # Apache-2.0
 oslo.middleware>=3.27.0 # Apache-2.0
-oslo.policy>=1.17.0 # Apache-2.0
+oslo.policy>=1.23.0 # Apache-2.0
 oslo.reports>=0.6.0 # Apache-2.0
 oslo.utils>=3.20.0 # Apache-2.0
-pyasn1 # BSD
+pyasn1!=0.2.3 # BSD
 pyasn1-modules # BSD
 PyMySQL>=0.7.6 # MIT License
 python-barbicanclient>=4.0.0 # Apache-2.0
 python-glanceclient>=2.7.0 # Apache-2.0
-python-novaclient>=7.1.0 # Apache-2.0
+python-novaclient>=9.0.0 # Apache-2.0
 pyOpenSSL>=0.14 # Apache-2.0
 WSME>=0.8 # MIT
 Jinja2!=2.9.0,!=2.9.1,!=2.9.2,!=2.9.3,!=2.9.4,>=2.8 # BSD License (3 clause)
