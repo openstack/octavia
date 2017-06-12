@@ -337,10 +337,16 @@ class AmphoraFlows(object):
         failover_amphora_flow.add(database_tasks.UpdateAmpFailoverDetails(
             requires=(constants.AMPHORA, constants.AMP_DATA)))
 
+        # Update the data stored in the flow from the database
         failover_amphora_flow.add(database_tasks.ReloadLoadBalancer(
             requires=constants.LOADBALANCER_ID,
             provides=constants.LOADBALANCER))
 
+        failover_amphora_flow.add(database_tasks.ReloadAmphora(
+            requires=constants.AMPHORA_ID,
+            provides=constants.AMPHORA))
+
+        # Prepare to reconnect the network interface(s)
         failover_amphora_flow.add(network_tasks.GetAmphoraeNetworkConfigs(
             requires=constants.LOADBALANCER,
             provides=constants.AMPHORAE_NETWORK_CONFIG))

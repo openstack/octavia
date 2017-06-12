@@ -121,7 +121,7 @@ class HaproxyAmphoraLoadBalancerDriver(
 
             port = amphorae_network_config.get(amphora.id).vrrp_port
             LOG.debug("Post-VIP-Plugging with vrrp_ip %s vrrp_port %s",
-                      amphora.vrrp_ip, port)
+                      amphora.vrrp_ip, port.id)
             host_routes = [{'nexthop': hr.nexthop,
                             'destination': hr.destination}
                            for hr in subnet.host_routes]
