@@ -152,8 +152,6 @@ function create_octavia_accounts {
 
 function octavia_configure {
 
-    create_octavia_cache_dir
-
     sudo mkdir -m 755 -p $OCTAVIA_CONF_DIR
     safe_chown $STACK_USER $OCTAVIA_CONF_DIR
 
@@ -167,7 +165,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF database connection "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia"
 
     # Configure keystone auth_token for all users
-    configure_auth_token_middleware $OCTAVIA_CONF octavia $OCTAVIA_AUTH_CACHE_DIR
+    configure_auth_token_middleware $OCTAVIA_CONF octavia
 
     # Ensure config is set up properly for authentication as admin
     iniset $OCTAVIA_CONF service_auth auth_url $OS_AUTH_URL
@@ -516,13 +514,6 @@ function octavia_cleanup {
     fi
 
     sudo rm -rf $NOVA_STATE_PATH $NOVA_AUTH_CACHE_DIR
-}
-
-# create_octavia_cache_dir() - Part of the configure_octavia() process
-function create_octavia_cache_dir {
-    # Create cache dir
-    sudo install -d -o $APACHE_USER $OCTAVIA_AUTH_CACHE_DIR
-    rm -f $OCTAVIA_AUTH_CACHE_DIR/*
 }
 
 # check for service enabled
