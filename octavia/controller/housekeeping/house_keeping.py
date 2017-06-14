@@ -17,6 +17,7 @@ import datetime
 from concurrent import futures
 from oslo_config import cfg
 from oslo_log import log as logging
+from sqlalchemy.orm import exc as sqlalchemy_exceptions
 
 from octavia.common import constants
 from octavia.controller.worker import controller_worker as cw
@@ -76,6 +77,10 @@ class DatabaseCleanup(object):
                                                           exp_age):
                 LOG.info('Attempting to delete Amphora id : %s', amp.id)
                 self.amp_repo.delete(session, id=amp.id)
+                try:
+                    self.amp_health_repo.delete(session, amphora_id=amp.id)
+                except sqlalchemy_exceptions.NoResultFound:
+                    pass  # Best effort delete, this record might not exist
                 LOG.info('Deleted Amphora id : %s' % amp.id)
 
     def cleanup_load_balancers(self):
