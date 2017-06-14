@@ -154,3 +154,26 @@ class ListenerSingleCreate(BaseListenerType):
     l7policies = wtypes.wsattr([l7policy.L7PolicySingleCreate], default=[])
     insert_headers = wtypes.wsattr(
         wtypes.DictType(str, wtypes.StringType(max_length=255)))
+
+
+class ListenerStatusesResponse(BaseListenerType):
+    """Defines which attributes are to be shown on statuses response."""
+    id = wtypes.wsattr(wtypes.UuidType())
+    name = wtypes.wsattr(wtypes.StringType())
+    operating_status = wtypes.wsattr(wtypes.StringType())
+    provisioning_status = wtypes.wsattr(wtypes.StringType())
+    pools = wtypes.wsattr([pool.PoolStatusesResponse])
+
+    @classmethod
+    def from_data_model(cls, data_model, children=False):
+        listener = super(ListenerStatusesResponse, cls).from_data_model(
+            data_model, children=children)
+
+        pool_model = pool.PoolStatusesResponse
+        listener.pools = [
+            pool_model.from_data_model(i) for i in data_model.pools]
+
+        if not listener.name:
+            listener.name = ""
+
+        return listener

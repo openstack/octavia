@@ -164,3 +164,29 @@ class PoolSingleCreate(BasePoolType):
     session_persistence = wtypes.wsattr(SessionPersistencePOST)
     healthmonitor = wtypes.wsattr(health_monitor.HealthMonitorSingleCreate)
     members = wtypes.wsattr([member.MemberSingleCreate])
+
+
+class PoolStatusesResponse(BasePoolType):
+    """Defines which attributes are to be shown on statuses response."""
+    id = wtypes.wsattr(wtypes.UuidType())
+    name = wtypes.wsattr(wtypes.StringType())
+    provisioning_status = wtypes.wsattr(wtypes.StringType())
+    operating_status = wtypes.wsattr(wtypes.StringType())
+    health_monitor = wtypes.wsattr(
+        health_monitor.HealthMonitorStatusesResponse)
+    members = wtypes.wsattr([member.MemberStatusesResponse])
+
+    @classmethod
+    def from_data_model(cls, data_model, children=False):
+        pool = super(PoolStatusesResponse, cls).from_data_model(
+            data_model, children=children)
+
+        member_model = member.MemberStatusesResponse
+        if data_model.health_monitor:
+            pool.health_monitor = (
+                health_monitor.HealthMonitorStatusesResponse.from_data_model(
+                    data_model.health_monitor))
+        pool.members = [
+            member_model.from_data_model(i) for i in data_model.members]
+
+        return pool

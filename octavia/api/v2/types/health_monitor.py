@@ -155,3 +155,12 @@ class HealthMonitorSingleCreate(BaseHealthMonitorType):
         wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'),
         default=constants.HEALTH_MONITOR_DEFAULT_EXPECTED_CODES)
     admin_state_up = wtypes.wsattr(bool, default=True)
+
+
+class HealthMonitorStatusesResponse(BaseHealthMonitorType):
+    """Defines which attributes are to be shown on statuses response."""
+    id = wtypes.wsattr(wtypes.UuidType())
+    name = wtypes.wsattr(wtypes.StringType())
+    type = wtypes.wsattr(wtypes.text)
+    provisioning_status = wtypes.wsattr(wtypes.StringType())
+    operating_status = wtypes.wsattr(wtypes.StringType())
