@@ -58,6 +58,7 @@ OCTAVIA_MGMT_PORT_IP=192.168.0.4"$'\n'
 }
 
 function _setup_octavia {
+    export DEVSTACK_LOCAL_CONFIG+=$'\n'"OCTAVIA_DIB_TRACING=True"$'\n'
     export DEVSTACK_LOCAL_CONFIG+=$'\n'"enable_plugin octavia https://git.openstack.org/openstack/octavia"$'\n'
     # Use infra's cached version of the file
     if [ -f /opt/stack/new/devstack/files/get-pip.py ]; then
