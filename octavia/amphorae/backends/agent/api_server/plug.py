@@ -19,13 +19,13 @@ import socket
 import stat
 import subprocess
 
-import flask
 import ipaddress
 import jinja2
 import netifaces
 from oslo_config import cfg
 import pyroute2
 import six
+import webob
 from werkzeug import exceptions
 
 from octavia.common import constants as consts
@@ -78,15 +78,15 @@ class Plug(object):
                     render_host_routes.append({'network': network,
                                                'gw': hr['nexthop']})
         except ValueError:
-            return flask.make_response(flask.jsonify(dict(
-                message="Invalid VIP")), 400)
+            return webob.Response(json=dict(message="Invalid VIP"),
+                                  status=400)
 
         # Check if the interface is already in the network namespace
         # Do not attempt to re-plug the VIP if it is already in the
         # network namespace
         if self._netns_interface_exists(mac_address):
-            return flask.make_response(flask.jsonify(dict(
-                message="Interface already exists")), 409)
+            return webob.Response(
+                json=dict(message="Interface already exists"), status=409)
 
         # This is the interface prior to moving into the netns
         default_netns_interface = self._interface_by_mac(mac_address)
@@ -141,10 +141,10 @@ class Plug(object):
         self._osutils.bring_interfaces_up(
             ip, primary_interface, secondary_interface)
 
-        return flask.make_response(flask.jsonify(dict(
+        return webob.Response(json=dict(
             message="OK",
             details="VIP {vip} plugged on interface {interface}".format(
-                vip=vip, interface=primary_interface))), 202)
+                vip=vip, interface=primary_interface)), status=202)
 
     def _check_ip_addresses(self, fixed_ips):
         if fixed_ips:
@@ -159,8 +159,8 @@ class Plug(object):
         # Do not attempt to re-plug the network if it is already in the
         # network namespace
         if self._netns_interface_exists(mac_address):
-            return flask.make_response(flask.jsonify(dict(
-                message="Interface already exists")), 409)
+            return webob.Response(json=dict(
+                message="Interface already exists"), status=409)
 
         # This is the interface as it was initially plugged into the
         # default network namespace, this will likely always be eth1
@@ -168,8 +168,8 @@ class Plug(object):
         try:
             self._check_ip_addresses(fixed_ips=fixed_ips)
         except socket.error:
-            return flask.make_response(flask.jsonify(dict(
-                message="Invalid network port")), 400)
+            return webob.Response(json=dict(
+                message="Invalid network port"), status=400)
 
         default_netns_interface = self._interface_by_mac(mac_address)
 
@@ -207,10 +207,10 @@ class Plug(object):
         self._osutils._bring_if_down(netns_interface)
         self._osutils._bring_if_up(netns_interface, 'network')
 
-        return flask.make_response(flask.jsonify(dict(
+        return webob.Response(json=dict(
             message="OK",
             details="Plugged on interface {interface}".format(
-                interface=netns_interface))), 202)
+                interface=netns_interface)), status=202)
 
     def _interface_by_mac(self, mac):
         for interface in netifaces.interfaces():
@@ -220,8 +220,8 @@ class Plug(object):
                     if link.get('addr', '').lower() == mac.lower():
                         return interface
         raise exceptions.HTTPException(
-            response=flask.make_response(flask.jsonify(dict(
-                details="No suitable network interface found")), 404))
+            response=webob.Response(json=dict(
+                details="No suitable network interface found"), status=404))
 
     def _update_plugged_interfaces_file(self, interface, mac_address):
         # write interfaces to plugged_interfaces file and prevent duplicates

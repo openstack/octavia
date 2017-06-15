@@ -17,6 +17,7 @@ import stat
 
 import flask
 from oslo_config import cfg
+import webob
 
 BUFFER = 1024
 
@@ -35,5 +36,4 @@ def upload_server_cert():
             crt_file.write(b)
             b = stream.read(BUFFER)
 
-    return flask.make_response(flask.jsonify({
-        'message': 'OK'}), 202)
+    return webob.Response(json={'message': 'OK'}, status=202)

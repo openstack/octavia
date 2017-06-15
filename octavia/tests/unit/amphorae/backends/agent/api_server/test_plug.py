@@ -66,7 +66,7 @@ class TestPlug(base.TestCase):
             self.assertEqual(FAKE_INTERFACE, interface)
 
     @mock.patch('pyroute2.NSPopen')
-    @mock.patch.object(plug, "flask")
+    @mock.patch.object(plug, "webob")
     @mock.patch('pyroute2.IPRoute')
     @mock.patch('pyroute2.netns.create')
     @mock.patch('pyroute2.NetNS')
@@ -75,7 +75,7 @@ class TestPlug(base.TestCase):
     @mock.patch('os.makedirs')
     def test_plug_vip_ipv4(self, mock_makedirs, mock_copytree,
                            mock_check_output, mock_netns, mock_netns_create,
-                           mock_pyroute2, mock_flask, mock_nspopen):
+                           mock_pyroute2, mock_webob, mock_nspopen):
         m = mock.mock_open()
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             self.test_plug.plug_vip(
@@ -84,17 +84,17 @@ class TestPlug(base.TestCase):
                 gateway=FAKE_GATEWAY_IPV4,
                 mac_address=FAKE_MAC_ADDRESS
             )
-        mock_flask.jsonify.assert_any_call({
+        mock_webob.Response.assert_any_call(json={
             'message': 'OK',
             'details': 'VIP {vip} plugged on interface {interface}'.format(
                 vip=FAKE_IP_IPV4, interface='eth1')
-        })
+        }, status=202)
         mock_nspopen.assert_called_once_with(
             'amphora-haproxy', ['/sbin/sysctl', '--system'],
             stdout=subprocess.PIPE)
 
     @mock.patch('pyroute2.NSPopen')
-    @mock.patch.object(plug, "flask")
+    @mock.patch.object(plug, "webob")
     @mock.patch('pyroute2.IPRoute')
     @mock.patch('pyroute2.netns.create')
     @mock.patch('pyroute2.NetNS')
@@ -103,7 +103,7 @@ class TestPlug(base.TestCase):
     @mock.patch('os.makedirs')
     def test_plug_vip_ipv6(self, mock_makedirs, mock_copytree,
                            mock_check_output, mock_netns, mock_netns_create,
-                           mock_pyroute2, mock_flask, mock_nspopen):
+                           mock_pyroute2, mock_webob, mock_nspopen):
         m = mock.mock_open()
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             self.test_plug.plug_vip(
@@ -112,16 +112,16 @@ class TestPlug(base.TestCase):
                 gateway=FAKE_GATEWAY_IPV6,
                 mac_address=FAKE_MAC_ADDRESS
             )
-        mock_flask.jsonify.assert_any_call({
+        mock_webob.Response.assert_any_call(json={
             'message': 'OK',
             'details': 'VIP {vip} plugged on interface {interface}'.format(
                 vip=FAKE_IP_IPV6_EXPANDED, interface='eth1')
-        })
+        }, status=202)
         mock_nspopen.assert_called_once_with(
             'amphora-haproxy', ['/sbin/sysctl', '--system'],
             stdout=subprocess.PIPE)
 
-    @mock.patch.object(plug, "flask")
+    @mock.patch.object(plug, "webob")
     @mock.patch('pyroute2.IPRoute')
     @mock.patch('pyroute2.netns.create')
     @mock.patch('pyroute2.NetNS')
@@ -130,7 +130,7 @@ class TestPlug(base.TestCase):
     @mock.patch('os.makedirs')
     def test_plug_vip_bad_ip(self, mock_makedirs, mock_copytree,
                              mock_check_output, mock_netns, mock_netns_create,
-                             mock_pyroute2, mock_flask):
+                             mock_pyroute2, mock_webob):
         m = mock.mock_open()
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             self.test_plug.plug_vip(
@@ -139,7 +139,8 @@ class TestPlug(base.TestCase):
                 gateway=FAKE_GATEWAY_IPV4,
                 mac_address=FAKE_MAC_ADDRESS
             )
-        mock_flask.jsonify.assert_any_call({'message': 'Invalid VIP'})
+        mock_webob.Response.assert_any_call(json={'message': 'Invalid VIP'},
+                                            status=400)
 
     @mock.patch('pyroute2.NetNS')
     def test__netns_interface_exists(self, mock_netns):

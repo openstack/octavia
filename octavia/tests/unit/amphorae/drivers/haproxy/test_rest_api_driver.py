@@ -295,7 +295,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     @requests_mock.mock()
     def test_get_info_missing(self, m):
         m.get("{base}/info".format(base=self.base_url),
-              status_code=404)
+              status_code=404,
+              headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.get_info, self.amp)
 
     @requests_mock.mock()
@@ -332,7 +333,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     @requests_mock.mock()
     def test_get_details_missing(self, m):
         m.get("{base}/details".format(base=self.base_url),
-              status_code=404)
+              status_code=404,
+              headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.get_details, self.amp)
 
     @requests_mock.mock()
@@ -368,7 +370,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     @requests_mock.mock()
     def test_get_all_listeners_missing(self, m):
         m.get("{base}/listeners".format(base=self.base_url),
-              status_code=404)
+              status_code=404,
+              headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.get_all_listeners,
                           self.amp)
 
@@ -409,7 +412,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_get_listener_status_missing(self, m):
         m.get("{base}/listeners/{listener_id}".format(
             base=self.base_url, listener_id=FAKE_UUID_1),
-            status_code=404)
+            status_code=404,
+            headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound,
                           self.driver.get_listener_status, self.amp,
                           FAKE_UUID_1)
@@ -443,7 +447,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_start_listener_missing(self, m):
         m.put("{base}/listeners/{listener_id}/start".format(
             base=self.base_url, listener_id=FAKE_UUID_1),
-            status_code=404)
+            status_code=404,
+            headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.start_listener,
                           self.amp, FAKE_UUID_1)
 
@@ -482,7 +487,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_stop_listener_missing(self, m):
         m.put("{base}/listeners/{listener_id}/stop".format(
             base=self.base_url, listener_id=FAKE_UUID_1),
-            status_code=404)
+            status_code=404,
+            headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.stop_listener,
                           self.amp, FAKE_UUID_1)
 
@@ -521,7 +527,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_delete_listener_missing(self, m):
         m.delete("{base}/listeners/{listener_id}".format(
             base=self.base_url, listener_id=FAKE_UUID_1),
-            status_code=404)
+            status_code=404,
+            headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.delete_listener,
                           self.amp, FAKE_UUID_1)
 
@@ -644,7 +651,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_get_cert_5sum_missing(self, m):
         m.get("{base}/listeners/{listener_id}/certificates/{filename}".format(
             base=self.base_url, listener_id=FAKE_UUID_1,
-            filename=FAKE_PEM_FILENAME), status_code=404)
+            filename=FAKE_PEM_FILENAME), status_code=404,
+            headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.get_cert_md5sum,
                           self.amp, FAKE_UUID_1, FAKE_PEM_FILENAME)
 
@@ -687,7 +695,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
         m.delete(
             "{base}/listeners/{listener_id}/certificates/{filename}".format(
                 base=self.base_url, listener_id=FAKE_UUID_1,
-                filename=FAKE_PEM_FILENAME), status_code=404)
+                filename=FAKE_PEM_FILENAME), status_code=404,
+            headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.delete_cert_pem, self.amp,
                           FAKE_UUID_1, FAKE_PEM_FILENAME)
 
@@ -785,6 +794,17 @@ class TestAmphoraAPIClientTest(base.TestCase):
             base=self.base_url, vip=FAKE_IP)
         )
         self.driver.plug_vip(self.amp, FAKE_IP, self.subnet_info)
+        self.assertTrue(m.called)
+
+    @requests_mock.mock()
+    def test_plug_vip_api_not_ready(self, m):
+        m.post("{base}/plug/vip/{vip}".format(
+            base=self.base_url, vip=FAKE_IP),
+            status_code=404, headers={'content-type': 'text/html'}
+        )
+        self.assertRaises(driver_except.TimeOutException,
+                          self.driver.plug_vip,
+                          self.amp, FAKE_IP, self.subnet_info)
         self.assertTrue(m.called)
 
     @requests_mock.mock()

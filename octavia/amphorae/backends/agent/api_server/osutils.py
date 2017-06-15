@@ -19,11 +19,11 @@ import shutil
 import stat
 import subprocess
 
-import flask
 import ipaddress
 import jinja2
 from oslo_config import cfg
 import six
+import webob
 from werkzeug import exceptions
 
 from octavia.common import constants as consts
@@ -154,8 +154,8 @@ class BaseOS(object):
                     host_routes = self.get_host_routes(fixed_ip)
 
                 except ValueError:
-                    return flask.make_response(flask.jsonify(dict(
-                        message="Invalid network IP")), 400)
+                    return webob.Response(
+                        json=dict(message="Invalid network IP"), status=400)
                 new_text = template_port.render(interface=netns_ip_interface,
                                                 ipv6=ip.version is 6,
                                                 ip_address=ip.exploded,
@@ -186,9 +186,9 @@ class BaseOS(object):
         except subprocess.CalledProcessError as e:
             LOG.error('Failed to if up %s due to error: %s', interface, e)
             raise exceptions.HTTPException(
-                response=flask.make_response(flask.jsonify(dict(
+                response=webob.Response(json=dict(
                     message='Error plugging {0}'.format(what),
-                    details=e.output)), 500))
+                    details=e.output), status=500))
 
     def _bring_if_down(self, interface):
         # Note, we are not using pyroute2 for this as it is not /etc/netns

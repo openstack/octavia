@@ -15,6 +15,7 @@
 
 import functools
 import hashlib
+import simplejson
 import time
 import warnings
 
@@ -265,7 +266,6 @@ class AmphoraAPIClient(object):
 
         headers['User-Agent'] = OCTAVIA_API_CLIENT
         self.ssl_adapter.uuid = amp.id
-        retry_attempt = False
         exception = None
         # Keep retrying
         for a in six.moves.xrange(CONF.haproxy_amphora.connection_max_retries):
@@ -278,11 +278,24 @@ class AmphoraAPIClient(object):
                     r = _request(**reqargs)
                 LOG.debug('Connected to amphora. Response: %(resp)s',
                           {'resp': r})
-                # Give a 404 response one retry.  Flask/werkzeug is
-                # returning 404 on startup.
-                if r.status_code == 404 and retry_attempt is False:
-                    retry_attempt = True
-                    raise requests.ConnectionError
+
+                content_type = r.headers.get('content-type', '')
+                # Check the 404 to see if it is just that the network in the
+                # amphora is not yet up, in which case retry.
+                # Otherwise return the response quickly.
+                if r.status_code == 404:
+                    LOG.debug('Got a 404 (content-type: %s) -- connection '
+                              'data: %s' % (content_type, r.content))
+                    if content_type.find("application/json") == -1:
+                        LOG.debug("Amphora agent not ready.")
+                        raise requests.ConnectionError
+                    try:
+                        json_data = r.json().get('details', '')
+                        if 'No suitable network interface found' in json_data:
+                            LOG.debug("Amphora network interface not found.")
+                            raise requests.ConnectionError
+                    except simplejson.JSONDecodeError:  # if r.json() fails
+                        pass  # TODO(rm_work) Should we do something?
                 return r
             except (requests.ConnectionError, requests.Timeout) as e:
                 exception = e
