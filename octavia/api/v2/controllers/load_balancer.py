@@ -110,11 +110,34 @@ class LoadBalancersController(base.BaseController):
                 ))
 
     def _validate_vip_request_object(self, load_balancer):
+        allowed_network_objects = []
+        if CONF.networking.allow_vip_port_id:
+            allowed_network_objects.append('vip_port_id')
+        if CONF.networking.allow_vip_network_id:
+            allowed_network_objects.append('vip_network_id')
+        if CONF.networking.allow_vip_subnet_id:
+            allowed_network_objects.append('vip_subnet_id')
+
+        msg = _("use of %(object)s is disallowed by this deployment's "
+                "configuration.")
+        if (load_balancer.vip_port_id and
+                not CONF.networking.allow_vip_port_id):
+            raise exceptions.ValidationException(
+                detail=msg % {'object': 'vip_port_id'})
+        if (load_balancer.vip_network_id and
+                not CONF.networking.allow_vip_network_id):
+            raise exceptions.ValidationException(
+                detail=msg % {'object': 'vip_network_id'})
+        if (load_balancer.vip_subnet_id and
+                not CONF.networking.allow_vip_subnet_id):
+            raise exceptions.ValidationException(
+                detail=msg % {'object': 'vip_subnet_id'})
+
         if not (load_balancer.vip_port_id or
                 load_balancer.vip_network_id or
                 load_balancer.vip_subnet_id):
-            raise exceptions.ValidationException(detail=_(
-                "VIP must contain one of: port_id, network_id, subnet_id."))
+            raise exceptions.VIPValidationException(
+                objects=', '.join(allowed_network_objects))
 
         # Validate the port id
         if load_balancer.vip_port_id:
@@ -128,6 +151,8 @@ class LoadBalancersController(base.BaseController):
             subnet = validate.subnet_exists(
                 subnet_id=load_balancer.vip_subnet_id)
             load_balancer.vip_network_id = subnet.network_id
+
+        validate.network_allowed_by_config(load_balancer.vip_network_id)
 
     @wsme_pecan.wsexpose(lb_types.LoadBalancerFullRootResponse,
                          body=lb_types.LoadBalancerRootPOST, status_code=201)

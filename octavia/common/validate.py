@@ -21,11 +21,15 @@ Defined here so these can also be used at deeper levels than the API.
 
 import re
 
+from oslo_config import cfg
 import rfc3986
 
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.common import utils
+
+
+CONF = cfg.CONF
 
 
 def url(url, require_scheme=True):
@@ -238,3 +242,12 @@ def network_exists_optionally_contains_subnet(network_id, subnet_id=None):
             raise exceptions.InvalidSubresource(resource='Subnet',
                                                 id=subnet_id)
     return network
+
+
+def network_allowed_by_config(network_id):
+    if CONF.networking.valid_vip_networks:
+        valid_networks = map(str.lower, CONF.networking.valid_vip_networks)
+        if network_id not in valid_networks:
+            raise exceptions.ValidationException(detail=_(
+                'Supplied VIP network_id is not allowed by the configuration '
+                'of this deployment.'))

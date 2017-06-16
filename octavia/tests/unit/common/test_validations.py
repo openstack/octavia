@@ -13,6 +13,8 @@
 #    under the License.
 
 import mock
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.api.v1.types import load_balancer as lb_types
@@ -27,6 +29,10 @@ import octavia.tests.unit.base as base
 class TestValidations(base.TestCase):
     # Note that particularly complex validation testing is handled via
     # functional tests elsewhere (ex. repository tests)
+
+    def setUp(self):
+        super(TestValidations, self).setUp()
+        self.conf = oslo_fixture.Config(cfg.CONF)
 
     def test_validate_url(self):
         ret = validate.url('http://example.com')
@@ -329,3 +335,15 @@ class TestValidations(base.TestCase):
                 exceptions.InvalidSubresource,
                 validate.network_exists_optionally_contains_subnet,
                 vip.network_id, vip.subnet_id)
+
+    def test_network_allowed_by_config(self):
+        net_id1 = uuidutils.generate_uuid()
+        net_id2 = uuidutils.generate_uuid()
+        net_id3 = uuidutils.generate_uuid()
+        valid_net_ids = ",".join((net_id1, net_id2))
+        self.conf.config(group="networking", valid_vip_networks=valid_net_ids)
+        validate.network_allowed_by_config(net_id1)
+        validate.network_allowed_by_config(net_id2)
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.network_allowed_by_config, net_id3)

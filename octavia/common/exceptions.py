@@ -286,6 +286,11 @@ class ValidationException(APIException):
     code = 400
 
 
+class VIPValidationException(APIException):
+    msg = _('Validation failure: VIP must contain one of: %(objects)s.')
+    code = 400
+
+
 class InvalidSortKey(APIException):
     msg = _("Supplied sort key '%(key)s' is not valid.")
     code = 400

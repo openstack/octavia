@@ -91,7 +91,17 @@ networking_opts = [
                       'networking service.')),
     cfg.IntOpt('port_detach_timeout', default=300,
                help=_('Seconds to wait for a port to detach from an '
-                      'amphora.'))
+                      'amphora.')),
+    cfg.BoolOpt('allow_vip_network_id', default=True,
+                help=_('Can users supply a network_id for their VIP?')),
+    cfg.BoolOpt('allow_vip_subnet_id', default=True,
+                help=_('Can users supply a subnet_id for their VIP?')),
+    cfg.BoolOpt('allow_vip_port_id', default=True,
+                help=_('Can users supply a port_id for their VIP?')),
+    cfg.ListOpt('valid_vip_networks',
+                help=_('List of network_ids that are valid for VIP '
+                       'creation. If this field is empty, no validation '
+                       'is performed.')),
 ]
 
 healthmanager_opts = [
