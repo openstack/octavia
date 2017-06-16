@@ -156,20 +156,20 @@ class ListenerSingleCreate(BaseListenerType):
         wtypes.DictType(str, wtypes.StringType(max_length=255)))
 
 
-class ListenerStatusesResponse(BaseListenerType):
-    """Defines which attributes are to be shown on statuses response."""
+class ListenerStatusResponse(BaseListenerType):
+    """Defines which attributes are to be shown on status response."""
     id = wtypes.wsattr(wtypes.UuidType())
     name = wtypes.wsattr(wtypes.StringType())
     operating_status = wtypes.wsattr(wtypes.StringType())
     provisioning_status = wtypes.wsattr(wtypes.StringType())
-    pools = wtypes.wsattr([pool.PoolStatusesResponse])
+    pools = wtypes.wsattr([pool.PoolStatusResponse])
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        listener = super(ListenerStatusesResponse, cls).from_data_model(
+        listener = super(ListenerStatusResponse, cls).from_data_model(
             data_model, children=children)
 
-        pool_model = pool.PoolStatusesResponse
+        pool_model = pool.PoolStatusResponse
         listener.pools = [
             pool_model.from_data_model(i) for i in data_model.pools]
 
@@ -177,3 +177,22 @@ class ListenerStatusesResponse(BaseListenerType):
             listener.name = ""
 
         return listener
+
+
+class ListenerStatisticsResponse(BaseListenerType):
+    """Defines which attributes are to show on stats response."""
+    bytes_in = wtypes.wsattr(wtypes.IntegerType())
+    bytes_out = wtypes.wsattr(wtypes.IntegerType())
+    active_connections = wtypes.wsattr(wtypes.IntegerType())
+    total_connections = wtypes.wsattr(wtypes.IntegerType())
+    request_errors = wtypes.wsattr(wtypes.IntegerType())
+
+    @classmethod
+    def from_data_model(cls, data_model, children=False):
+        result = super(ListenerStatisticsResponse, cls).from_data_model(
+            data_model, children=children)
+        return result
+
+
+class StatisticsRootResponse(types.BaseType):
+    stats = wtypes.wsattr(ListenerStatisticsResponse)

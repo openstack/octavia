@@ -114,8 +114,8 @@ class MemberSingleCreate(BaseMemberType):
     subnet_id = wtypes.wsattr(wtypes.UuidType())
 
 
-class MemberStatusesResponse(BaseMemberType):
-    """Defines which attributes are to be shown on statuses response."""
+class MemberStatusResponse(BaseMemberType):
+    """Defines which attributes are to be shown on status response."""
     id = wtypes.wsattr(wtypes.UuidType())
     name = wtypes.wsattr(wtypes.StringType())
     operating_status = wtypes.wsattr(wtypes.StringType())
@@ -125,7 +125,7 @@ class MemberStatusesResponse(BaseMemberType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        member = super(MemberStatusesResponse, cls).from_data_model(
+        member = super(MemberStatusResponse, cls).from_data_model(
             data_model, children=children)
 
         if not member.name:

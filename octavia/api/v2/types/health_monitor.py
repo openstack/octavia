@@ -157,8 +157,8 @@ class HealthMonitorSingleCreate(BaseHealthMonitorType):
     admin_state_up = wtypes.wsattr(bool, default=True)
 
 
-class HealthMonitorStatusesResponse(BaseHealthMonitorType):
-    """Defines which attributes are to be shown on statuses response."""
+class HealthMonitorStatusResponse(BaseHealthMonitorType):
+    """Defines which attributes are to be shown on status response."""
     id = wtypes.wsattr(wtypes.UuidType())
     name = wtypes.wsattr(wtypes.StringType())
     type = wtypes.wsattr(wtypes.text)

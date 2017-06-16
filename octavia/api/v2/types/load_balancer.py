@@ -141,19 +141,19 @@ class LoadBalancerRootPUT(types.BaseType):
     loadbalancer = wtypes.wsattr(LoadBalancerPUT)
 
 
-class LoadBalancerStatusesResponse(BaseLoadBalancerType):
-    """Defines which attributes are to be shown on statuses response."""
+class LoadBalancerStatusResponse(BaseLoadBalancerType):
+    """Defines which attributes are to be shown on status response."""
     id = wtypes.wsattr(wtypes.UuidType())
     name = wtypes.wsattr(wtypes.StringType())
     operating_status = wtypes.wsattr(wtypes.StringType())
     provisioning_status = wtypes.wsattr(wtypes.StringType())
-    listeners = wtypes.wsattr([listener.ListenerStatusesResponse])
+    listeners = wtypes.wsattr([listener.ListenerStatusResponse])
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        result = super(LoadBalancerStatusesResponse, cls).from_data_model(
+        result = super(LoadBalancerStatusResponse, cls).from_data_model(
             data_model, children=children)
-        listener_model = listener.ListenerStatusesResponse
+        listener_model = listener.ListenerStatusResponse
         result.listeners = [
             listener_model.from_data_model(i) for i in data_model.listeners]
         if not result.name:
@@ -162,9 +162,28 @@ class LoadBalancerStatusesResponse(BaseLoadBalancerType):
         return result
 
 
-class StatusesResponse(wtypes.Base):
-    loadbalancer = wtypes.wsattr(LoadBalancerStatusesResponse)
+class StatusResponse(wtypes.Base):
+    loadbalancer = wtypes.wsattr(LoadBalancerStatusResponse)
 
 
-class StatusesRootResponse(types.BaseType):
-    statuses = wtypes.wsattr(StatusesResponse)
+class StatusRootResponse(types.BaseType):
+    statuses = wtypes.wsattr(StatusResponse)
+
+
+class LoadBalancerStatisticsResponse(BaseLoadBalancerType):
+    """Defines which attributes are to show on stats response."""
+    bytes_in = wtypes.wsattr(wtypes.IntegerType())
+    bytes_out = wtypes.wsattr(wtypes.IntegerType())
+    active_connections = wtypes.wsattr(wtypes.IntegerType())
+    total_connections = wtypes.wsattr(wtypes.IntegerType())
+    request_errors = wtypes.wsattr(wtypes.IntegerType())
+
+    @classmethod
+    def from_data_model(cls, data_model, children=False):
+        result = super(LoadBalancerStatisticsResponse, cls).from_data_model(
+            data_model, children=children)
+        return result
+
+
+class StatisticsRootResponse(types.BaseType):
+    stats = wtypes.wsattr(LoadBalancerStatisticsResponse)

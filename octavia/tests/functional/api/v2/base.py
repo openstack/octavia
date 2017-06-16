@@ -189,6 +189,17 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
             request_errors=0)
         return db_ls.to_dict()
 
+    def create_listener_stats_dynamic(self, listener_id, amphora_id,
+                                      bytes_in=0, bytes_out=0,
+                                      active_connections=0,
+                                      total_connections=0, request_errors=0):
+        db_ls = self.listener_stats_repo.create(
+            db_api.get_session(), listener_id=listener_id,
+            amphora_id=amphora_id, bytes_in=bytes_in,
+            bytes_out=bytes_out, active_connections=active_connections,
+            total_connections=total_connections, request_errors=request_errors)
+        return db_ls.to_dict()
+
     def create_amphora(self, amphora_id, loadbalancer_id, **optionals):
         # We need to default these values in the request.
         opts = {'compute_id': uuidutils.generate_uuid(),

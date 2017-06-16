@@ -166,25 +166,25 @@ class PoolSingleCreate(BasePoolType):
     members = wtypes.wsattr([member.MemberSingleCreate])
 
 
-class PoolStatusesResponse(BasePoolType):
-    """Defines which attributes are to be shown on statuses response."""
+class PoolStatusResponse(BasePoolType):
+    """Defines which attributes are to be shown on status response."""
     id = wtypes.wsattr(wtypes.UuidType())
     name = wtypes.wsattr(wtypes.StringType())
     provisioning_status = wtypes.wsattr(wtypes.StringType())
     operating_status = wtypes.wsattr(wtypes.StringType())
     health_monitor = wtypes.wsattr(
-        health_monitor.HealthMonitorStatusesResponse)
-    members = wtypes.wsattr([member.MemberStatusesResponse])
+        health_monitor.HealthMonitorStatusResponse)
+    members = wtypes.wsattr([member.MemberStatusResponse])
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        pool = super(PoolStatusesResponse, cls).from_data_model(
+        pool = super(PoolStatusResponse, cls).from_data_model(
             data_model, children=children)
 
-        member_model = member.MemberStatusesResponse
+        member_model = member.MemberStatusResponse
         if data_model.health_monitor:
             pool.health_monitor = (
-                health_monitor.HealthMonitorStatusesResponse.from_data_model(
+                health_monitor.HealthMonitorStatusResponse.from_data_model(
                     data_model.health_monitor))
         pool.members = [
             member_model.from_data_model(i) for i in data_model.members]

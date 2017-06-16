@@ -14,6 +14,7 @@
 #    under the License.
 
 import mock
+import random
 
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
@@ -1128,3 +1129,107 @@ class TestListener(base.BaseAPITest):
                        'insert_headers': {'X-Forwarded-Four': 'true'}}
         body = self._build_body(lb_listener)
         self.post(self.LISTENERS_PATH, body, status=400)
+
+    def _getStats(self, listener_id):
+        res = self.get(self.LISTENER_PATH.format(
+                           listener_id=listener_id + "/stats"))
+        return res.json.get('stats')
+
+    def test_statistics(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.set_lb_status(lb['id'])
+        li = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb.get('id')).get('listener')
+        amphora = self.create_amphora(uuidutils.generate_uuid(), lb['id'])
+        ls = self.create_listener_stats_dynamic(
+            listener_id=li.get('id'),
+            amphora_id=amphora.id,
+            bytes_in=random.randint(1, 9),
+            bytes_out=random.randint(1, 9),
+            total_connections=random.randint(1, 9),
+            request_errors=random.randint(1, 9))
+
+        response = self._getStats(li['id'])
+        self.assertEqual(ls['bytes_in'], response['bytes_in'])
+        self.assertEqual(ls['bytes_out'], response['bytes_out'])
+        self.assertEqual(ls['total_connections'],
+                         response['total_connections'])
+        self.assertEqual(ls['active_connections'],
+                         response['active_connections'])
+        self.assertEqual(ls['request_errors'],
+                         response['request_errors'])
+
+    def test_statistics_authorized(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid(),
+            project_id=project_id).get('loadbalancer')
+        self.set_lb_status(lb['id'])
+        li = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb.get('id')).get('listener')
+        amphora = self.create_amphora(uuidutils.generate_uuid(), lb['id'])
+        ls = self.create_listener_stats_dynamic(
+            listener_id=li.get('id'),
+            amphora_id=amphora.id,
+            bytes_in=random.randint(1, 9),
+            bytes_out=random.randint(1, 9),
+            total_connections=random.randint(1, 9),
+            request_errors=random.randint(1, 9))
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self._getStats(li['id'])
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+
+        self.assertEqual(ls['bytes_in'], response['bytes_in'])
+        self.assertEqual(ls['bytes_out'], response['bytes_out'])
+        self.assertEqual(ls['total_connections'],
+                         response['total_connections'])
+        self.assertEqual(ls['active_connections'],
+                         response['active_connections'])
+        self.assertEqual(ls['request_errors'],
+                         response['request_errors'])
+
+    def test_statistics_not_authorized(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.set_lb_status(lb['id'])
+        li = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb.get('id')).get('listener')
+        amphora = self.create_amphora(uuidutils.generate_uuid(), lb['id'])
+        self.create_listener_stats_dynamic(
+            listener_id=li.get('id'),
+            amphora_id=amphora.id,
+            bytes_in=random.randint(1, 9),
+            bytes_out=random.randint(1, 9),
+            total_connections=random.randint(1, 9),
+            request_errors=random.randint(1, 9))
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            res = self.get(self.LISTENER_PATH.format(
+                               listener_id=li['id'] + "/stats"), status=403)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, res.json)
