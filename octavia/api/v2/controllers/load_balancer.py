@@ -109,24 +109,7 @@ class LoadBalancersController(base.BaseController):
                     "Supplied network does not contain a subnet."
                 ))
 
-    @wsme_pecan.wsexpose(lb_types.LoadBalancerFullRootResponse,
-                         body=lb_types.LoadBalancerRootPOST, status_code=201)
-    def post(self, load_balancer):
-        """Creates a load balancer."""
-        load_balancer = load_balancer.loadbalancer
-        context = pecan.request.context.get('octavia_context')
-
-        project_id = context.project_id
-        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
-            if load_balancer.project_id:
-                project_id = load_balancer.project_id
-
-        if not project_id:
-            raise exceptions.ValidationException(detail=_(
-                "Missing project ID in request where one is required."))
-
-        load_balancer.project_id = project_id
-
+    def _validate_vip_request_object(self, load_balancer):
         if not (load_balancer.vip_port_id or
                 load_balancer.vip_network_id or
                 load_balancer.vip_subnet_id):
@@ -145,6 +128,25 @@ class LoadBalancersController(base.BaseController):
             subnet = validate.subnet_exists(
                 subnet_id=load_balancer.vip_subnet_id)
             load_balancer.vip_network_id = subnet.network_id
+
+    @wsme_pecan.wsexpose(lb_types.LoadBalancerFullRootResponse,
+                         body=lb_types.LoadBalancerRootPOST, status_code=201)
+    def post(self, load_balancer):
+        """Creates a load balancer."""
+        load_balancer = load_balancer.loadbalancer
+        context = pecan.request.context.get('octavia_context')
+
+        project_id = context.project_id
+        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
+            if load_balancer.project_id:
+                project_id = load_balancer.project_id
+
+        if not project_id:
+            raise exceptions.ValidationException(detail=_(
+                "Missing project ID in request where one is required."))
+        load_balancer.project_id = project_id
+
+        self._validate_vip_request_object(load_balancer)
 
         lock_session = db_api.get_session(autocommit=False)
         if self.repositories.check_quota_met(
