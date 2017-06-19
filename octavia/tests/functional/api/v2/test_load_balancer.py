@@ -76,7 +76,7 @@ class TestLoadBalancer(base.BaseAPITest):
         body = self._build_body(lb_json)
         response = self.post(self.LBS_PATH, body, status=400)
         err_msg = ('Validation failure: VIP must contain one of: '
-                   'port_id, network_id, subnet_id.')
+                   'vip_port_id, vip_network_id, vip_subnet_id.')
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_create_with_empty_vip(self):
@@ -224,17 +224,100 @@ class TestLoadBalancer(base.BaseAPITest):
 
     def test_create_with_long_name(self):
         lb_json = {'name': 'n' * 256,
-                   'vip_subnet_id': uuidutils.generate_uuid()}
-        self.post(self.LBS_PATH, lb_json, status=400)
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id}
+        response = self.post(self.LBS_PATH, self._build_body(lb_json),
+                             status=400)
+        self.assertIn('Invalid input for field/attribute name',
+                      response.json.get('faultstring'))
 
     def test_create_with_long_description(self):
         lb_json = {'description': 'n' * 256,
-                   'vip_subnet_id': uuidutils.generate_uuid()}
-        self.post(self.LBS_PATH, lb_json, status=400)
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id}
+        response = self.post(self.LBS_PATH, self._build_body(lb_json),
+                             status=400)
+        self.assertIn('Invalid input for field/attribute description',
+                      response.json.get('faultstring'))
 
     def test_create_with_nonuuid_vip_attributes(self):
-        lb_json = {'vip_subnet_id': 'HI'}
-        self.post(self.LBS_PATH, lb_json, status=400)
+        lb_json = {'vip_subnet_id': 'HI',
+                   'project_id': self.project_id}
+        response = self.post(self.LBS_PATH, self._build_body(lb_json),
+                             status=400)
+        self.assertIn('Invalid input for field/attribute vip_subnet_id',
+                      response.json.get('faultstring'))
+
+    def test_create_with_allowed_network_id(self):
+        network_id = uuidutils.generate_uuid()
+        self.conf.config(group="networking", valid_vip_networks=network_id)
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                       network_id=network_id,
+                                       ip_version=4)
+        network = network_models.Network(id=network_id, subnets=[subnet.id])
+        lb_json = {'vip_network_id': network.id,
+                   'project_id': self.project_id}
+        body = self._build_body(lb_json)
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_network") as mock_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_subnet") as mock_get_subnet:
+            mock_get_network.return_value = network
+            mock_get_subnet.return_value = subnet
+            response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_request_matches_response(lb_json, api_lb)
+        self.assertEqual(subnet.id, api_lb.get('vip_subnet_id'))
+        self.assertEqual(network_id, api_lb.get('vip_network_id'))
+
+    def test_create_with_disallowed_network_id(self):
+        network_id1 = uuidutils.generate_uuid()
+        network_id2 = uuidutils.generate_uuid()
+        self.conf.config(group="networking", valid_vip_networks=network_id1)
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                       network_id=network_id2,
+                                       ip_version=4)
+        network = network_models.Network(id=network_id2, subnets=[subnet.id])
+        lb_json = {'vip_network_id': network.id,
+                   'project_id': self.project_id}
+        body = self._build_body(lb_json)
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_network") as mock_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_subnet") as mock_get_subnet:
+            mock_get_network.return_value = network
+            mock_get_subnet.return_value = subnet
+            response = self.post(self.LBS_PATH, body, status=400)
+        self.assertIn("Supplied VIP network_id is not allowed",
+                      response.json.get('faultstring'))
+
+    def test_create_with_disallowed_vip_objects(self):
+        self.conf.config(group="networking", allow_vip_network_id=False)
+        self.conf.config(group="networking", allow_vip_subnet_id=False)
+        self.conf.config(group="networking", allow_vip_port_id=False)
+
+        lb_json = {'vip_network_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id}
+        response = self.post(self.LBS_PATH, self._build_body(lb_json),
+                             status=400)
+        self.assertIn('use of vip_network_id is disallowed',
+                      response.json.get('faultstring'))
+
+        lb_json = {'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id}
+        response = self.post(self.LBS_PATH, self._build_body(lb_json),
+                             status=400)
+        self.assertIn('use of vip_subnet_id is disallowed',
+                      response.json.get('faultstring'))
+
+        lb_json = {'vip_port_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id}
+        response = self.post(self.LBS_PATH, self._build_body(lb_json),
+                             status=400)
+        self.assertIn('use of vip_port_id is disallowed',
+                      response.json.get('faultstring'))
 
     def test_create_with_project_id(self):
         project_id = uuidutils.generate_uuid()
