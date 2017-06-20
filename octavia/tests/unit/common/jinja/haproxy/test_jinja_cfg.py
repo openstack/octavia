@@ -150,7 +150,7 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs.sample_base_expected_config(backend=be),
             rendered_obj)
 
-    def test_render_template_https(self):
+    def test_render_template_https_real_monitor(self):
         fe = ("frontend sample_listener_id_1\n"
               "    option tcplog\n"
               "    maxconn 98\n"
@@ -164,6 +164,31 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
+              "    fullconn 98\n"
+              "    server sample_member_id_1 10.0.0.99:82 "
+              "weight 13 check check-ssl verify none inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 "
+              "weight 13 check check-ssl verify none inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_2\n\n")
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
+            sample_configs.sample_listener_tuple(proto='HTTPS'))
+        self.assertEqual(sample_configs.sample_base_expected_config(
+            frontend=fe, backend=be), rendered_obj)
+
+    def test_render_template_https_hello_monitor(self):
+        fe = ("frontend sample_listener_id_1\n"
+              "    option tcplog\n"
+              "    maxconn 98\n"
+              "    bind 10.0.0.2:443\n"
+              "    mode tcp\n"
+              "    default_backend sample_pool_id_1\n\n")
+        be = ("backend sample_pool_id_1\n"
+              "    mode tcp\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31s\n"
               "    option ssl-hello-chk\n"
               "    fullconn 98\n"
               "    server sample_member_id_1 10.0.0.99:82 "
@@ -174,7 +199,8 @@ class TestHaproxyCfg(base.TestCase):
               "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
-            sample_configs.sample_listener_tuple(proto='HTTPS'))
+            sample_configs.sample_listener_tuple(
+                proto='HTTPS', monitor_proto='TLS-HELLO'))
         self.assertEqual(sample_configs.sample_base_expected_config(
             frontend=fe, backend=be), rendered_obj)
 

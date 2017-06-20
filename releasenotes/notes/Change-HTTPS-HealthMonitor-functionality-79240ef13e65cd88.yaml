@@ -1,0 +1,14 @@
+---
+features:
+  - |
+    New Health Monitor type "TLS-HELLO" to perform a simple TLS connection.
+upgrade:
+  - |
+    If users have configured Health Monitors of type "HTTPS" and are expecting
+    a simple "TLS-HELLO" check, they will need to recreate their monitor with
+    the new "TLS-HELLO" type.
+fixes:
+  - |
+    Health Monitor type "HTTPS" now correctly performs the configured check.
+    This is done with all certificate validation disabled, so it will not work
+    if backend members are performing client certificate validation.

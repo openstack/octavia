@@ -196,7 +196,7 @@ class TestHealthMonitor(base.BaseAPITest):
             1, 1, 1, 1).get(self.root_tag)
         self.set_lb_status(lb1_id)
         hm3 = self.create_health_monitor(
-            pool3.get('id'), constants.HEALTH_MONITOR_TCP,
+            pool3.get('id'), constants.HEALTH_MONITOR_TLS_HELLO,
             1, 1, 1, 1).get(self.root_tag)
         self.set_lb_status(lb1_id)
         hms = self.get(self.HMS_PATH).json.get(self.root_tag_list)

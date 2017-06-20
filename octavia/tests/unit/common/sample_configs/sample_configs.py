@@ -405,7 +405,8 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                           persistence_type=None, persistence_cookie=None,
                           tls=False, sni=False, peer_port=None, topology=None,
                           l7=False, enabled=True, insert_headers=None,
-                          be_proto=None, monitor_ip_port=False):
+                          be_proto=None, monitor_ip_port=False,
+                          monitor_proto=None):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
@@ -425,12 +426,12 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                 proto=be_proto, monitor=monitor, persistence=persistence,
                 persistence_type=persistence_type,
                 persistence_cookie=persistence_cookie,
-                monitor_ip_port=monitor_ip_port),
+                monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto),
             sample_pool_tuple(
                 proto=be_proto, monitor=monitor, persistence=persistence,
                 persistence_type=persistence_type,
                 persistence_cookie=persistence_cookie, sample_pool=2,
-                monitor_ip_port=monitor_ip_port)]
+                monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto)]
         l7policies = [
             sample_l7policy_tuple('sample_l7policy_id_1', sample_policy=1),
             sample_l7policy_tuple('sample_l7policy_id_2', sample_policy=2),
@@ -444,7 +445,7 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                 proto=be_proto, monitor=monitor, persistence=persistence,
                 persistence_type=persistence_type,
                 persistence_cookie=persistence_cookie,
-                monitor_ip_port=monitor_ip_port)]
+                monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto)]
         l7policies = []
     return in_listener(
         id='sample_listener_id_1',
@@ -458,7 +459,7 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
             proto=be_proto, monitor=monitor, persistence=persistence,
             persistence_type=persistence_type,
             persistence_cookie=persistence_cookie,
-            monitor_ip_port=monitor_ip_port),
+            monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto),
         connection_limit=98,
         tls_certificate_id='cont_id_1' if tls else '',
         sni_container_ids=['cont_id_2', 'cont_id_3'] if sni else [],
@@ -515,8 +516,10 @@ def sample_tls_container_tuple(id='cont_id_1', certificate=None,
 
 def sample_pool_tuple(proto=None, monitor=True, persistence=True,
                       persistence_type=None, persistence_cookie=None,
-                      sample_pool=1, monitor_ip_port=False):
+                      sample_pool=1, monitor_ip_port=False,
+                      monitor_proto=None):
     proto = 'HTTP' if proto is None else proto
+    monitor_proto = proto if monitor_proto is None else monitor_proto
     in_pool = collections.namedtuple(
         'pool', 'id, protocol, lb_algorithm, members, health_monitor,'
                 'session_persistence, enabled, operating_status')
@@ -531,13 +534,13 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
                    sample_member_tuple('sample_member_id_2', '10.0.0.98',
                                        monitor_ip_port=monitor_ip_port)]
         if monitor is True:
-            mon = sample_health_monitor_tuple(proto=proto)
+            mon = sample_health_monitor_tuple(proto=monitor_proto)
     elif sample_pool == 2:
         id = 'sample_pool_id_2'
         members = [sample_member_tuple('sample_member_id_3', '10.0.0.97',
                                        monitor_ip_port=monitor_ip_port)]
         if monitor is True:
-            mon = sample_health_monitor_tuple(proto=proto, sample_hm=2)
+            mon = sample_health_monitor_tuple(proto=monitor_proto, sample_hm=2)
     return in_pool(
         id=id,
         protocol=proto,
