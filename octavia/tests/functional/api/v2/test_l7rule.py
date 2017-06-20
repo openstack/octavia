@@ -12,9 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.common import constants
+import octavia.common.context
 from octavia.tests.functional.api.v2 import base
 
 
@@ -28,6 +32,7 @@ class TestL7Rule(base.BaseAPITest):
         super(TestL7Rule, self).setUp()
         self.lb = self.create_load_balancer(uuidutils.generate_uuid())
         self.lb_id = self.lb.get('loadbalancer').get('id')
+        self.project_id = self.lb.get('loadbalancer').get('project_id')
         self.set_lb_status(self.lb_id)
         self.listener = self.create_listener(
             constants.PROTOCOL_HTTP, 80, lb_id=self.lb_id)
@@ -49,6 +54,52 @@ class TestL7Rule(base.BaseAPITest):
         response = self.get(self.l7rule_path.format(
             l7rule_id=l7rule.get('id'))).json.get(self.root_tag)
         self.assertEqual(l7rule, response)
+
+    def test_get_authorized(self):
+        l7rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self.get(self.l7rule_path.format(
+                    l7rule_id=l7rule.get('id'))).json.get(self.root_tag)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(l7rule, response)
+
+    def test_get_not_authorized(self):
+        l7rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            response = self.get(self.l7rule_path.format(
+                l7rule_id=l7rule.get('id')), status=401).json
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response)
 
     def test_get_hides_deleted(self):
         api_l7rule = self.create_l7rule(
@@ -95,6 +146,71 @@ class TestL7Rule(base.BaseAPITest):
                       rule_id_types)
         self.assertIn((api_l7r_b.get('id'), api_l7r_b.get('type')),
                       rule_id_types)
+
+    def test_get_all_authorized(self):
+        api_l7r_a = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        api_l7r_b = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_COOKIE,
+            constants.L7RULE_COMPARE_TYPE_CONTAINS, 'some-value',
+            key='some-cookie').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                rules = self.get(
+                    self.l7rules_path).json.get(self.root_tag_list)
+
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertIsInstance(rules, list)
+        self.assertEqual(2, len(rules))
+        rule_id_types = [(r.get('id'), r.get('type')) for r in rules]
+        self.assertIn((api_l7r_a.get('id'), api_l7r_a.get('type')),
+                      rule_id_types)
+        self.assertIn((api_l7r_b.get('id'), api_l7r_b.get('type')),
+                      rule_id_types)
+
+    def test_get_all_not_authorized(self):
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_COOKIE,
+            constants.L7RULE_COMPARE_TYPE_CONTAINS, 'some-value',
+            key='some-cookie').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            rules = self.get(self.l7rules_path, status=401)
+
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, rules.json)
 
     def test_get_all_sorted(self):
         self.create_l7rule(
@@ -200,6 +316,64 @@ class TestL7Rule(base.BaseAPITest):
             l7policy_prov_status=constants.PENDING_UPDATE,
             l7rule_prov_status=constants.PENDING_CREATE,
             l7rule_op_status=constants.OFFLINE)
+
+    def test_create_rule_authorized(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                api_l7rule = self.create_l7rule(
+                    self.l7policy_id, constants.L7RULE_TYPE_HOST_NAME,
+                    constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+                    'www.example.com').get(self.root_tag)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(constants.L7RULE_TYPE_HOST_NAME,
+                         api_l7rule.get('type'))
+        self.assertEqual(constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+                         api_l7rule.get('compare_type'))
+        self.assertEqual('www.example.com', api_l7rule.get('value'))
+        self.assertIsNone(api_l7rule.get('key'))
+        self.assertFalse(api_l7rule.get('invert'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            l7policy_prov_status=constants.PENDING_UPDATE,
+            l7rule_prov_status=constants.PENDING_CREATE,
+            l7rule_op_status=constants.OFFLINE)
+
+    def test_create_rule_not_authorized(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            api_l7rule = self.create_l7rule(
+                self.l7policy_id, constants.L7RULE_TYPE_HOST_NAME,
+                constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+                'www.example.com', status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, api_l7rule)
 
     def test_create_path_rule(self):
         api_l7rule = self.create_l7rule(
@@ -358,6 +532,74 @@ class TestL7Rule(base.BaseAPITest):
             l7policy_prov_status=constants.PENDING_UPDATE,
             l7rule_prov_status=constants.PENDING_UPDATE)
 
+    def test_update_authorized(self):
+        api_l7rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_l7rule = {'value': '/images'}
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self.put(self.l7rule_path.format(
+                    l7rule_id=api_l7rule.get('id')),
+                    self._build_body(new_l7rule)).json.get(self.root_tag)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual('/api', response.get('value'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            l7policy_prov_status=constants.PENDING_UPDATE,
+            l7rule_prov_status=constants.PENDING_UPDATE)
+
+    def test_update_not_authorized(self):
+        api_l7rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_l7rule = {'value': '/images'}
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            response = self.put(self.l7rule_path.format(
+                l7rule_id=api_l7rule.get('id')),
+                self._build_body(new_l7rule), status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),
+            lb_prov_status=constants.ACTIVE,
+            listener_prov_status=constants.ACTIVE,
+            l7policy_prov_status=constants.ACTIVE,
+            l7rule_prov_status=constants.ACTIVE)
+
     def test_bad_update(self):
         l7rule = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,
@@ -423,6 +665,89 @@ class TestL7Rule(base.BaseAPITest):
             l7policy_prov_status=constants.PENDING_UPDATE,
             l7rule_prov_status=constants.PENDING_DELETE)
         self.set_lb_status(self.lb_id)
+
+    def test_delete_authorized(self):
+        api_l7rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        # Set status to ACTIVE/ONLINE because set_lb_status did it in the db
+        api_l7rule['provisioning_status'] = constants.ACTIVE
+        api_l7rule['operating_status'] = constants.ONLINE
+        api_l7rule.pop('updated_at')
+
+        response = self.get(self.l7rule_path.format(
+            l7rule_id=api_l7rule.get('id'))).json.get(self.root_tag)
+        response.pop('updated_at')
+        self.assertEqual(api_l7rule, response)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+
+                self.delete(
+                    self.l7rule_path.format(l7rule_id=api_l7rule.get('id')))
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            l7policy_prov_status=constants.PENDING_UPDATE,
+            l7rule_prov_status=constants.PENDING_DELETE)
+        self.set_lb_status(self.lb_id)
+
+    def test_delete_not_authorized(self):
+        api_l7rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        # Set status to ACTIVE/ONLINE because set_lb_status did it in the db
+        api_l7rule['provisioning_status'] = constants.ACTIVE
+        api_l7rule['operating_status'] = constants.ONLINE
+        api_l7rule.pop('updated_at')
+
+        response = self.get(self.l7rule_path.format(
+            l7rule_id=api_l7rule.get('id'))).json.get(self.root_tag)
+        response.pop('updated_at')
+        self.assertEqual(api_l7rule, response)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            self.delete(
+                self.l7rule_path.format(l7rule_id=api_l7rule.get('id')),
+                status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),
+            lb_prov_status=constants.ACTIVE,
+            listener_prov_status=constants.ACTIVE,
+            l7policy_prov_status=constants.ACTIVE,
+            l7rule_prov_status=constants.ACTIVE)
 
     def test_bad_delete(self):
         self.delete(self.l7rule_path.format(

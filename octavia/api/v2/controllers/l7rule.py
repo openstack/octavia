@@ -45,6 +45,13 @@ class L7RuleController(base.BaseController):
         """Gets a single l7rule's details."""
         context = pecan.request.context.get('octavia_context')
         db_l7rule = self._get_db_l7rule(context.session, id)
+
+        # Check that the user is authorized to show this l7rule
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_L7RULE, action='get_one')
+        target = {'project_id': db_l7rule.project_id}
+        context.policy.authorize(action, target)
+
         result = self._convert_db_to_type(db_l7rule,
                                           l7rule_types.L7RuleResponse)
         return l7rule_types.L7RuleRootResponse(rule=result)
@@ -55,6 +62,15 @@ class L7RuleController(base.BaseController):
         """Lists all l7rules of a l7policy."""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
+
+        l7policy = self._get_db_l7policy(context.session, self.l7policy_id)
+
+        # Check that the user is authorized to list members for this l7rule
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_L7RULE, action='get_all')
+        target = {'project_id': l7policy.project_id}
+        context.policy.authorize(action, target)
+
         db_l7rules, links = self.repositories.l7rule.get_all(
             context.session, show_deleted=False, l7policy_id=self.l7policy_id,
             pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
@@ -143,6 +159,12 @@ class L7RuleController(base.BaseController):
                                                           self.l7policy_id)
         self._check_l7policy_max_rules(context.session)
 
+        # Check that the user is authorized to create under this project
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_L7RULE, action='post')
+        target = {'project_id': l7rule.project_id}
+        context.policy.authorize(action, target)
+
         lock_session = db_api.get_session(autocommit=False)
         l7rule_dict = db_prepare.create_l7rule(
             l7rule.to_dict(render_unsets=True), self.l7policy_id)
@@ -178,6 +200,13 @@ class L7RuleController(base.BaseController):
         new_l7rule = db_l7rule.to_dict()
         new_l7rule.update(l7rule.to_dict())
         new_l7rule = data_models.L7Rule.from_dict(new_l7rule)
+
+        # Check that the user is authorized to update this l7rule
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_L7RULE, action='put')
+        target = {'project_id': db_l7rule.project_id}
+        context.policy.authorize(action, target)
+
         try:
             validate.l7rule_data(new_l7rule)
         except Exception as e:
@@ -209,6 +238,13 @@ class L7RuleController(base.BaseController):
         """Deletes a l7rule."""
         context = pecan.request.context.get('octavia_context')
         db_l7rule = self._get_db_l7rule(context.session, id)
+
+        # Check that the user is authorized to update this member
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_L7RULE, action='delete')
+        target = {'project_id': db_l7rule.project_id}
+        context.policy.authorize(action, target)
+
         self._test_lb_listener_policy_statuses(context.session)
 
         self.repositories.l7rule.update(
