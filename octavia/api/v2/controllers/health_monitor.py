@@ -58,6 +58,13 @@ class HealthMonitorController(base.BaseController):
         """Gets a single healthmonitor's details."""
         context = pecan.request.context.get('octavia_context')
         db_hm = self._get_db_hm(context.session, id)
+
+        # Check that the user is authorized to show this health monitor
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_HEALTHMONITOR, action='get_one')
+        target = {'project_id': db_hm.project_id}
+        context.policy.authorize(action, target)
+
         result = self._convert_db_to_type(
             db_hm, hm_types.HealthMonitorResponse)
         return hm_types.HealthMonitorRootResponse(healthmonitor=result)
@@ -68,17 +75,31 @@ class HealthMonitorController(base.BaseController):
         """Gets all health monitors."""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
-        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
-            if project_id:
-                project_id = {'project_id': project_id}
-            else:
-                project_id = {}
+
+        # Check if user is authorized to list health mons under all projects
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_HEALTHMONITOR, action='get_all-global')
+        target = {'project_id': project_id}
+        if not context.policy.authorize(action, target, do_raise=False):
+            # Not a global observer or admin
+            if project_id is None:
+                project_id = context.project_id
+
+            # Check that the user is authorized to list lbs under this project
+            action = '{rbac_obj}{action}'.format(
+                rbac_obj=constants.RBAC_HEALTHMONITOR, action='get_all')
+            target = {'project_id': project_id}
+            context.policy.authorize(action, target)
+
+        if project_id is None:
+            query_filter = {}
         else:
-            project_id = {'project_id': context.project_id}
+            query_filter = {'project_id': project_id}
+
         db_hm, links = self.repositories.health_monitor.get_all(
             context.session, show_deleted=False,
             pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
-            **project_id)
+            **query_filter)
         result = self._convert_db_to_type(
             db_hm, [hm_types.HealthMonitorResponse])
         return hm_types.HealthMonitorsRootResponse(
@@ -163,6 +184,12 @@ class HealthMonitorController(base.BaseController):
         pool = self._get_db_pool(context.session, health_monitor.pool_id)
         health_monitor.project_id = pool.project_id
 
+        # Check that the user is authorized to create under this project
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_HEALTHMONITOR, action='post')
+        target = {'project_id': health_monitor.project_id}
+        context.policy.authorize(action, target)
+
         lock_session = db_api.get_session(autocommit=False)
         if self.repositories.check_quota_met(
                 context.session,
@@ -198,6 +225,13 @@ class HealthMonitorController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         health_monitor = health_monitor_.healthmonitor
         db_hm = self._get_db_hm(context.session, id)
+
+        # Check that the user is authorized to update this health monitor
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_HEALTHMONITOR, action='put')
+        target = {'project_id': db_hm.project_id}
+        context.policy.authorize(action, target)
+
         self._test_lb_and_listener_and_pool_statuses(context.session, db_hm)
 
         self.repositories.health_monitor.update(
@@ -227,6 +261,13 @@ class HealthMonitorController(base.BaseController):
         """Deletes a health monitor."""
         context = pecan.request.context.get('octavia_context')
         db_hm = self._get_db_hm(context.session, id)
+
+        # Check that the user is authorized to delete this health monitor
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_HEALTHMONITOR, action='delete')
+        target = {'project_id': db_hm.project_id}
+        context.policy.authorize(action, target)
+
         self._test_lb_and_listener_and_pool_statuses(context.session, db_hm)
 
         self.repositories.health_monitor.update(
