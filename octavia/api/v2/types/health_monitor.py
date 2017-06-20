@@ -119,7 +119,7 @@ class HealthMonitorPUT(BaseHealthMonitorType):
                            maximum=constants.MAX_HM_RETRIES))
     http_method = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_HEALTH_MONITOR_HTTP_METHODS))
-    url_path = wtypes.wsattr(types.URLType())
+    url_path = wtypes.wsattr(types.URLType(require_scheme=False))
     expected_codes = wtypes.wsattr(
         wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'))
     admin_state_up = wtypes.wsattr(bool)
