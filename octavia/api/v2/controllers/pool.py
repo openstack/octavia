@@ -49,6 +49,13 @@ class PoolsController(base.BaseController):
         """Gets a pool's details."""
         context = pecan.request.context.get('octavia_context')
         db_pool = self._get_db_pool(context.session, id)
+
+        # Check that the user is authorized to show this pool
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_POOL, action='get_one')
+        target = {'project_id': db_pool.project_id}
+        context.policy.authorize(action, target)
+
         result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
         return pool_types.PoolRootResponse(pool=result)
 
@@ -58,17 +65,31 @@ class PoolsController(base.BaseController):
         """Lists all pools."""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
-        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
-            if project_id:
-                project_id = {'project_id': project_id}
-            else:
-                project_id = {}
+
+        # Check that the user is authorized to list pools under all projects
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_POOL, action='get_all-global')
+        target = {'project_id': project_id}
+        if not context.policy.authorize(action, target, do_raise=False):
+            # Not a global observer or admin
+            if project_id is None:
+                project_id = context.project_id
+
+            # Check that the user is authorized to list lbs under this project
+            action = '{rbac_obj}{action}'.format(
+                rbac_obj=constants.RBAC_POOL, action='get_all')
+            target = {'project_id': project_id}
+            context.policy.authorize(action, target)
+
+        if project_id is None:
+            query_filter = {}
         else:
-            project_id = {'project_id': context.project_id}
+            query_filter = {'project_id': project_id}
+
         db_pools, links = self.repositories.pool.get_all(
             context.session, show_deleted=False,
             pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
-            **project_id)
+            **query_filter)
         result = self._convert_db_to_type(db_pools, [pool_types.PoolResponse])
         return pool_types.PoolsRootResponse(pools=result, pools_links=links)
 
@@ -166,6 +187,12 @@ class PoolsController(base.BaseController):
                     "loadbalancer_id, listener_id")
             raise exceptions.ValidationException(detail=msg)
 
+        # Check that the user is authorized to create under this project
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_POOL, action='post')
+        target = {'project_id': pool.project_id}
+        context.policy.authorize(action, target)
+
         lock_session = db_api.get_session(autocommit=False)
         if self.repositories.check_quota_met(
                 context.session,
@@ -245,6 +272,13 @@ class PoolsController(base.BaseController):
         pool = pool_.pool
         context = pecan.request.context.get('octavia_context')
         db_pool = self._get_db_pool(context.session, id)
+
+        # Check that the user is authorized to update this pool
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_POOL, action='put')
+        target = {'project_id': db_pool.project_id}
+        context.policy.authorize(action, target)
+
         self._test_lb_and_listener_statuses(
             context.session, lb_id=db_pool.load_balancer_id,
             listener_ids=self._get_affected_listener_ids(db_pool))
@@ -276,6 +310,13 @@ class PoolsController(base.BaseController):
         if len(db_pool.l7policies) > 0:
             raise exceptions.PoolInUseByL7Policy(
                 id=db_pool.id, l7policy_id=db_pool.l7policies[0].id)
+
+        # Check that the user is authorized to delete this pool
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_POOL, action='delete')
+        target = {'project_id': db_pool.project_id}
+        context.policy.authorize(action, target)
+
         self._test_lb_and_listener_statuses(
             context.session, lb_id=db_pool.load_balancer_id,
             listener_ids=self._get_affected_listener_ids(db_pool))
