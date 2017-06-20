@@ -14,6 +14,8 @@
 
 import mock
 
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.common import constants
@@ -32,6 +34,7 @@ class TestL7Policy(base.BaseAPITest):
         super(TestL7Policy, self).setUp()
         self.lb = self.create_load_balancer(uuidutils.generate_uuid())
         self.lb_id = self.lb.get('loadbalancer').get('id')
+        self.project_id = self.lb.get('loadbalancer').get('project_id')
         self.set_lb_status(self.lb_id)
         self.listener = self.create_listener(
             constants.PROTOCOL_HTTP, 80, lb_id=self.lb_id)
@@ -51,6 +54,53 @@ class TestL7Policy(base.BaseAPITest):
         response = self.get(self.L7POLICY_PATH.format(
             l7policy_id=api_l7policy.get('id'))).json.get(self.root_tag)
         self.assertEqual(api_l7policy, response)
+
+    def test_get_authorized(self):
+        api_l7policy = self.create_l7policy(
+            self.listener_id,
+            constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self.get(self.L7POLICY_PATH.format(
+                    l7policy_id=api_l7policy.get('id')))
+                response = response.json.get(self.root_tag)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(api_l7policy, response)
+
+    def test_get_not_authorized(self):
+        api_l7policy = self.create_l7policy(
+            self.listener_id,
+            constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            response = self.get(self.L7POLICY_PATH.format(
+                l7policy_id=api_l7policy.get('id')), status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
     def test_get_hides_deleted(self):
         api_l7policy = self.create_l7policy(
@@ -147,14 +197,105 @@ class TestL7Policy(base.BaseAPITest):
         self.conf.config(auth_strategy=constants.KEYSTONE)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                api_l7p_c.get('project_id')):
-            policies = self.get(
-                self.L7POLICIES_PATH).json.get(self.root_tag_list)
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                policies = self.get(
+                    self.L7POLICIES_PATH).json.get(self.root_tag_list)
         self.conf.config(auth_strategy=auth_strategy)
 
         self.assertEqual(1, len(policies))
         policy_id_actions = [(p.get('id'), p.get('action')) for p in policies]
         self.assertIn((api_l7p_c.get('id'), api_l7p_c.get('action')),
                       policy_id_actions)
+
+    def test_get_all_non_admin_global_observer(self):
+        project_id = uuidutils.generate_uuid()
+        lb1 = self.create_load_balancer(uuidutils.generate_uuid(), name='lb1',
+                                        project_id=project_id)
+        lb1_id = lb1.get('loadbalancer').get('id')
+        self.set_lb_status(lb1_id)
+        listener1 = self.create_listener(constants.PROTOCOL_HTTP, 80,
+                                         lb1_id)
+        listener1_id = listener1.get('listener').get('id')
+        self.set_lb_status(lb1_id)
+        pool1 = self.create_pool(lb1_id, constants.PROTOCOL_HTTP,
+                                 constants.LB_ALGORITHM_ROUND_ROBIN)
+        pool1_id = pool1.get('pool').get('id')
+        self.set_lb_status(lb1_id)
+        api_l7p_a = self.create_l7policy(
+            listener1_id,
+            constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        api_l7p_b = self.create_l7policy(
+            listener1_id, constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            position=2, redirect_pool_id=pool1_id).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        api_l7p_c = self.create_l7policy(
+            self.listener_id, constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            redirect_url='http://localhost/').get(self.root_tag)
+        self.set_lb_status(lb1_id)
+
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.KEYSTONE)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               api_l7p_c.get('project_id')):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_global_observer'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                policies = self.get(
+                    self.L7POLICIES_PATH).json.get(self.root_tag_list)
+        self.conf.config(auth_strategy=auth_strategy)
+
+        self.assertEqual(3, len(policies))
+        policy_id_actions = [(p.get('id'), p.get('action')) for p in policies]
+        self.assertIn((api_l7p_a.get('id'), api_l7p_a.get('action')),
+                      policy_id_actions)
+        self.assertIn((api_l7p_b.get('id'), api_l7p_b.get('action')),
+                      policy_id_actions)
+        self.assertIn((api_l7p_c.get('id'), api_l7p_c.get('action')),
+                      policy_id_actions)
+
+    def test_get_all_not_authorized(self):
+        self.create_l7policy(self.listener_id,
+                             constants.L7POLICY_ACTION_REJECT,
+                             ).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            policies = self.get(self.L7POLICIES_PATH, status=401).json
+
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, policies)
 
     def test_get_by_project_id(self):
         project1_id = uuidutils.generate_uuid()
@@ -309,6 +450,62 @@ class TestL7Policy(base.BaseAPITest):
             l7policy_prov_status=constants.PENDING_CREATE,
             l7policy_op_status=constants.OFFLINE)
 
+    def test_create_policy_authorized(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                api_l7policy = self.create_l7policy(
+                    self.listener_id,
+                    constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
+
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(constants.L7POLICY_ACTION_REJECT,
+                         api_l7policy['action'])
+        self.assertEqual(1, api_l7policy['position'])
+        self.assertIsNone(api_l7policy['redirect_pool_id'])
+        self.assertIsNone(api_l7policy['redirect_url'])
+        self.assertTrue(api_l7policy['admin_state_up'])
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            l7policy_id=api_l7policy.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            l7policy_prov_status=constants.PENDING_CREATE,
+            l7policy_op_status=constants.OFFLINE)
+
+    def test_create_policy_not_authorized(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            api_l7policy = self.create_l7policy(
+                self.listener_id,
+                constants.L7POLICY_ACTION_REJECT, status=401)
+
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, api_l7policy)
+
     def test_create_redirect_to_pool(self):
         api_l7policy = self.create_l7policy(
             self.listener_id, constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
@@ -401,6 +598,77 @@ class TestL7Policy(base.BaseAPITest):
             lb_prov_status=constants.PENDING_UPDATE,
             listener_prov_status=constants.PENDING_UPDATE,
             l7policy_prov_status=constants.PENDING_UPDATE)
+
+    def test_update_authorized(self):
+        api_l7policy = self.create_l7policy(self.listener_id,
+                                            constants.L7POLICY_ACTION_REJECT,
+                                            ).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_l7policy = {
+            'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            'redirect_url': 'http://www.example.com'}
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self.put(self.L7POLICY_PATH.format(
+                    l7policy_id=api_l7policy.get('id')),
+                    self._build_body(new_l7policy)).json.get(self.root_tag)
+
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(constants.L7POLICY_ACTION_REJECT,
+                         response.get('action'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            l7policy_id=api_l7policy.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            l7policy_prov_status=constants.PENDING_UPDATE)
+
+    def test_update_not_authorized(self):
+        api_l7policy = self.create_l7policy(self.listener_id,
+                                            constants.L7POLICY_ACTION_REJECT,
+                                            ).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_l7policy = {
+            'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            'redirect_url': 'http://www.example.com'}
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            response = self.put(self.L7POLICY_PATH.format(
+                l7policy_id=api_l7policy.get('id')),
+                self._build_body(new_l7policy), status=401)
+
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            l7policy_id=api_l7policy.get('id'),
+            lb_prov_status=constants.ACTIVE,
+            listener_prov_status=constants.ACTIVE,
+            l7policy_prov_status=constants.ACTIVE)
 
     def test_bad_update(self):
         api_l7policy = self.create_l7policy(self.listener_id,
@@ -513,6 +781,85 @@ class TestL7Policy(base.BaseAPITest):
             lb_prov_status=constants.PENDING_UPDATE,
             listener_prov_status=constants.PENDING_UPDATE,
             l7policy_prov_status=constants.PENDING_DELETE)
+
+    def test_delete_authorized(self):
+        api_l7policy = self.create_l7policy(
+            self.listener_id,
+            constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        # Set status to ACTIVE/ONLINE because set_lb_status did it in the db
+        api_l7policy['provisioning_status'] = constants.ACTIVE
+        api_l7policy['operating_status'] = constants.ONLINE
+        api_l7policy.pop('updated_at')
+
+        response = self.get(self.L7POLICY_PATH.format(
+            l7policy_id=api_l7policy.get('id'))).json.get(self.root_tag)
+        response.pop('updated_at')
+        self.assertEqual(api_l7policy, response)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+
+                self.delete(self.L7POLICY_PATH.format(
+                    l7policy_id=api_l7policy.get('id')))
+
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            l7policy_id=api_l7policy.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            l7policy_prov_status=constants.PENDING_DELETE)
+
+    def test_delete_not_authorized(self):
+        api_l7policy = self.create_l7policy(
+            self.listener_id,
+            constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        # Set status to ACTIVE/ONLINE because set_lb_status did it in the db
+        api_l7policy['provisioning_status'] = constants.ACTIVE
+        api_l7policy['operating_status'] = constants.ONLINE
+        api_l7policy.pop('updated_at')
+
+        response = self.get(self.L7POLICY_PATH.format(
+            l7policy_id=api_l7policy.get('id'))).json.get(self.root_tag)
+        response.pop('updated_at')
+        self.assertEqual(api_l7policy, response)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            self.delete(self.L7POLICY_PATH.format(
+                l7policy_id=api_l7policy.get('id')), status=401)
+
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            l7policy_id=api_l7policy.get('id'),
+            lb_prov_status=constants.ACTIVE,
+            listener_prov_status=constants.ACTIVE,
+            l7policy_prov_status=constants.ACTIVE)
 
     def test_bad_delete(self):
         self.delete(self.L7POLICY_PATH.format(

@@ -251,12 +251,13 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         response = self.post(path, body, **status)
         return response.json
 
-    def create_l7policy(self, listener_id, action, **optionals):
+    def create_l7policy(self, listener_id, action, status=None, **optionals):
         req_dict = {'listener_id': listener_id, 'action': action}
         req_dict.update(optionals)
         body = {'l7policy': req_dict}
         path = self.L7POLICIES_PATH
-        response = self.post(path, body)
+        status = {'status': status} if status else {}
+        response = self.post(path, body, **status)
         return response.json
 
     def create_l7rule(self, l7policy_id, type, compare_type,
