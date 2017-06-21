@@ -578,7 +578,7 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual(200, rv.status_code)
         self.assertEqual(six.b(CONTENT), rv.data)
         self.assertEqual('text/plain; charset=utf-8',
-                         rv.headers['Content-Type'])
+                         rv.headers['Content-Type'].lower())
 
     def test_ubuntu_get_all_listeners(self):
         self._test_get_all_listeners(consts.UBUNTU)

@@ -15,6 +15,7 @@
 
 import flask
 import six
+import webob
 from werkzeug import exceptions
 
 from octavia.amphorae.backends.agent import api_server
@@ -31,7 +32,7 @@ PATH_PREFIX = '/' + api_server.VERSION
 # make the error pages all json
 def make_json_error(ex):
     code = ex.code if isinstance(ex, exceptions.HTTPException) else 500
-    response = flask.jsonify({'error': str(ex), 'http_code': code})
+    response = webob.Response(json={'error': str(ex), 'http_code': code})
     response.status_code = code
     return response
 

@@ -17,11 +17,11 @@ import re
 import socket
 import subprocess
 
-import flask
 import ipaddress
 import netifaces
 import pyroute2
 import six
+import webob
 
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import util
@@ -33,46 +33,47 @@ class AmphoraInfo(object):
         self._osutils = osutils
 
     def compile_amphora_info(self):
-        return flask.jsonify(
-            {'hostname': socket.gethostname(),
-             'haproxy_version':
-                 self._get_version_of_installed_package('haproxy'),
-             'api_version': api_server.VERSION})
+        return webob.Response(
+            json={'hostname': socket.gethostname(),
+                  'haproxy_version':
+                      self._get_version_of_installed_package('haproxy'),
+                  'api_version': api_server.VERSION})
 
     def compile_amphora_details(self):
         listener_list = util.get_listeners()
         meminfo = self._get_meminfo()
         cpu = self._cpu()
         st = os.statvfs('/')
-        return flask.jsonify(
-            {'hostname': socket.gethostname(),
-             'haproxy_version':
-                 self._get_version_of_installed_package('haproxy'),
-             'api_version': api_server.VERSION,
-             'networks': self._get_networks(),
-             'active': True,
-             'haproxy_count': self._count_haproxy_processes(listener_list),
-             'cpu': {
-                 'total': cpu['total'],
-                 'user': cpu['user'],
-                 'system': cpu['system'],
-                 'soft_irq': cpu['softirq'], },
-             'memory': {
-                 'total': meminfo['MemTotal'],
-                 'free': meminfo['MemFree'],
-                 'buffers': meminfo['Buffers'],
-                 'cached': meminfo['Cached'],
-                 'swap_used': meminfo['SwapCached'],
-                 'shared': meminfo['Shmem'],
-                 'slab': meminfo['Slab'], },
-             'disk': {
-                 'used': (st.f_blocks - st.f_bfree) * st.f_frsize,
-                 'available': st.f_bavail * st.f_frsize},
-             'load': self._load(),
-             'topology': consts.TOPOLOGY_SINGLE,
-             'topology_status': consts.TOPOLOGY_STATUS_OK,
-             'listeners': listener_list,
-             'packages': {}})
+        return webob.Response(
+            json={'hostname': socket.gethostname(),
+                  'haproxy_version':
+                      self._get_version_of_installed_package('haproxy'),
+                  'api_version': api_server.VERSION,
+                  'networks': self._get_networks(),
+                  'active': True,
+                  'haproxy_count':
+                      self._count_haproxy_processes(listener_list),
+                  'cpu': {
+                      'total': cpu['total'],
+                      'user': cpu['user'],
+                      'system': cpu['system'],
+                      'soft_irq': cpu['softirq'], },
+                  'memory': {
+                      'total': meminfo['MemTotal'],
+                      'free': meminfo['MemFree'],
+                      'buffers': meminfo['Buffers'],
+                      'cached': meminfo['Cached'],
+                      'swap_used': meminfo['SwapCached'],
+                      'shared': meminfo['Shmem'],
+                      'slab': meminfo['Slab'], },
+                  'disk': {
+                      'used': (st.f_blocks - st.f_bfree) * st.f_frsize,
+                      'available': st.f_bavail * st.f_frsize},
+                  'load': self._load(),
+                  'topology': consts.TOPOLOGY_SINGLE,
+                  'topology_status': consts.TOPOLOGY_STATUS_OK,
+                  'listeners': listener_list,
+                  'packages': {}})
 
     def _get_version_of_installed_package(self, name):
 
@@ -144,16 +145,16 @@ class AmphoraInfo(object):
         try:
             ip_version = ipaddress.ip_address(six.text_type(ip_addr)).version
         except Exception:
-            return flask.make_response(
-                flask.jsonify(dict(message="Invalid IP address")), 400)
+            return webob.Response(
+                json=dict(message="Invalid IP address"), status=400)
 
         if ip_version == 4:
             address_format = netifaces.AF_INET
         elif ip_version == 6:
             address_format = netifaces.AF_INET6
         else:
-            return flask.make_response(
-                flask.jsonify(dict(message="Bad IP address version")), 400)
+            return webob.Response(
+                json=dict(message="Bad IP address version"), status=400)
 
         # We need to normalize the address as IPv6 has multiple representations
         # fe80:0000:0000:0000:f816:3eff:fef2:2058 == fe80::f816:3eff:fef2:2058
@@ -194,11 +195,11 @@ class AmphoraInfo(object):
                                     # interface name that is in int_attr[1]
                                     # for the matching interface attribute
                                     # name
-                                    return flask.make_response(
-                                        flask.jsonify(
-                                            dict(message='OK',
-                                                 interface=int_attr[1])), 200)
+                                    return webob.Response(
+                                        json=dict(message='OK',
+                                                  interface=int_attr[1]),
+                                        status=200)
 
-        return flask.make_response(
-            flask.jsonify(dict(message="Error interface not found "
-                                       "for IP address")), 404)
+        return webob.Response(
+            json=dict(message="Error interface not found for IP address"),
+            status=404)

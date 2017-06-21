@@ -19,6 +19,7 @@ import subprocess
 
 import flask
 import jinja2
+import webob
 
 from octavia.amphorae.backends.agent.api_server import listener
 from octavia.amphorae.backends.agent.api_server import util
@@ -109,12 +110,11 @@ class Keepalived(object):
             except subprocess.CalledProcessError as e:
                 LOG.debug('Failed to enable octavia-keepalived service: '
                           '%(err)s', {'err': e})
-                return flask.make_response(flask.jsonify(dict(
+                return webob.Response(json=dict(
                     message="Error enabling octavia-keepalived service",
-                    details=e.output)), 500)
+                    details=e.output), status=500)
 
-        res = flask.make_response(flask.jsonify({
-            'message': 'OK'}), 200)
+        res = webob.Response(json={'message': 'OK'}, status=200)
         res.headers['ETag'] = stream.get_md5()
 
         return res
@@ -124,9 +124,9 @@ class Keepalived(object):
         if action not in [consts.AMP_ACTION_START,
                           consts.AMP_ACTION_STOP,
                           consts.AMP_ACTION_RELOAD]:
-            return flask.make_response(flask.jsonify(dict(
+            return webob.Response(json=dict(
                 message='Invalid Request',
-                details="Unknown action: {0}".format(action))), 400)
+                details="Unknown action: {0}".format(action)), status=400)
 
         cmd = ("/usr/sbin/service octavia-keepalived {action}".format(
             action=action))
@@ -135,10 +135,11 @@ class Keepalived(object):
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             LOG.debug('Failed to %s keepalived service: %s', action, e)
-            return flask.make_response(flask.jsonify(dict(
+            return webob.Response(json=dict(
                 message="Failed to {0} keepalived service".format(action),
-                details=e.output)), 500)
+                details=e.output), status=500)
 
-        return flask.make_response(flask.jsonify(
-            dict(message='OK',
-                 details='keepalived {action}ed'.format(action=action))), 202)
+        return webob.Response(
+            json=dict(message='OK',
+                      details='keepalived {action}ed'.format(action=action)),
+            status=202)

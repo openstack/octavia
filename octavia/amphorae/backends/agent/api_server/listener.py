@@ -14,7 +14,6 @@
 
 import hashlib
 import io
-import json
 import logging
 import os
 import re
@@ -26,6 +25,7 @@ import flask
 import jinja2
 from oslo_config import cfg
 import six
+import webob
 from werkzeug import exceptions
 
 from octavia.amphorae.backends.agent.api_server import osutils
@@ -89,7 +89,7 @@ class Listener(object):
         self._check_listener_exists(listener_id)
         with open(util.config_path(listener_id), 'r') as file:
             cfg = file.read()
-            resp = flask.Response(cfg, mimetype='text/plain', )
+            resp = webob.Response(cfg, content_type='text/plain')
             resp.headers['ETag'] = hashlib.md5(six.b(cfg)).hexdigest()  # nosec
             return resp
 
@@ -137,9 +137,9 @@ class Listener(object):
         except subprocess.CalledProcessError as e:
             LOG.error("Failed to verify haproxy file: %s", e)
             os.remove(name)  # delete file
-            return flask.make_response(flask.jsonify(dict(
-                message="Invalid request",
-                details=e.output)), 400)
+            return webob.Response(
+                json=dict(message="Invalid request", details=e.output),
+                status=400)
 
         # file ok - move it
         os.rename(name, util.config_path(listener_id))
@@ -166,11 +166,11 @@ class Listener(object):
 
         except util.UnknownInitError:
             LOG.error("Unknown init system found.")
-            return flask.make_response(flask.jsonify(dict(
+            return webob.Response(json=dict(
                 message="Unknown init system in amphora",
                 details="The amphora image is running an unknown init "
                         "system.  We can't create the init configuration "
-                        "file for the load balancing process.")), 500)
+                        "file for the load balancing process."), status=500)
 
         if init_system == consts.INIT_SYSTEMD:
             # mode 00644
@@ -204,13 +204,13 @@ class Listener(object):
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to enable haproxy-%(list)s service: %(err)s",
                           {'list': listener_id, 'err': e})
-                return flask.make_response(flask.jsonify(dict(
+                return webob.Response(json=dict(
                     message="Error enabling haproxy-{0} service".format(
-                            listener_id), details=e.output)), 500)
+                            listener_id), details=e.output), status=500)
 
-        res = flask.make_response(flask.jsonify({
-            'message': 'OK'}), 202)
+        res = webob.Response(json={'message': 'OK'}, status=202)
         res.headers['ETag'] = stream.get_md5()
+
         return res
 
     def start_stop_listener(self, listener_id, action):
@@ -218,9 +218,9 @@ class Listener(object):
         if action not in [consts.AMP_ACTION_START,
                           consts.AMP_ACTION_STOP,
                           consts.AMP_ACTION_RELOAD]:
-            return flask.make_response(flask.jsonify(dict(
+            return webob.Response(json=dict(
                 message='Invalid Request',
-                details="Unknown action: {0}".format(action))), 400)
+                details="Unknown action: {0}".format(action)), status=400)
 
         self._check_listener_exists(listener_id)
 
@@ -245,24 +245,23 @@ class Listener(object):
             if 'Job is already running' not in e.output:
                 LOG.debug("Failed to %(action)s HAProxy service: %(err)s",
                           {'action': action, 'err': e})
-                return flask.make_response(flask.jsonify(dict(
+                return webob.Response(json=dict(
                     message="Error {0}ing haproxy".format(action),
-                    details=e.output)), 500)
+                    details=e.output), status=500)
         if action in [consts.AMP_ACTION_STOP,
                       consts.AMP_ACTION_RELOAD]:
-            return flask.make_response(flask.jsonify(
-                dict(message='OK',
-                     details='Listener {listener_id} {action}ed'.format(
-                         listener_id=listener_id, action=action))), 202)
+            return webob.Response(json=dict(
+                message='OK',
+                details='Listener {listener_id} {action}ed'.format(
+                    listener_id=listener_id, action=action)), status=202)
 
         details = (
             'Configuration file is valid\n'
             'haproxy daemon for {0} started'.format(listener_id)
         )
 
-        return flask.make_response(flask.jsonify(
-            dict(message='OK',
-                 details=details)), 202)
+        return webob.Response(json=dict(message='OK', details=details),
+                              status=202)
 
     def delete_listener(self, listener_id):
         self._check_listener_exists(listener_id)
@@ -275,9 +274,9 @@ class Listener(object):
                 subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to stop HAProxy service: %s", e)
-                return flask.make_response(flask.jsonify(dict(
+                return webob.Response(json=dict(
                     message="Error stopping haproxy",
-                    details=e.output)), 500)
+                    details=e.output), status=500)
 
         # parse config and delete stats socket
         try:
@@ -311,16 +310,16 @@ class Listener(object):
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to disable haproxy-%(list)s service: "
                           "%(err)s", {'list': listener_id, 'err': e})
-                return flask.make_response(flask.jsonify(dict(
+                return webob.Response(json=dict(
                     message="Error disabling haproxy-{0} service".format(
-                            listener_id), details=e.output)), 500)
+                            listener_id), details=e.output), status=500)
 
         # delete the directory + init script for that listener
         shutil.rmtree(util.haproxy_dir(listener_id))
         if os.path.exists(init_path):
             os.remove(init_path)
 
-        return flask.jsonify({'message': 'OK'})
+        return webob.Response(json={'message': 'OK'})
 
     def get_all_listeners_status(self):
         """Gets the status of all listeners
@@ -346,11 +345,7 @@ class Listener(object):
                 'type': listener_type,
             })
 
-        # Can't use jsonify since lists are not supported
-        # for security reason: http://stackoverflow.com/
-        # questions/12435297/how-do-i-jsonify-a-list-in-flask
-        return flask.Response(json.dumps(listeners),
-                              mimetype='application/json')
+        return webob.Response(json=listeners, content_type='application/json')
 
     def get_listener_status(self, listener_id):
         """Gets the status of a listener
@@ -373,7 +368,7 @@ class Listener(object):
                 uuid=listener_id,
                 type=''
             )
-            return flask.jsonify(stats)
+            return webob.Response(json=stats)
 
         cfg = self._parse_haproxy_file(listener_id)
         stats = dict(
@@ -386,7 +381,7 @@ class Listener(object):
         q = query.HAProxyQuery(cfg['stats_socket'])
         servers = q.get_pool_status()
         stats['pools'] = list(servers.values())
-        return flask.jsonify(stats)
+        return webob.Response(json=stats)
 
     def upload_certificate(self, listener_id, filename):
         self._check_ssl_filename_format(filename)
@@ -406,7 +401,7 @@ class Listener(object):
                 crt_file.write(b)
                 b = stream.read(BUFFER)
 
-        resp = flask.jsonify(dict(message='OK'))
+        resp = webob.Response(json=dict(message='OK'))
         resp.headers['ETag'] = stream.get_md5()
         return resp
 
@@ -416,28 +411,28 @@ class Listener(object):
         cert_path = self._cert_file_path(listener_id, filename)
         path_exists = os.path.exists(cert_path)
         if not path_exists:
-            return flask.make_response(flask.jsonify(dict(
+            return webob.Response(json=dict(
                 message='Certificate Not Found',
                 details="No certificate with filename: {f}".format(
-                    f=filename))), 404)
+                    f=filename)), status=404)
 
         with open(cert_path, 'r') as crt_file:
             cert = crt_file.read()
             md5 = hashlib.md5(six.b(cert)).hexdigest()  # nosec
-            resp = flask.jsonify(dict(md5sum=md5))
+            resp = webob.Response(json=dict(md5sum=md5))
             resp.headers['ETag'] = md5
             return resp
 
     def delete_certificate(self, listener_id, filename):
         self._check_ssl_filename_format(filename)
         if not os.path.exists(self._cert_file_path(listener_id, filename)):
-            return flask.make_response(flask.jsonify(dict(
+            return webob.Response(json=dict(
                 message='Certificate Not Found',
                 details="No certificate with filename: {f}".format(
-                    f=filename))), 404)
+                    f=filename)), status=404)
 
         os.remove(self._cert_file_path(listener_id, filename))
-        return flask.jsonify(dict(message='OK'))
+        return webob.Response(json=dict(message='OK'))
 
     def _check_listener_status(self, listener_id):
         if os.path.exists(util.pid_path(listener_id)):
@@ -484,17 +479,17 @@ class Listener(object):
         # check if we know about that listener
         if not os.path.exists(util.config_path(listener_id)):
             raise exceptions.HTTPException(
-                response=flask.make_response(flask.jsonify(dict(
+                response=webob.Response(json=dict(
                     message='Listener Not Found',
                     details="No listener with UUID: {0}".format(
-                        listener_id))), 404))
+                        listener_id)), status=404))
 
     def _check_ssl_filename_format(self, filename):
         # check if the format is (xxx.)*xxx.pem
         if not re.search('(\w.)+pem', filename):
             raise exceptions.HTTPException(
-                response=flask.make_response(flask.jsonify(dict(
-                    message='Filename has wrong format')), 400))
+                response=webob.Response(json=dict(
+                    message='Filename has wrong format'), status=400))
 
     def _cert_dir(self, listener_id):
         return os.path.join(util.CONF.haproxy_amphora.base_cert_dir,

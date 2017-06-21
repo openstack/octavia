@@ -33,20 +33,20 @@ class TestAmphoraInfo(base.TestCase):
         self.osutils_mock = mock.MagicMock()
         self.amp_info = amphora_info.AmphoraInfo(self.osutils_mock)
 
-    @mock.patch.object(amphora_info, "flask")
+    @mock.patch.object(amphora_info, "webob")
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'amphora_info.AmphoraInfo._get_version_of_installed_package',
                 return_value=HAPROXY_VERSION)
     @mock.patch('socket.gethostname', return_value='FAKE_HOST')
     def test_compile_amphora_info(self, mock_gethostname, mock_pkg_version,
-                                  mock_flask):
+                                  mock_webob):
         original_version = api_server.VERSION
         api_server.VERSION = self.API_VERSION
         expected_dict = {'api_version': self.API_VERSION,
                          'hostname': 'FAKE_HOST',
                          'haproxy_version': self.HAPROXY_VERSION}
         self.amp_info.compile_amphora_info()
-        mock_flask.jsonify.assert_called_once_with(expected_dict)
+        mock_webob.Response.assert_called_once_with(json=expected_dict)
         api_server.VERSION = original_version
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
