@@ -63,6 +63,9 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     QUOTA_PATH = QUOTAS_PATH + '/{project_id}'
     QUOTA_DEFAULT_PATH = QUOTAS_PATH + '/{project_id}/default'
 
+    NOT_AUTHORIZED_BODY = {'debuginfo': None, 'faultcode': 'Client',
+                           'faultstring': 'Not authorized.'}
+
     def setUp(self):
         super(BaseAPITest, self).setUp()
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
@@ -353,6 +356,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         explicit_status = True if status is not None else False
         if not explicit_status:
             status = constants.ACTIVE
+
         if status == constants.DELETED:
             op_status = constants.OFFLINE
         elif status == constants.ACTIVE:
@@ -371,16 +375,6 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                     provisioning_status=provisioning_status,
                     operating_status=operating_status)
 
-    def assert_final_lb_statuses(self, lb_id, delete=False):
-        expected_prov_status = constants.ACTIVE
-        expected_op_status = constants.ONLINE
-        if delete:
-            expected_prov_status = constants.DELETED
-            expected_op_status = constants.OFFLINE
-        self.set_lb_status(lb_id, status=expected_prov_status)
-        self.assert_correct_lb_status(expected_prov_status, expected_op_status,
-                                      lb_id)
-
     def assert_final_listener_statuses(self, lb_id, listener_id, delete=False):
         expected_prov_status = constants.ACTIVE
         expected_op_status = constants.ONLINE
@@ -392,8 +386,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                                             expected_op_status,
                                             listener_id)
 
-    def assert_correct_lb_status(self, provisioning_status, operating_status,
-                                 lb_id):
+    def assert_correct_lb_status(self, lb_id,
+                                 operating_status, provisioning_status):
         api_lb = self.get(
             self.LB_PATH.format(lb_id=lb_id)).json.get('loadbalancer')
         self.assertEqual(provisioning_status,
@@ -473,7 +467,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                               l7rule_op_status=constants.ONLINE,
                               hm_op_status=constants.ONLINE):
         if lb_id:
-            self.assert_correct_lb_status(lb_prov_status, lb_op_status, lb_id)
+            self.assert_correct_lb_status(lb_id, lb_op_status, lb_prov_status)
         if listener_id:
             self.assert_correct_listener_status(
                 listener_prov_status, listener_op_status, listener_id)

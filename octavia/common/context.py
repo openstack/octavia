@@ -12,24 +12,31 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_config import cfg
 from oslo_context import context as common_context
 
+from octavia.common import constants
 from octavia.common import policy
 from octavia.db import api as db_api
+
+CONF = cfg.CONF
 
 
 class Context(common_context.RequestContext):
 
     _session = None
 
-    def __init__(self, user=None, project_id=None, is_admin=False, **kwargs):
+    def __init__(self, user_id=None, project_id=None, **kwargs):
 
         if project_id:
             kwargs['tenant'] = project_id
 
-        super(Context, self).__init__(is_admin=is_admin, **kwargs)
+        super(Context, self).__init__(**kwargs)
 
         self.policy = policy.Policy(self)
+
+        self.is_admin = (self.policy.check_is_admin() or
+                         CONF.auth_strategy == constants.NOAUTH)
 
     @property
     def session(self):

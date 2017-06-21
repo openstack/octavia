@@ -44,6 +44,7 @@ For operators
    guides/dev-quick-start.rst
    guides/operator-maintenance.rst
    main/configref.rst
+   main/policy.rst
    main/Anchor.rst
    devref/apache-httpd.rst
 

@@ -13,10 +13,56 @@
 from oslo_policy import policy
 
 rules = [
-    policy.RuleDefault('context_is_admin', 'role:admin'),
-    policy.RuleDefault('admin_or_owner',
-                       'is_admin:True or project_id:%(project_id)s'),
-    policy.RuleDefault('admin_api', 'is_admin:True'),
+    # The default is to not allow access unless the auth_strategy is 'noauth'.
+    # Users must be a member of one of the following roles to have access to
+    # the load-balancer API:
+    #
+    # role:load-balancer_observer
+    #     User has access to load-balancer read-only APIs
+    # role:load-balancer_global_observer
+    #     User has access to load-balancer read-only APIs including resources
+    #     owned by others.
+    # role:load-balancer_member
+    #     User has access to load-balancer read and write APIs
+    # role:load-balancer_admin
+    #     User is considered an admin for all load-balnacer APIs including
+    #     resources owned by others.
+    # role:admin
+    #     User is admin to all APIs
+
+    policy.RuleDefault('context_is_admin',
+                       'role:admin or role:load-balancer_admin'),
+
+    # Note: 'is_admin:True' is a policy rule that takes into account the
+    # auth_strategy == noauth configuration setting.
+    # It is equivalent to 'rule:context_is_admin or {auth_strategy == noauth}'
+
+    policy.RuleDefault('load-balancer:owner', 'project_id:%(project_id)s'),
+
+    # API access roles
+    policy.RuleDefault('load-balancer:observer_and_owner',
+                       'role:load-balancer_observer and '
+                       'rule:load-balancer:owner'),
+
+    policy.RuleDefault('load-balancer:global_observer',
+                       'role:load-balancer_global_observer'),
+
+    policy.RuleDefault('load-balancer:member_and_owner',
+                       'role:load-balancer_member and '
+                       'rule:load-balancer:owner'),
+
+    # API access methods
+    policy.RuleDefault('load-balancer:read',
+                       'rule:load-balancer:observer_and_owner or '
+                       'rule:load-balancer:global_observer or '
+                       'rule:load-balancer:member_and_owner or is_admin:True'),
+
+    policy.RuleDefault('load-balancer:read-global',
+                       'rule:load-balancer:global_observer or '
+                       'is_admin:True'),
+
+    policy.RuleDefault('load-balancer:write',
+                       'rule:load-balancer:member_and_owner or is_admin:True'),
 ]
 
 

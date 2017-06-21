@@ -51,6 +51,13 @@ class LoadBalancersController(base.BaseController):
         """Gets a single load balancer's details."""
         context = pecan.request.context.get('octavia_context')
         load_balancer = self._get_db_lb(context.session, id)
+
+        # Check that the user is authorized to show this lb
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_LOADBALANCER, action='get_one')
+        target = {'project_id': load_balancer.project_id}
+        context.policy.authorize(action, target)
+
         result = self._convert_db_to_type(
             load_balancer, lb_types.LoadBalancerResponse)
         return lb_types.LoadBalancerRootResponse(loadbalancer=result)
@@ -61,17 +68,31 @@ class LoadBalancersController(base.BaseController):
         """Lists all load balancers."""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
-        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
-            if project_id:
-                project_id = {'project_id': project_id}
-            else:
-                project_id = {}
+
+        # Check that the user is authorized to list lbs under all projects
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_LOADBALANCER, action='get_all-global')
+        target = {'project_id': project_id}
+        if not context.policy.authorize(action, target, do_raise=False):
+            # Not a global observer or admin
+            if project_id is None:
+                project_id = context.project_id
+
+            # Check that the user is authorized to list lbs under this project
+            action = '{rbac_obj}{action}'.format(
+                rbac_obj=constants.RBAC_LOADBALANCER, action='get_all')
+            target = {'project_id': project_id}
+            context.policy.authorize(action, target)
+
+        if project_id is None:
+            query_filter = {}
         else:
-            project_id = {'project_id': context.project_id}
+            query_filter = {'project_id': project_id}
+
         load_balancers, links = self.repositories.load_balancer.get_all(
             context.session, show_deleted=False,
             pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
-            **project_id)
+            **query_filter)
         result = self._convert_db_to_type(
             load_balancers, [lb_types.LoadBalancerResponse])
         return lb_types.LoadBalancersRootResponse(
@@ -161,15 +182,18 @@ class LoadBalancersController(base.BaseController):
         load_balancer = load_balancer.loadbalancer
         context = pecan.request.context.get('octavia_context')
 
-        project_id = context.project_id
-        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
-            if load_balancer.project_id:
-                project_id = load_balancer.project_id
+        if not load_balancer.project_id and context.project_id:
+            load_balancer.project_id = context.project_id
 
-        if not project_id:
+        if not load_balancer.project_id:
             raise exceptions.ValidationException(detail=_(
                 "Missing project ID in request where one is required."))
-        load_balancer.project_id = project_id
+
+        # Check that the user is authorized to create under this project
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_LOADBALANCER, action='post')
+        target = {'project_id': load_balancer.project_id}
+        context.policy.authorize(action, target)
 
         self._validate_vip_request_object(load_balancer)
 
@@ -339,6 +363,13 @@ class LoadBalancersController(base.BaseController):
         load_balancer = load_balancer.loadbalancer
         context = pecan.request.context.get('octavia_context')
         db_lb = self._get_db_lb(context.session, id)
+
+        # Check that the user is authorized to update this lb
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_LOADBALANCER, action='put')
+        target = {'project_id': db_lb.project_id}
+        context.policy.authorize(action, target)
+
         self._test_lb_status(context.session, id)
         try:
             LOG.info("Sending updated Load Balancer %s to the handler", id)
@@ -357,6 +388,13 @@ class LoadBalancersController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         cascade = strutils.bool_from_string(cascade)
         db_lb = self._get_db_lb(context.session, id)
+
+        # Check that the user is authorized to delete this lb
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_LOADBALANCER, action='delete')
+        target = {'project_id': db_lb.project_id}
+        context.policy.authorize(action, target)
+
         with db_api.get_lock_session() as lock_session:
             self._test_lb_status(lock_session, id,
                                  lb_status=constants.PENDING_DELETE)

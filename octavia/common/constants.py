@@ -421,3 +421,12 @@ ALLOWED_SORT_DIR = (ASC, DESC)
 DEFAULT_SORT_DIR = ASC
 DEFAULT_SORT_KEYS = ['created_at', 'id']
 DEFAULT_PAGE_SIZE = 1000
+
+# RBAC
+LOADBALANCER_API = 'os_load-balancer_api'
+RULE_API_READ = 'rule:load-balancer:read'
+RULE_API_READ_GLOBAL = 'rule:load-balancer:read-global'
+RULE_API_WRITE = 'rule:load-balancer:write'
+RULE_ANY = '@'
+RBAC_LOADBALANCER = '{}:loadbalancer:'.format(LOADBALANCER_API)
+RBAC_LISTENER = '{}:listener:'.format(LOADBALANCER_API)
