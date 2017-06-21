@@ -39,6 +39,7 @@ LOG = logging.getLogger(__name__)
 
 
 class PoolsController(base.BaseController):
+    RBAC_TYPE = constants.RBAC_POOL
 
     def __init__(self):
         super(PoolsController, self).__init__()
@@ -50,11 +51,8 @@ class PoolsController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         db_pool = self._get_db_pool(context.session, id)
 
-        # Check that the user is authorized to show this pool
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_POOL, action='get_one')
-        target = {'project_id': db_pool.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, db_pool.project_id,
+                                   constants.RBAC_GET_ONE)
 
         result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
         return pool_types.PoolRootResponse(pool=result)
@@ -66,25 +64,7 @@ class PoolsController(base.BaseController):
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
 
-        # Check that the user is authorized to list pools under all projects
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_POOL, action='get_all-global')
-        target = {'project_id': project_id}
-        if not context.policy.authorize(action, target, do_raise=False):
-            # Not a global observer or admin
-            if project_id is None:
-                project_id = context.project_id
-
-            # Check that the user is authorized to list lbs under this project
-            action = '{rbac_obj}{action}'.format(
-                rbac_obj=constants.RBAC_POOL, action='get_all')
-            target = {'project_id': project_id}
-            context.policy.authorize(action, target)
-
-        if project_id is None:
-            query_filter = {}
-        else:
-            query_filter = {'project_id': project_id}
+        query_filter = self._auth_get_all(context, project_id)
 
         db_pools, links = self.repositories.pool.get_all(
             context.session, show_deleted=False,
@@ -187,11 +167,8 @@ class PoolsController(base.BaseController):
                     "loadbalancer_id, listener_id")
             raise exceptions.ValidationException(detail=msg)
 
-        # Check that the user is authorized to create under this project
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_POOL, action='post')
-        target = {'project_id': pool.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, pool.project_id,
+                                   constants.RBAC_POST)
 
         lock_session = db_api.get_session(autocommit=False)
         if self.repositories.check_quota_met(
@@ -273,11 +250,8 @@ class PoolsController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         db_pool = self._get_db_pool(context.session, id)
 
-        # Check that the user is authorized to update this pool
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_POOL, action='put')
-        target = {'project_id': db_pool.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, db_pool.project_id,
+                                   constants.RBAC_PUT)
 
         self._test_lb_and_listener_statuses(
             context.session, lb_id=db_pool.load_balancer_id,
@@ -311,11 +285,8 @@ class PoolsController(base.BaseController):
             raise exceptions.PoolInUseByL7Policy(
                 id=db_pool.id, l7policy_id=db_pool.l7policies[0].id)
 
-        # Check that the user is authorized to delete this pool
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_POOL, action='delete')
-        target = {'project_id': db_pool.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, db_pool.project_id,
+                                   constants.RBAC_DELETE)
 
         self._test_lb_and_listener_statuses(
             context.session, lb_id=db_pool.load_balancer_id,

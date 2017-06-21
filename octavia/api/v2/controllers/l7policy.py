@@ -37,6 +37,7 @@ LOG = logging.getLogger(__name__)
 
 
 class L7PolicyController(base.BaseController):
+    RBAC_TYPE = constants.RBAC_L7POLICY
 
     def __init__(self):
         super(L7PolicyController, self).__init__()
@@ -48,11 +49,8 @@ class L7PolicyController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         db_l7policy = self._get_db_l7policy(context.session, id)
 
-        # Check that the user is authorized to show this l7policy
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_L7POLICY, action='get_one')
-        target = {'project_id': db_l7policy.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, db_l7policy.project_id,
+                                   constants.RBAC_GET_ONE)
 
         result = self._convert_db_to_type(db_l7policy,
                                           l7policy_types.L7PolicyResponse)
@@ -65,25 +63,7 @@ class L7PolicyController(base.BaseController):
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
 
-        # Check if user is authorized to list l7policies under all projects
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_L7POLICY, action='get_all-global')
-        target = {'project_id': project_id}
-        if not context.policy.authorize(action, target, do_raise=False):
-            # Not a global observer or admin
-            if project_id is None:
-                project_id = context.project_id
-
-            # Check if user is authorized to list l7policies under this project
-            action = '{rbac_obj}{action}'.format(
-                rbac_obj=constants.RBAC_L7POLICY, action='get_all')
-            target = {'project_id': project_id}
-            context.policy.authorize(action, target)
-
-        if project_id is None:
-            query_filter = {}
-        else:
-            query_filter = {'project_id': project_id}
+        query_filter = self._auth_get_all(context, project_id)
 
         db_l7policies, links = self.repositories.l7policy.get_all(
             context.session, show_deleted=False,
@@ -171,11 +151,8 @@ class L7PolicyController(base.BaseController):
         load_balancer_id = listener.load_balancer_id
         l7policy.project_id = listener.project_id
 
-        # Check that the user is authorized to create under this project
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_L7POLICY, action='post')
-        target = {'project_id': l7policy.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, l7policy.project_id,
+                                   constants.RBAC_POST)
 
         lock_session = db_api.get_session(autocommit=False)
         if self.repositories.check_quota_met(
@@ -242,11 +219,8 @@ class L7PolicyController(base.BaseController):
         load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
             db_l7policy)
 
-        # Check that the user is authorized to update this l7policy
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_L7POLICY, action='put')
-        target = {'project_id': db_l7policy.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, db_l7policy.project_id,
+                                   constants.RBAC_PUT)
 
         self._test_lb_and_listener_statuses(context.session,
                                             lb_id=load_balancer_id,
@@ -282,11 +256,8 @@ class L7PolicyController(base.BaseController):
         load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
             db_l7policy)
 
-        # Check that the user is authorized to delete this pool
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_L7POLICY, action='delete')
-        target = {'project_id': db_l7policy.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, db_l7policy.project_id,
+                                   constants.RBAC_DELETE)
 
         self._test_lb_and_listener_statuses(context.session,
                                             lb_id=load_balancer_id,

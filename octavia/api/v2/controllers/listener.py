@@ -37,6 +37,7 @@ LOG = logging.getLogger(__name__)
 
 
 class ListenersController(base.BaseController):
+    RBAC_TYPE = constants.RBAC_LISTENER
 
     def __init__(self):
         super(ListenersController, self).__init__()
@@ -61,11 +62,8 @@ class ListenersController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         db_listener = self._get_db_listener(context.session, id)
 
-        # Check that the user is authorized to show this listener
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_LISTENER, action='get_one')
-        target = {'project_id': db_listener.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, db_listener.project_id,
+                                   constants.RBAC_GET_ONE)
 
         result = self._convert_db_to_type(db_listener,
                                           listener_types.ListenerResponse)
@@ -78,25 +76,7 @@ class ListenersController(base.BaseController):
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
 
-        # Check that the user is authorized to list lbs under all projects
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_LISTENER, action='get_all-global')
-        target = {'project_id': project_id}
-        if not context.policy.authorize(action, target, do_raise=False):
-            # Not a global observer or admin
-            if project_id is None:
-                project_id = context.project_id
-
-            # Check that the user is authorized to list lbs under this project
-            action = '{rbac_obj}{action}'.format(
-                rbac_obj=constants.RBAC_LISTENER, action='get_all')
-            target = {'project_id': project_id}
-            context.policy.authorize(action, target)
-
-        if project_id is None:
-            query_filter = {}
-        else:
-            query_filter = {'project_id': project_id}
+        query_filter = self._auth_get_all(context, project_id)
 
         db_listeners, links = self.repositories.listener.get_all(
             context.session, show_deleted=False,
@@ -211,11 +191,8 @@ class ListenersController(base.BaseController):
         listener.project_id = self._get_lb_project_id(
             context.session, load_balancer_id)
 
-        # Check that the user is authorized to create under this project
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_LISTENER, action='post')
-        target = {'project_id': listener.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, listener.project_id,
+                                   constants.RBAC_POST)
 
         lock_session = db_api.get_session(autocommit=False)
         if self.repositories.check_quota_met(
@@ -285,11 +262,8 @@ class ListenersController(base.BaseController):
         db_listener = self._get_db_listener(context.session, id)
         load_balancer_id = db_listener.load_balancer_id
 
-        # Check that the user is authorized to update this listener
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_LISTENER, action='put')
-        target = {'project_id': db_listener.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, db_listener.project_id,
+                                   constants.RBAC_PUT)
 
         # TODO(rm_work): Do we need something like this? What do we do on an
         # empty body for a PUT?
@@ -327,11 +301,8 @@ class ListenersController(base.BaseController):
         db_listener = self._get_db_listener(context.session, id)
         load_balancer_id = db_listener.load_balancer_id
 
-        # Check that the user is authorized to delete this listener
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_LISTENER, action='delete')
-        target = {'project_id': db_listener.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, db_listener.project_id,
+                                   constants.RBAC_DELETE)
 
         self._test_lb_and_listener_statuses(
             context.session, load_balancer_id,
