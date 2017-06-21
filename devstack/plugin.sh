@@ -525,6 +525,7 @@ function add_load-balancer_roles {
     openstack role create load-balancer_global_observer
     openstack role create load-balancer_member
     openstack role create load-balancer_admin
+    openstack role create load-balancer_quota_admin
     openstack role add --user demo --project demo load-balancer_member
 }
 

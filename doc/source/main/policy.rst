@@ -10,21 +10,24 @@ the load-balancer API:
 .. glossary::
 
     role:load-balancer_observer
-        User has access to load-balancer read-only APIs
+        User has access to load-balancer read-only APIs.
 
     role:load-balancer_global_observer
         User has access to load-balancer read-only APIs including resources
         owned by others.
 
     role:load-balancer_member
-        User has access to load-balancer read and write APIs
+        User has access to load-balancer read and write APIs.
+
+    role:load-balancer_quota_admin
+        User is considered an admin for quota APIs only.
 
     role:load-balancer_admin
         User is considered an admin for all load-balnacer APIs including
         resources owned by others.
 
     role:admin
-        User is admin to all APIs
+        User is admin to all APIs.
 
 .. note::
 

@@ -35,27 +35,47 @@ class QuotasController(base.BaseController):
     def get(self, project_id):
         """Get a single project's quota details."""
         context = pecan.request.context.get('octavia_context')
+
+        # Check that the user is authorized to show this quota
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_QUOTA, action='get_one')
+        target = {'project_id': project_id}
+        context.policy.authorize(action, target)
+
         db_quotas = self._get_db_quotas(context.session, project_id)
         return self._convert_db_to_type(db_quotas, quota_types.QuotaResponse)
 
     @wsme_pecan.wsexpose(quota_types.QuotaAllResponse,
                          ignore_extra_args=True)
-    def get_all(self, tenant_id=None, project_id=None):
+    def get_all(self, project_id=None):
         """List all non-default quotas."""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
-        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
-            if project_id or tenant_id:
-                project_id = {'project_id': project_id or tenant_id}
-            else:
-                project_id = {}
+
+        # Check that the user is authorized to list quotas under all projects
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_QUOTA, action='get_all-global')
+        target = {'project_id': project_id}
+        if not context.policy.authorize(action, target, do_raise=False):
+            # Not a global observer or admin
+            if project_id is None:
+                project_id = context.project_id
+
+            # Check if user is authorized to list quota under this project
+            action = '{rbac_obj}{action}'.format(
+                rbac_obj=constants.RBAC_QUOTA, action='get_all')
+            target = {'project_id': project_id}
+            context.policy.authorize(action, target)
+
+        if project_id is None:
+            query_filter = {}
         else:
-            project_id = {'project_id': context.project_id}
+            query_filter = {'project_id': project_id}
 
         db_quotas, links = self.repositories.quotas.get_all(
             context.session,
             pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
-            **project_id)
+            **query_filter)
         quotas = quota_types.QuotaAllResponse.from_data_model(db_quotas)
         quotas.quotas_links = links
         return quotas
@@ -66,15 +86,14 @@ class QuotasController(base.BaseController):
         """Update any or all quotas for a project."""
         context = pecan.request.context.get('octavia_context')
 
-        new_project_id = context.project_id
-        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
-            if project_id:
-                new_project_id = project_id
-
-        if not new_project_id:
+        if not project_id:
             raise exceptions.MissingAPIProjectID()
 
-        project_id = new_project_id
+        # Check that the user is authorized to update this quota
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_QUOTA, action='put')
+        target = {'project_id': project_id}
+        context.policy.authorize(action, target)
 
         quotas_dict = quotas.to_dict()
         self.repositories.quotas.update(context.session, project_id,
@@ -86,7 +105,16 @@ class QuotasController(base.BaseController):
     def delete(self, project_id):
         """Reset a project's quotas to the default values."""
         context = pecan.request.context.get('octavia_context')
-        project_id = context.project_id or project_id
+
+        if not project_id:
+            raise exceptions.MissingAPIProjectID()
+
+        # Check that the user is authorized to delete this quota
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_QUOTA, action='delete')
+        target = {'project_id': project_id}
+        context.policy.authorize(action, target)
+
         self.repositories.quotas.delete(context.session, project_id)
         db_quotas = self._get_db_quotas(context.session, project_id)
         return self._convert_db_to_type(db_quotas, quota_types.QuotaResponse)
@@ -108,6 +136,15 @@ class QuotasDefaultController(base.BaseController):
     def get(self):
         """Get a project's default quota details."""
         context = pecan.request.context.get('octavia_context')
-        project_id = context.project_id
-        quotas = self._get_default_quotas(project_id)
+
+        if not self.project_id:
+            raise exceptions.MissingAPIProjectID()
+
+        # Check that the user is authorized to see quota defaults
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_QUOTA, action='get_defaults')
+        target = {'project_id': self.project_id}
+        context.policy.authorize(action, target)
+
+        quotas = self._get_default_quotas(self.project_id)
         return self._convert_db_to_type(quotas, quota_types.QuotaResponse)
