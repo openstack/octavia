@@ -23,7 +23,7 @@ from octavia.controller.queue import endpoint
 from octavia.tests.unit import base
 
 
-@mock.patch.object(messaging, 'get_notification_transport')
+@mock.patch.object(messaging, 'get_rpc_transport')
 @mock.patch.object(messaging, 'Target')
 @mock.patch.object(endpoint, 'Endpoint')
 @mock.patch.object(messaging, 'get_rpc_server')

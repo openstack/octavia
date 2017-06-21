@@ -46,7 +46,7 @@ class BaseProducer(abstract_handler.BaseObjectHandler):
 
     def __init__(self):
         topic = cfg.CONF.oslo_messaging.topic
-        self.transport = messaging.get_notification_transport(cfg.CONF)
+        self.transport = messaging.get_rpc_transport(cfg.CONF)
         self.target = messaging.Target(
             namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
             topic=topic, version="1.0", fanout=False)
