@@ -1097,7 +1097,7 @@ Health Monitors
 +================+=========+======================================+
 | type           | String  | Type of health monitoring from \     |
 |                |         | the following: ``PING``, ``TCP``, \  |
-|                |         | ``HTTP``, ``HTTPS``                  |
+|                |         | ``HTTP``, ``HTTPS``, ``TLS-HELLO``   |
 +----------------+---------+--------------------------------------+
 | delay          | Integer | Delay between health checks          |
 +----------------+---------+--------------------------------------+

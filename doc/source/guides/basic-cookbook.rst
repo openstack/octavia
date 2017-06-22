@@ -602,7 +602,8 @@ generates the health check in your web application:
 
 Other heath monitors
 --------------------
-Other health monitor types include ``PING``, ``TCP`` and ``HTTPS``.
+Other health monitor types include ``PING``, ``TCP``, ``HTTPS``, and
+``TLS-HELLO``.
 
 ``PING`` health monitors send periodic ICMP PING requests to the back-end
 servers. Obviously, your back-end servers must be configured to allow PINGs in
@@ -613,9 +614,14 @@ port. Your custom TCP application should be written to respond OK to the load
 balancer connecting, opening a TCP connection, and closing it again after the
 TCP handshake without sending any data.
 
-``HTTPS`` health monitors operate exactly like HTTP health monitors, except
-that they also ensure the back-end server responds to SSLv3 client hello
-messages.
+``HTTPS`` health monitors operate exactly like HTTP health monitors, but with
+ssl back-end servers. Unfortunately, this causes problems if the servers are
+performing client certificate validation, as HAProxy won't have a valid cert.
+In this case, using ``TLS-HELLO`` type monitoring is an alternative.
+
+``TLS-HELLO`` health monitors simply ensure the back-end server responds to
+SSLv3 client hello messages. It will not check any other health metrics, like
+status code or body contents.
 
 
 Intermediate certificate chains

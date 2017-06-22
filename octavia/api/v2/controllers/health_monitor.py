@@ -183,6 +183,10 @@ class HealthMonitorController(base.BaseController):
                 lock_session, health_monitor)
             db_hm = self._validate_create_hm(lock_session, hm_dict)
             lock_session.commit()
+        except odb_exceptions.DBError:
+            lock_session.rollback()
+            raise exceptions.InvalidOption(
+                value=hm_dict.get('type'), option='type')
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
