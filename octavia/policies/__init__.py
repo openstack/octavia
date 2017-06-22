@@ -16,6 +16,7 @@ import itertools
 from octavia.policies import base
 from octavia.policies import healthmonitor
 from octavia.policies import l7policy
+from octavia.policies import l7rule
 from octavia.policies import listener
 from octavia.policies import loadbalancer
 from octavia.policies import member
@@ -27,6 +28,7 @@ def list_rules():
         base.list_rules(),
         healthmonitor.list_rules(),
         l7policy.list_rules(),
+        l7rule.list_rules(),
         listener.list_rules(),
         loadbalancer.list_rules(),
         member.list_rules(),

@@ -261,12 +261,13 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         return response.json
 
     def create_l7rule(self, l7policy_id, type, compare_type,
-                      value, **optionals):
+                      value, status=None, **optionals):
         req_dict = {'type': type, 'compare_type': compare_type, 'value': value}
         req_dict.update(optionals)
         body = {'rule': req_dict}
         path = self.L7RULES_PATH.format(l7policy_id=l7policy_id)
-        response = self.post(path, body)
+        status = {'status': status} if status else {}
+        response = self.post(path, body, **status)
         return response.json
 
     def create_quota(self, project_id=-1, lb_quota=None, listener_quota=None,
