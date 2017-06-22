@@ -4,5 +4,8 @@
 
     "load-balancer:read": "rule:admin_or_owner",
     "load-balancer:read-global": "is_admin:True",
-    "load-balancer:write": "rule:admin_or_owner"
+    "load-balancer:write": "rule:admin_or_owner",
+    "load-balancer:read-quota": "rule:admin_or_owner",
+    "load-balancer:read-quota-global": "is_admin:True",
+    "load-balancer:write-quota": "is_admin:True"
 }

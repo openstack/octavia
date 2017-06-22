@@ -100,6 +100,98 @@ class TestQuotas(base.BaseAPITest):
         expected = {'quotas': [quota1, quota2], 'quotas_links': []}
         self.assertEqual(expected, quota_list)
 
+    def test_get_all_not_Authorized(self):
+        project_id1 = uuidutils.generate_uuid()
+        project_id2 = uuidutils.generate_uuid()
+        quota_path1 = self.QUOTA_PATH.format(project_id=project_id1)
+        quota1 = {'load_balancer': constants.QUOTA_UNLIMITED, 'listener': 30,
+                  'pool': 30, 'health_monitor': 30, 'member': 30}
+        body1 = {'quota': quota1}
+        self.put(quota_path1, body1, status=202)
+        quota_path2 = self.QUOTA_PATH.format(project_id=project_id2)
+        quota2 = {'load_balancer': 50, 'listener': 50, 'pool': 50,
+                  'health_monitor': 50, 'member': 50}
+        body2 = {'quota': quota2}
+        self.put(quota_path2, body2, status=202)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+                response = self.get(self.QUOTAS_PATH, status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
+
+    def test_get_all_not_Authorized_no_role(self):
+        project_id1 = uuidutils.generate_uuid()
+        quota_path1 = self.QUOTA_PATH.format(project_id=project_id1)
+        quota1 = {'load_balancer': constants.QUOTA_UNLIMITED, 'listener': 30,
+                  'pool': 30, 'health_monitor': 30, 'member': 30}
+        body1 = {'quota': quota1}
+        self.put(quota_path1, body1, status=202)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               project_id1):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': [],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self.get(self.QUOTAS_PATH, status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
+
+    def test_get_all_not_Authorized_bogus_role(self):
+        project_id1 = uuidutils.generate_uuid()
+        project_id2 = uuidutils.generate_uuid()
+        quota_path1 = self.QUOTA_PATH.format(project_id=project_id1)
+        quota1 = {'load_balancer': constants.QUOTA_UNLIMITED, 'listener': 30,
+                  'pool': 30, 'health_monitor': 30, 'member': 30}
+        body1 = {'quota': quota1}
+        self.put(quota_path1, body1, status=202)
+        quota_path2 = self.QUOTA_PATH.format(project_id=project_id2)
+        quota2 = {'load_balancer': 50, 'listener': 50, 'pool': 50,
+                  'health_monitor': 50, 'member': 50}
+        body2 = {'quota': quota2}
+        self.put(quota_path2, body2, status=202)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_bogus'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self.get(self.QUOTAS_PATH, status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
+
     def test_get_all_admin(self):
         project_id1 = uuidutils.generate_uuid()
         project_id2 = uuidutils.generate_uuid()
@@ -114,6 +206,98 @@ class TestQuotas(base.BaseAPITest):
             project_id=project_id3, lb_quota=3, member_quota=3
         ).get(self.root_tag)
         quotas = self.get(self.QUOTAS_PATH).json.get(self.root_tag_list)
+        self.assertEqual(3, len(quotas))
+        quota_lb_member_quotas = [(l.get('load_balancer'), l.get('member'))
+                                  for l in quotas]
+        self.assertIn((quota1.get('load_balancer'), quota1.get('member')),
+                      quota_lb_member_quotas)
+        self.assertIn((quota2.get('load_balancer'), quota2.get('member')),
+                      quota_lb_member_quotas)
+        self.assertIn((quota3.get('load_balancer'), quota3.get('member')),
+                      quota_lb_member_quotas)
+
+    def test_get_all_non_admin_global_observer(self):
+        project_id1 = uuidutils.generate_uuid()
+        project_id2 = uuidutils.generate_uuid()
+        project_id3 = uuidutils.generate_uuid()
+        quota1 = self.create_quota(
+            project_id=project_id1, lb_quota=1, member_quota=1
+        ).get(self.root_tag)
+        quota2 = self.create_quota(
+            project_id=project_id2, lb_quota=2, member_quota=2
+        ).get(self.root_tag)
+        quota3 = self.create_quota(
+            project_id=project_id3, lb_quota=3, member_quota=3
+        ).get(self.root_tag)
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_global_observer'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                quotas = self.get(self.QUOTAS_PATH)
+                quotas = quotas.json.get(self.root_tag_list)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(3, len(quotas))
+        quota_lb_member_quotas = [(l.get('load_balancer'), l.get('member'))
+                                  for l in quotas]
+        self.assertIn((quota1.get('load_balancer'), quota1.get('member')),
+                      quota_lb_member_quotas)
+        self.assertIn((quota2.get('load_balancer'), quota2.get('member')),
+                      quota_lb_member_quotas)
+        self.assertIn((quota3.get('load_balancer'), quota3.get('member')),
+                      quota_lb_member_quotas)
+
+    def test_get_all_quota_admin(self):
+        project_id1 = uuidutils.generate_uuid()
+        project_id2 = uuidutils.generate_uuid()
+        project_id3 = uuidutils.generate_uuid()
+        quota1 = self.create_quota(
+            project_id=project_id1, lb_quota=1, member_quota=1
+        ).get(self.root_tag)
+        quota2 = self.create_quota(
+            project_id=project_id2, lb_quota=2, member_quota=2
+        ).get(self.root_tag)
+        quota3 = self.create_quota(
+            project_id=project_id3, lb_quota=3, member_quota=3
+        ).get(self.root_tag)
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_quota_admin'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                quotas = self.get(self.QUOTAS_PATH)
+                quotas = quotas.json.get(self.root_tag_list)
+        self.conf.config(auth_strategy=auth_strategy)
         self.assertEqual(3, len(quotas))
         quota_lb_member_quotas = [(l.get('load_balancer'), l.get('member'))
                                   for l in quotas]
@@ -142,7 +326,68 @@ class TestQuotas(base.BaseAPITest):
         self.conf.config(auth_strategy=constants.KEYSTONE)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                project3_id):
-            quotas = self.get(self.QUOTAS_PATH).json.get(self.root_tag_list)
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': project3_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                quotas = self.get(self.QUOTAS_PATH)
+                quotas = quotas.json.get(self.root_tag_list)
+        self.conf.config(auth_strategy=auth_strategy)
+
+        self.assertEqual(1, len(quotas))
+        quota_lb_member_quotas = [(l.get('load_balancer'), l.get('member'))
+                                  for l in quotas]
+        self.assertIn((quota3.get('load_balancer'), quota3.get('member')),
+                      quota_lb_member_quotas)
+
+    def test_get_all_non_admin_observer(self):
+        project1_id = uuidutils.generate_uuid()
+        project2_id = uuidutils.generate_uuid()
+        project3_id = uuidutils.generate_uuid()
+        self.create_quota(
+            project_id=project1_id, lb_quota=1, member_quota=1
+        ).get(self.root_tag)
+        self.create_quota(
+            project_id=project2_id, lb_quota=2, member_quota=2
+        ).get(self.root_tag)
+        quota3 = self.create_quota(
+            project_id=project3_id, lb_quota=3, member_quota=3
+        ).get(self.root_tag)
+
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.KEYSTONE)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               project3_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_observer'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': project3_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                quotas = self.get(self.QUOTAS_PATH)
+                quotas = quotas.json.get(self.root_tag_list)
         self.conf.config(auth_strategy=auth_strategy)
 
         self.assertEqual(1, len(quotas))
@@ -169,6 +414,133 @@ class TestQuotas(base.BaseAPITest):
             self.QUOTA_PATH.format(project_id=project2_id)
         ).json.get(self.root_tag)
         self._assert_quotas_equal(quotas, quota2)
+
+    def test_get_Authorized_member(self):
+        self._test_get_Authorized('load-balancer_member')
+
+    def test_get_Authorized_observer(self):
+        self._test_get_Authorized('load-balancer_observer')
+
+    def test_get_Authorized_global_observer(self):
+        self._test_get_Authorized('load-balancer_global_observer')
+
+    def test_get_Authorized_quota_admin(self):
+        self._test_get_Authorized('load-balancer_quota_admin')
+
+    def _test_get_Authorized(self, role):
+        project1_id = uuidutils.generate_uuid()
+        quota1 = self.create_quota(
+            project_id=project1_id, lb_quota=1, member_quota=1
+        ).get(self.root_tag)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               project1_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': [role],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': project1_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                quotas = self.get(
+                    self.QUOTA_PATH.format(project_id=project1_id)
+                ).json.get(self.root_tag)
+        self.conf.config(auth_strategy=auth_strategy)
+        self._assert_quotas_equal(quotas, quota1)
+
+    def test_get_not_Authorized(self):
+        project1_id = uuidutils.generate_uuid()
+        self.create_quota(
+            project_id=project1_id, lb_quota=1, member_quota=1
+        ).get(self.root_tag)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            quotas = self.get(self.QUOTA_PATH.format(project_id=project1_id),
+                              status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, quotas.json)
+
+    def test_get_not_Authorized_bogus_role(self):
+        project1_id = uuidutils.generate_uuid()
+        self.create_quota(
+            project_id=project1_id, lb_quota=1, member_quota=1
+        ).get(self.root_tag)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               project1_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer:bogus'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': project1_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                quotas = self.get(
+                    self.QUOTA_PATH.format(project_id=project1_id),
+                    status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, quotas.json)
+
+    def test_get_not_Authorized_no_role(self):
+        project1_id = uuidutils.generate_uuid()
+        self.create_quota(
+            project_id=project1_id, lb_quota=1, member_quota=1
+        ).get(self.root_tag)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               project1_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': [],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': project1_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                quotas = self.get(
+                    self.QUOTA_PATH.format(project_id=project1_id),
+                    status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, quotas.json)
 
     def test_get_all_sorted(self):
         project1_id = uuidutils.generate_uuid()
@@ -250,6 +622,45 @@ class TestQuotas(base.BaseAPITest):
         quota_dict = response.json
         self._assert_quotas_equal(quota_dict['quota'])
 
+    def test_get_default_quotas_Authorized(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self.get(self.QUOTA_DEFAULT_PATH.format(
+                    project_id=self.project_id))
+        quota_dict = response.json
+        self._assert_quotas_equal(quota_dict['quota'])
+        self.conf.config(auth_strategy=auth_strategy)
+
+    def test_get_default_quotas_not_Authorized(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            response = self.get(self.QUOTA_DEFAULT_PATH.format(
+                project_id=self.project_id), status=401)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
+        self.conf.config(auth_strategy=auth_strategy)
+
     def test_custom_quotas(self):
         quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
         body = {'quota': {'load_balancer': 30, 'listener': 30, 'pool': 30,
@@ -258,6 +669,66 @@ class TestQuotas(base.BaseAPITest):
         response = self.get(quota_path)
         quota_dict = response.json
         self._assert_quotas_equal(quota_dict['quota'], expected=body['quota'])
+
+    def test_custom_quotas_quota_admin(self):
+        quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
+        body = {'quota': {'load_balancer': 30, 'listener': 30, 'pool': 30,
+                          'health_monitor': 30, 'member': 30}}
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_quota_admin'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                self.put(quota_path, body, status=202)
+        self.conf.config(auth_strategy=auth_strategy)
+        response = self.get(quota_path)
+        quota_dict = response.json
+        self._assert_quotas_equal(quota_dict['quota'], expected=body['quota'])
+
+    def test_custom_quotas_not_Authorized_member(self):
+        quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
+        body = {'quota': {'load_balancer': 30, 'listener': 30, 'pool': 30,
+                          'health_monitor': 30, 'member': 30}}
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self.put(quota_path, body, status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
     def test_custom_partial_quotas(self):
         quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
@@ -299,6 +770,76 @@ class TestQuotas(base.BaseAPITest):
         response = self.get(quota_path)
         quota_dict = response.json
         self._assert_quotas_equal(quota_dict['quota'])
+
+    def test_delete_custom_quotas_admin(self):
+        quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
+        body = {'quota': {'load_balancer': 30, 'listener': 30, 'pool': 30,
+                          'health_monitor': 30, 'member': 30}}
+        self.put(quota_path, body, status=202)
+        response = self.get(quota_path)
+        quota_dict = response.json
+        self._assert_quotas_equal(quota_dict['quota'], expected=body['quota'])
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_quota_admin'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                self.delete(quota_path, status=202)
+        self.conf.config(auth_strategy=auth_strategy)
+        response = self.get(quota_path)
+        quota_dict = response.json
+        self._assert_quotas_equal(quota_dict['quota'])
+
+    def test_delete_quotas_not_Authorized_member(self):
+        quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
+        body = {'quota': {'load_balancer': 30, 'listener': 30, 'pool': 30,
+                          'health_monitor': 30, 'member': 30}}
+        self.put(quota_path, body, status=202)
+        response = self.get(quota_path)
+        quota_dict = response.json
+        self._assert_quotas_equal(quota_dict['quota'], expected=body['quota'])
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                self.delete(quota_path, status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        response = self.get(quota_path)
+        quota_dict = response.json
+        self._assert_quotas_equal(quota_dict['quota'], expected=body['quota'])
 
     def test_delete_non_existent_custom_quotas(self):
         quota_path = self.QUOTA_PATH.format(project_id='bogus')

@@ -63,6 +63,21 @@ rules = [
 
     policy.RuleDefault('load-balancer:write',
                        'rule:load-balancer:member_and_owner or is_admin:True'),
+
+    policy.RuleDefault('load-balancer:read-quota',
+                       'rule:load-balancer:observer_and_owner or '
+                       'rule:load-balancer:global_observer or '
+                       'rule:load-balancer:member_and_owner or '
+                       'role:load-balancer_quota_admin or '
+                       'is_admin:True'),
+
+    policy.RuleDefault('load-balancer:read-quota-global',
+                       'rule:load-balancer:global_observer or '
+                       'role:load-balancer_quota_admin or '
+                       'is_admin:True'),
+
+    policy.RuleDefault('load-balancer:write-quota',
+                       'role:load-balancer_quota_admin or is_admin:True'),
 ]
 
 

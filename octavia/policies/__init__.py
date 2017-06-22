@@ -21,6 +21,7 @@ from octavia.policies import listener
 from octavia.policies import loadbalancer
 from octavia.policies import member
 from octavia.policies import pool
+from octavia.policies import quota
 
 
 def list_rules():
@@ -33,4 +34,5 @@ def list_rules():
         loadbalancer.list_rules(),
         member.list_rules(),
         pool.list_rules(),
+        quota.list_rules(),
     )
