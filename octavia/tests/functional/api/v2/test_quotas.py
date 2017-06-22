@@ -114,12 +114,12 @@ class TestQuotas(base.BaseAPITest):
         body2 = {'quota': quota2}
         self.put(quota_path2, body2, status=202)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
                 response = self.get(self.QUOTAS_PATH, status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
     def test_get_all_not_Authorized_no_role(self):
@@ -130,8 +130,8 @@ class TestQuotas(base.BaseAPITest):
         body1 = {'quota': quota1}
         self.put(quota_path1, body1, status=202)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                project_id1):
             override_credentials = {
@@ -151,7 +151,7 @@ class TestQuotas(base.BaseAPITest):
                     "oslo_context.context.RequestContext.to_policy_values",
                     return_value=override_credentials):
                 response = self.get(self.QUOTAS_PATH, status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
     def test_get_all_not_Authorized_bogus_role(self):
@@ -168,8 +168,8 @@ class TestQuotas(base.BaseAPITest):
         body2 = {'quota': quota2}
         self.put(quota_path2, body2, status=202)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             override_credentials = {
@@ -189,7 +189,7 @@ class TestQuotas(base.BaseAPITest):
                     "oslo_context.context.RequestContext.to_policy_values",
                     return_value=override_credentials):
                 response = self.get(self.QUOTAS_PATH, status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
     def test_get_all_admin(self):
@@ -229,8 +229,8 @@ class TestQuotas(base.BaseAPITest):
         quota3 = self.create_quota(
             project_id=project_id3, lb_quota=3, member_quota=3
         ).get(self.root_tag)
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -251,7 +251,7 @@ class TestQuotas(base.BaseAPITest):
                     return_value=override_credentials):
                 quotas = self.get(self.QUOTAS_PATH)
                 quotas = quotas.json.get(self.root_tag_list)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(3, len(quotas))
         quota_lb_member_quotas = [(l.get('load_balancer'), l.get('member'))
                                   for l in quotas]
@@ -275,8 +275,8 @@ class TestQuotas(base.BaseAPITest):
         quota3 = self.create_quota(
             project_id=project_id3, lb_quota=3, member_quota=3
         ).get(self.root_tag)
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -297,7 +297,7 @@ class TestQuotas(base.BaseAPITest):
                     return_value=override_credentials):
                 quotas = self.get(self.QUOTAS_PATH)
                 quotas = quotas.json.get(self.root_tag_list)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(3, len(quotas))
         quota_lb_member_quotas = [(l.get('load_balancer'), l.get('member'))
                                   for l in quotas]
@@ -322,8 +322,9 @@ class TestQuotas(base.BaseAPITest):
             project_id=project3_id, lb_quota=3, member_quota=3
         ).get(self.root_tag)
 
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.KEYSTONE)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.KEYSTONE)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                project3_id):
             override_credentials = {
@@ -344,7 +345,7 @@ class TestQuotas(base.BaseAPITest):
                     return_value=override_credentials):
                 quotas = self.get(self.QUOTAS_PATH)
                 quotas = quotas.json.get(self.root_tag_list)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assertEqual(1, len(quotas))
         quota_lb_member_quotas = [(l.get('load_balancer'), l.get('member'))
@@ -366,8 +367,9 @@ class TestQuotas(base.BaseAPITest):
             project_id=project3_id, lb_quota=3, member_quota=3
         ).get(self.root_tag)
 
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.KEYSTONE)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.KEYSTONE)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                project3_id):
             override_credentials = {
@@ -388,7 +390,7 @@ class TestQuotas(base.BaseAPITest):
                     return_value=override_credentials):
                 quotas = self.get(self.QUOTAS_PATH)
                 quotas = quotas.json.get(self.root_tag_list)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assertEqual(1, len(quotas))
         quota_lb_member_quotas = [(l.get('load_balancer'), l.get('member'))
@@ -434,8 +436,8 @@ class TestQuotas(base.BaseAPITest):
         ).get(self.root_tag)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                project1_id):
             override_credentials = {
@@ -457,7 +459,7 @@ class TestQuotas(base.BaseAPITest):
                 quotas = self.get(
                     self.QUOTA_PATH.format(project_id=project1_id)
                 ).json.get(self.root_tag)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self._assert_quotas_equal(quotas, quota1)
 
     def test_get_not_Authorized(self):
@@ -467,13 +469,13 @@ class TestQuotas(base.BaseAPITest):
         ).get(self.root_tag)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             quotas = self.get(self.QUOTA_PATH.format(project_id=project1_id),
                               status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, quotas.json)
 
     def test_get_not_Authorized_bogus_role(self):
@@ -483,8 +485,8 @@ class TestQuotas(base.BaseAPITest):
         ).get(self.root_tag)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                project1_id):
             override_credentials = {
@@ -506,7 +508,7 @@ class TestQuotas(base.BaseAPITest):
                 quotas = self.get(
                     self.QUOTA_PATH.format(project_id=project1_id),
                     status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, quotas.json)
 
     def test_get_not_Authorized_no_role(self):
@@ -516,8 +518,8 @@ class TestQuotas(base.BaseAPITest):
         ).get(self.root_tag)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                project1_id):
             override_credentials = {
@@ -539,7 +541,7 @@ class TestQuotas(base.BaseAPITest):
                 quotas = self.get(
                     self.QUOTA_PATH.format(project_id=project1_id),
                     status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, quotas.json)
 
     def test_get_all_sorted(self):
@@ -624,8 +626,8 @@ class TestQuotas(base.BaseAPITest):
 
     def test_get_default_quotas_Authorized(self):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -648,18 +650,18 @@ class TestQuotas(base.BaseAPITest):
                     project_id=self.project_id))
         quota_dict = response.json
         self._assert_quotas_equal(quota_dict['quota'])
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
     def test_get_default_quotas_not_Authorized(self):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.QUOTA_DEFAULT_PATH.format(
                 project_id=self.project_id), status=401)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
     def test_custom_quotas(self):
         quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
@@ -675,8 +677,8 @@ class TestQuotas(base.BaseAPITest):
         body = {'quota': {'load_balancer': 30, 'listener': 30, 'pool': 30,
                           'health_monitor': 30, 'member': 30}}
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -696,7 +698,7 @@ class TestQuotas(base.BaseAPITest):
                     "oslo_context.context.RequestContext.to_policy_values",
                     return_value=override_credentials):
                 self.put(quota_path, body, status=202)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         response = self.get(quota_path)
         quota_dict = response.json
         self._assert_quotas_equal(quota_dict['quota'], expected=body['quota'])
@@ -706,8 +708,8 @@ class TestQuotas(base.BaseAPITest):
         body = {'quota': {'load_balancer': 30, 'listener': 30, 'pool': 30,
                           'health_monitor': 30, 'member': 30}}
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -727,7 +729,7 @@ class TestQuotas(base.BaseAPITest):
                     "oslo_context.context.RequestContext.to_policy_values",
                     return_value=override_credentials):
                 response = self.put(quota_path, body, status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
     def test_custom_partial_quotas(self):
@@ -780,8 +782,8 @@ class TestQuotas(base.BaseAPITest):
         quota_dict = response.json
         self._assert_quotas_equal(quota_dict['quota'], expected=body['quota'])
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -801,7 +803,7 @@ class TestQuotas(base.BaseAPITest):
                     "oslo_context.context.RequestContext.to_policy_values",
                     return_value=override_credentials):
                 self.delete(quota_path, status=202)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         response = self.get(quota_path)
         quota_dict = response.json
         self._assert_quotas_equal(quota_dict['quota'])
@@ -815,8 +817,8 @@ class TestQuotas(base.BaseAPITest):
         quota_dict = response.json
         self._assert_quotas_equal(quota_dict['quota'], expected=body['quota'])
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -836,7 +838,7 @@ class TestQuotas(base.BaseAPITest):
                     "oslo_context.context.RequestContext.to_policy_values",
                     return_value=override_credentials):
                 self.delete(quota_path, status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         response = self.get(quota_path)
         quota_dict = response.json
         self._assert_quotas_equal(quota_dict['quota'], expected=body['quota'])

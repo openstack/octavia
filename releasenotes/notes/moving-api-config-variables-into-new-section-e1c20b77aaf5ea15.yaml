@@ -1,0 +1,11 @@
+---
+upgrade:
+  - |
+    Several API related variables are moving to their own section `api_settings`.
+    bind_host
+    bind_port
+    api_handler
+    allow_pagination
+    allow_sorting
+    pagination_max_limit
+    api_base_uri

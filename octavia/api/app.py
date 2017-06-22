@@ -14,6 +14,7 @@
 
 from keystonemiddleware import auth_token
 from oslo_config import cfg
+from oslo_log import log as logging
 from oslo_middleware import cors
 from oslo_middleware import request_id
 import pecan
@@ -21,6 +22,8 @@ import pecan
 from octavia.api import config as app_config
 from octavia.common import constants
 from octavia.common import service as octavia_service
+
+LOG = logging.getLogger(__name__)
 
 
 def get_pecan_config():
@@ -32,6 +35,7 @@ def get_pecan_config():
 def setup_app(pecan_config=None, debug=False, argv=None):
     """Creates and returns a pecan wsgi app."""
     octavia_service.prepare_service(argv)
+    cfg.CONF.log_opt_values(LOG, logging.DEBUG)
 
     if not pecan_config:
         pecan_config = get_pecan_config()
@@ -49,7 +53,7 @@ def setup_app(pecan_config=None, debug=False, argv=None):
 def _wrap_app(app):
     """Wraps wsgi app with additional middlewares."""
     app = request_id.RequestId(app)
-    if cfg.CONF.auth_strategy == constants.KEYSTONE:
+    if cfg.CONF.api_settings.auth_strategy == constants.KEYSTONE:
         app = auth_token.AuthProtocol(app, {})
 
     # This should be the last middleware in the list (which results in

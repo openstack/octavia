@@ -73,8 +73,8 @@ class TestMember(base.BaseAPITest):
         api_member = self.create_member(
             self.pool_id, '10.0.0.1', 80).get(self.root_tag)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -95,7 +95,7 @@ class TestMember(base.BaseAPITest):
                     return_value=override_credentials):
                 response = self.get(self.member_path.format(
                     member_id=api_member.get('id'))).json.get(self.root_tag)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(api_member, response)
         self.assertEqual(api_member.get('name'), '')
 
@@ -103,13 +103,13 @@ class TestMember(base.BaseAPITest):
         api_member = self.create_member(
             self.pool_id, '10.0.0.1', 80).get(self.root_tag)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.member_path.format(
                 member_id=api_member.get('id')), status=401).json
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response)
 
     def test_get_hides_deleted(self):
@@ -165,8 +165,8 @@ class TestMember(base.BaseAPITest):
             m.pop('updated_at')
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -187,7 +187,7 @@ class TestMember(base.BaseAPITest):
                     return_value=override_credentials):
                 response = self.get(self.members_path)
                 response = response.json.get(self.root_tag_list)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assertIsInstance(response, list)
         self.assertEqual(2, len(response))
@@ -211,12 +211,12 @@ class TestMember(base.BaseAPITest):
             m.pop('updated_at')
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.members_path, status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
     def test_get_all_sorted(self):
@@ -346,8 +346,8 @@ class TestMember(base.BaseAPITest):
 
     def test_create_authorized(self):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
@@ -370,7 +370,7 @@ class TestMember(base.BaseAPITest):
 
                 api_member = self.create_member(
                     self.pool_id, '10.0.0.1', 80).get(self.root_tag)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assertEqual('10.0.0.1', api_member['address'])
         self.assertEqual(80, api_member['protocol_port'])
@@ -392,14 +392,14 @@ class TestMember(base.BaseAPITest):
 
     def test_create_not_authorized(self):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             api_member = self.create_member(
                 self.pool_id, '10.0.0.1', 80, status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_member)
 
     # TODO(rm_work) Remove after deprecation of project_id in POST (R series)
@@ -567,8 +567,8 @@ class TestMember(base.BaseAPITest):
         self.set_lb_status(self.lb_id)
         new_member = {'name': new_name}
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -593,7 +593,7 @@ class TestMember(base.BaseAPITest):
                     member_path,
                     self._build_body(new_member)).json.get(self.root_tag)
 
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
@@ -619,8 +619,8 @@ class TestMember(base.BaseAPITest):
         self.set_lb_status(self.lb_id)
         new_member = {'name': new_name}
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             member_path = self.member_path_listener.format(
@@ -629,7 +629,7 @@ class TestMember(base.BaseAPITest):
                 member_path,
                 self._build_body(new_member), status=401)
 
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
         self.assert_correct_status(
@@ -730,8 +730,8 @@ class TestMember(base.BaseAPITest):
         self.assertEqual(api_member, member)
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -752,7 +752,7 @@ class TestMember(base.BaseAPITest):
                     return_value=override_credentials):
                 self.delete(self.member_path_listener.format(
                     member_id=api_member.get('id')))
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
@@ -784,13 +784,13 @@ class TestMember(base.BaseAPITest):
         self.assertEqual(api_member, member)
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             self.delete(self.member_path_listener.format(
                 member_id=api_member.get('id')), status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,

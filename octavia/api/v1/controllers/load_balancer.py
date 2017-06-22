@@ -135,7 +135,8 @@ class LoadBalancersController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
 
         project_id = context.project_id
-        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
+        if context.is_admin or (CONF.api_settings.auth_strategy ==
+                                constants.NOAUTH):
             if load_balancer.project_id:
                 project_id = load_balancer.project_id
 

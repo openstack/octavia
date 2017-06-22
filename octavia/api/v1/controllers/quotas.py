@@ -53,7 +53,8 @@ class QuotasController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
 
         new_project_id = context.project_id
-        if context.is_admin or CONF.auth_strategy == constants.NOAUTH:
+        if context.is_admin or (CONF.api_settings.auth_strategy ==
+                                constants.NOAUTH):
             if project_id:
                 new_project_id = project_id
 

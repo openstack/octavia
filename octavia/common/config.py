@@ -29,7 +29,40 @@ from octavia import version
 
 LOG = logging.getLogger(__name__)
 
+# TODO(rm_work) Remove in or after "R" release
+API_SETTINGS_DEPRECATION_MESSAGE = _(
+    'This setting has moved to the [api_settings] section.')
+
 core_opts = [
+    cfg.HostnameOpt('host', default=utils.get_hostname(),
+                    help=_("The hostname Octavia is running on")),
+    cfg.StrOpt('octavia_plugins', default='hot_plug_plugin',
+               help=_("Name of the controller plugin to use")),
+
+    # TODO(johnsom) Remove in or after "R" release
+    cfg.IPOpt('bind_host', help=_("The host IP to bind to"),
+              deprecated_for_removal=True,
+              deprecated_reason=API_SETTINGS_DEPRECATION_MESSAGE),
+    # TODO(johnsom) Remove in or after "R" release
+    cfg.PortOpt('bind_port', help=_("The port to bind to"),
+                deprecated_for_removal=True,
+                deprecated_reason=API_SETTINGS_DEPRECATION_MESSAGE),
+    # TODO(johnsom) Remove in or after "R" release
+    cfg.StrOpt('auth_strategy',
+               choices=[constants.NOAUTH,
+                        constants.KEYSTONE,
+                        constants.TESTING],
+               help=_("The auth strategy for API requests."),
+               deprecated_for_removal=True,
+               deprecated_reason=API_SETTINGS_DEPRECATION_MESSAGE),
+    # TODO(johnsom) Remove in or after "R" release
+    cfg.StrOpt('api_handler',
+               help=_("The handler that the API communicates with"),
+               deprecated_for_removal=True,
+               deprecated_reason=API_SETTINGS_DEPRECATION_MESSAGE),
+]
+
+api_opts = [
     cfg.IPOpt('bind_host', default='127.0.0.1',
               help=_("The host IP to bind to")),
     cfg.PortOpt('bind_port', default=9876,
@@ -42,9 +75,9 @@ core_opts = [
     cfg.StrOpt('api_handler', default='queue_producer',
                help=_("The handler that the API communicates with")),
     cfg.BoolOpt('allow_pagination', default=True,
-                help=_("Allow the usage of the pagination")),
+                help=_("Allow the usage of pagination")),
     cfg.BoolOpt('allow_sorting', default=True,
-                help=_("Allow the usage of the sorting")),
+                help=_("Allow the usage of sorting")),
     cfg.BoolOpt('allow_filtering', default=True,
                 help=_("Allow the usage of filtering")),
     cfg.BoolOpt('allow_field_selection', default=True,
@@ -54,15 +87,14 @@ core_opts = [
                help=_("The maximum number of items returned in a single "
                       "response. The string 'infinite' or a negative "
                       "integer value means 'no limit'")),
-    cfg.HostnameOpt('host', default=utils.get_hostname(),
-                    help=_("The hostname Octavia is running on")),
     cfg.StrOpt('api_base_uri',
                help=_("Base URI for the API for use in pagination links. "
                       "This will be autodetected from the request if not "
                       "overridden here.")),
-    cfg.StrOpt('octavia_plugins',
-               default='hot_plug_plugin',
-               help=_('Name of the controller plugin to use'))
+    cfg.BoolOpt('api_v1_enabled', default=True,
+                help=_("Expose the v1 API?")),
+    cfg.BoolOpt('api_v2_enabled', default=True,
+                help=_("Expose the v2 API?")),
 ]
 
 # Options only used by the amphora agent
@@ -488,6 +520,7 @@ quota_opts = [
 
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
+cfg.CONF.register_opts(api_opts, group='api_settings')
 cfg.CONF.register_opts(amphora_agent_opts, group='amphora_agent')
 cfg.CONF.register_opts(networking_opts, group='networking')
 cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
@@ -524,6 +557,7 @@ def init(args, **kwargs):
     cfg.CONF(args=args, project='octavia',
              version='%%prog %s' % version.version_info.release_string(),
              **kwargs)
+    handle_deprecation_compatibility()
 
 
 def setup_logging(conf):
@@ -534,3 +568,26 @@ def setup_logging(conf):
     product_name = "octavia"
     logging.setup(conf, product_name)
     LOG.info("Logging enabled!")
+
+
+# Use cfg.CONF.set_default to override the new configuration setting
+# default value.  This allows a value set, at the new location, to override
+# a value set in the previous location while allowing settings that have
+# not yet been moved to be utilized.
+def handle_deprecation_compatibility():
+    # TODO(johnsom) Remove in or after "R" release
+    if cfg.CONF.bind_host is not None:
+        cfg.CONF.set_default('bind_host', cfg.CONF.bind_host,
+                             group='api_settings')
+    # TODO(johnsom) Remove in or after "R" release
+    if cfg.CONF.bind_port is not None:
+        cfg.CONF.set_default('bind_port', cfg.CONF.bind_port,
+                             group='api_settings')
+    # TODO(johnsom) Remove in or after "R" release
+    if cfg.CONF.auth_strategy is not None:
+        cfg.CONF.set_default('auth_strategy', cfg.CONF.auth_strategy,
+                             group='api_settings')
+    # TODO(johnsom) Remove in or after "R" release
+    if cfg.CONF.api_handler is not None:
+        cfg.CONF.set_default('api_handler', cfg.CONF.api_handler,
+                             group='api_settings')

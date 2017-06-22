@@ -33,7 +33,7 @@ class BaseController(rest.RestController):
         self.repositories = repositories.Repositories()
         self.handler = stevedore_driver.DriverManager(
             namespace='octavia.api.handlers',
-            name=CONF.api_handler,
+            name=CONF.api_settings.api_handler,
             invoke_on_load=True
         ).driver
 
