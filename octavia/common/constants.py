@@ -440,10 +440,18 @@ RBAC_HEALTHMONITOR = '{}:healthmonitor:'.format(LOADBALANCER_API)
 RBAC_L7POLICY = '{}:l7policy:'.format(LOADBALANCER_API)
 RBAC_L7RULE = '{}:l7rule:'.format(LOADBALANCER_API)
 RBAC_QUOTA = '{}:quota:'.format(LOADBALANCER_API)
-
 RBAC_POST = 'post'
 RBAC_PUT = 'put'
 RBAC_DELETE = 'delete'
 RBAC_GET_ONE = 'get_one'
 RBAC_GET_ALL = 'get_all'
 RBAC_GET_ALL_GLOBAL = 'get_all-global'
+
+# PROVIDERS
+# TODO(johnsom) When providers are implemented, this should be removed.
+OCTAVIA = 'octavia'
+SUPPORTED_PROVIDERS = OCTAVIA,
+
+# FLAVORS
+# TODO(johnsom) When flavors are implemented, this should be removed.
+SUPPORTED_FLAVORS = ()

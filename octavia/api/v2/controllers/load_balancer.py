@@ -194,6 +194,14 @@ class LoadBalancersController(base.BaseController):
             listeners = lb_dict.pop('listeners', []) or []
             pools = lb_dict.pop('pools', []) or []
 
+            # TODO(johnsom) Remove provider and flavor from the lb_dict
+            # as they have not been implemented beyond the API yet.
+            # Remove these lines as they are implemented.
+            if 'provider' in lb_dict:
+                del lb_dict['provider']
+            if 'flavor' in lb_dict:
+                del lb_dict['flavor']
+
             db_lb = self.repositories.create_load_balancer_and_vip(
                 lock_session, lb_dict, vip_dict)
 
