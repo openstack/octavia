@@ -18,6 +18,7 @@ from oslo_config import cfg
 from pecan import rest
 from stevedore import driver as stevedore_driver
 
+from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import repositories
@@ -27,6 +28,7 @@ LOG = logging.getLogger(__name__)
 
 
 class BaseController(rest.RestController):
+    RBAC_TYPE = None
 
     def __init__(self):
         super(BaseController, self).__init__()
@@ -146,3 +148,29 @@ class BaseController(rest.RestController):
             if db_quotas.member is None:
                 db_quotas.member = CONF.quotas.default_member_quota
         return db_quotas
+
+    def _auth_get_all(self, context, project_id):
+        # Check authorization to list objects under all projects
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=self.RBAC_TYPE, action=constants.RBAC_GET_ALL_GLOBAL)
+        target = {'project_id': project_id}
+        if not context.policy.authorize(action, target, do_raise=False):
+            # Not a global observer or admin
+            if project_id is None:
+                project_id = context.project_id
+
+            # Check authorization to list objects under this project
+            self._auth_validate_action(context, project_id,
+                                       constants.RBAC_GET_ALL)
+        if project_id is None:
+            query_filter = {}
+        else:
+            query_filter = {'project_id': project_id}
+        return query_filter
+
+    def _auth_validate_action(self, context, project_id, action):
+        # Check that the user is authorized to do an action in this object
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=self.RBAC_TYPE, action=action)
+        target = {'project_id': project_id}
+        context.policy.authorize(action, target)

@@ -27,6 +27,7 @@ CONF.import_group('quotas', 'octavia.common.config')
 
 
 class QuotasController(base.BaseController):
+    RBAC_TYPE = constants.RBAC_QUOTA
 
     def __init__(self):
         super(QuotasController, self).__init__()
@@ -36,11 +37,7 @@ class QuotasController(base.BaseController):
         """Get a single project's quota details."""
         context = pecan.request.context.get('octavia_context')
 
-        # Check that the user is authorized to show this quota
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_QUOTA, action='get_one')
-        target = {'project_id': project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, project_id, constants.RBAC_GET_ONE)
 
         db_quotas = self._get_db_quotas(context.session, project_id)
         return self._convert_db_to_type(db_quotas, quota_types.QuotaResponse)
@@ -52,25 +49,7 @@ class QuotasController(base.BaseController):
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
 
-        # Check that the user is authorized to list quotas under all projects
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_QUOTA, action='get_all-global')
-        target = {'project_id': project_id}
-        if not context.policy.authorize(action, target, do_raise=False):
-            # Not a global observer or admin
-            if project_id is None:
-                project_id = context.project_id
-
-            # Check if user is authorized to list quota under this project
-            action = '{rbac_obj}{action}'.format(
-                rbac_obj=constants.RBAC_QUOTA, action='get_all')
-            target = {'project_id': project_id}
-            context.policy.authorize(action, target)
-
-        if project_id is None:
-            query_filter = {}
-        else:
-            query_filter = {'project_id': project_id}
+        query_filter = self._auth_get_all(context, project_id)
 
         db_quotas, links = self.repositories.quotas.get_all(
             context.session,
@@ -89,11 +68,7 @@ class QuotasController(base.BaseController):
         if not project_id:
             raise exceptions.MissingAPIProjectID()
 
-        # Check that the user is authorized to update this quota
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_QUOTA, action='put')
-        target = {'project_id': project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
         quotas_dict = quotas.to_dict()
         self.repositories.quotas.update(context.session, project_id,
@@ -109,11 +84,7 @@ class QuotasController(base.BaseController):
         if not project_id:
             raise exceptions.MissingAPIProjectID()
 
-        # Check that the user is authorized to delete this quota
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_QUOTA, action='delete')
-        target = {'project_id': project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
 
         self.repositories.quotas.delete(context.session, project_id)
         db_quotas = self._get_db_quotas(context.session, project_id)

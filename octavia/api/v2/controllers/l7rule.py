@@ -34,6 +34,7 @@ LOG = logging.getLogger(__name__)
 
 
 class L7RuleController(base.BaseController):
+    RBAC_TYPE = constants.RBAC_L7RULE
 
     def __init__(self, l7policy_id):
         super(L7RuleController, self).__init__()
@@ -46,11 +47,8 @@ class L7RuleController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         db_l7rule = self._get_db_l7rule(context.session, id)
 
-        # Check that the user is authorized to show this l7rule
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_L7RULE, action='get_one')
-        target = {'project_id': db_l7rule.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, db_l7rule.project_id,
+                                   constants.RBAC_GET_ONE)
 
         result = self._convert_db_to_type(db_l7rule,
                                           l7rule_types.L7RuleResponse)
@@ -159,11 +157,8 @@ class L7RuleController(base.BaseController):
                                                           self.l7policy_id)
         self._check_l7policy_max_rules(context.session)
 
-        # Check that the user is authorized to create under this project
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_L7RULE, action='post')
-        target = {'project_id': l7rule.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, l7rule.project_id,
+                                   constants.RBAC_POST)
 
         lock_session = db_api.get_session(autocommit=False)
         l7rule_dict = db_prepare.create_l7rule(
@@ -201,11 +196,8 @@ class L7RuleController(base.BaseController):
         new_l7rule.update(l7rule.to_dict())
         new_l7rule = data_models.L7Rule.from_dict(new_l7rule)
 
-        # Check that the user is authorized to update this l7rule
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_L7RULE, action='put')
-        target = {'project_id': db_l7rule.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, db_l7rule.project_id,
+                                   constants.RBAC_PUT)
 
         try:
             validate.l7rule_data(new_l7rule)
@@ -239,11 +231,8 @@ class L7RuleController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         db_l7rule = self._get_db_l7rule(context.session, id)
 
-        # Check that the user is authorized to update this member
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_L7RULE, action='delete')
-        target = {'project_id': db_l7rule.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, db_l7rule.project_id,
+                                   constants.RBAC_DELETE)
 
         self._test_lb_listener_policy_statuses(context.session)
 
