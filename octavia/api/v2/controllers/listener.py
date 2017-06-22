@@ -196,6 +196,11 @@ class ListenersController(base.BaseController):
         self._auth_validate_action(context, listener.project_id,
                                    constants.RBAC_POST)
 
+        if (not CONF.api_settings.allow_tls_terminated_listeners and
+                listener.protocol == constants.PROTOCOL_TERMINATED_HTTPS):
+            raise exceptions.DisabledOption(
+                value=constants.PROTOCOL_TERMINATED_HTTPS, option='protocol')
+
         lock_session = db_api.get_session(autocommit=False)
         if self.repositories.check_quota_met(
                 context.session,

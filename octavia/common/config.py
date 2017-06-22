@@ -95,6 +95,8 @@ api_opts = [
                 help=_("Expose the v1 API?")),
     cfg.BoolOpt('api_v2_enabled', default=True,
                 help=_("Expose the v2 API?")),
+    cfg.BoolOpt('allow_tls_terminated_listeners', default=True,
+                help=_("Allow users to create TLS Terminated listeners?")),
 ]
 
 # Options only used by the amphora agent

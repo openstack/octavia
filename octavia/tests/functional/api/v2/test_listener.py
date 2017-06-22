@@ -1051,8 +1051,8 @@ class TestListener(base.BaseAPITest):
 
     def test_create_with_tls_termination_data(self):
         cert_id = uuidutils.generate_uuid()
-        listener = self.create_listener(constants.PROTOCOL_HTTP, 80,
-                                        self.lb_id,
+        listener = self.create_listener(constants.PROTOCOL_TERMINATED_HTTPS,
+                                        80, self.lb_id,
                                         default_tls_container_ref=cert_id)
         listener_path = self.LISTENER_PATH.format(
             listener_id=listener['listener']['id'])
@@ -1061,8 +1061,8 @@ class TestListener(base.BaseAPITest):
 
     def test_update_with_tls_termination_data(self):
         cert_id = uuidutils.generate_uuid()
-        listener = self.create_listener(constants.PROTOCOL_HTTP, 80,
-                                        self.lb_id)
+        listener = self.create_listener(constants.PROTOCOL_TERMINATED_HTTPS,
+                                        80, self.lb_id)
         self.set_lb_status(self.lb_id)
         listener_path = self.LISTENER_PATH.format(
             listener_id=listener['listener']['id'])
@@ -1072,6 +1072,19 @@ class TestListener(base.BaseAPITest):
                  self._build_body({'default_tls_container_ref': cert_id}))
         get_listener = self.get(listener_path).json['listener']
         self.assertIsNone(get_listener.get('default_tls_container_ref'))
+
+    def test_create_with_tls_termination_disabled(self):
+        self.conf.config(group='api_settings',
+                         allow_tls_terminated_listeners=False)
+        cert_id = uuidutils.generate_uuid()
+        listener = self.create_listener(constants.PROTOCOL_TERMINATED_HTTPS,
+                                        80, self.lb_id,
+                                        default_tls_container_ref=cert_id,
+                                        status=400)
+        self.assertIn(
+            'The selected protocol is not allowed in this deployment: {0}'
+            .format(constants.PROTOCOL_TERMINATED_HTTPS),
+            listener.get('faultstring'))
 
     def test_create_with_sni_data(self):
         sni_id1 = uuidutils.generate_uuid()
