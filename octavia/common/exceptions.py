@@ -166,7 +166,7 @@ class TooManyL7RulesOnL7Policy(APIException):
 
 
 class ComputeBuildException(OctaviaException):
-    message = _('Failed to build compute instance.')
+    message = _("Failed to build compute instance due to: %(fault)s")
 
 
 class ComputeBuildQueueTimeoutException(OctaviaException):
