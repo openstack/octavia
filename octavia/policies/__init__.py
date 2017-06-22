@@ -14,6 +14,7 @@
 import itertools
 
 from octavia.policies import base
+from octavia.policies import healthmonitor
 from octavia.policies import listener
 from octavia.policies import loadbalancer
 from octavia.policies import member
@@ -23,6 +24,7 @@ from octavia.policies import pool
 def list_rules():
     return itertools.chain(
         base.list_rules(),
+        healthmonitor.list_rules(),
         listener.list_rules(),
         loadbalancer.list_rules(),
         member.list_rules(),
