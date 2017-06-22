@@ -46,6 +46,13 @@ class MembersController(base.BaseController):
         """Gets a single pool member's details."""
         context = pecan.request.context.get('octavia_context')
         db_member = self._get_db_member(context.session, id)
+
+        # Check that the user is authorized to show this member
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_MEMBER, action='get_one')
+        target = {'project_id': db_member.project_id}
+        context.policy.authorize(action, target)
+
         result = self._convert_db_to_type(db_member,
                                           member_types.MemberResponse)
         return member_types.MemberRootResponse(member=result)
@@ -56,6 +63,15 @@ class MembersController(base.BaseController):
         """Lists all pool members of a pool."""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
+
+        pool = self._get_db_pool(context.session, self.pool_id)
+
+        # Check that the user is authorized to list members for this pool
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_MEMBER, action='get_all')
+        target = {'project_id': pool.project_id}
+        context.policy.authorize(action, target)
+
         db_members, links = self.repositories.member.get_all(
             context.session, show_deleted=False,
             pool_id=self.pool_id,
@@ -157,6 +173,12 @@ class MembersController(base.BaseController):
         member.project_id = self._get_lb_project_id(context.session,
                                                     pool.load_balancer_id)
 
+        # Check that the user is authorized to create under this project
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_MEMBER, action='post')
+        target = {'project_id': member.project_id}
+        context.policy.authorize(action, target)
+
         lock_session = db_api.get_session(autocommit=False)
         if self.repositories.check_quota_met(
                 context.session,
@@ -195,6 +217,13 @@ class MembersController(base.BaseController):
         member = member_.member
         context = pecan.request.context.get('octavia_context')
         db_member = self._get_db_member(context.session, id)
+
+        # Check that the user is authorized to update this member
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_MEMBER, action='put')
+        target = {'project_id': db_member.project_id}
+        context.policy.authorize(action, target)
+
         self._test_lb_and_listener_and_pool_statuses(context.session,
                                                      member=db_member)
         self.repositories.member.update(
@@ -223,6 +252,13 @@ class MembersController(base.BaseController):
         """Deletes a pool member."""
         context = pecan.request.context.get('octavia_context')
         db_member = self._get_db_member(context.session, id)
+
+        # Check that the user is authorized to update this member
+        action = '{rbac_obj}{action}'.format(
+            rbac_obj=constants.RBAC_MEMBER, action='delete')
+        target = {'project_id': db_member.project_id}
+        context.policy.authorize(action, target)
+
         self._test_lb_and_listener_and_pool_statuses(context.session,
                                                      member=db_member)
         self.repositories.member.update(

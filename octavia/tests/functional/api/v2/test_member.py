@@ -13,9 +13,12 @@
 #    under the License.
 
 import mock
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.common import constants
+import octavia.common.context
 from octavia.common import data_models
 from octavia.network import base as network_base
 from octavia.tests.functional.api.v2 import base
@@ -34,6 +37,7 @@ class TestMember(base.BaseAPITest):
         vip_subnet_id = uuidutils.generate_uuid()
         self.lb = self.create_load_balancer(vip_subnet_id)
         self.lb_id = self.lb.get('loadbalancer').get('id')
+        self.project_id = self.lb.get('loadbalancer').get('project_id')
         self.set_lb_status(self.lb_id)
         self.listener = self.create_listener(
             constants.PROTOCOL_HTTP, 80,
@@ -64,6 +68,49 @@ class TestMember(base.BaseAPITest):
             member_id=api_member.get('id'))).json.get(self.root_tag)
         self.assertEqual(api_member, response)
         self.assertEqual(api_member.get('name'), '')
+
+    def test_get_authorized(self):
+        api_member = self.create_member(
+            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self.get(self.member_path.format(
+                    member_id=api_member.get('id'))).json.get(self.root_tag)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(api_member, response)
+        self.assertEqual(api_member.get('name'), '')
+
+    def test_get_not_authorized(self):
+        api_member = self.create_member(
+            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            response = self.get(self.member_path.format(
+                member_id=api_member.get('id')), status=401).json
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response)
 
     def test_get_hides_deleted(self):
         api_member = self.create_member(
@@ -102,6 +149,75 @@ class TestMember(base.BaseAPITest):
             m.pop('updated_at')
         for m in [api_m_1, api_m_2]:
             self.assertIn(m, response)
+
+    def test_get_all_authorized(self):
+        api_m_1 = self.create_member(
+            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        api_m_2 = self.create_member(
+            self.pool_id, '10.0.0.2', 80).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        # Original objects didn't have the updated operating/provisioning
+        # status that exists in the DB.
+        for m in [api_m_1, api_m_2]:
+            m['operating_status'] = constants.ONLINE
+            m['provisioning_status'] = constants.ACTIVE
+            m.pop('updated_at')
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self.get(self.members_path)
+                response = response.json.get(self.root_tag_list)
+        self.conf.config(auth_strategy=auth_strategy)
+
+        self.assertIsInstance(response, list)
+        self.assertEqual(2, len(response))
+        for m in response:
+            m.pop('updated_at')
+        for m in [api_m_1, api_m_2]:
+            self.assertIn(m, response)
+
+    def test_get_all_not_authorized(self):
+        api_m_1 = self.create_member(
+            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        api_m_2 = self.create_member(
+            self.pool_id, '10.0.0.2', 80).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        # Original objects didn't have the updated operating/provisioning
+        # status that exists in the DB.
+        for m in [api_m_1, api_m_2]:
+            m['operating_status'] = constants.ONLINE
+            m['provisioning_status'] = constants.ACTIVE
+            m.pop('updated_at')
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            response = self.get(self.members_path, status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
     def test_get_all_sorted(self):
         self.create_member(self.pool_id, '10.0.0.1', 80, name='member1')
@@ -189,6 +305,64 @@ class TestMember(base.BaseAPITest):
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=self.pool_id, member_id=api_member.get('id'))
+
+    def test_create_authorized(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+
+                api_member = self.create_member(
+                    self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+        self.conf.config(auth_strategy=auth_strategy)
+
+        self.assertEqual('10.0.0.1', api_member['address'])
+        self.assertEqual(80, api_member['protocol_port'])
+        self.assertIsNotNone(api_member['created_at'])
+        self.assertIsNone(api_member['updated_at'])
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id,
+            member_id=api_member.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.ACTIVE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            member_prov_status=constants.PENDING_CREATE,
+            member_op_status=constants.NO_MONITOR)
+        self.set_lb_status(self.lb_id)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id, member_id=api_member.get('id'))
+
+    def test_create_not_authorized(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            api_member = self.create_member(
+                self.pool_id, '10.0.0.1', 80, status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, api_member)
 
     # TODO(rm_work) Remove after deprecation of project_id in POST (R series)
     def test_create_with_project_id_is_ignored(self):
@@ -346,6 +520,88 @@ class TestMember(base.BaseAPITest):
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=self.pool_with_listener_id, member_id=api_member.get('id'))
 
+    def test_update_authorized(self):
+        old_name = "name1"
+        new_name = "name2"
+        api_member = self.create_member(
+            self.pool_with_listener_id, '10.0.0.1', 80,
+            name=old_name).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_member = {'name': new_name}
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                member_path = self.member_path_listener.format(
+                    member_id=api_member.get('id'))
+                response = self.put(
+                    member_path,
+                    self._build_body(new_member)).json.get(self.root_tag)
+
+        self.conf.config(auth_strategy=auth_strategy)
+
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_with_listener_id, member_id=api_member.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            member_prov_status=constants.PENDING_UPDATE)
+        self.set_lb_status(self.lb_id)
+        self.assertEqual(old_name, response.get('name'))
+        self.assertEqual(api_member.get('created_at'),
+                         response.get('created_at'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_with_listener_id, member_id=api_member.get('id'))
+
+    def test_update_not_authorized(self):
+        old_name = "name1"
+        new_name = "name2"
+        api_member = self.create_member(
+            self.pool_with_listener_id, '10.0.0.1', 80,
+            name=old_name).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_member = {'name': new_name}
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            member_path = self.member_path_listener.format(
+                member_id=api_member.get('id'))
+            response = self.put(
+                member_path,
+                self._build_body(new_member), status=401)
+
+        self.conf.config(auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
+
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_with_listener_id, member_id=api_member.get('id'),
+            lb_prov_status=constants.ACTIVE,
+            listener_prov_status=constants.ACTIVE,
+            pool_prov_status=constants.ACTIVE,
+            member_prov_status=constants.ACTIVE)
+
     def test_update_sans_listener(self):
         old_name = "name1"
         new_name = "name2"
@@ -422,6 +678,89 @@ class TestMember(base.BaseAPITest):
             listener_prov_status=constants.ACTIVE,
             pool_prov_status=constants.ACTIVE,
             member_prov_status=constants.DELETED)
+
+    def test_delete_authorized(self):
+        api_member = self.create_member(
+            self.pool_with_listener_id, '10.0.0.1', 80).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        member = self.get(self.member_path_listener.format(
+            member_id=api_member.get('id'))).json.get(self.root_tag)
+        api_member['provisioning_status'] = constants.ACTIVE
+        api_member['operating_status'] = constants.ONLINE
+        self.assertIsNone(api_member.pop('updated_at'))
+        self.assertIsNotNone(member.pop('updated_at'))
+        self.assertEqual(api_member, member)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                self.delete(self.member_path_listener.format(
+                    member_id=api_member.get('id')))
+        self.conf.config(auth_strategy=auth_strategy)
+
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_with_listener_id, member_id=member.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            member_prov_status=constants.PENDING_DELETE)
+
+        self.set_lb_status(self.lb_id)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_with_listener_id, member_id=member.get('id'),
+            lb_prov_status=constants.ACTIVE,
+            listener_prov_status=constants.ACTIVE,
+            pool_prov_status=constants.ACTIVE,
+            member_prov_status=constants.DELETED)
+
+    def test_delete_not_authorized(self):
+        api_member = self.create_member(
+            self.pool_with_listener_id, '10.0.0.1', 80).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        member = self.get(self.member_path_listener.format(
+            member_id=api_member.get('id'))).json.get(self.root_tag)
+        api_member['provisioning_status'] = constants.ACTIVE
+        api_member['operating_status'] = constants.ONLINE
+        self.assertIsNone(api_member.pop('updated_at'))
+        self.assertIsNotNone(member.pop('updated_at'))
+        self.assertEqual(api_member, member)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.get('auth_strategy')
+        self.conf.config(auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            self.delete(self.member_path_listener.format(
+                member_id=api_member.get('id')), status=401)
+        self.conf.config(auth_strategy=auth_strategy)
+
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_with_listener_id, member_id=member.get('id'),
+            lb_prov_status=constants.ACTIVE,
+            listener_prov_status=constants.ACTIVE,
+            pool_prov_status=constants.ACTIVE,
+            member_prov_status=constants.ACTIVE)
 
     def test_bad_delete(self):
         self.delete(self.member_path.format(

@@ -431,3 +431,4 @@ RULE_ANY = '@'
 RBAC_LOADBALANCER = '{}:loadbalancer:'.format(LOADBALANCER_API)
 RBAC_LISTENER = '{}:listener:'.format(LOADBALANCER_API)
 RBAC_POOL = '{}:pool:'.format(LOADBALANCER_API)
+RBAC_MEMBER = '{}:member:'.format(LOADBALANCER_API)
