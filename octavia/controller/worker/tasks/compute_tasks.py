@@ -183,13 +183,13 @@ class ComputeWait(BaseComputeTask):
         :returns: An amphora object
         """
         for i in range(CONF.controller_worker.amp_active_retries):
-            amp = self.compute.get_amphora(compute_id)
+            amp, fault = self.compute.get_amphora(compute_id)
             if amp.status == constants.ACTIVE:
                 if CONF.haproxy_amphora.build_rate_limit != -1:
                     self.rate_limit.remove_from_build_req_queue(amphora_id)
                 return amp
             elif amp.status == constants.ERROR:
-                raise exceptions.ComputeBuildException()
+                raise exceptions.ComputeBuildException(fault=fault)
             time.sleep(CONF.controller_worker.amp_active_wait_sec)
 
         raise exceptions.ComputeWaitTimeoutException()

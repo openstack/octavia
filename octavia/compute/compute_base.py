@@ -73,6 +73,7 @@ class ComputeBase(object):
 
         :param compute_id: the id of the desired amphora
         :returns: the amphora object
+        :returns: fault message or None
         """
         pass
 

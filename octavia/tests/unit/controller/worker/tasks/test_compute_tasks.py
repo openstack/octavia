@@ -337,7 +337,7 @@ class TestComputeTasks(base.TestCase):
         _amphora_mock.status = constants.ACTIVE
         _amphora_mock.lb_network_ip = LB_NET_IP
 
-        mock_driver.get_amphora.return_value = _amphora_mock
+        mock_driver.get_amphora.return_value = _amphora_mock, None
 
         computewait = compute_tasks.ComputeWait()
         computewait.execute(COMPUTE_ID, AMPHORA_ID)
@@ -364,7 +364,7 @@ class TestComputeTasks(base.TestCase):
         _amphora_mock.status = constants.ACTIVE
         _amphora_mock.lb_network_ip = LB_NET_IP
 
-        mock_driver.get_amphora.return_value = _amphora_mock
+        mock_driver.get_amphora.return_value = _amphora_mock, None
 
         computewait = compute_tasks.ComputeWait()
         computewait.execute(COMPUTE_ID, AMPHORA_ID)
@@ -389,7 +389,7 @@ class TestComputeTasks(base.TestCase):
         _amphora_mock.status = constants.ACTIVE
         _amphora_mock.lb_network_ip = LB_NET_IP
 
-        mock_driver.get_amphora.return_value = _amphora_mock
+        mock_driver.get_amphora.return_value = _amphora_mock, None
 
         computewait = compute_tasks.ComputeWait()
         computewait.execute(COMPUTE_ID, AMPHORA_ID)

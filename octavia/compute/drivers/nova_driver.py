@@ -152,9 +152,9 @@ class VirtualMachineManager(compute_base.ComputeBase):
             )
 
             return amphora.id
-        except Exception:
-            LOG.exception("Error building nova virtual machine.")
-            raise exceptions.ComputeBuildException()
+        except Exception as e:
+            LOG.exception("Nova failed to build the instance due to: %s", e)
+            raise exceptions.ComputeBuildException(fault=e)
 
     def delete(self, compute_id):
         '''Delete a virtual machine.
@@ -177,7 +177,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
         :returns: constant of amphora status
         '''
         try:
-            amphora = self.get_amphora(compute_id)
+            amphora, fault = self.get_amphora(compute_id)
             if amphora and amphora.status == 'ACTIVE':
                 return constants.UP
         except Exception:
@@ -190,6 +190,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
 
         :param amphora_id: virtual machine UUID
         :returns: an amphora object
+        :returns: fault message or None
         '''
         # utilize nova client ServerManager 'get' method to retrieve info
         try:
@@ -204,11 +205,13 @@ class VirtualMachineManager(compute_base.ComputeBase):
 
         :param nova_response: JSON response from nova
         :returns: an amphora object
+        :returns: fault message or None
         '''
         # Extract interfaces of virtual machine to populate desired amphora
         # fields
 
         lb_network_ip = None
+        fault = None
 
         try:
             inf_list = nova_response.interface_list()
@@ -223,6 +226,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
                 if is_boot_network or no_boot_networks:
                     lb_network_ip = interface.fixed_ips[0]['ip_address']
                     break
+            fault = getattr(nova_response, 'fault', None)
         except Exception:
             LOG.debug('Extracting virtual interfaces through nova '
                       'os-interfaces extension failed.')
@@ -232,7 +236,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
             status=nova_response.status,
             lb_network_ip=lb_network_ip
         )
-        return response
+        return response, fault
 
     def create_server_group(self, name, policy):
         """Create a server group object

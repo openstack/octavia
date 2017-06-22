@@ -68,7 +68,7 @@ class NoopManager(object):
             compute_id=compute_id,
             status=constants.ACTIVE,
             lb_network_ip='192.0.2.1'
-        )
+        ), None
 
     def create_server_group(self, name, policy):
         LOG.debug("Create Server Group %s no-op, name %s, policy %s ",

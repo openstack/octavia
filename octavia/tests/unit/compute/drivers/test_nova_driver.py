@@ -106,6 +106,7 @@ class TestNovaClient(base.TestCase):
         self.nova_response = mock.Mock()
         self.nova_response.id = self.amphora.compute_id
         self.nova_response.status = 'ACTIVE'
+        self.nova_response.fault = 'FAKE_FAULT'
 
         self.interface_list = mock.MagicMock()
         self.interface_list.net_id = '1'
@@ -269,8 +270,9 @@ class TestNovaClient(base.TestCase):
                           self.manager.status, self.amphora.id)
 
     def test_get_amphora(self):
-        amphora = self.manager.get_amphora(self.amphora.compute_id)
+        amphora, fault = self.manager.get_amphora(self.amphora.compute_id)
         self.assertEqual(self.amphora, amphora)
+        self.assertEqual(self.nova_response.fault, fault)
         self.manager.manager.get.called_with(server=amphora.id)
 
     def test_bad_get_amphora(self):
@@ -279,15 +281,16 @@ class TestNovaClient(base.TestCase):
                           self.manager.get_amphora, self.amphora.id)
 
     def test_translate_amphora(self):
-        amphora = self.manager._translate_amphora(self.nova_response)
+        amphora, fault = self.manager._translate_amphora(self.nova_response)
         self.assertEqual(self.amphora, amphora)
+        self.assertEqual(self.nova_response.fault, fault)
         self.nova_response.interface_list.called_with()
 
     def test_bad_translate_amphora(self):
         self.nova_response.interface_list.side_effect = Exception
         self.manager._nova_client.networks.get.side_effect = Exception
-        self.assertIsNone(
-            self.manager._translate_amphora(self.nova_response).lb_network_ip)
+        amphora, fault = self.manager._translate_amphora(self.nova_response)
+        self.assertIsNone(amphora.lb_network_ip)
         self.nova_response.interface_list.called_with()
 
     def test_create_server_group(self):
