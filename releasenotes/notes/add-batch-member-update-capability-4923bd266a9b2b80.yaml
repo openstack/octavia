@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    It is now possible to completely update a pool's member list as a batch
+    operation. Using a PUT request on the base member endpoint of a pool, you
+    can specify a list of member objects and the service will perform any
+    necessary creates/deletes/updates as a single operation.

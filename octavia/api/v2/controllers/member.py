@@ -34,11 +34,11 @@ from octavia.db import prepare as db_prepare
 LOG = logging.getLogger(__name__)
 
 
-class MembersController(base.BaseController):
+class MemberController(base.BaseController):
     RBAC_TYPE = constants.RBAC_MEMBER
 
     def __init__(self, pool_id):
-        super(MembersController, self).__init__()
+        super(MemberController, self).__init__()
         self.pool_id = pool_id
         self.handler = self.handler.member
 
@@ -265,3 +265,80 @@ class MembersController(base.BaseController):
                 self.repositories.member.update(
                     lock_session, db_member.id,
                     provisioning_status=constants.ERROR)
+
+
+class MembersController(MemberController):
+
+    def __init__(self, pool_id):
+        super(MembersController, self).__init__(pool_id)
+
+    @wsme_pecan.wsexpose(None, wtypes.text,
+                         body=member_types.MembersRootPUT, status_code=202)
+    def put(self, members_):
+        """Updates all members."""
+        members = members_.members
+        context = pecan.request.context.get('octavia_context')
+
+        db_pool = self._get_db_pool(context.session, self.pool_id)
+        old_members = db_pool.members
+
+        # Check POST+PUT+DELETE since this operation is all of 'CUD'
+        self._auth_validate_action(context, db_pool.project_id,
+                                   constants.RBAC_POST)
+        self._auth_validate_action(context, db_pool.project_id,
+                                   constants.RBAC_PUT)
+        self._auth_validate_action(context, db_pool.project_id,
+                                   constants.RBAC_DELETE)
+
+        with db_api.get_lock_session() as lock_session:
+            self._test_lb_and_listener_and_pool_statuses(lock_session)
+
+            member_count_diff = len(members) - len(old_members)
+            if member_count_diff > 0 and self.repositories.check_quota_met(
+                    context.session, lock_session, data_models.Member,
+                    db_pool.project_id, count=member_count_diff):
+                raise exceptions.QuotaException
+
+            old_member_uniques = {
+                (m.ip_address, m.protocol_port): m.id for m in old_members}
+            new_member_uniques = [
+                (m.address, m.protocol_port) for m in members]
+
+            # Find members that are brand new or updated
+            new_members = []
+            updated_members = []
+            for m in members:
+                if (m.address, m.protocol_port) not in old_member_uniques:
+                    new_members.append(m)
+                else:
+                    m.id = old_member_uniques[(m.address, m.protocol_port)]
+                    updated_members.append(m)
+
+            # Find members that are deleted
+            deleted_members = []
+            for m in old_members:
+                if (m.ip_address, m.protocol_port) not in new_member_uniques:
+                    deleted_members.append(m)
+
+            # Create new members
+            new_members_created = []
+            for m in new_members:
+                m = m.to_dict(render_unsets=False)
+                m['project_id'] = db_pool.project_id
+                new_members_created.append(self._graph_create(lock_session, m))
+            # Update old members
+            for m in updated_members:
+                self.repositories.member.update(
+                    lock_session, m.id,
+                    provisioning_status=constants.PENDING_UPDATE)
+            # Delete old members
+            for m in deleted_members:
+                self.repositories.member.update(
+                    lock_session, m.id,
+                    provisioning_status=constants.PENDING_DELETE)
+
+            LOG.info("Sending Full Member Update to handler")
+            new_member_ids = [m.id for m in new_members_created]
+            old_member_ids = [m.id for m in deleted_members]
+            self.handler.batch_update(
+                old_member_ids, new_member_ids, updated_members)

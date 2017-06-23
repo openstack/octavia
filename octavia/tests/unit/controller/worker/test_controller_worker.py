@@ -774,6 +774,38 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.flows.'
+                'member_flows.MemberFlows.get_batch_update_members_flow',
+                return_value=_flow_mock)
+    def test_batch_update_members(self,
+                                  mock_get_batch_update_members_flow,
+                                  mock_api_get_session,
+                                  mock_dyn_log_listener,
+                                  mock_taskflow_load,
+                                  mock_pool_repo_get,
+                                  mock_member_repo_get,
+                                  mock_l7rule_repo_get,
+                                  mock_l7policy_repo_get,
+                                  mock_listener_repo_get,
+                                  mock_lb_repo_get,
+                                  mock_health_mon_repo_get,
+                                  mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+
+        cw = controller_worker.ControllerWorker()
+        cw.batch_update_members([9], [11], [MEMBER_UPDATE_DICT])
+
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+            assert_called_once_with(_flow_mock,
+                                    store={
+                                        constants.LISTENERS: [_listener_mock],
+                                        constants.LOADBALANCER:
+                                            _load_balancer_mock,
+                                        constants.POOL: _pool_mock}))
+
+        _flow_mock.run.assert_called_once_with()
+
+    @mock.patch('octavia.controller.worker.flows.'
                 'pool_flows.PoolFlows.get_create_pool_flow',
                 return_value=_flow_mock)
     def test_create_pool(self,

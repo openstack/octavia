@@ -39,7 +39,8 @@ def validate_input(expected, actual):
         raise InvalidHandlerInputObject(obj_type=actual.__class__)
 
 
-def simulate_controller(data_model, delete=False, update=False, create=False):
+def simulate_controller(data_model, delete=False, update=False, create=False,
+                        batch_update=False):
     """Simulates a successful controller operator for a data model.
 
     :param data_model: data model to simulate controller operation
@@ -47,7 +48,8 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
     """
     repo = repos.Repositories()
 
-    def member_controller(member, delete=False, update=False, create=False):
+    def member_controller(member, delete=False, update=False, create=False,
+                          batch_update=False):
         time.sleep(ASYNC_TIME)
         LOG.info("Simulating controller operation for member...")
 
@@ -63,6 +65,11 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
         elif create:
             repo.member.update(db_api.get_session(), member.id,
                                operating_status=constants.ONLINE)
+        elif batch_update:
+            members = member
+            for member in members:
+                repo.member.update(db_api.get_session(), member.id,
+                                   operating_status=constants.ONLINE)
         listeners = []
         if db_mem:
             for listener in db_mem.pool.listeners:
@@ -123,6 +130,7 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
             l7rule_dict = l7rule.to_dict()
             repo.l7rule.update(db_api.get_session(), l7rule.id, **l7rule_dict)
         elif create:
+            l7rule_dict = l7rule.to_dict()
             db_l7rule = repo.l7rule.create(db_api.get_session(), **l7rule_dict)
         if db_l7rule.l7policy.listener:
             listener = db_l7rule.l7policy.listener
@@ -391,6 +399,25 @@ class MemberHandler(abstract_handler.BaseObjectHandler):
                  {"entity": self.__class__.__name__, "id": old_member.id})
         member.id = old_member.id
         simulate_controller(member, update=True)
+
+    def batch_update(self, old_member_ids, new_member_ids, updated_members):
+        for m in updated_members:
+            validate_input(data_models.Member, m)
+        LOG.info("%(entity)s handling the batch update of members: "
+                 "old=%(old)s, new=%(new)s",
+                 {"entity": self.__class__.__name__, "old": old_member_ids,
+                  "new": new_member_ids})
+
+        repo = repos.Repositories()
+        old_members = [repo.member.get(db_api.get_session(), mid)
+                       for mid in old_member_ids]
+        new_members = [repo.member.get(db_api.get_session(), mid)
+                       for mid in new_member_ids]
+        all_members = []
+        all_members.extend(old_members)
+        all_members.extend(new_members)
+        all_members.extend(updated_members)
+        simulate_controller(all_members, batch_update=True)
 
     def delete(self, member_id):
         LOG.info("%(entity)s handling the deletion of member %(id)s",

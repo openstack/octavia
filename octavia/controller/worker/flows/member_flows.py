@@ -14,6 +14,7 @@
 #
 
 from taskflow.patterns import linear_flow
+from taskflow.patterns import unordered_flow
 
 from octavia.common import constants
 from octavia.controller.worker.tasks import amphora_driver_tasks
@@ -113,11 +114,108 @@ class MemberFlows(object):
             requires=[constants.MEMBER, constants.UPDATE_DICT]))
         update_member_flow.add(database_tasks.MarkMemberActiveInDB(
             requires=constants.MEMBER))
+        update_member_flow.add(database_tasks.MarkPoolActiveInDB(
+            requires=constants.POOL))
         update_member_flow.add(database_tasks.
                                MarkLBAndListenersActiveInDB(
                                    requires=[constants.LOADBALANCER,
                                              constants.LISTENERS]))
-        update_member_flow.add(database_tasks.MarkPoolActiveInDB(
-            requires=constants.POOL))
 
         return update_member_flow
+
+    def get_batch_update_members_flow(self, old_members, new_members,
+                                      updated_members):
+        """Create a flow to batch update members
+
+        :returns: The flow for batch updating members
+        """
+        batch_update_members_flow = linear_flow.Flow(
+            constants.BATCH_UPDATE_MEMBERS_FLOW)
+        unordered_members_flow = unordered_flow.Flow(
+            constants.UNORDERED_MEMBER_UPDATES_FLOW)
+        unordered_members_active_flow = unordered_flow.Flow(
+            constants.UNORDERED_MEMBER_ACTIVE_FLOW)
+
+        # Delete old members
+        unordered_members_flow.add(
+            lifecycle_tasks.MembersToErrorOnRevertTask(
+                inject={constants.MEMBERS: old_members},
+                name='{flow}-deleted'.format(
+                    flow=constants.MEMBER_TO_ERROR_ON_REVERT_FLOW)))
+        for m in old_members:
+            unordered_members_flow.add(
+                model_tasks.DeleteModelObject(
+                    inject={constants.OBJECT: m},
+                    name='{flow}-{id}'.format(
+                        id=m.id, flow=constants.DELETE_MODEL_OBJECT_FLOW)))
+            unordered_members_flow.add(database_tasks.DeleteMemberInDB(
+                inject={constants.MEMBER: m},
+                name='{flow}-{id}'.format(
+                    id=m.id, flow=constants.DELETE_MEMBER_INDB)))
+            unordered_members_flow.add(database_tasks.DecrementMemberQuota(
+                inject={constants.MEMBER: m},
+                name='{flow}-{id}'.format(
+                    id=m.id, flow=constants.DECREMENT_MEMBER_QUOTA_FLOW)))
+
+        # Create new members
+        unordered_members_flow.add(
+            lifecycle_tasks.MembersToErrorOnRevertTask(
+                inject={constants.MEMBERS: new_members},
+                name='{flow}-created'.format(
+                    flow=constants.MEMBER_TO_ERROR_ON_REVERT_FLOW)))
+        for m in new_members:
+            unordered_members_active_flow.add(
+                database_tasks.MarkMemberActiveInDB(
+                    inject={constants.MEMBER: m},
+                    name='{flow}-{id}'.format(
+                        id=m.id, flow=constants.MARK_MEMBER_ACTIVE_INDB)))
+
+        # Update existing members
+        unordered_members_flow.add(
+            lifecycle_tasks.MembersToErrorOnRevertTask(
+                inject={constants.MEMBERS: updated_members},
+                name='{flow}-updated'.format(
+                    flow=constants.MEMBER_TO_ERROR_ON_REVERT_FLOW)))
+        for m, um in updated_members:
+            um.pop('id', None)
+            unordered_members_flow.add(
+                model_tasks.UpdateAttributes(
+                    inject={constants.OBJECT: m, constants.UPDATE_DICT: um},
+                    name='{flow}-{id}'.format(
+                        id=m.id, flow=constants.UPDATE_ATTRIBUTES_FLOW)))
+            unordered_members_flow.add(database_tasks.UpdateMemberInDB(
+                inject={constants.MEMBER: m, constants.UPDATE_DICT: um},
+                name='{flow}-{id}'.format(
+                    id=m.id, flow=constants.UPDATE_MEMBER_INDB)))
+            unordered_members_active_flow.add(
+                database_tasks.MarkMemberActiveInDB(
+                    inject={constants.MEMBER: m},
+                    name='{flow}-{id}'.format(
+                        id=m.id, flow=constants.MARK_MEMBER_ACTIVE_INDB)))
+
+        batch_update_members_flow.add(unordered_members_flow)
+
+        # Done, do real updates
+        batch_update_members_flow.add(network_tasks.CalculateDelta(
+            requires=constants.LOADBALANCER,
+            provides=constants.DELTAS))
+        batch_update_members_flow.add(network_tasks.HandleNetworkDeltas(
+            requires=constants.DELTAS, provides=constants.ADDED_PORTS))
+        batch_update_members_flow.add(
+            amphora_driver_tasks.AmphoraePostNetworkPlug(
+                requires=(constants.LOADBALANCER, constants.ADDED_PORTS)))
+
+        # Update the Listener (this makes the changes active on the Amp)
+        batch_update_members_flow.add(amphora_driver_tasks.ListenersUpdate(
+            requires=(constants.LOADBALANCER, constants.LISTENERS)))
+
+        # Mark all the members ACTIVE here, then pool then LB/Listeners
+        batch_update_members_flow.add(unordered_members_active_flow)
+        batch_update_members_flow.add(database_tasks.MarkPoolActiveInDB(
+            requires=constants.POOL))
+        batch_update_members_flow.add(
+            database_tasks.MarkLBAndListenersActiveInDB(
+                requires=(constants.LOADBALANCER,
+                          constants.LISTENERS)))
+
+        return batch_update_members_flow

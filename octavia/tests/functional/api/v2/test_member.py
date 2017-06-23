@@ -427,6 +427,160 @@ class TestMember(base.BaseAPITest):
             member_prov_status=constants.ERROR,
             member_op_status=constants.NO_MONITOR)
 
+    def test_full_batch_members(self):
+        member1 = {'address': '10.0.0.1', 'protocol_port': 80}
+        member2 = {'address': '10.0.0.2', 'protocol_port': 80}
+        member3 = {'address': '10.0.0.3', 'protocol_port': 80}
+        member4 = {'address': '10.0.0.4', 'protocol_port': 80}
+        member5 = {'address': '10.0.0.5', 'protocol_port': 80}
+        member6 = {'address': '10.0.0.6', 'protocol_port': 80}
+        members = [member1, member2, member3, member4]
+        for m in members:
+            self.create_member(pool_id=self.pool_id, **m)
+            self.set_lb_status(self.lb_id)
+
+        req_dict = [member1, member2, member5, member6]
+        body = {self.root_tag_list: req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        self.put(path, body, status=202)
+        returned_members = self.get(
+            self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        ).json.get(self.root_tag_list)
+
+        expected_members = [
+            ('10.0.0.1', 80, 'PENDING_UPDATE'),
+            ('10.0.0.2', 80, 'PENDING_UPDATE'),
+            ('10.0.0.3', 80, 'PENDING_DELETE'),
+            ('10.0.0.4', 80, 'PENDING_DELETE'),
+            ('10.0.0.5', 80, 'PENDING_CREATE'),
+            ('10.0.0.6', 80, 'PENDING_CREATE'),
+        ]
+
+        member_ids = {}
+        for rm in returned_members:
+            self.assertIn(
+                (rm['address'],
+                 rm['protocol_port'],
+                 rm['provisioning_status']), expected_members)
+            member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
+        handler_args = self.handler_mock().member.batch_update.call_args[0]
+        self.assertEqual(
+            [member_ids[('10.0.0.3', 80)], member_ids[('10.0.0.4', 80)]],
+            handler_args[0])
+        self.assertEqual(
+            [member_ids[('10.0.0.5', 80)], member_ids[('10.0.0.6', 80)]],
+            handler_args[1])
+        self.assertEqual(2, len(handler_args[2]))
+        updated_members = [
+            (handler_args[2][0].address, handler_args[2][0].protocol_port),
+            (handler_args[2][1].address, handler_args[2][1].protocol_port)
+        ]
+        self.assertEqual([('10.0.0.1', 80), ('10.0.0.2', 80)], updated_members)
+
+    def test_create_batch_members(self):
+        member5 = {'address': '10.0.0.5', 'protocol_port': 80}
+        member6 = {'address': '10.0.0.6', 'protocol_port': 80}
+
+        req_dict = [member5, member6]
+        body = {self.root_tag_list: req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        self.put(path, body, status=202)
+        returned_members = self.get(
+            self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        ).json.get(self.root_tag_list)
+
+        expected_members = [
+            ('10.0.0.5', 80, 'PENDING_CREATE'),
+            ('10.0.0.6', 80, 'PENDING_CREATE'),
+        ]
+
+        member_ids = {}
+        for rm in returned_members:
+            self.assertIn(
+                (rm['address'],
+                 rm['protocol_port'],
+                 rm['provisioning_status']), expected_members)
+            member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
+        handler_args = self.handler_mock().member.batch_update.call_args[0]
+        self.assertEqual(0, len(handler_args[0]))
+        self.assertEqual(
+            [member_ids[('10.0.0.5', 80)], member_ids[('10.0.0.6', 80)]],
+            handler_args[1])
+        self.assertEqual(0, len(handler_args[2]))
+
+    def test_update_batch_members(self):
+        member1 = {'address': '10.0.0.1', 'protocol_port': 80}
+        member2 = {'address': '10.0.0.2', 'protocol_port': 80}
+        members = [member1, member2]
+        for m in members:
+            self.create_member(pool_id=self.pool_id, **m)
+            self.set_lb_status(self.lb_id)
+
+        req_dict = [member1, member2]
+        body = {self.root_tag_list: req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        self.put(path, body, status=202)
+        returned_members = self.get(
+            self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        ).json.get(self.root_tag_list)
+
+        expected_members = [
+            ('10.0.0.1', 80, 'PENDING_UPDATE'),
+            ('10.0.0.2', 80, 'PENDING_UPDATE'),
+        ]
+
+        member_ids = {}
+        for rm in returned_members:
+            self.assertIn(
+                (rm['address'],
+                 rm['protocol_port'],
+                 rm['provisioning_status']), expected_members)
+            member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
+        handler_args = self.handler_mock().member.batch_update.call_args[0]
+        self.assertEqual(0, len(handler_args[0]))
+        self.assertEqual(0, len(handler_args[1]))
+        self.assertEqual(2, len(handler_args[2]))
+        updated_members = [
+            (handler_args[2][0].address, handler_args[2][0].protocol_port),
+            (handler_args[2][1].address, handler_args[2][1].protocol_port)
+        ]
+        self.assertEqual([('10.0.0.1', 80), ('10.0.0.2', 80)], updated_members)
+
+    def test_delete_batch_members(self):
+        member3 = {'address': '10.0.0.3', 'protocol_port': 80}
+        member4 = {'address': '10.0.0.4', 'protocol_port': 80}
+        members = [member3, member4]
+        for m in members:
+            self.create_member(pool_id=self.pool_id, **m)
+            self.set_lb_status(self.lb_id)
+
+        req_dict = []
+        body = {self.root_tag_list: req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        self.put(path, body, status=202)
+        returned_members = self.get(
+            self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        ).json.get(self.root_tag_list)
+
+        expected_members = [
+            ('10.0.0.3', 80, 'PENDING_DELETE'),
+            ('10.0.0.4', 80, 'PENDING_DELETE'),
+        ]
+
+        member_ids = {}
+        for rm in returned_members:
+            self.assertIn(
+                (rm['address'],
+                 rm['protocol_port'],
+                 rm['provisioning_status']), expected_members)
+            member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
+        handler_args = self.handler_mock().member.batch_update.call_args[0]
+        self.assertEqual(
+            [member_ids[('10.0.0.3', 80)], member_ids[('10.0.0.4', 80)]],
+            handler_args[0])
+        self.assertEqual(0, len(handler_args[1]))
+        self.assertEqual(0, len(handler_args[2]))
+
     def test_create_with_attached_listener(self):
         api_member = self.create_member(
             self.pool_with_listener_id, '10.0.0.1', 80).get(self.root_tag)

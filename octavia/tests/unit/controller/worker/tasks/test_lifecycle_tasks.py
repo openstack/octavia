@@ -46,6 +46,7 @@ class TestLifecycleTasks(base.TestCase):
         self.MEMBER = mock.MagicMock()
         self.MEMBER_ID = uuidutils.generate_uuid()
         self.MEMBER.id = self.MEMBER_ID
+        self.MEMBERS = [self.MEMBER]
         self.POOL = mock.MagicMock()
         self.POOL_ID = uuidutils.generate_uuid()
         self.POOL.id = self.POOL_ID
@@ -293,7 +294,6 @@ class TestLifecycleTasks(base.TestCase):
             mock_listener_prov_status_active,
             mock_loadbalancer_prov_status_active,
             mock_member_prov_status_error):
-
         member_to_error_on_revert = lifecycle_tasks.MemberToErrorOnRevertTask()
 
         # Execute
@@ -309,6 +309,46 @@ class TestLifecycleTasks(base.TestCase):
                                          self.LISTENERS,
                                          self.LOADBALANCER,
                                          self.POOL)
+
+        mock_member_prov_status_error.assert_called_once_with(
+            self.MEMBER_ID)
+        mock_loadbalancer_prov_status_active.assert_called_once_with(
+            self.LOADBALANCER_ID)
+        mock_listener_prov_status_active.assert_called_once_with(
+            self.LISTENER_ID)
+        mock_pool_prov_status_active.assert_called_once_with(
+            self.POOL_ID)
+
+    @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
+                'mark_member_prov_status_error')
+    @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
+                'mark_loadbalancer_prov_status_active')
+    @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
+                'mark_listener_prov_status_active')
+    @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
+                'mark_pool_prov_status_active')
+    def test_MembersToErrorOnRevertTask(
+            self,
+            mock_pool_prov_status_active,
+            mock_listener_prov_status_active,
+            mock_loadbalancer_prov_status_active,
+            mock_member_prov_status_error):
+        members_to_error_on_revert = (
+            lifecycle_tasks.MembersToErrorOnRevertTask())
+
+        # Execute
+        members_to_error_on_revert.execute(self.MEMBERS,
+                                           self.LISTENERS,
+                                           self.LOADBALANCER,
+                                           self.POOL)
+
+        self.assertFalse(mock_member_prov_status_error.called)
+
+        # Revert
+        members_to_error_on_revert.revert(self.MEMBERS,
+                                          self.LISTENERS,
+                                          self.LOADBALANCER,
+                                          self.POOL)
 
         mock_member_prov_status_error.assert_called_once_with(
             self.MEMBER_ID)

@@ -104,6 +104,17 @@ class Endpoint(object):
         LOG.info('Updating member \'%s\'...', member_id)
         self.worker.update_member(member_id, member_updates)
 
+    def batch_update_members(self, context, old_member_ids, new_member_ids,
+                             updated_members):
+        updated_member_ids = [m.get('id') for m in updated_members]
+        LOG.info(
+            'Batch updating members: old=\'%(old)s\', new=\'%(new)s\', '
+            'updated=\'%(updated)s\'...',
+            {'old': old_member_ids, 'new': new_member_ids,
+             'updated': updated_member_ids})
+        self.worker.batch_update_members(
+            old_member_ids, new_member_ids, updated_members)
+
     def delete_member(self, context, member_id):
         LOG.info('Deleting member \'%s\'...', member_id)
         self.worker.delete_member(member_id)

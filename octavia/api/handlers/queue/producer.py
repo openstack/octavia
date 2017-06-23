@@ -163,6 +163,21 @@ class MemberProducer(BaseProducer):
     def payload_class(self):
         return self.PAYLOAD_CLASS
 
+    def batch_update(self, old_ids, new_ids, updated_models):
+        """sends an update message to the controller via oslo.messaging
+
+        :param old_ids: list of member ids that are being deleted
+        :param new_ids: list of member ids that are being created
+        :param updated_models: list of member model objects to update
+        """
+        updated_dicts = [m.to_dict(render_unsets=False)
+                         for m in updated_models]
+        kw = {"old_{0}_ids".format(self.payload_class): old_ids,
+              "new_{0}_ids".format(self.payload_class): new_ids,
+              "updated_{0}s".format(self.payload_class): updated_dicts}
+        method_name = "batch_update_{0}s".format(self.payload_class)
+        self.client.cast({}, method_name, **kw)
+
 
 class L7PolicyProducer(BaseProducer):
     """Sends updates,deletes and creates to the RPC end of the queue consumer
