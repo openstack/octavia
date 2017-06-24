@@ -1,0 +1,1 @@
+curl -X PUT -H "Content-Type: application/json" -H "X-Auth-Token: <token>" -d '{"l7policy":{"description":"Redirect requests to images.example.com","admin_state_up":true,"redirect_url":"http://images.example.com","name":"redirect-images.example.com","action":"REDIRECT_TO_URL","position":1}}' http://198.51.100.10:9876/v2.0/lbaas/l7policies/8a1412f0-4c32-4257-8b07-af4770b604fd

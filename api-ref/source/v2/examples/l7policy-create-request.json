@@ -1,0 +1,11 @@
+{
+    "l7policy": {
+        "description": "Redirect requests to example.com",
+        "admin_state_up": true,
+        "listener_id": "023f2e34-7806-443b-bfae-16c324569a3d",
+        "redirect_url": "http://www.example.com",
+        "name": "redirect-example.com",
+        "action": "REDIRECT_TO_URL",
+        "position": 1
+    }
+}

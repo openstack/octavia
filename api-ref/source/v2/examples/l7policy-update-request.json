@@ -1,0 +1,10 @@
+{
+    "l7policy": {
+        "description": "Redirect requests to images.example.com",
+        "admin_state_up": true,
+        "redirect_url": "http://images.example.com",
+        "name": "redirect-images.example.com",
+        "action": "REDIRECT_TO_URL",
+        "position": 1
+    }
+}

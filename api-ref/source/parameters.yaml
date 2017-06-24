@@ -7,6 +7,12 @@ path-healthmonitor-id:
   in: path
   required: true
   type: string
+path-l7policy-id:
+  description: |
+    The ID of the L7 policy to query.
+  in: path
+  required: true
+  type: string
 path-listener-id:
   description: |
     The ID of the listener to query.
@@ -376,9 +382,75 @@ l7policies-status-object-list:
   in: body
   required: true
   type: array
+l7policy-action:
+  description: |
+    The L7 policy action.  One of ``REDIRECT_TO_POOL``, ``REDIRECT_TO_URL``,
+    or ``REJECT``.
+  in: body
+  required: true
+  type: string
+l7policy-action-optional:
+  description: |
+    The L7 policy action.  One of ``REDIRECT_TO_POOL``, ``REDIRECT_TO_URL``,
+    or ``REJECT``.
+  in: body
+  required: false
+  type: string
+l7policy-id:
+  description: |
+    The ID of the L7 policy.
+  in: body
+  required: true
+  type: string
 l7policy-ids:
   description: |
     A list of L7 policy IDs.
+  in: body
+  required: true
+  type: array
+l7policy-position:
+  description: |
+    The position of this policy on the listener. Positions start at 1.
+  in: body
+  required: true
+  type: integer
+l7policy-position-optional:
+  description: |
+    The position of this policy on the listener. Positions start at 1.
+  in: body
+  required: false
+  type: integer
+l7policy-redirect-pool_id:
+  description: |
+    Requests matching this policy will be redirected to the pool with this ID.
+    Only valid if ``action`` is ``REDIRECT_TO_POOL``.
+  in: body
+  required: true
+  type: string
+l7policy-redirect-pool_id-optional:
+  description: |
+    Requests matching this policy will be redirected to the pool with this ID.
+    Only valid if ``action`` is ``REDIRECT_TO_POOL``.
+  in: body
+  required: false
+  type: string
+l7policy-redirect-url:
+  description: |
+    Requests matching this policy will be redirected to this URL.
+    Only valid if ``action`` is ``REDIRECT_TO_URL``.
+  in: body
+  required: true
+  type: string
+l7policy-redirect-url-optional:
+  description: |
+    Requests matching this policy will be redirected to this URL.
+    Only valid if ``action`` is ``REDIRECT_TO_URL``.
+  in: body
+  required: false
+  type: string
+l7policy-rule-ids:
+  description: |
+    List of associated L7 rule IDs.
   in: body
   required: true
   type: array

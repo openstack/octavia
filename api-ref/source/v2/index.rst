@@ -35,3 +35,8 @@ Members
 Health Monitor
 --------------
 .. include:: healthmonitor.inc
+
+-----------
+L7 Policies
+-----------
+.. include:: l7policy.inc

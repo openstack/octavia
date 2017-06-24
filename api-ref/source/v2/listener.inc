@@ -121,6 +121,7 @@ provisioning status.
    - 401
    - 403
    - 404
+   - 409
    - 500
    - 503
 
@@ -144,7 +145,6 @@ Request
    - protocol: protocol
    - protocol_port: protocol_port
    - sni_container_refs: sni_container_refs-optional
-   - updated_at: updated_at
 
 .. _header_insertions:
 
