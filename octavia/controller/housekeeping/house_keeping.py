@@ -110,18 +110,15 @@ class CertRotation(object):
         amp_repo = repo.AmphoraRepository()
 
         with futures.ThreadPoolExecutor(max_workers=self.threads) as executor:
-            try:
-                session = db_api.get_session()
-                rotation_count = 0
-                while True:
-                    amp = amp_repo.get_cert_expiring_amphora(session)
-                    if not amp:
-                        break
-                    rotation_count += 1
-                    LOG.debug("Cert expired amphora's id is: %s", amp.id)
-                    executor.submit(self.cw.amphora_cert_rotation, amp.id)
-                if rotation_count > 0:
-                    LOG.info("Rotated certificates for %s amphora" %
-                             rotation_count)
-            finally:
-                executor.shutdown(wait=True)
+            session = db_api.get_session()
+            rotation_count = 0
+            while True:
+                amp = amp_repo.get_cert_expiring_amphora(session)
+                if not amp:
+                    break
+                rotation_count += 1
+                LOG.debug("Cert expired amphora's id is: %s", amp.id)
+                executor.submit(self.cw.amphora_cert_rotation, amp.id)
+            if rotation_count > 0:
+                LOG.info("Rotated certificates for %s amphora" %
+                         rotation_count)
