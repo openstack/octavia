@@ -36,6 +36,10 @@ the load-balancer API:
     It is equivalent to 'rule:context_is_admin or {auth_strategy == noauth}'
     if that would be valid syntax.
 
+An alternate policy file has been provided in octavia/etc/policy called
+admin_or_owner-policy.json that removes the load-balancer RBAC role
+requirement. Please see the README.rst in that directory for more information.
+
 Sample File Generation
 ----------------------
 

@@ -17,21 +17,21 @@ from oslo_policy import policy
 rules = [
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
-                                    action='get_all'),
+                                    action=constants.RBAC_GET_ALL),
         constants.RULE_API_READ,
         "List Members of a Pool",
         [{'method': 'GET', 'path': '/v2.0/lbaas/pools/{pool_id}/members'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
-                                    action='post'),
+                                    action=constants.RBAC_POST),
         constants.RULE_API_WRITE,
         "Create a Member",
         [{'method': 'POST', 'path': '/v2.0/lbaas/pools/{pool_id}/members'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
-                                    action='get_one'),
+                                    action=constants.RBAC_GET_ONE),
         constants.RULE_API_READ,
         "Show Member details",
         [{'method': 'GET',
@@ -39,7 +39,7 @@ rules = [
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
-                                    action='put'),
+                                    action=constants.RBAC_PUT),
         constants.RULE_API_WRITE,
         "Update a Member",
         [{'method': 'PUT',
@@ -47,7 +47,7 @@ rules = [
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
-                                    action='delete'),
+                                    action=constants.RBAC_DELETE),
         constants.RULE_API_WRITE,
         "Remove a Member",
         [{'method': 'DELETE',

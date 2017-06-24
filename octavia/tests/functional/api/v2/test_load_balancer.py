@@ -391,7 +391,7 @@ class TestLoadBalancer(base.BaseAPITest):
         body = self._build_body(lb_json)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
-            response = self.post(self.LBS_PATH, body, status=401)
+            response = self.post(self.LBS_PATH, body, status=403)
         api_lb = response.json
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_lb)
@@ -550,7 +550,7 @@ class TestLoadBalancer(base.BaseAPITest):
         LB_PROJECT_PATH = '{}?project_id={}'.format(self.LBS_PATH, project_id)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
-            response = self.get(LB_PROJECT_PATH, status=401)
+            response = self.get(LB_PROJECT_PATH, status=403)
         api_lb = response.json
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_lb)
@@ -826,7 +826,7 @@ class TestLoadBalancer(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.LB_PATH.format(lb_id=lb_dict.get('id')),
-                                status=401)
+                                status=403)
         api_lb = response.json
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_lb)
@@ -954,7 +954,7 @@ class TestLoadBalancer(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
-                                lb_json, status=401)
+                                lb_json, status=403)
         api_lb = response.json
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_lb)
@@ -1111,7 +1111,7 @@ class TestLoadBalancer(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')),
-                        status=401)
+                        status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         response = self.get(self.LB_PATH.format(lb_id=lb_dict.get('id')))

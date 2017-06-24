@@ -446,6 +446,9 @@ RBAC_DELETE = 'delete'
 RBAC_GET_ONE = 'get_one'
 RBAC_GET_ALL = 'get_all'
 RBAC_GET_ALL_GLOBAL = 'get_all-global'
+RBAC_GET_DEFAULTS = 'get_defaults'
+RBAC_GET_STATS = 'get_stats'
+RBAC_GET_STATUS = 'get_status'
 
 # PROVIDERS
 # TODO(johnsom) When providers are implemented, this should be removed.

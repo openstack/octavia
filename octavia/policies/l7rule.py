@@ -17,7 +17,7 @@ from oslo_policy import policy
 rules = [
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7RULE,
-                                    action='get_all'),
+                                    action=constants.RBAC_GET_ALL),
         constants.RULE_API_READ,
         "List L7 Rules",
         [{'method': 'GET',
@@ -25,7 +25,7 @@ rules = [
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7RULE,
-                                    action='post'),
+                                    action=constants.RBAC_POST),
         constants.RULE_API_WRITE,
         "Create a L7 Rule",
         [{'method': 'POST',
@@ -33,7 +33,7 @@ rules = [
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7RULE,
-                                    action='get_one'),
+                                    action=constants.RBAC_GET_ONE),
         constants.RULE_API_READ,
         "Show L7 Rule details",
         [{'method': 'GET',
@@ -41,7 +41,7 @@ rules = [
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7RULE,
-                                    action='put'),
+                                    action=constants.RBAC_PUT),
         constants.RULE_API_WRITE,
         "Update a L7 Rule",
         [{'method': 'PUT',
@@ -49,7 +49,7 @@ rules = [
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7RULE,
-                                    action='delete'),
+                                    action=constants.RBAC_DELETE),
         constants.RULE_API_WRITE,
         "Remove a L7 Rule",
         [{'method': 'DELETE',

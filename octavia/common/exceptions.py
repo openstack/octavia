@@ -70,9 +70,9 @@ class NotFound(APIException):
     code = 404
 
 
-class NotAuthorized(APIException):
-    msg = _("Not authorized.")
-    code = 401
+class PolicyForbidden(APIException):
+    msg = _("Policy does not allow this request to be performed.")
+    code = 403
 
 
 class InvalidOption(APIException):

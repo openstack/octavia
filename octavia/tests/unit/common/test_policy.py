@@ -55,7 +55,7 @@ class PolicyFileTestCase(base.TestCase):
             tmp.write('{"example:test": "!"}')
             tmp.flush()
             self.context.policy.load_rules(True)
-            self.assertRaises(exceptions.NotAuthorized,
+            self.assertRaises(exceptions.PolicyForbidden,
                               self.context.policy.authorize,
                               action, self.target)
 
@@ -99,7 +99,7 @@ class PolicyTestCase(base.TestCase):
     def test_authorize_bad_action_throws(self):
         action = "example:denied"
         self.assertRaises(
-            exceptions.NotAuthorized, self.context.policy.authorize,
+            exceptions.PolicyForbidden, self.context.policy.authorize,
             action, self.target)
 
     def test_authorize_bad_action_noraise(self):
@@ -116,7 +116,7 @@ class PolicyTestCase(base.TestCase):
     def test_authorize_http(self, req_mock):
         req_mock.post('http://www.example.com/', text='False')
         action = "example:get_http"
-        self.assertRaises(exceptions.NotAuthorized,
+        self.assertRaises(exceptions.PolicyForbidden,
                           self.context.policy.authorize, action, self.target)
 
     def test_templatized_authorization(self):
@@ -125,13 +125,13 @@ class PolicyTestCase(base.TestCase):
         action = "example:my_file"
 
         self.context.policy.authorize(action, target_mine)
-        self.assertRaises(exceptions.NotAuthorized,
+        self.assertRaises(exceptions.PolicyForbidden,
                           self.context.policy.authorize,
                           action, target_not_mine)
 
     def test_early_AND_authorization(self):
         action = "example:early_and_fail"
-        self.assertRaises(exceptions.NotAuthorized,
+        self.assertRaises(exceptions.PolicyForbidden,
                           self.context.policy.authorize, action, self.target)
 
     def test_early_OR_authorization(self):
@@ -228,5 +228,5 @@ class AdminRolePolicyTestCase(base.TestCase):
         """
         for action in self.actions:
             self.assertRaises(
-                exceptions.NotAuthorized, self.context.policy.authorize,
+                exceptions.PolicyForbidden, self.context.policy.authorize,
                 action, self.target)

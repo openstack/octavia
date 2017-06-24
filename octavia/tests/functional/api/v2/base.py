@@ -63,8 +63,9 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     QUOTA_PATH = QUOTAS_PATH + '/{project_id}'
     QUOTA_DEFAULT_PATH = QUOTAS_PATH + '/{project_id}/default'
 
-    NOT_AUTHORIZED_BODY = {'debuginfo': None, 'faultcode': 'Client',
-                           'faultstring': 'Not authorized.'}
+    NOT_AUTHORIZED_BODY = {
+        'debuginfo': None, 'faultcode': 'Client',
+        'faultstring': 'Policy does not allow this request to be performed.'}
 
     def setUp(self):
         super(BaseAPITest, self).setUp()

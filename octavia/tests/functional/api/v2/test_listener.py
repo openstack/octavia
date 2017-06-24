@@ -189,7 +189,7 @@ class TestListener(base.BaseAPITest):
                          auth_strategy=constants.KEYSTONE)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
-            listeners = self.get(self.LISTENERS_PATH, status=401).json
+            listeners = self.get(self.LISTENERS_PATH, status=403).json
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, listeners)
 
@@ -402,7 +402,7 @@ class TestListener(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.listener_path.format(
-                listener_id=listener['id']), status=401)
+                listener_id=listener['id']), status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
@@ -650,7 +650,7 @@ class TestListener(base.BaseAPITest):
 
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
-            response = self.post(self.LISTENERS_PATH, body, status=401)
+            response = self.post(self.LISTENERS_PATH, body, status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
@@ -816,7 +816,7 @@ class TestListener(base.BaseAPITest):
                          auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
-                api_listener = self.put(listener_path, body, status=401)
+                api_listener = self.put(listener_path, body, status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_listener.json)
         self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
@@ -919,7 +919,7 @@ class TestListener(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
-                self.delete(listener_path, status=401)
+                self.delete(listener_path, status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
                                       constants.ACTIVE)

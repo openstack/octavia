@@ -17,28 +17,28 @@ from oslo_policy import policy
 rules = [
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_HEALTHMONITOR,
-                                    action='get_all'),
+                                    action=constants.RBAC_GET_ALL),
         constants.RULE_API_READ,
         "List Health Monitors of a Pool",
         [{'method': 'GET', 'path': '/v2.0/lbaas/healthmonitors'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_HEALTHMONITOR,
-                                    action='get_all-global'),
+                                    action=constants.RBAC_GET_ALL_GLOBAL),
         constants.RULE_API_READ_GLOBAL,
         "List Health Monitors including resources owned by others",
         [{'method': 'GET', 'path': '/v2.0/lbaas/healthmonitors'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_HEALTHMONITOR,
-                                    action='post'),
+                                    action=constants.RBAC_POST),
         constants.RULE_API_WRITE,
         "Create a Health Monitor",
         [{'method': 'POST', 'path': '/v2.0/lbaas/healthmonitors'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_HEALTHMONITOR,
-                                    action='get_one'),
+                                    action=constants.RBAC_GET_ONE),
         constants.RULE_API_READ,
         "Show Health Monitor details",
         [{'method': 'GET',
@@ -46,7 +46,7 @@ rules = [
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_HEALTHMONITOR,
-                                    action='put'),
+                                    action=constants.RBAC_PUT),
         constants.RULE_API_WRITE,
         "Update a Health Monitor",
         [{'method': 'PUT',
@@ -54,7 +54,7 @@ rules = [
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_HEALTHMONITOR,
-                                    action='delete'),
+                                    action=constants.RBAC_DELETE),
         constants.RULE_API_WRITE,
         "Remove a Health Monitor",
         [{'method': 'DELETE',
