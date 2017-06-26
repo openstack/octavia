@@ -268,7 +268,3 @@ class MembersController(base.BaseController):
                 self.repositories.member.update(
                     lock_session, db_member.id,
                     provisioning_status=constants.ERROR)
-        db_member = self.repositories.member.get(context.session, id=id)
-        result = self._convert_db_to_type(db_member,
-                                          member_types.MemberResponse)
-        return member_types.MembersRootResponse(member=result)

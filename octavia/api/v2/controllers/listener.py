@@ -323,8 +323,3 @@ class ListenersController(base.BaseController):
                 self.repositories.listener.update(
                     lock_session, db_listener.id,
                     provisioning_status=constants.ERROR)
-        db_listener = self.repositories.listener.get(
-            context.session, id=db_listener.id)
-        result = self._convert_db_to_type(db_listener,
-                                          listener_types.ListenerResponse)
-        return listener_types.ListenerRootResponse(listener=result)
