@@ -91,10 +91,10 @@ class BaseTestCase(manager.NetworkScenarioTest):
         self.quotas_client = quotas_client.QuotasClient(*self.client_args)
 
         # admin network client needed for assigning octavia port to flip
-        admin_manager = credentials_factory.AdminManager()
-        admin_manager.auth_provider.fill_credentials()
-        self.floating_ips_client_admin = admin_manager.floating_ips_client
-        self.ports_client_admin = admin_manager.ports_client
+        os_admin = credentials_factory.AdminManager()
+        os_admin.auth_provider.fill_credentials()
+        self.floating_ips_client_admin = os_admin.floating_ips_client
+        self.ports_client_admin = os_admin.ports_client
 
     @classmethod
     def skip_checks(cls):
@@ -117,13 +117,13 @@ class BaseTestCase(manager.NetworkScenarioTest):
         fallback in absence of tenant networking.
         """
         try:
-            tenant_net = self.admin_manager.networks_client.list_networks(
+            tenant_net = self.os_admin.networks_client.list_networks(
                 tenant_id=self.tenant_id)['networks'][0]
         except IndexError:
             tenant_net = None
 
         if tenant_net:
-            tenant_subnet = self.admin_manager.subnets_client.list_subnets(
+            tenant_subnet = self.os_admin.subnets_client.list_subnets(
                 tenant_id=self.tenant_id)['subnets'][0]
             self.subnet = tenant_subnet
             self.network = tenant_net
@@ -134,7 +134,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
             # with the fixed network is the one we want.  In the future, we
             # should instead pull a subnet id from config, which is set by
             # devstack/admin/etc.
-            subnet = self.admin_manager.subnets_client.list_subnets(
+            subnet = self.os_admin.subnets_client.list_subnets(
                 network_id=self.network['id'])['subnets'][0]
             self.subnet = subnet
 
