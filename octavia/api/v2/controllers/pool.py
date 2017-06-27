@@ -310,9 +310,6 @@ class PoolsController(base.BaseController):
                 self.repositories.pool.update(
                     lock_session, db_pool.id,
                     provisioning_status=constants.ERROR)
-        db_pool = self.repositories.pool.get(context.session, id=db_pool.id)
-        result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
-        return pool_types.PoolRootResponse(pool=result)
 
     @pecan.expose()
     def _lookup(self, pool_id, *remainder):

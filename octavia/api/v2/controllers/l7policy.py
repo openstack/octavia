@@ -282,10 +282,6 @@ class L7PolicyController(base.BaseController):
                 self.repositories.l7policy.update(
                     lock_session, db_l7policy.id,
                     provisioning_status=constants.ERROR)
-        db_l7policy = self.repositories.l7policy.get(context.session, id=id)
-        result = self._convert_db_to_type(db_l7policy,
-                                          l7policy_types.L7PolicyResponse)
-        return l7policy_types.L7PolicyRootResponse(l7policy=result)
 
     @pecan.expose()
     def _lookup(self, l7policy_id, *remainder):

@@ -385,5 +385,3 @@ class LoadBalancersController(base.BaseController):
                 self.repositories.load_balancer.update(
                     context.session, id,
                     provisioning_status=constants.ERROR)
-        result = self._convert_db_to_type(db_lb, lb_types.LoadBalancerResponse)
-        return lb_types.LoadBalancersRootResponse(loadbalancer=result)

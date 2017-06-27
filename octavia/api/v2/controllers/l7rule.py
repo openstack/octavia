@@ -253,7 +253,3 @@ class L7RuleController(base.BaseController):
                 self.repositories.l7rule.update(
                     lock_session, db_l7rule.id,
                     provisioning_status=constants.ERROR)
-        db_l7rule = self.repositories.l7rule.get(context.session, id=id)
-        result = self._convert_db_to_type(db_l7rule,
-                                          l7rule_types.L7RuleResponse)
-        return l7rule_types.L7RuleRootResponse(rule=result)

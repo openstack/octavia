@@ -264,8 +264,3 @@ class HealthMonitorController(base.BaseController):
                 self.repositories.health_monitor.update(
                     lock_session, db_hm.id,
                     provisioning_status=constants.ERROR)
-        db_hm = self.repositories.health_monitor.get(
-            context.session, id=id)
-        result = self._convert_db_to_type(
-            db_hm, hm_types.HealthMonitorResponse)
-        return hm_types.HealthMonitorRootResponse(healthmonitor=result)
