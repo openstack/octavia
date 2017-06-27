@@ -17,6 +17,7 @@ from wsme import types as wtypes
 from octavia.api.common import types
 from octavia.api.v2.types import listener
 from octavia.api.v2.types import pool
+from octavia.common import constants
 
 
 class BaseLoadBalancerType(types.BaseType):
@@ -116,8 +117,12 @@ class LoadBalancerPOST(BaseLoadBalancerType):
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     listeners = wtypes.wsattr([listener.ListenerSingleCreate], default=[])
     pools = wtypes.wsattr([pool.PoolSingleCreate], default=[])
-    provider = wtypes.wsattr(wtypes.StringType(max_length=255))
-    flavor = wtypes.wsattr(wtypes.StringType(max_length=255))
+    # TODO(johnsom) This should be dynamic based on the loaded providers
+    #               once providers are implemented.
+    provider = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROVIDERS))
+    # TODO(johnsom) This should be dynamic based on the loaded flavors
+    #               once flavors are implemented.
+    flavor = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_FLAVORS))
 
 
 class LoadBalancerRootPOST(types.BaseType):

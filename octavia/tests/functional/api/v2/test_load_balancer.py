@@ -396,6 +396,45 @@ class TestLoadBalancer(base.BaseAPITest):
         self.conf.config(auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_lb)
 
+    def test_create_provider_octavia(self, **optionals):
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id,
+                   'provider': constants.OCTAVIA
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_request_matches_response(lb_json, api_lb)
+        return api_lb
+
+    def test_create_provider_bogus(self, **optionals):
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id,
+                   'provider': 'BOGUS'
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=400)
+        self.assertIn("Invalid input for field/attribute provider. Value: "
+                      "'BOGUS'. Value should be one of:",
+                      response.json.get('faultstring'))
+
+    def test_create_flavor_bogus(self, **optionals):
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id,
+                   'flavor': 'BOGUS'
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=400)
+        self.assertIn("Invalid input for field/attribute flavor. Value: "
+                      "'BOGUS'. Value should be one of:",
+                      response.json.get('faultstring'))
+
     def test_get_all_admin(self):
         project_id = uuidutils.generate_uuid()
         lb1 = self.create_load_balancer(uuidutils.generate_uuid(),
