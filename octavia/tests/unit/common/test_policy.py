@@ -12,6 +12,7 @@
 
 """Test of Policy Engine For Octavia."""
 
+import logging
 import tempfile
 
 from oslo_config import fixture as oslo_fixture
@@ -25,6 +26,7 @@ from octavia.common import policy
 from octavia.tests.unit import base
 
 CONF = config.cfg.CONF
+LOG = logging.getLogger(__name__)
 
 
 class PolicyFileTestCase(base.TestCase):
@@ -33,6 +35,7 @@ class PolicyFileTestCase(base.TestCase):
         super(PolicyFileTestCase, self).setUp()
 
         self.conf = self.useFixture(oslo_fixture.Config(CONF))
+        policy.reset()
         self.target = {}
 
     def test_modified_policy_reloads(self):
@@ -46,18 +49,18 @@ class PolicyFileTestCase(base.TestCase):
             self.context = context.Context('fake', 'fake')
 
             rule = oslo_policy.RuleDefault('example:test', "")
-            self.context.policy.register_defaults([rule])
+            policy.get_enforcer().register_defaults([rule])
 
             action = "example:test"
-            self.context.policy.authorize(action, self.target)
+            policy.get_enforcer().authorize(action, self.target, self.context)
 
             tmp.seek(0)
             tmp.write('{"example:test": "!"}')
             tmp.flush()
-            self.context.policy.load_rules(True)
+            policy.get_enforcer().load_rules(True)
             self.assertRaises(exceptions.PolicyForbidden,
-                              self.context.policy.authorize,
-                              action, self.target)
+                              policy.get_enforcer().authorize,
+                              action, self.target, self.context)
 
 
 class PolicyTestCase(base.TestCase):
@@ -69,6 +72,8 @@ class PolicyTestCase(base.TestCase):
         # diltram: this one must be removed after fixing issue in oslo.config
         # https://bugs.launchpad.net/oslo.config/+bug/1645868
         self.conf.conf.__call__(args=[])
+        policy.reset()
+        self.context = context.Context('fake', 'fake', roles=['member'])
 
         self.rules = [
             oslo_policy.RuleDefault("true", "@"),
@@ -86,30 +91,31 @@ class PolicyTestCase(base.TestCase):
             oslo_policy.RuleDefault("example:uppercase_admin",
                                     "role:ADMIN or role:sysadmin"),
         ]
-        self.context = context.Context('fake', 'fake', roles=['member'])
-        self.context.policy.register_defaults(self.rules)
+        policy.get_enforcer().register_defaults(self.rules)
         self.target = {}
 
     def test_authorize_nonexistent_action_throws(self):
         action = "example:noexist"
         self.assertRaises(
-            oslo_policy.PolicyNotRegistered, self.context.policy.authorize,
-            action, self.target)
+            oslo_policy.PolicyNotRegistered, policy.get_enforcer().authorize,
+            action, self.target, self.context)
 
     def test_authorize_bad_action_throws(self):
         action = "example:denied"
         self.assertRaises(
-            exceptions.PolicyForbidden, self.context.policy.authorize,
-            action, self.target)
+            exceptions.PolicyForbidden, policy.get_enforcer().authorize,
+            action, self.target, self.context)
 
     def test_authorize_bad_action_noraise(self):
         action = "example:denied"
-        result = self.context.policy.authorize(action, self.target, False)
+        result = policy.get_enforcer().authorize(action, self.target,
+                                                 self.context, False)
         self.assertFalse(result)
 
     def test_authorize_good_action(self):
         action = "example:allowed"
-        result = self.context.policy.authorize(action, self.target)
+        result = policy.get_enforcer().authorize(action, self.target,
+                                                 self.context)
         self.assertTrue(result)
 
     @requests_mock.mock()
@@ -117,26 +123,28 @@ class PolicyTestCase(base.TestCase):
         req_mock.post('http://www.example.com/', text='False')
         action = "example:get_http"
         self.assertRaises(exceptions.PolicyForbidden,
-                          self.context.policy.authorize, action, self.target)
+                          policy.get_enforcer().authorize, action, self.target,
+                          self.context)
 
     def test_templatized_authorization(self):
         target_mine = {'project_id': 'fake'}
         target_not_mine = {'project_id': 'another'}
         action = "example:my_file"
 
-        self.context.policy.authorize(action, target_mine)
+        policy.get_enforcer().authorize(action, target_mine, self.context)
         self.assertRaises(exceptions.PolicyForbidden,
-                          self.context.policy.authorize,
-                          action, target_not_mine)
+                          policy.get_enforcer().authorize,
+                          action, target_not_mine, self.context)
 
     def test_early_AND_authorization(self):
         action = "example:early_and_fail"
         self.assertRaises(exceptions.PolicyForbidden,
-                          self.context.policy.authorize, action, self.target)
+                          policy.get_enforcer().authorize, action, self.target,
+                          self.context)
 
     def test_early_OR_authorization(self):
         action = "example:early_or_success"
-        self.context.policy.authorize(action, self.target)
+        policy.get_enforcer().authorize(action, self.target, self.context)
 
     def test_ignore_case_role_check(self):
         lowercase_action = "example:lowercase_admin"
@@ -145,19 +153,19 @@ class PolicyTestCase(base.TestCase):
         # NOTE(dprince) we mix case in the Admin role here to ensure
         # case is ignored
         self.context = context.Context('admin', 'fake', roles=['AdMiN'])
-        self.context.policy.register_defaults(self.rules)
 
-        self.context.policy.authorize(lowercase_action, self.target)
-        self.context.policy.authorize(uppercase_action, self.target)
+        policy.get_enforcer().authorize(lowercase_action, self.target,
+                                        self.context)
+        policy.get_enforcer().authorize(uppercase_action, self.target,
+                                        self.context)
 
     def test_check_is_admin_fail(self):
-        self.assertFalse(self.context.policy.check_is_admin())
+        self.assertFalse(policy.get_enforcer().check_is_admin(self.context))
 
     def test_check_is_admin(self):
         self.context = context.Context('admin', 'fake', roles=['AdMiN'])
-        self.context.policy.register_defaults(self.rules)
 
-        self.assertTrue(self.context.policy.check_is_admin())
+        self.assertTrue(policy.get_enforcer().check_is_admin(self.context))
 
     def test_get_enforcer(self):
         self.assertTrue(isinstance(policy.get_no_context_enforcer(),
@@ -194,17 +202,17 @@ class IsAdminCheckTestCase(base.TestCase):
         check = policy.IsAdminCheck('is_admin', 'True')
 
         self.assertTrue(
-            check('target', dict(is_admin=True), self.context.policy))
+            check('target', dict(is_admin=True), policy.get_enforcer()))
         self.assertFalse(
-            check('target', dict(is_admin=False), self.context.policy))
+            check('target', dict(is_admin=False), policy.get_enforcer()))
 
     def test_call_false(self):
         check = policy.IsAdminCheck('is_admin', 'False')
 
         self.assertFalse(
-            check('target', dict(is_admin=True), self.context.policy))
+            check('target', dict(is_admin=True), policy.get_enforcer()))
         self.assertTrue(
-            check('target', dict(is_admin=False), self.context.policy))
+            check('target', dict(is_admin=False), policy.get_enforcer()))
 
 
 class AdminRolePolicyTestCase(base.TestCase):
@@ -218,7 +226,7 @@ class AdminRolePolicyTestCase(base.TestCase):
         self.conf.conf.__call__(args=[])
 
         self.context = context.Context('fake', 'fake', roles=['member'])
-        self.actions = self.context.policy.get_rules().keys()
+        self.actions = policy.get_enforcer().get_rules().keys()
         self.target = {}
 
     def test_authorize_admin_actions_with_nonadmin_context_throws(self):
@@ -228,5 +236,5 @@ class AdminRolePolicyTestCase(base.TestCase):
         """
         for action in self.actions:
             self.assertRaises(
-                exceptions.PolicyForbidden, self.context.policy.authorize,
-                action, self.target)
+                exceptions.PolicyForbidden, policy.get_enforcer().authorize,
+                action, self.target, self.context)

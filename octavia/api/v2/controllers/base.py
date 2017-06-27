@@ -21,6 +21,7 @@ from stevedore import driver as stevedore_driver
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.common import policy
 from octavia.db import repositories
 
 CONF = cfg.CONF
@@ -154,7 +155,8 @@ class BaseController(rest.RestController):
         action = '{rbac_obj}{action}'.format(
             rbac_obj=self.RBAC_TYPE, action=constants.RBAC_GET_ALL_GLOBAL)
         target = {'project_id': project_id}
-        if not context.policy.authorize(action, target, do_raise=False):
+        if not policy.get_enforcer().authorize(action, target,
+                                               context, do_raise=False):
             # Not a global observer or admin
             if project_id is None:
                 project_id = context.project_id
@@ -173,7 +175,7 @@ class BaseController(rest.RestController):
         action = '{rbac_obj}{action}'.format(
             rbac_obj=self.RBAC_TYPE, action=action)
         target = {'project_id': project_id}
-        context.policy.authorize(action, target)
+        policy.get_enforcer().authorize(action, target, context)
 
     def _filter_fields(self, object_list, fields):
         if CONF.api_settings.allow_field_selection:

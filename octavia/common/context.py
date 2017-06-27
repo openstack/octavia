@@ -33,9 +33,7 @@ class Context(common_context.RequestContext):
 
         super(Context, self).__init__(**kwargs)
 
-        self.policy = policy.Policy(self)
-
-        self.is_admin = (self.policy.check_is_admin() or
+        self.is_admin = (policy.get_enforcer().check_is_admin(self) or
                          CONF.api_settings.auth_strategy == constants.NOAUTH)
 
     @property

@@ -98,6 +98,7 @@ class QuotasController(base.BaseController):
 
 
 class QuotasDefaultController(base.BaseController):
+    RBAC_TYPE = constants.RBAC_QUOTA
 
     def __init__(self, project_id):
         super(QuotasDefaultController, self).__init__()
@@ -111,11 +112,8 @@ class QuotasDefaultController(base.BaseController):
         if not self.project_id:
             raise exceptions.MissingAPIProjectID()
 
-        # Check that the user is authorized to see quota defaults
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_QUOTA, action='get_defaults')
-        target = {'project_id': self.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, self.project_id,
+                                   constants.RBAC_GET_DEFAULTS)
 
         quotas = self._get_default_quotas(self.project_id)
         return self._convert_db_to_type(quotas, quota_types.QuotaResponse)
