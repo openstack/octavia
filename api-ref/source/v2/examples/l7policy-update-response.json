@@ -1,5 +1,5 @@
 {
-    "l7policies":
+    "l7policy":
         {
             "listener_id": "023f2e34-7806-443b-bfae-16c324569a3d",
             "description": "Redirect requests to example.com",

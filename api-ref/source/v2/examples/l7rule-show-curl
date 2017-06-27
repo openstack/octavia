@@ -1,0 +1,1 @@
+curl -X GET -H "X-Auth-Token: <token>" http://198.51.100.10:9876/v2.0/lbaas/l7policies/8a1412f0-4c32-4257-8b07-af4770b604fd/rules/16621dbb-a736-4888-a57a-3ecd53df784c

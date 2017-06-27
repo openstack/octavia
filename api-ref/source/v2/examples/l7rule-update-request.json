@@ -1,0 +1,9 @@
+{
+    "rule": {
+        "compare_type": "REGEX",
+        "invert": true,
+        "type": "PATH",
+        "value": "/images/special*",
+        "admin_state_up": true
+    }
+}

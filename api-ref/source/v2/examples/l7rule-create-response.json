@@ -1,0 +1,17 @@
+{
+    "rule":
+        {
+            "created_at": "2017-06-27T15:52:27",
+            "compare_type": "REGEX",
+            "provisioning_status": "PENDING_CREATE",
+            "invert": false,
+            "admin_state_up": true,
+            "updated_at": "2017-06-27T15:52:28",
+            "value": "/images*",
+            "key": null,
+            "project_id": "e3cd678b11784734bc366148aa37580e",
+            "type": "PATH",
+            "id": "16621dbb-a736-4888-a57a-3ecd53df784c",
+            "operating_status": "OFFLINE"
+        }
+}

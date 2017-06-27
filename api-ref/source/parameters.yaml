@@ -13,6 +13,12 @@ path-l7policy-id:
   in: path
   required: true
   type: string
+path-l7rule-id:
+  description: |
+    The ID of the L7 rule to query.
+  in: path
+  required: true
+  type: string
 path-listener-id:
   description: |
     The ID of the listener to query.
@@ -150,13 +156,15 @@ bytes_out:
   type: integer
 connection_limit:
   description: |
-    The maximum number of connections permitted for this listener. Default value is -1 which represents infinite connections.
+    The maximum number of connections permitted for this listener. Default
+    value is -1 which represents infinite connections.
   in: body
   required: true
   type: integer
 connection_limit-optional:
   description: |
-    The maximum number of connections permitted for this listener. Default value is -1 which represents infinite connections.
+    The maximum number of connections permitted for this listener. Default
+    value is -1 which represents infinite connections.
   in: body
   required: false
   type: integer
@@ -454,6 +462,81 @@ l7policy-rule-ids:
   in: body
   required: true
   type: array
+l7rule-compare_type:
+  description: |
+    The comparison type for the L7 rule. One of ``CONTAINS``, ``ENDS_WITH``,
+    ``EQUAL_TO``, ``REGEX``, or ``STARTS_WITH``.
+  in: body
+  required: true
+  type: string
+l7rule-compare_type-optional:
+  description: |
+    The comparison type for the L7 rule. One of ``CONTAINS``, ``ENDS_WITH``,
+    ``EQUAL_TO``, ``REGEX``, or ``STARTS_WITH``.
+  in: body
+  required: false
+  type: string
+l7rule-id:
+  description: |
+    The ID of the L7 rule.
+  in: body
+  required: true
+  type: string
+l7rule-invert:
+  description: |
+    When ``true`` the logic of the rule is inverted. For example, with
+    invert ``true``, `equal to` would become `not equal to`.
+  in: body
+  required: true
+  type: boolean
+l7rule-invert-optional:
+  description: |
+    When ``true`` the logic of the rule is inverted. For example, with
+    invert ``true``, `equal to` would become `not equal to`.
+    Default is ``false``.
+  in: body
+  required: false
+  type: boolean
+l7rule-key:
+  description: |
+    The key to use for the comparison. For example, the name of the cookie
+    to evaluate.
+  in: body
+  required: true
+  type: string
+l7rule-key-optional:
+  description: |
+    The key to use for the comparison. For example, the name of the cookie
+    to evaluate.
+  in: body
+  required: false
+  type: string
+l7rule-type:
+  description: |
+    The L7 rule type.  One of ``COOKIE``, ``FILE_TYPE``, ``HEADER``,
+    ``HOST_NAME``, or ``PATH``.
+  in: body
+  required: true
+  type: string
+l7rule-type-optional:
+  description: |
+    The L7 rule type.  One of ``COOKIE``, ``FILE_TYPE``, ``HEADER``,
+    ``HOST_NAME``, or ``PATH``.
+  in: body
+  required: false
+  type: string
+l7rule-value:
+  description: |
+    The value to use for the comparison. For example, the file type to compare.
+  in: body
+  required: true
+  type: string
+l7rule-value-optional:
+  description: |
+    The value to use for the comparison. For example, the file type to compare.
+  in: body
+  required: false
+  type: string
 l7rules-status-object-list:
   description: |
     A list of L7 rule status objects.
@@ -488,7 +571,8 @@ listener-id:
   type: string
 listener-id-pool-optional:
   description: |
-    The ID of the listener for the pool. Either ``listener_id`` or ``loadbalancer_id`` must be specified.
+    The ID of the listener for the pool. Either ``listener_id`` or
+    ``loadbalancer_id`` must be specified.
   in: body
   required: false
   type: string
@@ -530,7 +614,8 @@ loadbalancer-id:
   type: string
 loadbalancer-id-pool-optional:
   description: |
-    The ID of the load balancer for the pool. Either ``listener_id`` or ``loadbalancer_id`` must be specified.
+    The ID of the load balancer for the pool. Either ``listener_id`` or
+    ``loadbalancer_id`` must be specified.
   in: body
   required: false
   type: string
@@ -660,13 +745,15 @@ project_id-optional-deprecated:
   type: string
 protocol:
   description: |
-    The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``TCP``, or ``TERMINATED_HTTPS``.
+    The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``TCP``, or
+    ``TERMINATED_HTTPS``.
   in: body
   required: true
   type: integer
 protocol-pools:
   description: |
-    The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``PROXY``, or ``TCP``.
+    The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``PROXY``, or
+    ``TCP``.
   in: body
   required: true
   type: string
