@@ -40,3 +40,8 @@ Health Monitor
 L7 Policies
 -----------
 .. include:: l7policy.inc
+
+--------
+L7 Rules
+--------
+.. include:: l7rule.inc
