@@ -1,8 +1,13 @@
-Octavia API
-===========
+Octavia API v1 (SUPORTED)
+=========================
 
 Authentication
 --------------
+
+.. warning::
+
+    This API should be only used for internal access such as from the
+    neutron-lbaas octavia driver. It does not support access control.
 
 Using the version 1 API
 -----------------------

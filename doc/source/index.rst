@@ -56,7 +56,7 @@ APIs
    :glob:
    :maxdepth: 1
 
-   api/octaviaapi.rst
+   Octavia API Reference <https://developer.openstack.org/api-ref/load-balancer/>
    api/haproxy-amphora-api.rst
 
 ====================
