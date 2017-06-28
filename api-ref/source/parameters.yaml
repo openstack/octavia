@@ -43,6 +43,12 @@ path-pool-id:
   in: path
   required: true
   type: string
+path-project-id:
+  description: |
+    The ID of the project to query.
+  in: path
+  required: true
+  type: string
 ###############################################################################
 # Query fields
 ###############################################################################
@@ -787,6 +793,80 @@ provisioning_status:
   in: body
   required: true
   type: string
+quota-health_monitor:
+  description: |
+    The configured health monitor quota limit. A setting of ``null`` means it
+    is using the deployment default quota.  A setting of ``-1``
+    means unlimited.
+  in: body
+  required: true
+  type: integer
+quota-health_monitor-optional:
+  description: |
+    The configured health monitor quota limit. A setting of ``null`` means it
+    is using the deployment default quota.  A setting of ``-1`` means
+    unlimited.
+  in: body
+  required: false
+  type: integer
+quota-listener:
+  description: |
+    The configured listener quota limit. A setting of ``null`` means it is
+    using the deployment default quota.  A setting of ``-1`` means unlimited.
+  in: body
+  required: true
+  type: integer
+quota-listener-optional:
+  description: |
+    The configured listener quota limit. A setting of ``null`` means it is
+    using the deployment default quota.  A setting of ``-1`` means unlimited.
+  in: body
+  required: true
+  type: integer
+quota-load_balancer:
+  description: |
+    The configured load balancer quota limit. A setting of ``null`` means it
+    is using the deployment default quota.  A setting of ``-1`` means
+    unlimited.
+  in: body
+  required: true
+  type: integer
+quota-load_balancer-optional:
+  description: |
+    The configured load balancer quota limit. A setting of ``null`` means it
+    is using the deployment default quota.  A setting of ``-1`` means
+    unlimited.
+  in: body
+  required: true
+  type: integer
+quota-member:
+  description: |
+    The configured member quota limit. A setting of ``null`` means it is using
+    the deployment default quota.  A setting of ``-1`` means unlimited.
+  in: body
+  required: true
+  type: integer
+quota-member-optional:
+  description: |
+    The configured member quota limit. A setting of ``null`` means it is using
+    the deployment default quota.  A setting of ``-1`` means unlimited.
+  in: body
+  required: true
+  type: integer
+quota-pool:
+  description: |
+    The configured pool quota limit. A setting of ``null`` means it is using
+    the deployment default quota.  A setting of ``-1`` means unlimited.
+  in: body
+  required: true
+  type: integer
+quota-pool-optional:
+  description: |
+    The configured pool quota limit. A setting of ``null`` means it is using
+    the deployment default quota.  A setting of ``-1`` means unlimited.
+  in: body
+  required: true
+  type: integer
 request_errors:
   description: |
     The total requests that were unable to be fulfilled.

@@ -1,0 +1,5 @@
+---
+other:
+  - |
+    Octavia now has an up to date API reference for the Octavia v2 API.
+    It is available at: https://developer.openstack.org/api-ref/load-balancer/

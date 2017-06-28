@@ -1,0 +1,9 @@
+{
+    "quota": {
+        "load_balancer": 50,
+        "listener": -1,
+        "member": -1,
+        "pool": -1,
+        "health_monitor": -1
+    }
+}
