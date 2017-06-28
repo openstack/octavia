@@ -1,0 +1,1 @@
+curl -X PUT -H "Content-Type: application/json" -H "X-Auth-Token: <token>" -d '{"quota":{"load_balancer":10,"listener":-1,"member":50,"pool":-1,"health_monitor":-1}}' http://198.51.100.10:9876/v2.0/lbaas/quotas/e3cd678b11784734bc366148aa37580e

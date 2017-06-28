@@ -1,0 +1,12 @@
+{
+    "quotas": [
+        {
+            "load_balancer": 5,
+            "member": 50,
+            "health_monitor": -1,
+            "listener": null,
+            "project_id": "e3cd678b11784734bc366148aa37580e",
+            "pool": null
+        }
+    ]
+}

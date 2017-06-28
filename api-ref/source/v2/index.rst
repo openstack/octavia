@@ -45,3 +45,8 @@ L7 Policies
 L7 Rules
 --------
 .. include:: l7rule.inc
+
+------
+Quotas
+------
+.. include:: quota.inc
