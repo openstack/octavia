@@ -336,7 +336,12 @@ task_flow_opts = [
                help=_('TaskFlow engine to use')),
     cfg.IntOpt('max_workers',
                default=5,
-               help=_('The maximum number of workers'))
+               help=_('The maximum number of workers')),
+    cfg.BoolOpt('disable_revert', default=False,
+                help=_('If True, disables the controller worker taskflow '
+                       'flows from reverting.  This will leave resources in '
+                       'an inconsistent state and should only be used for '
+                       'debugging purposes.'))
 ]
 
 core_cli_opts = []

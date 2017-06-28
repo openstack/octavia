@@ -86,9 +86,8 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('os.makedirs')
     @mock.patch('os.rename')
     @mock.patch('subprocess.check_output')
-    @mock.patch('os.remove')
     def _test_haproxy(self, init_system, distro, mock_init_system,
-                      mock_remove, mock_subprocess, mock_rename,
+                      mock_subprocess, mock_rename,
                       mock_makedirs, mock_exists):
 
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
@@ -122,7 +121,7 @@ class TestServerTestCase(base.TestCase):
                     peer=(octavia_utils.
                           base64_sha1_string('amp_123').rstrip('='))).split(),
                 stderr=-2)
-            mock_rename.assert_called_once_with(
+            mock_rename.assert_called_with(
                 '/var/lib/octavia/123/haproxy.cfg.new',
                 '/var/lib/octavia/123/haproxy.cfg')
 
@@ -222,7 +221,9 @@ class TestServerTestCase(base.TestCase):
                     peer=(octavia_utils.
                           base64_sha1_string('amp_123').rstrip('='))).split(),
                 stderr=-2)
-            mock_remove.assert_called_once_with(file_name)
+            mock_rename.assert_called_with(
+                '/var/lib/octavia/123/haproxy.cfg.new',
+                '/var/lib/octavia/123/haproxy.cfg.new-failed')
 
         # unhappy path with bogus init system
         mock_init_system.return_value = 'bogus'

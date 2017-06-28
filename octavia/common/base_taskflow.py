@@ -37,6 +37,7 @@ class BaseTaskFlowEngine(object):
             flow,
             engine_conf=CONF.task_flow.engine,
             executor=self.executor,
+            never_resolve=CONF.task_flow.disable_revert,
             **kwargs)
         eng.compile()
         eng.prepare()

@@ -136,7 +136,8 @@ class Listener(object):
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             LOG.error("Failed to verify haproxy file: %s", e)
-            os.remove(name)  # delete file
+            # Save the last config that failed validation for debugging
+            os.rename(name, ''.join([name, '-failed']))
             return webob.Response(
                 json=dict(message="Invalid request", details=e.output),
                 status=400)
