@@ -42,6 +42,7 @@ class UpdateHealthDb(object):
         self.loadbalancer_repo = repo.LoadBalancerRepository()
         self.member_repo = repo.MemberRepository()
         self.pool_repo = repo.PoolRepository()
+        self.sync_prv_status = cfg.CONF.health_manager.sync_provisioning_status
 
     def emit(self, info_type, info_id, info_obj):
         cnt = update_serializer.InfoContainer(info_type, info_id, info_obj)
@@ -50,15 +51,22 @@ class UpdateHealthDb(object):
     def _update_status_and_emit_event(self, session, repo, entity_type,
                                       entity_id, new_op_status):
         entity = repo.get(session, id=entity_id)
+        message = {}
         if entity.operating_status.lower() != new_op_status.lower():
             LOG.debug("%s %s status has changed from %s to "
                       "%s. Updating db and sending event.",
                       entity_type, entity_id, entity.operating_status,
                       new_op_status)
             repo.update(session, entity_id, operating_status=new_op_status)
-            self.emit(
-                entity_type, entity_id,
-                {constants.OPERATING_STATUS: new_op_status})
+            message.update({constants.OPERATING_STATUS: new_op_status})
+        if self.sync_prv_status:
+            LOG.debug("%s %s provisioning_status %s. Updating db and sending"
+                      " event.", entity_type, entity_id,
+                      entity.provisioning_status)
+            message.update(
+                {constants.PROVISIONING_STATUS: entity.provisioning_status})
+        if message:
+            self.emit(entity_type, entity_id, message)
 
     def update_health(self, health):
         """This function is to update db info based on amphora status

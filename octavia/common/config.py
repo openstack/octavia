@@ -183,7 +183,9 @@ healthmanager_opts = [
                       'don\'t need to sync the database or are running '
                       'octavia in stand alone mode use the '
                       'noop_event_streamer'),
-               default='noop_event_streamer')]
+               default='noop_event_streamer'),
+    cfg.BoolOpt('sync_provisioning_status', default=False,
+                help=_("Enable provisioning status sync with neutron db"))]
 
 oslo_messaging_opts = [
     cfg.StrOpt('topic'),
