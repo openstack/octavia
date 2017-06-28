@@ -86,8 +86,9 @@ class TestListener(base.BaseAPITest):
                                          self.lb_id).get(self.root_tag)
         self.set_lb_status(self.lb_id)
 
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.KEYSTONE)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.KEYSTONE)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                listener3['project_id']):
             override_credentials = {
@@ -108,7 +109,7 @@ class TestListener(base.BaseAPITest):
                     return_value=override_credentials):
                 listeners = self.get(
                     self.LISTENERS_PATH).json.get(self.root_tag_list)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assertEqual(1, len(listeners))
         listener_id_ports = [(l.get('id'), l.get('protocol_port'))
@@ -132,8 +133,9 @@ class TestListener(base.BaseAPITest):
             constants.PROTOCOL_HTTP, 82, lb1_id).get(self.root_tag)
         self.set_lb_status(lb1_id)
 
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.KEYSTONE)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.KEYSTONE)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -154,7 +156,7 @@ class TestListener(base.BaseAPITest):
                     return_value=override_credentials):
                 listeners = self.get(self.LISTENERS_PATH)
                 listeners = listeners.json.get(self.root_tag_list)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assertEqual(3, len(listeners))
         listener_id_ports = [(l.get('id'), l.get('protocol_port'))
@@ -182,12 +184,13 @@ class TestListener(base.BaseAPITest):
                              self.lb_id).get(self.root_tag)
         self.set_lb_status(self.lb_id)
 
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.KEYSTONE)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.KEYSTONE)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             listeners = self.get(self.LISTENERS_PATH, status=401).json
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, listeners)
 
     def test_get_all_by_project_id(self):
@@ -360,8 +363,9 @@ class TestListener(base.BaseAPITest):
             constants.PROTOCOL_HTTP, 80, self.lb_id).get(self.root_tag)
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -385,20 +389,21 @@ class TestListener(base.BaseAPITest):
                     listener_id=listener['id']))
         api_listener = response.json.get(self.root_tag)
         self.assertEqual(listener, api_listener)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
     def test_get_not_authorized(self):
         listener = self.create_listener(
             constants.PROTOCOL_HTTP, 80, self.lb_id).get(self.root_tag)
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.listener_path.format(
                 listener_id=listener['id']), status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
     def test_get_hides_deleted(self):
@@ -576,8 +581,9 @@ class TestListener(base.BaseAPITest):
         body = self._build_body(lb_listener)
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.TESTING)
 
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
@@ -598,7 +604,7 @@ class TestListener(base.BaseAPITest):
                     "oslo_context.context.RequestContext.to_policy_values",
                     return_value=override_credentials):
                 response = self.post(self.LISTENERS_PATH, body)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         listener_api = response.json['listener']
         extra_expects = {'provisioning_status': constants.PENDING_CREATE,
@@ -638,13 +644,14 @@ class TestListener(base.BaseAPITest):
         body = self._build_body(lb_listener)
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.TESTING)
 
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.post(self.LISTENERS_PATH, body, status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
     def test_update_with_bad_handler(self):
@@ -750,8 +757,9 @@ class TestListener(base.BaseAPITest):
             listener_id=listener['id'])
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -772,7 +780,7 @@ class TestListener(base.BaseAPITest):
                     return_value=override_credentials):
                 api_listener = self.put(listener_path, body)
                 api_listener = api_listener.json.get(self.root_tag)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         update_expect = {'name': 'listener2', 'admin_state_up': True,
                          'default_pool_id': self.pool_id,
@@ -803,12 +811,13 @@ class TestListener(base.BaseAPITest):
             listener_id=listener['id'])
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
                 api_listener = self.put(listener_path, body, status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_listener.json)
         self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
                                       constants.ACTIVE)
@@ -856,8 +865,9 @@ class TestListener(base.BaseAPITest):
             listener_id=listener['listener']['id'])
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -878,7 +888,7 @@ class TestListener(base.BaseAPITest):
                     return_value=override_credentials):
 
                 self.delete(listener_path)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         response = self.get(listener_path)
         api_listener = response.json['listener']
@@ -905,12 +915,12 @@ class TestListener(base.BaseAPITest):
             listener_id=listener['listener']['id'])
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
                 self.delete(listener_path, status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
                                       constants.ACTIVE)
 

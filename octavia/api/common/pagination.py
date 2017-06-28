@@ -53,10 +53,10 @@ class PaginationHelper(object):
 
     @staticmethod
     def _parse_limit(params):
-        if CONF.pagination_max_limit == 'infinite':
+        if CONF.api_settings.pagination_max_limit == 'infinite':
             page_max_limit = None
         else:
-            page_max_limit = int(CONF.pagination_max_limit)
+            page_max_limit = int(CONF.api_settings.pagination_max_limit)
         limit = params.get('limit', page_max_limit)
         try:
             # Deal with limit being a string or int meaning 'Unlimited'
@@ -132,9 +132,10 @@ class PaginationHelper(object):
         return sort_dir
 
     def _make_links(self, model_list):
-        if CONF.api_base_uri:
+        if CONF.api_settings.api_base_uri:
             path_url = "{api_base_url}{path}".format(
-                api_base_url=CONF.api_base_uri.rstrip('/'), path=request.path)
+                api_base_url=CONF.api_settings.api_base_uri.rstrip('/'),
+                path=request.path)
         else:
             path_url = request.path_url
         links = []
@@ -194,7 +195,7 @@ class PaginationHelper(object):
         """
 
         # Add filtering
-        if CONF.allow_filtering:
+        if CONF.api_settings.allow_filtering:
             filter_attrs = [attr for attr in dir(
                 model.__v2_wsme__
             ) if not callable(
@@ -206,7 +207,7 @@ class PaginationHelper(object):
             query = model.apply_filter(query, model, self.filters)
 
         # Add sorting
-        if CONF.allow_sorting:
+        if CONF.api_settings.allow_sorting:
             # Add default sort keys (if they are OK for the model)
             keys_only = [k[0] for k in self.sort_keys]
             for key in constants.DEFAULT_SORT_KEYS:
@@ -226,7 +227,7 @@ class PaginationHelper(object):
                 query = query.order_by(sort_dir_func(sort_key_attr))
 
         # Add pagination
-        if CONF.allow_pagination:
+        if CONF.api_settings.allow_pagination:
             default = ''  # Default to an empty string if NULL
             if self.marker is not None:
                 marker_object = self._parse_marker(query.session, model)
@@ -279,7 +280,7 @@ class PaginationHelper(object):
         model_list = query.all()
 
         links = None
-        if CONF.allow_pagination:
+        if CONF.api_settings.allow_pagination:
             links = self._make_links(model_list)
 
         return model_list, links

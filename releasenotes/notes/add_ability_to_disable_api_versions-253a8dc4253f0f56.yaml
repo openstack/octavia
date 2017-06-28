@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add config variables to allow disabling either API version (v1 or v2.0).

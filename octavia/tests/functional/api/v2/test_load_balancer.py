@@ -347,8 +347,8 @@ class TestLoadBalancer(base.BaseAPITest):
 
     def test_create_authorized(self, **optionals):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
         lb_json = {'name': 'test1',
                    'vip_subnet_id': uuidutils.generate_uuid(),
@@ -376,13 +376,13 @@ class TestLoadBalancer(base.BaseAPITest):
                     return_value=override_credentials):
                 response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self._assert_request_matches_response(lb_json, api_lb)
 
     def test_create_not_authorized(self, **optionals):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         lb_json = {'name': 'test1',
                    'vip_subnet_id': uuidutils.generate_uuid(),
                    'project_id': uuidutils.generate_uuid()
@@ -393,7 +393,7 @@ class TestLoadBalancer(base.BaseAPITest):
                                uuidutils.generate_uuid()):
             response = self.post(self.LBS_PATH, body, status=401)
         api_lb = response.json
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_lb)
 
     def test_create_provider_octavia(self, **optionals):
@@ -464,8 +464,9 @@ class TestLoadBalancer(base.BaseAPITest):
                                         name='lb3', project_id=self.project_id)
         lb3 = lb3.get(self.root_tag)
 
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.KEYSTONE)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.KEYSTONE)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -485,7 +486,7 @@ class TestLoadBalancer(base.BaseAPITest):
                     "oslo_context.context.RequestContext.to_policy_values",
                     return_value=override_credentials):
                 response = self.get(self.LBS_PATH)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         lbs = response.json.get(self.root_tag_list)
         self.assertEqual(1, len(lbs))
@@ -504,8 +505,9 @@ class TestLoadBalancer(base.BaseAPITest):
         lb2 = lb2.get(self.root_tag)
         lb3 = lb3.get(self.root_tag)
 
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.KEYSTONE)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.KEYSTONE)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             override_credentials = {
@@ -525,7 +527,7 @@ class TestLoadBalancer(base.BaseAPITest):
                     "oslo_context.context.RequestContext.to_policy_values",
                     return_value=override_credentials):
                 response = self.get(self.LBS_PATH)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         lbs = response.json.get(self.root_tag_list)
         self.assertEqual(3, len(lbs))
@@ -543,14 +545,14 @@ class TestLoadBalancer(base.BaseAPITest):
         self.create_load_balancer(uuidutils.generate_uuid(),
                                   name='lb3', project_id=project_id)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         LB_PROJECT_PATH = '{}?project_id={}'.format(self.LBS_PATH, project_id)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             response = self.get(LB_PROJECT_PATH, status=401)
         api_lb = response.json
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_lb)
 
     def test_get_all_by_project_id(self):
@@ -762,8 +764,8 @@ class TestLoadBalancer(base.BaseAPITest):
                                            admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                project_id):
             override_credentials = {
@@ -792,7 +794,7 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(subnet.id, response.get('vip_subnet_id'))
         self.assertEqual(network.id, response.get('vip_network_id'))
         self.assertEqual(port.id, response.get('vip_port_id'))
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
     def test_get_not_authorized(self):
         project_id = uuidutils.generate_uuid()
@@ -819,14 +821,14 @@ class TestLoadBalancer(base.BaseAPITest):
                                            admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.LB_PATH.format(lb_id=lb_dict.get('id')),
                                 status=401)
         api_lb = response.json
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_lb)
 
     def test_create_over_quota(self):
@@ -901,8 +903,8 @@ class TestLoadBalancer(base.BaseAPITest):
         lb = self.set_lb_status(lb_dict.get('id'))
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                project_id):
             override_credentials = {
@@ -924,7 +926,7 @@ class TestLoadBalancer(base.BaseAPITest):
                 response = self.put(
                     self.LB_PATH.format(lb_id=lb_dict.get('id')), lb_json)
         api_lb = response.json.get(self.root_tag)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertIsNotNone(api_lb.get('vip_subnet_id'))
         self.assertEqual('lb1', api_lb.get('name'))
         self.assertEqual(project_id, api_lb.get('project_id'))
@@ -947,14 +949,14 @@ class TestLoadBalancer(base.BaseAPITest):
         lb = self.set_lb_status(lb_dict.get('id'))
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
                                 lb_json, status=401)
         api_lb = response.json
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_lb)
         self.assert_correct_lb_status(lb_dict.get('id'), constants.ONLINE,
                                       constants.ACTIVE)
@@ -1061,8 +1063,8 @@ class TestLoadBalancer(base.BaseAPITest):
         lb_dict = lb.get(self.root_tag)
         lb = self.set_lb_status(lb_dict.get('id'))
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                project_id):
             override_credentials = {
@@ -1082,7 +1084,7 @@ class TestLoadBalancer(base.BaseAPITest):
                     "oslo_context.context.RequestContext.to_policy_values",
                     return_value=override_credentials):
                 self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')))
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         response = self.get(self.LB_PATH.format(lb_id=lb_dict.get('id')))
         api_lb = response.json.get(self.root_tag)
         self.assertEqual('lb1', api_lb.get('name'))
@@ -1104,13 +1106,13 @@ class TestLoadBalancer(base.BaseAPITest):
         lb_dict = lb.get(self.root_tag)
         lb = self.set_lb_status(lb_dict.get('id'))
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        auth_strategy = self.conf.conf.get('auth_strategy')
-        self.conf.config(auth_strategy=constants.TESTING)
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')),
                         status=401)
-        self.conf.config(auth_strategy=auth_strategy)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         response = self.get(self.LB_PATH.format(lb_id=lb_dict.get('id')))
         api_lb = response.json.get(self.root_tag)

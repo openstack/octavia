@@ -31,7 +31,8 @@ def main():
 
     app = api_app.setup_app(argv=sys.argv)
 
-    host, port = cfg.CONF.bind_host, cfg.CONF.bind_port
+    host = cfg.CONF.api_settings.bind_host
+    port = cfg.CONF.api_settings.bind_port
     LOG.info("Starting API server on %(host)s:%(port)s",
              {"host": host, "port": port})
     srv = simple_server.make_server(host, port, app)

@@ -36,7 +36,7 @@ class Context(common_context.RequestContext):
         self.policy = policy.Policy(self)
 
         self.is_admin = (self.policy.check_is_admin() or
-                         CONF.auth_strategy == constants.NOAUTH)
+                         CONF.api_settings.auth_strategy == constants.NOAUTH)
 
     @property
     def session(self):

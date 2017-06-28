@@ -35,7 +35,7 @@ class BaseController(rest.RestController):
         self.repositories = repositories.Repositories()
         self.handler = stevedore_driver.DriverManager(
             namespace='octavia.api.handlers',
-            name=CONF.api_handler,
+            name=CONF.api_settings.api_handler,
             invoke_on_load=True
         ).driver
 
@@ -176,7 +176,7 @@ class BaseController(rest.RestController):
         context.policy.authorize(action, target)
 
     def _filter_fields(self, object_list, fields):
-        if CONF.allow_field_selection:
+        if CONF.api_settings.allow_field_selection:
             for index, obj in enumerate(object_list):
                 members = self._get_attrs(obj)
                 for member in members:

@@ -291,7 +291,7 @@ class Repositories(object):
                   {'proj': project_id, 'obj': _class})
 
         # Under noauth everything is admin, so no quota
-        if CONF.auth_strategy == consts.NOAUTH:
+        if CONF.api_settings.auth_strategy == consts.NOAUTH:
             LOG.debug('Auth strategy is NOAUTH, skipping quota check.')
             return False
 
@@ -445,7 +445,7 @@ class Repositories(object):
             quotas = lock_session.query(models.Quotas).filter_by(
                 project_id=project_id).with_for_update().first()
             if not quotas:
-                if not CONF.auth_strategy == consts.NOAUTH:
+                if not CONF.api_settings.auth_strategy == consts.NOAUTH:
                     LOG.error('Quota decrement on %(clss)s called on '
                               'project: %(proj)s with no quota record in '
                               'the database.',
@@ -457,7 +457,7 @@ class Repositories(object):
                     quotas.in_use_load_balancer = (
                         quotas.in_use_load_balancer - quantity)
                 else:
-                    if not CONF.auth_strategy == consts.NOAUTH:
+                    if not CONF.api_settings.auth_strategy == consts.NOAUTH:
                         LOG.warning('Quota decrement on %(clss)s called on '
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',
@@ -468,7 +468,7 @@ class Repositories(object):
                     quotas.in_use_listener = (
                         quotas.in_use_listener - quantity)
                 else:
-                    if not CONF.auth_strategy == consts.NOAUTH:
+                    if not CONF.api_settings.auth_strategy == consts.NOAUTH:
                         LOG.warning('Quota decrement on %(clss)s called on '
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',
@@ -479,7 +479,7 @@ class Repositories(object):
                     quotas.in_use_pool = (
                         quotas.in_use_pool - quantity)
                 else:
-                    if not CONF.auth_strategy == consts.NOAUTH:
+                    if not CONF.api_settings.auth_strategy == consts.NOAUTH:
                         LOG.warning('Quota decrement on %(clss)s called on '
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',
@@ -490,7 +490,7 @@ class Repositories(object):
                     quotas.in_use_health_monitor = (
                         quotas.in_use_health_monitor - quantity)
                 else:
-                    if not CONF.auth_strategy == consts.NOAUTH:
+                    if not CONF.api_settings.auth_strategy == consts.NOAUTH:
                         LOG.warning('Quota decrement on %(clss)s called on '
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',
@@ -501,7 +501,7 @@ class Repositories(object):
                     quotas.in_use_member = (
                         quotas.in_use_member - quantity)
                 else:
-                    if not CONF.auth_strategy == consts.NOAUTH:
+                    if not CONF.api_settings.auth_strategy == consts.NOAUTH:
                         LOG.warning('Quota decrement on %(clss)s called on '
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',

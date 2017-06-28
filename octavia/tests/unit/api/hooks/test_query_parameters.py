@@ -174,7 +174,7 @@ class TestPaginationHelper(base.TestCase):
         request_mock.path_url = "http://localhost" + request_mock.path
         api_base_uri = "https://127.0.0.1"
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(api_base_uri=api_base_uri)
+        conf.config(group='api_settings', api_base_uri=api_base_uri)
         member1 = models.Member()
         member1.id = uuidutils.generate_uuid()
         model_list = [member1]
