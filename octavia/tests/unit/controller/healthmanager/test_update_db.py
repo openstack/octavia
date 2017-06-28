@@ -104,7 +104,7 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(lb.operating_status.lower.called)
         self.assertTrue(self.loadbalancer_repo.update.called)
 
-    def test_update_health_Online(self):
+    def test_update_health_online(self):
 
         health = {
             "id": self.FAKE_UUID_1,
@@ -272,7 +272,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         self.hm.update_health(health)
 
-    def test_update_health_Error(self):
+    def test_update_health_error(self):
 
         health = {
             "id": self.FAKE_UUID_1,
@@ -310,7 +310,7 @@ class TestUpdateHealthDb(base.TestCase):
                         'blah', member_id, operating_status=constants.ERROR)
 
     # Test the logic code paths
-    def test_update_health_Full(self):
+    def test_update_health_full(self):
 
         health = {
             "id": self.FAKE_UUID_1,
@@ -360,7 +360,7 @@ class TestUpdateHealthDb(base.TestCase):
             'blah', "pool-id-3", operating_status=constants.DEGRADED)
 
     # Test code paths where objects are not found in the database
-    def test_update_health_Not_Found(self):
+    def test_update_health_not_found(self):
 
         health = {
             "id": self.FAKE_UUID_1,
@@ -451,6 +451,11 @@ class TestUpdateStatsDb(base.TestCase):
 
     def setUp(self):
         super(TestUpdateStatsDb, self).setUp()
+
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="health_manager",
+                    event_streamer_driver='queue_event_streamer')
+
         self.sm = update_db.UpdateStatsDb()
         self.event_client = mock.MagicMock()
         self.sm.event_streamer.client = self.event_client

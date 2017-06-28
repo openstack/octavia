@@ -22,7 +22,6 @@ from stevedore import driver as stevedore_driver
 from octavia.common import constants
 from octavia.common import stats
 from octavia.controller.healthmanager import update_serializer
-from octavia.controller.queue import event_queue
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
 
@@ -212,7 +211,10 @@ class UpdateStatsDb(stats.StatsMixin):
 
     def __init__(self):
         super(UpdateStatsDb, self).__init__()
-        self.event_streamer = event_queue.EventStreamerNeutron()
+        self.event_streamer = stevedore_driver.DriverManager(
+            namespace='octavia.controller.queues',
+            name=cfg.CONF.health_manager.event_streamer_driver,
+            invoke_on_load=True).driver
         self.repo_listener = repo.ListenerRepository()
 
     def emit(self, info_type, info_id, info_obj):
