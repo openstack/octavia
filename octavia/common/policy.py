@@ -24,11 +24,27 @@ from octavia import policies
 
 
 LOG = logging.getLogger(__name__)
+OCTAVIA_POLICY = None
+
+
+def get_enforcer():
+    global OCTAVIA_POLICY
+    if OCTAVIA_POLICY is None:
+        LOG.debug('Loading octavia policy object.')
+        OCTAVIA_POLICY = Policy()
+    return OCTAVIA_POLICY
+
+
+def reset():
+    global OCTAVIA_POLICY
+    if OCTAVIA_POLICY:
+        OCTAVIA_POLICY.clear()
+        OCTAVIA_POLICY = None
 
 
 class Policy(oslo_policy.Enforcer):
 
-    def __init__(self, context, conf=cfg.CONF, policy_file=None, rules=None,
+    def __init__(self, conf=cfg.CONF, policy_file=None, rules=None,
                  default_rule=None, use_conf=True, overwrite=True):
         """Init an Enforcer class.
 
@@ -52,12 +68,13 @@ class Policy(oslo_policy.Enforcer):
 
         super(Policy, self).__init__(conf, policy_file, rules, default_rule,
                                      use_conf, overwrite)
-        self.context = context
+
         self.register_defaults(policies.list_rules())
 
-    def authorize(self, action, target, do_raise=True, exc=None):
+    def authorize(self, action, target, context, do_raise=True, exc=None):
         """Verifies that the action is valid on the target in this context.
 
+           :param context: The oslo context for this request.
            :param action: string representing the action to be checked
                this should be colon separated for clarity.
                i.e. ``compute:create_instance``,
@@ -83,10 +100,10 @@ class Policy(oslo_policy.Enforcer):
                authorized, and the exact value False if not authorized and
                do_raise is False.
         """
-        credentials = self.context.to_policy_values()
+        credentials = context.to_policy_values()
         # Inject is_admin into the credentials to allow override via
         # config auth_strategy = constants.NOAUTH
-        credentials['is_admin'] = self.context.is_admin
+        credentials['is_admin'] = context.is_admin
 
         if not exc:
             exc = exceptions.PolicyForbidden
@@ -104,13 +121,12 @@ class Policy(oslo_policy.Enforcer):
                           'credentials %(credentials)s',
                           {'action': action, 'credentials': credentials})
 
-    def check_is_admin(self):
+    def check_is_admin(self, context):
         """Does roles contains 'admin' role according to policy setting.
 
         """
-        credentials = self.context.to_dict()
-        target = credentials
-        return self.enforce('context_is_admin', target, credentials)
+        credentials = context.to_dict()
+        return self.enforce('context_is_admin', credentials, credentials)
 
     def get_rules(self):
         return self.rules
@@ -136,4 +152,4 @@ class IsAdminCheck(oslo_policy.Check):
 # This is used for the oslopolicy-policy-generator tool
 def get_no_context_enforcer():
     config.init([])
-    return Policy(None)
+    return Policy()

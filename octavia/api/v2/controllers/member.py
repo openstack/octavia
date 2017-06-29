@@ -64,11 +64,8 @@ class MembersController(base.BaseController):
 
         pool = self._get_db_pool(context.session, self.pool_id)
 
-        # Check that the user is authorized to list members for this pool
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_MEMBER, action='get_all')
-        target = {'project_id': pool.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, pool.project_id,
+                                   constants.RBAC_GET_ALL)
 
         db_members, links = self.repositories.member.get_all(
             context.session, show_deleted=False,

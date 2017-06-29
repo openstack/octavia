@@ -63,11 +63,8 @@ class L7RuleController(base.BaseController):
 
         l7policy = self._get_db_l7policy(context.session, self.l7policy_id)
 
-        # Check that the user is authorized to list members for this l7rule
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_L7RULE, action='get_all')
-        target = {'project_id': l7policy.project_id}
-        context.policy.authorize(action, target)
+        self._auth_validate_action(context, l7policy.project_id,
+                                   constants.RBAC_GET_ALL)
 
         db_l7rules, links = self.repositories.l7rule.get_all(
             context.session, show_deleted=False, l7policy_id=self.l7policy_id,
