@@ -40,7 +40,7 @@ class RootController(rest.RestController):
             self.v1 = v1_controller.V1Controller()
             self._versions.append(
                 {
-                    'status': 'CURRENT',
+                    'status': 'SUPPORTED',
                     'updated': '2014-12-11T00:00:00Z',
                     'id': 'v1'
                 })
