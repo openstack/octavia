@@ -98,7 +98,7 @@ class TestL7Policy(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.L7POLICY_PATH.format(
-                l7policy_id=api_l7policy.get('id')), status=401)
+                l7policy_id=api_l7policy.get('id')), status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
@@ -294,7 +294,7 @@ class TestL7Policy(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
-            policies = self.get(self.L7POLICIES_PATH, status=401).json
+            policies = self.get(self.L7POLICIES_PATH, status=403).json
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, policies)
@@ -548,7 +548,7 @@ class TestL7Policy(base.BaseAPITest):
                                self.project_id):
             api_l7policy = self.create_l7policy(
                 self.listener_id,
-                constants.L7POLICY_ACTION_REJECT, status=401)
+                constants.L7POLICY_ACTION_REJECT, status=403)
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_l7policy)
@@ -706,7 +706,7 @@ class TestL7Policy(base.BaseAPITest):
                                self.project_id):
             response = self.put(self.L7POLICY_PATH.format(
                 l7policy_id=api_l7policy.get('id')),
-                self._build_body(new_l7policy), status=401)
+                self._build_body(new_l7policy), status=403)
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
@@ -898,7 +898,7 @@ class TestL7Policy(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             self.delete(self.L7POLICY_PATH.format(
-                l7policy_id=api_l7policy.get('id')), status=401)
+                l7policy_id=api_l7policy.get('id')), status=403)
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assert_correct_status(

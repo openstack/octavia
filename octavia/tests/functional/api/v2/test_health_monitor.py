@@ -122,7 +122,7 @@ class TestHealthMonitor(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.HM_PATH.format(
-                healthmonitor_id=api_hm.get('id')), status=401)
+                healthmonitor_id=api_hm.get('id')), status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
@@ -164,7 +164,7 @@ class TestHealthMonitor(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
-            hms = self.get(self.HMS_PATH, status=401).json
+            hms = self.get(self.HMS_PATH, status=403).json
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, hms)
@@ -652,7 +652,7 @@ class TestHealthMonitor(base.BaseAPITest):
                                uuidutils.generate_uuid()):
             api_hm = self.create_health_monitor(
                 self.pool_id, constants.HEALTH_MONITOR_HTTP,
-                1, 1, 1, 1, status=401)
+                1, 1, 1, 1, status=403)
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_hm)
@@ -814,7 +814,7 @@ class TestHealthMonitor(base.BaseAPITest):
                                uuidutils.generate_uuid()):
             response = self.put(
                 self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
-                self._build_body(new_hm), status=401)
+                self._build_body(new_hm), status=403)
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
@@ -937,7 +937,7 @@ class TestHealthMonitor(base.BaseAPITest):
                                uuidutils.generate_uuid()):
             self.delete(
                 self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
-                status=401)
+                status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,

@@ -67,15 +67,15 @@ class Policy(oslo_policy.Enforcer):
                for object creation this should be a dictionary representing the
                location of the object e.g.
                ``{'project_id': context.project_id}``
-           :param do_raise: if True (the default), raises PolicyNotAuthorized;
+           :param do_raise: if True (the default), raises PolicyForbidden;
                if False, returns False
            :param exc: Class of the exceptions to raise if the check fails.
                        Any remaining arguments passed to :meth:`enforce` (both
                        positional and keyword arguments) will be passed to
                        the exceptions class. If not specified,
-                       :class:`PolicyNotAuthorized` will be used.
+                       :class:`PolicyForbidden` will be used.
 
-           :raises nova.exceptions.PolicyNotAuthorized: if verification fails
+           :raises PolicyForbidden: if verification fails
                and do_raise is True. Or if 'exc' is specified it will raise an
                exceptions of that type.
 
@@ -89,7 +89,7 @@ class Policy(oslo_policy.Enforcer):
         credentials['is_admin'] = self.context.is_admin
 
         if not exc:
-            exc = exceptions.NotAuthorized
+            exc = exceptions.PolicyForbidden
 
         try:
             return super(Policy, self).authorize(

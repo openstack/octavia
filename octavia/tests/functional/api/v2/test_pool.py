@@ -122,7 +122,7 @@ class TestPool(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.POOL_PATH.format(
-                pool_id=api_pool.get('id')), status=401)
+                pool_id=api_pool.get('id')), status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
@@ -308,7 +308,7 @@ class TestPool(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
-            pools = self.get(self.POOLS_PATH, status=401).json
+            pools = self.get(self.POOLS_PATH, status=403).json
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, pools)
@@ -592,7 +592,7 @@ class TestPool(base.BaseAPITest):
                 self.lb_id,
                 constants.PROTOCOL_HTTP,
                 constants.LB_ALGORITHM_ROUND_ROBIN,
-                listener_id=self.listener_id, status=401)
+                listener_id=self.listener_id, status=403)
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_pool)
@@ -834,7 +834,7 @@ class TestPool(base.BaseAPITest):
                                uuidutils.generate_uuid()):
             api_pool = self.put(
                 self.POOL_PATH.format(pool_id=api_pool.get('id')),
-                self._build_body(new_pool), status=401)
+                self._build_body(new_pool), status=403)
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_pool.json)
@@ -967,7 +967,7 @@ class TestPool(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             self.delete(self.POOL_PATH.format(pool_id=api_pool.get('id')),
-                        status=401)
+                        status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assert_correct_status(

@@ -108,7 +108,7 @@ class TestMember(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.member_path.format(
-                member_id=api_member.get('id')), status=401).json
+                member_id=api_member.get('id')), status=403).json
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response)
 
@@ -215,7 +215,7 @@ class TestMember(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
-            response = self.get(self.members_path, status=401)
+            response = self.get(self.members_path, status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
@@ -398,7 +398,7 @@ class TestMember(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             api_member = self.create_member(
-                self.pool_id, '10.0.0.1', 80, status=401)
+                self.pool_id, '10.0.0.1', 80, status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_member)
 
@@ -627,7 +627,7 @@ class TestMember(base.BaseAPITest):
                 member_id=api_member.get('id'))
             response = self.put(
                 member_path,
-                self._build_body(new_member), status=401)
+                self._build_body(new_member), status=403)
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
@@ -789,7 +789,7 @@ class TestMember(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             self.delete(self.member_path_listener.format(
-                member_id=api_member.get('id')), status=401)
+                member_id=api_member.get('id')), status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assert_correct_status(
