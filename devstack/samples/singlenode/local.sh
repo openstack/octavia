@@ -41,9 +41,9 @@ if is_service_enabled nova; then
     nova keypair-add --pub-key=${DEVSTACK_LBAAS_SSH_KEY}.pub ${DEVSTACK_LBAAS_SSH_KEY_NAME}
 
     # Add tcp/22,80 and icmp to default security group
-    nova secgroup-add-rule default tcp 22 22 0.0.0.0/0
-    nova secgroup-add-rule default tcp 80 80 0.0.0.0/0
-    nova secgroup-add-rule default icmp -1 -1 0.0.0.0/0
+    openstack security group rule create --protocol tcp --dst-port 22:22 default
+    openstack security group rule create --protocol tcp --dst-port 80:80 default
+    openstack security group rule create --protocol icmp default
 
     # Boot some instances
     NOVA_BOOT_ARGS="--key-name ${DEVSTACK_LBAAS_SSH_KEY_NAME} --image $(openstack image list | awk '/ cirros-0.3.4-x86_64-disk / {print $2}') --flavor 1 --nic net-id=$(neutron net-list | awk '/ private / {print $2}')"
