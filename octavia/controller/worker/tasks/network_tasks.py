@@ -90,8 +90,9 @@ class CalculateDelta(BaseNetworkTask):
         """Compute which NICs need to be plugged
 
         for the amphora to become operational.
+
         :param loadbalancer: the loadbalancer to calculate deltas for all
-                              amphorae
+                             amphorae
         :returns: dict of octavia.network.data_models.Delta keyed off amphora
                   id
         """

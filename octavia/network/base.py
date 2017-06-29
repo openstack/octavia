@@ -293,12 +293,11 @@ class AbstractNetworkDriver(object):
         means the driver is responsible for providing data that is appropriate
         for the amphora network configurations.
 
-        Example return:
-        {<amphora.id>: <AmphoraNetworkConfig>}
+        Example return: {<amphora.id>: <AmphoraNetworkConfig>}
 
         :param load_balancer: The load_balancer configuration
         :return: dict of octavia.network.data_models.AmphoraNetworkConfig
-        keyed off of the amphora id the config is associated with.
+                 keyed off of the amphora id the config is associated with.
         :raises: NotFound, NetworkNotFound, SubnetNotFound, PortNotFound
         """
         pass

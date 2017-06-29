@@ -148,5 +148,5 @@ Octavia version 0.9 consists of the following major components:
   service is deployed by the tenant.
 
 For a more complete description of Octavia's components, please see the
-:doc:`../design/version0.5/component-design` document within this documentation
-repository.
+:doc:`../contributor/design/version0.5/component-design` document within this
+documentation repository.

@@ -13,7 +13,7 @@ Current API version
 
 Supported API version
 
-    `Octavia API v1 <https://docs.openstack.org/developer/octavia/api/octaviaapi.html>`_
+    :doc:`v1/octaviaapi`
 
 Deprecated API version
 
@@ -23,6 +23,7 @@ Deprecated API version
    :hidden:
 
    v2/index
+   v1/octaviaapi
 
 The API status reflects the state of the endpoint on the service.
 

@@ -101,8 +101,8 @@ def get_intermediates_pems(intermediates=None):
 
     :param intermediates: PEM or PKCS7 encoded intermediate certificates
     :returns: A list of strings where each string represents an
-    X509 pem block surrounded by BEGIN CERTIFICATE,
-    END CERTIFICATE block tags
+              X509 pem block surrounded by BEGIN CERTIFICATE,
+              END CERTIFICATE block tags
     """
     if X509_BEG in intermediates:
         for x509Pem in _split_x509s(intermediates):
@@ -242,10 +242,10 @@ def get_host_names(certificate):
 
     :param certificate: A PEM encoded certificate
     :returns: A dictionary containing the following keys:
-    ['cn', 'dns_names']
-    where 'cn' is the CN from the SubjectName of the certificate, and
-    'dns_names' is a list of dNSNames (possibly empty) from
-    the SubjectAltNames of the certificate.
+              ['cn', 'dns_names']
+              where 'cn' is the CN from the SubjectName of the
+              certificate, and 'dns_names' is a list of dNSNames
+              (possibly empty) from the SubjectAltNames of the certificate.
     """
     try:
         cert = x509.load_pem_x509_certificate(certificate,

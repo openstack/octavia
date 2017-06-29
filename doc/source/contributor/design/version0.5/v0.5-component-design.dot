@@ -63,7 +63,12 @@ digraph G {
           </tr>
           <tr>
             <td sides="l"></td>
-            <td sides="ltb"></td>
+            <!-- TODO(johnsom) Change back to sides="ltb" when dot is fixed -->
+            <!-- This is commented out as it causes the current version -->
+            <!-- of dot to crash on Ubuntu.  <graphviz 2.38.0-12ubuntu2.1> -->
+            <!-- Which causes gate failures. -->
+            <!-- <td sides="ltb"></td> -->
+            <td sides="lb"></td>
             <td sides="tb" port="driver"><font point-size="10">Driver</font></td>
             <td sides="trb"></td>
             <td sides="r"></td>

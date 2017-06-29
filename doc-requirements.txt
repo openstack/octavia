@@ -2,7 +2,6 @@ actdiag
 blockdiag
 docutils>=0.11
 nwdiag
-oslosphinx
 seqdiag
 sphinx>=1.6.2
 sphinxcontrib-actdiag

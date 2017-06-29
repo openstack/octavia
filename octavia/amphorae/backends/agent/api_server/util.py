@@ -111,7 +111,7 @@ def get_listeners():
     """Get Listeners
 
     :returns: An array with the ids of all listeners, e.g. ['123', '456', ...]
-    or [] if no listeners exist
+              or [] if no listeners exist
     """
 
     if os.path.exists(CONF.haproxy_amphora.base_path):

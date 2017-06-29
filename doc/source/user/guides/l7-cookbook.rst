@@ -36,8 +36,8 @@ Examples
 
 .. _redirect-http-to-https:
 
-Redirect http://www.example.com/ to https://www.example.com/
-------------------------------------------------------------
+Redirect *http://www.example.com/* to *https://www.example.com/*
+----------------------------------------------------------------
 **Scenario description**:
 
 * Load balancer *lb1* has been set up with ``TERMINATED_HTTPS`` listener
@@ -121,8 +121,8 @@ Send requests starting with /js or /images to *static_pool*
     neutron lbaas-l7rule-create --type PATH --compare-type REGEX --value '^/(js|images)' policy1
 
 
-Send requests for http://www2.example.com/ to *pool2*
------------------------------------------------------
+Send requests for *http://www2.example.com/* to *pool2*
+-------------------------------------------------------
 **Scenario description**:
 
 * Listener *listener1* on load balancer *lb1* is set up to send all requests to

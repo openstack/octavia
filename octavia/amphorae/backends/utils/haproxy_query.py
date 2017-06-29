@@ -40,7 +40,7 @@ class HAProxyQuery(object):
         """Send the given query to the haproxy statistics socket.
 
         :returns: the output of a successful query as a string with trailing
-        newlines removed, or raise an Exception if the query fails.
+                  newlines removed, or raise an Exception if the query fails.
         """
 
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -76,20 +76,17 @@ class HAProxyQuery(object):
     def show_stat(self, proxy_iid=-1, object_type=-1, server_id=-1):
         """Get and parse output from 'show status' command.
 
-        :param proxy_iid:
-          Proxy ID (column 27 in CSV output). -1 for all.
+        :param proxy_iid: Proxy ID (column 27 in CSV output). -1 for all.
+        :param object_type: Select the type of dumpable object. Values can
+                            be ORed.
+                            -1 - everything
+                            1 - frontends
+                            2 - backends
+                            4 - servers
+        :param server_id: Server ID (column 28 in CSV output?), or -1
+                          for everything.
+        :returns: stats (split into an array by newline)
 
-        :param object_type:
-          Select the type of dumpable object. Values can be ORed.
-             -1 - everything
-              1 - frontends
-              2 - backends
-              4 - servers
-
-        :param server_id:
-          Server ID (column 28 in CSV output?), or -1 for everything.
-
-        :returns: stats (split into an array by \n)
         """
 
         results = self._query(
@@ -105,12 +102,10 @@ class HAProxyQuery(object):
         """Get status for each server and the pool as a whole.
 
         :returns: pool data structure
-        {<pool-name>: {
-          'uuid': <uuid>,
-          'status': 'UP'|'DOWN',
-          'members': [
-            <name>: 'UP'|'DOWN'
-          ]
+                  {<pool-name>: {
+                  'uuid': <uuid>,
+                  'status': 'UP'|'DOWN',
+                  'members': [<name>: 'UP'|'DOWN'] }}
         """
 
         results = self.show_stat(object_type=6)  # servers + pool

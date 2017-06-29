@@ -88,6 +88,7 @@ class ListenerFlows(object):
         """Create a flow to delete a listener and l7policies internally
 
            (will skip deletion on the amp and marking LB active)
+
         :returns: The flow for deleting a listener
         """
         delete_listener_flow = linear_flow.Flow(constants.DELETE_LISTENER_FLOW)

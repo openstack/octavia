@@ -20,8 +20,9 @@ def rename_kwargs(**renamed_kwargs):
     """Renames a class's variables and maintains backwards compatibility.
 
     :param renamed_kwargs: mapping of old kwargs to new kwargs.  For example,
-    to say a class has renamed variable foo to bar the decorator would
-    be used like: rename_kwargs(foo='bar')
+                           to say a class has renamed variable foo to bar the
+                           decorator would be used like:
+                           rename_kwargs(foo='bar')
 
     """
 

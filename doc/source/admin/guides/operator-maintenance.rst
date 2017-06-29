@@ -17,9 +17,9 @@
 Operator Maintenance  Guide
 ======================================
 This document is intended for operators. For a developer guide see the
-:doc:`dev-quick-start` in this documentation repository. For an end-user
-guide, please see the :doc:`basic-cookbook` in this documentation
-repository.
+:doc:`../../contributor/guides/dev-quick-start` in this documentation
+repository. For an end-user guide, please see the
+:doc:`../../user/guides/basic-cookbook` in this documentation repository.
 
 Monitoring
 ==========
@@ -40,7 +40,8 @@ monitoring of the other services showed problems as well, so depending on
 your overall monitoring strategy this might be optional.
 
 If additional monitoring is necessary, review the corresponding calls on
-the amphora agent REST interface (see :doc:`../api/haproxy-amphora-api`)
+the amphora agent REST interface (see
+:doc:`../../contributor/api/haproxy-amphora-api`)
 
 Monitoring Pool Members
 -----------------------
@@ -286,7 +287,7 @@ Rotating Amphora Certificates
 -----------------------------
 
 For the server part Octavia will either act as a certificate authority itself,
-or use :doc:`../main/Anchor` to issue amphora certificates to be used
+or use :doc:`../Anchor` to issue amphora certificates to be used
 by each amphora. Octavia will also monitor those certificates and refresh them
 before they expire.
 
@@ -310,7 +311,7 @@ There are three ways to initiate a rotation manually:
   issued amphora certificates by switching off validation of the old amphora
   certificate. This requires a client certificate which can be validated by the
   client CA file on the amphora. Refer to
-  :doc:`../api/haproxy-amphora-api` for more details.
+  :doc:`../../contributor/api/haproxy-amphora-api` for more details.
 
 * If the client certificate on the control plane changed in a way that it can't
   be validated by the client certificate authority certificate on the amphora,
@@ -336,7 +337,7 @@ find them.
 to the new certs in the configuration file and restart all Octavia services
 (except octavia-api).
 
-# Review :ref:`_rotate-amphora-certs` above to determine if and how the
+# Review :ref:`rotate-amphora-certs` above to determine if and how the
 amphora certificates needs to be rotated.
 
 Rotating Client Certificates

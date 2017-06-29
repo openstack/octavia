@@ -169,8 +169,8 @@ def no_translate_logs(logical_line, filename):
     :param logical_line: The logical line to check.
     :param filename: The file name where the logical line exists.
     :returns: None if the logical line passes the check, otherwise a tuple
-    is yielded that contains the offending index in logical line and a
-    message describe the check validation failure.
+              is yielded that contains the offending index in logical line
+              and a message describe the check validation failure.
     """
     if _translation_checks_not_enforced(filename):
         return
@@ -187,8 +187,8 @@ def check_raised_localized_exceptions(logical_line, filename):
     :param logical_line: The logical line to check.
     :param filename: The file name where the logical line exists.
     :returns: None if the logical line passes the check, otherwise a tuple
-    is yielded that contains the offending index in logical line and a
-    message describe the check validation failure.
+              is yielded that contains the offending index in logical line
+              and a message describe the check validation failure.
     """
     if _translation_checks_not_enforced(filename):
         return
@@ -208,8 +208,8 @@ def check_no_basestring(logical_line):
 
     :param logical_line: The logical line to check.
     :returns: None if the logical line passes the check, otherwise a tuple
-    is yielded that contains the offending index in logical line and a
-    message describe the check validation failure.
+              is yielded that contains the offending index in logical line
+              and a message describe the check validation failure.
     """
     if re.search(r"\bbasestring\b", logical_line):
         msg = ("O343: basestring is not Python3-compatible, use "
@@ -222,8 +222,8 @@ def check_python3_no_iteritems(logical_line):
 
     :param logical_line: The logical line to check.
     :returns: None if the logical line passes the check, otherwise a tuple
-    is yielded that contains the offending index in logical line and a
-    message describe the check validation failure.
+              is yielded that contains the offending index in logical line
+              and a message describe the check validation failure.
     """
     if re.search(r".*\.iteritems\(\)", logical_line):
         msg = ("O344: Use dict.items() instead of dict.iteritems() to be "
@@ -239,8 +239,8 @@ def check_no_eventlet_imports(logical_line):
 
     :param logical_line: The logical line to check.
     :returns: None if the logical line passes the check, otherwise a tuple
-    is yielded that contains the offending index in logical line and a
-    message describe the check validation failure.
+              is yielded that contains the offending index in logical line
+              and a message describe the check validation failure.
     """
     if re.match(r'(import|from)\s+[(]?eventlet', logical_line):
         msg = 'O345 Usage of Python eventlet module not allowed'
@@ -253,8 +253,8 @@ def check_line_continuation_no_backslash(logical_line, tokens):
     :param logical_line: The logical line to check. Not actually used.
     :param tokens: List of tokens to check.
     :returns: None if the tokens don't contain any issues, otherwise a tuple
-    is yielded that contains the offending index in the logical line and a
-    message describe the check validation failure.
+              is yielded that contains the offending index in the logical
+              line and a message describe the check validation failure.
     """
     backslash = None
     for token_type, text, start, end, orig_line in tokens:

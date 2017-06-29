@@ -26,7 +26,7 @@ class AmphoraLoadBalancerDriver(object):
         """Update the amphora with a new configuration.
 
         :param listener: listener object,
-        need to use its protocol_port property
+                         need to use its protocol_port property
         :type listener: object
         :param vip: vip object, need to use its ip_address property
         :type vip: object
@@ -42,7 +42,7 @@ class AmphoraLoadBalancerDriver(object):
         """Stop the listener on the vip.
 
         :param listener: listener object,
-        need to use its protocol_port property
+                         need to use its protocol_port property
         :type listener: object
         :param vip: vip object, need to use its ip_address property
         :type vip: object
@@ -58,9 +58,9 @@ class AmphoraLoadBalancerDriver(object):
         """Start the listener on the vip.
 
         :param listener: listener object,
-        need to use its protocol_port property
+                         need to use its protocol_port property
         :type listener: object
-        :param vip : vip object, need to use its ip_address property
+        :param vip: vip object, need to use its ip_address property
         :type vip: object
         :returns: return a value list (listener, vip, status flag--enable)
 
@@ -74,7 +74,7 @@ class AmphoraLoadBalancerDriver(object):
         """Delete the listener on the vip.
 
         :param listener: listener object,
-        need to use its protocol_port property
+                         need to use its protocol_port property
         :type listener: object
         :param vip: vip object, need to use its ip_address property
         :type vip: object
@@ -109,7 +109,7 @@ class AmphoraLoadBalancerDriver(object):
         :param amphora: amphora object, need to use its id property
         :type amphora: object
         :returns: return a value list (amphora.id, status flag--'ge
-        t_diagnostics')
+                  t_diagnostics')
 
         At this moment, we just build the basic structure for testing, will
         add more function along with the development, eventually, we want it

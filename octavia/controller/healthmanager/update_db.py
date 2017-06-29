@@ -67,19 +67,20 @@ class UpdateHealthDb(object):
         :type map: string
         :returns: null
 
-        The input health data structure is shown as below:
+        The input health data structure is shown as below::
 
-        health = {
-            "id": self.FAKE_UUID_1,
-            "listeners": {
-                "listener-id-1": {"status": constants.OPEN, "pools": {
-                    "pool-id-1": {"status": constants.UP,
-                                  "members": {"member-id-1": constants.ONLINE}
-                                  }
-                }
+            health = {
+                "id": self.FAKE_UUID_1,
+                "listeners": {
+                    "listener-id-1": {"status": constants.OPEN, "pools": {
+                        "pool-id-1": {"status": constants.UP,
+                                      "members": {
+                                          "member-id-1": constants.ONLINE}
+                                      }
+                    }
+                    }
                 }
             }
-        }
 
         """
         session = db_api.get_session()
@@ -228,27 +229,29 @@ class UpdateStatsDb(stats.StatsMixin):
         :type map: string
         :returns: null
 
-        health = {
-            "id": self.FAKE_UUID_1,
-            "listeners": {
-                "listener-id-1": {
-                    "status": constants.OPEN,
-                    "stats": {
-                        "ereq":0,
-                        "conns": 0,
-                        "totconns": 0,
-                        "rx": 0,
-                        "tx": 0,
-                    },
-                    "pools": {
-                        "pool-id-1": {
-                            "status": constants.UP,
-                            "members": {"member-id-1": constants.ONLINE}
+        Example::
+
+            health = {
+                "id": self.FAKE_UUID_1,
+                "listeners": {
+                    "listener-id-1": {
+                        "status": constants.OPEN,
+                        "stats": {
+                            "ereq":0,
+                            "conns": 0,
+                            "totconns": 0,
+                            "rx": 0,
+                            "tx": 0,
+                        },
+                        "pools": {
+                            "pool-id-1": {
+                                "status": constants.UP,
+                                "members": {"member-id-1": constants.ONLINE}
+                            }
                         }
                     }
                 }
             }
-        }
 
         """
         session = db_api.get_session()

@@ -34,16 +34,18 @@ class ComputeBase(object):
         :param key_name: Optionally specify a keypair
         :param sec_groups: Optionally specify list of security groups
         :param network_ids: A list of network IDs to attach to the amphora
-        :param config_drive_files:  An optional dict of files to overwrite on
-        the server upon boot. Keys are file names (i.e. /etc/passwd)
-        and values are the file contents (either as a string or as
-        a file-like object). A maximum of five entries is allowed,
-        and each file must be 10k or less.
+        :param config_drive_files: An optional dict of files to overwrite on
+                                   the server upon boot. Keys are file names
+                                   (i.e. /etc/passwd) and values are the
+                                   file contents (either as a string or as
+                                   a file-like object). A maximum of five
+                                   entries is allowed, and each file must be
+                                   10k or less.
         :param user_data: Optional user data to pass to be exposed by the
-        metadata server this can be a file type object as well or
-        a string
+                          metadata server this can be a file type object as
+                          well or a string
         :param server_group_id: Optional server group id(uuid) which is used
-        for anti_affinity feature
+                                for anti_affinity feature
 
         :raises ComputeBuildException: if compute failed to build amphora
         :returns: UUID of amphora

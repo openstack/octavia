@@ -671,8 +671,9 @@ class LoadBalancerRepository(BaseRepository):
         :param session: A Sql Alchemy database session.
         :param lb_id: id of an load balancer object
         :param exp_age: A standard datetime delta which is used to see for how
-        long can a load balancer live without updates before it is considered
-        expired (default: CONF.house_keeping.load_balancer_expiry_age)
+                        long can a load balancer live without updates before
+                        it is considered expired (default:
+                        CONF.house_keeping.load_balancer_expiry_age)
         :returns: boolean
         """
         if not exp_age:
@@ -1032,8 +1033,9 @@ class AmphoraHealthRepository(BaseRepository):
         :param session: A Sql Alchemy database session.
         :param amphora_id: id of an amphora object
         :param exp_age: A standard datetime delta which is used to see for how
-        long can an amphora live without updates before it is considered
-        expired (default: CONF.house_keeping.amphora_expiry_age)
+                        long can an amphora live without updates before it is
+                        considered expired (default:
+                        CONF.house_keeping.amphora_expiry_age)
         :returns: boolean
         """
         if not exp_age:

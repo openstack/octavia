@@ -301,7 +301,7 @@ Configuring Octavia
 ___________________
 Going into all of the specifics of how Octavia can be configured is actually
 beyond the scope of this document. For full documentation of this, please see
-the configuration reference: :doc:`../main/configref`
+the configuration reference: :doc:`../../configuration/configref`
 
 A configuration template can be found in ``etc/octavia.conf`` in this
 repository.

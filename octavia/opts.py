@@ -25,6 +25,7 @@ def list_opts():
     return [
         ('DEFAULT',
          itertools.chain(octavia.common.config.core_opts)),
+        ('api_settings', octavia.common.config.api_opts),
         ('amphora_agent', octavia.common.config.amphora_agent_opts),
         ('networking', octavia.common.config.networking_opts),
         ('oslo_messaging', octavia.common.config.oslo_messaging_opts),
@@ -35,9 +36,11 @@ def list_opts():
         ('certificates', octavia.common.config.certificate_opts),
         ('house_keeping', octavia.common.config.house_keeping_opts),
         ('keepalived_vrrp', octavia.common.config.keepalived_vrrp_opts),
+        ('anchor', octavia.common.config.anchor_opts),
         ('nova', octavia.common.config.nova_opts),
         ('neutron', octavia.common.config.neutron_opts),
         ('glance', octavia.common.config.glance_opts),
+        ('quotas', octavia.common.config.quota_opts),
         add_auth_opts(),
     ]
 

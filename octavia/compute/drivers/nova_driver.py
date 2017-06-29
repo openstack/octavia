@@ -104,18 +104,21 @@ class VirtualMachineManager(compute_base.ComputeBase):
         :param network_ids: Network IDs to include on virtual machine
         :param port_ids: Port IDs to include on virtual machine
         :param config_drive_files:  An optional dict of files to overwrite on
-        the server upon boot. Keys are file names (i.e. /etc/passwd)
-        and values are the file contents (either as a string or as
-        a file-like object). A maximum of five entries is allowed,
-        and each file must be 10k or less.
+                                    the server upon boot. Keys are file names
+                                    (i.e. /etc/passwd) and values are the file
+                                    contents (either as a string or as a
+                                    file-like object). A maximum of five
+                                    entries is allowed, and each file must be
+                                    10k or less.
         :param user_data: Optional user data to pass to be exposed by the
-        metadata server this can be a file type object as well or
-        a string
+                          metadata server this can be a file type object as
+                          well or a string
         :param server_group_id: Optional server group id(uuid) which is used
-        for anti_affinity feature
+                                for anti_affinity feature
 
         :raises ComputeBuildException: if nova failed to build virtual machine
         :returns: UUID of amphora
+
         '''
 
         try:

@@ -32,9 +32,9 @@ TLS certificates from a trusted provider, and so on. A description of the
 starting conditions is given in each example below.
 
 Please also note that this guide assumes you are familiar with the specific
-load balancer terminology defined in the :doc:`../main/glossary`. For a
+load balancer terminology defined in the :doc:`../../reference/glossary`. For a
 description of load balancing itself and the Octavia project, please see:
-:doc:`../main/introduction`.
+:doc:`../../reference/introduction`.
 
 
 Examples
@@ -537,7 +537,7 @@ them out of the pool. Since effective health monitors depend as much on
 back-end application server configuration as proper load balancer
 configuration, some additional discussion of best practices is warranted here.
 
-See also: :doc:`../api/octaviaapi`
+See also: `Octavia API Reference <https://developer.openstack.org/api-ref/load-balancer/>`_
 
 
 Heath monitor options

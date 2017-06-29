@@ -828,10 +828,10 @@ Documentation Impact
 References
 ==========
 
-.. [1] https://blueprints.launchpad.net/octavia/+spec/base-image
-.. [2] https://blueprints.launchpad.net/octavia/+spec/controller-worker
-.. [3] https://blueprints.launchpad.net/octavia/+spec/amphora-driver-interface
-.. [4] https://blueprints.launchpad.net/octavia/+spec/controller
-.. [5] https://blueprints.launchpad.net/octavia/+spec/operator-api
-.. [6] :doc:`../../api/haproxy-amphora-api`
-.. [7] https://blueprints.launchpad.net/octavia/+spec/active-active-topology
+https://blueprints.launchpad.net/octavia/+spec/base-image
+https://blueprints.launchpad.net/octavia/+spec/controller-worker
+https://blueprints.launchpad.net/octavia/+spec/amphora-driver-interface
+https://blueprints.launchpad.net/octavia/+spec/controller
+https://blueprints.launchpad.net/octavia/+spec/operator-api
+:doc:`../../api/haproxy-amphora-api`
+https://blueprints.launchpad.net/octavia/+spec/active-active-topology

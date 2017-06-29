@@ -81,85 +81,86 @@ class UDPStatusGetter(object):
                  can be seen below. Note that listener_1 has no pools
                  and listener_4 has no members.
 
-        {"listeners": {
-        "listener_uuid_1": {
-            "pools": {},
-            "status": "OPEN",
-            "stats": {
-                "conns": 0,
-                "rx": 0,
-                "tx": 0
-            }
-        },
-        "listener_uuid_2": {
-            "pools": {
-                "pool_uuid_1": {
-                    "members": [
-                        {
-                            "member_uuid_1": "DOWN"
+        Example::
+
+            {
+              "listeners": {
+                "listener_uuid_1": {
+                  "pools": {},
+                  "status": "OPEN",
+                  "stats": {
+                    "conns": 0,
+                    "rx": 0,
+                    "tx": 0
+                  }
+                },
+                "listener_uuid_2": {
+                  "pools": {
+                    "pool_uuid_1": {
+                      "members": [{
+                          "member_uuid_1": "DOWN"
                         },
                         {
-                            "member_uuid_2": "DOWN"
+                          "member_uuid_2": "DOWN"
                         },
                         {
-                            "member_uuid_3": "DOWN"
+                          "member_uuid_3": "DOWN"
                         },
                         {
-                            "member_uuid_4": "DOWN"
+                          "member_uuid_4": "DOWN"
                         }
-                    ]
-                }
-            },
-            "status": "OPEN",
-            "stats": {
-                "conns": 0,
-                "rx": 0,
-                "tx": 0
-            }
-        },
-        "listener_uuid_3": {
-            "pools": {
-                "pool_uuid_2": {
-                    "members": [
-                        {
-                            "member_uuid_5": "DOWN"
+                      ]
+                    }
+                  },
+                  "status": "OPEN",
+                  "stats": {
+                    "conns": 0,
+                    "rx": 0,
+                    "tx": 0
+                  }
+                },
+                "listener_uuid_3": {
+                  "pools": {
+                    "pool_uuid_2": {
+                      "members": [{
+                          "member_uuid_5": "DOWN"
                         },
                         {
-                            "member_uuid_6": "DOWN"
+                          "member_uuid_6": "DOWN"
                         },
                         {
-                            "member_uuid_7": "DOWN"
+                          "member_uuid_7": "DOWN"
                         },
                         {
-                            "member_uuid_8": "DOWN"
+                          "member_uuid_8": "DOWN"
                         }
-                    ]
+                      ]
+                    }
+                  },
+                  "status": "OPEN",
+                  "stats": {
+                    "conns": 0,
+                    "rx": 0,
+                    "tx": 0
+                  }
+                },
+                "listener_uuid_4": {
+                  "pools": {
+                    "pool_uuid_3": {
+                      "members": []
+                    }
+                  },
+                  "status": "OPEN",
+                  "stats": {
+                    "conns": 0,
+                    "rx": 0,
+                    "tx": 0
+                  }
                 }
-            },
-            "status": "OPEN",
-            "stats": {
-                "conns": 0,
-                "rx": 0,
-                "tx": 0
+              },
+              "id": "amphora_uuid",
+              "seq": 1033
             }
-        },
-        "listener_uuid_4": {
-            "pools": {
-                "pool_uuid_3": {
-                    "members": []
-                }
-            },
-            "status": "OPEN",
-            "stats": {
-                "conns": 0,
-                "rx": 0,
-                "tx": 0
-            }
-        }
-    },
-    "id": "amphora_uuid",
-    "seq": 1033
-}
 
         """
         (data, srcaddr) = self.sock.recvfrom(UDP_MAX_SIZE)

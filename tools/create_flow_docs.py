@@ -98,7 +98,7 @@ def generate(flow_list, output_directory):
             current_doc_file.write('.. image:: ' + doc_tuple[0] +
                                    '-' + doc_tuple[1] + '.svg\n')
             current_doc_file.write('    :width: 660px\n')
-            current_doc_file.write('    :target: ../../_images/' +
+            current_doc_file.write('    :target: ../../../_images/' +
                                    doc_tuple[0] +
                                    '-' + doc_tuple[1] + '.svg\n')
 
@@ -129,7 +129,7 @@ def generate(flow_list, output_directory):
             current_doc_file.write('.. image:: ' + doc_tuple[0] +
                                    '-' + doc_tuple[1] + '.svg\n')
             current_doc_file.write('    :width: 660px\n')
-            current_doc_file.write('    :target: ../../_images/' +
+            current_doc_file.write('    :target: ../../../_images/' +
                                    doc_tuple[0] +
                                    '-' + doc_tuple[1] + '.svg\n')
 

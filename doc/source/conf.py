@@ -18,12 +18,13 @@ from tools import create_flow_docs
 
 # Generate our flow diagrams
 create_flow_docs.generate(
-    'tools/flow-list.txt', 'doc/source/devref/flow_diagrams')
+    'tools/flow-list.txt', 'doc/source/contributor/devref/flow_diagrams')
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../../octavia'))
 
 # -- General configuration -----------------------------------------------------
 
@@ -40,7 +41,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinxcontrib.seqdiag',
               'sphinxcontrib.nwdiag',
               'sphinx.ext.graphviz',
-              'oslosphinx',
+              'openstackdocstheme',
               'oslo_config.sphinxext',
               'oslo_policy.sphinxpolicygen'
              ]
@@ -75,7 +76,9 @@ copyright = u'2014, OpenStack Octavia Team'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build', 'specs/skeleton.rst', 'specs/template.rst']
+exclude_patterns = ['_build',
+                    'contributor/specs/skeleton.rst',
+                    'contributor/specs/template.rst']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -104,7 +107,7 @@ man_pages = []
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'nature'
+html_theme = 'openstackdocs'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -134,9 +137,7 @@ html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
-git_cmd = ["git", "log", "--pretty=format:'%ad, commit %h'", "--date=local",
-           "-n1"]
-html_last_updated_fmt = subprocess.check_output(git_cmd).decode('utf-8')
+html_last_updated_fmt = '%Y-%m-%d %H:%M'
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
@@ -150,10 +151,10 @@ html_last_updated_fmt = subprocess.check_output(git_cmd).decode('utf-8')
 #html_additional_pages = {}
 
 # If false, no module index is generated.
-html_domain_indices = False
+html_domain_indices = True
 
 # If false, no index is generated.
-html_use_index = False
+html_use_index = True
 
 # If true, the index is split into individual pages for each letter.
 #html_split_index = False
@@ -284,4 +285,12 @@ epub_copyright = u'2014, OpenStack Octavia Team'
 
 # RBAC sample policy file generation
 policy_generator_config_file = '../../etc/policy/octavia-policy-generator.conf'
-sample_policy_basename = '_static/octavia'
+sample_policy_basename = 'configuration/_static/octavia'
+
+# openstackdocstheme options
+html_theme_options = {
+    "display_toc": False
+}
+repository_name = 'openstack/octavia'
+bug_project = 'octavia'
+bug_tag = 'docs'

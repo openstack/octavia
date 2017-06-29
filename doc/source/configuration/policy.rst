@@ -76,4 +76,4 @@ in effective policy::
 Default Octavia Policies
 ------------------------
 
-.. literalinclude:: ../_static/octavia.policy.yaml.sample
+.. literalinclude:: _static/octavia.policy.yaml.sample
