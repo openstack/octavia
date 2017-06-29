@@ -123,31 +123,60 @@ function _configure_octavia_apache_wsgi {
 
 }
 
+function _configure_octavia_apache_uwsgi {
+    write_uwsgi_config "$OCTAVIA_UWSGI_CONF" "$OCTAVIA_UWSGI_APP" "/$OCTAVIA_SERVICE_TYPE"
+}
+
+
 function _cleanup_octavia_apache_wsgi {
-    sudo rm -f $(apache_site_config_for octavia)
-    restart_apache_server
+    if [[ "$WSGI_MODE" == "uwsgi" ]]; then
+        remove_uwsgi_config "$OCTAVIA_UWSGI_CONF" "$OCTAVIA_UWSGI_APP"
+        restart_apache_server
+    else
+        sudo rm -f $(apache_site_config_for octavia)
+        restart_apache_server
+    fi
 }
 
 function _start_octavia_apache_wsgi {
-    enable_apache_site octavia
-    restart_apache_server
+    if [[ "$WSGI_MODE" == "uwsgi" ]]; then
+        run_process o-api "$OCTAVIA_BIN_DIR/uwsgi --ini $OCTAVIA_UWSGI_CONF"
+        enable_apache_site octavia-wsgi
+    else
+        enable_apache_site octavia
+        restart_apache_server
+    fi
 }
 
 function _stop_octavia_apache_wsgi {
-    disable_apache_site octavia
-    restart_apache_server
+    if [[ "$WSGI_MODE" == "uwsgi" ]]; then
+        disable_apache_site octavia-wsgi
+        stop_process o-api
+    else
+        disable_apache_site octavia
+        restart_apache_server
+    fi
 }
 
 function create_octavia_accounts {
     create_service_user $OCTAVIA
 
     local octavia_service=$(get_or_create_service "octavia" \
-        "load-balancer" "Octavia Load Balancing Service")
-    get_or_create_endpoint $octavia_service \
-        "$REGION_NAME" \
-        "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/" \
-        "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/" \
-        "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/"
+        $OCTAVIA_SERVICE_TYPE "Octavia Load Balancing Service")
+
+    if [[ "$WSGI_MODE" == "uwsgi" ]]; then
+        get_or_create_endpoint $octavia_service \
+            "$REGION_NAME" \
+            "$OCTAVIA_PROTOCOL://$SERVICE_HOST/$OCTAVIA_SERVICE_TYPE" \
+            "$OCTAVIA_PROTOCOL://$SERVICE_HOST/$OCTAVIA_SERVICE_TYPE" \
+            "$OCTAVIA_PROTOCOL://$SERVICE_HOST/$OCTAVIA_SERVICE_TYPE"
+    else
+        get_or_create_endpoint $octavia_service \
+            "$REGION_NAME" \
+            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/" \
+            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/" \
+            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/"
+    fi
 }
 
 function octavia_configure {
@@ -198,7 +227,11 @@ function octavia_configure {
 
     # Setting neutron request_poll_timeout
     iniset $NEUTRON_CONF octavia request_poll_timeout 3000
-    iniset $NEUTRON_CONF octavia base_url http://$SERVICE_HOST:9876
+    if [[ "$WSGI_MODE" == "uwsgi" ]]; then
+        iniadd $NEUTRON_CONF octavia base_url "$OCTAVIA_PROTOCOL://$SERVICE_HOST/$OCTAVIA_SERVICE_TYPE"
+    else
+        iniadd $NEUTRON_CONF octavia base_url "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/"
+    fi
 
     # Uncomment other default options
     iniuncomment $OCTAVIA_CONF haproxy_amphora base_path
@@ -264,7 +297,11 @@ function octavia_configure {
     cp $OCTAVIA_DIR/etc/dhcp/dhclient.conf $OCTAVIA_DHCLIENT_CONF
 
     if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
-        _configure_octavia_apache_wsgi
+        if [[ "$WSGI_MODE" == "uwsgi" ]]; then
+            _configure_octavia_apache_uwsgi
+        else
+            _configure_octavia_apache_wsgi
+        fi
     fi
 
 }
@@ -484,13 +521,6 @@ function octavia_stop {
     fi
 }
 
-function octavia_configure_common {
-    if is_service_enabled $OCTAVIA_SERVICE && [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE = 'standalone' ] ; then
-        inicomment $NEUTRON_LBAAS_CONF service_providers service_provider
-        iniadd $NEUTRON_LBAAS_CONF service_providers service_provider $OCTAVIA_SERVICE_PROVIDER
-    fi
-}
-
 function octavia_cleanup {
 
     if [ ${OCTAVIA_AMP_IMAGE_NAME}x != x ] ; then
@@ -553,7 +583,6 @@ if is_service_enabled $OCTAVIA; then
         # Configure after the other layer 1 and 2 services have been configured
         # TODO: need to make sure this runs after LBaaS V2 configuration
         echo_summary "Configuring octavia"
-        # octavia_configure_common
         octavia_configure
 
     elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
