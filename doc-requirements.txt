@@ -1,15 +1,16 @@
 actdiag
 blockdiag
-docutils==0.11
+docutils>=0.11
 nwdiag
 oslosphinx
 seqdiag
-sphinx==1.2.3
+sphinx>=1.6.2
 sphinxcontrib-actdiag
 sphinxcontrib-blockdiag
 sphinxcontrib-nwdiag
 sphinxcontrib-seqdiag
 graphviz
+openstackdocstheme>=1.11.0  # Apache-2.0
 
 # This needs to be installed after above modules
 pydotplus
