@@ -1063,6 +1063,30 @@ class TestDatabaseTasks(base.TestCase):
             AMP_ID,
             cert_busy=False)
 
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository'
+                '.test_and_set_provisioning_status')
+    def test_test_lb_status_set_pending_in_db(self,
+                                              mock_loadbalancer_repo_test,
+                                              mock_generate_uuid,
+                                              mock_LOG,
+                                              mock_get_session,
+                                              mock_loadbalancer_repo_update,
+                                              mock_listener_repo_update,
+                                              mock_amphora_repo_update,
+                                              mock_amphora_repo_delete):
+        test_lb_pending = database_tasks.TestLBStatusSetPendingInDB()
+        test_lb_pending.execute(LB_ID)
+        mock_loadbalancer_repo_test.assert_called_once_with(
+            'TEST', LB_ID, status=constants.PENDING_UPDATE,
+            raise_exception=True)
+
+        # Test the revert
+        test_lb_pending.revert(LB_ID)
+        mock_loadbalancer_repo_update.assert_called_once_with(
+            'TEST',
+            id=LB_ID,
+            provisioning_status=constants.ERROR)
+
     def test_mark_LB_active_in_db(self,
                                   mock_generate_uuid,
                                   mock_LOG,

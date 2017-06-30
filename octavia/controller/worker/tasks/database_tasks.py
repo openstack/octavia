@@ -891,6 +891,24 @@ class UpdateAmphoraCertBusyToFalse(BaseDatabaseTask):
                                  cert_busy=False)
 
 
+class TestLBStatusSetPendingInDB(BaseDatabaseTask):
+    """Test the LB's status to get a lock, and set it to PENDING_UPDATE
+
+    """
+
+    def execute(self, loadbalancer_id):
+        LOG.debug("Attempting to get a lock for loadbalancer %s to set "
+                  "PENDING_UPDATE status", loadbalancer_id)
+        self.loadbalancer_repo.test_and_set_provisioning_status(
+            db_apis.get_session(), loadbalancer_id,
+            status=constants.PENDING_UPDATE, raise_exception=True)
+        LOG.debug("Set loadbalancer %s to PENDING_UPDATE", loadbalancer_id)
+
+    def revert(self, loadbalancer_id):
+        LOG.debug("Marking loadbalancer %s ERROR", loadbalancer_id)
+        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer_id)
+
+
 class MarkLBActiveInDB(BaseDatabaseTask):
     """Mark the load balancer active in the DB.
 
