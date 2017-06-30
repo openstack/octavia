@@ -75,8 +75,17 @@ class TestHealthMonitor(object):
         if self._type is hm_type.HealthMonitorPOST:
             body.update({"type": constants.PROTOCOL_HTTP,
                          "pool_id": uuidutils.generate_uuid()})
-        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
-                          body)
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
+                          self._type, body)
+
+    def test_invalid_url_path_with_url(self):
+        body = {"delay": 1, "timeout": 1, "max_retries": 1,
+                "url_path": 'https://www.openstack.org'}
+        if self._type is hm_type.HealthMonitorPOST:
+            body.update({"type": constants.PROTOCOL_HTTP,
+                         "pool_id": uuidutils.generate_uuid()})
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
+                          self._type, body)
 
     def test_invalid_expected_codes(self):
         body = {"delay": 1, "timeout": 1, "max_retries": 1,
@@ -136,6 +145,19 @@ class TestHealthMonitorPOST(base.BaseTypesTest, TestHealthMonitor):
         hmpost = wsme_json.fromjson(self._type, body)
         self.assertEqual('GET', hmpost.http_method)
         self.assertEqual('/', hmpost.url_path)
+        self.assertEqual('200', hmpost.expected_codes)
+        self.assertEqual(3, hmpost.max_retries_down)
+        self.assertTrue(hmpost.admin_state_up)
+
+    def test_url_path_with_query_and_fragment(self):
+        url_path = "/v2/index?a=12,b=34#123dd"
+        body = {"type": constants.HEALTH_MONITOR_HTTP, "delay": 1,
+                "timeout": 1, "max_retries": 1,
+                "pool_id": uuidutils.generate_uuid(),
+                "url_path": url_path}
+        hmpost = wsme_json.fromjson(self._type, body)
+        self.assertEqual('GET', hmpost.http_method)
+        self.assertEqual(url_path, hmpost.url_path)
         self.assertEqual('200', hmpost.expected_codes)
         self.assertEqual(3, hmpost.max_retries_down)
         self.assertTrue(hmpost.admin_state_up)

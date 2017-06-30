@@ -92,7 +92,7 @@ class HealthMonitorPOST(BaseHealthMonitorType):
         wtypes.Enum(str, *constants.SUPPORTED_HEALTH_MONITOR_HTTP_METHODS),
         default=constants.HEALTH_MONITOR_HTTP_DEFAULT_METHOD)
     url_path = wtypes.wsattr(
-        types.URLType(require_scheme=False),
+        types.URLPathType(),
         default=constants.HEALTH_MONITOR_DEFAULT_URL_PATH)
     expected_codes = wtypes.wsattr(
         wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'),
@@ -120,7 +120,7 @@ class HealthMonitorPUT(BaseHealthMonitorType):
                            maximum=constants.MAX_HM_RETRIES))
     http_method = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_HEALTH_MONITOR_HTTP_METHODS))
-    url_path = wtypes.wsattr(types.URLType(require_scheme=False))
+    url_path = wtypes.wsattr(types.URLPathType())
     expected_codes = wtypes.wsattr(
         wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'))
     admin_state_up = wtypes.wsattr(bool)
@@ -149,7 +149,7 @@ class HealthMonitorSingleCreate(BaseHealthMonitorType):
         wtypes.Enum(str, *constants.SUPPORTED_HEALTH_MONITOR_HTTP_METHODS),
         default=constants.HEALTH_MONITOR_HTTP_DEFAULT_METHOD)
     url_path = wtypes.wsattr(
-        types.URLType(require_scheme=False),
+        types.URLPathType(),
         default=constants.HEALTH_MONITOR_DEFAULT_URL_PATH)
     expected_codes = wtypes.wsattr(
         wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'),

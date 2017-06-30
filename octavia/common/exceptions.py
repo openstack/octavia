@@ -239,6 +239,11 @@ class InvalidURL(OctaviaException):
     message = _('Not a valid URL: %(url)s')
 
 
+class InvalidURLPath(APIException):
+    msg = _('Not a valid URLPath: %(url_path)s')
+    code = 400
+
+
 class InvalidString(OctaviaException):
     message = _('Invalid characters in %(what)s')
 

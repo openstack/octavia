@@ -572,6 +572,19 @@ class TestHealthMonitor(base.BaseAPITest):
             hm_prov_status=constants.PENDING_CREATE,
             hm_op_status=constants.OFFLINE)
 
+    def test_create_http_monitor_with_url_path(self):
+        api_hm = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1, url_path="/v2/api/index").get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id, hm_id=api_hm.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.ACTIVE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_CREATE,
+            hm_op_status=constants.OFFLINE)
+
     def test_create_sans_listener(self):
         api_hm = self.create_health_monitor(
             self.pool_id, constants.HEALTH_MONITOR_HTTP,
@@ -700,6 +713,19 @@ class TestHealthMonitor(base.BaseAPITest):
     def test_bad_create(self):
         hm_json = {'name': 'test1', 'pool_id': self.pool_id}
         self.post(self.HMS_PATH, self._build_body(hm_json), status=400)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id)
+
+    def test_bad_create_with_invalid_url_path(self):
+        req_dict = {'pool_id': self.pool_id,
+                    'type': constants.HEALTH_MONITOR_HTTP,
+                    'delay': 1,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': 1,
+                    'url_path': 'https://openstack.org'}
+        self.post(self.HMS_PATH, self._build_body(req_dict), status=400)
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=self.pool_id)
