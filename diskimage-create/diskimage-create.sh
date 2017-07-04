@@ -174,6 +174,11 @@ AMP_IMAGETYPE=${AMP_IMAGETYPE:-"qcow2"}
 
 AMP_IMAGESIZE=${AMP_IMAGESIZE:-2}
 
+if [ "$AMP_BASEOS" = "rhel" ] && [ "$AMP_IMAGESIZE" -lt 3 ]; then
+    echo "RHEL based amphora requires an image size of at least 3GB"
+    exit 1
+fi
+
 OCTAVIA_ELEMENTS_PATH=$OCTAVIA_REPO_PATH/elements
 
 if ! [ -d $OCTAVIA_ELEMENTS_PATH ]; then
