@@ -164,4 +164,4 @@ Changes shall be introduced to the octavia APIs: see [1]
 
 References
 ==========
-[1] http://docs.openstack.org/developer/octavia/api/octaviaapi.html
+[1] https://developer.openstack.org/api-ref/load-balancer/v1/octaviaapi.html

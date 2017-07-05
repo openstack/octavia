@@ -8,7 +8,7 @@ Service Endpoints
 
 All API calls described throughout the rest of this document require
 authentication with the `OpenStack Identity service
-<http://docs.openstack.org/developer/keystone/>`_. After authentication, the
+<https://docs.openstack.org/keystone/latest/>`_. After authentication, the
 base ``endpoint URL`` for the ``service type`` of ``load-balancer`` and
 ``service name`` of  ``octavia`` can be extracted from the service catalog
 returned with the identity token.
@@ -79,7 +79,7 @@ Authentication and authorization
 ================================
 
 The Octavia API v2.0 uses the `OpenStack Identity service
-<http://docs.openstack.org/developer/keystone/>`_ as the default authentication
+<https://docs.openstack.org/keystone/latest/>`_ as the default authentication
 service. When Keystone is enabled, users that submit requests to the Octavia
 service must provide an authentication token in **X-Auth-Token** request
 header. You obtain the token by authenticating to the Keystone endpoint.
