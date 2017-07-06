@@ -30,6 +30,7 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 PIDFILE={{ haproxy_pid }}
 CONFIG={{ haproxy_cfg }}
+PEER_NAME={{ peer_name }}
 HAPROXY={{ haproxy_cmd }}
 USER_GROUP_CONF_PATH={{ haproxy_user_group_cfg }}
 
@@ -68,7 +69,7 @@ haproxy_start()
     {%- endif %}
 
     start-stop-daemon --start --pidfile "$PIDFILE" \
-        --exec $HAPROXY -- -f "$CONFIG" -f "$USER_GROUP_CONF_PATH" -D -p "$PIDFILE" \
+        --exec $HAPROXY -- -f "$CONFIG" -f "$USER_GROUP_CONF_PATH" -L "$PEER_NAME" -D -p "$PIDFILE" \
         $EXTRAOPTS || return 2
     return 0
 }
@@ -88,7 +89,7 @@ haproxy_stop()
 
 haproxy_reload()
 {
-    $HAPROXY -f "$CONFIG" -f "$USER_GROUP_CONF_PATH" -p $PIDFILE -D $EXTRAOPTS -sf $(cat $PIDFILE) \
+    $HAPROXY -f "$CONFIG" -f "$USER_GROUP_CONF_PATH" -L "$PEER_NAME" -p $PIDFILE -D $EXTRAOPTS -sf $(cat $PIDFILE) \
         || return 2
     return 0
 }
@@ -97,7 +98,7 @@ haproxy_checkconf()
 {
     rcode=0
 
-    $HAPROXY -c -f "$CONFIG" -f "$USER_GROUP_CONF_PATH"
+    $HAPROXY -c -f "$CONFIG" -f "$USER_GROUP_CONF_PATH" -L "$PEER_NAME"
     if [ $? -ne 0 ]; then
         rcode=1
     fi
