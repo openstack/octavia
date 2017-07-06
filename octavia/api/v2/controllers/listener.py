@@ -28,6 +28,7 @@ from octavia.api.v2.types import listener as listener_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.common import stats
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 
@@ -328,3 +329,41 @@ class ListenersController(base.BaseController):
                 self.repositories.listener.update(
                     lock_session, db_listener.id,
                     provisioning_status=constants.ERROR)
+
+    @pecan.expose()
+    def _lookup(self, id, *remainder):
+        """Overridden pecan _lookup method for custom routing.
+
+        Currently it checks if this was a stats request and routes
+        the request to the StatsController.
+        """
+        if id and len(remainder) and remainder[0] == 'stats':
+            return StatisticsController(listener_id=id), remainder[1:]
+
+
+class StatisticsController(base.BaseController, stats.StatsMixin):
+    RBAC_TYPE = constants.RBAC_LISTENER
+
+    def __init__(self, listener_id):
+        super(StatisticsController, self).__init__()
+        self.id = listener_id
+
+    @wsme_pecan.wsexpose(listener_types.StatisticsRootResponse, wtypes.text,
+                         status_code=200)
+    def get(self):
+        context = pecan.request.context.get('octavia_context')
+        db_listener = self._get_db_listener(context.session, self.id)
+        if not db_listener:
+            LOG.info("Listener %s not found.", id)
+            raise exceptions.NotFound(
+                resource=data_models.Listener._name(),
+                id=id)
+
+        self._auth_validate_action(context, db_listener.project_id,
+                                   constants.RBAC_GET_STATS)
+
+        listener_stats = self.get_listener_stats(context.session, self.id)
+
+        result = self._convert_db_to_type(
+            listener_stats, listener_types.ListenerStatisticsResponse)
+        return listener_types.StatisticsRootResponse(stats=result)
