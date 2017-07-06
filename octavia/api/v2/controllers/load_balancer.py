@@ -393,3 +393,40 @@ class LoadBalancersController(base.BaseController):
                 self.repositories.load_balancer.update(
                     context.session, id,
                     provisioning_status=constants.ERROR)
+
+    @pecan.expose()
+    def _lookup(self, id, *remainder):
+        """Overridden pecan _lookup method for custom routing.
+
+        Currently it checks if this was a statuses request and routes
+        the request to the StatusesController.
+        """
+        if id and len(remainder) and remainder[0] == 'statuses':
+            return StatusesController(lb_id=id), remainder[1:]
+
+
+class StatusesController(base.BaseController):
+    RBAC_TYPE = constants.RBAC_LOADBALANCER
+
+    def __init__(self, lb_id):
+        super(StatusesController, self).__init__()
+        self.id = lb_id
+
+    @wsme_pecan.wsexpose(lb_types.StatusesRootResponse, wtypes.text,
+                         status_code=200)
+    def get(self):
+        context = pecan.request.context.get('octavia_context')
+        load_balancer = self._get_db_lb(context.session, self.id)
+        if not load_balancer:
+            LOG.info("Load balancer %s not found.", id)
+            raise exceptions.NotFound(
+                resource=data_models.LoadBalancer._name(),
+                id=id)
+
+        self._auth_validate_action(context, load_balancer.project_id,
+                                   constants.RBAC_GET_STATUS)
+
+        result = self._convert_db_to_type(
+            load_balancer, lb_types.LoadBalancerStatusesResponse)
+        result = lb_types.StatusesResponse(loadbalancer=result)
+        return lb_types.StatusesRootResponse(statuses=result)

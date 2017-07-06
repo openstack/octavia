@@ -112,3 +112,23 @@ class MemberSingleCreate(BaseMemberType):
     weight = wtypes.wsattr(wtypes.IntegerType(
         minimum=constants.MIN_WEIGHT, maximum=constants.MAX_WEIGHT), default=1)
     subnet_id = wtypes.wsattr(wtypes.UuidType())
+
+
+class MemberStatusesResponse(BaseMemberType):
+    """Defines which attributes are to be shown on statuses response."""
+    id = wtypes.wsattr(wtypes.UuidType())
+    name = wtypes.wsattr(wtypes.StringType())
+    operating_status = wtypes.wsattr(wtypes.StringType())
+    provisioning_status = wtypes.wsattr(wtypes.StringType())
+    address = wtypes.wsattr(types.IPAddressType())
+    protocol_port = wtypes.wsattr(wtypes.IntegerType())
+
+    @classmethod
+    def from_data_model(cls, data_model, children=False):
+        member = super(MemberStatusesResponse, cls).from_data_model(
+            data_model, children=children)
+
+        if not member.name:
+            member.name = ""
+
+        return member

@@ -1825,3 +1825,304 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         body, _ = self._test_with_one_of_everything_helper()
         self.start_quota_mock(data_models.L7Policy)
         self.post(self.LBS_PATH, body)
+
+    def _getStatus(self, lb_id):
+        res = self.get(self.LB_PATH.format(lb_id=lb_id + "/statuses"))
+        return res.json.get('statuses').get('loadbalancer')
+
+    def test_statuses(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+
+        response = self._getStatus(lb['id'])
+        self.assertEqual(lb['name'], response['name'])
+        self.assertEqual(lb['id'], response['id'])
+        self.assertEqual(lb['operating_status'],
+                         response['operating_status'])
+        self.assertEqual(lb['provisioning_status'],
+                         response['provisioning_status'])
+
+    def _assertLB(self, lb, response):
+        self.assertEqual(lb['name'], response['name'])
+        self.assertEqual(lb['id'], response['id'])
+        self.assertEqual(constants.ONLINE,
+                         response['operating_status'])
+        self.assertEqual(constants.PENDING_UPDATE,
+                         response['provisioning_status'])
+
+    def test_statuses_listener(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.set_lb_status(lb['id'])
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb['id']).get('listener')
+
+        response = self._getStatus(lb['id'])
+
+        self._assertLB(lb, response)
+        response = response.get('listeners')[0]
+        self.assertEqual(listener['name'], response['name'])
+        self.assertEqual(listener['id'], response['id'])
+        self.assertEqual(listener['operating_status'],
+                         response['operating_status'])
+        self.assertEqual(listener['provisioning_status'],
+                         response['provisioning_status'])
+
+    def _assertListener(self, listener, response,
+                        prov_status=constants.ACTIVE):
+        self.assertEqual(listener['name'], response['name'])
+        self.assertEqual(listener['id'], response['id'])
+        self.assertEqual(constants.ONLINE,
+                         response['operating_status'])
+        self.assertEqual(prov_status, response['provisioning_status'])
+
+    def _assertListenerPending(self, listener, response):
+        self._assertListener(listener, response, constants.PENDING_UPDATE)
+
+    def test_statuses_multiple_listeners(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.set_lb_status(lb['id'])
+        listener1 = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb['id']).get('listener')
+
+        self.set_lb_status(lb['id'])
+        listener2 = self.create_listener(
+            constants.PROTOCOL_HTTPS, 443, lb['id']).get('listener')
+
+        response = self._getStatus(lb['id'])
+
+        self._assertLB(lb, response)
+        self._assertListener(listener1, response.get('listeners')[0])
+        response = response.get('listeners')[1]
+        self.assertEqual(listener2['name'], response['name'])
+        self.assertEqual(listener2['id'], response['id'])
+        self.assertEqual(listener2['operating_status'],
+                         response['operating_status'])
+        self.assertEqual(listener2['provisioning_status'],
+                         response['provisioning_status'])
+
+    def test_statuses_pool(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.set_lb_status(lb['id'])
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb['id']).get('listener')
+        self.set_lb_status(lb['id'])
+        pool = self.create_pool(
+            lb['id'],
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=listener['id']).get('pool')
+
+        response = self._getStatus(lb['id'])
+
+        self._assertLB(lb, response)
+        self._assertListenerPending(listener, response.get('listeners')[0])
+        response = response.get('listeners')[0]['pools'][0]
+        self.assertEqual(pool['name'], response['name'])
+        self.assertEqual(pool['id'], response['id'])
+        self.assertEqual(pool['operating_status'],
+                         response['operating_status'])
+        self.assertEqual(pool['provisioning_status'],
+                         response['provisioning_status'])
+
+    def _assertPool(self, pool, response,
+                    prov_status=constants.ACTIVE):
+        self.assertEqual(pool['name'], response['name'])
+        self.assertEqual(pool['id'], response['id'])
+        self.assertEqual(constants.ONLINE,
+                         response['operating_status'])
+        self.assertEqual(prov_status, response['provisioning_status'])
+
+    def _assertPoolPending(self, pool, response):
+        self._assertPool(pool, response, constants.PENDING_UPDATE)
+
+    def test_statuses_pools(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.set_lb_status(lb['id'])
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb['id']).get('listener')
+        self.set_lb_status(lb['id'])
+        pool1 = self.create_pool(
+            lb['id'],
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=listener['id']).get('pool')
+        self.set_lb_status(lb['id'])
+        pool2 = self.create_pool(
+            lb['id'],
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+        self.set_lb_status(lb['id'])
+        l7_policy = self.create_l7policy(
+            listener['id'],
+            constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            redirect_pool_id=pool2.get('id')).get('l7policy')
+        self.set_lb_status(lb['id'])
+        self.create_l7rule(
+            l7_policy['id'], constants.L7RULE_TYPE_HOST_NAME,
+            constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            'www.example.com').get(self.root_tag)
+
+        response = self._getStatus(lb['id'])
+
+        self._assertLB(lb, response)
+        self._assertListenerPending(listener, response.get('listeners')[0])
+        self._assertPool(pool1, response.get('listeners')[0]['pools'][0])
+        self._assertPool(pool2, response.get('listeners')[0]['pools'][1])
+
+    def test_statuses_health_monitor(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.set_lb_status(lb['id'])
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb['id']).get('listener')
+        self.set_lb_status(lb['id'])
+        pool = self.create_pool(
+            lb['id'],
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=listener['id']).get('pool')
+        self.set_lb_status(lb['id'])
+        hm = self.create_health_monitor(
+            pool['id'], constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1).get('healthmonitor')
+
+        response = self._getStatus(lb['id'])
+
+        self._assertLB(lb, response)
+        self._assertListenerPending(listener, response.get('listeners')[0])
+        self._assertPoolPending(pool, response.get('listeners')[0]['pools'][0])
+        response = response.get('listeners')[0]['pools'][0]['health_monitor']
+        self.assertEqual(hm['name'], response['name'])
+        self.assertEqual(hm['id'], response['id'])
+        self.assertEqual(hm['type'], response['type'])
+        self.assertEqual(hm['operating_status'],
+                         response['operating_status'])
+        self.assertEqual(hm['provisioning_status'],
+                         response['provisioning_status'])
+
+    def test_statuses_member(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.set_lb_status(lb['id'])
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb['id']).get('listener')
+        self.set_lb_status(lb['id'])
+        pool = self.create_pool(
+            lb['id'],
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=listener['id']).get('pool')
+        self.set_lb_status(lb['id'])
+        member = self.create_member(
+            pool['id'], '10.0.0.1', 80).get('member')
+
+        response = self._getStatus(lb['id'])
+
+        self._assertLB(lb, response)
+        self._assertListenerPending(listener, response.get('listeners')[0])
+        self._assertPoolPending(pool, response.get('listeners')[0]['pools'][0])
+        response = response.get('listeners')[0]['pools'][0]['members'][0]
+        self.assertEqual(member['name'], response['name'])
+        self.assertEqual(member['id'], response['id'])
+        self.assertEqual(member['address'], response['address'])
+        self.assertEqual(member['protocol_port'], response['protocol_port'])
+        self.assertEqual(member['operating_status'],
+                         response['operating_status'])
+        self.assertEqual(member['provisioning_status'],
+                         response['provisioning_status'])
+
+    def test_statuses_members(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.set_lb_status(lb['id'])
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb['id']).get('listener')
+        self.set_lb_status(lb['id'])
+        pool = self.create_pool(
+            lb['id'],
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=listener['id']).get('pool')
+        self.set_lb_status(lb['id'])
+        member1 = self.create_member(
+            pool['id'], '10.0.0.1', 80).get('member')
+        self.set_lb_status(lb['id'])
+        member2 = self.create_member(
+            pool['id'], '10.0.0.2', 88, name='test').get('member')
+
+        response = self._getStatus(lb['id'])
+
+        self._assertLB(lb, response)
+        self._assertListenerPending(listener, response.get('listeners')[0])
+        self._assertPoolPending(pool, response.get('listeners')[0]['pools'][0])
+        members = response.get('listeners')[0]['pools'][0]['members']
+        response = members[0]
+        self.assertEqual(member1['name'], response['name'])
+        self.assertEqual(member1['id'], response['id'])
+        self.assertEqual(member1['address'], response['address'])
+        self.assertEqual(member1['protocol_port'], response['protocol_port'])
+        self.assertEqual(constants.ONLINE,
+                         response['operating_status'])
+        self.assertEqual(constants.ACTIVE,
+                         response['provisioning_status'])
+        response = members[1]
+        self.assertEqual(member2['name'], response['name'])
+        self.assertEqual(member2['id'], response['id'])
+        self.assertEqual(member2['address'], response['address'])
+        self.assertEqual(member2['protocol_port'], response['protocol_port'])
+
+    def test_statuses_authorized(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid(),
+            project_id=project_id).get('loadbalancer')
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self._getStatus(lb['id'])
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+
+        self.assertEqual(lb['name'], response['name'])
+        self.assertEqual(lb['id'], response['id'])
+        self.assertEqual(lb['operating_status'],
+                         response['operating_status'])
+        self.assertEqual(lb['provisioning_status'],
+                         response['provisioning_status'])
+
+    def test_statuses_not_authorized(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+
+            res = self.get(self.LB_PATH.format(lb_id=lb['id'] + "/statuses"),
+                           status=403)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, res.json)
