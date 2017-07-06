@@ -6,7 +6,7 @@ features:
     able to access the Octavia v2 API.  This can be overriden with the
     admin_or_owner-policy.json sample file provided.
     See the `Octavia Policies
-    <https://docs.openstack.org/developer/octavia/main/policy.html>`_
+    <https://docs.openstack.org/octavia/latest/configuration/policy.html>`_
     document for more information.
 security:
   - |
