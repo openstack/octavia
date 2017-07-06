@@ -651,7 +651,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         except Exception as e:
             with excutils.save_and_reraise_exception():
-                LOG.error("Failover exception: %s" % e)
+                LOG.error("Failover exception: %s", e)
 
     def amphora_cert_rotation(self, amphora_id):
         """Perform cert rotation for an amphora.
@@ -663,7 +663,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         amp = self._amphora_repo.get(db_apis.get_session(),
                                      id=amphora_id)
-        LOG.info("Start amphora cert rotation, amphora's id is: %s" % amp.id)
+        LOG.info("Start amphora cert rotation, amphora's id is: %s", amp.id)
 
         certrotation_amphora_tf = self._taskflow_load(
             self._amphora_flows.cert_rotate_amphora_flow(),
