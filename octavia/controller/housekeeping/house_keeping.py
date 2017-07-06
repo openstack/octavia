@@ -47,7 +47,7 @@ class SpareAmphora(object):
 
         # When the current spare amphora is less than required
         if diff_count > 0:
-            LOG.info("Initiating creation of %d spare amphora." % diff_count)
+            LOG.info("Initiating creation of %d spare amphora.", diff_count)
 
             # Call Amphora Create Flow diff_count times
             for i in range(1, diff_count + 1):
@@ -81,7 +81,7 @@ class DatabaseCleanup(object):
                     self.amp_health_repo.delete(session, amphora_id=amp.id)
                 except sqlalchemy_exceptions.NoResultFound:
                     pass  # Best effort delete, this record might not exist
-                LOG.info('Deleted Amphora id : %s' % amp.id)
+                LOG.info('Deleted Amphora id : %s', amp.id)
 
     def cleanup_load_balancers(self):
         """Checks the DB for old load balancers and triggers their removal."""
@@ -97,7 +97,7 @@ class DatabaseCleanup(object):
                                                         exp_age):
                 LOG.info('Attempting to delete load balancer id : %s', lb.id)
                 self.lb_repo.delete(session, id=lb.id)
-                LOG.info('Deleted load balancer id : %s' % lb.id)
+                LOG.info('Deleted load balancer id : %s', lb.id)
 
 
 class CertRotation(object):
@@ -120,5 +120,4 @@ class CertRotation(object):
                 LOG.debug("Cert expired amphora's id is: %s", amp.id)
                 executor.submit(self.cw.amphora_cert_rotation, amp.id)
             if rotation_count > 0:
-                LOG.info("Rotated certificates for %s amphora" %
-                         rotation_count)
+                LOG.info("Rotated certificates for %s amphora", rotation_count)

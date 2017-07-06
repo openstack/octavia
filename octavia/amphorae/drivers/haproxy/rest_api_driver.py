@@ -284,8 +284,10 @@ class AmphoraAPIClient(object):
                 # amphora is not yet up, in which case retry.
                 # Otherwise return the response quickly.
                 if r.status_code == 404:
-                    LOG.debug('Got a 404 (content-type: %s) -- connection '
-                              'data: %s' % (content_type, r.content))
+                    LOG.debug('Got a 404 (content-type: %(content_type)s) -- '
+                              'connection data: %(content)s',
+                              {'content_type': content_type,
+                               'content': r.content})
                     if content_type.find("application/json") == -1:
                         LOG.debug("Amphora agent not ready.")
                         raise requests.ConnectionError

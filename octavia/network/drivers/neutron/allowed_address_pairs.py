@@ -500,7 +500,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 raise base.PlugNetworkException(e.message)
         except nova_client_exceptions.Conflict:
             LOG.info('Port %(portid)s is already plugged, '
-                     'skipping' % {'portid': port.id})
+                     'skipping', {'portid': port.id})
             plugged_interface = n_data_models.Interface(
                 compute_id=amphora.compute_id,
                 network_id=port.network_id,
