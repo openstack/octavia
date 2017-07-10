@@ -36,6 +36,8 @@ SCREEN_LOGDIR=/opt/stack/logs
 ENABLED_SERVICES=key,rabbit,mysql
 # Nova
 ENABLED_SERVICES+=,n-api,n-obj,n-cpu,n-cond,n-sch
+# Placement service needed for Nova
+ENABLED_SERVICES+=,placement-api,placement-client
 # Glance
 ENABLED_SERVICES+=,g-api,g-reg
 # Neutron
