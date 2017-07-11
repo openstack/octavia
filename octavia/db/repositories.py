@@ -25,6 +25,7 @@ from oslo_db import exception as db_exception
 from oslo_log import log as logging
 from oslo_utils import excutils
 from oslo_utils import uuidutils
+from sqlalchemy.orm import joinedload
 
 from octavia.common import constants as consts
 from octavia.common import data_models
@@ -113,6 +114,8 @@ class BaseRepository(object):
         """
         deleted = filters.pop('show_deleted', True)
         query = session.query(self.model_class).filter_by(**filters)
+        # Only make one trip to the database
+        query = query.options(joinedload('*'))
 
         if not deleted:
             query = query.filter(
