@@ -1,0 +1,14 @@
+---
+features:
+  - |
+    The diskimage-create script now supports generic download mirrors via the
+    DIB_DISTRIBUTION_MIRROR environment variable, replacing the existing
+    distribution-specific elements
+upgrade:
+  - |
+    For the diskimage-create script, the BASE_OS_MIRROR environment variable
+    was renamed to DIB_DISTRIBUTION_MIRROR
+deprecations:
+  - |
+    These custom distribution mirror elements for the diskimage-script were
+    removed: apt-mirror, centos-mirror, fedora-mirror

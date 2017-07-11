@@ -101,7 +101,7 @@ CLOUD_INIT_DATASOURCES
     - Options: NoCloud, ConfigDrive, OVF, MAAS, Ec2, <others>
     - Reference: https://launchpad.net/cloud-init
 
-BASE_OS_MIRROR
+DIB_DISTRIBUTION_MIRROR
     - URL to a mirror for the base OS selected
     - Default: None
 

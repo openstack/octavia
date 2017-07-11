@@ -82,7 +82,7 @@ Command syntax:
 .. line-block::
 
     Environment variables supported by the script:
-       BASE_OS_MIRROR - URL to a mirror for the base OS selected  (-i).
+       DIB_DISTRIBUTION_MIRROR - URL to a mirror for the base OS selected  (-i).
        DIB_REPO_PATH - Path to the diskimage-builder repository (default: ../../diskimage-builder)
        ELEMENTS_REPO_PATH - Path to the /tripleo-image-elements repository (default: ../../tripleo-image-elements)
        DIB_ELEMENTS - Override the elements used to build the image

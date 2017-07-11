@@ -1,5 +1,0 @@
-#!/bin/bash
-if [ -z "$FEDORA_MIRROR" ]; then
-    echo "You should specify parameter 'FEDORA_MIRROR'"
-    exit 2
-fi
