@@ -422,14 +422,17 @@ class TestServerTestCase(base.TestCase):
 
     @mock.patch('os.path.exists')
     @mock.patch('subprocess.check_output')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
+                'vrrp_check_script_update')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.' +
                 'get_haproxy_pid')
     @mock.patch('shutil.rmtree')
     @mock.patch('os.remove')
     def _test_delete_listener(self, init_system, distro, mock_init_system,
-                              mock_remove, mock_rmtree, mock_pid,
+                              mock_remove, mock_rmtree, mock_pid, mock_vrrp,
                               mock_check_output, mock_exists):
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
+        # no listener
         mock_exists.return_value = False
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.delete('/' + api_server.VERSION +
@@ -444,8 +447,8 @@ class TestServerTestCase(base.TestCase):
             json.loads(rv.data.decode('utf-8')))
         mock_exists.assert_called_with('/var/lib/octavia/123/haproxy.cfg')
 
-        # service is stopped + no upstart script
-        mock_exists.side_effect = [True, False, False]
+        # service is stopped + no upstart script + no vrrp
+        mock_exists.side_effect = [True, False, False, False]
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
@@ -471,8 +474,35 @@ class TestServerTestCase(base.TestCase):
 
         mock_exists.assert_any_call('/var/lib/octavia/123/123.pid')
 
-        # service is stopped + upstart script
-        mock_exists.side_effect = [True, False, True]
+        # service is stopped + no upstart script + vrrp
+        mock_exists.side_effect = [True, False, True, False]
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
+        self.assertEqual(200, rv.status_code)
+        self.assertEqual({u'message': u'OK'},
+                         json.loads(rv.data.decode('utf-8')))
+        mock_rmtree.assert_called_with('/var/lib/octavia/123')
+
+        if init_system == consts.INIT_SYSTEMD:
+            mock_exists.assert_called_with(consts.SYSTEMD_DIR +
+                                           '/haproxy-123.service')
+        elif init_system == consts.INIT_UPSTART:
+            mock_exists.assert_called_with(consts.UPSTART_DIR +
+                                           '/haproxy-123.conf')
+        elif init_system == consts.INIT_SYSVINIT:
+            mock_exists.assert_called_with(consts.SYSVINIT_DIR +
+                                           '/haproxy-123')
+        else:
+            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
+
+        mock_exists.assert_any_call('/var/lib/octavia/123/123.pid')
+
+        # service is stopped + upstart script + no vrrp
+        mock_exists.side_effect = [True, False, False, True]
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
@@ -495,8 +525,32 @@ class TestServerTestCase(base.TestCase):
         else:
             self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
 
-        # service is running + upstart script
-        mock_exists.side_effect = [True, True, True, True]
+        # service is stopped + upstart script + vrrp
+        mock_exists.side_effect = [True, False, True, True]
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
+        self.assertEqual(200, rv.status_code)
+        self.assertEqual({u'message': u'OK'},
+                         json.loads(rv.data.decode('utf-8')))
+
+        if init_system == consts.INIT_SYSTEMD:
+            mock_remove.assert_called_with(consts.SYSTEMD_DIR +
+                                           '/haproxy-123.service')
+        elif init_system == consts.INIT_UPSTART:
+            mock_remove.assert_called_with(consts.UPSTART_DIR +
+                                           '/haproxy-123.conf')
+        elif init_system == consts.INIT_SYSVINIT:
+            mock_remove.assert_called_with(consts.SYSVINIT_DIR +
+                                           '/haproxy-123')
+        else:
+            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
+
+        # service is running + upstart script + no vrrp
+        mock_exists.side_effect = [True, True, True, False, True]
         mock_pid.return_value = '456'
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.delete('/' + api_server.VERSION +
@@ -508,6 +562,36 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual({u'message': u'OK'},
                          json.loads(rv.data.decode('utf-8')))
         mock_pid.assert_called_once_with('123')
+        mock_check_output.assert_any_call(
+            ['/usr/sbin/service', 'haproxy-123', 'stop'], stderr=-2)
+
+        if init_system == consts.INIT_SYSTEMD:
+            mock_check_output.assert_any_call(
+                "systemctl disable haproxy-123".split(),
+                stderr=subprocess.STDOUT)
+        elif init_system == consts.INIT_UPSTART:
+            mock_remove.assert_any_call(consts.UPSTART_DIR +
+                                        '/haproxy-123.conf')
+        elif init_system == consts.INIT_SYSVINIT:
+            mock_check_output.assert_any_call(
+                "insserv -r /etc/init.d/haproxy-123".split(),
+                stderr=subprocess.STDOUT)
+        else:
+            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
+
+        # service is running + upstart script + vrrp
+        mock_exists.side_effect = [True, True, True, True, True]
+        mock_pid.return_value = '456'
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.delete('/' + api_server.VERSION +
+                                        '/listeners/123')
+        self.assertEqual(200, rv.status_code)
+        self.assertEqual({u'message': u'OK'},
+                         json.loads(rv.data.decode('utf-8')))
+        mock_pid.assert_called_with('123')
         mock_check_output.assert_any_call(
             ['/usr/sbin/service', 'haproxy-123', 'stop'], stderr=-2)
 
