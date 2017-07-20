@@ -268,9 +268,6 @@ function octavia_configure {
     fi
     iniset $OCTAVIA_CONF controller_worker amp_ssh_key_name ${OCTAVIA_AMP_SSH_KEY_NAME}
 
-    # Used to communicate with the amphora over the mgmt network, may differ from amp_ssh_key in a real deployment.
-    iniset $OCTAVIA_CONF haproxy_amphora key_path ${OCTAVIA_AMP_SSH_KEY_PATH}
-
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] || [ $OCTAVIA_NODE == 'api' ]; then
         recreate_database_mysql octavia
         octavia-db-manage upgrade head
