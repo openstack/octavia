@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from keystonemiddleware import auth_token
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_middleware import cors
@@ -21,6 +20,7 @@ import pecan
 
 from octavia.api import config as app_config
 from octavia.common import constants
+from octavia.common import keystone
 from octavia.common import service as octavia_service
 
 LOG = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ def _wrap_app(app):
     """Wraps wsgi app with additional middlewares."""
     app = request_id.RequestId(app)
     if cfg.CONF.api_settings.auth_strategy == constants.KEYSTONE:
-        app = auth_token.AuthProtocol(app, {})
+        app = keystone.SkippingAuthProtocol(app, {})
 
     # This should be the last middleware in the list (which results in
     # it being the first in the middleware chain). This is to ensure

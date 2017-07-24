@@ -13,8 +13,14 @@
 #    under the License.
 
 from keystoneauth1 import loading as ks_loading
+from keystonemiddleware import auth_token
 from octavia.common import constants
 from oslo_config import cfg
+from oslo_log import log as logging
+
+LOG = logging.getLogger(__name__)
+
+_NOAUTH_PATHS = ['/', '/load-balancer/']
 
 
 class KeystoneSession(object):
@@ -38,3 +44,27 @@ class KeystoneSession(object):
                 cfg.CONF, self.section, auth=self._auth)
 
         return self._session
+
+
+class SkippingAuthProtocol(auth_token.AuthProtocol):
+    """SkippingAuthProtocol to reach special endpoints
+
+    Bypasses keystone authentication for special request paths, such
+    as the api version discovery path.
+
+    Note:
+        SkippingAuthProtocol is lean customization
+        of :py:class:`keystonemiddleware.auth_token.AuthProtocol`
+        that disables keystone communication if the request path
+        is in the _NOAUTH_PATHS list.
+
+    """
+
+    def process_request(self, request):
+        path = request.path
+        if path in _NOAUTH_PATHS:
+            LOG.info(('Request path is %s and it does not require keystone '
+                      'authentication'), path)
+            return None  # return NONE to reach actual logic
+
+        return super(SkippingAuthProtocol, self).process_request(request)
