@@ -231,14 +231,14 @@ class NoopManager(object):
         LOG.debug('Provider %s no-op, get_supported_flavor_metadata',
                   self.__class__.__name__)
 
-        return {'amp_image_tag': 'The glance image tag to use for this load '
-                'balancer.'}
+        return {"amp_image_tag": "The glance image tag to use for this load "
+                "balancer."}
 
     def validate_flavor(self, flavor_metadata):
         LOG.debug('Provider %s no-op, validate_flavor metadata: %s',
                   self.__class__.__name__, flavor_metadata)
 
-        flavor_hash = hash(frozenset(flavor_metadata.items()))
+        flavor_hash = hash(frozenset(flavor_metadata))
         self.driverconfig[flavor_hash] = (flavor_metadata, 'validate_flavor')
 
 

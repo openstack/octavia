@@ -99,6 +99,16 @@ class BaseController(rest.RestController):
                                 data_models.HealthMonitor, id,
                                 show_deleted=show_deleted)
 
+    def _get_db_flavor(self, session, id):
+        """Get a flavor from the database."""
+        return self._get_db_obj(session, self.repositories.flavor,
+                                data_models.Flavor, id)
+
+    def _get_db_flavor_profile(self, session, id):
+        """Get a flavor profile from the database."""
+        return self._get_db_obj(session, self.repositories.flavor_profile,
+                                data_models.FlavorProfile, id)
+
     def _get_db_l7policy(self, session, id, show_deleted=True):
         """Get a L7 Policy from the database."""
         return self._get_db_obj(session, self.repositories.l7policy,

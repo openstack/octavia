@@ -216,6 +216,11 @@ class IDAlreadyExists(APIException):
     code = 409
 
 
+class RecordAlreadyExists(APIException):
+    msg = _('A %(field)s of %(name)s already exists.')
+    code = 409
+
+
 class NoReadyAmphoraeException(OctaviaException):
     message = _('There are not any READY amphora available.')
 
@@ -367,3 +372,8 @@ class ProviderUnsupportedOptionError(APIException):
 
 class InputFileError(OctaviaException):
     message = _('Error with file %(file_name)s. Reason: %(reason)s')
+
+
+class ObjectInUse(APIException):
+    msg = _("%(object)s %(id)s is in use and cannot be modified.")
+    code = 409

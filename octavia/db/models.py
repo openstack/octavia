@@ -1,5 +1,6 @@
 #    Copyright 2014 Rackspace
 #    Copyright 2016 Blue Box, an IBM Company
+#    Copyright 2017 Walmart Stores Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+
 from oslo_db.sqlalchemy import models
 import sqlalchemy as sa
 from sqlalchemy.ext import orderinglist
@@ -21,6 +23,8 @@ from sqlalchemy.orm import validates
 from sqlalchemy.sql import func
 
 from octavia.api.v2.types import amphora
+from octavia.api.v2.types import flavor_profile
+from octavia.api.v2.types import flavors
 from octavia.api.v2.types import health_monitor
 from octavia.api.v2.types import l7policy
 from octavia.api.v2.types import l7rule
@@ -717,3 +721,40 @@ class Quotas(base_models.BASE):
     in_use_load_balancer = sa.Column(sa.Integer(), nullable=True)
     in_use_member = sa.Column(sa.Integer(), nullable=True)
     in_use_pool = sa.Column(sa.Integer(), nullable=True)
+
+
+class FlavorProfile(base_models.BASE, base_models.IdMixin,
+                    base_models.NameMixin):
+
+    __data_model__ = data_models.FlavorProfile
+
+    __tablename__ = "flavor_profile"
+
+    __v2_wsme__ = flavor_profile.FlavorProfileResponse
+
+    provider_name = sa.Column(sa.String(255), nullable=False)
+    flavor_data = sa.Column(sa.String(4096), nullable=False)
+
+
+class Flavor(base_models.BASE,
+             base_models.IdMixin,
+             base_models.NameMixin):
+
+    __data_model__ = data_models.Flavor
+
+    __tablename__ = "flavor"
+
+    __v2_wsme__ = flavors.FlavorResponse
+
+    __table_args__ = (
+        sa.UniqueConstraint('name',
+                            name='uq_flavor_name'),
+    )
+
+    description = sa.Column(sa.String(255), nullable=True)
+    enabled = sa.Column(sa.Boolean(), nullable=False)
+    flavor_profile_id = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("flavor_profile.id",
+                      name="fk_flavor_flavor_profile_id"),
+        nullable=False)
