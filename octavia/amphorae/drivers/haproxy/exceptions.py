@@ -16,7 +16,7 @@
 from webob import exc
 
 
-def check_exception(response):
+def check_exception(response, ignore=tuple()):
     status_code = response.status_code
     responses = {
         400: InvalidRequest,
@@ -28,7 +28,7 @@ def check_exception(response):
         500: InternalServerError,
         503: ServiceUnavailable
     }
-    if status_code in responses:
+    if (status_code not in ignore) and (status_code in responses):
         raise responses[status_code]()
 
     return response

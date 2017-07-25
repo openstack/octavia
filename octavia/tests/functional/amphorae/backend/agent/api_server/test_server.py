@@ -439,11 +439,8 @@ class TestServerTestCase(base.TestCase):
         elif distro == consts.CENTOS:
             rv = self.centos_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
-        self.assertEqual(404, rv.status_code)
-        self.assertEqual(
-            {'message': 'Listener Not Found',
-             'details': 'No listener with UUID: 123'},
-            json.loads(rv.data.decode('utf-8')))
+        self.assertEqual(200, rv.status_code)
+        self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
         mock_exists.assert_called_with('/var/lib/octavia/123/haproxy.cfg')
 
         # service is stopped + no upstart script
@@ -730,11 +727,8 @@ class TestServerTestCase(base.TestCase):
         elif distro == consts.CENTOS:
             rv = self.centos_app.delete('/' + api_server.VERSION +
                                         '/listeners/123/certificates/test.pem')
-        self.assertEqual(404, rv.status_code)
-        self.assertEqual(dict(
-            details='No certificate with filename: test.pem',
-            message='Certificate Not Found'),
-            json.loads(rv.data.decode('utf-8')))
+        self.assertEqual(200, rv.status_code)
+        self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
         mock_exists.assert_called_once_with(
             '/var/lib/octavia/certs/123/test.pem')
 

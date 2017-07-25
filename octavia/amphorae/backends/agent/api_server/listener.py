@@ -265,7 +265,10 @@ class Listener(object):
                               status=202)
 
     def delete_listener(self, listener_id):
-        self._check_listener_exists(listener_id)
+        try:
+            self._check_listener_exists(listener_id)
+        except exceptions.HTTPException:
+            return webob.Response(json={'message': 'OK'})
 
         # check if that haproxy is still running and if stop it
         if os.path.exists(util.pid_path(listener_id)) and os.path.exists(
@@ -426,13 +429,8 @@ class Listener(object):
 
     def delete_certificate(self, listener_id, filename):
         self._check_ssl_filename_format(filename)
-        if not os.path.exists(self._cert_file_path(listener_id, filename)):
-            return webob.Response(json=dict(
-                message='Certificate Not Found',
-                details="No certificate with filename: {f}".format(
-                    f=filename)), status=404)
-
-        os.remove(self._cert_file_path(listener_id, filename))
+        if os.path.exists(self._cert_file_path(listener_id, filename)):
+            os.remove(self._cert_file_path(listener_id, filename))
         return webob.Response(json=dict(message='OK'))
 
     def _check_listener_status(self, listener_id):

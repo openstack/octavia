@@ -529,8 +529,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
             base=self.base_url, listener_id=FAKE_UUID_1),
             status_code=404,
             headers={'content-type': 'application/json'})
-        self.assertRaises(exc.NotFound, self.driver.delete_listener,
-                          self.amp, FAKE_UUID_1)
+        self.driver.delete_listener(self.amp, FAKE_UUID_1)
+        self.assertTrue(m.called)
 
     @requests_mock.mock()
     def test_delete_listener_unauthorized(self, m):
@@ -697,8 +697,9 @@ class TestAmphoraAPIClientTest(base.TestCase):
                 base=self.base_url, listener_id=FAKE_UUID_1,
                 filename=FAKE_PEM_FILENAME), status_code=404,
             headers={'content-type': 'application/json'})
-        self.assertRaises(exc.NotFound, self.driver.delete_cert_pem, self.amp,
-                          FAKE_UUID_1, FAKE_PEM_FILENAME)
+        self.driver.delete_cert_pem(self.amp, FAKE_UUID_1,
+                                    FAKE_PEM_FILENAME)
+        self.assertTrue(m.called)
 
     @requests_mock.mock()
     def test_delete_cert_pem_unauthorized(self, m):
