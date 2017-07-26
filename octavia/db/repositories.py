@@ -641,7 +641,8 @@ class Repositories(object):
 class LoadBalancerRepository(BaseRepository):
     model_class = models.LoadBalancer
 
-    def test_and_set_provisioning_status(self, session, id, status):
+    def test_and_set_provisioning_status(self, session, id, status,
+                                         raise_exception=False):
         """Tests and sets a load balancer and provisioning status.
 
         Puts a lock on the load balancer table to check the status of a
@@ -652,6 +653,7 @@ class LoadBalancerRepository(BaseRepository):
         :param session: A Sql Alchemy database session.
         :param id: id of Load Balancer
         :param status: Status to set Load Balancer if check passes.
+        :param raise_exception: If True, raise ImmutableObject on failure
         :returns: bool
         """
         with session.begin(subtransactions=True):
@@ -663,6 +665,9 @@ class LoadBalancerRepository(BaseRepository):
                 if is_delete else consts.MUTABLE_STATUSES
             )
             if lb.provisioning_status not in acceptable_statuses:
+                if raise_exception:
+                    raise exceptions.ImmutableObject(
+                        resource='Load Balancer', id=id)
                 return False
             lb.provisioning_status = status
             session.add(lb)

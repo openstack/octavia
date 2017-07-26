@@ -2706,6 +2706,20 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         lb = self.lb_repo.get(self.session, id=lb_id)
         self.assertEqual(constants.PENDING_CREATE, lb.provisioning_status)
 
+    def test_test_and_set_provisioning_status_immutable_raise(self):
+        lb_id = uuidutils.generate_uuid()
+        self.lb_repo.create(self.session, id=lb_id,
+                            provisioning_status=constants.PENDING_CREATE,
+                            operating_status=constants.OFFLINE,
+                            enabled=True)
+        self.assertRaises(exceptions.ImmutableObject,
+                          self.lb_repo.test_and_set_provisioning_status,
+                          self.session, lb_id,
+                          status=constants.PENDING_UPDATE,
+                          raise_exception=True)
+        lb = self.lb_repo.get(self.session, id=lb_id)
+        self.assertEqual(constants.PENDING_CREATE, lb.provisioning_status)
+
     def test_test_and_set_provisioning_status_mutable(self):
         lb_id = uuidutils.generate_uuid()
         self.lb_repo.create(self.session, id=lb_id,

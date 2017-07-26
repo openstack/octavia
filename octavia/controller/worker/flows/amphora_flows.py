@@ -292,6 +292,10 @@ class AmphoraFlows(object):
         failover_amphora_flow.add(lifecycle_tasks.AmphoraToErrorOnRevertTask(
             rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
             requires=constants.AMPHORA))
+        if status == constants.AMPHORA_ALLOCATED:
+            failover_amphora_flow.add(
+                database_tasks.TestLBStatusSetPendingInDB(
+                    requires=constants.LOADBALANCER_ID))
 
         # Delete the old amphora
         failover_amphora_flow.add(
@@ -392,6 +396,8 @@ class AmphoraFlows(object):
 
         failover_amphora_flow.add(amphora_driver_tasks.ListenersStart(
             requires=(constants.LOADBALANCER, constants.LISTENERS)))
+        failover_amphora_flow.add(database_tasks.MarkLBActiveInDB(
+            requires=[constants.LOADBALANCER]))
 
         return failover_amphora_flow
 
