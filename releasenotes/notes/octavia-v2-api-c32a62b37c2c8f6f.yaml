@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Octavia now has a v2 API that can be used as a standalone endpoint.
+    The Octavia v2 API is fully backward compatible with the neutron-lbaas
+    v2 API and is a superset of the neutron-lbaas v2 API.
+    For more information see the Octavia API reference:
+    https://developer.openstack.org/api-ref/load-balancer/v2/index.html

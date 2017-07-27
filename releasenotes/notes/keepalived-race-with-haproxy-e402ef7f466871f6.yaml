@@ -1,0 +1,10 @@
+---
+upgrade:
+  - |
+    The keepalived improvements require the amphora image to be upgraded.
+fixes:
+  - |
+    Improvements to the keepalived system used in active/standby topologies.
+    keepalived is now monitored for health by the amphora agent (previously
+    just by the init system) and a systemd race condition between keepalived
+    and haproxy have been resolved.

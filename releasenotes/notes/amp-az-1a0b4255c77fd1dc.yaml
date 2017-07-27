@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Added a configuration option that specifies the availability zone amphora
+    should be built in.

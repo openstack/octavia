@@ -1,0 +1,9 @@
+---
+features:
+  - |
+    Octavia now has options to limit the amphora concurrent build rate.
+    This may be useful for deployments where nova can get overloaded.
+    Amphora builds will be prioritized in the following order:
+    failover, normal, spares pool builds.
+    See the configuration guide for more information:
+    https://docs.openstack.org/octavia/latest/configuration/configref.html#haproxy_amphora.build_rate_limit
