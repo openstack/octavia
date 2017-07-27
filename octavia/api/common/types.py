@@ -60,6 +60,20 @@ class URLType(wtypes.UserType):
         return value
 
 
+class URLPathType(wtypes.UserType):
+    basetype = unicode
+    name = 'url_path'
+
+    @staticmethod
+    def validate(value):
+        try:
+            validate.url_path(value)
+        except exceptions.InvalidURLPath:
+            error = 'Value must be a valid URL Path string'
+            raise ValueError(error)
+        return value
+
+
 class BaseType(wtypes.Base):
     @classmethod
     def _full_response(cls):

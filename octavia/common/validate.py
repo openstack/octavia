@@ -46,6 +46,22 @@ def url(url, require_scheme=True):
     return True
 
 
+def url_path(url_path):
+    """Raises an error if the url_path doesn't look like a URL Path."""
+    try:
+        p_url = rfc3986.urlparse(rfc3986.normalize_uri(url_path))
+
+        if (
+            p_url.scheme or p_url.userinfo or p_url.host or
+            p_url.port or
+            p_url.path is None
+        ):
+            raise exceptions.InvalidURLPath(url_path=url_path)
+    except Exception:
+        raise exceptions.InvalidURLPath(url_path=url_path)
+    return True
+
+
 def header_name(header, what=None):
     """Raises an error if header does not look like an HTML header name."""
     p = re.compile(constants.HTTP_HEADER_NAME_REGEX)
