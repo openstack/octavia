@@ -58,6 +58,8 @@ class UpdateHealthDb(object):
                       entity_type, entity_id, entity.operating_status,
                       new_op_status)
             repo.update(session, entity_id, operating_status=new_op_status)
+            if new_op_status == constants.DRAINING:
+                new_op_status = constants.ONLINE
             message.update({constants.OPERATING_STATUS: new_op_status})
         if self.sync_prv_status:
             LOG.debug("%s %s provisioning_status %s. Updating db and sending"
@@ -167,14 +169,20 @@ class UpdateHealthDb(object):
                 for member_id, status in members.items():
 
                     member_status = None
-                    if status == constants.UP:
+                    # Member status can be "UP" or "UP #/#" (transitional)
+                    if status.startswith(constants.UP):
                         member_status = constants.ONLINE
-                    elif status == constants.DOWN:
+                    # Member status can be "DOWN" or "DOWN #/#" (transitional)
+                    elif status.startswith(constants.DOWN):
                         member_status = constants.ERROR
                         if pool_status == constants.ONLINE:
                             pool_status = constants.DEGRADED
                             if lb_status == constants.ONLINE:
                                 lb_status = constants.DEGRADED
+                    elif status == constants.DRAIN:
+                        member_status = constants.DRAINING
+                    elif status == constants.MAINT:
+                        member_status = constants.OFFLINE
                     elif status == constants.NO_CHECK:
                         member_status = constants.NO_MONITOR
                     else:

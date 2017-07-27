@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Some versions of HAProxy incorrectly reported nodes in DRAIN status as
+    being UP, and Octavia code was written around this incorrect reporting.
+    This has been fixed in some versions of HAProxy and is now handled
+    properly in Octavia as well. Now it is possible for members to be in the
+    status DRAINING. Note that this is masked when statuses are forwarded to
+    neutron-lbaas in the eventstream, so no compatibility change is necessary.
