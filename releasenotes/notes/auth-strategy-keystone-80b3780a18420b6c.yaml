@@ -1,0 +1,4 @@
+---
+upgrade:
+  - |
+    The configuration setting auth_strategy is now set to keystone by default.

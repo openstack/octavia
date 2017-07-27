@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue where the amphora would fail to bring up the VIP if the
+    VIP network did not have a gateway specified in neutron.

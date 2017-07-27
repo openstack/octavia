@@ -1,0 +1,7 @@
+---
+other:
+  - |
+    The Octavia project documentation has been reorganized as part of the
+    OpenStack documentation migration project.
+    The Octavia project documentation is now located at:
+    https://docs.openstack.org/octavia/latest/

@@ -1,0 +1,7 @@
+---
+prelude: >
+    For the OpenStack Pike release, the Octavia team is excited to announce
+    Octavia version 1.0.0 and introduce the Octavia v2 API.  Octavia can now
+    be deployed without neutron-lbaas as a standalone endpoint.  The
+    Octavia v2 API is fully backward compatible with the neutron-lbaas v2 API
+    and is a superset of the neutron-lbaas v2 API.

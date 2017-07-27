@@ -1,0 +1,6 @@
+---
+other:
+  - |
+    Octavia will use the OpenStack service type 'load-balancer'.
+    For more information about service types, see the Octavia API reference:
+    https://developer.openstack.org/api-ref/load-balancer/v2/index.html#service-endpoints

@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue that caused failover to unsuccessful if the vip network
+    was not DHCP enabled.
