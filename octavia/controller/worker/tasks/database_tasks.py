@@ -2580,7 +2580,7 @@ class DecrementPoolQuota(BaseDatabaseTask):
                         lock_session.rollback()
 
                 # Attempt to increment back the member quota
-                # This is seperate calls to maximize the correction
+                # This is separate calls to maximize the correction
                 # should other factors have increased the in use quota
                 # before this point in the revert flow
                 for i in six.moves.range(pool_child_count['member']):
