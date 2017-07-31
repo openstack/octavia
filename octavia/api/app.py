@@ -62,7 +62,7 @@ def _wrap_app(app):
     # middleware - are annotated with CORS headers, and thus accessible
     # by the browser.
     app = cors.CORS(app, cfg.CONF)
-    app.set_latent(
+    cors.set_defaults(
         allow_headers=['X-Auth-Token', 'X-Openstack-Request-Id'],
         allow_methods=['GET', 'PUT', 'POST', 'DELETE'],
         expose_headers=['X-Auth-Token', 'X-Openstack-Request-Id']
