@@ -165,6 +165,7 @@ class UpdateHealthDb(object):
                                 '%(status)s'), {'pool': pool_id,
                                 'status': pool.get('status')})
 
+                # Deal with the members that are reporting from the Amphora
                 members = pool['members']
                 for member_id, status in members.items():
 
@@ -199,6 +200,17 @@ class UpdateHealthDb(object):
                     except sqlalchemy.orm.exc.NoResultFound:
                         LOG.error("Member %s is not able to update "
                                   "in DB", member_id)
+
+                # Now deal with the members that didn't report from the Amphora
+                db_pool = self.pool_repo.get(session, id=pool_id)
+                real_members = [member.id for member in db_pool.members]
+                reported_members = [member for member in members.keys()]
+                missing_members = set(real_members) - set(reported_members)
+                for member_id in missing_members:
+                    self._update_status_and_emit_event(
+                        session, self.member_repo, constants.MEMBER,
+                        member_id, constants.OFFLINE
+                    )
 
                 try:
                     if pool_status is not None:
