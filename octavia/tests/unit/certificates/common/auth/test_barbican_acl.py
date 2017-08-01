@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from barbicanclient import client as barbican_client
 import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
@@ -41,11 +40,13 @@ class TestBarbicanACLAuth(base.TestCase):
         acl_auth_object = barbican_acl.BarbicanACLAuth()
         bc1 = acl_auth_object.get_barbican_client()
 
-        # Our returned client should be an instance of barbican_client.Client
-        self.assertIsInstance(
-            bc1,
-            barbican_client.Client
-        )
+        # Our returned object should have elements that proves it is a real
+        # Barbican client object. We shouldn't use `isinstance` because that's
+        # an evil pattern, instead we can check for very unique things in the
+        # stable client API like "register_consumer", since this should fairly
+        # reliably prove we're dealing with a Barbican client.
+        self.assertTrue(hasattr(bc1, 'containers') and
+                        hasattr(bc1.containers, 'register_consumer'))
 
         # Getting the session again with new class should get the same object
         acl_auth_object2 = barbican_acl.BarbicanACLAuth()
