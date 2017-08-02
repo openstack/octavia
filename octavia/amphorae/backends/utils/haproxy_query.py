@@ -105,7 +105,7 @@ class HAProxyQuery(object):
                   {<pool-name>: {
                   'uuid': <uuid>,
                   'status': 'UP'|'DOWN',
-                  'members': [<name>: 'UP'|'DOWN'] }}
+                  'members': [<name>: 'UP'|'DOWN'|'DRAIN'|'no check'] }}
         """
 
         results = self.show_stat(object_type=6)  # servers + pool
@@ -114,10 +114,10 @@ class HAProxyQuery(object):
         for line in results:
             # pxname: pool, svname: server_name, status: status
 
-            # All the way up is UP, otherwise call it DOWN
-            if (line['status'] != consts.UP and
-                    line['status'] != consts.NO_CHECK):
-                line['status'] = consts.DOWN
+            # Due to a bug in some versions of HAProxy, DRAIN mode isn't
+            # calculated correctly, but we can spoof the correct value here.
+            if line['status'] == consts.UP and line['weight'] == 0:
+                line['status'] = consts.DRAIN
 
             if line['pxname'] not in final_results:
                 final_results[line['pxname']] = dict(members={})

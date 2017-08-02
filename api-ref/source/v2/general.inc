@@ -466,6 +466,8 @@ Operating Status Codes
 | ONLINE     | - Entity is operating normally                               |
 |            | - All pool members are healthy                               |
 +------------+--------------------------------------------------------------+
+| DRAINING   | - The member is not accepting new connections                |
++------------+--------------------------------------------------------------+
 | OFFLINE    | - Entity is administratively disabled                        |
 +------------+--------------------------------------------------------------+
 | DEGRADED   | - One or more of the entity's components are in ERROR        |

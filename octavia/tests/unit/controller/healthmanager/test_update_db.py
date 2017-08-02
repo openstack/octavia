@@ -145,6 +145,120 @@ class TestUpdateHealthDb(base.TestCase):
 
         self.hm.update_health(health)
 
+    def test_update_health_member_drain(self):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {
+                    "status": constants.OPEN,
+                    "pools": {
+                        "pool-id-1": {
+                            "status": constants.UP,
+                            "members": {"member-id-1": constants.DRAIN}}}}}}
+
+        self.mock_session.return_value = 'blah'
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # test listener, member
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
+
+            self.listener_repo.update.assert_any_call(
+                'blah', listener_id, operating_status=constants.ONLINE)
+
+            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+
+                self.hm.pool_repo.update.assert_any_call(
+                    'blah', pool_id, operating_status=constants.ONLINE)
+
+                for member_id, member in six.iteritems(
+                        pool.get('members', {})):
+
+                    self.member_repo.update.assert_any_call(
+                        'blah', member_id,
+                        operating_status=constants.DRAINING)
+
+        self.hm.listener_repo.count.return_value = 2
+
+        self.hm.update_health(health)
+
+    def test_update_health_member_maint(self):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {
+                    "status": constants.OPEN,
+                    "pools": {
+                        "pool-id-1": {
+                            "status": constants.UP,
+                            "members": {"member-id-1": constants.MAINT}}}}}}
+
+        self.mock_session.return_value = 'blah'
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # test listener, member
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
+
+            self.listener_repo.update.assert_any_call(
+                'blah', listener_id, operating_status=constants.ONLINE)
+
+            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+
+                self.hm.pool_repo.update.assert_any_call(
+                    'blah', pool_id, operating_status=constants.ONLINE)
+
+                for member_id, member in six.iteritems(
+                        pool.get('members', {})):
+
+                    self.member_repo.update.assert_any_call(
+                        'blah', member_id,
+                        operating_status=constants.OFFLINE)
+
+        self.hm.listener_repo.count.return_value = 2
+
+        self.hm.update_health(health)
+
+    def test_update_health_member_unknown(self):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {
+                    "status": constants.OPEN,
+                    "pools": {
+                        "pool-id-1": {
+                            "status": constants.UP,
+                            "members": {"member-id-1": "blah"}}}}}}
+
+        self.mock_session.return_value = 'blah'
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # test listener, member
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
+
+            self.listener_repo.update.assert_any_call(
+                'blah', listener_id, operating_status=constants.ONLINE)
+
+            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+
+                self.hm.pool_repo.update.assert_any_call(
+                    'blah', pool_id, operating_status=constants.ONLINE)
+                self.assertTrue(not self.member_repo.update.called)
+
+        self.hm.listener_repo.count.return_value = 2
+
+        self.hm.update_health(health)
+
     def test_update_health_member_down(self):
 
         health = {
@@ -334,11 +448,23 @@ class TestUpdateHealthDb(base.TestCase):
                                   }
                 }
                 },
-                "listener-id-4": {"status": "bogus", "pools": {
-                    "pool-id-4": {"status": "bogus",
-                                  "members": {"member-id-4": "bogus"}
-                                  }
-                }
+                "listener-id-4": {
+                    "status": constants.OPEN,
+                    "pools": {
+                        "pool-id-4": {
+                            "status": constants.UP,
+                            "members": {"member-id-4": constants.DRAINING}
+                        }
+                    }
+                },
+                "listener-id-5": {
+                    "status": "bogus",
+                    "pools": {
+                        "pool-id-5": {
+                            "status": "bogus",
+                            "members": {"member-id-5": "bogus"}
+                        }
+                    }
                 }
             }
         }
@@ -358,6 +484,8 @@ class TestUpdateHealthDb(base.TestCase):
             'blah', "pool-id-2", operating_status=constants.ONLINE)
         self.pool_repo.update.assert_any_call(
             'blah', "pool-id-3", operating_status=constants.DEGRADED)
+        self.pool_repo.update.assert_any_call(
+            'blah', "pool-id-4", operating_status=constants.ONLINE)
 
     # Test code paths where objects are not found in the database
     def test_update_health_not_found(self):
