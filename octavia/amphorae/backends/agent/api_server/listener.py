@@ -235,6 +235,12 @@ def delete_listener(listener_id):
     except Exception:
         pass
 
+    # Since this script should be deleted at LB delete time
+    # we can check for this path to see if VRRP is enabled
+    # on this amphora and not write the file if VRRP is not in use
+    if os.path.exists(util.keepalived_check_script_path()):
+        vrrp_check_script_update(listener_id, action=consts.AMP_ACTION_STOP)
+
     # delete the ssl files
     try:
         shutil.rmtree(_cert_dir(listener_id))

@@ -243,12 +243,15 @@ class TestServerTestCase(base.TestCase):
 
     @mock.patch('os.path.exists')
     @mock.patch('subprocess.check_output')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
+                'vrrp_check_script_update')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.' +
                 'get_haproxy_pid')
     @mock.patch('shutil.rmtree')
     @mock.patch('os.remove')
     def test_delete_listener(self, mock_remove, mock_rmtree, mock_pid,
-                             mock_check_output, mock_exists):
+                             mock_vrrp, mock_check_output, mock_exists):
+        # no listener
         mock_exists.return_value = False
         rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
         self.assertEqual(404, rv.status_code)
@@ -258,8 +261,8 @@ class TestServerTestCase(base.TestCase):
             json.loads(rv.data.decode('utf-8')))
         mock_exists.assert_called_with('/var/lib/octavia/123/haproxy.cfg')
 
-        # service is stopped + no upstart script
-        mock_exists.side_effect = [True, False, False]
+        # service is stopped + no upstart script + no vrrp
+        mock_exists.side_effect = [True, False, False, False]
         rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
         self.assertEqual(200, rv.status_code)
         self.assertEqual({u'message': u'OK'},
@@ -268,16 +271,34 @@ class TestServerTestCase(base.TestCase):
         mock_exists.assert_called_with('/etc/init/haproxy-123.conf')
         mock_exists.assert_any_call('/var/lib/octavia/123/123.pid')
 
-        # service is stopped + upstart script
-        mock_exists.side_effect = [True, False, True]
+        # service is stopped + no upstart script + vrrp
+        mock_exists.side_effect = [True, False, True, False]
+        rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
+        self.assertEqual(200, rv.status_code)
+        self.assertEqual({u'message': u'OK'},
+                         json.loads(rv.data.decode('utf-8')))
+        mock_rmtree.assert_called_with('/var/lib/octavia/123')
+        mock_exists.assert_called_with('/etc/init/haproxy-123.conf')
+        mock_exists.assert_any_call('/var/lib/octavia/123/123.pid')
+
+        # service is stopped + upstart script + no vrrp
+        mock_exists.side_effect = [True, False, False, True]
         rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
         self.assertEqual(200, rv.status_code)
         self.assertEqual({u'message': u'OK'},
                          json.loads(rv.data.decode('utf-8')))
         mock_remove.assert_called_once_with('/etc/init/haproxy-123.conf')
 
-        # service is running + upstart script
-        mock_exists.side_effect = [True, True, True, True]
+        # service is stopped + upstart script + vrrp
+        mock_exists.side_effect = [True, False, True, True]
+        rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
+        self.assertEqual(200, rv.status_code)
+        self.assertEqual({u'message': u'OK'},
+                         json.loads(rv.data.decode('utf-8')))
+        mock_remove.assert_called_with('/etc/init/haproxy-123.conf')
+
+        # service is running + upstart script + no vrrp
+        mock_exists.side_effect = [True, True, True, False, True]
         mock_pid.return_value = '456'
         rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
         self.assertEqual(200, rv.status_code)
@@ -285,6 +306,17 @@ class TestServerTestCase(base.TestCase):
                          json.loads(rv.data.decode('utf-8')))
         mock_pid.assert_called_once_with('123')
         mock_check_output.assert_called_once_with(
+            ['/usr/sbin/service', 'haproxy-123', 'stop'], stderr=-2)
+
+        # service is running + upstart script + vrrp
+        mock_exists.side_effect = [True, True, True, True, True]
+        mock_pid.return_value = '456'
+        rv = self.app.delete('/' + api_server.VERSION + '/listeners/123')
+        self.assertEqual(200, rv.status_code)
+        self.assertEqual({u'message': u'OK'},
+                         json.loads(rv.data.decode('utf-8')))
+        mock_pid.assert_called_with('123')
+        mock_check_output.assert_with(
             ['/usr/sbin/service', 'haproxy-123', 'stop'], stderr=-2)
 
         # service is running + stopping fails
