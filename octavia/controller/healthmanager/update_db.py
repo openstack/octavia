@@ -121,7 +121,11 @@ class UpdateHealthDb(object):
                          'expected': expected_listener_count})
 
         # We got a heartbeat so lb is healthy until proven otherwise
-        lb_status = constants.ONLINE
+        # TODO(johnsom) Fix this if we have more than one LB on an amp
+        if lbs_on_amp[0].enabled is False:
+            lb_status = constants.OFFLINE
+        else:
+            lb_status = constants.ONLINE
 
         # update listener and nodes db information
         for listener_id, listener in listeners.items():
