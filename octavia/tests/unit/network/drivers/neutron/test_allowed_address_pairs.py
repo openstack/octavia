@@ -384,7 +384,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 'network_id': t_constants.MOCK_NETWORK_ID,
                 'device_id': 'lb-1',
                 'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
-                'admin_state_up': False
+                'admin_state_up': False,
+                'fixed_ips': [{'subnet_id': t_constants.MOCK_SUBNET_ID}]
             }
         }
         create_port.assert_called_once_with(exp_create_port_call)

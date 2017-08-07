@@ -74,6 +74,7 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
                 break
         return data_models.Vip(ip_address=fixed_ip.ip_address,
                                subnet_id=fixed_ip.subnet_id,
+                               network_id=port.network_id,
                                port_id=port.id,
                                load_balancer=load_balancer,
                                load_balancer_id=load_balancer.id)

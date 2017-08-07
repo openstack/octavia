@@ -158,6 +158,12 @@ class LoadBalancersController(base.BaseController):
 
         validate.network_allowed_by_config(load_balancer.vip_network_id)
 
+    def _create_vip_port_if_not_exist(self, load_balancer_db):
+        """Create vip port."""
+        network_driver = utils.get_network_driver()
+        vip = network_driver.allocate_vip(load_balancer_db)
+        return vip
+
     @wsme_pecan.wsexpose(lb_types.LoadBalancerFullRootResponse,
                          body=lb_types.LoadBalancerRootPOST, status_code=201)
     def post(self, load_balancer):
@@ -207,6 +213,13 @@ class LoadBalancersController(base.BaseController):
 
             db_lb = self.repositories.create_load_balancer_and_vip(
                 lock_session, lb_dict, vip_dict)
+
+            # create vip port if not exist
+            vip = self._create_vip_port_if_not_exist(db_lb)
+            db_lb.vip.ip_address = vip.ip_address
+            db_lb.vip.port_id = vip.port_id
+            db_lb.vip.network_id = vip.network_id
+            db_lb.vip.subnet_id = vip.subnet_id
 
             if listeners or pools:
                 db_pools, db_lists = self._graph_create(
