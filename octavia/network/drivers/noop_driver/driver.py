@@ -32,9 +32,19 @@ class NoopManager(object):
                   self.__class__.__name__, loadbalancer)
         self.networkconfigconfig[loadbalancer.id] = (
             loadbalancer, 'allocate_vip')
-        return data_models.Vip(ip_address='198.51.100.1',
-                               subnet_id=uuidutils.generate_uuid(),
-                               port_id=uuidutils.generate_uuid(),
+        subnet_id = uuidutils.generate_uuid()
+        network_id = uuidutils.generate_uuid()
+        port_id = uuidutils.generate_uuid()
+        ip_address = '198.51.100.1'
+        if loadbalancer.vip:
+            subnet_id = loadbalancer.vip.subnet_id or subnet_id
+            network_id = loadbalancer.vip.network_id or network_id
+            port_id = loadbalancer.vip.port_id or port_id
+            ip_address = loadbalancer.vip.ip_address or ip_address
+        return data_models.Vip(ip_address=ip_address,
+                               subnet_id=subnet_id,
+                               network_id=network_id,
+                               port_id=port_id,
                                load_balancer_id=loadbalancer.id)
 
     def deallocate_vip(self, vip):
