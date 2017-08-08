@@ -27,6 +27,7 @@ from oslo_log import log as logging
 import six
 from six.moves.urllib import error
 from six.moves.urllib import request as urllib2
+from tempest import clients
 from tempest.common import credentials_factory
 from tempest.common import waiters
 from tempest import config
@@ -86,7 +87,8 @@ class BaseTestCase(manager.NetworkScenarioTest):
         self._set_net_and_subnet()
 
         # admin network client needed for assigning octavia port to flip
-        admin_manager = credentials_factory.AdminManager()
+        admin_manager = clients.Manager(
+            credentials_factory.get_configured_admin_credentials())
         admin_manager.auth_provider.fill_credentials()
         self.floating_ips_client_admin = admin_manager.floating_ips_client
         self.ports_client_admin = admin_manager.ports_client
