@@ -152,7 +152,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                      # with the egress rules.  VRRP uses protocol
                      # 51 and 112
                      if rule.get('direction') != 'egress' and
-                     rule.get('protocol').lower() == 'tcp']
+                     rule.get('protocol', '').lower() == 'tcp']
         add_ports = set(updated_ports) - set(old_ports)
         del_ports = set(old_ports) - set(updated_ports)
         for rule in rules.get('security_group_rules', []):
