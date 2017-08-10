@@ -353,7 +353,8 @@ class AmphoraAPIClient(object):
     def delete_listener(self, amp, listener_id):
         r = self.delete(
             amp, 'listeners/{listener_id}'.format(listener_id=listener_id))
-        return exc.check_exception(r)
+
+        return exc.check_exception(r, (404,))
 
     def get_info(self, amp):
         r = self.get(amp, "info")
@@ -375,7 +376,7 @@ class AmphoraAPIClient(object):
             amp,
             'listeners/{listener_id}/certificates/{filename}'.format(
                 listener_id=listener_id, filename=pem_filename))
-        return exc.check_exception(r)
+        return exc.check_exception(r, (404,))
 
     def plug_network(self, amp, port):
         r = self.post(amp, 'plug/network',
