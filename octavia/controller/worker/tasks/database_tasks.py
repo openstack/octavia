@@ -229,9 +229,13 @@ class DeleteMemberInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting delete in DB for member id %s", member.id)
-# TODO(johnsom) fix this
-#        self.member_repo.update(db_apis.get_session(), member.id,
-#                                operating_status=constants.ERROR)
+        try:
+            self.member_repo.update(db_apis.get_session(), member.id,
+                                    provisioning_status=constants.ERROR)
+        except Exception as e:
+            LOG.error("Failed to update member %(mem)s "
+                      "provisioning_status to ERROR due to: %(except)s",
+                      {'mem': member.id, 'except': e})
 
 
 class DeleteListenerInDB(BaseDatabaseTask):
@@ -281,9 +285,13 @@ class DeletePoolInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting delete in DB for pool id %s", pool.id)
-# TODO(johnsom) Fix this
-#        self.pool_repo.update(db_apis.get_session(), pool.id,
-#                              operating_status=constants.ERROR)
+        try:
+            self.pool_repo.update(db_apis.get_session(), pool.id,
+                                  provisioning_status=constants.ERROR)
+        except Exception as e:
+            LOG.error("Failed to update pool %(pool)s "
+                      "provisioning_status to ERROR due to: %(except)s",
+                      {'pool': pool.id, 'except': e})
 
 
 class DeleteL7PolicyInDB(BaseDatabaseTask):
@@ -310,9 +318,13 @@ class DeleteL7PolicyInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting delete in DB for l7policy id %s", l7policy.id)
-# TODO(sbalukoff) Fix this
-#        self.listener_repo.update(db_apis.get_session(), l7policy.listener.id,
-#                                  operating_status=constants.ERROR)
+        try:
+            self.l7policy_repo.update(db_apis.get_session(), l7policy.id,
+                                      provisioning_status=constants.ERROR)
+        except Exception as e:
+            LOG.error("Failed to update l7policy %(l7policy)s "
+                      "provisioning_status to ERROR due to: %(except)s",
+                      {'l7policy': l7policy.id, 'except': e})
 
 
 class DeleteL7RuleInDB(BaseDatabaseTask):
@@ -339,10 +351,13 @@ class DeleteL7RuleInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting delete in DB for l7rule id %s", l7rule.id)
-# TODO(sbalukoff) Fix this
-#        self.listener_repo.update(db_apis.get_session(),
-#                                  l7rule.l7policy.listener.id,
-#                                  operating_status=constants.ERROR)
+        try:
+            self.l7rule_repo.update(db_apis.get_session(), l7rule.id,
+                                    provisioning_status=constants.ERROR)
+        except Exception as e:
+            LOG.error("Failed to update l7rule %(l7rule)s "
+                      "provisioning_status to ERROR due to: %(except)s",
+                      {'l7rule': l7rule.id, 'except': e})
 
 
 class ReloadAmphora(BaseDatabaseTask):
@@ -1311,14 +1326,13 @@ class UpdateHealthMonInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting update health monitor in DB "
                     "for health monitor id %s", health_mon.id)
-# TODO(johnsom) fix this to set the upper ojects to ERROR
         try:
             self.health_mon_repo.update(db_apis.get_session(),
                                         health_mon.id,
-                                        enabled=0)
+                                        provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update health monitor %(hm)s "
-                      "enabled to 0 due to: %(except)s",
+                      "provisioning_status to ERROR due to: %(except)s",
                       {'hm': health_mon.id, 'except': e})
 
 
@@ -1379,13 +1393,13 @@ class UpdateMemberInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting update member in DB "
                     "for member id %s", member.id)
-# TODO(johnsom) fix this to set the upper objects to ERROR
         try:
             self.member_repo.update(db_apis.get_session(), member.id,
-                                    enabled=0)
+                                    provisioning_status=constants.ERROR)
         except Exception as e:
-            LOG.error("Failed to update member %(member)s enabled to 0 due "
-                      "to: %(except)s", {'member': member.id, 'except': e})
+            LOG.error("Failed to update member %(member)s provisioning_status "
+                      "to ERROR due to: %(except)s", {'member': member.id,
+                                                      'except': e})
 
 
 class UpdatePoolInDB(BaseDatabaseTask):
@@ -1414,13 +1428,13 @@ class UpdatePoolInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting update pool in DB for pool id %s", pool.id)
-# TODO(johnsom) fix this to set the upper objects to ERROR
         try:
-            self.repos.update_pool_and_sp(db_apis.get_session(),
-                                          pool.id, enabled=0)
+            self.repos.update_pool_and_sp(db_apis.get_session(), pool.id,
+                                          provisioning_status=constants.ERROR)
         except Exception as e:
-            LOG.error("Failed to update pool %(pool)s enabled 0 due to: "
-                      "%(except)s", {'pool': pool.id, 'except': e})
+            LOG.error("Failed to update pool %(pool)s provisioning_status to "
+                      "ERROR due to: %(except)s", {'pool': pool.id,
+                                                   'except': e})
 
 
 class UpdateL7PolicyInDB(BaseDatabaseTask):
@@ -1450,13 +1464,13 @@ class UpdateL7PolicyInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting update l7policy in DB "
                     "for l7policy id %s", l7policy.id)
-# TODO(sbalukoff) fix this to set the upper objects to ERROR
         try:
             self.l7policy_repo.update(db_apis.get_session(), l7policy.id,
-                                      enabled=0)
+                                      provisioning_status=constants.ERROR)
         except Exception as e:
-            LOG.error("Failed to update l7policy %(l7p)s enabled to 0 due "
-                      "to: %(except)s", {'l7p': l7policy.id, 'except': e})
+            LOG.error("Failed to update l7policy %(l7p)s provisioning_status "
+                      "to ERROR due to: %(except)s", {'l7p': l7policy.id,
+                                                      'except': e})
 
 
 class UpdateL7RuleInDB(BaseDatabaseTask):
@@ -1486,14 +1500,14 @@ class UpdateL7RuleInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting update l7rule in DB "
                     "for l7rule id %s", l7rule.id)
-# TODO(sbalukoff) fix this to set appropriate upper objects to ERROR
         try:
             self.l7policy_repo.update(db_apis.get_session(),
                                       l7rule.l7policy.id,
-                                      enabled=0)
+                                      provisioning_status=constants.ERROR)
         except Exception as e:
-            LOG.error("Failed to update L7rule %(l7r)s enabled to 0 due to: "
-                      "%(except)s", {'l7r': l7rule.l7policy.id, 'except': e})
+            LOG.error("Failed to update L7rule %(l7r)s provisioning_status to "
+                      "ERROR due to: %(except)s", {'l7r': l7rule.l7policy.id,
+                                                   'except': e})
 
 
 class GetAmphoraDetails(BaseDatabaseTask):

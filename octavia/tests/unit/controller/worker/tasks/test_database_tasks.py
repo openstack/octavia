@@ -1397,22 +1397,20 @@ class TestDatabaseTasks(base.TestCase):
         mock_health_mon_repo_update.reset_mock()
         update_health_mon.revert(self.health_mon_mock)
 
-# TODO(johnsom) fix this to set the upper ojects to ERROR
         repo.HealthMonitorRepository.update.assert_called_once_with(
             'TEST',
             HM_ID,
-            enabled=0)
+            provisioning_status=constants.ERROR)
 
         # Test the revert with exception
         mock_health_mon_repo_update.reset_mock()
         mock_health_mon_repo_update.side_effect = Exception('fail')
         update_health_mon.revert(self.health_mon_mock)
 
-# TODO(johnsom) fix this to set the upper ojects to ERROR
         repo.HealthMonitorRepository.update.assert_called_once_with(
             'TEST',
             HM_ID,
-            enabled=0)
+            provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_update_load_balancer_in_db(self,
@@ -1514,22 +1512,20 @@ class TestDatabaseTasks(base.TestCase):
         mock_member_repo_update.reset_mock()
         update_member.revert(self.member_mock)
 
-# TODO(johnsom) fix this to set the upper ojects to ERROR
         repo.MemberRepository.update.assert_called_once_with(
             'TEST',
             MEMBER_ID,
-            enabled=0)
+            provisioning_status=constants.ERROR)
 
         # Test the revert
         mock_member_repo_update.reset_mock()
         mock_member_repo_update.side_effect = Exception('fail')
         update_member.revert(self.member_mock)
 
-# TODO(johnsom) fix this to set the upper ojects to ERROR
         repo.MemberRepository.update.assert_called_once_with(
             'TEST',
             MEMBER_ID,
-            enabled=0)
+            provisioning_status=constants.ERROR)
 
     @mock.patch(
         'octavia.db.repositories.Repositories.update_pool_and_sp')
@@ -1559,22 +1555,20 @@ class TestDatabaseTasks(base.TestCase):
         mock_repos_pool_update.reset_mock()
         update_pool.revert(self.pool_mock)
 
-# TODO(johnsom) fix this to set the upper ojects to ERROR
         repo.Repositories.update_pool_and_sp.assert_called_once_with(
             'TEST',
             POOL_ID,
-            enabled=0)
+            provisioning_status=constants.ERROR)
 
         # Test the revert with exception
         mock_repos_pool_update.reset_mock()
         mock_repos_pool_update.side_effect = Exception('fail')
         update_pool.revert(self.pool_mock)
 
-# TODO(johnsom) fix this to set the upper ojects to ERROR
         repo.Repositories.update_pool_and_sp.assert_called_once_with(
             'TEST',
             POOL_ID,
-            enabled=0)
+            provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.L7PolicyRepository.update')
     def test_update_l7policy_in_db(self,
@@ -1600,22 +1594,20 @@ class TestDatabaseTasks(base.TestCase):
         mock_l7policy_repo_update.reset_mock()
         update_l7policy.revert(self.l7policy_mock)
 
-# TODO(sbalukoff) fix this to set the upper objects to ERROR
         repo.L7PolicyRepository.update.assert_called_once_with(
             'TEST',
             L7POLICY_ID,
-            enabled=0)
+            provisioning_status=constants.ERROR)
 
         # Test the revert
         mock_l7policy_repo_update.reset_mock()
         mock_l7policy_repo_update.side_effect = Exception('fail')
         update_l7policy.revert(self.l7policy_mock)
 
-# TODO(sbalukoff) fix this to set the upper objects to ERROR
         repo.L7PolicyRepository.update.assert_called_once_with(
             'TEST',
             L7POLICY_ID,
-            enabled=0)
+            provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.L7RuleRepository.update')
     @mock.patch('octavia.db.repositories.L7PolicyRepository.update')
@@ -1648,22 +1640,20 @@ class TestDatabaseTasks(base.TestCase):
         mock_l7rule_repo_update.reset_mock()
         update_l7rule.revert(self.l7rule_mock)
 
-# TODO(sbalukoff) fix this to set the upper objects to ERROR
         repo.L7PolicyRepository.update.assert_called_once_with(
             'TEST',
             L7POLICY_ID,
-            enabled=0)
+            provisioning_status=constants.ERROR)
 
         # Test the revert
         mock_l7rule_repo_update.reset_mock()
         mock_l7rule_repo_update.side_effect = Exception('fail')
         update_l7rule.revert(self.l7rule_mock)
 
-# TODO(sbalukoff) fix this to set the upper objects to ERROR
         repo.L7PolicyRepository.update.assert_called_once_with(
             'TEST',
             L7POLICY_ID,
-            enabled=0)
+            provisioning_status=constants.ERROR)
 
     def test_get_amphora_details(self,
                                  mock_generate_uuid,
