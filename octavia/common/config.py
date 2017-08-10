@@ -297,6 +297,11 @@ controller_worker_opts = [
                help=_('SSH key name used to boot the Amphora')),
     cfg.BoolOpt('amp_ssh_access_allowed',
                 default=True,
+                deprecated_for_removal=True,
+                deprecated_reason='This option and amp_ssh_key_name overlap '
+                                  'in functionality, and only one is needed. '
+                                  'SSH access can be enabled/disabled simply '
+                                  'by setting amp_ssh_key_name, or not.',
                 help=_('Determines whether or not to allow access '
                        'to the Amphorae')),
     cfg.ListOpt('amp_boot_network_list',

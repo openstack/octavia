@@ -70,6 +70,7 @@ Command syntax:
             [-c **~/.cache/image-create** | <cache directory> ]
             [-h]
             [-i **ubuntu** | fedora | centos | rhel ]
+            [-n]
             [-o **amphora-x64-haproxy** | <filename> ]
             [-r <root password> ]
             [-s **2** | <size in GB> ]
@@ -82,6 +83,7 @@ Command syntax:
         '-c' is the path to the cache directory (default: ~/.cache/image-create)
         '-h' display help message
         '-i' is the base OS (default: ubuntu)
+        '-n' disable sshd (default: enabled)
         '-o' is the output image file name
         '-r' enable the root account in the generated image (default: disabled)
         '-s' is the image size to produce in gigabytes (default: 2)
