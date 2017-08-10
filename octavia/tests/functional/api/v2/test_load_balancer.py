@@ -1300,6 +1300,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'name': 'lb1',
             'project_id': self._project_id,
             'vip_subnet_id': uuidutils.generate_uuid(),
+            'vip_port_id': uuidutils.generate_uuid(),
+            'vip_address': '198.51.100.10',
             'listeners': create_listeners,
             'pools': create_pools or []
         }
@@ -1308,9 +1310,12 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'admin_state_up': True,
             'provisioning_status': constants.PENDING_CREATE,
             'operating_status': constants.OFFLINE,
-            'vip_address': None,
-            'vip_network_id': None,
-            'vip_port_id': None,
+            # TODO(rm_work): vip_network_id is a weird case, as it will be
+            # replaced from the port, which in the noop network driver will be
+            # freshly generated... I don't see a way to actually set it sanely
+            # for this test without interfering with a ton of stuff, and it is
+            # expected that this would be overwritten anyway, so 'ANY' is fine?
+            'vip_network_id': mock.ANY,
             'flavor': '',
             'provider': 'octavia'
         }

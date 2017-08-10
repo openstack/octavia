@@ -216,10 +216,13 @@ class LoadBalancersController(base.BaseController):
 
             # create vip port if not exist
             vip = self._create_vip_port_if_not_exist(db_lb)
-            db_lb.vip.ip_address = vip.ip_address
-            db_lb.vip.port_id = vip.port_id
-            db_lb.vip.network_id = vip.network_id
-            db_lb.vip.subnet_id = vip.subnet_id
+            self.repositories.vip.update(
+                lock_session, db_lb.id,
+                ip_address=vip.ip_address,
+                port_id=vip.port_id,
+                network_id=vip.network_id,
+                subnet_id=vip.subnet_id
+            )
 
             if listeners or pools:
                 db_pools, db_lists = self._graph_create(
