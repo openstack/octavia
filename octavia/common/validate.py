@@ -21,6 +21,7 @@ Defined here so these can also be used at deeper levels than the API.
 
 import re
 
+import netaddr
 from oslo_config import cfg
 import rfc3986
 
@@ -267,3 +268,9 @@ def network_allowed_by_config(network_id):
             raise exceptions.ValidationException(detail=_(
                 'Supplied VIP network_id is not allowed by the configuration '
                 'of this deployment.'))
+
+
+def is_ip_member_of_cidr(address, cidr):
+    if netaddr.IPAddress(address) in netaddr.IPNetwork(cidr):
+        return True
+    return False
