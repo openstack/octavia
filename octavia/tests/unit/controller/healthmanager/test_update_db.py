@@ -605,6 +605,54 @@ class TestUpdateHealthDb(base.TestCase):
         self.pool_repo.update.assert_not_called()
         self.member_repo.update.assert_not_called()
 
+    def test_update_health_lb_admin_down(self):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {}}
+
+        fake_lb = mock.MagicMock()
+        fake_lb.enabled = False
+        self.hm.amphora_repo.get_all_lbs_on_amphora.return_value = [fake_lb]
+
+        lb = mock.MagicMock()
+        lb.operating_status.lower.return_value = 'blah'
+        self.amphora_repo.get.load_balancer_id.return_value = self.FAKE_UUID_1
+        self.loadbalancer_repo.get.return_value = lb
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_repo.get.called)
+        self.assertTrue(lb.operating_status.lower.called)
+        self.assertTrue(self.loadbalancer_repo.update.called)
+        self.loadbalancer_repo.update.assert_called_with(
+            self.mock_session(),
+            self.amphora_repo.get().load_balancer_id,
+            operating_status='OFFLINE')
+
+    def test_update_health_lb_admin_up(self):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {}}
+
+        fake_lb = mock.MagicMock()
+        fake_lb.enabled = True
+        self.hm.amphora_repo.get_all_lbs_on_amphora.return_value = [fake_lb]
+
+        lb = mock.MagicMock()
+        lb.operating_status.lower.return_value = 'blah'
+        self.amphora_repo.get.load_balancer_id.return_value = self.FAKE_UUID_1
+        self.loadbalancer_repo.get.return_value = lb
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_repo.get.called)
+        self.assertTrue(lb.operating_status.lower.called)
+        self.assertTrue(self.loadbalancer_repo.update.called)
+        self.loadbalancer_repo.update.assert_called_with(
+            self.mock_session(),
+            self.amphora_repo.get().load_balancer_id,
+            operating_status='ONLINE')
+
 
 class TestUpdateStatsDb(base.TestCase):
 
