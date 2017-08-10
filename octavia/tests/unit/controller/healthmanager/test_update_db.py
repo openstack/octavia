@@ -141,9 +141,12 @@ class TestUpdateHealthDb(base.TestCase):
                         'blah', member_id,
                         operating_status=constants.ONLINE)
 
+        # If the listener count is wrong, make sure we don't update
         self.hm.listener_repo.count.return_value = 2
+        self.amphora_health_repo.replace.reset_mock()
 
         self.hm.update_health(health)
+        self.assertTrue(not self.amphora_health_repo.replace.called)
 
     def test_update_health_member_drain(self):
 
@@ -181,10 +184,6 @@ class TestUpdateHealthDb(base.TestCase):
                         'blah', member_id,
                         operating_status=constants.DRAINING)
 
-        self.hm.listener_repo.count.return_value = 2
-
-        self.hm.update_health(health)
-
     def test_update_health_member_maint(self):
 
         health = {
@@ -221,10 +220,6 @@ class TestUpdateHealthDb(base.TestCase):
                         'blah', member_id,
                         operating_status=constants.OFFLINE)
 
-        self.hm.listener_repo.count.return_value = 2
-
-        self.hm.update_health(health)
-
     def test_update_health_member_unknown(self):
 
         health = {
@@ -254,10 +249,6 @@ class TestUpdateHealthDb(base.TestCase):
                 self.hm.pool_repo.update.assert_any_call(
                     'blah', pool_id, operating_status=constants.ONLINE)
                 self.assertTrue(not self.member_repo.update.called)
-
-        self.hm.listener_repo.count.return_value = 2
-
-        self.hm.update_health(health)
 
     def test_update_health_member_down(self):
 
@@ -296,10 +287,6 @@ class TestUpdateHealthDb(base.TestCase):
                     self.member_repo.update.assert_any_call(
                         'blah', member_id,
                         operating_status=constants.ERROR)
-
-        self.hm.listener_repo.count.return_value = 2
-
-        self.hm.update_health(health)
 
     def test_update_health_member_no_check(self):
 
@@ -340,9 +327,51 @@ class TestUpdateHealthDb(base.TestCase):
                         'blah', member_id,
                         operating_status=constants.NO_MONITOR)
 
-        self.hm.listener_repo.count.return_value = 2
+    def test_update_health_member_admin_down(self):
 
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {
+                    "status": constants.OPEN,
+                    "pools": {
+                        "pool-id-1": {
+                            "status": constants.UP,
+                            "members": {
+                                "member-id-1": constants.UP}}}}}}
+
+        self.mock_session.return_value = 'blah'
+
+        mock_pool = mock.Mock()
+        mock_member1 = mock.Mock()
+        mock_member1.id = 'member-id-1'
+        mock_member2 = mock.Mock()
+        mock_member2.id = 'member-id-2'
+        mock_pool.members = [mock_member1, mock_member2]
+        self.pool_repo.get.return_value = mock_pool
         self.hm.update_health(health)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # test listener, member
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
+
+            self.listener_repo.update.assert_any_call(
+                'blah', listener_id, operating_status=constants.ONLINE)
+
+            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+
+                self.hm.pool_repo.update.assert_any_call(
+                    'blah', pool_id, operating_status=constants.ONLINE)
+
+                for member_id, member in six.iteritems(
+                        pool.get('members', {})):
+
+                    self.member_repo.update.assert_any_call(
+                        'blah', member_id,
+                        operating_status=constants.ONLINE)
+        self.member_repo.update.assert_any_call(
+            'blah', mock_member2.id, operating_status=constants.OFFLINE)
 
     def test_update_health_list_full_member_down(self):
 
@@ -383,8 +412,10 @@ class TestUpdateHealthDb(base.TestCase):
                         operating_status=constants.ERROR)
 
         self.hm.listener_repo.count.return_value = 2
+        self.amphora_health_repo.replace.reset_mock()
 
         self.hm.update_health(health)
+        self.assertTrue(not self.amphora_health_repo.replace.called)
 
     def test_update_health_error(self):
 
