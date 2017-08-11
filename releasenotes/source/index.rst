@@ -19,7 +19,8 @@ Octavia Release Notes
    :maxdepth: 1
 
    unreleased
-   liberty
-   mitaka
-   newton
+   pike
    ocata
+   newton
+   mitaka
+   liberty
