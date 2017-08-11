@@ -16,7 +16,9 @@ import time
 
 from concurrent import futures
 from oslo_config import cfg
+from oslo_db import exception as db_exc
 from oslo_log import log as logging
+from oslo_utils import excutils
 
 from octavia.controller.worker import controller_worker as cw
 from octavia.db import api as db_api
@@ -40,11 +42,34 @@ class HealthManager(object):
             LOG.debug("Pausing before starting health check")
             time.sleep(CONF.health_manager.heartbeat_timeout)
             while True:
-                session = db_api.get_session()
                 LOG.debug("Starting amphora health check")
                 failover_count = 0
                 while True:
-                    amp = amp_health_repo.get_stale_amphora(session)
+
+                    lock_session = db_api.get_session(autocommit=False)
+                    amp = None
+                    try:
+                        amp = amp_health_repo.get_stale_amphora(lock_session)
+                        lock_session.commit()
+                    except db_exc.DBDeadlock:
+                        LOG.debug('Database reports deadlock. Skipping.')
+                        try:
+                            lock_session.rollback()
+                        except Exception:
+                            pass
+                    except db_exc.RetryRequest:
+                        LOG.debug('Database is requesting a retry. Skipping.')
+                        try:
+                            lock_session.rollback()
+                        except Exception:
+                            pass
+                    except Exception:
+                        with excutils.save_and_reraise_exception():
+                            try:
+                                lock_session.rollback()
+                            except Exception:
+                                pass
+
                     if amp is None:
                         break
                     failover_count += 1

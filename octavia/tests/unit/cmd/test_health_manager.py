@@ -40,18 +40,23 @@ class TestHealthManagerCMD(base.TestCase):
         mock_getter.assert_called_once_with(mock_health(), mock_stats())
         self.assertEqual(2, getter_mock.check.call_count)
 
+    @mock.patch('octavia.cmd.health_manager.true_func')
     @mock.patch('octavia.controller.healthmanager.'
                 'health_manager.HealthManager')
-    def test_hm_health_check(self, mock_health):
+    def test_hm_health_check(self, mock_health, mock_true_func):
         hm_mock = mock.MagicMock()
         health_check_mock = mock.MagicMock()
         hm_mock.health_check = health_check_mock
         hm_mock.health_check.side_effect = [None, Exception('break')]
+        mock_true_func.side_effect = [True, True, Exception('break')]
         mock_health.return_value = hm_mock
         self.assertRaisesRegex(Exception, 'break',
                                health_manager.hm_health_check)
         mock_health.assert_called_once_with()
         self.assertEqual(2, hm_mock.health_check.call_count)
+
+    def test_hm_true_func(self):
+        self.assertTrue(health_manager.true_func())
 
     @mock.patch('multiprocessing.Process')
     @mock.patch('octavia.common.service.prepare_service')
