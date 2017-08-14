@@ -28,6 +28,8 @@ Octavia Specific Commandments
 - [O343] Python 3: do not use basestring.
 - [O344] Python 3: do not use dict.iteritems.
 - [O345] Usage of Python eventlet module not allowed
+- [O346] Don't use backslashes for line continuation.
+- [O347] Taskflow revert methods must have \*\*kwargs.
 
 Creating Unit Tests
 -------------------

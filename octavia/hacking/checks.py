@@ -62,6 +62,13 @@ assert_not_equal_start_with_none_re = re.compile(
     r"(.)*assertNotEqual\(None, .+\)")
 assert_no_xrange_re = re.compile(
     r"\s*xrange\s*\(")
+revert_must_have_kwargs_re = re.compile(
+    r'[ ]*def revert\(.+,[ ](?!\*\*kwargs)\w+\):')
+untranslated_exception_re = re.compile(r"raise (?:\w*)\((.*)\)")
+no_basestring_re = re.compile(r"\bbasestring\b")
+no_iteritems_re = re.compile(r".*\.iteritems\(\)")
+no_eventlet_re = re.compile(r'(import|from)\s+[(]?eventlet')
+no_line_continuation_backslash_re = re.compile(r'.*(\\)\n')
 
 
 def _translation_checks_not_enforced(filename):
@@ -194,8 +201,7 @@ def check_raised_localized_exceptions(logical_line, filename):
         return
 
     logical_line = logical_line.strip()
-    raised_search = re.compile(
-        r"raise (?:\w*)\((.*)\)").match(logical_line)
+    raised_search = untranslated_exception_re.match(logical_line)
     if raised_search:
         exception_msg = raised_search.groups()[0]
         if exception_msg.startswith("\"") or exception_msg.startswith("\'"):
@@ -211,7 +217,7 @@ def check_no_basestring(logical_line):
               is yielded that contains the offending index in logical line
               and a message describe the check validation failure.
     """
-    if re.search(r"\bbasestring\b", logical_line):
+    if no_basestring_re.search(logical_line):
         msg = ("O343: basestring is not Python3-compatible, use "
                "six.string_types instead.")
         yield(0, msg)
@@ -225,7 +231,7 @@ def check_python3_no_iteritems(logical_line):
               is yielded that contains the offending index in logical line
               and a message describe the check validation failure.
     """
-    if re.search(r".*\.iteritems\(\)", logical_line):
+    if no_iteritems_re.search(logical_line):
         msg = ("O344: Use dict.items() instead of dict.iteritems() to be "
                "compatible with both Python 2 and Python 3. In Python 2, "
                "dict.items() may be inefficient for very large dictionaries. "
@@ -242,7 +248,7 @@ def check_no_eventlet_imports(logical_line):
               is yielded that contains the offending index in logical line
               and a message describe the check validation failure.
     """
-    if re.match(r'(import|from)\s+[(]?eventlet', logical_line):
+    if no_eventlet_re.match(logical_line):
         msg = 'O345 Usage of Python eventlet module not allowed'
         yield logical_line.index('eventlet'), msg
 
@@ -258,7 +264,7 @@ def check_line_continuation_no_backslash(logical_line, tokens):
     """
     backslash = None
     for token_type, text, start, end, orig_line in tokens:
-        m = re.match(r'.*(\\)\n', orig_line)
+        m = no_line_continuation_backslash_re.match(orig_line)
         if m:
             backslash = (start[0], m.start(1))
             break
@@ -266,6 +272,19 @@ def check_line_continuation_no_backslash(logical_line, tokens):
     if backslash is not None:
         msg = 'O346 Backslash line continuations not allowed'
         yield backslash, msg
+
+
+def revert_must_have_kwargs(logical_line):
+    """O347 - Taskflow revert methods must have \*\*kwargs.
+
+    :param logical_line: The logical line to check.
+    :returns: None if the logical line passes the check, otherwise a tuple
+              is yielded that contains the offending index in logical line
+              and a message describe the check validation failure.
+    """
+    if revert_must_have_kwargs_re.match(logical_line):
+        msg = 'O347 Taskflow revert methods must have **kwargs'
+        yield 0, msg
 
 
 def factory(register):
@@ -283,3 +302,4 @@ def factory(register):
     register(check_python3_no_iteritems)
     register(check_no_eventlet_imports)
     register(check_line_continuation_no_backslash)
+    register(revert_must_have_kwargs)
