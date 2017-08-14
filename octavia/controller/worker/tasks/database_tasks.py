@@ -919,7 +919,7 @@ class TestLBStatusSetPendingInDB(BaseDatabaseTask):
             status=constants.PENDING_UPDATE, raise_exception=True)
         LOG.debug("Set loadbalancer %s to PENDING_UPDATE", loadbalancer_id)
 
-    def revert(self, loadbalancer_id):
+    def revert(self, loadbalancer_id, *args, **kwargs):
         LOG.debug("Marking loadbalancer %s ERROR", loadbalancer_id)
         self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer_id)
 
