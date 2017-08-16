@@ -1069,15 +1069,14 @@ class AmphoraHealthRepository(BaseRepository):
         expired_time = datetime.datetime.utcnow() - datetime.timedelta(
             seconds=timeout)
 
-        with session.begin(subtransactions=True):
-            amp = session.query(self.model_class).with_for_update().filter_by(
-                busy=False).filter(
-                self.model_class.last_update < expired_time).first()
+        amp = session.query(self.model_class).with_for_update().filter_by(
+            busy=False).filter(
+            self.model_class.last_update < expired_time).first()
 
-            if amp is None:
-                return None
+        if amp is None:
+            return None
 
-            amp.busy = True
+        amp.busy = True
 
         return amp.to_data_model()
 

@@ -14,6 +14,7 @@
 
 import mock
 from oslo_config import cfg
+from oslo_db import exception as db_exc
 from oslo_utils import uuidutils
 
 from octavia.controller.healthmanager import health_manager as healthmanager
@@ -51,13 +52,26 @@ class TestHealthManager(base.TestCase):
         amphora_health = mock.MagicMock()
         amphora_health.amphora_id = AMPHORA_ID
 
-        session_mock.side_effect = [None, TestException('test')]
-        get_stale_amp_mock.side_effect = [amphora_health, None]
+        get_stale_amp_mock.side_effect = [amphora_health,
+                                          None,
+                                          TestException('test')]
 
         hm = healthmanager.HealthManager()
         self.assertRaises(TestException, hm.health_check)
 
         failover_mock.assert_called_once_with(AMPHORA_ID)
+
+        # Test DBDeadlock and RetryRequest exceptions
+        session_mock.reset_mock()
+        get_stale_amp_mock.reset_mock()
+        mock_session = mock.MagicMock()
+        session_mock.return_value = mock_session
+        get_stale_amp_mock.side_effect = [
+            db_exc.DBDeadlock,
+            db_exc.RetryRequest(Exception('retry_test')),
+            TestException('test')]
+        self.assertRaises(TestException, hm.health_check)
+        self.assertEqual(3, mock_session.rollback.call_count)
 
     @mock.patch('octavia.controller.worker.controller_worker.'
                 'ControllerWorker.failover_amphora')
@@ -68,8 +82,7 @@ class TestHealthManager(base.TestCase):
     def test_health_check_nonestale_amphora(self, session_mock,
                                             sleep_mock, get_stale_amp_mock,
                                             failover_mock):
-        session_mock.side_effect = [None, TestException('test')]
-        get_stale_amp_mock.return_value = None
+        get_stale_amp_mock.side_effect = [None, TestException('test')]
 
         hm = healthmanager.HealthManager()
         self.assertRaises(TestException, hm.health_check)

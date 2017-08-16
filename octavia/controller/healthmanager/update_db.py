@@ -16,6 +16,7 @@ import datetime
 
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_utils import excutils
 import sqlalchemy
 from stevedore import driver as stevedore_driver
 
@@ -110,10 +111,16 @@ class UpdateHealthDb(object):
         # does not match the expected listener count
         if len(listeners) == expected_listener_count:
 
+            lock_session = db_api.get_session(autocommit=False)
             # if the input amphora is healthy, we update its db info
-            self.amphora_health_repo.replace(session, health['id'],
-                                             last_update=(datetime.
-                                                          datetime.utcnow()))
+            try:
+                self.amphora_health_repo.replace(
+                    lock_session, health['id'],
+                    last_update=(datetime.datetime.utcnow()))
+                lock_session.commit()
+            except Exception:
+                with excutils.save_and_reraise_exception():
+                    lock_session.rollback()
         else:
             LOG.warning('Amphora %(id)s health message reports %(found)i '
                         'listeners when %(expected)i expected',

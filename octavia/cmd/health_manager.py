@@ -30,6 +30,13 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
+# Used for while true loops to allow testing
+# TODO(johnsom) This will be removed with
+#               https://review.openstack.org/#/c/456420/
+def true_func():
+    return True
+
+
 def hm_listener():
     # TODO(german): steved'or load those drivers
     udp_getter = heartbeat_udp.UDPStatusGetter(
@@ -41,8 +48,12 @@ def hm_listener():
 
 def hm_health_check():
     hm = health_manager.HealthManager()
-    while True:
-        hm.health_check()
+    while true_func():
+        try:
+            hm.health_check()
+        except Exception as e:
+            LOG.warning('Health Manager caught the following exception and '
+                        'is restarting: {}'.format(e))
 
 
 def main():
