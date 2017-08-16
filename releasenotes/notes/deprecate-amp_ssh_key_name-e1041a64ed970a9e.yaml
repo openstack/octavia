@@ -1,0 +1,17 @@
+---
+features:
+  - |
+    New option in diskimage-create.sh `-n` to completely disable sshd on the
+    amphora.
+deprecations:
+  - |
+    Config option `amp_ssh_access_allowed` is deprecated, as it overlaps with
+    `amp_ssh_key_name` in functionality and is not needed. Simply leave the
+    variable `amp_ssh_key_name` blank and no ssh key will be installed. This
+    is the same result as using `amp_ssh_access_allowed = False`.
+security:
+  - |
+    It is now possible to completely remove sshd from the amphora image, to
+    further lock down access and increase security. If this is set, providing
+    an `amp_ssh_key_name` in config will install the key, but ssh access will
+    not be possible as sshd will not be running.

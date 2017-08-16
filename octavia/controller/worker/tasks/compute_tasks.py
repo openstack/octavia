@@ -63,9 +63,12 @@ class ComputeCreate(BaseComputeTask):
         LOG.debug("Compute create execute for amphora with id %s", amphora_id)
 
         user_data_config_drive = CONF.controller_worker.user_data_config_drive
+
+        key_name = CONF.controller_worker.amp_ssh_key_name
+        # TODO(rm_work): amp_ssh_access_allowed is deprecated in Pike.
+        # Remove the following two lines in the S release.
         ssh_access = CONF.controller_worker.amp_ssh_access_allowed
-        ssh_key = CONF.controller_worker.amp_ssh_key_name
-        key_name = None if not ssh_access else ssh_key
+        key_name = None if not ssh_access else key_name
 
         try:
             if CONF.haproxy_amphora.build_rate_limit != -1:

@@ -26,6 +26,7 @@ usage() {
     echo "            [-d **xenial** | trusty | <other release id> ]"
     echo "            [-h]"
     echo "            [-i **ubuntu** | fedora | centos | rhel ]"
+    echo "            [-n]"
     echo "            [-o **amphora-x64-haproxy** | <filename> ]"
     echo "            [-r <root password> ]"
     echo "            [-s **2** | <size in GB> ]"
@@ -39,6 +40,7 @@ usage() {
     echo "        '-d' distribution release id (default on ubuntu: xenial)"
     echo "        '-h' display this help message"
     echo "        '-i' is the base OS (default: ubuntu)"
+    echo "        '-n' disable sshd (default: enabled)"
     echo "        '-o' is the output image file name"
     echo "        '-r' enable the root account in the generated image (default: disabled)"
     echo "        '-s' is the image size to produce in gigabytes (default: 2)"
@@ -74,7 +76,7 @@ if [ -z $OCTAVIA_REPO_PATH ]; then
 fi
 dib_enable_tracing=
 
-while getopts "a:b:c:d:hi:o:t:r:s:vw:x" opt; do
+while getopts "a:b:c:d:hi:no:t:r:s:vw:x" opt; do
     case $opt in
         a)
             AMP_ARCH=$OPTARG
@@ -111,6 +113,9 @@ while getopts "a:b:c:d:hi:o:t:r:s:vw:x" opt; do
                 echo "Error: Unsupported base OS " $AMP_BASEOS " specified"
                 exit 3
             fi
+        ;;
+        n)
+            AMP_DISABLE_SSHD=1
         ;;
         o)
             AMP_OUTPUTFILENAME=$(readlink -f $OPTARG)
@@ -173,6 +178,8 @@ AMP_OUTPUTFILENAME=${AMP_OUTPUTFILENAME:-"$PWD/amphora-x64-haproxy"}
 AMP_IMAGETYPE=${AMP_IMAGETYPE:-"qcow2"}
 
 AMP_IMAGESIZE=${AMP_IMAGESIZE:-2}
+
+AMP_DISABLE_SSHD=${AMP_DISABLE_SSHD:-0}
 
 if [ "$AMP_BASEOS" = "rhel" ] && [ "$AMP_IMAGESIZE" -lt 3 ]; then
     echo "RHEL based amphora requires an image size of at least 3GB"
@@ -323,6 +330,11 @@ AMP_element_sequence="$AMP_element_sequence pip-cache"
 
 # Add certificate ramfs element
 AMP_element_sequence="$AMP_element_sequence certs-ramfs"
+
+# Disable SSHD if requested
+if [ "$AMP_DISABLE_SSHD" ]; then
+    AMP_element_sequence="$AMP_element_sequence remove-sshd"
+fi
 
 # Allow full elements override
 if [ "$DIB_ELEMENTS" ]; then
