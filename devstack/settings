@@ -3,7 +3,7 @@
 OCTAVIA=${OCTAVIA:-"octavia"}
 OCTAVIA_DIR=${OCTAVIA_DIR:-"${DEST}/octavia"}
 DISKIMAGE_BUILDER_REPO_URL=${DISKIMAGE_BUILDER_REPO_URL:-${GIT_BASE}/openstack/diskimage-builder.git}
-DISKIMAGE_BUILDER_REPO_REF=${DISKIMAGE_BUILDER_REPO_REF:-master}
+DISKIMAGE_BUILDER_REPO_REF=${DISKIMAGE_BUILDER_REPO_REF:-stable/pike}
 DISKIMAGE_BUILDER_DIR=$DEST/diskimage-builder
 OCTAVIA_BIN_DIR=${OCTAVIA_BIN_DIR:-$(get_python_exec_prefix)}
 OCTAVIA_CONF_DIR=${OCTAVIA_CONF_DIR:-"/etc/octavia"}
@@ -73,7 +73,7 @@ OCTAVIA_API_HAPROXY="o-api-ha"
 
 # Client settings
 GITREPO["python-octaviaclient"]=${OCTAVIACLIENT_REPO:-${GIT_BASE}/openstack/python-octaviaclient.git}
-GITBRANCH["python-octaviaclient"]=${OCTAVIACLIENT_BRANCH:-master}
+GITBRANCH["python-octaviaclient"]=${OCTAVIACLIENT_BRANCH:-stable/pike}
 GITDIR["python-octaviaclient"]=$DEST/python-octaviaclient
 
 NEUTRON_LBAAS_DIR=$DEST/neutron-lbaas
