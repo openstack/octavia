@@ -28,7 +28,7 @@ tl;dr
 -----
 * 8GB RAM minimum
 * "vmx" or "svm" in ``/proc/cpuinfo``
-* Ubuntu 14.04 or later
+* Ubuntu 16.04 or later
 * On that host, copy and run as root:
   ``octavia/devstack/contrib/new-octavia-devstack.sh``
 
@@ -56,7 +56,7 @@ these features to the guest VM (sometimes called nested virtualization).
 For more information, see:
 http://docs.openstack.org/developer/devstack/guides/devstack-with-nested-kvm.html
 
-The devstack environment we recommend should be running Ubuntu Linux 14.04 or
+The devstack environment we recommend should be running Ubuntu Linux 16.04 or
 later. These instructions may work for other Linux operating systems or
 environments. However, most people doing development on Octavia are using
 Ubuntu for their test environment, so you will probably have the easiest time
@@ -65,7 +65,7 @@ getting your devstack working with that OS.
 
 Deployment
 ----------
-1. Deploy an Ubuntu 14.04 or later Linux host with at least 8GB of RAM. (This
+1. Deploy an Ubuntu 16.04 or later Linux host with at least 8GB of RAM. (This
    can be a VM, but again, make sure you have nested virtualization features
    enabled in your BIOS and virtualization software.)
 2. Copy ``devstack/contrib/new-octavia-devstack.sh`` from this source
