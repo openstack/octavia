@@ -17,6 +17,8 @@
 Routines for configuring Octavia
 """
 
+import sys
+
 from keystoneauth1 import loading as ks_loading
 from oslo_config import cfg
 from oslo_db import options as db_options
@@ -582,6 +584,10 @@ def setup_logging(conf):
     product_name = "octavia"
     logging.setup(conf, product_name)
     LOG.info("Logging enabled!")
+    LOG.info("%(prog)s version %(version)s",
+             {'prog': sys.argv[0],
+              'version': version.version_info.release_string()})
+    LOG.debug("command line: %s", " ".join(sys.argv))
 
 
 # Use cfg.CONF.set_default to override the new configuration setting

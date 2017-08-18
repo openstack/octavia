@@ -188,6 +188,9 @@ function octavia_configure {
         cp $OCTAVIA_DIR/etc/octavia.conf $OCTAVIA_CONF
     fi
 
+    # Use devstack logging configuration
+    setup_logging $OCTAVIA_CONF
+
     # Change bind host
     iniset $OCTAVIA_CONF DEFAULT bind_host $SERVICE_HOST
 
