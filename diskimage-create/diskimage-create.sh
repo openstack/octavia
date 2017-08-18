@@ -332,7 +332,7 @@ AMP_element_sequence="$AMP_element_sequence pip-cache"
 AMP_element_sequence="$AMP_element_sequence certs-ramfs"
 
 # Disable SSHD if requested
-if [ "$AMP_DISABLE_SSHD" ]; then
+if [ "$AMP_DISABLE_SSHD" -eq 1 ]; then
     AMP_element_sequence="$AMP_element_sequence remove-sshd"
 fi
 
