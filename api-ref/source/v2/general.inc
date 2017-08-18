@@ -451,7 +451,7 @@ the ``operating_status`` provides the observed status of the entity.
 
 For example, a member may be in a ``provisioning_status`` of ``PENDING_UPDATE``
 and have an ``operating_status`` of ``ONLINE``.  This would indicate that an
-update operation is occuring on this member and it is in an immutable state
+update operation is occurring on this member and it is in an immutable state
 but it is healthy and able to service requests.  This situation could occur if
 the user made a request to update the weight of the member.
 
