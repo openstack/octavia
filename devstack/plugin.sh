@@ -320,7 +320,9 @@ function create_mgmt_network_interface {
     MGMT_PORT_MAC=${id_and_mac[1]}
     # TODO(johnsom) This gets the IPv4 address, should be updated for IPv6
     MGMT_PORT_IP=$(openstack port show -f value -c fixed_ips $MGMT_PORT_ID | awk '{FS=",| "; gsub(",",""); gsub("'\''",""); for(i = 1; i <= NF; ++i) {if ($i ~ /^ip_address/) {n=index($i, "="); if (substr($i, n+1) ~ "\\.") print substr($i, n+1)}}}')
-    if [[ $Q_AGENT == "openvswitch" ]]; then
+    if function_exists octavia_create_network_interface_device ; then
+        octavia_create_network_interface_device o-hm0 $MGMT_PORT_ID $MGMT_PORT_MAC
+    elif [[ $Q_AGENT == "openvswitch" ]]; then
         sudo ovs-vsctl -- --may-exist add-port ${OVS_BRIDGE:-br-int} o-hm0 -- set Interface o-hm0 type=internal -- set Interface o-hm0 external-ids:iface-status=active -- set Interface o-hm0 external-ids:attached-mac=$MGMT_PORT_MAC -- set Interface o-hm0 external-ids:iface-id=$MGMT_PORT_ID -- set Interface o-hm0 external-ids:skip_cleanup=true
     elif [[ $Q_AGENT == "linuxbridge" ]]; then
         if ! ip link show o-hm0 ; then
@@ -330,6 +332,8 @@ function create_mgmt_network_interface {
             sudo brctl addif $BRNAME o-bhm0
             sudo ip link set o-bhm0 up
         fi
+    else
+        die "Unknown network controller. Please define octavia_create_network_interface_device"
     fi
     sudo ip link set dev o-hm0 address $MGMT_PORT_MAC
     sudo dhclient -v o-hm0 -cf $OCTAVIA_DHCLIENT_CONF
@@ -514,10 +518,16 @@ function octavia_stop {
     # Kill dhclient process started for o-hm0 interface
     pids=$(ps aux | awk '/o-hm0/ { print $2 }')
     [ ! -z "$pids" ] && sudo kill $pids
-    if [[ $Q_AGENT == "linuxbridge" ]]; then
+    if function_exists octavia_delete_network_interface_device ; then
+        octavia_delete_network_interface_device o-hm0
+    elif [[ $Q_AGENT == "openvswitch" ]]; then
+        :  # Do nothing
+    elif [[ $Q_AGENT == "linuxbridge" ]]; then
         if ip link show o-hm0 ; then
             sudo ip link del o-hm0
         fi
+    else
+        die "Unknown network controller. Please define octavia_delete_network_interface_device"
     fi
 }
 
