@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Added hook to plugin.sh: `octavia_create_network_interface_device` and
+    `octavia_delete_network_interface_device`. For each of these functions,
+    if they are defined during stack (respectively unstack), they are called
+    to create (respectively delete) the management network interface.
