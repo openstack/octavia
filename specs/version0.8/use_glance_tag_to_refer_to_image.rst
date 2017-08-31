@@ -95,7 +95,7 @@ The change couples Octavia with Glance. It should not be an issue since there
 are no use cases to use Octavia without Glance installed.
 
 The new feature deprecates amp_image_id option. Operators that still use the
-old image referencing mechanism will be adviced to switch to the new option.
+old image referencing mechanism will be advised to switch to the new option.
 
 Eventually, the old mechanism will be removed from the tree.
 

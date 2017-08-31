@@ -6,4 +6,4 @@ features:
     feature to take into effect.
 upgrade:
   - amp_image_id option is deprecated and will be removed in one of the next
-    releases. Operators are adviced to migrate to the new amp_image_tag option.
+    releases. Operators are advised to migrate to the new amp_image_tag option.
