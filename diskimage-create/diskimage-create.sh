@@ -354,6 +354,7 @@ fi
 
 # Add keepalived-octavia element
 AMP_element_sequence="$AMP_element_sequence keepalived-octavia"
+AMP_element_sequence="$AMP_element_sequence ipvsadmin"
 
 # Add pip-cache element
 AMP_element_sequence="$AMP_element_sequence pip-cache"
