@@ -266,7 +266,16 @@ if [ "$platform" = 'NAME="Ubuntu"' ]; then
             echo "Earlier versions don't support the extended attributes required."
             exit 1
     fi
-
+elif [[ $platform =~ "SUSE" ]]; then
+    # OpenSUSE
+    # use rpm -q to check for qemu-tools and git-core
+    PKG_LIST="qemu-tools git-core"
+    for pkg in $PKG_LIST; do
+        if ! rpm -q $pkg &> /dev/null; then
+            echo "Required package " ${pkg/\*} " is not installed.  Exiting."
+            exit 1
+        fi
+    done
 else
     # fedora/centos/rhel
     # Actual qemu-img name may be qemu-img, qemu-img-ev, qemu-img-rhev, ...
