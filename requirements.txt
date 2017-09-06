@@ -42,5 +42,5 @@ Flask!=0.11,<1.0,>=0.10 # BSD
 netifaces>=0.10.4 # MIT
 ipaddress>=1.0.7;python_version<'3.3' # PSF
 cryptography!=2.0,>=1.6 # BSD/Apache-2.0
-pyroute2>=0.4.17 # Apache-2.0 (+ dual licensed GPL2)
+pyroute2!=0.4.18,!=0.4.19,!=0.4.20,>=0.4.17 # Apache-2.0 (+ dual licensed GPL2)
 gunicorn>=19.0 # MIT
