@@ -1662,7 +1662,25 @@ class TestServerTestCase(base.TestCase):
                     'iface {netns_int}:0 inet static\n'
                     'address 203.0.113.2\n'
                     'broadcast 203.0.113.255\n'
-                    'netmask 255.255.255.0'.format(
+                    'netmask 255.255.255.0\n'
+                    '# Add a source routing table to allow members to '
+                    'access the VIP\n'
+                    'post-up /sbin/ip route add default via 203.0.113.1 '
+                    'dev eth1 onlink table 1\n'
+                    'post-down /sbin/ip route del default via 203.0.113.1 '
+                    'dev eth1 onlink table 1\n'
+                    'post-up /sbin/ip route add 203.0.114.0/24 '
+                    'via 203.0.113.5 dev eth1 onlink table 1\n'
+                    'post-down /sbin/ip route del 203.0.114.0/24 '
+                    'via 203.0.113.5 dev eth1 onlink table 1\n'
+                    'post-up /sbin/ip route add 203.0.115.0/24 '
+                    'via 203.0.113.5 dev eth1 onlink table 1\n'
+                    'post-down /sbin/ip route del 203.0.115.0/24 '
+                    'via 203.0.113.5 dev eth1 onlink table 1\n'
+                    'post-up /sbin/ip rule add from 203.0.113.2/32 table 1 '
+                    'priority 100\n'
+                    'post-down /sbin/ip rule del from 203.0.113.2/32 table 1 '
+                    'priority 100'.format(
                         netns_int=consts.NETNS_PRIMARY_INTERFACE))
             elif distro == consts.CENTOS:
                 handle.write.assert_any_call(
@@ -1741,7 +1759,17 @@ class TestServerTestCase(base.TestCase):
                     'iface {netns_int}:0 inet static\n'
                     'address 203.0.113.2\n'
                     'broadcast 203.0.113.255\n'
-                    'netmask 255.255.255.0'.format(
+                    'netmask 255.255.255.0\n'
+                    '# Add a source routing table to allow members to '
+                    'access the VIP\n'
+                    'post-up /sbin/ip route add default via 203.0.113.1 '
+                    'dev eth1 onlink table 1\n'
+                    'post-down /sbin/ip route del default via 203.0.113.1 '
+                    'dev eth1 onlink table 1\n'
+                    'post-up /sbin/ip rule add from 203.0.113.2/32 table 1 '
+                    'priority 100\n'
+                    'post-down /sbin/ip rule del from 203.0.113.2/32 table 1 '
+                    'priority 100'.format(
                         netns_int=consts.NETNS_PRIMARY_INTERFACE))
             elif distro == consts.CENTOS:
                 handle.write.assert_any_call(
@@ -1946,7 +1974,27 @@ class TestServerTestCase(base.TestCase):
                     'iface {netns_int}:0 inet6 static\n'
                     'address 2001:0db8:0000:0000:0000:0000:0000:0002\n'
                     'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n'
-                    'netmask 32'.format(
+                    'netmask 32\n'
+                    '# Add a source routing table to allow members to access '
+                    'the VIP\n'
+                    'post-up /sbin/ip route add default via 2001:db8::1 '
+                    'dev eth1 onlink table 1\n'
+                    'post-down /sbin/ip route del default via 2001:db8::1 '
+                    'dev eth1 onlink table 1\n'
+                    'post-up /sbin/ip route add 2001:db9::/32 via 2001:db8::5 '
+                    'dev eth1 onlink table 1\n'
+                    'post-down /sbin/ip route del 2001:db9::/32 '
+                    'via 2001:db8::5 dev eth1 onlink table 1\n'
+                    'post-up /sbin/ip route add 2001:db9::/32 via 2001:db8::5 '
+                    'dev eth1 onlink table 1\n'
+                    'post-down /sbin/ip route del 2001:db9::/32 '
+                    'via 2001:db8::5 dev eth1 onlink table 1\n'
+                    'post-up /sbin/ip rule add from '
+                    '2001:0db8:0000:0000:0000:0000:0000:0002/32 table 1 '
+                    'priority 100\n'
+                    'post-down /sbin/ip rule del from '
+                    '2001:0db8:0000:0000:0000:0000:0000:0002/32 table 1 '
+                    'priority 100'.format(
                         netns_int=consts.NETNS_PRIMARY_INTERFACE))
             elif distro == consts.CENTOS:
                 handle.write.assert_any_call(
@@ -2026,7 +2074,19 @@ class TestServerTestCase(base.TestCase):
                     'iface {netns_int}:0 inet6 static\n'
                     'address 2001:0db8:0000:0000:0000:0000:0000:0002\n'
                     'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n'
-                    'netmask 32'.format(
+                    'netmask 32\n'
+                    '# Add a source routing table to allow members to access '
+                    'the VIP\n'
+                    'post-up /sbin/ip route add default via 2001:db8::1 '
+                    'dev eth1 onlink table 1\n'
+                    'post-down /sbin/ip route del default via 2001:db8::1 '
+                    'dev eth1 onlink table 1\n'
+                    'post-up /sbin/ip rule add from '
+                    '2001:0db8:0000:0000:0000:0000:0000:0002/32 table 1 '
+                    'priority 100\n'
+                    'post-down /sbin/ip rule del from '
+                    '2001:0db8:0000:0000:0000:0000:0000:0002/32 table 1 '
+                    'priority 100'.format(
                         netns_int=consts.NETNS_PRIMARY_INTERFACE))
             elif distro == consts.CENTOS:
                 handle.write.assert_any_call(
