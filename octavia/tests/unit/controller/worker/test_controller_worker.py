@@ -1101,6 +1101,49 @@ class TestControllerWorker(base.TestCase):
 
         _flow_mock.run.assert_called_once_with()
 
+    @mock.patch('octavia.controller.worker.'
+                'controller_worker.ControllerWorker._perform_amphora_failover')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    def test_failover_loadbalancer(self,
+                                   mock_update,
+                                   mock_perform,
+                                   mock_api_get_session,
+                                   mock_dyn_log_listener,
+                                   mock_taskflow_load,
+                                   mock_pool_repo_get,
+                                   mock_member_repo_get,
+                                   mock_l7rule_repo_get,
+                                   mock_l7policy_repo_get,
+                                   mock_listener_repo_get,
+                                   mock_lb_repo_get,
+                                   mock_health_mon_repo_get,
+                                   mock_amp_repo_get):
+        _amphora_mock2 = mock.MagicMock()
+        _load_balancer_mock.amphorae = [_amphora_mock, _amphora_mock2]
+        cw = controller_worker.ControllerWorker()
+        cw.failover_loadbalancer('123')
+        mock_perform.assert_called_with(
+            _amphora_mock2, constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
+        mock_update.assert_called_with('TEST', '123',
+                                       provisioning_status=constants.ACTIVE)
+
+        mock_perform.reset
+        _load_balancer_mock.amphorae = [_amphora_mock, _amphora_mock2]
+        _amphora_mock2.role = constants.ROLE_BACKUP
+        cw.failover_loadbalancer('123')
+        # because mock2 gets failed over earlier now _amphora_mock
+        # is the last one
+        mock_perform.assert_called_with(
+            _amphora_mock, constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
+        mock_update.assert_called_with('TEST', '123',
+                                       provisioning_status=constants.ACTIVE)
+
+        mock_perform.reset
+        mock_perform.side_effect = OverflowError()
+        self.assertRaises(OverflowError, cw.failover_loadbalancer, 123)
+        mock_update.assert_called_with('TEST', 123,
+                                       provisioning_status=constants.ERROR)
+
     @mock.patch('octavia.controller.worker.flows.'
                 'amphora_flows.AmphoraFlows.get_failover_flow',
                 return_value=_flow_mock)

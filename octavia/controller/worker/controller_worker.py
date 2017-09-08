@@ -613,6 +613,44 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             update_l7rule_tf.run()
 
+    def _perform_amphora_failover(self, amp, priority):
+        """Internal method to perform failover operations for an amphora.
+
+        :param amp: The amphora to failover
+        :param priority: The create priority
+        :returns: None
+        """
+
+        stored_params = {constants.FAILED_AMPHORA: amp,
+                         constants.LOADBALANCER_ID: amp.load_balancer_id,
+                         constants.BUILD_TYPE_PRIORITY: priority, }
+
+        if (CONF.house_keeping.spare_amphora_pool_size == 0) and (
+                CONF.nova.enable_anti_affinity is False):
+            LOG.warning("Failing over amphora with no spares pool may "
+                        "cause delays in failover times while a new "
+                        "amphora instance boots.")
+
+        # if we run with anti-affinity we need to set the server group
+        # as well
+        if CONF.nova.enable_anti_affinity:
+            lb = self._amphora_repo.get_all_lbs_on_amphora(
+                db_apis.get_session(), amp.id)
+            if lb:
+                stored_params[constants.SERVER_GROUP_ID] = (
+                    lb[0].server_group_id)
+
+        failover_amphora_tf = self._taskflow_load(
+            self._amphora_flows.get_failover_flow(role=amp.role,
+                                                  status=amp.status),
+            store=stored_params)
+
+        with tf_logging.DynamicLoggingListener(
+                failover_amphora_tf, log=LOG,
+                hide_inputs_outputs_of=self._exclude_result_logging_tasks):
+
+            failover_amphora_tf.run()
+
     def failover_amphora(self, amphora_id):
         """Perform failover operations for an amphora.
 
@@ -620,38 +658,57 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :returns: None
         :raises AmphoraNotFound: The referenced amphora was not found
         """
-
         try:
             amp = self._amphora_repo.get(db_apis.get_session(),
                                          id=amphora_id)
-            stored_params = {constants.FAILED_AMPHORA: amp,
-                             constants.LOADBALANCER_ID: amp.load_balancer_id,
-                             constants.BUILD_TYPE_PRIORITY:
-                                 constants.LB_CREATE_FAILOVER_PRIORITY}
-
-            # if we run with anti-affinity we need to set the server group
-            # as well
-            if CONF.nova.enable_anti_affinity:
-                lb = self._amphora_repo.get_all_lbs_on_amphora(
-                    db_apis.get_session(), amp.id)
-                if lb:
-                    stored_params[constants.SERVER_GROUP_ID] = (
-                        lb[0].server_group_id)
-
-            failover_amphora_tf = self._taskflow_load(
-                self._amphora_flows.get_failover_flow(
-                    role=amp.role,
-                    status=amp.status),
-                store=stored_params)
-            with tf_logging.DynamicLoggingListener(
-                    failover_amphora_tf, log=LOG,
-                    hide_inputs_outputs_of=self._exclude_result_logging_tasks):
-
-                failover_amphora_tf.run()
-
+            self._perform_amphora_failover(
+                amp, constants.LB_CREATE_FAILOVER_PRIORITY)
         except Exception as e:
             with excutils.save_and_reraise_exception():
                 LOG.error("Failover exception: %s", e)
+
+    def failover_loadbalancer(self, load_balancer_id):
+        """Perform failover operations for a load balancer.
+
+        :param load_balancer_id: ID for load balancer to failover
+        :returns: None
+        :raises LBNotFound: The referenced load balancer was not found
+        """
+
+        # this is a bit pedestrian right now but should be sufficient for now
+        try:
+            lb = self._lb_repo.get(db_apis.get_session(),
+                                   id=load_balancer_id)
+            self._lb_repo.update(db_apis.get_session(), load_balancer_id,
+                                 provisioning_status=constants.PENDING_UPDATE)
+
+            amps = lb.amphorae
+            for amp in amps:
+                # failover amphora in backup role
+                # Note: this amp may not currently be the backup
+                # TODO(johnsom) Change this to query the amp state
+                #               once the amp API supports it.
+                if amp.role == constants.ROLE_BACKUP:
+                    self._perform_amphora_failover(
+                        amp, constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
+
+            for amp in amps:
+                # failover everyhting else
+                if amp.role != constants.ROLE_BACKUP:
+                    self._perform_amphora_failover(
+                        amp, constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
+
+            self._lb_repo.update(
+                db_apis.get_session(), load_balancer_id,
+                provisioning_status=constants.ACTIVE)
+
+        except Exception as e:
+            with excutils.save_and_reraise_exception():
+                LOG.error("LB %(lbid)s failover exception: %(exc)s",
+                          {'libid': load_balancer_id, 'exc': e})
+                self._lb_repo.update(
+                    db_apis.get_session(), load_balancer_id,
+                    provisioning_status=constants.ERROR)
 
     def amphora_cert_rotation(self, amphora_id):
         """Perform cert rotation for an amphora.

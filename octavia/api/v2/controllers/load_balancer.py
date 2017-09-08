@@ -457,13 +457,16 @@ class LoadBalancersController(base.BaseController):
         the request to the StatusesController.
         """
         if id and len(remainder) and (remainder[0] == 'status' or
-                                      remainder[0] == 'stats'):
+                                      remainder[0] == 'stats' or
+                                      remainder[0] == 'failover'):
             controller = remainder[0]
             remainder = remainder[1:]
             if controller == 'status':
                 return StatusController(lb_id=id), remainder
             elif controller == 'stats':
                 return StatisticsController(lb_id=id), remainder
+            elif controller == 'failover':
+                return FailoverController(lb_id=id), remainder
 
 
 class StatusController(base.BaseController):
@@ -519,3 +522,30 @@ class StatisticsController(base.BaseController, stats.StatsMixin):
         result = self._convert_db_to_type(
             lb_stats, lb_types.LoadBalancerStatisticsResponse)
         return lb_types.StatisticsRootResponse(stats=result)
+
+
+class FailoverController(LoadBalancersController):
+
+    def __init__(self, lb_id):
+        super(FailoverController, self).__init__()
+        self.lb_id = lb_id
+
+    @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
+    def put(self, **kwargs):
+        """Fails over a loadbalancer"""
+        context = pecan.request.context.get('octavia_context')
+        db_lb = self._get_db_lb(context.session, self.lb_id)
+
+        self._auth_validate_action(context, db_lb.project_id,
+                                   constants.RBAC_PUT_FAILOVER)
+
+        self._test_lb_status(context.session, self.lb_id)
+        try:
+            LOG.info("Sending failover request for lb %s to the handler",
+                     self.lb_id)
+            self.handler.failover(db_lb)
+        except Exception:
+            with excutils.save_and_reraise_exception(reraise=False):
+                self.repositories.load_balancer.update(
+                    context.session, self.lb_id,
+                    provisioning_status=constants.ERROR)

@@ -108,6 +108,17 @@ class LoadBalancerProducer(BaseProducer):
         method_name = "delete_{0}".format(self.payload_class)
         self.client.cast({}, method_name, **kw)
 
+    def failover(self, data_model):
+        """sends a failover message to the controller via oslo.messaging
+
+        :param data_model:
+        """
+        model_id = getattr(data_model, 'id', None)
+        p_class = self.payload_class
+        kw = {"{0}_id".format(p_class): model_id}
+        method_name = "failover_{0}".format(self.payload_class)
+        self.client.cast({}, method_name, **kw)
+
 
 class ListenerProducer(BaseProducer):
     """Sends updates,deletes and creates to the RPC end of the queue consumer
