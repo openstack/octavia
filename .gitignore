@@ -21,6 +21,7 @@ setuptools*.egg/
 subunit.log
 tempest.log
 .testrepository
+.stestr
 .tox/
 .venv/
 *.mo
