@@ -554,13 +554,14 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         """
         l7rule = self._l7rule_repo.get(db_apis.get_session(),
                                        id=l7rule_id)
-
-        listeners = [l7rule.l7policy.listener]
-        load_balancer = l7rule.l7policy.listener.load_balancer
+        l7policy = l7rule.l7policy
+        listeners = [l7policy.listener]
+        load_balancer = l7policy.listener.load_balancer
 
         create_l7rule_tf = self._taskflow_load(
             self._l7rule_flows.get_create_l7rule_flow(),
             store={constants.L7RULE: l7rule,
+                   constants.L7POLICY: l7policy,
                    constants.LISTENERS: listeners,
                    constants.LOADBALANCER: load_balancer})
         with tf_logging.DynamicLoggingListener(create_l7rule_tf,
@@ -576,13 +577,14 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         """
         l7rule = self._l7rule_repo.get(db_apis.get_session(),
                                        id=l7rule_id)
-
-        load_balancer = l7rule.l7policy.listener.load_balancer
-        listeners = [l7rule.l7policy.listener]
+        l7policy = l7rule.l7policy
+        load_balancer = l7policy.listener.load_balancer
+        listeners = [l7policy.listener]
 
         delete_l7rule_tf = self._taskflow_load(
             self._l7rule_flows.get_delete_l7rule_flow(),
             store={constants.L7RULE: l7rule,
+                   constants.L7POLICY: l7policy,
                    constants.LISTENERS: listeners,
                    constants.LOADBALANCER: load_balancer})
         with tf_logging.DynamicLoggingListener(delete_l7rule_tf,
@@ -599,13 +601,14 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         """
         l7rule = self._l7rule_repo.get(db_apis.get_session(),
                                        id=l7rule_id)
-
-        listeners = [l7rule.l7policy.listener]
-        load_balancer = l7rule.l7policy.listener.load_balancer
+        l7policy = l7rule.l7policy
+        listeners = [l7policy.listener]
+        load_balancer = l7policy.listener.load_balancer
 
         update_l7rule_tf = self._taskflow_load(
             self._l7rule_flows.get_update_l7rule_flow(),
             store={constants.L7RULE: l7rule,
+                   constants.L7POLICY: l7policy,
                    constants.LISTENERS: listeners,
                    constants.LOADBALANCER: load_balancer,
                    constants.UPDATE_DICT: l7rule_updates})

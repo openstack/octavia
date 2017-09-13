@@ -994,6 +994,7 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
+                                           constants.L7POLICY: _l7policy_mock,
                                            constants.LISTENERS:
                                                [_listener_mock],
                                            constants.LOADBALANCER:
@@ -1026,6 +1027,7 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
+                                           constants.L7POLICY: _l7policy_mock,
                                            constants.LISTENERS:
                                                [_listener_mock],
                                            constants.LOADBALANCER:
@@ -1058,6 +1060,7 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
+                                           constants.L7POLICY: _l7policy_mock,
                                            constants.LISTENERS:
                                                [_listener_mock],
                                            constants.LOADBALANCER:

@@ -36,7 +36,7 @@ class TestL7RuleFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, l7rule_flow.requires)
         self.assertIn(constants.LOADBALANCER, l7rule_flow.requires)
 
-        self.assertEqual(3, len(l7rule_flow.requires))
+        self.assertEqual(4, len(l7rule_flow.requires))
         self.assertEqual(0, len(l7rule_flow.provides))
 
     def test_get_delete_l7rule_flow(self):
@@ -49,7 +49,7 @@ class TestL7RuleFlows(base.TestCase):
         self.assertIn(constants.LOADBALANCER, l7rule_flow.requires)
         self.assertIn(constants.L7RULE, l7rule_flow.requires)
 
-        self.assertEqual(3, len(l7rule_flow.requires))
+        self.assertEqual(4, len(l7rule_flow.requires))
         self.assertEqual(0, len(l7rule_flow.provides))
 
     def test_get_update_l7rule_flow(self):
@@ -63,5 +63,5 @@ class TestL7RuleFlows(base.TestCase):
         self.assertIn(constants.LOADBALANCER, l7rule_flow.requires)
         self.assertIn(constants.UPDATE_DICT, l7rule_flow.requires)
 
-        self.assertEqual(4, len(l7rule_flow.requires))
+        self.assertEqual(5, len(l7rule_flow.requires))
         self.assertEqual(0, len(l7rule_flow.provides))
