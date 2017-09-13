@@ -16,9 +16,8 @@ git clone https://github.com/openstack-dev/devstack.git $HOME/devstack
 
 cat <<EOF > $HOME/devstack/localrc
 enable_plugin barbican https://review.openstack.org/openstack/barbican
-enable_plugin neutron-lbaas https://review.openstack.org/openstack/neutron-lbaas
 enable_plugin octavia https://review.openstack.org/openstack/octavia
-LIBS_FROM_GIT+=python-neutronclient
+LIBS_FROM_GIT+=python-octaviaclient
 
 KEYSTONE_TOKEN_FORMAT=UUID
 
@@ -41,10 +40,6 @@ ENABLED_SERVICES+=,placement-api,placement-client
 ENABLED_SERVICES+=,g-api,g-reg
 # Neutron
 ENABLED_SERVICES+=,q-svc,q-agt,q-dhcp,q-l3,q-meta,neutron
-# Enable LBaaS V2
-ENABLED_SERVICES+=,q-lbaasv2
-# Cinder (optional)
-#ENABLED_SERVICES+=,cinder,c-api,c-vol,c-sch
 # Tempest (optional)
 #ENABLED_SERVICES+=,tempest
 # Octavia
