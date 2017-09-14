@@ -12,7 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from barbicanclient import client as barbican_client
+from barbicanclient.v1 import containers
+from barbicanclient.v1 import secrets
 import mock
 import six
 
@@ -24,19 +25,19 @@ import octavia.tests.unit.common.sample_configs.sample_certs as sample
 class TestBarbicanCert(base.TestCase):
 
     def _prepare(self):
-        self.certificate_secret = barbican_client.secrets.Secret(
+        self.certificate_secret = secrets.Secret(
             api=mock.MagicMock(),
             payload=self.certificate
         )
-        self.intermediates_secret = barbican_client.secrets.Secret(
+        self.intermediates_secret = secrets.Secret(
             api=mock.MagicMock(),
             payload=sample.X509_IMDS
         )
-        self.private_key_secret = barbican_client.secrets.Secret(
+        self.private_key_secret = secrets.Secret(
             api=mock.MagicMock(),
             payload=self.private_key
         )
-        self.private_key_passphrase_secret = barbican_client.secrets.Secret(
+        self.private_key_passphrase_secret = secrets.Secret(
             api=mock.MagicMock(),
             payload=self.private_key_passphrase
         )
@@ -49,7 +50,7 @@ class TestBarbicanCert(base.TestCase):
         self.private_key_passphrase = sample.X509_CERT_KEY_PASSPHRASE
         self._prepare()
 
-        container = barbican_client.containers.CertificateContainer(
+        container = containers.CertificateContainer(
             api=mock.MagicMock(),
             certificate=self.certificate_secret,
             intermediates=self.intermediates_secret,
@@ -78,7 +79,7 @@ class TestBarbicanCert(base.TestCase):
             sample.X509_CERT_KEY_PASSPHRASE)
         self._prepare()
 
-        container = barbican_client.containers.CertificateContainer(
+        container = containers.CertificateContainer(
             api=mock.MagicMock(),
             certificate=self.certificate_secret,
             intermediates=self.intermediates_secret,

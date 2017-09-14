@@ -44,7 +44,7 @@ class TestLocalManager(base.TestCase):
         with mock.patch('os.open', open_mock), mock.patch.object(
                 os, 'fdopen', fd_mock):
             cert_id = local_cert_mgr.LocalCertManager.store_cert(
-                None,
+                context=None,
                 certificate=self.certificate,
                 intermediates=self.intermediates,
                 private_key=self.private_key,

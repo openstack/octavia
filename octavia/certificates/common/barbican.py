@@ -19,7 +19,7 @@ Common classes for Barbican certificate handling
 
 import abc
 
-from barbicanclient import client as barbican_client
+from barbicanclient.v1 import containers
 from oslo_utils import encodeutils
 import six
 
@@ -31,8 +31,7 @@ from octavia.i18n import _
 class BarbicanCert(cert.Cert):
     """Representation of a Cert based on the Barbican CertificateContainer."""
     def __init__(self, cert_container):
-        if not isinstance(cert_container,
-                          barbican_client.containers.CertificateContainer):
+        if not isinstance(cert_container, containers.CertificateContainer):
             raise TypeError(_("Retrieved Barbican Container is not of the "
                               "correct type (certificate)."))
         self._cert_container = cert_container

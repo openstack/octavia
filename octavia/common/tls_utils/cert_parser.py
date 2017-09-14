@@ -18,6 +18,7 @@ import base64
 from cryptography.hazmat import backends
 from cryptography.hazmat.primitives import serialization
 from cryptography import x509
+from oslo_context import context as oslo_context
 from oslo_log import log as logging
 from pyasn1.codec.der import decoder as der_decoder
 from pyasn1.codec.der import encoder as der_encoder
@@ -332,23 +333,25 @@ def build_pem(tls_container):
     return b'\n'.join(pem) + b'\n'
 
 
-def load_certificates_data(cert_mngr, listener):
+def load_certificates_data(cert_mngr, listener, context=None):
     """Load TLS certificate data from the listener.
 
     return TLS_CERT and SNI_CERTS
     """
     tls_cert = None
     sni_certs = []
+    if not context:
+        context = oslo_context.RequestContext(project_id=listener.project_id)
 
     if listener.tls_certificate_id:
         tls_cert = _map_cert_tls_container(
-            cert_mngr.get_cert(listener.project_id,
+            cert_mngr.get_cert(context,
                                listener.tls_certificate_id,
                                check_only=True))
     if listener.sni_containers:
         for sni_cont in listener.sni_containers:
             cert_container = _map_cert_tls_container(
-                cert_mngr.get_cert(listener.project_id,
+                cert_mngr.get_cert(context,
                                    sni_cont.tls_container_id,
                                    check_only=True))
             sni_certs.append(cert_container)

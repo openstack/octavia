@@ -245,17 +245,21 @@ default_pool_id-optional:
   type: string
 default_tls_container_ref:
   description: |
-    The URI to the `key manager service
-    <https://docs.openstack.org/barbican/latest/>`__ secrets container
-    containing the certificate and key for ``TERMINATED_TLS`` listeners.
+    The URI of the `key manager service
+    <https://docs.openstack.org/castellan/latest/>`__ secret containing a
+    PKCS12 format certificate/key bundle for ``TERMINATED_TLS`` listeners.
+    DEPRECATED: A secret container of type "certificate" containing the
+    certificate and key for ``TERMINATED_TLS`` listeners.
   in: body
   required: true
   type: string
 default_tls_container_ref-optional:
   description: |
-    The URI to the `key manager service
-    <https://docs.openstack.org/barbican/latest/>`__ secrets container
-    containing the certificate and key for ``TERMINATED_TLS`` listeners.
+    The URI of the `key manager service
+    <https://docs.openstack.org/castellan/latest/>`__ secret containing a
+    PKCS12 format certificate/key bundle for ``TERMINATED_TLS`` listeners.
+    DEPRECATED: A secret container of type "certificate" containing the
+    certificate and key for ``TERMINATED_TLS`` listeners.
   in: body
   required: false
   type: string
@@ -963,18 +967,20 @@ session_persistence_type:
 sni_container_refs:
   description: |
     A list of URIs to the `key manager service
-    <https://docs.openstack.org/barbican/latest/>`__ secrets containers
-    containing the certificates and keys for ``TERMINATED_TLS`` the listener
-    using Server Name Indication.
+    <https://docs.openstack.org/barbican/latest/>`__ secrets containing
+    PKCS12 format certificate/key bundles for ``TERMINATED_TLS`` listeners.
+    (DEPRECATED) Secret containers of type "certificate" containing the
+    certificates and keys for ``TERMINATED_TLS`` listeners.
   in: body
   required: true
   type: array
 sni_container_refs-optional:
   description: |
     A list of URIs to the `key manager service
-    <https://docs.openstack.org/barbican/latest/>`__ secrets containers
-    containing the certificates and keys for ``TERMINATED_TLS`` the listener
-    using Server Name Indication.
+    <https://docs.openstack.org/barbican/latest/>`__ secrets containing
+    PKCS12 format certificate/key bundles for ``TERMINATED_TLS`` listeners.
+    (DEPRECATED) Secret containers of type "certificate" containing the
+    certificates and keys for ``TERMINATED_TLS`` listeners.
   in: body
   required: false
   type: array

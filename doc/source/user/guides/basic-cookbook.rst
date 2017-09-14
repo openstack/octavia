@@ -365,34 +365,30 @@ balancer features, like Layer 7 features and header manipulation.
 
 * Back-end servers 192.0.2.10 and 192.0.2.11 on subnet *private-subnet* have
   been configured with regular HTTP application on TCP port 80.
-* These back-end servers have been configured with a health check at the URL
-  path "/healthcheck". See :ref:`http-heath-monitors` below.
 * Subnet *public-subnet* is a shared external subnet created by the cloud
   operator which is reachable from the internet.
 * A TLS certificate, key, and intermediate certificate chain for
   www.example.com have been obtained from an external certificate authority.
-  These now exist in the files server.crt, server.key, and ca-chain.p7b in the
+  These now exist in the files server.crt, server.key, and ca-chain.crt in the
   current directory. The key and certificate are PEM-encoded, and the
-  intermediate certificate chain is PKCS7 PEM encoded. The key is not encrypted
-  with a passphrase.
+  intermediate certificate chain is multiple PEM-encoded certs concatenated
+  together. The key is not encrypted with a passphrase.
 * The *admin* user on this cloud installation has keystone ID *admin_id*
 * We want to configure a TLS-terminated HTTPS load balancer that is accessible
   from the internet using the key and certificate mentioned above, which
   distributes requests to the back-end servers over the non-encrypted HTTP
   protocol.
+* Octavia is configured to use barbican for key management.
 
 **Solution**:
 
-1. Create barbican *secret* resources for the certificate, key, and
-   intermediate certificate chain. We will call these *cert1*, *key1*, and
-   *intermediates1* respectively.
-2. Create a *secret container* resource combining all of the above. We will
-   call this *tls_container1*.
-3. Grant the *admin* user access to all the *secret* and *secret container*
-   barbican resources above.
+1. Combine the individual cert/key/intermediates to a single PKCS12 file.
+2. Create a barbican *secret* resource for the PKCS12 file. We will call
+   this *tls_secret1*.
+3. Grant the *admin* user access to the *tls_secret1* barbican resource.
 4. Create load balancer *lb1* on subnet *public-subnet*.
 5. Create listener *listener1* as a TERMINATED_HTTPS listener referencing
-   *tls_container1* as its default TLS container.
+   *tls_secret1* as its default TLS container.
 6. Create pool *pool1* as *listener1*'s default pool.
 7. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
 
@@ -400,21 +396,16 @@ balancer features, like Layer 7 features and header manipulation.
 
 ::
 
-    openstack secret store --name='cert1' --payload-content-type='text/plain' --payload="$(cat server.crt)"
-    openstack secret store --name='key1' --payload-content-type='text/plain' --payload="$(cat server.key)"
-    openstack secret store --name='intermediates1' --payload-content-type='text/plain' --payload="$(cat ca-chain.p7b)"
-    openstack secret container create --name='tls_container1' --type='certificate' --secret="certificate=$(openstack secret list | awk '/ cert1 / {print $2}')" --secret="private_key=$(openstack secret list | awk '/ key1 / {print $2}')" --secret="intermediates=$(openstack secret list | awk '/ intermediates1 / {print $2}')"
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ cert1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ key1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ intermediates1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_container1 / {print $2}')
-    neutron lbaas-loadbalancer-create --name lb1 public-subnet
+    openssl pkcs12 -export -inkey server.key -in server.crt -certfile ca-chain.crt -passout pass: -out server.p12
+    openstack secret store --name='tls_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server.p12)"
+    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_secret1 / {print $2}')
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    neutron lbaas-loadbalancer-show lb1
-    neutron lbaas-listener-create --loadbalancer lb1 --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret container list | awk '/ tls_container1 / {print $2}')
-    neutron lbaas-pool-create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}' lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
 
 
 Deploy a TLS-terminated HTTPS load balancer with SNI
@@ -427,18 +418,15 @@ listener using Server Name Indication (SNI) technology.
 
 * Back-end servers 192.0.2.10 and 192.0.2.11 on subnet *private-subnet* have
   been configured with regular HTTP application on TCP port 80.
-* These back-end servers have been configured with a health check at the URL
-  path "/healthcheck". See :ref:`http-heath-monitors` below.
 * Subnet *public-subnet* is a shared external subnet created by the cloud
   operator which is reachable from the internet.
 * TLS certificates, keys, and intermediate certificate chains for
   www.example.com and www2.example.com have been obtained from an external
   certificate authority. These now exist in the files server.crt, server.key,
-  ca-chain.p7b, server2.crt, server2-encrypted.key, and ca-chain2.p7b in the
+  ca-chain.crt, server2.crt, server2.key, and ca-chain2.crt in the
   current directory. The keys and certificates are PEM-encoded, and the
-  intermediate certificate chains are PKCS7 PEM encoded.
-* The key for www.example.com is not encrypted with a passphrase.
-* The key for www2.example.com is encrypted with the passphrase "abc123".
+  intermediate certificate chains are multiple certs PEM-encoded and
+  concatenated together. Neither key is encrypted with a passphrase.
 * The *admin* user on this cloud installation has keystone ID *admin_id*
 * We want to configure a TLS-terminated HTTPS load balancer that is accessible
   from the internet using the keys and certificates mentioned above, which
@@ -449,50 +437,34 @@ listener using Server Name Indication (SNI) technology.
 
 **Solution**:
 
-1. Create barbican *secret* resources for the certificates, keys, and
-   intermediate certificate chains. We will call these *cert1*, *key1*,
-   *intermediates1*, *cert2*, *key2* and *intermediates2* respectively.
-2. Create a barbican *secret* resource *passphrase2* for the passphrase for
-   *key2*
-3. Create *secret container* resources combining the above appropriately. We
-   will call these *tls_container1* and *tls_container2*.
-4. Grant the *admin* user access to all the *secret* and *secret container*
-   barbican resources above.
-5. Create load balancer *lb1* on subnet *public-subnet*.
-6. Create listener *listener1* as a TERMINATED_HTTPS listener referencing
-   *tls_container1* as its default TLS container, and referencing both
-   *tls_container1* and *tls_container2* using SNI.
-7. Create pool *pool1* as *listener1*'s default pool.
-8. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
+1. Combine the individual cert/key/intermediates to single PKCS12 files.
+2. Create barbican *secret* resources for the PKCS12 files. We will call them
+   *tls_secret1* and *tls_secret2*.
+3. Grant the *admin* user access to both *tls_secret* barbican resources.
+4. Create load balancer *lb1* on subnet *public-subnet*.
+5. Create listener *listener1* as a TERMINATED_HTTPS listener referencing
+   *tls_secret1* as its default TLS container, and referencing both
+   *tls_secret1* and *tls_secret2* using SNI.
+6. Create pool *pool1* as *listener1*'s default pool.
+7. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
 
 **CLI commands**:
 
 ::
 
-    openstack secret store --name='cert1' --payload-content-type='text/plain' --payload="$(cat server.crt)"
-    openstack secret store --name='key1' --payload-content-type='text/plain' --payload="$(cat server.key)"
-    openstack secret store --name='intermediates1' --payload-content-type='text/plain' --payload="$(cat ca-chain.p7b)"
-    openstack secret container create --name='tls_container1' --type='certificate' --secret="certificate=$(openstack secret list | awk '/ cert1 / {print $2}')" --secret="private_key=$(openstack secret list | awk '/ key1 / {print $2}')" --secret="intermediates=$(openstack secret list | awk '/ intermediates1 / {print $2}')"
-    openstack secret store --name='cert2' --payload-content-type='text/plain' --payload="$(cat server2.crt)"
-    openstack secret store --name='key2' --payload-content-type='text/plain' --payload="$(cat server2-encrypted.key)"
-    openstack secret store --name='intermediates2' --payload-content-type='text/plain' --payload="$(cat ca-chain2.p7b)"
-    openstack secret store --name='passphrase2' --payload-content-type='text/plain' --payload="abc123"
-    openstack secret container create --name='tls_container2' --type='certificate' --secret="certificate=$(openstack secret list | awk '/ cert2 / {print $2}')" --secret="private_key=$(openstack secret list | awk '/ key2 / {print $2}')" --secret="intermediates=$(openstack secret list | awk '/ intermediates2 / {print $2}')" --secret="private_key_passphrase=$(openstack secret list | awk '/ passphrase2 / {print $2}')"
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ cert1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ key1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ intermediates1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_container1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ cert2 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ key2 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ intermediates2 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_container2 / {print $2}')
-    neutron lbaas-loadbalancer-create --name lb1 public-subnet
+    openssl pkcs12 -export -inkey server.key -in server.crt -certfile ca-chain.crt -passout pass: -out server.p12
+    openssl pkcs12 -export -inkey server2.key -in server2.crt -certfile ca-chain2.crt -passout pass: -out server2.p12
+    openstack secret store --name='tls_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server.p12)"
+    openstack secret store --name='tls_secret2' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server2.p12)"
+    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_secret1 / {print $2}')
+    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_secret2 / {print $2}')
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    neutron lbaas-loadbalancer-show lb1
-    neutron lbaas-listener-create --loadbalancer lb1 --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret container list | awk '/ tls_container1 / {print $2}') --sni-container_refs $(openstack secret container list | awk '/ tls_container1 / {print $2}') $(openstack secret container list | awk '/ tls_container2 / {print $2}')
-    neutron lbaas-pool-create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}' --sni-container_refs $(openstack secret list | awk '/ tls_secret1 / {print $2}') $(openstack secret list | awk '/ tls_secret2 / {print $2}') lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
 
 
 Deploy HTTP and TLS-terminated HTTPS load balancing on the same IP and backend
@@ -512,16 +484,14 @@ HTTP just get redirected to the HTTPS listener), then please see `the example
 
 * Back-end servers 192.0.2.10 and 192.0.2.11 on subnet *private-subnet* have
   been configured with regular HTTP application on TCP port 80.
-* These back-end servers have been configured with a health check at the URL
-  path "/healthcheck". See :ref:`http-heath-monitors` below.
 * Subnet *public-subnet* is a shared external subnet created by the cloud
   operator which is reachable from the internet.
 * A TLS certificate, key, and intermediate certificate chain for
   www.example.com have been obtained from an external certificate authority.
-  These now exist in the files server.crt, server.key, and ca-chain.p7b in the
+  These now exist in the files server.crt, server.key, and ca-chain.crt in the
   current directory. The key and certificate are PEM-encoded, and the
-  intermediate certificate chain is PKCS7 PEM encoded. The key is not encrypted
-  with a passphrase.
+  intermediate certificate chain is multiple PEM-encoded certs concatenated
+  together. The key is not encrypted with a passphrase.
 * The *admin* user on this cloud installation has keystone ID *admin_id*
 * We want to configure a TLS-terminated HTTPS load balancer that is accessible
   from the internet using the key and certificate mentioned above, which
@@ -533,16 +503,13 @@ HTTP just get redirected to the HTTPS listener), then please see `the example
 
 **Solution**:
 
-1. Create barbican *secret* resources for the certificate, key, and
-   intermediate certificate chain. We will call these *cert1*, *key1*, and
-   *intermediates1* respectively.
-2. Create a *secret container* resource combining all of the above. We will
-   call this *tls_container1*.
-3. Grant the *admin* user access to all the *secret* and *secret container*
-   barbican resources above.
+1. Combine the individual cert/key/intermediates to a single PKCS12 file.
+2. Create a barbican *secret* resource for the PKCS12 file. We will call
+   this *tls_secret1*.
+3. Grant the *admin* user access to the *tls_secret1* barbican resource.
 4. Create load balancer *lb1* on subnet *public-subnet*.
 5. Create listener *listener1* as a TERMINATED_HTTPS listener referencing
-   *tls_container1* as its default TLS container.
+   *tls_secret1* as its default TLS container.
 6. Create pool *pool1* as *listener1*'s default pool.
 7. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
 8. Create listener *listener2* as an HTTP listener with *pool1* as its
@@ -552,22 +519,18 @@ HTTP just get redirected to the HTTPS listener), then please see `the example
 
 ::
 
-    openstack secret store --name='cert1' --payload-content-type='text/plain' --payload="$(cat server.crt)"
-    openstack secret store --name='key1' --payload-content-type='text/plain' --payload="$(cat server.key)"
-    openstack secret store --name='intermediates1' --payload-content-type='text/plain' --payload="$(cat ca-chain.p7b)"
-    openstack secret container create --name='tls_container1' --type='certificate' --secret="certificate=$(openstack secret list | awk '/ cert1 / {print $2}')" --secret="private_key=$(openstack secret list | awk '/ key1 / {print $2}')" --secret="intermediates=$(openstack secret list | awk '/ intermediates1 / {print $2}')"
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ cert1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ key1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ intermediates1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_container1 / {print $2}')
-    neutron lbaas-loadbalancer-create --name lb1 public-subnet
+    openssl pkcs12 -export -inkey server.key -in server.crt -certfile ca-chain.crt -passout pass: -out server.p12
+    openstack secret store --name='tls_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server.p12)"
+    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_secret1 / {print $2}')
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    neutron lbaas-loadbalancer-show lb1
-    neutron lbaas-listener-create --loadbalancer lb1 --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret container list | awk '/ tls_container1 / {print $2}')
-    neutron lbaas-pool-create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.11 --protocol-port 80 pool1
-    neutron lbaas-listener-create --name listener2 --loadbalancer lb1 --protocol HTTP --protocol-port 80 --default-pool pool1
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}' lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack secret store --name='tls_secret1' --payload-content-type='text/plain' --payload="$(cat server.crt)"
+    openstack loadbalancer listener create --protocol-port 80 --protocol HTTP --name listener2 --default-pool pool1 lb1
 
 
 .. _heath-monitor-best-practices:
@@ -691,39 +654,33 @@ blocks of 64-character lines of ASCII text (that will look like gobbedlygook to
 a human). These files are also typically named with a ``.crt`` or ``.pem``
 extension.
 
-To upload this type of intermediates chain to barbican, run a command similar
-to the following (assuming "intermediates-chain.pem" is the name of the file):
-
-::
-
-    openstack secret store --name='intermediates1' --payload-content-type='text/plain' --payload="$(cat intermediates-chain.pem)"
-
 DER-encoded chains
 ------------------
 If the intermediates chain provided to you is a file that contains what appears
 to be random binary data, it is likely that it is a PKCS7 chain in DER format.
-These files also may be named with a ``.p7b`` extension. In order to use this
-intermediates chain, you can either convert it to a series of PEM-encoded
-certificates with the following command:
+These files also may be named with a ``.p7b`` extension.
+
+You may use the binary DER file as-is when building your PKCS12 bundle:
 
 ::
 
-    openssl pkcs7 -in intermediates-chain.p7b -inform DER -print_certs -out intermediates-chain.pem
+   openssl pkcs12 -export -inkey server.key -in server.crt -certfile ca-chain.p7b -passout pass: -out server.p12
 
-...or convert it into a PEM-encoded PKCS7 bundle with the following command:
-
-::
-
-    openssl pkcs7 -in intermediates-chain.p7b -inform DER -outform PEM -out intermediates-chain.pem
-
-...or simply upload the binary DER file to barbican without conversion:
+... or you can convert it to a series of PEM-encoded certificates:
 
 ::
 
-    openstack secret store --name='intermediates1' --payload-content-type='application/octet-stream' --payload-content-encoding='base64' --payload="$(cat intermediates-chain.p7b | base64)"
+    openssl pkcs7 -in intermediates-chain.p7b -inform DER -print_certs -out intermediates-chain.crt
 
-In any case, if the file is not a PKCS7 DER bundle, then either of the above
-two openssl commands will fail.
+... or you can convert it to a PEM-encoded PKCS7 bundle:
+
+::
+
+    openssl pkcs7 -in intermediates-chain.p7b -inform DER -outform PEM -out intermediates-chain.crt
+
+
+If the file is not a PKCS7 DER bundle, either of the two ``openssl pkcs7``
+commands will fail.
 
 Further reading
 ===============

@@ -1,0 +1,21 @@
+---
+features:
+  - |
+    Users can now use a reference to a single PKCS12 bundle as their
+    `default_tls_container_ref` instead of a Barbican container with
+    individual secret objects. PKCS12 supports bundling a private key,
+    certificate, and intermediates. Private keys can no longer be passphrase
+    protected when using PKCS12 bundles.
+    No configuration change is necessary to enable this feature. Users may
+    simply begin using this. Any use of the old style containers will be
+    detected and automatically fall back to using the old Barbican driver.
+  - |
+    Certificate bundles can now be stored in any backend Castellan supports,
+    and can be retrieved via a Castellan driver, even if Barbican is not
+    deployed.
+security:
+  - |
+    Private keys can no longer be password protected, as PKCS12 does not
+    support storing a passphrase in an explicitly defined way. Note that this
+    is not noticeably less secure than storing a passphrase protected private
+    key in the same place as the passphrase, as was the case with Barbican.

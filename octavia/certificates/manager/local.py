@@ -31,14 +31,14 @@ class LocalCertManager(cert_mgr.CertManager):
     """Cert Manager Interface that stores data locally."""
 
     @staticmethod
-    def store_cert(project_id, certificate, private_key, intermediates=None,
+    def store_cert(context, certificate, private_key, intermediates=None,
                    private_key_passphrase=None, **kwargs):
         """Stores (i.e., registers) a cert with the cert manager.
 
         This method stores the specified cert to the filesystem and returns
         a UUID that can be used to retrieve it.
 
-        :param project_id: Ignored in this implementation
+        :param context: Ignored in this implementation
         :param certificate: PEM encoded TLS certificate
         :param private_key: private key for the supplied certificate
         :param intermediates: ordered and concatenated intermediate certs
@@ -82,10 +82,10 @@ class LocalCertManager(cert_mgr.CertManager):
         return cert_ref
 
     @staticmethod
-    def get_cert(project_id, cert_ref, **kwargs):
+    def get_cert(context, cert_ref, **kwargs):
         """Retrieves the specified cert.
 
-        :param project_id: Ignored in this implementation
+        :param context: Ignored in this implementation
         :param cert_ref: the UUID of the cert to retrieve
 
         :return: octavia.certificates.common.Cert representation of the
@@ -134,10 +134,10 @@ class LocalCertManager(cert_mgr.CertManager):
         return local_common.LocalCert(**cert_data)
 
     @staticmethod
-    def delete_cert(project_id, cert_ref, **kwargs):
+    def delete_cert(context, cert_ref, **kwargs):
         """Deletes the specified cert.
 
-        :param project_id: Ignored in this implementation
+        :param context: Ignored in this implementation
         :param cert_ref: the UUID of the cert to delete
 
         :raises CertificateStorageException: if certificate deletion fails

@@ -134,18 +134,20 @@ class TestTLSParseUtils(base.TestCase):
     def test_load_certificates(self):
         listener = sample_configs.sample_listener_tuple(tls=True, sni=True)
         client = mock.MagicMock()
+        context = mock.Mock()
+        context.project_id = '12345'
         with mock.patch.object(cert_parser,
                                'get_host_names') as cp:
             with mock.patch.object(cert_parser,
                                    '_map_cert_tls_container'):
                 cp.return_value = {'cn': 'fakeCN'}
-                cert_parser.load_certificates_data(client, listener)
+                cert_parser.load_certificates_data(client, listener, context)
 
                 # Ensure upload_cert is called three times
                 calls_cert_mngr = [
-                    mock.call.get_cert('12345', 'cont_id_1', check_only=True),
-                    mock.call.get_cert('12345', 'cont_id_2', check_only=True),
-                    mock.call.get_cert('12345', 'cont_id_3', check_only=True)
+                    mock.call.get_cert(context, 'cont_id_1', check_only=True),
+                    mock.call.get_cert(context, 'cont_id_2', check_only=True),
+                    mock.call.get_cert(context, 'cont_id_3', check_only=True)
                 ]
                 client.assert_has_calls(calls_cert_mngr)
 
