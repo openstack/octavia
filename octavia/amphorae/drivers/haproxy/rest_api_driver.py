@@ -12,15 +12,14 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-
 import functools
 import hashlib
-import simplejson
 import time
 import warnings
 
 from oslo_log import log as logging
 import requests
+import simplejson
 import six
 from stevedore import driver as stevedore_driver
 

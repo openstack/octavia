@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import ipaddress
 import time
 
 from neutronclient.common import exceptions as neutron_client_exceptions
@@ -27,9 +28,6 @@ from octavia.network import base
 from octavia.network import data_models as n_data_models
 from octavia.network.drivers.neutron import base as neutron_base
 from octavia.network.drivers.neutron import utils
-
-import ipaddress
-
 
 LOG = logging.getLogger(__name__)
 AAP_EXT_ALIAS = 'allowed-address-pairs'

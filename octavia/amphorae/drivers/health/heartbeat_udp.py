@@ -12,9 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from concurrent import futures
 import socket
 
-from concurrent import futures
 from oslo_config import cfg
 from oslo_log import log as logging
 

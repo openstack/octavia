@@ -12,12 +12,12 @@
 # License for the specific language governing permissions and limitations
 #    under the License.
 
+import ipaddress
 import os
 import re
 import socket
 import subprocess
 
-import ipaddress
 import netifaces
 import pyroute2
 import six
