@@ -140,7 +140,7 @@ class MembersController(base.BaseController):
 
     def _send_member_to_handler(self, session, db_member):
         try:
-            LOG.info("Sending Creation of Pool %s to handler", db_member.id)
+            LOG.info("Sending Creation of Member %s to handler", db_member.id)
             self.handler.create(db_member)
         except Exception:
             with excutils.save_and_reraise_exception(
