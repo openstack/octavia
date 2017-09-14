@@ -45,7 +45,7 @@ failed.
 Octavia follows the best coding and design conventions
 ------------------------------------------------------
 For the most part, Octavia tries to follow the coding standards set forth for
-the OpenStack project in general: http://docs.openstack.org/developer/hacking/
+the OpenStack project in general: https://docs.openstack.org/hacking/latest
 More specific additional standards can be found in the HACKING.rst file in the
 same directory as this constitution.
 

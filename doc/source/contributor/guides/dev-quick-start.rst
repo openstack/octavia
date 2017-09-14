@@ -54,7 +54,7 @@ systems you're running your devstack on have virtualization features enabled
 (Intel VT-x, AMD-V, etc.), and the virtualization software you're using exposes
 these features to the guest VM (sometimes called nested virtualization).
 For more information, see:
-http://docs.openstack.org/developer/devstack/guides/devstack-with-nested-kvm.html
+https://docs.openstack.org/devstack/latest/guides/devstack-with-nested-kvm.html
 
 The devstack environment we recommend should be running Ubuntu Linux 14.04 or
 later. These instructions may work for other Linux operating systems or
