@@ -13,13 +13,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #}
-
-{% macro unicast_peer_macro(peers_vrrp_ips) %}
-{% for amp_vrrp_ip in peers_vrrp_ips %}
-    {{ amp_vrrp_ip }}
-{% endfor %}
-{% endmacro %}
-
 vrrp_script check_script {
   script {{ check_script_path }}
   interval {{ vrrp_check_interval }}
@@ -28,29 +21,31 @@ vrrp_script check_script {
 }
 
 vrrp_instance {{ vrrp_group_name }} {
- state {{ amp_role }}
- interface {{ amp_intf }}
- virtual_router_id {{ amp_vrrp_id }}
- priority {{ amp_priority }}
- nopreempt
- garp_master_refresh {{ vrrp_garp_refresh }}
- garp_master_refresh_repeat {{ vrrp_garp_refresh_repeat }}
- advert_int {{ advert_int }}
- authentication {
-  auth_type {{ vrrp_auth_type }}
-  auth_pass {{ vrrp_auth_pass }}
- }
+  state {{ amp_role }}
+  interface {{ amp_intf }}
+  virtual_router_id {{ amp_vrrp_id }}
+  priority {{ amp_priority }}
+  nopreempt
+  garp_master_refresh {{ vrrp_garp_refresh }}
+  garp_master_refresh_repeat {{ vrrp_garp_refresh_repeat }}
+  advert_int {{ advert_int }}
+  authentication {
+    auth_type {{ vrrp_auth_type }}
+    auth_pass {{ vrrp_auth_pass }}
+  }
 
- unicast_src_ip {{ amp_vrrp_ip }}
- unicast_peer {
-   {{ unicast_peer_macro(peers_vrrp_ips) }}
- }
+  unicast_src_ip {{ amp_vrrp_ip }}
+  unicast_peer {
+{% for amp_vrrp_ip in peers_vrrp_ips %}
+    {{ amp_vrrp_ip }}
+{% endfor %}
+  }
 
- virtual_ipaddress {
-  {{ vip_ip_address }}
- }
- track_script {
+  virtual_ipaddress {
+    {{ vip_ip_address }}
+  }
+  track_script {
     check_script
- }
+  }
 }
 
