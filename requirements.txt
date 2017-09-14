@@ -10,38 +10,38 @@ Babel!=2.4.0,>=2.3.4 # BSD
 requests>=2.14.2 # Apache-2.0
 rfc3986>=0.3.1 # Apache-2.0
 keystoneauth1>=3.2.0 # Apache-2.0
-keystonemiddleware>=4.12.0 # Apache-2.0
+keystonemiddleware>=4.17.0 # Apache-2.0
 python-neutronclient>=6.3.0 # Apache-2.0
 WebOb>=1.7.1 # MIT
 six>=1.9.0 # MIT
 stevedore>=1.20.0 # Apache-2.0
-oslo.config!=4.3.0,!=4.4.0,>=4.0.0 # Apache-2.0
+oslo.config>=4.6.0 # Apache-2.0
 oslo.context>=2.14.0 # Apache-2.0
 oslo.db>=4.24.0 # Apache-2.0
-oslo.i18n!=3.15.2,>=2.1.0 # Apache-2.0
+oslo.i18n>=3.15.3 # Apache-2.0
 oslo.log>=3.30.0 # Apache-2.0
-oslo.messaging!=5.25.0,>=5.24.2 # Apache-2.0
-oslo.middleware>=3.27.0 # Apache-2.0
+oslo.messaging>=5.29.0 # Apache-2.0
+oslo.middleware>=3.31.0 # Apache-2.0
 oslo.policy>=1.23.0 # Apache-2.0
-oslo.reports>=0.6.0 # Apache-2.0
-oslo.utils>=3.20.0 # Apache-2.0
+oslo.reports>=1.18.0 # Apache-2.0
+oslo.utils>=3.28.0 # Apache-2.0
 pyasn1!=0.2.3 # BSD
 pyasn1-modules # BSD
 PyMySQL>=0.7.6 # MIT License
 python-barbicanclient!=4.5.0,!=4.5.1,>=4.0.0 # Apache-2.0
 python-glanceclient>=2.8.0 # Apache-2.0
 python-novaclient>=9.1.0 # Apache-2.0
-pyOpenSSL>=0.14 # Apache-2.0
-WSME>=0.8 # MIT
+pyOpenSSL>=16.2.0 # Apache-2.0
+WSME>=0.8.0 # MIT
 Jinja2!=2.9.0,!=2.9.1,!=2.9.2,!=2.9.3,!=2.9.4,>=2.8 # BSD License (3 clause)
 taskflow>=2.7.0 # Apache-2.0
 diskimage-builder!=1.6.0,!=1.7.0,!=1.7.1,>=1.1.2 # Apache-2.0
-futures>=3.0;python_version=='2.7' or python_version=='2.6'  # BSD
+futures>=3.0;python_version=='2.7' or python_version=='2.6' # BSD
 
 #for the amphora api
 Flask!=0.11,<1.0,>=0.10 # BSD
 netifaces>=0.10.4 # MIT
-ipaddress>=1.0.7;python_version<'3.3' # PSF
-cryptography!=2.0,>=1.6 # BSD/Apache-2.0
+ipaddress>=1.0.16;python_version<'3.3' # PSF
+cryptography!=2.0,>=1.9 # BSD/Apache-2.0
 pyroute2>=0.4.21 # Apache-2.0 (+ dual licensed GPL2)
 gunicorn>=19.0.0 # MIT
