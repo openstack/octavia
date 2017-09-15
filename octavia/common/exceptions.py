@@ -31,11 +31,15 @@ class OctaviaException(Exception):
     with the keyword arguments provided to the constructor.
     """
     message = _("An unknown exception occurred.")
+    orig_msg = None
+    orig_code = None
 
     def __init__(self, *args, **kwargs):
         try:
             if len(args) > 0:
                 self.message = args[0]
+                self.orig_msg = kwargs.get('orig_msg')
+                self.orig_code = kwargs.get('orig_code')
             super(OctaviaException, self).__init__(self.message % kwargs)
             self.msg = self.message % kwargs
         except Exception:

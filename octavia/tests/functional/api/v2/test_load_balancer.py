@@ -433,6 +433,34 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(network.id, api_lb.get('vip_network_id'))
         self.assertEqual(port.id, api_lb.get('vip_port_id'))
 
+    def test_create_neutron_failure(self):
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid())
+        network = network_models.Network(id=uuidutils.generate_uuid(),
+                                         subnets=[subnet])
+        port = network_models.Port(id=uuidutils.generate_uuid(),
+                                   network_id=network.id)
+        lb_json = {
+            'name': 'test1', 'description': 'test1_desc',
+            'vip_address': '10.0.0.1', 'vip_subnet_id': subnet.id,
+            'vip_network_id': network.id, 'vip_port_id': port.id,
+            'admin_state_up': False, 'project_id': self.project_id}
+        body = self._build_body(lb_json)
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_network") as mock_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_port") as mock_get_port, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".allocate_vip") as mock_allocate_vip:
+            mock_get_network.return_value = network
+            mock_get_port.return_value = port
+            mock_allocate_vip.side_effect = TestNeutronException(
+                "octavia_msg", "neutron_msg", 409)
+            response = self.post(self.LBS_PATH, body, status=409)
+        # Make sure the faultstring contains the neutron error and not
+        # the octavia error message
+        self.assertIn("neutron_msg", response.json.get("faultstring"))
+
     def test_create_with_long_name(self):
         lb_json = {'name': 'n' * 256,
                    'vip_subnet_id': uuidutils.generate_uuid(),
@@ -2618,3 +2646,14 @@ class TestLoadBalancerGraph(base.BaseAPITest):
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, res.json)
+
+
+class TestNeutronException(Exception):
+
+    def __init__(self, message, orig_msg, orig_code):
+        self.message = message
+        self.orig_msg = orig_msg
+        self.orig_code = orig_code
+
+    def __str__(self):
+        return repr(self.message)

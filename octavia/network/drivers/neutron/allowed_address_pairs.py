@@ -350,12 +350,15 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             port['port']['fixed_ips'] = [fixed_ip]
         try:
             new_port = self.neutron_client.create_port(port)
-        except Exception:
+        except Exception as e:
             message = _('Error creating neutron port on network '
                         '{network_id}.').format(
                 network_id=load_balancer.vip.network_id)
             LOG.exception(message)
-            raise base.AllocateVIPException(message)
+            raise base.AllocateVIPException(
+                message,
+                orig_msg=getattr(e, 'message', None),
+                orig_code=getattr(e, 'status_code', None))
         new_port = utils.convert_port_dict_to_model(new_port)
         return self._port_to_vip(new_port, load_balancer)
 

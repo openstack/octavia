@@ -199,7 +199,16 @@ class LoadBalancersController(base.BaseController):
     def _create_vip_port_if_not_exist(self, load_balancer_db):
         """Create vip port."""
         network_driver = utils.get_network_driver()
-        vip = network_driver.allocate_vip(load_balancer_db)
+        try:
+            vip = network_driver.allocate_vip(load_balancer_db)
+        except Exception as e:
+            # Convert neutron style exception to octavia style
+            # if the error was API ready
+            if e.orig_code is not None:
+                e.code = e.orig_code
+                e.message = e.orig_msg
+                e.msg = e.orig_msg
+            raise e
         return vip
 
     @wsme_pecan.wsexpose(lb_types.LoadBalancerFullRootResponse,
