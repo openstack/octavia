@@ -50,24 +50,24 @@ class UpdateHealthDb(object):
         self.event_streamer.emit(cnt)
 
     def _update_status_and_emit_event(self, session, repo, entity_type,
-                                      entity_id, new_op_status):
-        entity = repo.get(session, id=entity_id)
+                                      entity_id, new_op_status, old_op_status,
+                                      current_prov_status):
         message = {}
-        if entity.operating_status.lower() != new_op_status.lower():
+        if old_op_status.lower() != new_op_status.lower():
             LOG.debug("%s %s status has changed from %s to "
                       "%s. Updating db and sending event.",
-                      entity_type, entity_id, entity.operating_status,
+                      entity_type, entity_id, old_op_status,
                       new_op_status)
             repo.update(session, entity_id, operating_status=new_op_status)
             if new_op_status == constants.DRAINING:
                 new_op_status = constants.ONLINE
             message.update({constants.OPERATING_STATUS: new_op_status})
         if self.sync_prv_status:
-            LOG.debug("%s %s provisioning_status %s. Updating db and sending"
-                      " event.", entity_type, entity_id,
-                      entity.provisioning_status)
+            LOG.debug("%s %s provisioning_status %s. "
+                      "Updating db and sending event.",
+                      entity_type, entity_id, current_prov_status)
             message.update(
-                {constants.PROVISIONING_STATUS: entity.provisioning_status})
+                {constants.PROVISIONING_STATUS: current_prov_status})
         if message:
             self.emit(entity_type, entity_id, message)
 
@@ -106,14 +106,15 @@ class UpdateHealthDb(object):
 
         # We need to see if all of the listeners are reporting in
         expected_listener_count = 0
-        lbs_on_amp = self.amphora_repo.get_all_lbs_on_amphora(session,
-                                                              health['id'])
-        for lb in lbs_on_amp:
-            listener_count = self.listener_repo.count(session,
-                                                      load_balancer_id=lb.id)
-            expected_listener_count += listener_count
-
+        db_lbs_on_amp = self.amphora_repo.get_all_lbs_on_amphora(session,
+                                                                 health['id'])
         listeners = health['listeners']
+
+        # We need to loop over the lbs here to make sure we update the
+        # amphora_health record as soon as possible to prevent unnecessary
+        # failovers. Unfortunately that means looping over this list twice.
+        for db_lb in db_lbs_on_amp:
+            expected_listener_count += len(db_lb.listeners)
 
         # Do not update amphora health if the reporting listener count
         # does not match the expected listener count
@@ -135,64 +136,123 @@ class UpdateHealthDb(object):
                         {'id': health['id'], 'found': len(listeners),
                          'expected': expected_listener_count})
 
-        # We got a heartbeat so lb is healthy until proven otherwise
-        # TODO(johnsom) Fix this if we have more than one LB on an amp
-        if lbs_on_amp[0].enabled is False:
-            lb_status = constants.OFFLINE
-        else:
-            lb_status = constants.ONLINE
+        for db_lb in db_lbs_on_amp:
 
-        # update listener and nodes db information
-        for listener_id, listener in listeners.items():
+            processed_pools = []
 
-            listener_status = None
-            # OPEN = HAProxy listener status nbconn < maxconn
-            if listener.get('status') == constants.OPEN:
-                listener_status = constants.ONLINE
-            # FULL = HAProxy listener status not nbconn < maxconn
-            elif listener.get('status') == constants.FULL:
-                listener_status = constants.DEGRADED
-                if lb_status == constants.ONLINE:
-                    lb_status = constants.DEGRADED
+            # We got a heartbeat so lb is healthy until proven otherwise
+            if db_lb.enabled is False:
+                lb_status = constants.OFFLINE
             else:
-                LOG.warning(('Listener %(list)s reported status of '
-                            '%(status)s'), {'list': listener_id,
-                            'status': listener.get('status')})
+                lb_status = constants.ONLINE
 
-            try:
-                if listener_status is not None:
-                    self._update_status_and_emit_event(
-                        session, self.listener_repo, constants.LISTENER,
-                        listener_id, listener_status
-                    )
-            except sqlalchemy.orm.exc.NoResultFound:
-                LOG.error("Listener %s is not in DB", listener_id)
+            for db_listener in db_lb.listeners:
+                listener_status = None
+                listener_id = db_listener.id
+                listener = None
 
-            pools = listener['pools']
-            for pool_id, pool in pools.items():
-
-                pool_status = None
-                # UP = HAProxy backend has working or no servers
-                if pool.get('status') == constants.UP:
-                    pool_status = constants.ONLINE
-                # DOWN = HAProxy backend has no working servers
-                elif pool.get('status') == constants.DOWN:
-                    pool_status = constants.ERROR
-                    lb_status = constants.ERROR
+                if listener_id not in listeners:
+                    listener_status = constants.OFFLINE
                 else:
-                    LOG.warning(('Pool %(pool)s reported status of '
-                                '%(status)s'), {'pool': pool_id,
-                                'status': pool.get('status')})
+                    listener = listeners[listener_id]
 
-                # Deal with the members that are reporting from the Amphora
-                members = pool['members']
-                for member_id, status in members.items():
+                    # OPEN = HAProxy listener status nbconn < maxconn
+                    if listener.get('status') == constants.OPEN:
+                        listener_status = constants.ONLINE
+                    # FULL = HAProxy listener status not nbconn < maxconn
+                    elif listener.get('status') == constants.FULL:
+                        listener_status = constants.DEGRADED
+                        if lb_status == constants.ONLINE:
+                            lb_status = constants.DEGRADED
+                    else:
+                        LOG.warning(('Listener %(list)s reported status of '
+                                     '%(status)s'),
+                                    {'list': listener_id,
+                                     'status': listener.get('status')})
 
-                    member_status = None
-                    # Member status can be "UP" or "UP #/#" (transitional)
+                try:
+                    if listener_status is not None:
+                        self._update_status_and_emit_event(
+                            session, self.listener_repo, constants.LISTENER,
+                            listener_id, listener_status,
+                            db_listener.operating_status,
+                            db_listener.provisioning_status
+                        )
+                except sqlalchemy.orm.exc.NoResultFound:
+                    LOG.error("Listener %s is not in DB", listener_id)
+
+                if not listener:
+                    continue
+
+                pools = listener['pools']
+
+                # Process pools bound to listeners
+                for db_pool in db_listener.pools:
+                    lb_status, processed_pools = self._process_pool_status(
+                        session, db_pool, pools, lb_status)
+
+            # Process pools bound to the load balancer
+            for db_pool in db_lb.pools:
+                # Don't re-process pools shared with listeners
+                if db_pool.id in processed_pools:
+                    continue
+                lb_status, processed_pools = self._process_pool_status(
+                    session, db_pool, pools, lb_status)
+
+            # Update the load balancer status last
+            try:
+                self._update_status_and_emit_event(
+                    session, self.loadbalancer_repo,
+                    constants.LOADBALANCER, db_lb.id, lb_status,
+                    db_lb.operating_status, db_lb.provisioning_status
+                )
+            except sqlalchemy.orm.exc.NoResultFound:
+                LOG.error("Load balancer %s is not in DB", db_lb.id)
+
+    def _process_pool_status(self, session, db_pool, pools, lb_status):
+        pool_status = None
+        pool_id = db_pool.id
+
+        processed_pools = []
+
+        if pool_id not in pools:
+            pool_status = constants.OFFLINE
+        else:
+            pool = pools[pool_id]
+
+            processed_pools.append(pool_id)
+
+            # UP = HAProxy backend has working or no servers
+            if pool.get('status') == constants.UP:
+                pool_status = constants.ONLINE
+            # DOWN = HAProxy backend has no working servers
+            elif pool.get('status') == constants.DOWN:
+                pool_status = constants.ERROR
+                lb_status = constants.ERROR
+            else:
+                LOG.warning(('Pool %(pool)s reported status of '
+                            '%(status)s'),
+                            {'pool': pool_id,
+                             'status': pool.get('status')})
+
+            # Deal with the members that are reporting from
+            # the Amphora
+            members = pool['members']
+            for db_member in db_pool.members:
+                member_status = None
+                member_id = db_member.id
+
+                if member_id not in members:
+                    member_status = constants.OFFLINE
+                else:
+                    status = members[member_id]
+
+                    # Member status can be "UP" or "UP #/#"
+                    # (transitional)
                     if status.startswith(constants.UP):
                         member_status = constants.ONLINE
-                    # Member status can be "DOWN" or "DOWN #/#" (transitional)
+                    # Member status can be "DOWN" or "DOWN #/#"
+                    # (transitional)
                     elif status.startswith(constants.DOWN):
                         member_status = constants.ERROR
                         if pool_status == constants.ONLINE:
@@ -206,53 +266,35 @@ class UpdateHealthDb(object):
                     elif status == constants.NO_CHECK:
                         member_status = constants.NO_MONITOR
                     else:
-                        LOG.warning('Member %(mem)s reported status of '
-                                    '%(status)s', {'mem': member_id,
-                                                   'status': status})
-
-                    try:
-                        if member_status is not None:
-                            self._update_status_and_emit_event(
-                                session, self.member_repo, constants.MEMBER,
-                                member_id, member_status
-                            )
-                    except sqlalchemy.orm.exc.NoResultFound:
-                        LOG.error("Member %s is not able to update "
-                                  "in DB", member_id)
-
-                # Now deal with the members that didn't report from the Amphora
-                db_pool = self.pool_repo.get(session, id=pool_id)
-                real_members = [member.id for member in db_pool.members]
-                reported_members = [member for member in members.keys()]
-                missing_members = set(real_members) - set(reported_members)
-                for member_id in missing_members:
-                    self._update_status_and_emit_event(
-                        session, self.member_repo, constants.MEMBER,
-                        member_id, constants.OFFLINE
-                    )
+                        LOG.warning('Member %(mem)s reported '
+                                    'status of %(status)s',
+                                    {'mem': member_id,
+                                     'status': status})
 
                 try:
-                    if pool_status is not None:
+                    if member_status is not None:
                         self._update_status_and_emit_event(
-                            session, self.pool_repo, constants.POOL,
-                            pool_id, pool_status
+                            session, self.member_repo,
+                            constants.MEMBER,
+                            member_id, member_status,
+                            db_member.operating_status,
+                            db_member.provisioning_status
                         )
                 except sqlalchemy.orm.exc.NoResultFound:
-                    LOG.error("Pool %s is not in DB", pool_id)
+                    LOG.error("Member %s is not able to update "
+                              "in DB", member_id)
 
-        # Update the load balancer status last
-        # TODO(sbalukoff): This logic will need to be adjusted if we
-        # start supporting multiple load balancers per amphora
-        lb_id = self.amphora_repo.get(
-            session, id=health['id']).load_balancer_id
-        if lb_id is not None:
-            try:
+        try:
+            if pool_status is not None:
                 self._update_status_and_emit_event(
-                    session, self.loadbalancer_repo,
-                    constants.LOADBALANCER, lb_id, lb_status
+                    session, self.pool_repo, constants.POOL,
+                    pool_id, pool_status, db_pool.operating_status,
+                    db_pool.provisioning_status
                 )
-            except sqlalchemy.orm.exc.NoResultFound:
-                LOG.error("Load balancer %s is not in DB", lb_id)
+        except sqlalchemy.orm.exc.NoResultFound:
+            LOG.error("Pool %s is not in DB", pool_id)
+
+        return lb_status, processed_pools
 
 
 class UpdateStatsDb(stats.StatsMixin):

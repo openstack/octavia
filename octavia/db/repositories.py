@@ -891,7 +891,8 @@ class AmphoraRepository(BaseRepository):
             lb_subquery = (session.query(self.model_class.load_balancer_id).
                            filter_by(id=amphora_id).subquery())
             lb_list = (session.query(models.LoadBalancer).
-                       filter(models.LoadBalancer.id.in_(lb_subquery)).all())
+                       filter(models.LoadBalancer.id.in_(lb_subquery)).
+                       options(joinedload('*')).all())
             data_model_list = [model.to_data_model() for model in lb_list]
             return data_model_list
 
