@@ -50,6 +50,7 @@ class PaginationHelper(object):
         self.sort_keys = self._parse_sort_keys(params)
         self.params = params
         self.filters = None
+        self.page_reverse = params.get('page_reverse', 'False')
 
     @staticmethod
     def _parse_limit(params):
@@ -149,6 +150,7 @@ class PaginationHelper(object):
             next_attr = copy.copy(prev_attr)
             if self.marker:
                 prev_attr.append("marker={}".format(model_list[0].get('id')))
+                prev_attr.append("page_reverse=True")
                 prev_link = {
                     "rel": "previous",
                     "href": "{url}?{params}".format(
@@ -261,9 +263,15 @@ class PaginationHelper(object):
                           model_attr), ], else_=default)
                     this_sort_dir = self.sort_keys[i][1]
                     if this_sort_dir == constants.DESC:
-                        crit_attrs.append((attr < marker_values[i]))
+                        if self.page_reverse == "True":
+                            crit_attrs.append((attr > marker_values[i]))
+                        else:
+                            crit_attrs.append((attr < marker_values[i]))
                     elif this_sort_dir == constants.ASC:
-                        crit_attrs.append((attr > marker_values[i]))
+                        if self.page_reverse == "True":
+                            crit_attrs.append((attr < marker_values[i]))
+                        else:
+                            crit_attrs.append((attr > marker_values[i]))
                     else:
                         raise exceptions.InvalidSortDirection(
                             key=this_sort_dir)
