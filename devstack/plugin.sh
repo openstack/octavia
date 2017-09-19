@@ -54,7 +54,13 @@ function build_octavia_worker_image {
         export DIB_REPOLOCATION_pip_and_virtualenv=file://$GET_PIP_CACHE_LOCATION
     fi
     export DIB_REPOLOCATION_amphora_agent=$OCTAVIA_DIR
-    export DIB_REPOREF_amphora_agent=$(git -C "$OCTAVIA_DIR" log -1 --pretty="format:%H")
+
+    git_minimum_version=$(git --version | awk '{print $NF "\n1.8.5" }' | sort -V | head -1)
+    if [[ ${git_minimum_version} == "1.8.5" ]]; then
+        export DIB_REPOREF_amphora_agent=$(git -C "$OCTAVIA_DIR" log -1 --pretty="format:%H")
+    else
+        export DIB_REPOREF_amphora_agent=$(git -c "$OCTAVIA_DIR" log -1 --pretty="format:%H")
+    fi
     TOKEN=$(openstack token issue | grep ' id ' | get_field 2)
     die_if_not_set $LINENO TOKEN "Keystone failed to get token."
 
