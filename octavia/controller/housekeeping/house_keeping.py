@@ -50,10 +50,12 @@ class SpareAmphora(object):
             LOG.info("Initiating creation of %d spare amphora.", diff_count)
 
             # Call Amphora Create Flow diff_count times
-            for i in range(1, diff_count + 1):
-                LOG.debug("Starting amphorae number %d ...", i)
-                self.cw.create_amphora()
-
+            with futures.ThreadPoolExecutor(
+                    max_workers=CONF.house_keeping.spare_amphora_pool_size
+            ) as executor:
+                for i in range(1, diff_count + 1):
+                    LOG.debug("Starting amphorae number %d ...", i)
+                    executor.submit(self.cw.create_amphora)
         else:
             LOG.debug("Current spare amphora count satisfies the requirement")
 
