@@ -103,7 +103,8 @@ class Policy(oslo_policy.Enforcer):
         credentials = context.to_policy_values()
         # Inject is_admin into the credentials to allow override via
         # config auth_strategy = constants.NOAUTH
-        credentials['is_admin'] = context.is_admin
+        credentials['is_admin'] = (
+            credentials.get('is_admin') or context.is_admin)
 
         if not exc:
             exc = exceptions.PolicyForbidden

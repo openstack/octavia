@@ -1,6 +1,12 @@
 ###############################################################################
 # Path fields
 ###############################################################################
+path-amphora-id:
+  description: |
+    The ID of the amphora to query.
+  in: path
+  required: true
+  type: string
 path-healthmonitor-id:
   description: |
     The ID of the health monitor to query.
@@ -125,6 +131,25 @@ admin_state_up-optional:
   in: body
   required: false
   type: boolean
+amphora-id:
+  description: |
+    The associated amphora ID.
+  in: body
+  required: true
+  type: string
+amphora-role:
+  description: |
+    The role of the amphora. One of ``STANDALONE``, ``MASTER``, ``BACKUP``.
+  in: body
+  required: true
+  type: string
+amphora-status:
+  description: |
+    The status of the amphora. One of: ``BOOTING``, ``ALLOCATED``, ``READY``,
+    ``PENDING_DELETE``, ``DELETED``, ``ERROR``.
+  in: body
+  required: true
+  type: string
 api_links:
   description: |
     Links to the resources in question.
@@ -160,6 +185,24 @@ bytes_out:
   in: body
   required: true
   type: integer
+cert-busy:
+  description: |
+    Whether the certificate is in the process of being replaced.
+  in: body
+  required: true
+  type: string
+cert-expiration:
+  description: |
+    The date the certificate for the amphora expires.
+  in: body
+  required: true
+  type: string
+compute-id:
+  description: |
+    The ID of the amphora resource in the compute system.
+  in: body
+  required: true
+  type: string
 connection_limit:
   description: |
     The maximum number of connections permitted for this listener. Default
@@ -562,6 +605,12 @@ lb-algorithm-optional:
     ``ROUND_ROBIN``, or ``SOURCE_IP``.
   in: body
   required: false
+  type: string
+lb-network-ip:
+  description: |
+    The management IP of the amphora.
+  in: body
+  required: true
   type: string
 listener:
   description: |
@@ -1014,6 +1063,36 @@ vip_subnet_id-optional:
     ``vip_port_id``, or ``vip_subnet_id`` must be specified.
   in: body
   required: false
+  type: string
+vrrp-id:
+  description: |
+    The vrrp group's ID for the amphora.
+  in: body
+  required: true
+  type: string
+vrrp-interface:
+  description: |
+    The bound interface name of the vrrp port on the amphora.
+  in: body
+  required: true
+  type: string
+vrrp-ip:
+  description: |
+    The address of the vrrp port on the amphora.
+  in: body
+  required: true
+  type: string
+vrrp-port-id:
+  description: |
+    The vrrp port's ID in the networking system.
+  in: body
+  required: true
+  type: string
+vrrp-priority:
+  description: |
+    The priority of the amphora in the vrrp group.
+  in: body
+  required: true
   type: string
 weight:
   description: |

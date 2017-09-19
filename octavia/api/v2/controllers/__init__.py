@@ -15,6 +15,7 @@
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
+from octavia.api.v2.controllers import amphora
 from octavia.api.v2.controllers import base
 from octavia.api.v2.controllers import health_monitor
 from octavia.api.v2.controllers import l7policy
@@ -46,9 +47,22 @@ class BaseV2Controller(base.BaseController):
         return "v2.0"
 
 
+class OctaviaV2Controller(base.BaseController):
+    amphorae = None
+
+    def __init__(self):
+        super(OctaviaV2Controller, self).__init__()
+        self.amphorae = amphora.AmphoraController()
+
+    @wsme_pecan.wsexpose(wtypes.text)
+    def get(self):
+        return "v2.0"
+
+
 class V2Controller(BaseV2Controller):
     lbaas = None
 
     def __init__(self):
         super(V2Controller, self).__init__()
         self.lbaas = BaseV2Controller()
+        self.octavia = OctaviaV2Controller()

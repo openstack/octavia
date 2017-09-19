@@ -118,8 +118,12 @@ class BaseRepository(object):
         query = query.options(joinedload('*'))
 
         if not deleted:
-            query = query.filter(
-                self.model_class.provisioning_status != consts.DELETED)
+            if hasattr(self.model_class, 'status'):
+                query = query.filter(
+                    self.model_class.status != consts.DELETED)
+            else:
+                query = query.filter(
+                    self.model_class.provisioning_status != consts.DELETED)
 
         if pagination_helper:
             model_list, links = pagination_helper.apply(

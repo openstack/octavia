@@ -20,6 +20,7 @@ from sqlalchemy import orm
 from sqlalchemy.orm import validates
 from sqlalchemy.sql import func
 
+from octavia.api.v2.types import amphora
 from octavia.api.v2.types import health_monitor
 from octavia.api.v2.types import l7policy
 from octavia.api.v2.types import l7rule
@@ -481,6 +482,8 @@ class Amphora(base_models.BASE, base_models.IdMixin):
     __data_model__ = data_models.Amphora
 
     __tablename__ = "amphora"
+
+    __v2_wsme__ = amphora.AmphoraResponse
 
     load_balancer_id = sa.Column(
         sa.String(36), sa.ForeignKey("load_balancer.id",
