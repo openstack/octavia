@@ -12,12 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import six
 import uuid
 
 from barbicanclient import containers
 from barbicanclient import secrets
 import mock
+import six
 
 import octavia.certificates.common.barbican as barbican_common
 import octavia.certificates.common.cert as cert

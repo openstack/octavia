@@ -18,10 +18,10 @@ Common classes for Barbican certificate handling
 """
 
 import abc
-import six
 
 from barbicanclient import client as barbican_client
 from oslo_utils import encodeutils
+import six
 
 from octavia.certificates.common import cert
 from octavia.common.tls_utils import cert_parser

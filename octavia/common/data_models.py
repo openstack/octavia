@@ -15,8 +15,8 @@
 #    under the License.
 
 import re
-import six
 
+import six
 from sqlalchemy.orm import collections
 
 from octavia.common import constants

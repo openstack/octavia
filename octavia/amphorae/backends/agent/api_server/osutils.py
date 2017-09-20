@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import ipaddress
 import logging
 import os
 import platform
@@ -19,7 +20,6 @@ import shutil
 import stat
 import subprocess
 
-import ipaddress
 import jinja2
 from oslo_config import cfg
 import six

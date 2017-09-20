@@ -12,10 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import subprocess
+
 import flask
 import mock
-
-import subprocess
 
 from octavia.amphorae.backends.agent.api_server import keepalived
 import octavia.tests.unit.base as base

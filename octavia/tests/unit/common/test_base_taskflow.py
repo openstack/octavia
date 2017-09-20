@@ -14,6 +14,7 @@
 #
 
 import concurrent.futures
+
 import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
