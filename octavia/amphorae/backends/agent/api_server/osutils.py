@@ -297,6 +297,7 @@ class RH(BaseOS):
     ETH_X_VIP_CONF = 'rh_plug_vip_ethX.conf.j2'
     ETH_X_ALIAS_VIP_CONF = 'rh_plug_vip_ethX_alias.conf.j2'
     ROUTE_ETH_X_CONF = 'rh_route_ethX.conf.j2'
+    RULE_ETH_X_CONF = 'rh_rule_ethX.conf.j2'
 
     @classmethod
     def is_os_name(cls, os_name):
@@ -320,6 +321,9 @@ class RH(BaseOS):
 
     def get_static_routes_interface_file(self, interface):
         return self.get_network_interface_file('route-' + interface)
+
+    def get_route_rules_interface_file(self, interface):
+        return self.get_network_interface_file('rule-' + interface)
 
     def get_network_path(self):
         return '/etc/sysconfig/network-scripts'
@@ -373,18 +377,25 @@ class RH(BaseOS):
                 broadcast, netmask, gateway, mtu, vrrp_ip, vrrp_version,
                 render_host_routes, template_vip_alias)
 
-        if render_host_routes:
-            routes_interface_file_path = (
-                self.get_static_routes_interface_file(primary_interface))
-            template_routes = j2_env.get_template(self.ROUTE_ETH_X_CONF)
+        routes_interface_file_path = (
+            self.get_static_routes_interface_file(primary_interface))
+        template_routes = j2_env.get_template(self.ROUTE_ETH_X_CONF)
 
-            self.write_static_routes_interface_file(
-                routes_interface_file_path, primary_interface,
-                render_host_routes, template_routes)
+        self.write_static_routes_interface_file(
+            routes_interface_file_path, primary_interface,
+            render_host_routes, template_routes, gateway, vip)
+
+        route_rules_interface_file_path = (
+            self.get_route_rules_interface_file(primary_interface))
+        template_rules = j2_env.get_template(self.RULE_ETH_X_CONF)
+
+        self.write_static_routes_interface_file(
+            route_rules_interface_file_path, primary_interface,
+            render_host_routes, template_rules, gateway, vip)
 
     def write_static_routes_interface_file(self, interface_file_path,
                                            interface, host_routes,
-                                           template_routes):
+                                           template_routes, gateway, vip):
         # write static routes interface file
 
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
@@ -400,6 +411,8 @@ class RH(BaseOS):
             text = template_routes.render(
                 interface=interface,
                 host_routes=host_routes,
+                gateway=gateway,
+                vip=vip,
             )
             text_file.write(text)
 
@@ -426,7 +439,7 @@ class RH(BaseOS):
 
             self.write_static_routes_interface_file(
                 routes_interface_file_path, netns_interface,
-                host_routes, template_routes)
+                host_routes, template_routes, None, None)
 
     def bring_interfaces_up(self, ip, primary_interface, secondary_interface):
         if ip.version == 4:
