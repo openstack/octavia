@@ -75,6 +75,14 @@ Version 1.0 (pike)
 
    specs/version1.0/*
 
+Version 1.1 (queens)
+````````````````````
+.. toctree::
+   :glob:
+   :maxdepth: 1
+
+   specs/version1.1/*
+
 Indices and Search
 ------------------
 
