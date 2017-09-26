@@ -283,7 +283,7 @@ we need to write an interface documentation so
 
 References
 ==========
-[1] http://martinfowler.com/bliki/CircuitBreaker.html
-[2] http://docs.openstack.org/developer/taskflow/index.html
+[1] https://martinfowler.com/bliki/CircuitBreaker.html
+[2] https://docs.openstack.org/taskflow/latest/
 
 

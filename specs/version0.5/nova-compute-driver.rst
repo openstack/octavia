@@ -107,4 +107,4 @@ None
 References
 ==========
 https://blueprints.launchpad.net/octavia/+spec/nova-compute-driver
-http://docs.openstack.org/developer/python-novaclient/api.html
+https://docs.openstack.org/python-novaclient/latest/reference/api/index.html

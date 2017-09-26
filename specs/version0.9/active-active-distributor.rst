@@ -628,7 +628,7 @@ Further Discussion
 
     * Ketama https://github.com/RJ/ketama
 
-    * Openstack swift http://docs.openstack.org/developer/swift/ring.html
+    * Openstack swift https://docs.openstack.org/swift/latest/ring.html#ring
 
     * Amazon dynamo
       http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf

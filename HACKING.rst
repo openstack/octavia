@@ -4,7 +4,7 @@ This project was ultimately spawned from work done on the Neutron project.
 As such, we tend to follow Neutron conventions regarding coding style.
 
 - We follow the OpenStack Style Commandments:
-  http://docs.openstack.org/developer/hacking/
+  https://docs.openstack.org/hacking/latest
 
 Octavia Specific Commandments
 -----------------------------
