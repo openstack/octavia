@@ -219,6 +219,14 @@ class Plug(object):
                         interface)[netifaces.AF_LINK]:
                     if link.get('addr', '').lower() == mac.lower():
                         return interface
+        # Poke the kernel to re-enumerate the PCI bus.
+        # We have had cases where nova hot plugs the interface but
+        # the kernel doesn't get the memo.
+        filename = '/sys/bus/pci/rescan'
+        flags = os.O_WRONLY
+        if os.path.isfile(filename):
+            with os.fdopen(os.open(filename, flags), 'w') as rescan_file:
+                rescan_file.write('1')
         raise exceptions.HTTPException(
             response=webob.Response(json=dict(
                 details="No suitable network interface found"), status=404))

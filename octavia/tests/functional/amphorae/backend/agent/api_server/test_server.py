@@ -1034,33 +1034,48 @@ class TestServerTestCase(base.TestCase):
 
         # No interface at all
         mock_interfaces.side_effect = [[]]
-        if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.post('/' + api_server.VERSION +
-                                      "/plug/network",
-                                      content_type='application/json',
-                                      data=json.dumps(port_info))
-        elif distro == consts.CENTOS:
-            rv = self.centos_app.post('/' + api_server.VERSION +
-                                      "/plug/network",
-                                      content_type='application/json',
-                                      data=json.dumps(port_info))
+        file_name = '/sys/bus/pci/rescan'
+        m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
+            mock_open.assert_called_with(file_name, os.O_WRONLY)
+            mock_fdopen.assert_called_with(123, 'w')
+        m().write.assert_called_once_with('1')
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
 
         # No interface down
+        m().reset_mock()
         mock_interfaces.side_effect = [['blah']]
         mock_ifaddress.side_effect = [[netifaces.AF_INET]]
-        if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.post('/' + api_server.VERSION +
-                                      "/plug/network",
-                                      content_type='application/json',
-                                      data=json.dumps(port_info))
-        elif distro == consts.CENTOS:
-            rv = self.centos_app.post('/' + api_server.VERSION +
-                                      "/plug/network",
-                                      content_type='application/json',
-                                      data=json.dumps(port_info))
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/network",
+                                          content_type='application/json',
+                                          data=json.dumps(port_info))
+            mock_open.assert_called_with(file_name, os.O_WRONLY)
+            mock_fdopen.assert_called_with(123, 'w')
+        m().write.assert_called_once_with('1')
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
@@ -1548,33 +1563,50 @@ class TestServerTestCase(base.TestCase):
 
         # No interface at all
         mock_interfaces.side_effect = [[]]
-        if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.post('/' + api_server.VERSION +
-                                      "/plug/vip/203.0.113.2",
-                                      content_type='application/json',
-                                      data=json.dumps(subnet_info))
-        elif distro == consts.CENTOS:
-            rv = self.centos_app.post('/' + api_server.VERSION +
-                                      "/plug/vip/203.0.113.2",
-                                      content_type='application/json',
-                                      data=json.dumps(subnet_info))
+        file_name = '/sys/bus/pci/rescan'
+        m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
+
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/203.0.113.2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/203.0.113.2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
+            mock_open.assert_called_with(file_name, os.O_WRONLY)
+            mock_fdopen.assert_called_with(123, 'w')
+        m().write.assert_called_once_with('1')
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
 
         # Two interfaces down
+        m().reset_mock()
         mock_interfaces.side_effect = [['blah', 'blah2']]
         mock_ifaddress.side_effect = [['blabla'], ['blabla']]
-        if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.post('/' + api_server.VERSION +
-                                      "/plug/vip/203.0.113.2",
-                                      content_type='application/json',
-                                      data=json.dumps(subnet_info))
-        elif distro == consts.CENTOS:
-            rv = self.centos_app.post('/' + api_server.VERSION +
-                                      "/plug/vip/203.0.113.2",
-                                      content_type='application/json',
-                                      data=json.dumps(subnet_info))
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
+
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/203.0.113.2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/203.0.113.2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
+            mock_open.assert_called_with(file_name, os.O_WRONLY)
+            mock_fdopen.assert_called_with(123, 'w')
+        m().write.assert_called_once_with('1')
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
@@ -1866,33 +1898,48 @@ class TestServerTestCase(base.TestCase):
 
         # No interface at all
         mock_interfaces.side_effect = [[]]
-        if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.post('/' + api_server.VERSION +
-                                      "/plug/vip/2001:db8::2",
-                                      content_type='application/json',
-                                      data=json.dumps(subnet_info))
-        elif distro == consts.CENTOS:
-            rv = self.centos_app.post('/' + api_server.VERSION +
-                                      "/plug/vip/2001:db8::2",
-                                      content_type='application/json',
-                                      data=json.dumps(subnet_info))
+        file_name = '/sys/bus/pci/rescan'
+        m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/2001:db8::2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/2001:db8::2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
+            mock_open.assert_called_with(file_name, os.O_WRONLY)
+            mock_fdopen.assert_called_with(123, 'w')
+        m().write.assert_called_once_with('1')
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
 
         # Two interfaces down
+        m().reset_mock()
         mock_interfaces.side_effect = [['blah', 'blah2']]
         mock_ifaddress.side_effect = [['blabla'], ['blabla']]
-        if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.post('/' + api_server.VERSION +
-                                      "/plug/vip/2001:db8::2",
-                                      content_type='application/json',
-                                      data=json.dumps(subnet_info))
-        elif distro == consts.CENTOS:
-            rv = self.centos_app.post('/' + api_server.VERSION +
-                                      "/plug/vip/2001:db8::2",
-                                      content_type='application/json',
-                                      data=json.dumps(subnet_info))
+        with mock.patch('os.open') as mock_open, mock.patch.object(
+                os, 'fdopen', m) as mock_fdopen:
+            mock_open.return_value = 123
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/2001:db8::2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.post('/' + api_server.VERSION +
+                                          "/plug/vip/2001:db8::2",
+                                          content_type='application/json',
+                                          data=json.dumps(subnet_info))
+            mock_open.assert_called_with(file_name, os.O_WRONLY)
+            mock_fdopen.assert_called_with(123, 'w')
+        m().write.assert_called_once_with('1')
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          json.loads(rv.data.decode('utf-8')))
