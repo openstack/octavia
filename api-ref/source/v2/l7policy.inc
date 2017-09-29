@@ -104,6 +104,12 @@ creating multiple policies with the same action.
 If a new policy is created with a position that matches that of an existing
 policy, then the new policy is inserted at the given position.
 
+L7 policies with ``action`` of ``REDIRECT_TO_URL`` will return a HTTP
+``Found (302)`` response code with the ``redirect_url``.
+
+L7 policies with ``action`` of ``REJECT`` will return a ``Forbidden (403)``
+response code to the requester.
+
 .. rest_status_code:: success ../http-status.yaml
 
    - 201
