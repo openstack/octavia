@@ -708,7 +708,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         except Exception as e:
             with excutils.save_and_reraise_exception():
                 LOG.error("LB %(lbid)s failover exception: %(exc)s",
-                          {'libid': load_balancer_id, 'exc': e})
+                          {'lbid': load_balancer_id, 'exc': e})
                 self._lb_repo.update(
                     db_apis.get_session(), load_balancer_id,
                     provisioning_status=constants.ERROR)
