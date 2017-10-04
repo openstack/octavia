@@ -8,6 +8,7 @@ covhtml/
 dist/
 doc/build
 doc/source/configuration/_static/octavia.policy.yaml.sample
+doc/source/contributor/devref/erd.svg
 doc/source/contributor/devref/flow_diagrams/
 doc/source/contributor/modules
 .idea/*
