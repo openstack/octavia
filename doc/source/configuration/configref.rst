@@ -20,4 +20,9 @@ Octavia Configuration Options
     :depth: 2
 
 .. show-options::
+
+    keystonemiddleware.auth_token
     octavia
+    oslo.db
+    oslo.log
+    oslo.messaging
