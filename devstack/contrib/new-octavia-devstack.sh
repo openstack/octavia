@@ -31,7 +31,6 @@ SERVICE_TOKEN=111222333444
 LOGFILE=/opt/stack/logs/stack.sh.log
 VERBOSE=True
 LOG_COLOR=True
-SCREEN_LOGDIR=/opt/stack/logs
 # Pre-requisite
 ENABLED_SERVICES=key,rabbit,mysql
 # Nova
