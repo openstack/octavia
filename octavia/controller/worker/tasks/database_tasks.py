@@ -872,8 +872,10 @@ class UpdateAmphoraInfo(BaseDatabaseTask):
         :param compute_obj: Compute on which an amphora resides
         :returns: Updated amphora object
         """
-        self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                 lb_network_ip=compute_obj.lb_network_ip)
+        self.amphora_repo.update(
+            db_apis.get_session(), amphora_id,
+            lb_network_ip=compute_obj.lb_network_ip,
+            cached_zone=compute_obj.cached_zone)
         return self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
 
 

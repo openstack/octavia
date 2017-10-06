@@ -15,7 +15,8 @@
             "status": "ALLOCATED",
             "vrrp_interface": "eth1",
             "vrrp_id": 1,
-            "vrrp_priority": 100
+            "vrrp_priority": 100,
+            "cached_zone": "zone1"
         },
         {
             "id": "89c186a3-cb16-497b-b099-c4bd40316642",
@@ -32,7 +33,8 @@
             "status": "ALLOCATED",
             "vrrp_interface": "eth1",
             "vrrp_id": 1,
-            "vrrp_priority": 200
+            "vrrp_priority": 200,
+            "cached_zone": "zone2"
         }
     ]
 }

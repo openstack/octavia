@@ -185,6 +185,14 @@ bytes_out:
   in: body
   required: true
   type: integer
+cached-zone:
+  description: |
+    The availability zone of a compute instance, cached at create time. This
+    is not guaranteed to be current. May be an empty-string if the compute
+    service does not use zones.
+  in: body
+  required: true
+  type: string
 cert-busy:
   description: |
     Whether the certificate is in the process of being replaced.

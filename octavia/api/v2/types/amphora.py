@@ -39,6 +39,7 @@ class AmphoraResponse(BaseAmphoraType):
     vrrp_interface = wtypes.wsattr(wtypes.StringType())
     vrrp_id = wtypes.wsattr(wtypes.IntegerType())
     vrrp_priority = wtypes.wsattr(wtypes.IntegerType())
+    cached_zone = wtypes.wsattr(wtypes.StringType())
 
     @classmethod
     def from_data_model(cls, data_model, children=False):

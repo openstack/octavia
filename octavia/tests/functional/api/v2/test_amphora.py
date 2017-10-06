@@ -52,6 +52,7 @@ class TestAmphora(base.BaseAPITest):
             'vrrp_interface': 'eth1',
             'vrrp_id': 1,
             'vrrp_priority': 100,
+            'cached_zone': None
         }
         self.amp = self.amphora_repo.create(self.session, **self.amp_args)
         self.amp_id = self.amp.id

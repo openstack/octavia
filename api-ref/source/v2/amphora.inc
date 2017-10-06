@@ -16,6 +16,12 @@ by using query string parameters. For information, see :ref:`filtering`.
 
 The list might be empty.
 
+.. NOTE::
+
+    The field `cached_zone` should be used for quick filtering and reference
+    only, as it may out of date. If an up-to-date zone is vital, we recommend
+    retrieving details directly from the compute service.
+
 .. rest_status_code:: success ../http-status.yaml
 
    - 200
@@ -60,6 +66,7 @@ Response Parameters
    - vrrp_interface: vrrp-interface
    - vrrp_id: vrrp-id
    - vrrp_priority: vrrp-priority
+   - cached_zone: cached-zone
 
 Response Example
 ----------------
@@ -78,6 +85,12 @@ If you are not an administrative user, the service returns the HTTP
 ``Forbidden (403)`` response code.
 
 This operation does not require a request body.
+
+.. NOTE::
+
+    The field `cached_zone` should be used for quick filtering and reference
+    only, as it may out of date. If an up-to-date zone is vital, we recommend
+    retrieving details directly from the compute service.
 
 .. rest_status_code:: success ../http-status.yaml
 
@@ -124,6 +137,7 @@ Response Parameters
    - vrrp_interface: vrrp-interface
    - vrrp_id: vrrp-id
    - vrrp_priority: vrrp-priority
+   - cached_zone: cached-zone
 
 Response Example
 ----------------
