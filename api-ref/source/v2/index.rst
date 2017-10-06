@@ -50,3 +50,8 @@ L7 Rules
 Quotas
 ------
 .. include:: quota.inc
+
+--------
+Amphorae
+--------
+.. include:: amphora.inc

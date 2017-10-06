@@ -28,21 +28,21 @@ from octavia.tests.functional.db import base as base_db_test
 
 class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
-    BASE_PATH = '/v2.0/lbaas'
+    BASE_PATH = '/v2.0'
 
     # /lbaas/loadbalancers
-    LBS_PATH = '/loadbalancers'
+    LBS_PATH = '/lbaas/loadbalancers'
     LB_PATH = LBS_PATH + '/{lb_id}'
     LB_STATUS_PATH = LB_PATH + '/statuses'
     LB_STATS_PATH = LB_PATH + '/stats'
 
     # /lbaas/listeners/
-    LISTENERS_PATH = '/listeners'
+    LISTENERS_PATH = '/lbaas/listeners'
     LISTENER_PATH = LISTENERS_PATH + '/{listener_id}'
     LISTENER_STATS_PATH = LISTENER_PATH + '/stats'
 
     # /lbaas/pools
-    POOLS_PATH = '/pools'
+    POOLS_PATH = '/lbaas/pools'
     POOL_PATH = POOLS_PATH + '/{pool_id}'
 
     # /lbaas/pools/{pool_id}/members
@@ -50,18 +50,21 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     MEMBER_PATH = MEMBERS_PATH + '/{member_id}'
 
     # /lbaas/healthmonitors
-    HMS_PATH = '/healthmonitors'
+    HMS_PATH = '/lbaas/healthmonitors'
     HM_PATH = HMS_PATH + '/{healthmonitor_id}'
 
     # /lbaas/l7policies
-    L7POLICIES_PATH = '/l7policies'
+    L7POLICIES_PATH = '/lbaas/l7policies'
     L7POLICY_PATH = L7POLICIES_PATH + '/{l7policy_id}'
     L7RULES_PATH = L7POLICY_PATH + '/rules'
     L7RULE_PATH = L7RULES_PATH + '/{l7rule_id}'
 
-    QUOTAS_PATH = '/quotas'
+    QUOTAS_PATH = '/lbaas/quotas'
     QUOTA_PATH = QUOTAS_PATH + '/{project_id}'
     QUOTA_DEFAULT_PATH = QUOTAS_PATH + '/{project_id}/default'
+
+    AMPHORAE_PATH = '/octavia/amphorae'
+    AMPHORA_PATH = AMPHORAE_PATH + '/{amphora_id}'
 
     NOT_AUTHORIZED_BODY = {
         'debuginfo': None, 'faultcode': 'Client',

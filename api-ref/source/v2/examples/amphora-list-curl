@@ -1,0 +1,1 @@
+curl -X GET -H "X-Auth-Token: <token>" http://198.51.100.10:9876/v2.0/octavia/amphorae?loadbalancer_id=09eedfc6-2c55-41a8-a75c-2cd4e95212ca

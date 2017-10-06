@@ -207,6 +207,9 @@ class PaginationHelper(object):
                             if k in filter_attrs}
 
             query = model.apply_filter(query, model, self.filters)
+            if model.__name__ == "Amphora" and 'project_id' in self.params:
+                query = query.filter(model.load_balancer.has(
+                    project_id=self.params['project_id']))
 
         # Add sorting
         if CONF.api_settings.allow_sorting:

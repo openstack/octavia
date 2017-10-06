@@ -1,0 +1,19 @@
+{
+    "amphora": {
+        "id": "6bd55cd3-802e-447e-a518-1e74e23bb106",
+        "load_balancer_id": "09eedfc6-2c55-41a8-a75c-2cd4e95212ca",
+        "compute_id": "f0f79f90-733d-417a-8d70-cc6be62cd54d",
+        "lb_network_ip": "192.168.1.2",
+        "vrrp_ip": "192.168.1.5",
+        "ha_ip": "192.168.1.10",
+        "vrrp_port_id": "ab2a8add-76a9-44bb-89f8-88430193cc83",
+        "ha_port_id": "19561fd3-5da5-46cc-bdd3-99bbdf7246e6",
+        "cert_expiration": "2019-09-19 00:34:51",
+        "cert_busy": 0,
+        "role": "MASTER",
+        "status": "ALLOCATED",
+        "vrrp_interface": "eth1",
+        "vrrp_id": 1,
+        "vrrp_priority": 100
+    }
+}
