@@ -38,6 +38,23 @@ class TaskUtils(object):
         self.l7rule_repo = repo.L7RuleRepository()
         super(TaskUtils, self).__init__(**kwargs)
 
+    def unmark_amphora_health_busy(self, amphora_id):
+        """Unmark the amphora_health record busy for an amphora.
+
+        NOTE: This should only be called from revert methods.
+
+        :param amphora_id: The amphora id to unmark busy
+        """
+        LOG.debug('Unmarking health monitoring busy on amphora: %s',
+                  amphora_id)
+        try:
+            self.amp_health_repo.update(db_apis.get_session(),
+                                        amphora_id=amphora_id,
+                                        busy=False)
+        except Exception as e:
+            LOG.debug('Failed to update amphora health record %(amp)s '
+                      'due to: %(except)s', {'amp': amphora_id, 'except': e})
+
     def mark_amphora_status_error(self, amphora_id):
         """Sets an amphora status to ERROR.
 

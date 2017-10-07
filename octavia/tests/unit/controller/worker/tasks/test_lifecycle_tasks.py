@@ -53,8 +53,11 @@ class TestLifecycleTasks(base.TestCase):
         super(TestLifecycleTasks, self).setUp()
 
     @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
+                'unmark_amphora_health_busy')
+    @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
                 'mark_amphora_status_error')
-    def test_AmphoraIDToErrorOnRevertTask(self, mock_amp_status_error):
+    def test_AmphoraIDToErrorOnRevertTask(self, mock_amp_status_error,
+                                          mock_amp_health_busy):
 
         amp_id_to_error_on_revert = (lifecycle_tasks.
                                      AmphoraIDToErrorOnRevertTask())
@@ -68,10 +71,14 @@ class TestLifecycleTasks(base.TestCase):
         amp_id_to_error_on_revert.revert(self.AMPHORA_ID)
 
         mock_amp_status_error.assert_called_once_with(self.AMPHORA_ID)
+        mock_amp_health_busy.assert_called_once_with(self.AMPHORA_ID)
 
     @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
+                'unmark_amphora_health_busy')
+    @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
                 'mark_amphora_status_error')
-    def test_AmphoraToErrorOnRevertTask(self, mock_amp_status_error):
+    def test_AmphoraToErrorOnRevertTask(self, mock_amp_status_error,
+                                        mock_amp_health_busy):
 
         amp_to_error_on_revert = lifecycle_tasks.AmphoraToErrorOnRevertTask()
 
@@ -84,6 +91,7 @@ class TestLifecycleTasks(base.TestCase):
         amp_to_error_on_revert.revert(self.AMPHORA)
 
         mock_amp_status_error.assert_called_once_with(self.AMPHORA_ID)
+        mock_amp_health_busy.assert_called_once_with(self.AMPHORA_ID)
 
     @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
                 'mark_health_mon_prov_status_error')
