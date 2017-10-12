@@ -13,18 +13,23 @@
       License for the specific language governing permissions and limitations
       under the License.
 
-================
-Layer 7 Cookbook
-================
+=====================================
+Layer 7 Cookbook Using Neutron Client
+=====================================
+
+.. warning:: The neutron client used in this document is deprecated. We
+             strongly encourage you to use the OpenStack Client and Octavia
+             OpenStack Client plugin instead. This document is being maintained
+             for deployments still using neutron-lbaas and the neutron client.
 
 Introduction
 ============
 This document gives several examples of common L7 load balancer usage. For a
 description of L7 load balancing see: :doc:`l7`
 
-For the purposes of this guide we assume that the OpenStack Client command-line
-interface is going to be used to configure all features of Octavia with the
-Octavia driver back-end. Also, in order to keep these examples short, we assume
+For the purposes of this guide we assume that the neutron command-line
+interface is going to be used to configure all features of Neutron LBaaS with
+an Octavia back-end. Also, in order to keep these examples short, we assume
 that many non-L7 configuration tasks (such as deploying loadbalancers,
 listeners, pools, members, healthmonitors, etc.) have already been
 accomplished. A description of the starting conditions is given in each example
@@ -34,7 +39,7 @@ below.
 Examples
 ========
 
-.. _redirect-http-to-https:
+.. _redirect-http-to-https-n:
 
 Redirect *http://www.example.com/* to *https://www.example.com/*
 ----------------------------------------------------------------
@@ -57,14 +62,14 @@ Redirect *http://www.example.com/* to *https://www.example.com/*
 
 **CLI commands**:
 
-.. code-block:: bash
+::
 
-    openstack loadbalancer listener create --name http_listener --protocol HTTP --protocol-port 80 lb1
-    openstack loadbalancer l7policy create --action REDIRECT_TO_URL --redirect-url https://www.example.com/ --name policy1 http_listener
-    openstack loadbalancer l7rule create --compare-type STARTS_WITH --type PATH --value / policy1
+    neutron lbaas-listener-create --name http_listener --loadbalancer lb1 --protocol HTTP --protocol-port 80
+    neutron lbaas-l7policy-create --action REDIRECT_TO_URL --redirect-url https://www.example.com/ --listener http_listener --name policy1
+    neutron lbaas-l7rule-create --type PATH --compare-type STARTS_WITH --value / policy1
 
 
-.. _send-requests-to-static-pool:
+.. _send-requests-to-static-pool-n:
 
 Send requests starting with /js or /images to *static_pool*
 -----------------------------------------------------------
@@ -91,15 +96,15 @@ Send requests starting with /js or /images to *static_pool*
 
 **CLI commands**:
 
-.. code-block:: bash
+::
 
-    openstack loadbalancer pool create --lb-algorithm ROUND_ROBIN --loadbalancer lb1 --name static_pool --protocol HTTP
-    openstack loadbalancer member create --address 10.0.0.10 --protocol-port 80 --subnet-id private-subnet static_pool
-    openstack loadbalancer member create --address 10.0.0.11 --protocol-port 80 --subnet-id private-subnet static_pool
-    openstack loadbalancer l7policy create --action REDIRECT_TO_POOL --redirect-pool static_pool --name policy1 listener1
-    openstack loadbalancer l7rule create --compare-type STARTS_WITH --type PATH --value /js policy1
-    openstack loadbalancer l7policy create --action REDIRECT_TO_POOL --redirect-pool static_pool --name policy2 listener1
-    openstack loadbalancer l7rule create --compare-type STARTS_WITH --type PATH --value /images policy2
+    neutron lbaas-pool-create --name static_pool --lb-algorithm ROUND_ROBIN --loadbalancer lb1 --protocol HTTP
+    neutron lbaas-member-create --subnet private-subnet --address 10.0.0.10 --protocol-port 80 static_pool
+    neutron lbaas-member-create --subnet private-subnet --address 10.0.0.11 --protocol-port 80 static_pool
+    neutron lbaas-l7policy-create --action REDIRECT_TO_POOL --redirect-pool static_pool --listener listener1 --name policy1
+    neutron lbaas-l7rule-create --type PATH --compare-type STARTS_WITH --value /js policy1
+    neutron lbaas-l7policy-create --action REDIRECT_TO_POOL --redirect-pool static_pool --listener listener1 --name policy2
+    neutron lbaas-l7rule-create --type PATH --compare-type STARTS_WITH --value /images policy2
 
 **Alternate solution** (using regular expressions):
 
@@ -112,13 +117,13 @@ Send requests starting with /js or /images to *static_pool*
 
 **CLI commands**:
 
-.. code-block:: bash
+::
 
-    openstack loadbalancer pool create --lb-algorithm ROUND_ROBIN --loadbalancer lb1 --name static_pool --protocol HTTP
-    openstack loadbalancer member create --address 10.0.0.10 --protocol-port 80 --subnet-id private-subnet static_pool
-    openstack loadbalancer member create --address 10.0.0.11 --protocol-port 80 --subnet-id private-subnet static_pool
-    openstack loadbalancer l7policy create --action REDIRECT_TO_POOL --redirect-pool static_pool --name policy1 listener1
-    openstack loadbalancer l7rule create --compare-type REGEX --type PATH --value '^/(js|images)' policy1
+    neutron lbaas-pool-create --name static_pool --lb-algorithm ROUND_ROBIN --loadbalancer lb1 --protocol HTTP
+    neutron lbaas-member-create --subnet private-subnet --address 10.0.0.10 --protocol-port 80 static_pool
+    neutron lbaas-member-create --subnet private-subnet --address 10.0.0.11 --protocol-port 80 static_pool
+    neutron lbaas-l7policy-create --action REDIRECT_TO_POOL --redirect-pool static_pool --listener listener1 --name policy1
+    neutron lbaas-l7rule-create --type PATH --compare-type REGEX --value '^/(js|images)' policy1
 
 
 Send requests for *http://www2.example.com/* to *pool2*
@@ -139,10 +144,10 @@ Send requests for *http://www2.example.com/* to *pool2*
 
 **CLI commands**:
 
-.. code-block:: bash
+::
 
-    openstack loadbalancer l7policy create --action REDIRECT_TO_POOL --redirect-pool pool2 --name policy1 listener1
-    openstack loadbalancer l7rule create --compare-type EQUAL_TO --type HOST_NAME --value www2.example.com policy1
+    neutron lbaas-l7policy-create --action REDIRECT_TO_POOL --redirect-pool pool2 --listener listener1 --name policy1
+    neutron lbaas-l7rule-create --type HOST_NAME --compare-type EQUAL_TO --value www2.example.com policy1
 
 
 Send requests for *\*.example.com* to *pool2*
@@ -163,10 +168,10 @@ Send requests for *\*.example.com* to *pool2*
 
 **CLI commands**:
 
-.. code-block:: bash
+::
 
-    openstack loadbalancer l7policy create --action REDIRECT_TO_POOL --redirect-pool pool2 --name policy1 listener1
-    openstack loadbalancer l7rule create --compare-type ENDS_WITH --type HOST_NAME --value example.com policy1
+    neutron lbaas-l7policy-create --action REDIRECT_TO_POOL --redirect-pool pool2 --listener listener1 --name policy1
+    neutron lbaas-l7rule-create --type HOST_NAME --compare-type ENDS_WITH --value example.com policy1
 
 
 Send unauthenticated users to *login_pool* (scenario 1)
@@ -203,12 +208,12 @@ based on a browser cookie.
 
 **CLI commands**:
 
-.. code-block:: bash
+::
 
-    openstack loadbalancer pool create --lb-algorithm ROUND_ROBIN --loadbalancer lb1 --name login_pool --protocol HTTP
-    openstack loadbalancer member create --address 10.0.1.10 --protocol-port 80 --subnet-id secure_subnet login_pool
-    openstack loadbalancer l7policy create --action REDIRECT_TO_POOL --redirect-pool login_pool --name policy1 listener1
-    openstack loadbalancer l7rule create --compare-type REGEX --key auth_token --type COOKIE --value '.*' --invert policy1
+    neutron lbaas-pool-create --name login_pool --lb-algorithm ROUND_ROBIN --loadbalancer lb1 --protocol HTTP
+    neutron lbaas-member-create --subnet secure_subnet --address 10.0.1.10 --protocol-port 80 login_pool
+    neutron lbaas-l7policy-create --action REDIRECT_TO_POOL --redirect-pool login_pool --listener listener1 --name policy1
+    neutron lbaas-l7rule-create --type COOKIE --key auth_token --compare-type REGEX --value '.*' --invert policy1
 
 
 Send unauthenticated users to *login_pool* (scenario 2)
@@ -249,14 +254,14 @@ based on a browser cookie.
 
 **CLI commands**:
 
-.. code-block:: bash
+::
 
-    openstack loadbalancer pool create --lb-algorithm ROUND_ROBIN --loadbalancer lb1 --name login_pool --protocol HTTP
-    openstack loadbalancer member create --address 10.0.1.10 --protocol-port 80 --subnet-id secure_subnet login_pool
-    openstack loadbalancer l7policy create --action REDIRECT_TO_POOL --redirect-pool login_pool --name policy1 listener1
-    openstack loadbalancer l7rule create --compare-type REGEX --key auth_token --type COOKIE --value '.*' --invert policy1
-    openstack loadbalancer l7policy create --action REDIRECT_TO_POOL --redirect-pool login_pool --name policy2 listener1
-    openstack loadbalancer l7rule create --compare-type EQUAL_TO --key auth_token --type COOKIE --value INVALID policy2
+    neutron lbaas-pool-create --name login_pool --lb-algorithm ROUND_ROBIN --loadbalancer lb1 --protocol HTTP
+    neutron lbaas-member-create --subnet secure_subnet --address 10.0.1.10 --protocol-port 80 login_pool
+    neutron lbaas-l7policy-create --action REDIRECT_TO_POOL --redirect-pool login_pool --listener listener1 --name policy1
+    neutron lbaas-l7rule-create --type COOKIE --key auth_token --compare-type REGEX --value '.*' --invert policy1
+    neutron lbaas-l7policy-create --action REDIRECT_TO_POOL --redirect-pool login_pool --listener listener1 --name policy2
+    neutron lbaas-l7rule-create --type COOKIE --key auth_token --compare-type EQUAL_TO --value INVALID policy2
 
 
 Send requests for *http://api.example.com/api* to *api_pool*
@@ -279,11 +284,11 @@ Send requests for *http://api.example.com/api* to *api_pool*
 
 **CLI commands**:
 
-.. code-block:: bash
+::
 
-    openstack loadbalancer l7policy create --action REDIRECT_TO_POOL --redirect-pool api_pool --name policy1 listener1
-    openstack loadbalancer l7rule create --compare-type EQUAL_TO --type HOST_NAME --value api.example.com policy1
-    openstack loadbalancer l7rule create --compare-type STARTS_WITH --type PATH --value /api policy1
+    neutron lbaas-l7policy-create --action REDIRECT_TO_POOL --redirect-pool api_pool --listener listener1 --name policy1
+    neutron lbaas-l7rule-create --type HOST_NAME --compare-type EQUAL_TO --value api.example.com policy1
+    neutron lbaas-l7rule-create --type PATH --compare-type STARTS_WITH --value /api policy1
 
 
 Set up A/B testing on an existing production site using a cookie
@@ -291,7 +296,7 @@ Set up A/B testing on an existing production site using a cookie
 **Scenario description**:
 
 * Listener *listener1* on load balancer *lb1* is a production site set up as
-  described under :ref:`send-requests-to-static-pool` (alternate solution)
+  described under :ref:`send-requests-to-static-pool-n` (alternate solution)
   above. Specifically:
 
   * HTTP requests with a URL that starts with either "/js" or "/images" are
@@ -341,16 +346,16 @@ sent to *static_pool_B*, which is why *policy2* needs to be evaluated before
 
 **CLI commands**:
 
-.. code-block:: bash
+::
 
-    openstack loadbalancer pool create --lb-algorithm ROUND_ROBIN --loadbalancer lb1 --name pool_B --protocol HTTP
-    openstack loadbalancer member create --address 10.0.0.50 --protocol-port 80 --subnet-id private-subnet pool_B
-    openstack loadbalancer member create --address 10.0.0.51 --protocol-port 80 --subnet-id private-subnet pool_B
-    openstack loadbalancer pool create --lb-algorithm ROUND_ROBIN --loadbalancer lb1 --name static_pool_B --protocol HTTP
-    openstack loadbalancer member create --address 10.0.0.100 --protocol-port 80 --subnet-id private-subnet static_pool_B
-    openstack loadbalancer member create --address 10.0.0.101 --protocol-port 80 --subnet-id private-subnet static_pool_B
-    openstack loadbalancer l7policy create --action REDIRECT_TO_POOL --redirect-pool static_pool_B --name policy2 --position 1 listener1
-    openstack loadbalancer l7rule create --compare-type REGEX --type PATH --value '^/(js|images)' policy2
-    openstack loadbalancer l7rule create --compare-type EQUAL_TO --key site_version --type COOKIE --value B policy2
-    openstack loadbalancer l7policy create --action REDIRECT_TO_POOL --redirect-pool pool_B --name policy3 --position 2 listener1
-    openstack loadbalancer l7rule create --compare-type EQUAL_TO --key site_version --type COOKIE --value B policy3
+    neutron lbaas-pool-create --name pool_B --lb-algorithm ROUND_ROBIN --loadbalancer lb1 --protocol HTTP
+    neutron lbaas-member-create --subnet private-subnet --address 10.0.0.50 --protocol-port 80 pool_B
+    neutron lbaas-member-create --subnet private-subnet --address 10.0.0.51 --protocol-port 80 pool_B
+    neutron lbaas-pool-create --name static_pool_B --lb-algorithm ROUND_ROBIN --loadbalancer lb1 --protocol HTTP
+    neutron lbaas-member-create --subnet private-subnet --address 10.0.0.100 --protocol-port 80 static_pool_B
+    neutron lbaas-member-create --subnet private-subnet --address 10.0.0.101 --protocol-port 80 static_pool_B
+    neutron lbaas-l7policy-create --action REDIRECT_TO_POOL --redirect-pool static_pool_B --listener listener1 --name policy2 --position 1
+    neutron lbaas-l7rule-create --type PATH --compare-type REGEX --value '^/(js|images)' policy2
+    neutron lbaas-l7rule-create --type COOKIE --key site_version --compare-type EQUAL_TO --value B policy2
+    neutron lbaas-l7policy-create --action REDIRECT_TO_POOL --redirect-pool pool_B --listener listener1 --name policy3 --position 2
+    neutron lbaas-l7rule-create --type COOKIE --key site_version --compare-type EQUAL_TO --value B policy3
