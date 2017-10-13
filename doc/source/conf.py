@@ -14,11 +14,26 @@
 import sys
 import subprocess
 import os
+
+from pydotplus import graphviz
+import sadisplay
+
+import octavia.db.models as models
 from tools import create_flow_docs
 
 # Generate our flow diagrams
 create_flow_docs.generate(
     'tools/flow-list.txt', 'doc/source/contributor/devref/flow_diagrams')
+
+# Generate entity relationship diagram
+desc = sadisplay.describe(
+    [getattr(models, attr) for attr in dir(models)],
+    show_methods=True,
+    show_properties=True,
+    show_indexes=True,
+)
+graph = graphviz.graph_from_dot_data(sadisplay.dot(desc).encode('utf-8'))
+graph.write('contributor/devref/erd.svg', format='svg')
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
