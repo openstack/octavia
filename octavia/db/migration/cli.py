@@ -21,6 +21,8 @@ from alembic import util as alembic_u
 from oslo_config import cfg
 from oslo_db import options
 
+from octavia.i18n import _
+
 CONF = cfg.CONF
 options.set_defaults(CONF)
 

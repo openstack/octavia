@@ -27,6 +27,7 @@ import oslo_messaging as messaging
 
 from octavia.common import constants
 from octavia.common import utils
+from octavia.i18n import _
 from octavia import version
 
 LOG = logging.getLogger(__name__)

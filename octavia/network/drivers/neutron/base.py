@@ -18,6 +18,7 @@ from oslo_log import log as logging
 
 from octavia.common import clients
 from octavia.common import data_models
+from octavia.i18n import _
 from octavia.network import base
 from octavia.network import data_models as network_models
 from octavia.network.drivers.neutron import utils

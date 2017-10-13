@@ -31,6 +31,7 @@ from octavia.api.v2.types import pool
 from octavia.api.v2.types import quotas
 from octavia.common import data_models
 from octavia.db import base_models
+from octavia.i18n import _
 
 
 class ProvisioningStatus(base_models.BASE, base_models.LookupTableMixin):

@@ -22,6 +22,8 @@ import six
 from oslo_utils import excutils
 from webob import exc
 
+from octavia.i18n import _
+
 
 class OctaviaException(Exception):
     """Base Octavia Exception.

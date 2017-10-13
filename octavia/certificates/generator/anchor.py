@@ -19,6 +19,7 @@ import requests
 
 from octavia.certificates.generator import local
 from octavia.common import exceptions
+from octavia.i18n import _
 
 LOG = logging.getLogger(__name__)
 
