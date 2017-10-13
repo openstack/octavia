@@ -47,7 +47,7 @@ class EventStreamerNoop(EventStreamerBase):
     """
 
     def emit(self, cnt):
-            pass
+        pass
 
 
 class EventStreamerNeutron(EventStreamerBase):

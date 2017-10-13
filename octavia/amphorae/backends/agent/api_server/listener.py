@@ -408,7 +408,7 @@ class Listener(object):
         mode = stat.S_IRUSR | stat.S_IWUSR
         with os.fdopen(os.open(file, flags, mode), 'wb') as crt_file:
             b = stream.read(BUFFER)
-            while (b):
+            while b:
                 crt_file.write(b)
                 b = stream.read(BUFFER)
 

@@ -130,7 +130,7 @@ class BaseType(wtypes.Base):
             if attr == 'tenant_id':
                 continue
             if value and callable(value):
-                    continue
+                continue
             if value and isinstance(value, BaseType):
                 value = value.to_dict(render_unsets=render_unsets)
             if value and isinstance(value, list):

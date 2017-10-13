@@ -181,10 +181,9 @@ class UnPlugNetworks(BaseNetworkTask):
                                                    nic.network_id)
             except base.NetworkNotFound:
                 LOG.debug("Network %d not found", nic.network_id)
-                pass
             except Exception:
                 LOG.exception("Unable to unplug network")
-                pass  # Todo(german) follow up if that makes sense
+                # TODO(xgerman) follow up if that makes sense
 
 
 class GetMemberPorts(BaseNetworkTask):
