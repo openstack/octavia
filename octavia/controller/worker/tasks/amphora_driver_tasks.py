@@ -307,7 +307,7 @@ class AmphoraVRRPStop(BaseAmphoraTask):
 
     def execute(self, loadbalancer):
         self.amphora_driver.stop_vrrp_service(loadbalancer)
-        LOG.debug("Stopped VRRP of loadbalancer % amphorae",
+        LOG.debug("Stopped VRRP of loadbalancer %s amphorae",
                   loadbalancer.id)
 
 

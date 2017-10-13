@@ -55,7 +55,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        result = super(BaseLoadBalancerType, cls).from_data_model(
+        result = super(LoadBalancerResponse, cls).from_data_model(
             data_model, children=children)
         if data_model.vip:
             result.vip_subnet_id = data_model.vip.subnet_id

@@ -1558,7 +1558,7 @@ class TestDatabaseTasks(base.TestCase):
         repo.Repositories.update_pool_and_sp.assert_called_once_with(
             'TEST',
             POOL_ID,
-            provisioning_status=constants.ERROR)
+            {'provisioning_status': constants.ERROR})
 
         # Test the revert with exception
         mock_repos_pool_update.reset_mock()
@@ -1568,7 +1568,7 @@ class TestDatabaseTasks(base.TestCase):
         repo.Repositories.update_pool_and_sp.assert_called_once_with(
             'TEST',
             POOL_ID,
-            provisioning_status=constants.ERROR)
+            {'provisioning_status': constants.ERROR})
 
     @mock.patch('octavia.db.repositories.L7PolicyRepository.update')
     def test_update_l7policy_in_db(self,

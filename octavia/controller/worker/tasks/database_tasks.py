@@ -1434,8 +1434,9 @@ class UpdatePoolInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting update pool in DB for pool id %s", pool.id)
         try:
-            self.repos.update_pool_and_sp(db_apis.get_session(), pool.id,
-                                          provisioning_status=constants.ERROR)
+            self.repos.update_pool_and_sp(
+                db_apis.get_session(), pool.id,
+                dict(provisioning_status=constants.ERROR))
         except Exception as e:
             LOG.error("Failed to update pool %(pool)s provisioning_status to "
                       "ERROR due to: %(except)s", {'pool': pool.id,

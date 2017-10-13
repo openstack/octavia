@@ -78,7 +78,8 @@ class BaseRepository(object):
     def delete_batch(self, session, ids=None):
         """Batch deletes by entity ids."""
         ids = ids or []
-        [self.delete(session, id) for id in ids]
+        for id in ids:
+            self.delete(session, id=id)
 
     def update(self, session, id, **model_kwargs):
         """Updates an entity in the database.
