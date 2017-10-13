@@ -283,6 +283,7 @@ class PlugVIP(BaseNetworkTask):
             # Make sure we have the current port IDs for cleanup
             for amp_data in result:
                 for amphora in six.moves.filter(
+                        # pylint: disable=cell-var-from-loop
                         lambda amp: amp.id == amp_data.id,
                         loadbalancer.amphorae):
                     amphora.vrrp_port_id = amp_data.vrrp_port_id
