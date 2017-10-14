@@ -28,7 +28,7 @@ import rfc3986
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.common import utils
-
+from octavia.i18n import _
 
 CONF = cfg.CONF
 

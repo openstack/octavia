@@ -18,6 +18,7 @@ import socket
 import six
 
 from octavia.common import constants as consts
+from octavia.i18n import _
 
 
 class HAProxyQuery(object):

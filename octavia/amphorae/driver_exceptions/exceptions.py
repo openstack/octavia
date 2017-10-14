@@ -16,6 +16,8 @@ import six
 
 from oslo_utils import excutils
 
+from octavia.i18n import _
+
 
 class AmphoraDriverError(Exception):
 
