@@ -53,10 +53,10 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
 
         db_mem = None
         if delete:
-            db_mem = repo.member.get(db_api.get_session(), member.id)
+            db_mem = repo.member.get(db_api.get_session(), id=member.id)
             repo.member.delete(db_api.get_session(), id=member.id)
         elif update:
-            db_mem = repo.member.get(db_api.get_session(), member.id)
+            db_mem = repo.member.get(db_api.get_session(), id=member.id)
             member_dict = member.to_dict()
             member_dict['operating_status'] = db_mem.operating_status
             repo.member.update(db_api.get_session(), member.id, **member_dict)
@@ -90,10 +90,12 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
 
         db_l7policy = None
         if delete:
-            db_l7policy = repo.l7policy.get(db_api.get_session(), l7policy.id)
+            db_l7policy = repo.l7policy.get(db_api.get_session(),
+                                            id=l7policy.id)
             repo.l7policy.delete(db_api.get_session(), id=l7policy.id)
         elif update:
-            db_l7policy = repo.l7policy.get(db_api.get_session(), l7policy.id)
+            db_l7policy = repo.l7policy.get(db_api.get_session(),
+                                            id=l7policy.id)
             l7policy_dict = l7policy.to_dict()
             repo.l7policy.update(db_api.get_session(), l7policy.id,
                                  **l7policy_dict)
@@ -116,13 +118,14 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
 
         db_l7rule = None
         if delete:
-            db_l7rule = repo.l7rule.get(db_api.get_session(), l7rule.id)
+            db_l7rule = repo.l7rule.get(db_api.get_session(), id=l7rule.id)
             repo.l7rule.delete(db_api.get_session(), id=l7rule.id)
         elif update:
-            db_l7rule = repo.l7rule.get(db_api.get_session(), l7rule.id)
+            db_l7rule = repo.l7rule.get(db_api.get_session(), id=l7rule.id)
             l7rule_dict = l7rule.to_dict()
             repo.l7rule.update(db_api.get_session(), l7rule.id, **l7rule_dict)
         elif create:
+            l7rule_dict = l7rule.to_dict()
             db_l7rule = repo.l7rule.create(db_api.get_session(), **l7rule_dict)
         if db_l7rule.l7policy.listener:
             listener = db_l7rule.l7policy.listener
@@ -148,7 +151,7 @@ def simulate_controller(data_model, delete=False, update=False, create=False):
                                        pool_id=health_monitor.pool.id)
         elif update:
             db_hm = repo.health_monitor.get(db_api.get_session(),
-                                            health_monitor.pool_id)
+                                            pool_id=health_monitor.pool_id)
             hm_dict = health_monitor.to_dict()
             hm_dict['operating_status'] = db_hm.operating_status()
             repo.health_monitor.update(db_api.get_session(), **hm_dict)
