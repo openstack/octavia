@@ -319,52 +319,52 @@ def _get_x509_from_der_bytes(certificate_der):
 
 
 def build_pem(tls_container):
-        """Concatenate TLS container fields to create a PEM
+    """Concatenate TLS container fields to create a PEM
 
-        encoded certificate file
+    encoded certificate file
 
-        :param tls_container: Object container TLS certificates
-        :returns: Pem encoded certificate file
-        """
-        pem = [tls_container.certificate, tls_container.private_key]
-        if tls_container.intermediates:
-            pem.extend(tls_container.intermediates[:])
-        return b'\n'.join(pem) + b'\n'
+    :param tls_container: Object container TLS certificates
+    :returns: Pem encoded certificate file
+    """
+    pem = [tls_container.certificate, tls_container.private_key]
+    if tls_container.intermediates:
+        pem.extend(tls_container.intermediates[:])
+    return b'\n'.join(pem) + b'\n'
 
 
 def load_certificates_data(cert_mngr, listener):
-        """Load TLS certificate data from the listener.
+    """Load TLS certificate data from the listener.
 
-        return TLS_CERT and SNI_CERTS
-        """
-        tls_cert = None
-        sni_certs = []
+    return TLS_CERT and SNI_CERTS
+    """
+    tls_cert = None
+    sni_certs = []
 
-        if listener.tls_certificate_id:
-            tls_cert = _map_cert_tls_container(
+    if listener.tls_certificate_id:
+        tls_cert = _map_cert_tls_container(
+            cert_mngr.get_cert(listener.project_id,
+                               listener.tls_certificate_id,
+                               check_only=True))
+    if listener.sni_containers:
+        for sni_cont in listener.sni_containers:
+            cert_container = _map_cert_tls_container(
                 cert_mngr.get_cert(listener.project_id,
-                                   listener.tls_certificate_id,
+                                   sni_cont.tls_container_id,
                                    check_only=True))
-        if listener.sni_containers:
-            for sni_cont in listener.sni_containers:
-                cert_container = _map_cert_tls_container(
-                    cert_mngr.get_cert(listener.project_id,
-                                       sni_cont.tls_container_id,
-                                       check_only=True))
-                sni_certs.append(cert_container)
-        return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
+            sni_certs.append(cert_container)
+    return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
 
 
 def _map_cert_tls_container(cert):
-        return data_models.TLSContainer(
-            primary_cn=get_primary_cn(cert),
-            private_key=prepare_private_key(
-                cert.get_private_key(),
-                cert.get_private_key_passphrase()),
-            certificate=cert.get_certificate(),
-            intermediates=cert.get_intermediates())
+    return data_models.TLSContainer(
+        primary_cn=get_primary_cn(cert),
+        private_key=prepare_private_key(
+            cert.get_private_key(),
+            cert.get_private_key_passphrase()),
+        certificate=cert.get_certificate(),
+        intermediates=cert.get_intermediates())
 
 
 def get_primary_cn(tls_cert):
-        """Returns primary CN for Certificate."""
-        return get_host_names(tls_cert.get_certificate())['cn']
+    """Returns primary CN for Certificate."""
+    return get_host_names(tls_cert.get_certificate())['cn']

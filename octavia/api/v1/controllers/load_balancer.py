@@ -286,9 +286,9 @@ class LoadBalancersController(base.BaseController):
             elif controller == 'pools':
                 return pool.PoolsController(
                     load_balancer_id=db_lb.id), remainder
-            elif (controller == 'delete_cascade'):
+            elif controller == 'delete_cascade':
                 return LBCascadeDeleteController(db_lb.id), ''
-            elif (controller == 'stats'):
+            elif controller == 'stats':
                 return lb_stats.LoadBalancerStatisticsController(
                     loadbalancer_id=db_lb.id), remainder
 
