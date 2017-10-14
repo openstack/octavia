@@ -278,6 +278,19 @@ CREATE_VRRP_SECURITY_RULES = 'octavia-create-vrrp-security-rules'
 
 GENERATE_SERVER_PEM_TASK = 'GenerateServerPEMTask'
 
+# Batch Member Update constants
+MEMBERS = 'members'
+UNORDERED_MEMBER_UPDATES_FLOW = 'octavia-unordered-member-updates-flow'
+UNORDERED_MEMBER_ACTIVE_FLOW = 'octavia-unordered-member-active-flow'
+UPDATE_ATTRIBUTES_FLOW = 'octavia-update-attributes-flow'
+DELETE_MODEL_OBJECT_FLOW = 'octavia-delete-model-object-flow'
+BATCH_UPDATE_MEMBERS_FLOW = 'octavia-batch-update-members-flow'
+MEMBER_TO_ERROR_ON_REVERT_FLOW = 'octavia-member-to-error-on-revert-flow'
+DECREMENT_MEMBER_QUOTA_FLOW = 'octavia-decrement-member-quota-flow'
+MARK_MEMBER_ACTIVE_INDB = 'octavia-mark-member-active-indb'
+UPDATE_MEMBER_INDB = 'octavia-update-member-indb'
+DELETE_MEMBER_INDB = 'octavia-delete-member-indb'
+
 # Task Names
 RELOAD_LB_AFTER_AMP_ASSOC = 'reload-lb-after-amp-assoc'
 RELOAD_LB_AFTER_AMP_ASSOC_FULL_GRAPH = 'reload-lb-after-amp-assoc-full-graph'

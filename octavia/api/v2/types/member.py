@@ -101,6 +101,10 @@ class MemberRootPUT(types.BaseType):
     member = wtypes.wsattr(MemberPUT)
 
 
+class MembersRootPUT(types.BaseType):
+    members = wtypes.wsattr([MemberPOST])
+
+
 class MemberSingleCreate(BaseMemberType):
     """Defines mandatory and optional attributes of a POST request."""
     name = wtypes.wsattr(wtypes.StringType(max_length=255))
@@ -112,6 +116,9 @@ class MemberSingleCreate(BaseMemberType):
     weight = wtypes.wsattr(wtypes.IntegerType(
         minimum=constants.MIN_WEIGHT, maximum=constants.MAX_WEIGHT), default=1)
     subnet_id = wtypes.wsattr(wtypes.UuidType())
+    monitor_port = wtypes.wsattr(wtypes.IntegerType(
+        minimum=constants.MIN_PORT_NUMBER, maximum=constants.MAX_PORT_NUMBER))
+    monitor_address = wtypes.wsattr(types.IPAddressType())
 
 
 class MemberStatusResponse(BaseMemberType):

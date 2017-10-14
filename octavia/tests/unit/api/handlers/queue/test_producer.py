@@ -186,6 +186,18 @@ class TestProducer(base.TestCase):
         self.mck_client.cast.assert_called_once_with(
             {}, 'update_member', **kw)
 
+    def test_batch_update_members(self):
+        p = producer.MemberProducer()
+        member_model = data_models.Member(id=10)
+        p.batch_update(old_ids=[9],
+                       new_ids=[11],
+                       updated_models=[member_model])
+        kw = {'old_member_ids': [9],
+              'new_member_ids': [11],
+              'updated_members': [member_model.to_dict()]}
+        self.mck_client.cast.assert_called_once_with(
+            {}, 'batch_update_members', **kw)
+
     def test_create_l7policy(self):
         p = producer.L7PolicyProducer()
         p.create(self.mck_model)

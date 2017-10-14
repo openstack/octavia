@@ -19,6 +19,7 @@ octavia.controller.worker.flows.pool_flows PoolFlows get_update_pool_flow
 octavia.controller.worker.flows.member_flows MemberFlows get_create_member_flow
 octavia.controller.worker.flows.member_flows MemberFlows get_delete_member_flow
 octavia.controller.worker.flows.member_flows MemberFlows get_update_member_flow
+octavia.controller.worker.flows.member_flows MemberFlows get_batch_update_members_flow
 octavia.controller.worker.flows.health_monitor_flows HealthMonitorFlows get_create_health_monitor_flow
 octavia.controller.worker.flows.health_monitor_flows HealthMonitorFlows get_delete_health_monitor_flow
 octavia.controller.worker.flows.health_monitor_flows HealthMonitorFlows get_update_health_monitor_flow

@@ -71,6 +71,10 @@ def generate(flow_list, output_directory):
                 lb = dmh.generate_load_balancer()
                 delete_flow, store = get_flow_method(lb)
                 current_engine = engines.load(delete_flow)
+            elif (current_tuple[1] == 'MemberFlows' and
+                  current_tuple[2] == 'get_batch_update_members_flow'):
+                current_engine = engines.load(
+                    get_flow_method([], [], []))
             else:
                 current_engine = engines.load(get_flow_method())
             current_engine.compile()

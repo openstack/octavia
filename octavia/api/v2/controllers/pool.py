@@ -319,19 +319,14 @@ class PoolsController(base.BaseController):
         which controller, if any, should control be passed.
         """
         context = pecan.request.context.get('octavia_context')
-        if pool_id and len(remainder) and (remainder[0] == 'members' or
-                                           remainder[0] == 'healthmonitor'):
-            controller = remainder[0]
+        if pool_id and len(remainder) and remainder[0] == 'members':
             remainder = remainder[1:]
             db_pool = self.repositories.pool.get(context.session, id=pool_id)
             if not db_pool:
                 LOG.info("Pool %s not found.", pool_id)
                 raise exceptions.NotFound(resource=data_models.Pool._name(),
                                           id=pool_id)
-            if controller == 'members':
-                return member.MembersController(
-                    pool_id=db_pool.id), remainder
-            elif controller == 'healthmonitor':
-                return health_monitor.HealthMonitorController(
-                    load_balancer_id=db_pool.load_balancer_id,
-                    pool_id=db_pool.id), remainder
+            if remainder:
+                return member.MemberController(pool_id=db_pool.id), remainder
+            else:
+                return member.MembersController(pool_id=db_pool.id), remainder

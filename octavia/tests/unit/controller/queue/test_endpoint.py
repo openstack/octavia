@@ -120,6 +120,12 @@ class TestEndpoint(base.TestCase):
         self.ep.worker.update_member.assert_called_once_with(
             self.resource_id, self.resource_updates)
 
+    def test_batch_update_members(self):
+        self.ep.batch_update_members(
+            self.context, [9], [11], [self.resource_updates])
+        self.ep.worker.batch_update_members.assert_called_once_with(
+            [9], [11], [self.resource_updates])
+
     def test_delete_member(self):
         self.ep.delete_member(self.context, self.resource_id)
         self.ep.worker.delete_member.assert_called_once_with(

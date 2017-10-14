@@ -376,6 +376,34 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             delete_member_tf.run()
 
+    def batch_update_members(self, old_member_ids, new_member_ids,
+                             updated_members):
+        old_members = [self._member_repo.get(db_apis.get_session(), id=mid)
+                       for mid in old_member_ids]
+        new_members = [self._member_repo.get(db_apis.get_session(), id=mid)
+                       for mid in new_member_ids]
+        updated_members = [
+            (self._member_repo.get(db_apis.get_session(), id=m.get('id')), m)
+            for m in updated_members]
+        if old_members:
+            pool = old_members[0].pool
+        elif new_members:
+            pool = new_members[0].pool
+        else:
+            pool = updated_members[0][0].pool
+        listeners = pool.listeners
+        load_balancer = pool.load_balancer
+
+        batch_update_members_tf = self._taskflow_load(
+            self._member_flows.get_batch_update_members_flow(
+                old_members, new_members, updated_members),
+            store={constants.LISTENERS: listeners,
+                   constants.LOADBALANCER: load_balancer,
+                   constants.POOL: pool})
+        with tf_logging.DynamicLoggingListener(batch_update_members_tf,
+                                               log=LOG):
+            batch_update_members_tf.run()
+
     def update_member(self, member_id, member_updates):
         """Updates a pool member.
 

@@ -340,8 +340,79 @@ Response Example
 .. literalinclude:: examples/member-update-response.json
    :language: javascript
 
+Batch Update Members
+====================
+
+.. rest_method:: PUT /v2.0/lbaas/pools/{pool_id}/members
+
+Set the state of members for a pool in one API call. This may include
+creating new members, deleting old members, and updating existing members.
+Existing members are matched based on address/port combination.
+
+For example, assume a pool currently has two members. These members have the
+following address/port combinations: '192.0.2.15:80' and '192.0.2.16:80'.
+Now assume a PUT request is made that includes members with address/port
+combinations: '192.0.2.16:80' and '192.0.2.17:80'.
+The member '192.0.2.15:80' will be deleted, because it was not in the request.
+The member '192.0.2.16:80' will be updated to match the request data for that
+member, because it was matched.
+The member '192.0.2.17:80' will be created, because no such member existed.
+
+If the request is valid, the service returns the ``Accepted (202)``
+response code. To confirm the updates, check that the member provisioning
+statuses are ``ACTIVE`` for new or updated members, and that any unspecified
+members were correctly deleted. If the statuses are ``PENDING_UPDATE`` or
+``PENDING_DELETE``, use GET to poll the member objects for changes.
+
+.. rest_status_code:: success ../http-status.yaml
+
+   - 202
+
+.. rest_status_code:: error ../http-status.yaml
+
+   - 400
+   - 401
+   - 403
+   - 404
+   - 409
+   - 500
+   - 503
+
+Request
+-------
+
+.. rest_parameters:: ../parameters.yaml
+
+   - admin_state_up: admin_state_up-default-optional
+   - address: address
+   - monitor_address: monitor_address-optional
+   - monitor_port: monitor_port-optional
+   - name: name-optional
+   - pool_id: path-pool-id
+   - project_id: project_id-optional-deprecated
+   - protocol_port: protocol_port
+   - subnet_id: subnet_id-optional
+   - weight: weight-optional
+
+Request Example
+---------------
+
+.. literalinclude:: examples/member-batch-update-request.json
+   :language: javascript
+
+Curl Example
+------------
+
+.. literalinclude:: examples/member-batch-update-curl
+   :language: bash
+
+Response
+--------
+
+There is no body content for the response of a successful PUT request.
+
 Remove a Member
-=================
+===============
 
 .. rest_method:: DELETE /v2.0/lbaas/pools/{pool_id}/members/{member_id}
 
