@@ -1,0 +1,66 @@
+- hosts: all
+  name: Autoconverted job legacy-octavia-v1-dsvm-scenario from old job gate-octavia-v1-dsvm-scenario-ubuntu-xenial-nv
+  tasks:
+
+    - name: Ensure legacy workspace directory
+      file:
+        path: '{{ ansible_user_dir }}/workspace'
+        state: directory
+
+    - shell:
+        cmd: |
+          set -e
+          set -x
+          cat > clonemap.yaml << EOF
+          clonemap:
+            - name: openstack-infra/devstack-gate
+              dest: devstack-gate
+          EOF
+          /usr/zuul-env/bin/zuul-cloner -m clonemap.yaml --cache-dir /opt/git \
+              git://git.openstack.org \
+              openstack-infra/devstack-gate
+        executable: /bin/bash
+        chdir: '{{ ansible_user_dir }}/workspace'
+      environment: '{{ zuul | zuul_legacy_vars }}'
+
+    - shell:
+        cmd: |
+          set -e
+          set -x
+          export PYTHONUNBUFFERED=true
+          export DEVSTACK_GATE_TEMPEST=1
+          export DEVSTACK_GATE_TEMPEST_NOTESTS=1
+          export DEVSTACK_GATE_EXERCISES=0
+          export DEVSTACK_GATE_NEUTRON=1
+          export DEVSTACK_GATE_INSTALL_TESTONLY=1
+          export BRANCH_OVERRIDE=default
+          if [ "$BRANCH_OVERRIDE" != "default" ] ; then
+              export OVERRIDE_ZUUL_BRANCH=$BRANCH_OVERRIDE
+          fi
+          export PROJECTS="openstack/barbican $PROJECTS"
+          export PROJECTS="openstack/python-barbicanclient $PROJECTS"
+          export PROJECTS="openstack/diskimage-builder $PROJECTS"
+          export PROJECTS="openstack/tripleo-image-elements $PROJECTS"
+          export PROJECTS="openstack/neutron-lbaas $PROJECTS"
+          export PROJECTS="openstack/octavia $PROJECTS"
+
+          if ! [[ "$ZUUL_BRANCH" =~ "stable/newton"|"stable/ocata" ]]; then
+              export DEVSTACK_PROJECT_FROM_GIT="python-octaviaclient"
+              export OVERRIDE_PYTHON_OCTAVIACLIENT_PROJECT_BRANCH=$ZUUL_BRANCH
+          fi
+
+          function gate_hook {
+              $BASE/new/octavia/octavia/tests/contrib/gate_hook.sh tempest v1 scenario
+          }
+          export -f gate_hook
+
+          function post_test_hook {
+              $BASE/new/octavia/octavia/tests/contrib/post_test_hook.sh tempest v1 scenario
+          }
+          export -f post_test_hook
+
+          cp devstack-gate/devstack-vm-gate-wrap.sh ./safe-devstack-vm-gate-wrap.sh
+          ./safe-devstack-vm-gate-wrap.sh
+        executable: /bin/bash
+        chdir: '{{ ansible_user_dir }}/workspace'
+      environment: '{{ zuul | zuul_legacy_vars }}'
