@@ -12,8 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest.common import utils
 from tempest.lib import decorators
-from tempest import test
 
 from octavia.tests.tempest.v1.scenario import base
 
@@ -27,7 +27,7 @@ class TestLoadBalancerQuota(base.BaseTestCase):
        with a quota exceeded code.
     """
 
-    @test.services('compute', 'network')
+    @utils.services('compute', 'network')
     @decorators.skip_because(bug="1656110")
     def test_load_balancer_quota(self):
         self._set_quotas(project_id=None, load_balancer=1)

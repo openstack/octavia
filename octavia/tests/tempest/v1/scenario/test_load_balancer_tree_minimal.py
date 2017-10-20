@@ -13,8 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest.common import utils
 from tempest import config
-from tempest import test
 
 
 from octavia.tests.tempest.v1.scenario import base
@@ -24,7 +24,7 @@ config = config.CONF
 
 class TestLoadBalancerTreeMinimal(base.BaseTestCase):
 
-    @test.services('compute', 'network')
+    @utils.services('compute', 'network')
     def test_load_balancer_tree_minimal(self):
         """This test checks basic load balancing.
 
