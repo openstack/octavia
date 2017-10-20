@@ -115,6 +115,7 @@ class BaseType(wtypes.Base):
         # Set project_id equal tenant_id if project_id is unset and tenant_id
         # is
         if hasattr(self, 'project_id') and hasattr(self, 'tenant_id'):
+            # pylint: disable=access-member-before-definition
             if (isinstance(self.project_id, wtypes.UnsetType) and
                     not isinstance(self.tenant_id, wtypes.UnsetType)):
                 self.project_id = self.tenant_id

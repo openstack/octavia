@@ -411,9 +411,9 @@ class MemberHandler(abstract_handler.BaseObjectHandler):
                   "new": new_member_ids})
 
         repo = repos.Repositories()
-        old_members = [repo.member.get(db_api.get_session(), mid)
+        old_members = [repo.member.get(db_api.get_session(), id=mid)
                        for mid in old_member_ids]
-        new_members = [repo.member.get(db_api.get_session(), mid)
+        new_members = [repo.member.get(db_api.get_session(), id=mid)
                        for mid in new_member_ids]
         all_members = []
         all_members.extend(old_members)
