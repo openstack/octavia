@@ -32,12 +32,12 @@ from six.moves.urllib import error
 from six.moves.urllib import request as urllib2
 from tempest import clients
 from tempest.common import credentials_factory
+from tempest.common import utils
 from tempest.common import waiters
 from tempest import config
 from tempest import exceptions
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
-from tempest import test
 
 
 from octavia.i18n import _
@@ -102,7 +102,7 @@ class BaseTestCase(manager.NetworkScenarioTest):
     def skip_checks(cls):
         super(BaseTestCase, cls).skip_checks()
         cfg = config.network
-        if not test.is_extension_enabled('lbaasv2', 'network'):
+        if not utils.is_extension_enabled('lbaasv2', 'network'):
             msg = 'LBaaS Extension is not enabled'
             raise cls.skipException(msg)
         if not (cfg.project_networks_reachable or cfg.public_network_id):

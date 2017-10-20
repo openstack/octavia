@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from tempest import test
+from tempest.common import utils
 
 from octavia.tests.tempest.v1.scenario import base
 
@@ -31,7 +31,7 @@ class TestListenerBasic(base.BaseTestCase):
     5. Delete listener and validate the traffic is not sent to any members.
     """
 
-    @test.services('compute', 'network')
+    @utils.services('compute', 'network')
     def test_load_balancer_basic(self):
         self._create_server('server1')
         self._start_backend_httpd_processes('server1')
