@@ -432,13 +432,13 @@ class LoadBalancersController(base.BaseController):
                                    constants.RBAC_DELETE)
 
         with db_api.get_lock_session() as lock_session:
-            self._test_lb_status(lock_session, id,
-                                 lb_status=constants.PENDING_DELETE)
             if (db_lb.listeners or db_lb.pools) and not cascade:
                 msg = _("Cannot delete Load Balancer %s - "
                         "it has children") % id
                 LOG.warning(msg)
                 raise exceptions.ValidationException(detail=msg)
+            self._test_lb_status(lock_session, id,
+                                 lb_status=constants.PENDING_DELETE)
 
         try:
             LOG.info("Sending deleted Load Balancer %s to the handler", id)
