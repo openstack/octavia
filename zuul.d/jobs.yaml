@@ -1,20 +1,14 @@
 - job:
     name: octavia-tox-functional
-    parent: legacy-base
-    run: playbooks/legacy/octavia-tox-functional/run
-    post-run: playbooks/legacy/octavia-tox-functional/post
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    vars:
+      tox_envlist: functional
 
 - job:
     name: octavia-tox-functional-py35
-    parent: legacy-base
-    run: playbooks/legacy/octavia-tox-functional-py35/run
-    post-run: playbooks/legacy/octavia-tox-functional-py35/post
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    vars:
+      tox_envlist: functional-py35
 
 - job:
     name: octavia-v1-dsvm-scenario

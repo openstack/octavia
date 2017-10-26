@@ -4,32 +4,33 @@
     name: openstack/octavia
     check:
       jobs:
-        - neutron-lbaasv2-dsvm-minimal:
-            branches: ^stable/newton
-        - neutron-lbaasv2-dsvm-loadbalancer:
-            branches: ^stable/newton
-        - neutron-lbaasv2-dsvm-listener:
-            branches: ^stable/newton
-        - neutron-lbaasv2-dsvm-pool:
-            branches: ^stable/newton
-        - neutron-lbaasv2-dsvm-member:
-            branches: ^stable/newton
-        - neutron-lbaasv2-dsvm-healthmonitor:
-            branches: ^stable/newton
-        - openstack-tox-cover
-        - neutron-lbaasv2-dsvm-api:
-            branches: ^(?!stable/newton).*$
+        - neutron-lbaasv2-dsvm-api
         - neutron-lbaasv2-dsvm-py3x-api:
-            branches: ^(?!stable)
+            branches: ^(?!stable/ocata).*$
         - neutron-lbaasv2-dsvm-scenario:
             voting: false
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
         - neutron-lbaasv2-dsvm-py3x-scenario:
-            branches: ^(?!stable)
+            branches: ^(?!stable/ocata).*$
             voting: false
-        - octavia-tox-functional:
-            branches: ^(?!stable/newton).*$
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
+        - octavia-tox-functional
         - octavia-tox-functional-py35:
-            branches: ^(?!stable/(newton|ocata)).*$
+            branches: ^(?!stable/ocata).*$
         - octavia-v1-dsvm-scenario:
             irrelevant-files:
               - ^.*\.rst$
@@ -40,7 +41,7 @@
               - ^tempest/hacking/.*$
               - ^tempest/tests/.*$
         - octavia-v1-dsvm-py3x-scenario:
-            branches: ^(?!stable)
+            branches: ^(?!stable/ocata).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -50,7 +51,6 @@
               - ^tempest/hacking/.*$
               - ^tempest/tests/.*$
         - octavia-v1-dsvm-scenario-multinode:
-            branches: ^(?!stable/newton).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -60,7 +60,7 @@
               - ^tempest/hacking/.*$
               - ^tempest/tests/.*$
         - octavia-v1-dsvm-py3x-scenario-multinode:
-            branches: ^(?!stable)
+            branches: ^(?!stable/ocata).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -81,7 +81,7 @@
               - ^tempest/tests/.*$
         - octavia-v1-dsvm-scenario-lxd:
             voting: false
-            branches: ^(?!stable/(newton|ocata)).*$
+            branches: ^(?!stable/ocata).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -93,21 +93,9 @@
     gate:
       queue: octavia
       jobs:
-        - neutron-lbaasv2-dsvm-loadbalancer:
-            branches: ^stable/newton
-        - neutron-lbaasv2-dsvm-listener:
-            branches: ^stable/newton
-        - neutron-lbaasv2-dsvm-pool:
-            branches: ^stable/newton
-        - neutron-lbaasv2-dsvm-member:
-            branches: ^stable/newton
-        - neutron-lbaasv2-dsvm-healthmonitor:
-            branches: ^stable/newton
-        - openstack-tox-cover
-        - octavia-tox-functional:
-            branches: ^(?!stable/newton).*$
+        - octavia-tox-functional
         - octavia-tox-functional-py35:
-            branches: ^(?!stable/(newton|ocata)).*$
+            branches: ^(?!stable/ocata).*$
         - octavia-v1-dsvm-scenario:
             irrelevant-files:
               - ^.*\.rst$
@@ -118,7 +106,7 @@
               - ^tempest/hacking/.*$
               - ^tempest/tests/.*$
         - octavia-v1-dsvm-py3x-scenario:
-            branches: ^(?!stable)
+            branches: ^(?!stable/ocata).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -128,7 +116,6 @@
               - ^tempest/hacking/.*$
               - ^tempest/tests/.*$
         - octavia-v1-dsvm-scenario-multinode:
-            branches: ^(?!stable/newton).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -138,7 +125,7 @@
               - ^tempest/hacking/.*$
               - ^tempest/tests/.*$
         - octavia-v1-dsvm-py3x-scenario-multinode:
-            branches: ^(?!stable)
+            branches: ^(?!stable/ocata).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -147,7 +134,6 @@
               - ^releasenotes/.*$
               - ^tempest/hacking/.*$
               - ^tempest/tests/.*$
-        - neutron-lbaasv2-dsvm-api:
-            branches: ^(?!stable/newton).*$
+        - neutron-lbaasv2-dsvm-api
         - neutron-lbaasv2-dsvm-py3x-api:
-            branches: ^(?!stable)
+            branches: ^(?!stable/ocata).*$
