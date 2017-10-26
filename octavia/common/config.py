@@ -195,6 +195,10 @@ oslo_messaging_opts = [
     cfg.StrOpt('event_stream_topic',
                default='neutron_lbaas_event',
                help=_('topic name for communicating events through a queue')),
+    cfg.StrOpt('event_stream_transport_url', default=None,
+               help=_('Transport URL to use for the neutron-lbaas'
+                      'synchronization event stream when neutron and octavia'
+                      'have separate queues.')),
 ]
 
 haproxy_amphora_opts = [

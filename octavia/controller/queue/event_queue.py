@@ -60,7 +60,12 @@ class EventStreamerNeutron(EventStreamerBase):
 
     def __init__(self):
         topic = cfg.CONF.oslo_messaging.event_stream_topic
-        self.transport = oslo_messaging.get_rpc_transport(cfg.CONF)
+        if cfg.CONF.oslo_messaging.event_stream_transport_url:
+            # Use custom URL
+            self.transport = oslo_messaging.get_rpc_transport(
+                cfg.CONF, cfg.CONF.oslo_messaging.event_stream_transport_url)
+        else:
+            self.transport = oslo_messaging.get_rpc_transport(cfg.CONF)
         self.target = oslo_messaging.Target(topic=topic, exchange="common",
                                             namespace='control', fanout=False,
                                             version='1.0')

@@ -1,0 +1,16 @@
+---
+features:
+  - |
+    In some enviornments (e.g. OSA) Neutron and Octavia use different queues
+    (at least different vhosts) and so if Octavia posts to the Octavia queue
+    and Neutron listens on the Neutron queue the events will never make it
+    over.
+
+    This adds a way to configure a custom queue for the event streamer thus
+    allowing to post messages to the Neutron queue if needed.
+security:
+  - |
+    Depending on how the other queue is set up additional passwords for the
+    other queue will be in the Octavia config file. Operators should take care
+    of setting up appropriate users with appropriate restrictions to the
+    topic(s) needed.
