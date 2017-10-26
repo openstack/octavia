@@ -1,0 +1,94 @@
+- job:
+    name: octavia-tox-functional
+    parent: openstack-tox
+    vars:
+      tox_envlist: functional
+
+- job:
+    name: octavia-tox-functional-py35
+    parent: openstack-tox
+    vars:
+      tox_envlist: functional-py35
+
+- job:
+    name: octavia-v1-dsvm-scenario
+    parent: legacy-dsvm-base
+    run: playbooks/legacy/octavia-v1-dsvm-scenario/run.yaml
+    post-run: playbooks/legacy/octavia-v1-dsvm-scenario/post.yaml
+    timeout: 7800
+    required-projects:
+      - openstack-infra/devstack-gate
+      - openstack/barbican
+      - openstack/diskimage-builder
+      - openstack/neutron-lbaas
+      - openstack/octavia
+      - openstack/python-barbicanclient
+      - openstack/python-octaviaclient
+      - openstack/tripleo-image-elements
+
+- job:
+    name: octavia-v1-dsvm-py3x-scenario
+    parent: legacy-dsvm-base
+    run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario/run.yaml
+    post-run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario/post.yaml
+    timeout: 7800
+    required-projects:
+      - openstack-infra/devstack-gate
+      - openstack/barbican
+      - openstack/diskimage-builder
+      - openstack/neutron-lbaas
+      - openstack/octavia
+      - openstack/python-barbicanclient
+      - openstack/python-octaviaclient
+      - openstack/tripleo-image-elements
+
+- job:
+    name: octavia-v1-dsvm-scenario-multinode
+    parent: legacy-dsvm-base-multinode
+    run: playbooks/legacy/octavia-v1-dsvm-scenario-multinode/run.yaml
+    post-run: playbooks/legacy/octavia-v1-dsvm-scenario-multinode/post.yaml
+    timeout: 7800
+    required-projects:
+      - openstack-infra/devstack-gate
+      - openstack/barbican
+      - openstack/diskimage-builder
+      - openstack/neutron-lbaas
+      - openstack/octavia
+      - openstack/python-barbicanclient
+      - openstack/python-octaviaclient
+      - openstack/tripleo-image-elements
+    nodeset: legacy-ubuntu-xenial-2-node
+
+- job:
+    name: octavia-v1-dsvm-py3x-scenario-multinode
+    parent: legacy-dsvm-base-multinode
+    run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario-multinode/run.yaml
+    post-run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario-multinode/post.yaml
+    timeout: 7800
+    required-projects:
+      - openstack-infra/devstack-gate
+      - openstack/barbican
+      - openstack/diskimage-builder
+      - openstack/neutron-lbaas
+      - openstack/octavia
+      - openstack/python-barbicanclient
+      - openstack/python-octaviaclient
+      - openstack/tripleo-image-elements
+    nodeset: legacy-ubuntu-xenial-2-node
+
+- job:
+    name: octavia-v1-dsvm-scenario-kvm-centos.7
+    parent: legacy-dsvm-base
+    run: playbooks/legacy/octavia-v1-dsvm-scenario-kvm-centos.7/run.yaml
+    post-run: playbooks/legacy/octavia-v1-dsvm-scenario-kvm-centos.7/post.yaml
+    timeout: 7800
+    required-projects:
+      - openstack-infra/devstack-gate
+      - openstack/barbican
+      - openstack/barbican-tempest-plugin
+      - openstack/diskimage-builder
+      - openstack/neutron-lbaas
+      - openstack/octavia
+      - openstack/python-barbicanclient
+      - openstack/python-octaviaclient
+      - openstack/tripleo-image-elements

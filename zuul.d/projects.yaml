@@ -1,0 +1,128 @@
+# Note: Some official OpenStack wide jobs are still defined in the
+#       project-config repository
+- project:
+    name: openstack/octavia
+    check:
+      jobs:
+        - neutron-lbaasv2-dsvm-api
+        - neutron-lbaasv2-dsvm-py3x-api:
+            branches: ^(?!stable/ocata).*$
+        - neutron-lbaasv2-dsvm-scenario:
+            voting: false
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
+        - neutron-lbaasv2-dsvm-py3x-scenario:
+            branches: ^(?!stable/ocata).*$
+            voting: false
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
+        - octavia-tox-functional
+        - octavia-tox-functional-py35:
+            branches: ^(?!stable/ocata).*$
+        - octavia-v1-dsvm-scenario:
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
+        - octavia-v1-dsvm-py3x-scenario:
+            branches: ^(?!stable/ocata).*$
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
+        - octavia-v1-dsvm-scenario-multinode:
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
+        - octavia-v1-dsvm-py3x-scenario-multinode:
+            branches: ^(?!stable/ocata).*$
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
+        - octavia-v1-dsvm-scenario-kvm-centos.7:
+            voting: false
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
+    gate:
+      queue: octavia
+      jobs:
+        - octavia-tox-functional
+        - octavia-tox-functional-py35:
+            branches: ^(?!stable/ocata).*$
+        - octavia-v1-dsvm-scenario:
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
+        - octavia-v1-dsvm-py3x-scenario:
+            branches: ^(?!stable/ocata).*$
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
+        - octavia-v1-dsvm-scenario-multinode:
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
+        - octavia-v1-dsvm-py3x-scenario-multinode:
+            branches: ^(?!stable/ocata).*$
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
+        - neutron-lbaasv2-dsvm-api
+        - neutron-lbaasv2-dsvm-py3x-api:
+            branches: ^(?!stable/ocata).*$
