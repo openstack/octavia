@@ -29,10 +29,10 @@ class TestTLSParseUtils(base.TestCase):
     def test_alt_subject_name_parses(self):
         hosts = cert_parser.get_host_names(sample_certs.ALT_EXT_CRT)
         self.assertIn('www.cnfromsubject.org', hosts['cn'])
-        self.assertIn('www.hostfromdnsname1.com', hosts['dns_names'])
-        self.assertIn('www.hostfromdnsname2.com', hosts['dns_names'])
-        self.assertIn('www.hostfromdnsname3.com', hosts['dns_names'])
-        self.assertIn('www.hostfromdnsname4.com', hosts['dns_names'])
+        self.assertIn('www.hostFromDNSName1.com', hosts['dns_names'])
+        self.assertIn('www.hostFromDNSName2.com', hosts['dns_names'])
+        self.assertIn('www.hostFromDNSName3.com', hosts['dns_names'])
+        self.assertIn('www.hostFromDNSName4.com', hosts['dns_names'])
 
     def test_x509_parses(self):
         self.assertRaises(exceptions.UnreadableCert,
