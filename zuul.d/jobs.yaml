@@ -13,8 +13,8 @@
 - job:
     name: octavia-v1-dsvm-scenario
     parent: legacy-dsvm-base
-    run: playbooks/legacy/octavia-v1-dsvm-scenario/run
-    post-run: playbooks/legacy/octavia-v1-dsvm-scenario/post
+    run: playbooks/legacy/octavia-v1-dsvm-scenario/run.yaml
+    post-run: playbooks/legacy/octavia-v1-dsvm-scenario/post.yaml
     timeout: 7800
     required-projects:
       - openstack-infra/devstack-gate
@@ -29,8 +29,8 @@
 - job:
     name: octavia-v1-dsvm-py3x-scenario
     parent: legacy-dsvm-base
-    run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario/run
-    post-run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario/post
+    run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario/run.yaml
+    post-run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario/post.yaml
     timeout: 7800
     required-projects:
       - openstack-infra/devstack-gate
@@ -45,8 +45,8 @@
 - job:
     name: octavia-v1-dsvm-scenario-multinode
     parent: legacy-dsvm-base-multinode
-    run: playbooks/legacy/octavia-v1-dsvm-scenario-multinode/run
-    post-run: playbooks/legacy/octavia-v1-dsvm-scenario-multinode/post
+    run: playbooks/legacy/octavia-v1-dsvm-scenario-multinode/run.yaml
+    post-run: playbooks/legacy/octavia-v1-dsvm-scenario-multinode/post.yaml
     timeout: 7800
     required-projects:
       - openstack-infra/devstack-gate
@@ -62,8 +62,8 @@
 - job:
     name: octavia-v1-dsvm-py3x-scenario-multinode
     parent: legacy-dsvm-base-multinode
-    run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario-multinode/run
-    post-run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario-multinode/post
+    run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario-multinode/run.yaml
+    post-run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario-multinode/post.yaml
     timeout: 7800
     required-projects:
       - openstack-infra/devstack-gate
@@ -79,8 +79,8 @@
 - job:
     name: octavia-v1-dsvm-scenario-kvm-centos.7
     parent: legacy-dsvm-base
-    run: playbooks/legacy/octavia-v1-dsvm-scenario-kvm-centos.7/run
-    post-run: playbooks/legacy/octavia-v1-dsvm-scenario-kvm-centos.7/post
+    run: playbooks/legacy/octavia-v1-dsvm-scenario-kvm-centos.7/run.yaml
+    post-run: playbooks/legacy/octavia-v1-dsvm-scenario-kvm-centos.7/post.yaml
     timeout: 7800
     required-projects:
       - openstack-infra/devstack-gate
@@ -96,8 +96,8 @@
 - job:
     name: octavia-v1-dsvm-scenario-lxd
     parent: legacy-dsvm-base
-    run: playbooks/legacy/octavia-v1-dsvm-scenario-lxd/run
-    post-run: playbooks/legacy/octavia-v1-dsvm-scenario-lxd/post
+    run: playbooks/legacy/octavia-v1-dsvm-scenario-lxd/run.yaml
+    post-run: playbooks/legacy/octavia-v1-dsvm-scenario-lxd/post.yaml
     timeout: 7800
     required-projects:
       - openstack-infra/devstack-gate
