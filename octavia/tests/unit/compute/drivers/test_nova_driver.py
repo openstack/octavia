@@ -107,6 +107,7 @@ class TestNovaClient(base.TestCase):
         self.nova_response.id = self.amphora.compute_id
         self.nova_response.status = 'ACTIVE'
         self.nova_response.fault = 'FAKE_FAULT'
+        setattr(self.nova_response, 'OS-EXT-AZ:availability_zone', None)
 
         self.interface_list = mock.MagicMock()
         self.interface_list.net_id = '1'
@@ -281,6 +282,13 @@ class TestNovaClient(base.TestCase):
                           self.manager.get_amphora, self.amphora.id)
 
     def test_translate_amphora(self):
+        amphora, fault = self.manager._translate_amphora(self.nova_response)
+        self.assertEqual(self.amphora, amphora)
+        self.assertEqual(self.nova_response.fault, fault)
+        self.nova_response.interface_list.called_with()
+
+    def test_translate_amphora_no_availability_zone(self):
+        delattr(self.nova_response, 'OS-EXT-AZ:availability_zone')
         amphora, fault = self.manager._translate_amphora(self.nova_response)
         self.assertEqual(self.amphora, amphora)
         self.assertEqual(self.nova_response.fault, fault)

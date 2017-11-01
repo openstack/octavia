@@ -488,7 +488,7 @@ class Amphora(BaseDataModel):
                  ha_ip=None, vrrp_port_id=None, ha_port_id=None,
                  load_balancer=None, role=None, cert_expiration=None,
                  cert_busy=False, vrrp_interface=None, vrrp_id=None,
-                 vrrp_priority=None):
+                 vrrp_priority=None, cached_zone=None):
         self.id = id
         self.load_balancer_id = load_balancer_id
         self.compute_id = compute_id
@@ -505,6 +505,7 @@ class Amphora(BaseDataModel):
         self.load_balancer = load_balancer
         self.cert_expiration = cert_expiration
         self.cert_busy = cert_busy
+        self.cached_zone = cached_zone
 
     def delete(self):
         for amphora in self.load_balancer.amphorae:

@@ -214,6 +214,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
         # fields
 
         lb_network_ip = None
+        availability_zone = None
         fault = None
 
         try:
@@ -229,6 +230,12 @@ class VirtualMachineManager(compute_base.ComputeBase):
                 if is_boot_network or no_boot_networks:
                     lb_network_ip = interface.fixed_ips[0]['ip_address']
                     break
+            try:
+                availability_zone = getattr(
+                    nova_response, 'OS-EXT-AZ:availability_zone')
+            except AttributeError:
+                LOG.info('No availability zone listed for server %s',
+                         nova_response.id)
             fault = getattr(nova_response, 'fault', None)
         except Exception:
             LOG.debug('Extracting virtual interfaces through nova '
@@ -237,7 +244,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
         response = models.Amphora(
             compute_id=nova_response.id,
             status=nova_response.status,
-            lb_network_ip=lb_network_ip
+            lb_network_ip=lb_network_ip,
+            cached_zone=availability_zone
         )
         return response, fault
 

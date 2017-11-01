@@ -511,6 +511,7 @@ class Amphora(base_models.BASE, base_models.IdMixin):
     vrrp_interface = sa.Column(sa.String(16), nullable=True)
     vrrp_id = sa.Column(sa.Integer(), nullable=True)
     vrrp_priority = sa.Column(sa.Integer(), nullable=True)
+    cached_zone = sa.Column(sa.String(255), nullable=True)
 
 
 class AmphoraHealth(base_models.BASE):

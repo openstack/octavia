@@ -14,6 +14,7 @@
         "status": "ALLOCATED",
         "vrrp_interface": "eth1",
         "vrrp_id": 1,
-        "vrrp_priority": 100
+        "vrrp_priority": 100,
+        "cached_zone": "zone1"
     }
 }

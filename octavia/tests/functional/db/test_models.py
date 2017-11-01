@@ -29,6 +29,7 @@ class ModelTestMixin(object):
     FAKE_IP = '10.0.0.1'
     FAKE_UUID_1 = uuidutils.generate_uuid()
     FAKE_UUID_2 = uuidutils.generate_uuid()
+    FAKE_AZ = 'zone1'
 
     def _insert(self, session, model_cls, model_kwargs):
         with session.begin():
@@ -138,7 +139,8 @@ class ModelTestMixin(object):
                   'ha_port_id': self.FAKE_UUID_2,
                   'lb_network_ip': self.FAKE_IP,
                   'cert_expiration': datetime.datetime.utcnow(),
-                  'cert_busy': False}
+                  'cert_busy': False,
+                  'cached_zone': self.FAKE_AZ}
         kwargs.update(overrides)
         return self._insert(session, models.Amphora, kwargs)
 
