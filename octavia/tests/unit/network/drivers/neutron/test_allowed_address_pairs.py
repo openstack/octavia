@@ -126,6 +126,50 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         delete_port.assert_has_calls(calls, any_order=True)
         delete_sec_grp.assert_called_once_with(sec_grp_id)
 
+    def test_deallocate_vip_no_port(self):
+        lb = dmh.generate_load_balancer_tree()
+        lb.vip.load_balancer = lb
+        vip = lb.vip
+        sec_grp_id = 'lb-sec-grp1'
+        show_port = self.driver.neutron_client.show_port
+        port = {'port': {
+            'device_owner': allowed_address_pairs.OCTAVIA_OWNER}}
+        show_port.side_effect = [port, Exception]
+        list_security_groups = self.driver.neutron_client.list_security_groups
+        security_groups = {
+            'security_groups': [
+                {'id': sec_grp_id}
+            ]
+        }
+        list_security_groups.return_value = security_groups
+        self.driver.deallocate_vip(vip)
+        self.driver.neutron_client.update_port.assert_not_called()
+
+    def test_deallocate_vip_port_deleted(self):
+        lb = dmh.generate_load_balancer_tree()
+        lb.vip.load_balancer = lb
+        vip = lb.vip
+        sec_grp_id = 'lb-sec-grp1'
+        show_port = self.driver.neutron_client.show_port
+        show_port.return_value = {'port': {
+            'device_owner': allowed_address_pairs.OCTAVIA_OWNER}}
+        delete_port = self.driver.neutron_client.delete_port
+        delete_port.side_effect = neutron_exceptions.NotFound
+        delete_sec_grp = self.driver.neutron_client.delete_security_group
+        list_security_groups = self.driver.neutron_client.list_security_groups
+        security_groups = {
+            'security_groups': [
+                {'id': sec_grp_id}
+            ]
+        }
+        list_security_groups.return_value = security_groups
+        self.driver.deallocate_vip(vip)
+        calls = [mock.call(vip.port_id)]
+        for amp in lb.amphorae:
+            calls.append(mock.call(amp.vrrp_port_id))
+        delete_port.assert_has_calls(calls, any_order=True)
+        delete_sec_grp.assert_called_once_with(sec_grp_id)
+
     def test_deallocate_vip_no_sec_group(self):
         lb = dmh.generate_load_balancer_tree()
         lb.vip.load_balancer = lb
@@ -162,8 +206,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         vip.load_balancer = lb
         show_port = self.driver.neutron_client.show_port
         show_port.side_effect = neutron_exceptions.PortNotFoundClient
-        self.assertRaises(network_base.VIPConfigurationNotFound,
-                          self.driver.deallocate_vip, vip)
+        self.driver.deallocate_vip(vip)
 
     def test_deallocate_vip_when_port_not_owned_by_octavia(self):
         lb = dmh.generate_load_balancer_tree()
@@ -199,8 +242,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.k_session.return_value = session_mock
         show_port = self.driver.neutron_client.show_port
         show_port.side_effect = neutron_exceptions.PortNotFoundClient
-        self.assertRaises(network_base.VIPConfigurationNotFound,
-                          self.driver.deallocate_vip, vip)
+        self.driver.deallocate_vip(vip)
 
     def test_plug_vip_errors_when_nova_cant_find_network_to_attach(self):
         lb = dmh.generate_load_balancer_tree()
@@ -449,6 +491,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         }
         list_ports = self.driver.neutron_client.list_ports
         list_ports.return_value = {'ports': [port1, port2]}
+        get_port = self.driver.neutron_client.get_port
+        get_port.side_effect = neutron_exceptions.NotFound
         self.driver.unplug_vip(lb, lb.vip)
         self.assertEqual(len(lb.amphorae), update_port.call_count)
         clear_aap = {'port': {'allowed_address_pairs': []}}
@@ -500,7 +544,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         net_id = t_constants.MOCK_NOVA_INTERFACE.net_id
         list_ports = self.driver.neutron_client.list_ports
         list_ports.return_value = {'ports': []}
-        self.assertRaises(network_base.AmphoraNotFound,
+        self.assertRaises(network_base.NetworkNotFound,
                           self.driver.unplug_network,
                           t_constants.MOCK_COMPUTE_ID, net_id)
 
@@ -522,10 +566,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         list_ports.return_value = {'ports': [port1, port2]}
         interface_detach = self.driver.nova_client.servers.interface_detach
         interface_detach.side_effect = Exception
-        self.assertRaises(network_base.UnplugNetworkException,
-                          self.driver.unplug_network,
-                          t_constants.MOCK_COMPUTE_ID,
-                          port2.get('network_id'))
+        self.driver.unplug_network(t_constants.MOCK_COMPUTE_ID,
+                                   port2.get('network_id'))
 
     def test_unplug_network(self):
         list_ports = self.driver.neutron_client.list_ports

@@ -255,12 +255,22 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 LOG.info(
                     "Removing security group %(sg)s from port %(port)s",
                     {'sg': sec_grp, 'port': vip.port_id})
-                raw_port = self.neutron_client.show_port(port.id)
-                sec_grps = raw_port.get('port', {}).get('security_groups', [])
-                if sec_grp in sec_grps:
-                    sec_grps.remove(sec_grp)
-                port_update = {'port': {'security_groups': sec_grps}}
-                self.neutron_client.update_port(port.id, port_update)
+                raw_port = None
+                try:
+                    if port:
+                        raw_port = self.neutron_client.show_port(port.id)
+                except Exception:
+                    LOG.warning('Unable to get port information for port '
+                                ' %s. Continuing to delete the security '
+                                'group.', port.id)
+                if raw_port:
+                    sec_grps = raw_port.get(
+                        'port', {}).get('security_groups', [])
+                    if sec_grp in sec_grps:
+                        sec_grps.remove(sec_grp)
+                    port_update = {'port': {'security_groups': sec_grps}}
+                    self.neutron_client.update_port(port.id, port_update)
+
                 self._delete_vip_security_group(sec_grp)
 
     def deallocate_vip(self, vip):
@@ -280,21 +290,26 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         try:
             port = self.get_port(vip.port_id)
         except base.PortNotFound:
-            msg = ("Can't deallocate VIP because the vip port {0} cannot be "
-                   "found in neutron".format(vip.port_id))
-            raise base.VIPConfigurationNotFound(msg)
+            LOG.warning("Can't deallocate VIP because the vip port {0} "
+                        "cannot be found in neutron. "
+                        "Continuing cleanup.".format(vip.port_id))
+            port = None
 
         self._delete_security_group(vip, port)
 
-        if port.device_owner == OCTAVIA_OWNER:
+        if port and port.device_owner == OCTAVIA_OWNER:
             try:
                 self.neutron_client.delete_port(vip.port_id)
+            except (neutron_client_exceptions.NotFound,
+                    neutron_client_exceptions.PortNotFoundClient):
+                LOG.debug('VIP port %s already deleted. Skipping.',
+                          vip.port_id)
             except Exception:
                 message = _('Error deleting VIP port_id {port_id} from '
                             'neutron').format(port_id=vip.port_id)
                 LOG.exception(message)
                 raise base.DeallocateVIPException(message)
-        else:
+        elif port:
             LOG.info("Port %s will not be deleted by Octavia as it was "
                      "not created by Octavia.", vip.port_id)
 
@@ -410,7 +425,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 port = self.get_port(amphora.vrrp_port_id)
                 if port.name.startswith('octavia-lb-vrrp-'):
                     self.neutron_client.delete_port(amphora.vrrp_port_id)
-            except base.PortNotFound:
+            except (neutron_client_exceptions.NotFound,
+                    neutron_client_exceptions.PortNotFoundClient):
                 pass
             except Exception as e:
                 LOG.error('Failed to delete port.  Resources may still be in '
@@ -444,31 +460,19 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         if not interfaces:
             msg = ('Amphora with compute id {compute_id} does not have any '
                    'plugged networks').format(compute_id=compute_id)
-            raise base.AmphoraNotFound(msg)
+            raise base.NetworkNotFound(msg)
 
         unpluggers = self._get_interfaces_to_unplug(interfaces, network_id,
                                                     ip_address=ip_address)
-        try:
-            for index, unplugger in enumerate(unpluggers):
+        for index, unplugger in enumerate(unpluggers):
+            try:
                 self.nova_client.servers.interface_detach(
                     server=compute_id, port_id=unplugger.port_id)
-        except Exception:
-            message = _('Error unplugging amphora {amphora_id} from network '
-                        '{network_id}.').format(amphora_id=compute_id,
-                                                network_id=network_id)
-            if len(unpluggers) > 1:
-                message = _('{base} Other interfaces have been successfully '
-                            'unplugged: ').format(base=message)
-                unpluggeds = unpluggers[:index]
-                for unplugged in unpluggeds:
-                    message = _('{base} neutron port '
-                                '{port_id} ').format(
-                                    base=message, port_id=unplugged.port_id)
-            else:
-                message = _('{base} No other networks were '
-                            'unplugged.').format(base=message)
-            LOG.exception(message)
-            raise base.UnplugNetworkException(message)
+            except Exception:
+                LOG.warning('Error unplugging port {port_id} from amphora '
+                            'with compute ID {compute_id}. '
+                            'Skipping.'.format(port_id=unplugger.port_id,
+                                               compute_id=compute_id))
 
     def update_vip(self, load_balancer):
         sec_grp = self._get_lb_security_group(load_balancer.id)
