@@ -269,6 +269,8 @@ class Repositories(object):
         # are changed.
         success = self.load_balancer.test_and_set_provisioning_status(
             session, lb_id, lb_prov_status)
+        if not success:
+            return success
         for listener_id in listener_ids:
             self.listener.update(session, listener_id,
                                  provisioning_status=listener_prov_status)
