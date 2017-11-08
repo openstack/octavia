@@ -3,5 +3,11 @@
 set -eu
 set -o pipefail
 
-chkconfig haproxy off
+if [ "$DISTRO_NAME" == "ubuntu" ]; then
+    # Doing both here as just remove doesn't seem to work on xenial
+    update-rc.d haproxy disable || true
+    update-rc.d -f haproxy remove || true
+else
+    chkconfig haproxy off
+fi
 

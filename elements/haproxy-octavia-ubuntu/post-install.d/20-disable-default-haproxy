@@ -1,8 +1,0 @@
-#!/bin/bash
-
-set -eu
-set -o pipefail
-
-# Doing both here as just remove doesn't seem to work on xenial
-update-rc.d haproxy disable || true
-update-rc.d -f haproxy remove || true
