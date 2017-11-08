@@ -12,7 +12,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import threading
+
 import mock
+
 from oslo_config import cfg
 from oslo_db import exception as db_exc
 from oslo_utils import uuidutils
@@ -44,22 +47,18 @@ class TestHealthManager(base.TestCase):
                 'ControllerWorker.failover_amphora')
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.'
                 'get_stale_amphora')
-    @mock.patch('time.sleep')
     @mock.patch('octavia.db.api.get_session')
-    def test_health_check_stale_amphora(self, session_mock,
-                                        sleep_mock, get_stale_amp_mock,
+    def test_health_check_stale_amphora(self, session_mock, get_stale_amp_mock,
                                         failover_mock):
         amphora_health = mock.MagicMock()
         amphora_health.amphora_id = AMPHORA_ID
 
-        get_stale_amp_mock.side_effect = [amphora_health,
-                                          None,
-                                          TestException('test')]
+        get_stale_amp_mock.side_effect = [amphora_health, None]
 
-        hm = healthmanager.HealthManager()
-        self.assertRaises(TestException, hm.health_check)
+        exit_event = threading.Event()
+        hm = healthmanager.HealthManager(exit_event)
 
-        failover_mock.assert_called_once_with(AMPHORA_ID)
+        hm.health_check()
 
         # Test DBDeadlock and RetryRequest exceptions
         session_mock.reset_mock()
@@ -70,6 +69,11 @@ class TestHealthManager(base.TestCase):
             db_exc.DBDeadlock,
             db_exc.RetryRequest(Exception('retry_test')),
             TestException('test')]
+        # Test that a DBDeadlock does not raise an exception
+        self.assertIsNone(hm.health_check())
+        # Test that a RetryRequest does not raise an exception
+        self.assertIsNone(hm.health_check())
+        # Other exceptions should raise
         self.assertRaises(TestException, hm.health_check)
         self.assertEqual(3, mock_session.rollback.call_count)
 
@@ -77,14 +81,30 @@ class TestHealthManager(base.TestCase):
                 'ControllerWorker.failover_amphora')
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.'
                 'get_stale_amphora', return_value=None)
-    @mock.patch('time.sleep')
     @mock.patch('octavia.db.api.get_session')
-    def test_health_check_nonestale_amphora(self, session_mock,
-                                            sleep_mock, get_stale_amp_mock,
-                                            failover_mock):
+    def test_health_check_nonstale_amphora(self, session_mock,
+                                           get_stale_amp_mock, failover_mock):
         get_stale_amp_mock.side_effect = [None, TestException('test')]
 
-        hm = healthmanager.HealthManager()
-        self.assertRaises(TestException, hm.health_check)
+        exit_event = threading.Event()
+        hm = healthmanager.HealthManager(exit_event)
 
+        hm.health_check()
+        session_mock.assert_called_once_with(autocommit=False)
+        self.assertFalse(failover_mock.called)
+
+    @mock.patch('octavia.controller.worker.controller_worker.'
+                'ControllerWorker.failover_amphora')
+    @mock.patch('octavia.db.repositories.AmphoraHealthRepository.'
+                'get_stale_amphora', return_value=None)
+    @mock.patch('octavia.db.api.get_session')
+    def test_health_check_exit(self, session_mock, get_stale_amp_mock,
+                               failover_mock):
+        get_stale_amp_mock.return_value = None
+
+        exit_event = threading.Event()
+        hm = healthmanager.HealthManager(exit_event)
+        hm.health_check()
+
+        session_mock.assert_called_once_with(autocommit=False)
         self.assertFalse(failover_mock.called)

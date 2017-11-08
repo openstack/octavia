@@ -11,10 +11,12 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+#
 
 from concurrent import futures
-import time
+import functools
 
+from futurist import periodics
 from oslo_config import cfg
 from oslo_db import exception as db_exc
 from oslo_log import log as logging
@@ -28,56 +30,88 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
+def wait_done_or_dead(futs, dead, check_timeout=1):
+    while True:
+        _done, not_done = futures.wait(futs, timeout=check_timeout)
+        if len(not_done) == 0:
+            break
+        if dead.is_set():
+            for fut in not_done:
+                # This may not actually be able to cancel, but try to
+                # if we can.
+                fut.cancel()
+
+
+def update_stats_on_done(stats, fut):
+    # This utilizes the fact that python, non-primitive types are
+    # passed by reference (not by value)...
+    stats['failover_attempted'] += 1
+    try:
+        fut.result()
+    except futures.CancelledError:
+        stats['failover_cancelled'] += 1
+    except Exception:
+        stats['failover_failed'] += 1
+
+
 class HealthManager(object):
-    def __init__(self):
+    def __init__(self, exit_event):
         self.cw = cw.ControllerWorker()
         self.threads = CONF.health_manager.failover_threads
+        self.executor = futures.ThreadPoolExecutor(max_workers=self.threads)
+        self.amp_health_repo = repo.AmphoraHealthRepository()
+        self.dead = exit_event
 
+    @periodics.periodic(CONF.health_manager.health_check_interval,
+                        run_immediately=True)
     def health_check(self):
-        amp_health_repo = repo.AmphoraHealthRepository()
+        stats = {
+            'failover_attempted': 0,
+            'failover_failed': 0,
+            'failover_cancelled': 0,
+        }
+        futs = []
+        while not self.dead.is_set():
+            lock_session = db_api.get_session(autocommit=False)
+            amp = None
+            try:
+                amp = self.amp_health_repo.get_stale_amphora(lock_session)
+                lock_session.commit()
+            except db_exc.DBDeadlock:
+                LOG.debug('Database reports deadlock. Skipping.')
+                lock_session.rollback()
+            except db_exc.RetryRequest:
+                LOG.debug('Database is requesting a retry. Skipping.')
+                lock_session.rollback()
+            except Exception:
+                with excutils.save_and_reraise_exception():
+                    lock_session.rollback()
 
-        with futures.ThreadPoolExecutor(max_workers=self.threads) as executor:
-            # Don't start checking immediately, as the health manager may
-            # have been down for a while and amphorae not able to check in.
-            LOG.debug("Pausing before starting health check")
-            time.sleep(CONF.health_manager.heartbeat_timeout)
-            while True:
-                LOG.debug("Starting amphora health check")
-                failover_count = 0
-                while True:
+            if amp is None:
+                break
 
-                    lock_session = db_api.get_session(autocommit=False)
-                    amp = None
-                    try:
-                        amp = amp_health_repo.get_stale_amphora(lock_session)
-                        lock_session.commit()
-                    except db_exc.DBDeadlock:
-                        LOG.debug('Database reports deadlock. Skipping.')
-                        try:
-                            lock_session.rollback()
-                        except Exception:
-                            pass
-                    except db_exc.RetryRequest:
-                        LOG.debug('Database is requesting a retry. Skipping.')
-                        try:
-                            lock_session.rollback()
-                        except Exception:
-                            pass
-                    except Exception:
-                        with excutils.save_and_reraise_exception():
-                            try:
-                                lock_session.rollback()
-                            except Exception:
-                                pass
-
-                    if amp is None:
-                        break
-                    failover_count += 1
-                    LOG.info("Stale amphora's id is: %s",
-                             amp.amphora_id)
-                    executor.submit(self.cw.failover_amphora,
-                                    amp.amphora_id)
-                if failover_count > 0:
-                    LOG.info("Failed over %s amphora",
-                             failover_count)
-                time.sleep(CONF.health_manager.health_check_interval)
+            LOG.info("Stale amphora's id is: %s", amp.amphora_id)
+            fut = self.executor.submit(
+                self.cw.failover_amphora, amp.amphora_id)
+            fut.add_done_callback(
+                functools.partial(update_stats_on_done, stats)
+            )
+            futs.append(fut)
+            if len(futs) == self.threads:
+                break
+        if futs:
+            LOG.info("Waiting for %s failovers to finish",
+                     len(futs))
+            wait_done_or_dead(futs, self.dead)
+        if stats['failover_attempted'] > 0:
+            LOG.info("Attempted %s failovers of amphora",
+                     stats['failover_attempted'])
+            LOG.info("Failed at %s failovers of amphora",
+                     stats['failover_failed'])
+            LOG.info("Cancelled %s failovers of amphora",
+                     stats['failover_cancelled'])
+            happy_failovers = stats['failover_attempted']
+            happy_failovers -= stats['failover_cancelled']
+            happy_failovers -= stats['failover_failed']
+            LOG.info("Successfully completed %s failovers of amphora",
+                     happy_failovers)

@@ -12,8 +12,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+
 import multiprocessing
+import os
+import signal
 import sys
+
+from futurist.periodics import PeriodicWorker
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -30,30 +35,28 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-# Used for while true loops to allow testing
-# TODO(johnsom) This will be removed with
-#               https://review.openstack.org/#/c/456420/
-def true_func():
-    return True
-
-
-def hm_listener():
-    # TODO(german): steved'or load those drivers
+def hm_listener(exit_event):
+    # TODO(german): stevedore load those drivers
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
     udp_getter = heartbeat_udp.UDPStatusGetter(
         update_db.UpdateHealthDb(),
         update_db.UpdateStatsDb())
-    while True:
+    while not exit_event.is_set():
         udp_getter.check()
 
 
-def hm_health_check():
-    hm = health_manager.HealthManager()
-    while true_func():
-        try:
-            hm.health_check()
-        except Exception as e:
-            LOG.warning('Health Manager caught the following exception and '
-                        'is restarting: {}'.format(e))
+def hm_health_check(exit_event):
+    hm = health_manager.HealthManager(exit_event)
+    health_check = PeriodicWorker([(hm.health_check, None, None)],
+                                  schedule_strategy='aligned_last_finished')
+
+    def hm_exit(*args, **kwargs):
+        health_check.stop()
+        hm.executor.shutdown()
+    signal.signal(signal.SIGINT, hm_exit)
+    LOG.debug("Pausing before starting health check")
+    exit_event.wait(CONF.health_manager.heartbeat_timeout)
+    health_check.start()
 
 
 def main():
@@ -62,22 +65,33 @@ def main():
     gmr.TextGuruMeditation.setup_autorun(version)
 
     processes = []
+    exit_event = multiprocessing.Event()
 
     hm_listener_proc = multiprocessing.Process(name='HM_listener',
-                                               target=hm_listener)
+                                               target=hm_listener,
+                                               args=(exit_event,))
     processes.append(hm_listener_proc)
     hm_health_check_proc = multiprocessing.Process(name='HM_health_check',
-                                                   target=hm_health_check)
+                                                   target=hm_health_check,
+                                                   args=(exit_event,))
     processes.append(hm_health_check_proc)
+
     LOG.info("Health Manager listener process starts:")
     hm_listener_proc.start()
     LOG.info("Health manager check process starts:")
     hm_health_check_proc.start()
 
+    def process_cleanup(*args, **kwargs):
+        LOG.info("Health Manager exiting due to signal")
+        exit_event.set()
+        os.kill(hm_health_check_proc.pid, signal.SIGINT)
+        hm_health_check_proc.join()
+        hm_listener_proc.terminate()
+
+    signal.signal(signal.SIGTERM, process_cleanup)
+
     try:
         for process in processes:
             process.join()
     except KeyboardInterrupt:
-        LOG.info("Health Manager existing due to signal")
-        hm_listener_proc.terminate()
-        hm_health_check_proc.terminate()
+        process_cleanup()
