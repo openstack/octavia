@@ -2031,6 +2031,20 @@ class MemberRepositoryTest(BaseRepositoryTest):
         self.assertIsNotNone(new_pool)
         self.assertEqual(0, len(new_pool.members))
 
+    def test_update_pool_members(self):
+        member1 = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
+                                     self.pool.id, "10.0.0.1")
+        member2 = self.create_member(self.FAKE_UUID_3, self.FAKE_UUID_2,
+                                     self.pool.id, "10.0.0.2")
+        self.member_repo.update_pool_members(
+            self.session,
+            pool_id=self.pool.id,
+            operating_status=constants.OFFLINE)
+        new_member1 = self.member_repo.get(self.session, id=member1.id)
+        new_member2 = self.member_repo.get(self.session, id=member2.id)
+        self.assertEqual(constants.OFFLINE, new_member1.operating_status)
+        self.assertEqual(constants.OFFLINE, new_member2.operating_status)
+
 
 class SessionPersistenceRepositoryTest(BaseRepositoryTest):
 

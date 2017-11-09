@@ -746,6 +746,18 @@ class MemberRepository(BaseRepository):
         """Batch deletes members from a pool."""
         self.delete_batch(session, member_ids)
 
+    def update_pool_members(self, session, pool_id, **model_kwargs):
+        """Updates all of the members of a pool.
+
+        :param session: A Sql Alchemy database session.
+        :param pool_id: ID of the pool to update members on.
+        :param model_kwargs: Entity attributes that should be updates.
+        :returns: octavia.common.data_model
+        """
+        with session.begin(subtransactions=True):
+            session.query(self.model_class).filter_by(
+                pool_id=pool_id).update(model_kwargs)
+
 
 class ListenerRepository(BaseRepository):
     model_class = models.Listener

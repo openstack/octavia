@@ -2643,3 +2643,25 @@ class CountPoolChildrenForQuota(BaseDatabaseTask):
         member_count = len(pool.members)
 
         return {'HM': health_mon_count, 'member': member_count}
+
+
+class UpdatePoolMembersOperatingStatusInDB(BaseDatabaseTask):
+    """Updates the members of a pool operating status.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, pool, operating_status):
+        """Update the members of a pool operating status in DB.
+
+        :param pool: Pool object to be updated
+        :param operating_status: Operating status to set
+        :returns: None
+        """
+
+        LOG.debug("Updating member operating status to %(status)s in DB for "
+                  "pool id: %(pool)s", {'status': operating_status,
+                                        'pool': pool.id})
+        self.member_repo.update_pool_members(db_apis.get_session(),
+                                             pool.id,
+                                             operating_status=operating_status)

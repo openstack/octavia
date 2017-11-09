@@ -2631,3 +2631,23 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             id=POOL_ID,
             provisioning_status=constants.ERROR)
+
+    @mock.patch('octavia.db.repositories.MemberRepository.update_pool_members')
+    def test_update_pool_members_operating_status_in_db(
+            self,
+            mock_member_repo_update_pool_members,
+            mock_generate_uuid,
+            mock_LOG,
+            mock_get_session,
+            mock_loadbalancer_repo_update,
+            mock_listener_repo_update,
+            mock_amphora_repo_update,
+            mock_amphora_repo_delete):
+
+        update_members = database_tasks.UpdatePoolMembersOperatingStatusInDB()
+        update_members.execute(self.pool_mock, constants.ONLINE)
+
+        mock_member_repo_update_pool_members.assert_called_once_with(
+            'TEST',
+            POOL_ID,
+            operating_status=constants.ONLINE)
