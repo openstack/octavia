@@ -173,25 +173,24 @@ class PoolsController(base.BaseController):
                                    constants.RBAC_POST)
 
         lock_session = db_api.get_session(autocommit=False)
-        if self.repositories.check_quota_met(
-                context.session,
-                lock_session,
-                data_models.Pool,
-                pool.project_id):
-            lock_session.rollback()
-            raise exceptions.QuotaException
-
-        listener_repo = self.repositories.listener
-        pool_dict = db_prepare.create_pool(
-            pool.to_dict(render_unsets=True))
-
-        listener_id = pool_dict.pop('listener_id', None)
-        if listener_id:
-            if listener_repo.has_default_pool(lock_session,
-                                              listener_id):
-                raise exceptions.DuplicatePoolEntry()
-
         try:
+            if self.repositories.check_quota_met(
+                    context.session,
+                    lock_session,
+                    data_models.Pool,
+                    pool.project_id):
+                raise exceptions.QuotaException
+
+            listener_repo = self.repositories.listener
+            pool_dict = db_prepare.create_pool(
+                pool.to_dict(render_unsets=True))
+
+            listener_id = pool_dict.pop('listener_id', None)
+            if listener_id:
+                if listener_repo.has_default_pool(lock_session,
+                                                  listener_id):
+                    raise exceptions.DuplicatePoolEntry()
+
             self._test_lb_and_listener_statuses(
                 lock_session, lb_id=pool_dict['load_balancer_id'],
                 listener_ids=[listener_id] if listener_id else [])

@@ -203,22 +203,21 @@ class ListenersController(base.BaseController):
                 value=constants.PROTOCOL_TERMINATED_HTTPS, option='protocol')
 
         lock_session = db_api.get_session(autocommit=False)
-        if self.repositories.check_quota_met(
-                context.session,
-                lock_session,
-                data_models.Listener,
-                listener.project_id):
-            lock_session.rollback()
-            raise exceptions.QuotaException
-
-        listener_dict = db_prepare.create_listener(
-            listener.to_dict(render_unsets=True), None)
-
-        if listener_dict['default_pool_id']:
-            self._validate_pool(context.session, load_balancer_id,
-                                listener_dict['default_pool_id'])
-
         try:
+            if self.repositories.check_quota_met(
+                    context.session,
+                    lock_session,
+                    data_models.Listener,
+                    listener.project_id):
+                raise exceptions.QuotaException
+
+            listener_dict = db_prepare.create_listener(
+                listener.to_dict(render_unsets=True), None)
+
+            if listener_dict['default_pool_id']:
+                self._validate_pool(context.session, load_balancer_id,
+                                    listener_dict['default_pool_id'])
+
             self._test_lb_and_listener_statuses(
                 lock_session, lb_id=load_balancer_id)
 
