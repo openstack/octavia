@@ -317,21 +317,21 @@ if [ "$AMP_ROOTPW" ]; then
     export DIB_PASSWORD=$AMP_ROOTPW
 fi
 
-# Add the Octavia keepalived, Amphora Agent and Pyroute elements
+# Add the Amphora Agent and Pyroute elements
 if [ "$AMP_BASEOS" = "ubuntu" ]; then
     AMP_element_sequence="$AMP_element_sequence rebind-sshd"
     AMP_element_sequence="$AMP_element_sequence no-resolvconf"
     AMP_element_sequence="$AMP_element_sequence amphora-agent"
-    AMP_element_sequence="$AMP_element_sequence keepalived-octavia-ubuntu"
 elif [ "$AMP_BASEOS" = "rhel" ]; then
     AMP_element_sequence="$AMP_element_sequence no-resolvconf"
     AMP_element_sequence="$AMP_element_sequence amphora-agent-rhel"
-    AMP_element_sequence="$AMP_element_sequence keepalived-octavia"
 else
     AMP_element_sequence="$AMP_element_sequence no-resolvconf"
     AMP_element_sequence="$AMP_element_sequence amphora-agent"
-    AMP_element_sequence="$AMP_element_sequence keepalived-octavia"
 fi
+
+# Add keepalived-octavia element
+AMP_element_sequence="$AMP_element_sequence keepalived-octavia"
 
 # Add pip-cache element
 AMP_element_sequence="$AMP_element_sequence pip-cache"

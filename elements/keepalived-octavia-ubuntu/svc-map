@@ -1,2 +1,0 @@
-vrrp-octavia:
-  default: vrrp-octavia
