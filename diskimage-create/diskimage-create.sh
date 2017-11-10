@@ -301,17 +301,16 @@ pushd $TEMP > /dev/null
 
 if [ "$AMP_BASEOS" = "ubuntu" ]; then
     AMP_element_sequence=${AMP_element_sequence:-"base vm ubuntu"}
-    AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND-ubuntu"
 elif [ "$AMP_BASEOS" = "fedora" ]; then
     AMP_element_sequence=${AMP_element_sequence:-"base vm fedora selinux-permissive"}
-    AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
 elif [ "$AMP_BASEOS" = "centos" ]; then
     AMP_element_sequence=${AMP_element_sequence:-"base vm centos7 selinux-permissive"}
-    AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
 elif [ "$AMP_BASEOS" = "rhel" ]; then
     AMP_element_sequence=${AMP_element_sequence:-"base vm rhel7 selinux-permissive"}
-    AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
 fi
+
+# Add our backend element (haproxy, etc.)
+AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
 
 if [ "$AMP_ROOTPW" ]; then
     AMP_element_sequence="$AMP_element_sequence root-passwd"
@@ -322,7 +321,7 @@ fi
 if [ "$AMP_BASEOS" = "ubuntu" ]; then
     AMP_element_sequence="$AMP_element_sequence rebind-sshd"
     AMP_element_sequence="$AMP_element_sequence no-resolvconf"
-    AMP_element_sequence="$AMP_element_sequence amphora-agent-ubuntu"
+    AMP_element_sequence="$AMP_element_sequence amphora-agent"
     AMP_element_sequence="$AMP_element_sequence keepalived-octavia-ubuntu"
 elif [ "$AMP_BASEOS" = "rhel" ]; then
     AMP_element_sequence="$AMP_element_sequence no-resolvconf"
