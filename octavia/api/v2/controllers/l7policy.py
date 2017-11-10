@@ -157,18 +157,18 @@ class L7PolicyController(base.BaseController):
                                    constants.RBAC_POST)
 
         lock_session = db_api.get_session(autocommit=False)
-        if self.repositories.check_quota_met(
-                context.session,
-                lock_session,
-                data_models.L7Policy,
-                l7policy.project_id):
-            lock_session.rollback()
-            raise exceptions.QuotaException
-
-        l7policy_dict = db_prepare.create_l7policy(
-            l7policy.to_dict(render_unsets=True),
-            load_balancer_id, listener_id)
         try:
+            if self.repositories.check_quota_met(
+                    context.session,
+                    lock_session,
+                    data_models.L7Policy,
+                    l7policy.project_id):
+                raise exceptions.QuotaException
+
+            l7policy_dict = db_prepare.create_l7policy(
+                l7policy.to_dict(render_unsets=True),
+                load_balancer_id, listener_id)
+
             self._test_lb_and_listener_statuses(
                 lock_session, lb_id=load_balancer_id,
                 listener_ids=[listener_id])

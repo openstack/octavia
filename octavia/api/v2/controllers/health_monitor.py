@@ -170,17 +170,17 @@ class HealthMonitorController(base.BaseController):
                                    constants.RBAC_POST)
 
         lock_session = db_api.get_session(autocommit=False)
-        if self.repositories.check_quota_met(
-                context.session,
-                lock_session,
-                data_models.HealthMonitor,
-                health_monitor.project_id):
-            lock_session.rollback()
-            raise exceptions.QuotaException
-
-        hm_dict = db_prepare.create_health_monitor(
-            health_monitor.to_dict(render_unsets=True))
         try:
+            if self.repositories.check_quota_met(
+                    context.session,
+                    lock_session,
+                    data_models.HealthMonitor,
+                    health_monitor.project_id):
+                raise exceptions.QuotaException
+
+            hm_dict = db_prepare.create_health_monitor(
+                health_monitor.to_dict(render_unsets=True))
+
             self._test_lb_and_listener_and_pool_statuses(
                 lock_session, health_monitor)
             db_hm = self._validate_create_hm(lock_session, hm_dict)

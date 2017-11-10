@@ -174,17 +174,17 @@ class MemberController(base.BaseController):
                                    constants.RBAC_POST)
 
         lock_session = db_api.get_session(autocommit=False)
-        if self.repositories.check_quota_met(
-                context.session,
-                lock_session,
-                data_models.Member,
-                member.project_id):
-            lock_session.rollback()
-            raise exceptions.QuotaException
-
-        member_dict = db_prepare.create_member(member.to_dict(
-            render_unsets=True), self.pool_id, bool(pool.health_monitor))
         try:
+            if self.repositories.check_quota_met(
+                    context.session,
+                    lock_session,
+                    data_models.Member,
+                    member.project_id):
+                raise exceptions.QuotaException
+
+            member_dict = db_prepare.create_member(member.to_dict(
+                render_unsets=True), self.pool_id, bool(pool.health_monitor))
+
             self._test_lb_and_listener_and_pool_statuses(lock_session)
 
             db_member = self._validate_create_member(lock_session, member_dict)

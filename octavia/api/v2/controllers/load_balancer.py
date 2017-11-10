@@ -231,16 +231,16 @@ class LoadBalancersController(base.BaseController):
         self._validate_vip_request_object(load_balancer)
 
         lock_session = db_api.get_session(autocommit=False)
-        if self.repositories.check_quota_met(
-                context.session,
-                lock_session,
-                data_models.LoadBalancer,
-                load_balancer.project_id):
-            lock_session.rollback()
-            raise exceptions.QuotaException
-
-        db_lb, db_pools, db_lists = None, None, None
         try:
+            if self.repositories.check_quota_met(
+                    context.session,
+                    lock_session,
+                    data_models.LoadBalancer,
+                    load_balancer.project_id):
+                raise exceptions.QuotaException
+
+            db_lb, db_pools, db_lists = None, None, None
+
             lb_dict = db_prepare.create_load_balancer(load_balancer.to_dict(
                 render_unsets=False
             ))

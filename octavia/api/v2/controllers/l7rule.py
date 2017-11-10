@@ -160,9 +160,10 @@ class L7RuleController(base.BaseController):
                                    constants.RBAC_POST)
 
         lock_session = db_api.get_session(autocommit=False)
-        l7rule_dict = db_prepare.create_l7rule(
-            l7rule.to_dict(render_unsets=True), self.l7policy_id)
         try:
+            l7rule_dict = db_prepare.create_l7rule(
+                l7rule.to_dict(render_unsets=True), self.l7policy_id)
+
             self._test_lb_listener_policy_statuses(context.session)
 
             db_l7rule = self._validate_create_l7rule(lock_session, l7rule_dict)
