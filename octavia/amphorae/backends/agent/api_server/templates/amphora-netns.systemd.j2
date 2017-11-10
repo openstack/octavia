@@ -1,0 +1,22 @@
+[Unit]
+Description=Configure {{ amphora_nsname }} network namespace
+StopWhenUnneeded=true
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+# Re-add the namespace
+ExecStart=-/sbin/ip netns add {{ amphora_nsname }}
+# Load the system sysctl into the new namespace
+ExecStart=-/sbin/ip netns exec {{ amphora_nsname }} sysctl --system
+# We need the plugged_interfaces file sorted to join the host interfaces
+ExecStart=-/bin/sh -c '/usr/bin/sort -k 1 /var/lib/octavia/plugged_interfaces > /var/lib/octavia/plugged_interfaces.sorted'
+# Assign the interfaces into the namespace with the appropriate name
+ExecStart=-/bin/sh -c '/sbin/ip link | awk \'{getline n; print $0,n}\' | awk \'{sub(":","",$2)} { for(i=1;i<=NF;i++) if ($i == "link/ether") {print $(i+1) " " $2} }\' | sort -k 1 | join -j 1 - /var/lib/octavia/plugged_interfaces.sorted | awk \'{system("ip link set "$2" netns {{ amphora_nsname }} name "$3"")}\''
+# Bring up all of the namespace interfaces
+{%- if HasIFUPAll %}
+ExecStart=-/sbin/ip netns exec {{ amphora_nsname }} ifup -a
+{%- else %}
+ExecStart=-/bin/awk '{system("/sbin/ip netns exec {{ amphora_nsname }} ifup " $2)}' /var/lib/octavia/plugged_interfaces
+{%- endif %}

@@ -42,6 +42,7 @@ CONF = cfg.CONF
 UPSTART_CONF = 'upstart.conf.j2'
 SYSVINIT_CONF = 'sysvinit.conf.j2'
 SYSTEMD_CONF = 'systemd.conf.j2'
+AMPHORA_NETNS = 'amphora-netns'
 
 JINJA_ENV = jinja2.Environment(
     autoescape=True,
@@ -180,6 +181,22 @@ class Listener(object):
             # mode 00755
             mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
                     stat.S_IROTH | stat.S_IXOTH)
+
+        if init_system == consts.INIT_SYSTEMD:
+            # TODO(bcafarel): implement this for other init systems
+            # netns handling depends on a separate unit file
+            netns_path = os.path.join(consts.SYSTEMD_DIR,
+                                      AMPHORA_NETNS + '.service')
+            if not os.path.exists(netns_path):
+                with os.fdopen(os.open(netns_path, flags, mode),
+                               'w') as text_file:
+                    text = JINJA_ENV.get_template(AMPHORA_NETNS +
+                                                  '.systemd.j2').render(
+                            amphora_nsname=consts.AMPHORA_NAMESPACE,
+                            HasIFUPAll=self._osutils.has_ifup_all()
+                            )
+                    text_file.write(text)
+
         if not os.path.exists(init_path):
             with os.fdopen(os.open(init_path, flags, mode), 'w') as text_file:
 
@@ -192,6 +209,7 @@ class Listener(object):
                     respawn_count=util.CONF.haproxy_amphora.respawn_count,
                     respawn_interval=(util.CONF.haproxy_amphora.
                                       respawn_interval),
+                    amphora_netns=AMPHORA_NETNS,
                     amphora_nsname=consts.AMPHORA_NAMESPACE,
                     HasIFUPAll=self._osutils.has_ifup_all()
                 )
