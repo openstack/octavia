@@ -36,7 +36,7 @@ class BaseTaskFlowEngine(object):
     def _taskflow_load(self, flow, **kwargs):
         eng = tf_engines.load(
             flow,
-            engine_conf=CONF.task_flow.engine,
+            engine=CONF.task_flow.engine,
             executor=self.executor,
             never_resolve=CONF.task_flow.disable_revert,
             **kwargs)
