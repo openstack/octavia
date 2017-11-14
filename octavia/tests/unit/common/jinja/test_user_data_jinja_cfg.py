@@ -22,7 +22,7 @@ TEST_CONFIG = ('[DEFAULT]\n'
 EXPECTED_TEST_CONFIG = ('        [DEFAULT]\n'
                         '        debug = False\n'
                         '        [haproxy_amphora]\n'
-                        '        base_cert_dir = /var/lib/octavia/certs\n')
+                        '        base_cert_dir = /var/lib/octavia/certs\n\n')
 BASE_CFG = ('#cloud-config\n'
             '# vim: syntax=yaml\n'
             '#\n'
