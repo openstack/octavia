@@ -68,6 +68,10 @@ class HealthMonitorFlows(object):
             requires=constants.HEALTH_MON))
         delete_hm_flow.add(database_tasks.DecrementHealthMonitorQuota(
             requires=constants.HEALTH_MON))
+        delete_hm_flow.add(
+            database_tasks.UpdatePoolMembersOperatingStatusInDB(
+                requires=constants.POOL,
+                inject={constants.OPERATING_STATUS: constants.NO_MONITOR}))
         delete_hm_flow.add(database_tasks.MarkPoolActiveInDB(
             requires=constants.POOL))
         delete_hm_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
