@@ -236,11 +236,11 @@ class VirtualMachineManager(compute_base.ComputeBase):
             except AttributeError:
                 LOG.info('No availability zone listed for server %s',
                          nova_response.id)
-            fault = getattr(nova_response, 'fault', None)
         except Exception:
             LOG.debug('Extracting virtual interfaces through nova '
                       'os-interfaces extension failed.')
 
+        fault = getattr(nova_response, 'fault', None)
         response = models.Amphora(
             compute_id=nova_response.id,
             status=nova_response.status,
