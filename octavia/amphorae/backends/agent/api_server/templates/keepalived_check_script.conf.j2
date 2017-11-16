@@ -14,7 +14,10 @@
 #    under the License.
 #
 #}
-#!/bin/sh
+#!/bin/bash
+
+# Don't try to run the directory when it is empty
+shopt -s nullglob
 
 status=0
 for file in {{ check_scripts_dir }}/*
