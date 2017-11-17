@@ -50,6 +50,8 @@ class TestUpdateHealthDb(base.TestCase):
         session_patch = mock.patch('octavia.db.api.get_session')
         self.addCleanup(session_patch.stop)
         self.mock_session = session_patch.start()
+        self.session_mock = mock.MagicMock()
+        self.mock_session.return_value = self.session_mock
 
         self.hm = update_db.UpdateHealthDb()
         self.event_client = mock.MagicMock()
@@ -71,6 +73,38 @@ class TestUpdateHealthDb(base.TestCase):
         self.hm.member_repo = self.member_repo
         self.hm.pool_repo = self.pool_repo
 
+    def _make_mock_lb_tree(self, listener=True, pool=True, members=1):
+        mock_lb = mock.Mock()
+        mock_lb.id = self.FAKE_UUID_1
+        mock_lb.pools = []
+        mock_lb.listeners = []
+        mock_lb.provisioning_status = constants.ACTIVE
+        mock_lb.operating_status = 'blah'
+
+        mock_listener1 = None
+        mock_pool1 = None
+        mock_members = None
+
+        if listener:
+            mock_listener1 = mock.Mock()
+            mock_listener1.id = 'listener-id-1'
+            mock_lb.listeners = [mock_listener1]
+
+        if pool:
+            mock_pool1 = mock.Mock()
+            mock_pool1.id = "pool-id-1"
+            mock_pool1.members = []
+            mock_lb.pools = [mock_pool1]
+            if mock_listener1:
+                mock_listener1.pools = [mock_pool1]
+            for i in range(members):
+                mock_member_x = mock.Mock()
+                mock_member_x.id = 'member-id-%s' % (i + 1)
+                mock_pool1.members.append(mock_member_x)
+            mock_members = mock_pool1.members
+
+        return mock_lb, mock_listener1, mock_pool1, mock_members
+
     def test_update_health_event_stream(self):
         health = {
             "id": self.FAKE_UUID_1,
@@ -84,19 +118,8 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = []
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
 
         self.hm.update_health(health)
@@ -119,12 +142,9 @@ class TestUpdateHealthDb(base.TestCase):
             "id": self.FAKE_UUID_1,
             "listeners": {}}
 
-        fake_lb = mock.MagicMock()
-        fake_lb.enabled = False
-        fake_lb.listeners = []
-        fake_lb.id = self.FAKE_UUID_1
-        fake_lb.operating_status = 'blah'
-        self.hm.amphora_repo.get_all_lbs_on_amphora.return_value = [fake_lb]
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
+            self._make_mock_lb_tree(listener=False, pool=False))
+        self.hm.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
 
         self.hm.update_health(health)
         self.assertTrue(self.amphora_repo.get_all_lbs_on_amphora.called)
@@ -137,15 +157,13 @@ class TestUpdateHealthDb(base.TestCase):
             "listeners": {}
         }
 
-        session_mock = mock.MagicMock()
-        session_mock.commit.side_effect = TestException('boom')
-        self.mock_session.return_value = session_mock
+        self.session_mock.commit.side_effect = TestException('boom')
 
         self.amphora_repo.get_all_lbs_on_amphora.return_value = []
 
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
-        session_mock.rollback.assert_called_once()
+        self.session_mock.rollback.assert_called_once()
 
     def test_update_health_online(self):
 
@@ -161,22 +179,8 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = []
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
@@ -186,17 +190,19 @@ class TestUpdateHealthDb(base.TestCase):
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                session_mock, listener_id, operating_status=constants.ONLINE)
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
 
             for pool_id, pool in six.iteritems(listener.get('pools', {})):
 
                 self.hm.pool_repo.update.assert_any_call(
-                    session_mock, pool_id, operating_status=constants.ONLINE)
+                    self.session_mock, pool_id,
+                    operating_status=constants.ONLINE)
 
                 for member_id, member in six.iteritems(
                         pool.get('members', {})):
                     self.member_repo.update.assert_any_call(
-                        session_mock, member_id,
+                        self.session_mock, member_id,
                         operating_status=constants.ONLINE)
 
         # If the listener count is wrong, make sure we don't update
@@ -223,22 +229,11 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree())
+        # I'm not sure why we were testing this, but we were -- leaving it
         mock_listener1.pools = []
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = [mock_pool1]
+
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
@@ -248,18 +243,20 @@ class TestUpdateHealthDb(base.TestCase):
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                session_mock, listener_id, operating_status=constants.ONLINE)
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
 
             for pool_id, pool in six.iteritems(listener.get('pools', {})):
 
                 # We should not double process a shared pool
                 self.hm.pool_repo.update.assert_called_once_with(
-                    session_mock, pool_id, operating_status=constants.ONLINE)
+                    self.session_mock, pool_id,
+                    operating_status=constants.ONLINE)
 
                 for member_id, member in six.iteritems(
                         pool.get('members', {})):
                     self.member_repo.update.assert_any_call(
-                        session_mock, member_id,
+                        self.session_mock, member_id,
                         operating_status=constants.ONLINE)
 
     def test_update_lb_and_list_pool_health_online(self):
@@ -276,22 +273,8 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = [mock_pool1]
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
+            self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
@@ -301,18 +284,20 @@ class TestUpdateHealthDb(base.TestCase):
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                session_mock, listener_id, operating_status=constants.ONLINE)
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
 
             for pool_id, pool in six.iteritems(listener.get('pools', {})):
 
                 # We should not double process a shared pool
                 self.hm.pool_repo.update.assert_called_once_with(
-                    session_mock, pool_id, operating_status=constants.ONLINE)
+                    self.session_mock, pool_id,
+                    operating_status=constants.ONLINE)
 
                 for member_id, member in six.iteritems(
                         pool.get('members', {})):
                     self.member_repo.update.assert_any_call(
-                        session_mock, member_id,
+                        self.session_mock, member_id,
                         operating_status=constants.ONLINE)
 
     def test_update_pool_offline(self):
@@ -329,22 +314,8 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = []
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
@@ -354,10 +325,12 @@ class TestUpdateHealthDb(base.TestCase):
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                session_mock, listener_id, operating_status=constants.ONLINE)
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
 
             self.hm.pool_repo.update.assert_any_call(
-                session_mock, "pool-id-1", operating_status=constants.OFFLINE)
+                self.session_mock, "pool-id-1",
+                operating_status=constants.OFFLINE)
 
     def test_update_health_member_drain(self):
 
@@ -371,22 +344,8 @@ class TestUpdateHealthDb(base.TestCase):
                             "status": constants.UP,
                             "members": {"member-id-1": constants.DRAIN}}}}}}
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = []
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
@@ -396,18 +355,20 @@ class TestUpdateHealthDb(base.TestCase):
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                session_mock, listener_id, operating_status=constants.ONLINE)
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
 
             for pool_id, pool in six.iteritems(listener.get('pools', {})):
 
                 self.hm.pool_repo.update.assert_any_call(
-                    session_mock, pool_id, operating_status=constants.ONLINE)
+                    self.session_mock, pool_id,
+                    operating_status=constants.ONLINE)
 
                 for member_id, member in six.iteritems(
                         pool.get('members', {})):
 
                     self.member_repo.update.assert_any_call(
-                        session_mock, member_id,
+                        self.session_mock, member_id,
                         operating_status=constants.DRAINING)
 
     def test_update_health_member_maint(self):
@@ -422,22 +383,8 @@ class TestUpdateHealthDb(base.TestCase):
                             "status": constants.UP,
                             "members": {"member-id-1": constants.MAINT}}}}}}
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = []
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
@@ -447,18 +394,20 @@ class TestUpdateHealthDb(base.TestCase):
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                session_mock, listener_id, operating_status=constants.ONLINE)
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
 
             for pool_id, pool in six.iteritems(listener.get('pools', {})):
 
                 self.hm.pool_repo.update.assert_any_call(
-                    session_mock, pool_id, operating_status=constants.ONLINE)
+                    self.session_mock, pool_id,
+                    operating_status=constants.ONLINE)
 
                 for member_id, member in six.iteritems(
                         pool.get('members', {})):
 
                     self.member_repo.update.assert_any_call(
-                        session_mock, member_id,
+                        self.session_mock, member_id,
                         operating_status=constants.OFFLINE)
 
     def test_update_health_member_unknown(self):
@@ -473,22 +422,8 @@ class TestUpdateHealthDb(base.TestCase):
                             "status": constants.UP,
                             "members": {"member-id-1": "blah"}}}}}}
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = []
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
@@ -498,12 +433,14 @@ class TestUpdateHealthDb(base.TestCase):
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                session_mock, listener_id, operating_status=constants.ONLINE)
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
 
             for pool_id, pool in six.iteritems(listener.get('pools', {})):
 
                 self.hm.pool_repo.update.assert_any_call(
-                    session_mock, pool_id, operating_status=constants.ONLINE)
+                    self.session_mock, pool_id,
+                    operating_status=constants.ONLINE)
                 self.assertTrue(not self.member_repo.update.called)
 
     def test_update_health_member_down(self):
@@ -520,22 +457,8 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = []
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
 
         self.hm.update_health(health)
@@ -546,18 +469,20 @@ class TestUpdateHealthDb(base.TestCase):
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                session_mock, listener_id, operating_status=constants.ONLINE)
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
 
             for pool_id, pool in six.iteritems(listener.get('pools', {})):
 
                 self.hm.pool_repo.update.assert_any_call(
-                    session_mock, pool_id, operating_status=constants.DEGRADED)
+                    self.session_mock, pool_id,
+                    operating_status=constants.DEGRADED)
 
                 for member_id, member in six.iteritems(
                         pool.get('members', {})):
 
                     self.member_repo.update.assert_any_call(
-                        session_mock, member_id,
+                        self.session_mock, member_id,
                         operating_status=constants.ERROR)
 
     def test_update_health_member_no_check(self):
@@ -575,22 +500,8 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = []
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
@@ -600,18 +511,20 @@ class TestUpdateHealthDb(base.TestCase):
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                session_mock, listener_id, operating_status=constants.ONLINE)
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
 
             for pool_id, pool in six.iteritems(listener.get('pools', {})):
 
                 self.hm.pool_repo.update.assert_any_call(
-                    session_mock, pool_id, operating_status=constants.ONLINE)
+                    self.session_mock, pool_id,
+                    operating_status=constants.ONLINE)
 
                 for member_id, member in six.iteritems(
                         pool.get('members', {})):
 
                     self.member_repo.update.assert_any_call(
-                        session_mock, member_id,
+                        self.session_mock, member_id,
                         operating_status=constants.NO_MONITOR)
 
     def test_update_health_member_admin_down(self):
@@ -627,24 +540,8 @@ class TestUpdateHealthDb(base.TestCase):
                             "members": {
                                 "member-id-1": constants.UP}}}}}}
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_member2 = mock.Mock()
-        mock_member2.id = 'member-id-2'
-        mock_pool1.members = [mock_member1, mock_member2]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = []
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
+            self._make_mock_lb_tree(members=2))
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
         self.assertTrue(self.amphora_repo.get_all_lbs_on_amphora.called)
@@ -654,21 +551,24 @@ class TestUpdateHealthDb(base.TestCase):
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                session_mock, listener_id, operating_status=constants.ONLINE)
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
 
             for pool_id, pool in six.iteritems(listener.get('pools', {})):
 
                 self.hm.pool_repo.update.assert_any_call(
-                    session_mock, pool_id, operating_status=constants.ONLINE)
+                    self.session_mock, pool_id,
+                    operating_status=constants.ONLINE)
 
                 for member_id, member in six.iteritems(
                         pool.get('members', {})):
 
                     self.member_repo.update.assert_any_call(
-                        session_mock, member_id,
+                        self.session_mock, member_id,
                         operating_status=constants.ONLINE)
         self.member_repo.update.assert_any_call(
-            session_mock, mock_member2.id, operating_status=constants.OFFLINE)
+            self.session_mock, mock_members[1].id,
+            operating_status=constants.OFFLINE)
 
     def test_update_health_list_full_member_down(self):
 
@@ -684,22 +584,8 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = []
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
@@ -709,18 +595,20 @@ class TestUpdateHealthDb(base.TestCase):
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                session_mock, listener_id, operating_status=constants.DEGRADED)
+                self.session_mock, listener_id,
+                operating_status=constants.DEGRADED)
 
             for pool_id, pool in six.iteritems(listener.get('pools', {})):
 
                 self.hm.pool_repo.update.assert_any_call(
-                    session_mock, pool_id, operating_status=constants.DEGRADED)
+                    self.session_mock, pool_id,
+                    operating_status=constants.DEGRADED)
 
                 for member_id, member in six.iteritems(
                         pool.get('members', {})):
 
                     self.member_repo.update.assert_any_call(
-                        session_mock, member_id,
+                        self.session_mock, member_id,
                         operating_status=constants.ERROR)
 
         mock_listener2 = mock.Mock()
@@ -746,22 +634,8 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = []
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
 
         self.hm.update_health(health)
@@ -772,18 +646,20 @@ class TestUpdateHealthDb(base.TestCase):
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                session_mock, listener_id, operating_status=constants.ONLINE)
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
 
             for pool_id, pool in six.iteritems(listener.get('pools', {})):
 
                 self.hm.pool_repo.update.assert_any_call(
-                    session_mock, pool_id, operating_status=constants.ERROR)
+                    self.session_mock, pool_id,
+                    operating_status=constants.ERROR)
 
                 for member_id, member in six.iteritems(
                         pool.get('members', {})):
 
                     self.member_repo.update.assert_any_call(
-                        session_mock, member_id,
+                        self.session_mock, member_id,
                         operating_status=constants.ERROR)
 
     # Test the logic code paths
@@ -832,14 +708,9 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_lb = mock.Mock()
-        mock_lb.listeners = []
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = []
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
+            self._make_mock_lb_tree(listener=False, pool=False))
+        # Build our own custom listeners/pools/members
         for i in [1, 2, 3, 4, 5]:
             mock_member = mock.Mock()
             mock_member.id = 'member-id-%s' % i
@@ -861,17 +732,23 @@ class TestUpdateHealthDb(base.TestCase):
 
         # test listener
         self.listener_repo.update.assert_any_call(
-            session_mock, "listener-id-1", operating_status=constants.DEGRADED)
+            self.session_mock, "listener-id-1",
+            operating_status=constants.DEGRADED)
         self.listener_repo.update.assert_any_call(
-            session_mock, "listener-id-2", operating_status=constants.DEGRADED)
+            self.session_mock, "listener-id-2",
+            operating_status=constants.DEGRADED)
         self.pool_repo.update.assert_any_call(
-            session_mock, "pool-id-1", operating_status=constants.ERROR)
+            self.session_mock, "pool-id-1",
+            operating_status=constants.ERROR)
         self.pool_repo.update.assert_any_call(
-            session_mock, "pool-id-2", operating_status=constants.ONLINE)
+            self.session_mock, "pool-id-2",
+            operating_status=constants.ONLINE)
         self.pool_repo.update.assert_any_call(
-            session_mock, "pool-id-3", operating_status=constants.DEGRADED)
+            self.session_mock, "pool-id-3",
+            operating_status=constants.DEGRADED)
         self.pool_repo.update.assert_any_call(
-            session_mock, "pool-id-4", operating_status=constants.ONLINE)
+            self.session_mock, "pool-id-4",
+            operating_status=constants.ONLINE)
 
     # Test code paths where objects are not found in the database
     def test_update_health_not_found(self):
@@ -897,22 +774,8 @@ class TestUpdateHealthDb(base.TestCase):
         self.hm.loadbalancer_repo.update.side_effect = (
             [sqlalchemy.orm.exc.NoResultFound])
 
-        session_mock = mock.MagicMock()
-        self.mock_session.return_value = session_mock
-
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
-        mock_lb.operating_status = 'blah'
-        mock_lb.pools = []
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
 
         self.hm.update_health(health)
@@ -923,18 +786,20 @@ class TestUpdateHealthDb(base.TestCase):
                 health.get('listeners', {})):
 
             self.listener_repo.update.assert_any_call(
-                session_mock, listener_id, operating_status=constants.ONLINE)
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
 
             for pool_id, pool in six.iteritems(listener.get('pools', {})):
 
                 self.hm.pool_repo.update.assert_any_call(
-                    session_mock, pool_id, operating_status=constants.ONLINE)
+                    self.session_mock, pool_id,
+                    operating_status=constants.ONLINE)
 
                 for member_id, member in six.iteritems(
                         pool.get('members', {})):
 
                     self.member_repo.update.assert_any_call(
-                        session_mock, member_id,
+                        self.session_mock, member_id,
                         operating_status=constants.ONLINE)
 
     def test_update_health_no_status_change(self):
@@ -953,22 +818,14 @@ class TestUpdateHealthDb(base.TestCase):
             }
         }
 
-        mock_pool1 = mock.Mock()
-        mock_pool1.id = "pool-id-1"
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
+            self._make_mock_lb_tree())
+
+        # Start everything ONLINE
+        mock_members[0].operating_status = constants.ONLINE
         mock_pool1.operating_status = constants.ONLINE
-        mock_member1 = mock.Mock()
-        mock_member1.id = 'member-id-1'
-        mock_member1.operating_status = constants.ONLINE
-        mock_pool1.members = [mock_member1]
-        mock_listener1 = mock.Mock()
-        mock_listener1.id = 'listener-id-1'
-        mock_listener1.pools = [mock_pool1]
         mock_listener1.operating_status = constants.ONLINE
-        mock_lb = mock.Mock()
-        mock_lb.listeners = [mock_listener1]
-        mock_lb.id = self.FAKE_UUID_1
         mock_lb.operating_status = constants.ONLINE
-        mock_lb.pools = []
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
 
         self.hm.update_health(health)
@@ -979,45 +836,37 @@ class TestUpdateHealthDb(base.TestCase):
         self.member_repo.update.assert_not_called()
 
     def test_update_health_lb_admin_down(self):
-
         health = {
             "id": self.FAKE_UUID_1,
             "listeners": {}}
 
-        fake_lb = mock.MagicMock()
-        fake_lb.enabled = False
-        fake_lb.listeners = []
-        fake_lb.id = self.FAKE_UUID_1
-        fake_lb.operating_status = 'blah'
-        self.hm.amphora_repo.get_all_lbs_on_amphora.return_value = [fake_lb]
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
+            self._make_mock_lb_tree(listener=False, pool=False))
+        mock_lb.enabled = False
+        self.hm.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
 
         self.hm.update_health(health)
         self.assertTrue(self.amphora_repo.get_all_lbs_on_amphora.called)
         self.assertTrue(self.loadbalancer_repo.update.called)
         self.loadbalancer_repo.update.assert_called_with(
-            self.mock_session(),
-            fake_lb.id,
+            self.mock_session(), mock_lb.id,
             operating_status='OFFLINE')
 
     def test_update_health_lb_admin_up(self):
-
         health = {
             "id": self.FAKE_UUID_1,
             "listeners": {}}
 
-        fake_lb = mock.MagicMock()
-        fake_lb.enabled = True
-        fake_lb.listeners = []
-        fake_lb.id = self.FAKE_UUID_1
-        fake_lb.operating_status = 'blah'
-        self.hm.amphora_repo.get_all_lbs_on_amphora.return_value = [fake_lb]
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
+            self._make_mock_lb_tree(listener=False, pool=False))
+        mock_lb.enabled = True
+        self.hm.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
 
         self.hm.update_health(health)
         self.assertTrue(self.amphora_repo.get_all_lbs_on_amphora.called)
         self.assertTrue(self.loadbalancer_repo.update.called)
         self.loadbalancer_repo.update.assert_called_with(
-            self.mock_session(),
-            fake_lb.id,
+            self.mock_session(), mock_lb.id,
             operating_status='ONLINE')
 
 
