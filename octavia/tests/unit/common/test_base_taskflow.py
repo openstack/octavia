@@ -60,7 +60,7 @@ class TestBaseTaskFlowEngine(base.TestCase):
 
         tf_engines.load.assert_called_once_with(
             'TEST',
-            engine_conf='TESTENGINE',
+            engine='TESTENGINE',
             executor='TESTEXECUTOR',
             never_resolve=True)
 
