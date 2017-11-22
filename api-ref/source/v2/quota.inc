@@ -241,8 +241,8 @@ Response Example
 .. literalinclude:: examples/quota-update-response.json
    :language: javascript
 
-Remove a Quota
-==============
+Reset a Quota
+=============
 
 .. rest_method:: DELETE /v2.0/lbaas/quotas/{project_id}
 
@@ -271,7 +271,7 @@ Request
 Curl Example
 ------------
 
-.. literalinclude:: examples/quota-delete-curl
+.. literalinclude:: examples/quota-reset-curl
    :language: bash
 
 Response

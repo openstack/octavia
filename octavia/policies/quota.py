@@ -49,7 +49,7 @@ rules = [
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_QUOTA,
                                     action=constants.RBAC_DELETE),
         constants.RULE_API_WRITE_QUOTA,
-        "Remove a Quota",
+        "Reset a Quota",
         [{'method': 'DELETE',
           'path': '/v2.0/lbaas/quotas/{project_id}'}]
     ),
