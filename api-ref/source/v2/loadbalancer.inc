@@ -101,21 +101,6 @@ and submit the request again.
 Administrative users can specify a project ID that is different than
 their own to create load balancers for other projects.
 
-There are three ways to specify a Virtual IP (VIP) network for the load
-balancer: provide a ``vip_port_id``, supply a ``vip_subnet_id``, or provide a
-``vip_network_id``. Providing a neutron port ID for the ``vip_port_id`` tells
-octavia to use this port for the VIP. Some port settings may be changed or
-removed as required by octavia, but the IP address will be retained. If the
-port has more than one subnet you must specify either the ``vip_subnet_id`` or
-``vip_address`` to clarify which address should be used for the VIP.
-Specifying a neutron subnet ID will tell octavia to create a neutron port
-on this subnet and allocate an IP address from the subnet if the
-``vip_address`` was not specified. If ``vip_address`` was specified, octavia
-will attempt to allocate the ``vip_address`` from the subnet for the VIP
-address. Finally, when a ``vip_network_ip`` is specified octavia will select
-a subnet from the network, preferring IPv4 over IPv6 subnets, if a
-``vip_address`` was not provided.
-
 An optional ``flavor`` attribute can be used to create the load balancer
 using a pre-configured octavia flavor.  Flavors are created by the operator
 to allow custom load balancer configurations, such as allocating more
@@ -126,6 +111,31 @@ load balancer. The ``provider`` attribute specifies which backend should
 be used to create the load balancer.  This could be the default provider
 (``octavia``) or a vendor supplied ``provider`` if one has been installed.
 Setting both a flavor and a provider will result in a conflict error.
+
+Specifying a Virtual IP (VIP) is mandatory. There are three ways to specify
+a VIP network for the load balancer:
+
+1. Provide a ``vip_port_id``.
+
+   Providing a neutron port ID for the ``vip_port_id`` tells
+   octavia to use this port for the VIP. Some port settings may be changed or
+   removed as required by octavia, but the IP address will be retained. If the
+   port has more than one subnet you must specify either the ``vip_subnet_id``
+   or ``vip_address`` to clarify which address should be used for the VIP.
+
+2. Provide a ``vip_network_id``.
+
+   When a ``vip_network_ip`` is specified, unless neither ``vip_subnet_id``
+   nor ``vip_address`` is specified, octavia will select a subnet from
+   the network, preferring IPv4 over IPv6 subnets.
+
+3. Provide a ``vip_subnet_id``.
+
+   Specifying a neutron subnet ID will tell octavia to create a neutron port
+   on this subnet and allocate an IP address from the subnet if the
+   ``vip_address`` was not specified. If ``vip_address`` was specified,
+   octavia will attempt to allocate the ``vip_address`` from the subnet for
+   the VIP address.
 
 .. rest_status_code:: success ../http-status.yaml
 
