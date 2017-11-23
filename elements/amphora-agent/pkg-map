@@ -1,0 +1,10 @@
+{
+  "family": {
+    "redhat": {
+      "amphora-agent": "openstack-octavia-amphora-agent"
+    }
+  },
+  "default": {
+    "amphora-agent": "amphora-agent"
+  }
+}

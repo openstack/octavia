@@ -1,5 +1,9 @@
 #!/bin/bash
-echo '#!/bin/sh
+
+# isc dhcpd specific section
+if [[ $DISTRO_NAME = "ubuntu" || $DISTRO_NAME = "debian" ]]; then
+
+  echo '#!/bin/sh
 if [ "$reason" = "BOUND" ]; then
     if `grep -q "#ListenAddress 0.0.0.0" /etc/ssh/sshd_config`; then
         /bin/sed -i "s/^#ListenAddress 0.0.0.0.*$/ListenAddress $new_ip_address/g" /etc/ssh/sshd_config
@@ -8,4 +12,5 @@ if [ "$reason" = "BOUND" ]; then
         fi
     fi
 fi' > /etc/dhcp/dhclient-enter-hooks.d/rebind-sshd
-chmod +x /etc/dhcp/dhclient-enter-hooks.d/rebind-sshd
+  chmod +x /etc/dhcp/dhclient-enter-hooks.d/rebind-sshd
+fi
