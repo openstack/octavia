@@ -146,7 +146,7 @@ amphora-role:
 amphora-status:
   description: |
     The status of the amphora. One of: ``BOOTING``, ``ALLOCATED``, ``READY``,
-    ``PENDING_DELETE``, ``DELETED``, ``ERROR``.
+    ``PENDING_CREATE``, ``PENDING_DELETE``, ``DELETED``, ``ERROR``.
   in: body
   required: true
   type: string

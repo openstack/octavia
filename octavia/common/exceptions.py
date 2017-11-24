@@ -86,6 +86,11 @@ class InvalidOption(APIException):
     code = 400
 
 
+class InvalidFilterArgument(APIException):
+    msg = "One or more arguments are either duplicate or invalid"
+    code = 400
+
+
 class DisabledOption(APIException):
     msg = _("The selected %(option)s is not allowed in this deployment: "
             "%(value)s")

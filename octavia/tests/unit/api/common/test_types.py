@@ -95,6 +95,17 @@ class TestTypeDataModelRenames(base.TestCase):
         self.assertEqual(new_type.child_one, child_dict.get('one'))
         self.assertEqual(new_type.child_two, child_dict.get('two'))
 
+    def test_translate_dict_keys_to_data_model(self):
+        new_type = TestTypeRename.from_data_model(self.model)
+        new_type_vars = {
+            k: getattr(new_type, k) for k in dir(new_type) if not (
+                callable(getattr(new_type, k)) or k.startswith('_'))
+        }
+        self.assertEqual(
+            set(vars(self.model)),
+            set(new_type.translate_dict_keys_to_data_model(new_type_vars)),
+        )
+
     def test_type_to_dict_with_tenant_id(self):
         type_dict = TestTypeTenantProject(tenant_id='1234').to_dict()
         self.assertEqual('1234', type_dict['project_id'])

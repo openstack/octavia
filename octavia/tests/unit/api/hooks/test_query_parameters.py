@@ -105,13 +105,57 @@ class TestPaginationHelper(base.TestCase):
 
     @mock.patch('octavia.api.common.pagination.request')
     def test_filter_mismatched_params(self, request_mock):
-        params = {'id': 'fake_id', 'fields': 'id'}
+        params = {
+            'id': 'fake_id',
+            'fields': 'field',
+            'limit': '10',
+            'sort': None,
+        }
+
         filters = {'id': 'fake_id'}
+
         helper = pagination.PaginationHelper(params)
         query_mock = mock.MagicMock()
 
         helper.apply(query_mock, models.LoadBalancer)
         self.assertEqual(filters, helper.filters)
+        helper.apply(query_mock, models.LoadBalancer,
+                     enforce_valid_params=True)
+        self.assertEqual(filters, helper.filters)
+
+    @mock.patch('octavia.api.common.pagination.request')
+    def test_filter_with_invalid_params(self, request_mock):
+        params = {'id': 'fake_id', 'no_such_param': 'id'}
+        filters = {'id': 'fake_id'}
+        helper = pagination.PaginationHelper(params)
+        query_mock = mock.MagicMock()
+
+        helper.apply(query_mock, models.LoadBalancer,
+                     # silently ignore invalid parameter
+                     enforce_valid_params=False)
+        self.assertEqual(filters, helper.filters)
+
+        self.assertRaises(
+            exceptions.InvalidFilterArgument,
+            pagination.PaginationHelper.apply,
+            helper,
+            query_mock,
+            models.Amphora,
+        )
+
+    @mock.patch('octavia.api.common.pagination.request')
+    def test_duplicate_argument(self, request_mock):
+        params = {'loadbalacer_id': 'id1', 'load_balacer_id': 'id2'}
+        query_mock = mock.MagicMock()
+        helper = pagination.PaginationHelper(params)
+
+        self.assertRaises(
+            exceptions.InvalidFilterArgument,
+            pagination.PaginationHelper.apply,
+            helper,
+            query_mock,
+            models.Amphora,
+        )
 
     @mock.patch('octavia.api.common.pagination.request')
     def test_fields_not_passed(self, request_mock):
