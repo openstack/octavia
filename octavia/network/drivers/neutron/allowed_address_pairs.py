@@ -156,7 +156,12 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         del_ports = set(old_ports) - set(updated_ports)
         for rule in rules.get('security_group_rules', []):
             if rule.get('port_range_max') in del_ports:
-                self.neutron_client.delete_security_group_rule(rule.get('id'))
+                rule_id = rule.get('id')
+                try:
+                    self.neutron_client.delete_security_group_rule(rule_id)
+                except neutron_client_exceptions.NotFound:
+                    LOG.info("Security group rule %s not found, will assume "
+                             "it is already deleted.", rule_id)
 
         ethertype = self._get_ethertype_for_ip(load_balancer.vip.ip_address)
         for port in add_ports:
