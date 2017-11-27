@@ -1105,7 +1105,9 @@ class TestControllerWorker(base.TestCase):
     @mock.patch('octavia.controller.worker.flows.'
                 'amphora_flows.AmphoraFlows.get_failover_flow',
                 return_value=_flow_mock)
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_failover_amphora(self,
+                              mock_update,
                               mock_get_update_listener_flow,
                               mock_api_get_session,
                               mock_dyn_log_listener,
@@ -1135,6 +1137,8 @@ class TestControllerWorker(base.TestCase):
                        }))
 
         _flow_mock.run.assert_called_once_with()
+        mock_update.assert_called_with('TEST', LB_ID,
+                                       provisioning_status=constants.ACTIVE)
 
     @mock.patch('octavia.controller.worker.'
                 'controller_worker.ControllerWorker._perform_amphora_failover')
@@ -1185,7 +1189,9 @@ class TestControllerWorker(base.TestCase):
     @mock.patch(
         'octavia.db.repositories.AmphoraRepository.get_all_lbs_on_amphora',
         return_value=[_load_balancer_mock])
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_failover_amphora_anti_affinity(self,
+                                            mock_update,
                                             mock_get_update_listener_flow,
                                             mock_get_all_lbs_for_amp_mock,
                                             mock_api_get_session,
@@ -1219,6 +1225,8 @@ class TestControllerWorker(base.TestCase):
                        }))
 
         _flow_mock.run.assert_called_once_with()
+        mock_update.assert_called_with('TEST', LB_ID,
+                                       provisioning_status=constants.ACTIVE)
 
     @mock.patch('octavia.controller.worker.flows.'
                 'amphora_flows.AmphoraFlows.cert_rotate_amphora_flow',
