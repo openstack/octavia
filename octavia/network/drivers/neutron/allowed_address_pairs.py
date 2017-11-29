@@ -363,7 +363,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                          'network_id': load_balancer.vip.network_id,
                          'admin_state_up': False,
                          'device_id': 'lb-{0}'.format(load_balancer.id),
-                         'device_owner': OCTAVIA_OWNER}}
+                         'device_owner': OCTAVIA_OWNER,
+                         'project_id': load_balancer.project_id}}
 
         if fixed_ip:
             port['port']['fixed_ips'] = [fixed_ip]

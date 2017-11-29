@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Neutron LBaaS was assigning the VIP port it created the user's project-id,
+    thus allowing the user to attach Floating-IPs to the VIP port. Octavia,
+    on the other hand, was assigning the Octavia project-id to the port, making
+    it impossible for the user to attach a Floating IP. This patch brings
+    Octavia's behavior in line with Neutron LBaaS and assigns the user's
+    project-id to the VIP port created by Octavia.
