@@ -1002,9 +1002,10 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'plug.Plug._netns_interface_exists')
-    def _test_plug_network(self, distro, mock_int_exists, mock_check_output,
-                           mock_netns, mock_pyroute2, mock_ifaddress,
-                           mock_interfaces):
+    @mock.patch('os.path.isfile')
+    def _test_plug_network(self, distro, mock_isfile, mock_int_exists,
+                           mock_check_output, mock_netns, mock_pyroute2,
+                           mock_ifaddress, mock_interfaces):
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         port_info = {'mac_address': '123'}
         test_int_num = random.randint(0, 9999)
@@ -1012,6 +1013,7 @@ class TestServerTestCase(base.TestCase):
         mock_int_exists.return_value = False
         netns_handle = mock_netns.return_value.__enter__.return_value
         netns_handle.get_links.return_value = [0] * test_int_num
+        mock_isfile.return_value = True
 
         test_int_num = str(test_int_num)
 
@@ -1509,10 +1511,14 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
     @mock.patch('os.makedirs')
-    def _test_plug_VIP4(self, distro, mock_makedirs, mock_copytree,
-                        mock_check_output, mock_netns, mock_netns_create,
-                        mock_pyroute2, mock_ifaddress, mock_interfaces,
-                        mock_int_exists, mock_nspopen, mock_copy2):
+    @mock.patch('os.path.isfile')
+    def _test_plug_VIP4(self, distro, mock_isfile, mock_makedirs,
+                        mock_copytree, mock_check_output, mock_netns,
+                        mock_netns_create, mock_pyroute2, mock_ifaddress,
+                        mock_interfaces, mock_int_exists, mock_nspopen,
+                        mock_copy2):
+
+        mock_isfile.return_value = True
 
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         subnet_info = {
@@ -1858,10 +1864,13 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
     @mock.patch('os.makedirs')
-    def _test_plug_vip6(self, distro, mock_makedirs, mock_copytree,
-                        mock_check_output, mock_netns, mock_netns_create,
-                        mock_pyroute2, mock_ifaddress, mock_interfaces,
-                        mock_nspopen, mock_copy2):
+    @mock.patch('os.path.isfile')
+    def _test_plug_vip6(self, distro, mock_isfile, mock_makedirs,
+                        mock_copytree, mock_check_output, mock_netns,
+                        mock_netns_create, mock_pyroute2, mock_ifaddress,
+                        mock_interfaces, mock_nspopen, mock_copy2):
+
+        mock_isfile.return_value = True
 
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         subnet_info = {
