@@ -418,7 +418,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         }}
         fake_lb_vip = data_models.Vip(subnet_id=t_constants.MOCK_SUBNET_ID,
                                       network_id=t_constants.MOCK_NETWORK_ID)
-        fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip)
+        fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip,
+                                           project_id='test-project')
         vip = self.driver.allocate_vip(fake_lb)
         exp_create_port_call = {
             'port': {
@@ -427,6 +428,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 'device_id': 'lb-1',
                 'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
                 'admin_state_up': False,
+                'project_id': 'test-project',
                 'fixed_ips': [{'subnet_id': t_constants.MOCK_SUBNET_ID}]
             }
         }
