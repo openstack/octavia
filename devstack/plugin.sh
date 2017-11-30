@@ -61,7 +61,7 @@ function build_octavia_worker_image {
     else
         export DIB_REPOREF_amphora_agent=$(git -c "$OCTAVIA_DIR" log -1 --pretty="format:%H")
     fi
-    TOKEN=$(openstack token issue | grep ' id ' | get_field 2)
+    TOKEN=$(openstack token issue -f value -c id)
     die_if_not_set $LINENO TOKEN "Keystone failed to get token."
 
     octavia_dib_tracing_arg=
@@ -234,6 +234,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF oslo_messaging rpc_thread_pool_size 2
     iniset $OCTAVIA_CONF oslo_messaging topic octavia_prov
 
+    # TODO(nmagnezi): Remove this when neutron-lbaas gets deprecated
     # Setting neutron request_poll_timeout
     iniset $NEUTRON_CONF octavia request_poll_timeout 3000
     if [[ "$WSGI_MODE" == "uwsgi" ]]; then
@@ -314,16 +315,13 @@ function octavia_configure {
 
 function create_mgmt_network_interface {
     if [ $OCTAVIA_MGMT_PORT_IP != 'auto' ]; then
-        SUBNET_ID=$(neutron subnet-show lb-mgmt-subnet | awk '/ id / {print $4}')
-        PORT_FIXED_IP="--fixed-ip subnet_id=$SUBNET_ID,ip_address=$OCTAVIA_MGMT_PORT_IP"
+        SUBNET_ID=$(openstack subnet show lb-mgmt-subnet -f value -c id)
+        PORT_FIXED_IP="--fixed-ip subnet=$SUBNET_ID,ip-address=$OCTAVIA_MGMT_PORT_IP"
     fi
 
-    # TODO(johnsom) Change this to OSC when security group is working
-    id_and_mac=$(neutron port-create --name octavia-health-manager-$OCTAVIA_NODE-listen-port --security-group lb-health-mgr-sec-grp --device-owner Octavia:health-mgr --binding:host_id=$(hostname) lb-mgmt-net $PORT_FIXED_IP | awk '/ id | mac_address / {print $4}')
+    MGMT_PORT_ID=$(openstack port create --security-group lb-health-mgr-sec-grp --device-owner Octavia:health-mgr --host=$(hostname) -c id -f value --network lb-mgmt-net $PORT_FIXED_IP octavia-health-manager-$OCTAVIA_NODE-listen-port)
+    MGMT_PORT_MAC=$(openstack port show -c mac_address -f value $MGMT_PORT_ID)
 
-    id_and_mac=($id_and_mac)
-    MGMT_PORT_ID=${id_and_mac[0]}
-    MGMT_PORT_MAC=${id_and_mac[1]}
     # TODO(johnsom) This gets the IPv4 address, should be updated for IPv6
     MGMT_PORT_IP=$(openstack port show -f value -c fixed_ips $MGMT_PORT_ID | awk '{FS=",| "; gsub(",",""); gsub("'\''",""); for(i = 1; i <= NF; ++i) {if ($i ~ /^ip_address/) {n=index($i, "="); if (substr($i, n+1) ~ "\\.") print substr($i, n+1)}}}')
     if function_exists octavia_create_network_interface_device ; then
@@ -358,8 +356,8 @@ function create_mgmt_network_interface {
 
 function build_mgmt_network {
     # Create network and attach a subnet
-    OCTAVIA_AMP_NETWORK_ID=$(openstack network create lb-mgmt-net | awk '/ id / {print $4}')
-    OCTAVIA_AMP_SUBNET_ID=$(openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET --allocation-pool start=$OCTAVIA_MGMT_SUBNET_START,end=$OCTAVIA_MGMT_SUBNET_END --network lb-mgmt-net lb-mgmt-subnet | awk '/ id / {print $4}')
+    OCTAVIA_AMP_NETWORK_ID=$(openstack network create lb-mgmt-net -f value -c id)
+    OCTAVIA_AMP_SUBNET_ID=$(openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET --allocation-pool start=$OCTAVIA_MGMT_SUBNET_START,end=$OCTAVIA_MGMT_SUBNET_END --network lb-mgmt-net lb-mgmt-subnet -f value -c id)
 
     # Create security group and rules
     openstack security group create lb-mgmt-sec-grp
@@ -377,7 +375,7 @@ function build_mgmt_network {
 }
 
 function configure_lb_mgmt_sec_grp {
-    OCTAVIA_MGMT_SEC_GRP_ID=$(openstack security group list | awk ' / lb-mgmt-sec-grp / {print $2}')
+    OCTAVIA_MGMT_SEC_GRP_ID=$(openstack security group show lb-mgmt-sec-grp -f value -c id)
     iniset ${OCTAVIA_CONF} controller_worker amp_secgroup_list ${OCTAVIA_MGMT_SEC_GRP_ID}
 }
 
@@ -394,7 +392,7 @@ function configure_octavia_tempest {
 function create_amphora_flavor {
     # Pass even if it exists to avoid race condition on multinode
     openstack flavor create --id auto --ram 1024 --disk 2 --vcpus 1 --private m1.amphora -f value -c id || true
-    amp_flavor_id=$(openstack flavor list --all -c ID -c Name | awk ' / m1.amphora / {print $2}')
+    amp_flavor_id=$(openstack flavor show m1.amphora -f value -c id)
     iniset $OCTAVIA_CONF controller_worker amp_flavor_id $amp_flavor_id
 }
 
@@ -477,7 +475,7 @@ function octavia_start {
 
     iniset $OCTAVIA_CONF controller_worker amp_image_tag ${OCTAVIA_AMP_IMAGE_TAG}
 
-    OCTAVIA_AMP_NETWORK_ID=$(openstack network list | awk '/ lb-mgmt-net / {print $2}')
+    OCTAVIA_AMP_NETWORK_ID=$(openstack network show lb-mgmt-net -f value -c id)
 
     iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
 
