@@ -2,28 +2,16 @@
 Description=HAProxy Load Balancer
 Documentation=man:haproxy(1)
 Documentation=file:/usr/share/doc/haproxy/configuration.txt.gz
-After=network.target syslog.service
+After=network.target syslog.service {{ amphora_netns }}.service
 Before=octavia-keepalived.service
 Wants=syslog.service
+Requires={{ amphora_netns }}.service
 
 [Service]
+# Force context as we start haproxy under "ip netns exec"
+SELinuxContext=system_u:system_r:haproxy_t:s0
 EnvironmentFile=-/etc/default/haproxy
 ExecStartPre=/usr/sbin/haproxy -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }} -c -q
-# Re-add the namespace
-ExecStartPre=-/sbin/ip netns add {{ amphora_nsname }}
-# Load the system sysctl into the new namespace
-ExecStartPre=-/sbin/ip netns exec {{ amphora_nsname }} sysctl --system
-# We need the plugged_interfaces file sorted to join the host interfaces
-ExecStartPre=-/bin/sh -c '/usr/bin/sort -k 1 /var/lib/octavia/plugged_interfaces > /var/lib/octavia/plugged_interfaces.sorted'
-# Assign the interfaces into the namespace with the appropriate name
-ExecStartPre=-/bin/sh -c '/sbin/ip link | awk \'{getline n; print $0,n}\' | awk \'{sub(":","",$2)} { for(i=1;i<=NF;i++) if ($i == "link/ether") {print $(i+1) " " $2} }\' | sort -k 1 | join -j 1 - /var/lib/octavia/plugged_interfaces.sorted | awk \'{system("ip link set "$2" netns {{ amphora_nsname }} name "$3"")}\''
-# Bring up all of the namespace interfaces
-{%- if HasIFUPAll %}
-ExecStartPre=-/sbin/ip netns exec {{ amphora_nsname }} ifup -a
-{%- else %}
-ExecStartPre=-/bin/awk '{system("/sbin/ip netns exec {{ amphora_nsname }} ifup " $2)}' /var/lib/octavia/plugged_interfaces
-{%- endif %}
-#
 ExecStart=/sbin/ip netns exec {{ amphora_nsname }} /usr/sbin/haproxy-systemd-wrapper -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }} -p {{ haproxy_pid }} -L {{ peer_name }} $EXTRAOPTS
 ExecReload=/usr/sbin/haproxy -c -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }} -L {{ peer_name }}
 ExecReload=/bin/kill -USR2 $MAINPID
