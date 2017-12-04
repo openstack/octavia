@@ -78,6 +78,20 @@ class TestProducer(base.TestCase):
         self.mck_client.cast.assert_called_once_with(
             {}, 'delete_load_balancer', **kw)
 
+    def test_failover_loadbalancer(self):
+        p = producer.LoadBalancerProducer()
+        p.failover(self.mck_model)
+        kw = {'load_balancer_id': self.mck_model.id}
+        self.mck_client.cast.assert_called_once_with(
+            {}, 'failover_load_balancer', **kw)
+
+    def test_failover_amphora(self):
+        p = producer.AmphoraProducer()
+        p.failover(self.mck_model)
+        kw = {'amphora_id': self.mck_model.id}
+        self.mck_client.cast.assert_called_once_with(
+            {}, 'failover_amphora', **kw)
+
     def test_update_loadbalancer(self):
         p = producer.LoadBalancerProducer()
         lb = data_models.LoadBalancer(id=10)

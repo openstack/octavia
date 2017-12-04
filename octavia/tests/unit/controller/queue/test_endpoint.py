@@ -61,6 +61,11 @@ class TestEndpoint(base.TestCase):
         self.ep.worker.failover_loadbalancer.assert_called_once_with(
             self.resource_id)
 
+    def test_failover_amphora(self):
+        self.ep.failover_amphora(self.context, self.resource_id)
+        self.ep.worker.failover_amphora.assert_called_once_with(
+            self.resource_id)
+
     def test_create_listener(self):
         self.ep.create_listener(self.context, self.resource_id)
         self.ep.worker.create_listener.assert_called_once_with(
