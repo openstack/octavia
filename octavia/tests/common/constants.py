@@ -37,8 +37,15 @@ MOCK_CIDR = '10.0.0.0/24'
 MOCK_MAC_ADDR = 'fe:16:3e:00:95:5c'
 MOCK_MAC_ADDR2 = 'fe:16:3e:00:95:5d'
 MOCK_PROJECT_ID = 'mock-project-1'
+MOCK_HOST_ROUTES = []
 MOCK_SUBNET = {'subnet': {'id': MOCK_SUBNET_ID,
-                          'network_id': MOCK_NETWORK_ID}}
+                          'network_id': MOCK_NETWORK_ID,
+                          'name': MOCK_SUBNET_NAME,
+                          'tenant_id': MOCK_PROJECT_ID,
+                          'gateway_ip': MOCK_GATEWAY_IP,
+                          'cidr': MOCK_CIDR,
+                          'ip_version': MOCK_IP_VERSION,
+                          'host_routes': MOCK_HOST_ROUTES}}
 MOCK_SUBNET2 = {'subnet': {'id': MOCK_SUBNET_ID2,
                            'network_id': MOCK_NETWORK_ID2}}
 MOCK_HOST_ROUTES = []
@@ -90,6 +97,32 @@ MOCK_NEUTRON_PORT2 = {'port': {'network_id': MOCK_NETWORK_ID2,
                                'mac_address': MOCK_MAC_ADDR2,
                                'fixed_ips': [{'ip_address': MOCK_IP_ADDRESS2,
                                               'subnet_id': MOCK_SUBNET_ID2}]}}
+
+MOCK_NETWORK = {'network': {'id': MOCK_NETWORK_ID,
+                            'name': MOCK_NETWORK_NAME,
+                            'tenant_id': MOCK_PROJECT_ID,
+                            'admin_state_up': MOCK_ADMIN_STATE_UP,
+                            'subnets': [MOCK_SUBNET_ID],
+                            'mtu': MOCK_MTU,
+                            'provider:network_type': 'flat',
+                            'provider:physical_network': MOCK_NETWORK_NAME,
+                            'provider:segmentation_id': MOCK_SEGMENTATION_ID,
+                            'router:external': MOCK_ROUTER_EXTERNAL}}
+MOCK_FIXED_IP = {'fixed_ip': {'subnet_id': MOCK_SUBNET_ID,
+                              'ip_address': MOCK_IP_ADDRESS}}
+MOCK_FLOATING_IP_ID = 'floating-ip-1'
+MOCK_FLOATING_IP_DESC = 'TestFloatingIP1'
+MOCK_ROUTER_ID = 'mock-router-1'
+MOCK_FLOATING_IP = {'floatingip': {'id': MOCK_FLOATING_IP_ID,
+                                   'description': MOCK_FLOATING_IP_DESC,
+                                   'tenant_id': MOCK_PROJECT_ID,
+                                   'status': MOCK_STATUS,
+                                   'port_id': MOCK_PORT_ID,
+                                   'router_id': MOCK_ROUTER_ID,
+                                   'floating_network_id': MOCK_NETWORK_ID,
+                                   'floating_ip_address': MOCK_IP_ADDRESS,
+                                   'fixed_ip_address': MOCK_IP_ADDRESS2,
+                                   'fixed_port_id': MOCK_PORT_ID2}}
 
 MOCK_AMP_ID1 = 'amp1-id'
 MOCK_AMP_ID2 = 'amp2-id'
