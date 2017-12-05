@@ -59,6 +59,84 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
 
         self.assertTrue(self.driver._check_extension_enabled('TEST1'))
         self.assertFalse(self.driver._check_extension_enabled('TEST2'))
+        show_extension.assert_has_calls(
+            [mock.call('TEST1'), mock.call('TEST2')])
+
+    def test__check_extension_enabled_cached(self):
+        show_extension = self.driver.neutron_client.show_extension
+
+        self.driver._check_extension_cache = {'TEST1': True, 'TEST2': False}
+        self.assertTrue(self.driver._check_extension_enabled('TEST1'))
+        self.assertFalse(self.driver._check_extension_enabled('TEST2'))
+        self.assertNotIn(mock.call('TEST1'), show_extension.mock_calls)
+        self.assertNotIn(mock.call('TEST2'), show_extension.mock_calls)
+
+    def test__add_allowed_address_pair_to_port(self):
+        self.driver._add_allowed_address_pair_to_port(
+            t_constants.MOCK_PORT_ID, t_constants.MOCK_IP_ADDRESS)
+        expected_aap_dict = {
+                'port': {
+                    'allowed_address_pairs': [
+                        {'ip_address': t_constants.MOCK_IP_ADDRESS}]}}
+        self.driver.neutron_client.update_port.assert_has_calls([
+            mock.call(t_constants.MOCK_PORT_ID, expected_aap_dict)])
+
+    def test__add_security_group_to_port(self):
+        self.driver._add_security_group_to_port(
+            t_constants.MOCK_SECURITY_GROUP_ID, t_constants.MOCK_PORT_ID)
+        expected_sg_dict = {
+            'port': {
+                'security_groups': [
+                    t_constants.MOCK_SECURITY_GROUP_ID]}}
+        self.driver.neutron_client.update_port.assert_has_calls([
+            mock.call(t_constants.MOCK_PORT_ID, expected_sg_dict)])
+
+    def test__add_security_group_to_port_with_port_not_found(self):
+        self.driver.neutron_client.update_port.side_effect = (
+            neutron_client_exceptions.PortNotFoundClient)
+        self.assertRaises(
+            network_base.PortNotFound,
+            self.driver._add_security_group_to_port,
+            t_constants.MOCK_SECURITY_GROUP_ID, t_constants.MOCK_PORT_ID)
+
+    def test__add_security_group_to_port_with_other_exception(self):
+        self.driver.neutron_client.update_port.side_effect = IOError
+        self.assertRaises(
+            network_base.NetworkException,
+            self.driver._add_security_group_to_port,
+            t_constants.MOCK_SECURITY_GROUP_ID, t_constants.MOCK_PORT_ID)
+
+    def test__create_security_group(self):
+        sg_return = self.driver._create_security_group(
+            t_constants.MOCK_SECURITY_GROUP_NAME)
+        expected_sec_grp_dict = {
+            'security_group': {
+                'name': t_constants.MOCK_SECURITY_GROUP_NAME}}
+        self.driver.neutron_client.create_security_group.assert_has_calls([
+            mock.call(expected_sec_grp_dict)])
+        self.assertEqual(
+            sg_return,
+            self.driver.neutron_client.create_security_group()[
+                'security_group'])
+
+    def test__create_security_group_rule(self):
+        self.driver._create_security_group_rule(
+            sec_grp_id=t_constants.MOCK_SECURITY_GROUP_ID,
+            direction=1,
+            protocol=2,
+            port_min=3,
+            port_max=4,
+            ethertype=5)
+        expected_sec_grp_rule_dict = {
+            'security_group_rule': {
+                'security_group_id': t_constants.MOCK_SECURITY_GROUP_ID,
+                'direction': 1,
+                'protocol': 2,
+                'port_range_min': 3,
+                'port_range_max': 4,
+                'ethertype': 5}}
+        self.driver.neutron_client.create_security_group_rule.assert_has_calls(
+            [mock.call(expected_sec_grp_rule_dict)])
 
     def test__port_to_vip(self):
         lb = dmh.generate_load_balancer_tree()
