@@ -89,6 +89,18 @@ class TestAmphora(base.BaseAPITest):
             amphora_id=self.amp_id)).json.get(self.root_tag)
         self._assert_amp_equal(self.amp_args, response)
 
+    def test_failover(self):
+        self.put(self.AMPHORA_FAILOVER_PATH.format(
+            amphora_id=self.amp_id), body={}, status=202)
+        self.handler_mock().amphora.failover.assert_has_calls(
+            [mock.call(self.amp)]
+        )
+
+    def test_failover_bad_amp_id(self):
+        self.put(self.AMPHORA_FAILOVER_PATH.format(
+            amphora_id='asdf'), body={}, status=404)
+        self.assertFalse(self.handler_mock().amphora.failover.called)
+
     def test_get_authorized(self):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')

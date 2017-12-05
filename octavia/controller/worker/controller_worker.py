@@ -692,17 +692,14 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         try:
             amp = self._amphora_repo.get(db_apis.get_session(),
                                          id=amphora_id)
-            if amp.status == constants.AMPHORA_ALLOCATED:
-                self._lb_repo.test_and_set_provisioning_status(
-                    db_apis.get_session(), amp.load_balancer_id,
-                    status=constants.PENDING_UPDATE, raise_exception=True)
             self._perform_amphora_failover(
                 amp, constants.LB_CREATE_FAILOVER_PRIORITY)
-            LOG.info("Mark ACTIVE in DB for load balancer id: %s",
-                     amp.load_balancer_id)
-            self._lb_repo.update(
-                db_apis.get_session(), amp.load_balancer_id,
-                provisioning_status=constants.ACTIVE)
+            if amp.load_balancer_id:
+                LOG.info("Mark ACTIVE in DB for load balancer id: %s",
+                         amp.load_balancer_id)
+                self._lb_repo.update(
+                    db_apis.get_session(), amp.load_balancer_id,
+                    provisioning_status=constants.ACTIVE)
         except Exception as e:
             with excutils.save_and_reraise_exception():
                 LOG.error("Failover exception: %s", e)

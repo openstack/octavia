@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Added the 'failover' sub-resource for the Amphora API. Each amphora can be
+    triggered to failover by sending a PUT (with an empty body) to the resource
+    ``/v2.0/octavia/amphorae/<uuid>/failover``. It will cause the amphora to be
+    recycled and replaced, in the same way as the health-triggered failover.
