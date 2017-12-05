@@ -24,6 +24,7 @@ global
     {% if loadbalancer.global_connection_limit is defined %}
     maxconn {{ loadbalancer.global_connection_limit }}
     {% endif %}
+    external-check
 
 defaults
     log global

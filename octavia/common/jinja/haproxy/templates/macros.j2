@@ -227,6 +227,10 @@ backend {{ pool.id }}
         {% if pool.health_monitor.type == constants.HEALTH_MONITOR_TLS_HELLO %}
     option ssl-hello-chk
         {% endif %}
+        {% if pool.health_monitor.type == constants.HEALTH_MONITOR_PING %}
+    option external-check
+    external-check command /var/lib/octavia/ping-wrapper.sh
+        {% endif %}
     {% endif %}
     {% if pool.protocol.lower() == constants.PROTOCOL_HTTP.lower() %}
         {% if listener.insert_headers.get('X-Forwarded-For',

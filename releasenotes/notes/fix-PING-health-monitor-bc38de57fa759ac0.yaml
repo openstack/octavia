@@ -1,0 +1,17 @@
+---
+issues:
+  - |
+    Amphora images with HAProxy older than 1.6 (CentOS 7, etc.) will still
+    use health monitor type TCP when PING is selected by the user.
+upgrade:
+  - |
+    Amphora will need to be updated to a new image with this version of the
+    agent and ping-wrapper.sh script prior to updating the Octavia controllers.
+    If a load balancer is using a health monitor of type PING with an
+    amphora image that has not been updated, the next configuration change to
+    the load balancer will cause it to go into an ERROR state until it is
+    failed over to an updated image.
+fixes:
+  - |
+    Fixed an issue where health monitors of type PING were really doing a
+    TCP health check.

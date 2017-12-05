@@ -82,15 +82,19 @@ class TestServerTestCase(base.TestCase):
         self._test_haproxy(consts.INIT_UPSTART, consts.UBUNTU,
                            mock_init_system)
 
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'haproxy_compatibility.get_haproxy_versions')
     @mock.patch('os.path.exists')
     @mock.patch('os.makedirs')
     @mock.patch('os.rename')
     @mock.patch('subprocess.check_output')
     def _test_haproxy(self, init_system, distro, mock_init_system,
                       mock_subprocess, mock_rename,
-                      mock_makedirs, mock_exists):
+                      mock_makedirs, mock_exists, mock_get_version):
 
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
+
+        mock_get_version.return_value = [1, 6]
 
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mock_exists.return_value = True

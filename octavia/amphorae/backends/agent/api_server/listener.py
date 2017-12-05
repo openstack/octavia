@@ -28,6 +28,7 @@ import six
 import webob
 from werkzeug import exceptions
 
+from octavia.amphorae.backends.agent.api_server import haproxy_compatibility
 from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.amphorae.backends.utils import haproxy_query as query
@@ -124,6 +125,10 @@ class Listener(object):
         # a duplicate entry for 'group' in haproxy configuration, which will
         # result an error when haproxy starts.
         new_config = re.sub(r"\s+group\s.+", "", s_io.getvalue())
+
+        # Handle any haproxy version compatibility issues
+        new_config = haproxy_compatibility.process_cfg_for_version_compat(
+            new_config)
 
         with os.fdopen(os.open(name, flags, mode), 'w') as file:
             file.write(new_config)
