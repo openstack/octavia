@@ -106,6 +106,24 @@ class BaseType(wtypes.Base):
                     del new_dict[key]
         return cls(**new_dict)
 
+    @classmethod
+    def translate_dict_keys_to_data_model(cls, wsme_dict):
+        """Translate the keys from wsme class type, to data_model."""
+        if not hasattr(cls, '_type_to_model_map'):
+            return wsme_dict
+        res = {}
+        for (k, v) in wsme_dict.items():
+            if k in cls._type_to_model_map:
+                k = cls._type_to_model_map[k]
+                if '.' in k:
+                    parent, child = k.split('.')
+                    if parent not in res:
+                        res[parent] = {}
+                    res[parent][child] = v
+                    continue
+            res[k] = v
+        return res
+
     def to_dict(self, render_unsets=False):
         """Converts Octavia WSME type to dictionary.
 
@@ -119,7 +137,7 @@ class BaseType(wtypes.Base):
             if (isinstance(self.project_id, wtypes.UnsetType) and
                     not isinstance(self.tenant_id, wtypes.UnsetType)):
                 self.project_id = self.tenant_id
-        ret_dict = {}
+        wsme_dict = {}
         for attr in dir(self):
             if attr.startswith('_'):
                 continue
@@ -143,19 +161,8 @@ class BaseType(wtypes.Base):
                     value = None
                 else:
                     continue
-            attr_name = attr
-            if (hasattr(self, '_type_to_model_map') and
-                    attr in self._type_to_model_map):
-                renamed = self._type_to_model_map[attr]
-                if '.' in renamed:
-                    parent, child = renamed.split('.')
-                    if parent not in ret_dict:
-                        ret_dict[parent] = {}
-                    ret_dict[parent][child] = value
-                    continue
-                attr_name = renamed
-            ret_dict[attr_name] = value
-        return ret_dict
+            wsme_dict[attr] = value
+        return self.translate_dict_keys_to_data_model(wsme_dict)
 
 
 class IdOnlyType(BaseType):

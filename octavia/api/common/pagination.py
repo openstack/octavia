@@ -23,6 +23,7 @@ from octavia.api.common import types
 from octavia.common.config import cfg
 from octavia.common import constants
 from octavia.common import exceptions
+from octavia.db import models
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -33,6 +34,10 @@ class PaginationHelper(object):
 
     Pass this class to `db.repositories` to apply it on query
     """
+    _auxiliary_arguments = ('limit', 'marker',
+                            'sort', 'sort_key', 'sort_dir',
+                            'fields', 'page_reverse',
+                            )
 
     def __init__(self, params, sort_dir=constants.DEFAULT_SORT_DIR):
         """Pagination Helper takes params and a default sort direction
@@ -173,7 +178,7 @@ class PaginationHelper(object):
         links = [types.PageType(**link) for link in links]
         return links
 
-    def apply(self, query, model):
+    def apply(self, query, model, enforce_valid_params=True):
         """Returns a query with sorting / pagination criteria added.
 
         Pagination works by requiring a unique sort_key specified by sort_keys.
@@ -191,6 +196,7 @@ class PaginationHelper(object):
         :param query: the query object to which we should add
         paging/sorting/filtering
         :param model: the ORM model class
+        :param enforce_valid_params: check for invalid enteries in self.params
 
         :rtype: sqlalchemy.orm.query.Query
         :returns: The query with sorting/pagination/filtering added.
@@ -198,18 +204,35 @@ class PaginationHelper(object):
 
         # Add filtering
         if CONF.api_settings.allow_filtering:
-            filter_attrs = [attr for attr in dir(
-                model.__v2_wsme__
-            ) if not callable(
-                getattr(model.__v2_wsme__, attr)
-            ) and not attr.startswith("_")]
-            self.filters = {k: v for (k, v) in self.params.items()
-                            if k in filter_attrs}
+            # Exclude (valid) arguments that are not used for data filtering
+            filter_params = {k: v for k, v in self.params.items(
+                ) if k not in self._auxiliary_arguments}
+
+            secondary_query_filter = filter_params.pop(
+                "project_id", None) if (model == models.Amphora) else None
+
+            # Tranlate arguments from API standard to data model's field name
+            filter_params = (
+                model.__v2_wsme__.translate_dict_keys_to_data_model(
+                    filter_params)
+            )
+            if 'loadbalancer_id' in filter_params:
+                filter_params['load_balancer_id'] = filter_params.pop(
+                    'loadbalancer_id')
+
+            # Drop invalid arguments
+            self.filters = {k: v for (k, v) in filter_params.items()
+                            if k in vars(model.__data_model__())}
+
+            if enforce_valid_params and (
+                len(self.filters) < len(filter_params)
+            ):
+                raise exceptions.InvalidFilterArgument()
 
             query = model.apply_filter(query, model, self.filters)
-            if model.__name__ == "Amphora" and 'project_id' in self.params:
+            if secondary_query_filter is not None:
                 query = query.filter(model.load_balancer.has(
-                    project_id=self.params['project_id']))
+                    project_id=secondary_query_filter))
 
         # Add sorting
         if CONF.api_settings.allow_sorting:

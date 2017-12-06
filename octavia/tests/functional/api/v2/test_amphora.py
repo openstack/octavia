@@ -209,13 +209,16 @@ class TestAmphora(base.BaseAPITest):
             self.AMPHORAE_PATH,
             params={'project_id': self.project_id}
         ).json.get(self.root_tag_list)
-
         self.assertEqual(1, len(amps))
+
+        false_project_id = uuidutils.generate_uuid()
         amps = self.get(
             self.AMPHORAE_PATH,
-            params={'project_id': uuidutils.generate_uuid()}
+            params={'project_id': false_project_id}
         ).json.get(self.root_tag_list)
-        self.assertEqual(0, len(amps))
+
+        self.assertEqual(int(false_project_id == self.project_id),
+                         len(amps))
 
     def test_get_all_sorted(self):
         self._create_additional_amp()
