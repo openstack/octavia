@@ -24,6 +24,7 @@ usage() {
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
     echo "            [-d **xenial**/**7** | trusty | <other release id> ]"
+    echo "            [-e]"
     echo "            [-h]"
     echo "            [-i **ubuntu** | fedora | centos | rhel ]"
     echo "            [-n]"
@@ -39,6 +40,7 @@ usage() {
     echo "        '-b' is the backend type (default: haproxy)"
     echo "        '-c' is the path to the cache directory (default: ~/.cache/image-create)"
     echo "        '-d' distribution release id (default on ubuntu: xenial)"
+    echo "        '-e' enable complete mandatory access control systems when available (default: permissive)"
     echo "        '-h' display this help message"
     echo "        '-i' is the base OS (default: ubuntu)"
     echo "        '-n' disable sshd (default: enabled)"
@@ -78,7 +80,7 @@ if [ -z $OCTAVIA_REPO_PATH ]; then
 fi
 dib_enable_tracing=
 
-while getopts "a:b:c:d:hi:no:pt:r:s:vw:x" opt; do
+while getopts "a:b:c:d:ehi:no:pt:r:s:vw:x" opt; do
     case $opt in
         a)
             AMP_ARCH=$OPTARG
@@ -103,6 +105,9 @@ while getopts "a:b:c:d:hi:no:pt:r:s:vw:x" opt; do
         d)
             AMP_DIB_RELEASE=$OPTARG
         ;;
+        e)
+            AMP_ENABLE_FULL_MAC_SECURITY=1
+        ;;
         h)
             usage
         ;;
@@ -125,15 +130,6 @@ while getopts "a:b:c:d:hi:no:pt:r:s:vw:x" opt; do
         p)
             export DIB_INSTALLTYPE_amphora_agent=package
         ;;
-        t)
-            AMP_IMAGETYPE=$OPTARG
-            if [ $AMP_IMAGETYPE != "qcow2" ] && \
-                [ $AMP_IMAGETYPE != "tar" ] && \
-                [ $AMP_IMAGETYPE != "vhd" ]; then
-                echo "Error: Unsupported image type " $AMP_IMAGETYPE " specified"
-                exit 3
-            fi
-        ;;
         r)
             AMP_ROOTPW=$OPTARG
         ;;
@@ -141,6 +137,15 @@ while getopts "a:b:c:d:hi:no:pt:r:s:vw:x" opt; do
             AMP_IMAGESIZE=$OPTARG
             if ! [[ $AMP_IMAGESIZE =~ ^[0-9]+$ ]]; then
                 echo "Error: Invalid image size " $AMP_IMAGESIZE " specified"
+                exit 3
+            fi
+        ;;
+        t)
+            AMP_IMAGETYPE=$OPTARG
+            if [ $AMP_IMAGETYPE != "qcow2" ] && \
+                [ $AMP_IMAGETYPE != "tar" ] && \
+                [ $AMP_IMAGETYPE != "vhd" ]; then
+                echo "Error: Unsupported image type " $AMP_IMAGETYPE " specified"
                 exit 3
             fi
         ;;
@@ -185,6 +190,8 @@ AMP_IMAGETYPE=${AMP_IMAGETYPE:-"qcow2"}
 AMP_IMAGESIZE=${AMP_IMAGESIZE:-2}
 
 AMP_DISABLE_SSHD=${AMP_DISABLE_SSHD:-0}
+
+AMP_ENABLE_FULL_MAC_SECURITY=${AMP_ENABLE_FULL_MAC_SECURITY:-0}
 
 if [ "$AMP_BASEOS" = "rhel" ] && [ "$AMP_IMAGESIZE" -lt 3 ]; then
     echo "RHEL based amphora requires an image size of at least 3GB"
@@ -323,8 +330,13 @@ fi
 AMP_element_sequence="$AMP_element_sequence rebind-sshd"
 AMP_element_sequence="$AMP_element_sequence no-resolvconf"
 AMP_element_sequence="$AMP_element_sequence amphora-agent"
-#TODO(bcafarel): make this conditional
-AMP_element_sequence="$AMP_element_sequence selinux-permissive"
+
+if [ "$AMP_ENABLE_FULL_MAC_SECURITY" -ne 1 ]; then
+    # SELinux systems
+    if [ "${AMP_BASEOS}" = "centos" ] || [ "${AMP_BASEOS}" = "fedora" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
+        AMP_element_sequence="$AMP_element_sequence selinux-permissive"
+    fi
+fi
 
 # Add keepalived-octavia element
 AMP_element_sequence="$AMP_element_sequence keepalived-octavia"
