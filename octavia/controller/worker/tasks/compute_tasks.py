@@ -48,10 +48,9 @@ class BaseComputeTask(task.Task):
 class ComputeCreate(BaseComputeTask):
     """Create the compute instance for a new amphora."""
 
-    def execute(self, amphora_id,
+    def execute(self, amphora_id, config_drive_files=None,
                 build_type_priority=constants.LB_CREATE_NORMAL_PRIORITY,
-                ports=None, config_drive_files=None,
-                server_group_id=None):
+                server_group_id=None, ports=None):
         """Create an amphora
 
         :returns: an amphora
@@ -127,7 +126,7 @@ class ComputeCreate(BaseComputeTask):
 class CertComputeCreate(ComputeCreate):
     def execute(self, amphora_id, server_pem,
                 build_type_priority=constants.LB_CREATE_NORMAL_PRIORITY,
-                ports=None, server_group_id=None):
+                server_group_id=None, ports=None):
         """Create an amphora
 
         :returns: an amphora
@@ -140,9 +139,10 @@ class CertComputeCreate(ComputeCreate):
             '/etc/octavia/certs/server.pem': server_pem,
             '/etc/octavia/certs/client_ca.pem': ca}
         return super(CertComputeCreate, self).execute(
-            amphora_id, build_type_priority=build_type_priority,
-            ports=ports, config_drive_files=config_drive_files,
-            server_group_id=server_group_id)
+            amphora_id, config_drive_files=config_drive_files,
+            build_type_priority=build_type_priority,
+            server_group_id=server_group_id, ports=ports,
+            )
 
 
 class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
