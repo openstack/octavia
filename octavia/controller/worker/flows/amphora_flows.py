@@ -114,7 +114,9 @@ class AmphoraFlows(object):
             name=sf_name + '-' + constants.CREATE_AMPHORA_INDB,
             provides=constants.AMPHORA_ID))
 
-        anti_affinity = CONF.nova.enable_anti_affinity
+        require_server_group_id_condition = (
+            role in (constants.ROLE_BACKUP, constants.ROLE_MASTER) and
+            CONF.nova.enable_anti_affinity)
 
         if self.REST_AMPHORA_DRIVER:
             create_amp_for_lb_subflow.add(cert_task.GenerateServerPEMTask(
@@ -126,34 +128,42 @@ class AmphoraFlows(object):
                     name=sf_name + '-' + constants.UPDATE_CERT_EXPIRATION,
                     requires=(constants.AMPHORA_ID, constants.SERVER_PEM)))
 
-            if role in (constants.ROLE_BACKUP, constants.ROLE_MASTER
-                        ) and anti_affinity:
+            if require_server_group_id_condition:
                 create_amp_for_lb_subflow.add(compute_tasks.CertComputeCreate(
                     name=sf_name + '-' + constants.CERT_COMPUTE_CREATE,
-                    requires=(constants.AMPHORA_ID, constants.SERVER_PEM,
-                              constants.SERVER_GROUP_ID,
-                              constants.BUILD_TYPE_PRIORITY),
+                    requires=(
+                        constants.AMPHORA_ID,
+                        constants.SERVER_PEM,
+                        constants.BUILD_TYPE_PRIORITY,
+                        constants.SERVER_GROUP_ID,
+                    ),
                     provides=constants.COMPUTE_ID))
             else:
                 create_amp_for_lb_subflow.add(compute_tasks.CertComputeCreate(
                     name=sf_name + '-' + constants.CERT_COMPUTE_CREATE,
-                    requires=(constants.AMPHORA_ID, constants.SERVER_PEM,
-                              constants.BUILD_TYPE_PRIORITY),
+                    requires=(
+                        constants.AMPHORA_ID,
+                        constants.SERVER_PEM,
+                        constants.BUILD_TYPE_PRIORITY,
+                    ),
                     provides=constants.COMPUTE_ID))
         else:
-
-            if role in (constants.ROLE_BACKUP, constants.ROLE_MASTER
-                        ) and anti_affinity:
+            if require_server_group_id_condition:
                 create_amp_for_lb_subflow.add(compute_tasks.ComputeCreate(
                     name=sf_name + '-' + constants.COMPUTE_CREATE,
-                    requires=(constants.AMPHORA_ID, constants.SERVER_GROUP_ID,
-                              constants.BUILD_TYPE_PRIORITY),
+                    requires=(
+                        constants.AMPHORA_ID,
+                        constants.BUILD_TYPE_PRIORITY,
+                        constants.SERVER_GROUP_ID,
+                    ),
                     provides=constants.COMPUTE_ID))
             else:
                 create_amp_for_lb_subflow.add(compute_tasks.ComputeCreate(
                     name=sf_name + '-' + constants.COMPUTE_CREATE,
-                    requires=(constants.AMPHORA_ID,
-                              constants.BUILD_TYPE_PRIORITY),
+                    requires=(
+                        constants.AMPHORA_ID,
+                        constants.BUILD_TYPE_PRIORITY,
+                    ),
                     provides=constants.COMPUTE_ID))
 
         create_amp_for_lb_subflow.add(database_tasks.UpdateAmphoraComputeId(
