@@ -165,7 +165,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         list_ports = self.driver.neutron_client.list_ports
         list_ports.side_effect = TypeError
         o_ifaces = self.driver.get_plugged_networks(
-            t_constants.MOCK_COMPUTE_ID)
+            t_constants.MOCK_DEVICE_ID)
         self.assertEqual(0, len(o_ifaces))
         list_ports.side_effect = None
         list_ports.reset_mock()
@@ -176,7 +176,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         }
         list_ports.return_value = {'ports': [port1, port2]}
         plugged_networks = self.driver.get_plugged_networks(
-            t_constants.MOCK_COMPUTE_ID)
+            t_constants.MOCK_DEVICE_ID)
         for pn in plugged_networks:
             self.assertIn(pn.port_id, [port1.get('id'), port2.get('id')])
             self.assertIn(pn.network_id, [port1.get('network_id'),
@@ -347,3 +347,66 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                           self.driver.get_port_by_net_id_device_id,
                           t_constants.MOCK_NETWORK_ID,
                           t_constants.MOCK_DEVICE_ID)
+
+    def test_get_ports_by_net_id_device_id(self):
+        """Test get_port_by_net_id_device_id, when port is not unique.
+
+        The expected result is: only the first port is returned.
+        """
+
+        list_port = self.driver.neutron_client.list_ports
+        list_port.return_value = {
+            'ports': [t_constants.MOCK_NEUTRON_PORT,
+                      t_constants.MOCK_NEUTRON_PORT2,
+                      ],
+        }
+
+        port = self.driver.get_port_by_net_id_device_id(
+            t_constants.MOCK_NETWORK_ID, t_constants.MOCK_DEVICE_ID)
+        self.assertIsInstance(port, network_models.Port)
+        self.assertEqual(t_constants.MOCK_PORT_ID, port.id)
+        self.assertEqual(t_constants.MOCK_DEVICE_ID, port.device_id)
+        self.assertEqual(t_constants.MOCK_PORT_NAME, port.name)
+        self.assertEqual(t_constants.MOCK_MAC_ADDR, port.mac_address)
+        self.assertEqual(t_constants.MOCK_NETWORK_ID, port.network_id)
+        self.assertEqual(1, len(port.fixed_ips))
+        self.assertIsInstance(port.fixed_ips[0], network_models.FixedIP)
+        self.assertEqual(t_constants.MOCK_SUBNET_ID,
+                         port.fixed_ips[0].subnet_id)
+        self.assertEqual(t_constants.MOCK_IP_ADDRESS,
+                         port.fixed_ips[0].ip_address)
+        # Negative
+        list_port.side_effect = neutron_client_exceptions.NotFound
+        self.assertRaises(network_base.PortNotFound,
+                          self.driver.get_port_by_net_id_device_id,
+                          t_constants.MOCK_PORT_NAME,
+                          t_constants.MOCK_DEVICE_ID)
+        list_port.side_effect = Exception
+        self.assertRaises(network_base.NetworkException,
+                          self.driver.get_port_by_net_id_device_id,
+                          t_constants.MOCK_NETWORK_ID,
+                          t_constants.MOCK_DEVICE_ID)
+
+    def test_get_multiple_ports_by_net_id_device_id(self):
+        """Test _get_resources_by_filters, when result is not unique"""
+        list_port = self.driver.neutron_client.list_ports
+        list_port.return_value = {
+            'ports': [t_constants.MOCK_NEUTRON_PORT,
+                      t_constants.MOCK_NEUTRON_PORT2,
+                      ],
+        }
+
+        ports = self.driver._get_resources_by_filters(
+            'port',
+            network_id=t_constants.MOCK_NETWORK_ID,
+            device_id=t_constants.MOCK_DEVICE_ID,
+        )
+        self.assertIsInstance(ports, list)
+        port1, port2 = ports
+
+        self.assertEqual(t_constants.MOCK_PORT_ID, port1.id)
+        self.assertEqual(t_constants.MOCK_PORT_ID2, port2.id)
+        self.assertEqual(t_constants.MOCK_IP_ADDRESS,
+                         port1.fixed_ips[0].ip_address)
+        self.assertEqual(t_constants.MOCK_IP_ADDRESS2,
+                         port2.fixed_ips[0].ip_address)

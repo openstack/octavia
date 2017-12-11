@@ -405,7 +405,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                           self.driver.allocate_vip, fake_lb)
 
     def test_allocate_vip_when_no_port_provided(self):
-        port_create_dict = copy.copy(t_constants.MOCK_NEUTRON_PORT)
+        port_create_dict = copy.deepcopy(t_constants.MOCK_NEUTRON_PORT)
         port_create_dict['port']['device_owner'] = (
             allowed_address_pairs.OCTAVIA_OWNER)
         port_create_dict['port']['device_id'] = 'lb-1'
