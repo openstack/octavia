@@ -4,6 +4,8 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
+# Force context as we start keepalived under "ip netns exec"
+SELinuxContext=system_u:system_r:keepalived_t:s0
 Type=forking
 KillMode=process
 ExecStart=/sbin/ip netns exec {{ amphora_nsname }} {{ keepalived_cmd }} -D -d -f {{ keepalived_cfg }} -p {{ keepalived_pid }}
