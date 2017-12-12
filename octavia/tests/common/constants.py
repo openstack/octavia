@@ -45,6 +45,8 @@ MOCK_NOVA_INTERFACE2.port_id = MOCK_PORT_ID2
 MOCK_NOVA_INTERFACE2.fixed_ips = [{'ip_address': MOCK_IP_ADDRESS2}]
 MOCK_DEVICE_OWNER = 'Moctavia'
 MOCK_DEVICE_ID = 'Moctavia123'
+MOCK_SECURITY_GROUP_ID = 'security-group-1'
+MOCK_SECURITY_GROUP_NAME = 'SecurityGroup1'
 
 MOCK_NEUTRON_PORT = {'port': {'network_id': MOCK_NETWORK_ID,
                               'device_id': MOCK_COMPUTE_ID,

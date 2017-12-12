@@ -34,8 +34,13 @@ class BaseNetworkTask(task.Task):
 
     def __init__(self, **kwargs):
         super(BaseNetworkTask, self).__init__(**kwargs)
+        self._network_driver = None
 
-        self.network_driver = utils.get_network_driver()
+    @property
+    def network_driver(self):
+        if self._network_driver is None:
+            self._network_driver = utils.get_network_driver()
+        return self._network_driver
 
 
 class CalculateAmphoraDelta(BaseNetworkTask):
