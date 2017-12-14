@@ -110,7 +110,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         try:
             self._add_allowed_address_pair_to_port(port_id, vip_address)
         except neutron_client_exceptions.PortNotFoundClient as e:
-            raise base.PortNotFound(e.message)
+            raise base.PortNotFound(str(e))
         except Exception:
             message = _('Error adding allowed address pair {ip} '
                         'to port {port_id}.').format(ip=vip_address,
@@ -378,7 +378,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             raise base.AllocateVIPException(
                 message,
                 orig_msg=getattr(e, 'message', None),
-                orig_code=getattr(e, 'status_code', None))
+                orig_code=getattr(e, 'status_code', None),
+            )
         new_port = utils.convert_port_dict_to_model(new_port)
         return self._port_to_vip(new_port, load_balancer)
 
@@ -438,12 +439,12 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 server=compute_id, net_id=network_id, fixed_ip=ip_address,
                 port_id=None)
         except nova_client_exceptions.NotFound as e:
-            if 'Instance' in e.message:
-                raise base.AmphoraNotFound(e.message)
-            elif 'Network' in e.message:
-                raise base.NetworkNotFound(e.message)
+            if 'Instance' in str(e):
+                raise base.AmphoraNotFound(str(e))
+            elif 'Network' in str(e):
+                raise base.NetworkNotFound(str(e))
             else:
-                raise base.PlugNetworkException(e.message)
+                raise base.PlugNetworkException(str(e))
         except Exception:
             message = _('Error plugging amphora (compute_id: {compute_id}) '
                         'into network {network_id}.').format(
@@ -512,12 +513,12 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             plugged_interface = self._nova_interface_to_octavia_interface(
                 amphora.compute_id, interface)
         except nova_client_exceptions.NotFound as e:
-            if 'Instance' in e.message:
-                raise base.AmphoraNotFound(e.message)
-            elif 'Network' in e.message:
-                raise base.NetworkNotFound(e.message)
+            if 'Instance' in str(e):
+                raise base.AmphoraNotFound(str(e))
+            elif 'Network' in str(e):
+                raise base.NetworkNotFound(str(e))
             else:
-                raise base.PlugNetworkException(e.message)
+                raise base.PlugNetworkException(str(e))
         except nova_client_exceptions.Conflict:
             LOG.info('Port %(portid)s is already plugged, '
                      'skipping', {'portid': port.id})

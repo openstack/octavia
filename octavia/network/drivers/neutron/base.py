@@ -111,7 +111,7 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
         try:
             self.neutron_client.update_port(port_id, port_update)
         except neutron_client_exceptions.PortNotFoundClient as e:
-            raise base.PortNotFound(e.message)
+            raise base.PortNotFound(str(e))
         except Exception as e:
             raise base.NetworkException(str(e))
 
@@ -143,7 +143,7 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
         try:
             self.neutron_client.update_port(port_id, body)
         except neutron_client_exceptions.PortNotFoundClient as e:
-            raise base.PortNotFound(e.message)
+            raise base.PortNotFound(str(e))
         except Exception as e:
             raise base.NetworkException(str(e))
 

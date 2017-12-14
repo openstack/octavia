@@ -35,6 +35,7 @@ import octavia.common.validate as validate
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _
+from octavia.network import base as network_base
 
 
 CONF = cfg.CONF
@@ -211,16 +212,15 @@ class LoadBalancersController(base.BaseController):
         """Create vip port."""
         network_driver = utils.get_network_driver()
         try:
-            vip = network_driver.allocate_vip(load_balancer_db)
-        except Exception as e:
+            return network_driver.allocate_vip(load_balancer_db)
+        except network_base.AllocateVIPException as e:
             # Convert neutron style exception to octavia style
             # if the error was API ready
-            if e.orig_code is not None:
+            if getattr(e, 'orig_code', None) is not None:
                 e.code = e.orig_code
                 e.message = e.orig_msg
                 e.msg = e.orig_msg
             raise e
-        return vip
 
     @wsme_pecan.wsexpose(lb_types.LoadBalancerFullRootResponse,
                          body=lb_types.LoadBalancerRootPOST, status_code=201)

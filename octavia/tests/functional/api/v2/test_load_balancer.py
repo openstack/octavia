@@ -434,6 +434,16 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(port.id, api_lb.get('vip_port_id'))
 
     def test_create_neutron_failure(self):
+
+        class TestNeutronException(network_base.AllocateVIPException):
+            def __init__(self, message, orig_msg, orig_code):
+                super(TestNeutronException, self).__init__(
+                    message, orig_msg=orig_msg, orig_code=orig_code,
+                )
+
+            def __str__(self):
+                return repr(self.message)
+
         subnet = network_models.Subnet(id=uuidutils.generate_uuid())
         network = network_models.Network(id=uuidutils.generate_uuid(),
                                          subnets=[subnet])
@@ -2796,14 +2806,3 @@ class TestLoadBalancerGraph(base.BaseAPITest):
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, res.json)
-
-
-class TestNeutronException(Exception):
-
-    def __init__(self, message, orig_msg, orig_code):
-        self.message = message
-        self.orig_msg = orig_msg
-        self.orig_code = orig_code
-
-    def __str__(self):
-        return repr(self.message)
