@@ -746,12 +746,6 @@ class TestHealthMonitor(base.BaseAPITest):
             hm_op_status=constants.OFFLINE)
 
     def test_duplicate_create(self):
-        # TODO(rm_work): I am fairly certain this is the same issue as we see
-        # in test_repositories.py where PySqlite commits too early and can't
-        # roll back, causing things to get out of whack. This runs fine solo.
-        # It would be useful to test this *in reality* and see if it breaks.
-        self.skipTest("PySqlite transaction handling is broken. We can unskip"
-                      "this when `test_sqlite_transactions_broken` fails.")
         self.create_health_monitor(
             self.pool_id, constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1)
         self.set_lb_status(self.lb_id)

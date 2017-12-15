@@ -116,10 +116,9 @@ class L7RuleController(base.BaseController):
     def _validate_create_l7rule(self, lock_session, l7rule_dict):
         try:
             return self.repositories.l7rule.create(lock_session, **l7rule_dict)
-        except odb_exceptions.DBDuplicateEntry as de:
-            if ['id'] == de.columns:
-                raise exceptions.IDAlreadyExists()
-        except odb_exceptions.DBError as de:
+        except odb_exceptions.DBDuplicateEntry:
+            raise exceptions.IDAlreadyExists()
+        except odb_exceptions.DBError:
             # TODO(blogan): will have to do separate validation protocol
             # before creation or update since the exception messages
             # do not give any information as to what constraint failed

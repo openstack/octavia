@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Improves error messages returned to the user, such as errors for attempting
+    to add a second health monitor to a pool.
