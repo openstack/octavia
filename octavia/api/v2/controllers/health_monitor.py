@@ -151,6 +151,12 @@ class HealthMonitorController(base.BaseController):
         """Creates a health monitor on a pool."""
         context = pecan.request.context.get('octavia_context')
         health_monitor = health_monitor_.healthmonitor
+
+        if (not CONF.api_settings.allow_ping_health_monitors and
+                health_monitor.type == constants.HEALTH_MONITOR_PING):
+            raise exceptions.DisabledOption(
+                option='type', value=constants.HEALTH_MONITOR_PING)
+
         pool = self._get_db_pool(context.session, health_monitor.pool_id)
         health_monitor.project_id = pool.project_id
 

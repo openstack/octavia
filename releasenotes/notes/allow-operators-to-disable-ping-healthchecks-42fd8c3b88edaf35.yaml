@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Cloud deployers can set `api_settings.allow_ping_health_monitors = False`
+    in `octavia.conf` to disable the ability to create PING health monitors.
