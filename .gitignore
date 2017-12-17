@@ -29,6 +29,7 @@ tempest.log
 *.sw?
 *~
 .eggs/
+.ropeproject/
 
 # Files created by releasenotes build
 releasenotes/build
