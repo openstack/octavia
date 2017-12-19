@@ -27,33 +27,66 @@ MOCK_SUBNET_NAME = 'TestSubnet1'
 MOCK_PORT_ID = 'mock-port-1'
 MOCK_PORT_ID2 = 'mock-port-2'
 MOCK_PORT_NAME = 'TestPort1'
+MOCK_PORT_NAME2 = 'TestPort2'
 MOCK_COMPUTE_ID = 'mock-compute-1'
 MOCK_IP_ADDRESS = '10.0.0.1'
 MOCK_IP_ADDRESS2 = '10.0.0.2'
+MOCK_GATEWAY_IP = '10.0.0.3'
+MOCK_IP_VERSION = 4
 MOCK_CIDR = '10.0.0.0/24'
 MOCK_MAC_ADDR = 'fe:16:3e:00:95:5c'
+MOCK_MAC_ADDR2 = 'fe:16:3e:00:95:5d'
+MOCK_PROJECT_ID = 'mock-project-1'
+MOCK_SUBNET = {'subnet': {'id': MOCK_SUBNET_ID,
+                          'network_id': MOCK_NETWORK_ID}}
+MOCK_SUBNET2 = {'subnet': {'id': MOCK_SUBNET_ID2,
+                           'network_id': MOCK_NETWORK_ID2}}
+MOCK_HOST_ROUTES = []
+
 MOCK_NOVA_INTERFACE = MockNovaInterface()
-MOCK_SUBNET = {'subnet': {'id': MOCK_SUBNET_ID, 'network_id': MOCK_NETWORK_ID}}
 MOCK_NOVA_INTERFACE.net_id = MOCK_NETWORK_ID
 MOCK_NOVA_INTERFACE.port_id = MOCK_PORT_ID
 MOCK_NOVA_INTERFACE.fixed_ips = [{'ip_address': MOCK_IP_ADDRESS}]
 MOCK_NOVA_INTERFACE2 = MockNovaInterface()
-MOCK_SUBNET2 = {'subnet': {'id': MOCK_SUBNET_ID2,
-                           'network_id': MOCK_NETWORK_ID2}}
 MOCK_NOVA_INTERFACE2.net_id = MOCK_NETWORK_ID2
 MOCK_NOVA_INTERFACE2.port_id = MOCK_PORT_ID2
 MOCK_NOVA_INTERFACE2.fixed_ips = [{'ip_address': MOCK_IP_ADDRESS2}]
 MOCK_DEVICE_OWNER = 'Moctavia'
 MOCK_DEVICE_ID = 'Moctavia123'
+MOCK_DEVICE_ID2 = 'Moctavia124'
 MOCK_SECURITY_GROUP_ID = 'security-group-1'
 MOCK_SECURITY_GROUP_NAME = 'SecurityGroup1'
 
+MOCK_ADMIN_STATE_UP = True
+MOCK_STATUS = 'ACTIVE'
+MOCK_MTU = 1500
+MOCK_NETWORK_TYPE = 'flat'
+MOCK_SEGMENTATION_ID = 1
+MOCK_ROUTER_EXTERNAL = False
+
 MOCK_NEUTRON_PORT = {'port': {'network_id': MOCK_NETWORK_ID,
-                              'device_id': MOCK_COMPUTE_ID,
+                              'device_id': MOCK_DEVICE_ID,
                               'device_owner': MOCK_DEVICE_OWNER,
                               'id': MOCK_PORT_ID,
+                              'name': MOCK_PORT_NAME,
+                              'tenant_id': MOCK_PROJECT_ID,
+                              'admin_state_up': MOCK_ADMIN_STATE_UP,
+                              'status': MOCK_STATUS,
+                              'mac_address': MOCK_MAC_ADDR,
                               'fixed_ips': [{'ip_address': MOCK_IP_ADDRESS,
                                              'subnet_id': MOCK_SUBNET_ID}]}}
+
+MOCK_NEUTRON_PORT2 = {'port': {'network_id': MOCK_NETWORK_ID2,
+                               'device_id': MOCK_DEVICE_ID2,
+                               'device_owner': MOCK_DEVICE_OWNER,
+                               'id': MOCK_PORT_ID2,
+                               'name': MOCK_PORT_NAME2,
+                               'tenant_id': MOCK_PROJECT_ID,
+                               'admin_state_up': MOCK_ADMIN_STATE_UP,
+                               'status': MOCK_STATUS,
+                               'mac_address': MOCK_MAC_ADDR2,
+                               'fixed_ips': [{'ip_address': MOCK_IP_ADDRESS2,
+                                              'subnet_id': MOCK_SUBNET_ID2}]}}
 
 MOCK_AMP_ID1 = 'amp1-id'
 MOCK_AMP_ID2 = 'amp2-id'

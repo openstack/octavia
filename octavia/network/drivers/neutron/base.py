@@ -156,8 +156,8 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             message = _('{resource_type} not found '
                         '({resource_type} id: {resource_id}).').format(
                 resource_type=resource_type, resource_id=resource_id)
-            raise getattr(base, '%sNotFound' %
-                          resource_type.capitalize())(message)
+            raise getattr(base, '%sNotFound' % ''.join(
+                [w.capitalize() for w in resource_type.split('_')]))(message)
         except Exception:
             message = _('Error retrieving {resource_type} '
                         '({resource_type} id: {resource_id}.').format(
@@ -165,21 +165,32 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             LOG.exception(message)
             raise base.NetworkException(message)
 
-    def _get_resource_by_filters(self, resource_type, **filters):
-        # Filter items are unique, return the filtered item from the list.
+    def _get_resources_by_filters(self, resource_type, unique_item=False,
+                                  **filters):
+        """Retrieves item(s) from filters. By default, a list is returned.
+
+        If unique_item set to True, only the first resource is returned.
+        """
         try:
             resource = getattr(self.neutron_client, 'list_%ss' %
                                resource_type)(**filters)
-            resource = resource['%ss' % resource_type][0]
-            return getattr(utils, 'convert_%s_dict_to_model' %
-                           resource_type)(resource)
+            conversion_function = getattr(
+                utils,
+                'convert_%s_dict_to_model' % resource_type)
+            if unique_item:
+                return conversion_function(resource['%ss' % resource_type][0])
+            elif not resource['%ss' % resource_type]:
+                # no items found
+                raise neutron_client_exceptions.NotFound()
+            else:
+                return list(map(conversion_function,
+                                resource['%ss' % resource_type]))
         except neutron_client_exceptions.NotFound:
             message = _('{resource_type} not found '
                         '({resource_type} Filters: {filters}.').format(
                 resource_type=resource_type, filters=filters)
-            LOG.exception(message)
-            raise getattr(base, '%sNotFound' %
-                          resource_type.capitalize())(message)
+            raise getattr(base, '%sNotFound' % ''.join(
+                [w.capitalize() for w in resource_type.split('_')]))(message)
         except Exception:
             message = _('Error retrieving {resource_type} '
                         '({resource_type} Filters: {filters}.').format(
@@ -197,15 +208,18 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
         return self._get_resource('port', port_id)
 
     def get_network_by_name(self, network_name):
-        return self._get_resource_by_filters('network', name=network_name)
+        return self._get_resources_by_filters(
+            'network', unique_item=True, name=network_name)
 
     def get_subnet_by_name(self, subnet_name):
-        return self._get_resource_by_filters('subnet', name=subnet_name)
+        return self._get_resources_by_filters(
+            'subnet', unique_item=True, name=subnet_name)
 
     def get_port_by_name(self, port_name):
-        return self._get_resource_by_filters('port', name=port_name)
+        return self._get_resources_by_filters(
+            'port', unique_item=True, name=port_name)
 
     def get_port_by_net_id_device_id(self, network_id, device_id):
-        return self._get_resource_by_filters('port',
-                                             network_id=network_id,
-                                             device_id=device_id)
+        return self._get_resources_by_filters(
+            'port', unique_item=True,
+            network_id=network_id, device_id=device_id)
