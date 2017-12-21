@@ -16,3 +16,5 @@ doc8 # Apache-2.0
 reno>=1.8.0 # Apache-2.0
 bandit>=1.1.0 # Apache-2.0
 tempest>=12.1.0 # Apache-2.0
+# required for the doc8 tests in pep8
+sphinx>=1.2.1,!=1.3b1,<1.4  # BSD
