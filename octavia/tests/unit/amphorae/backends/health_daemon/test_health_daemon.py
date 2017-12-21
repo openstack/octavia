@@ -20,6 +20,7 @@ from oslo_utils import uuidutils
 import six
 
 from octavia.amphorae.backends.health_daemon import health_daemon
+from octavia.common import constants
 import octavia.tests.unit.base as base
 
 if six.PY2:
@@ -352,6 +353,65 @@ class TestHealthDaemon(base.TestCase):
         msg = health_daemon.build_stats_message()
 
         self.assertEqual(msg['listeners'][LISTENER_ID1]['pools'], {})
+
+    @mock.patch("octavia.amphorae.backends.utils.keepalivedlvs_query."
+                "get_udp_listener_pool_status")
+    @mock.patch("octavia.amphorae.backends.utils.keepalivedlvs_query."
+                "get_udp_listeners_stats")
+    @mock.patch("octavia.amphorae.backends.agent.api_server.util."
+                "get_udp_listeners")
+    def test_bulid_stats_message_with_udp_listener(
+            self, mock_get_udp_listeners, mock_get_listener_stats,
+            mock_get_pool_status):
+        udp_listener_id1 = uuidutils.generate_uuid()
+        udp_listener_id2 = uuidutils.generate_uuid()
+        udp_listener_id3 = uuidutils.generate_uuid()
+        pool_id = uuidutils.generate_uuid()
+        member_id1 = uuidutils.generate_uuid()
+        member_id2 = uuidutils.generate_uuid()
+        mock_get_udp_listeners.return_value = [udp_listener_id1,
+                                               udp_listener_id2,
+                                               udp_listener_id3]
+        mock_get_listener_stats.return_value = {
+            udp_listener_id1: {
+                'status': constants.OPEN,
+                'stats': {'bin': 6387472, 'stot': 5, 'bout': 7490,
+                          'ereq': 0, 'scur': 0}},
+            udp_listener_id3: {
+                'status': constants.DOWN,
+                'stats': {'bin': 0, 'stot': 0, 'bout': 0,
+                          'ereq': 0, 'scur': 0}}
+        }
+        udp_pool_status = {
+            'lvs': {
+                'uuid': pool_id,
+                'status': constants.UP,
+                'members': {member_id1: constants.UP,
+                            member_id2: constants.UP}}}
+        mock_get_pool_status.side_effect = (
+            lambda x: udp_pool_status if x == udp_listener_id1 else {})
+        # the first listener can get all necessary info.
+        # the second listener can not get listener stats, so we won't report it
+        # the third listener can get listener stats, but can not get pool
+        # status, so the result will just contain the listener status for it.
+        expected = {
+            'listeners': {
+                udp_listener_id1: {
+                    'status': constants.OPEN,
+                    'pools': {
+                        pool_id: {
+                            'status': constants.UP,
+                            'members': {
+                                member_id1: constants.UP,
+                                member_id2: constants.UP}}},
+                    'stats': {'conns': 0, 'totconns': 5, 'ereq': 0,
+                              'rx': 6387472, 'tx': 7490}},
+                udp_listener_id3: {
+                    'status': constants.DOWN,
+                    'stats': {'conns': 0, 'totconns': 0, 'ereq': 0,
+                              'rx': 0, 'tx': 0}}}, 'id': None, 'seq': mock.ANY}
+        msg = health_daemon.build_stats_message()
+        self.assertEqual(expected, msg)
 
 
 class FileNotFoundError(IOError):

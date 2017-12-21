@@ -27,11 +27,26 @@ class TestAmphoraInfo(base.TestCase):
 
     API_VERSION = random.randrange(0, 10000)
     HAPROXY_VERSION = random.randrange(0, 10000)
+    KEEPALIVED_VERSION = random.randrange(0, 10000)
+    IPVSADM_VERSION = random.randrange(0, 10000)
+    FAKE_LISTENER_ID_1 = uuidutils.generate_uuid()
+    FAKE_LISTENER_ID_2 = uuidutils.generate_uuid()
+    FAKE_LISTENER_ID_3 = uuidutils.generate_uuid()
+    FAKE_LISTENER_ID_4 = uuidutils.generate_uuid()
 
     def setUp(self):
         super(TestAmphoraInfo, self).setUp()
         self.osutils_mock = mock.MagicMock()
         self.amp_info = amphora_info.AmphoraInfo(self.osutils_mock)
+        self.udp_driver = mock.MagicMock()
+
+    def _return_version(self, package_name):
+        if package_name == 'ipvsadm':
+            return self.IPVSADM_VERSION
+        elif package_name == 'keepalived':
+            return self.KEEPALIVED_VERSION
+        else:
+            return self.HAPROXY_VERSION
 
     @mock.patch.object(amphora_info, "webob")
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
@@ -49,6 +64,186 @@ class TestAmphoraInfo(base.TestCase):
         mock_webob.Response.assert_called_once_with(json=expected_dict)
         api_server.VERSION = original_version
 
+    @mock.patch.object(amphora_info, "webob")
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._get_version_of_installed_package')
+    @mock.patch('socket.gethostname', return_value='FAKE_HOST')
+    def test_compile_amphora_info_for_udp(self, mock_gethostname,
+                                          mock_pkg_version, mock_webob):
+
+        mock_pkg_version.side_effect = self._return_version
+        self.udp_driver.get_subscribed_amp_compile_info.side_effect = [
+            ['keepalived', 'ipvsadm']]
+        original_version = api_server.VERSION
+        api_server.VERSION = self.API_VERSION
+        expected_dict = {'api_version': self.API_VERSION,
+                         'hostname': 'FAKE_HOST',
+                         'haproxy_version': self.HAPROXY_VERSION,
+                         'keepalived_version': self.KEEPALIVED_VERSION,
+                         'ipvsadm_version': self.IPVSADM_VERSION
+                         }
+        self.amp_info.compile_amphora_info(extend_udp_driver=self.udp_driver)
+        mock_webob.Response.assert_called_once_with(json=expected_dict)
+        api_server.VERSION = original_version
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_listeners', return_value=[FAKE_LISTENER_ID_1,
+                                               FAKE_LISTENER_ID_2])
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._get_meminfo')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._cpu')
+    @mock.patch('os.statvfs')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._get_networks')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._load')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._get_version_of_installed_package')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._count_haproxy_processes')
+    @mock.patch('socket.gethostname', return_value='FAKE_HOST')
+    def test_compile_amphora_details(self, mhostname, m_count, m_pkg_version,
+                                     m_load, m_get_nets, m_os, m_cpu,
+                                     mget_mem, mget_listener):
+        mget_mem.return_value = {'SwapCached': 0, 'Buffers': 344792,
+                                 'MemTotal': 21692784, 'Cached': 4271856,
+                                 'Slab': 534384, 'MemFree': 12685624,
+                                 'Shmem': 9520}
+        m_cpu.return_value = {'user': '252551', 'softirq': '8336',
+                              'system': '52554', 'total': 7503411}
+        m_pkg_version.side_effect = self._return_version
+        mdisk_info = mock.MagicMock()
+        m_os.return_value = mdisk_info
+        mdisk_info.f_blocks = 34676992
+        mdisk_info.f_bfree = 28398016
+        mdisk_info.f_frsize = 4096
+        mdisk_info.f_bavail = 26630646
+        m_get_nets.return_value = {'eth1': {'network_rx': 996,
+                                            'network_tx': 418},
+                                   'eth2': {'network_rx': 848,
+                                            'network_tx': 578}}
+        m_load.return_value = ['0.09', '0.11', '0.10']
+        m_count.return_value = 5
+        original_version = api_server.VERSION
+        api_server.VERSION = self.API_VERSION
+        expected_dict = {u'active': True,
+                         u'api_version': self.API_VERSION,
+                         u'cpu': {u'soft_irq': u'8336',
+                                  u'system': u'52554',
+                                  u'total': 7503411,
+                                  u'user': u'252551'},
+                         u'disk': {u'available': 109079126016,
+                                   u'used': 25718685696},
+                         u'haproxy_count': 5,
+                         u'haproxy_version': self.HAPROXY_VERSION,
+                         u'hostname': u'FAKE_HOST',
+                         u'listeners': [self.FAKE_LISTENER_ID_1,
+                                        self.FAKE_LISTENER_ID_2],
+                         u'load': [u'0.09', u'0.11', u'0.10'],
+                         u'memory': {u'buffers': 344792,
+                                     u'cached': 4271856,
+                                     u'free': 12685624,
+                                     u'shared': 9520,
+                                     u'slab': 534384,
+                                     u'swap_used': 0,
+                                     u'total': 21692784},
+                         u'networks': {u'eth1': {u'network_rx': 996,
+                                                 u'network_tx': 418},
+                                       u'eth2': {u'network_rx': 848,
+                                                 u'network_tx': 578}},
+                         u'packages': {},
+                         u'topology': u'SINGLE',
+                         u'topology_status': u'OK'}
+        actual = self.amp_info.compile_amphora_details()
+        self.assertEqual(expected_dict, actual.json)
+        api_server.VERSION = original_version
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_udp_listeners',
+                return_value=[FAKE_LISTENER_ID_3, FAKE_LISTENER_ID_4])
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_listeners', return_value=[FAKE_LISTENER_ID_1,
+                                               FAKE_LISTENER_ID_2])
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._get_meminfo')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._cpu')
+    @mock.patch('os.statvfs')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._get_networks')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._load')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._get_version_of_installed_package')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._count_haproxy_processes')
+    @mock.patch('socket.gethostname', return_value='FAKE_HOST')
+    def test_compile_amphora_details_for_udp(self, mhostname, m_count,
+                                             m_pkg_version, m_load, m_get_nets,
+                                             m_os, m_cpu, mget_mem,
+                                             mget_listener, mget_udp_listener):
+        mget_mem.return_value = {'SwapCached': 0, 'Buffers': 344792,
+                                 'MemTotal': 21692784, 'Cached': 4271856,
+                                 'Slab': 534384, 'MemFree': 12685624,
+                                 'Shmem': 9520}
+        m_cpu.return_value = {'user': '252551', 'softirq': '8336',
+                              'system': '52554', 'total': 7503411}
+        m_pkg_version.side_effect = self._return_version
+        mdisk_info = mock.MagicMock()
+        m_os.return_value = mdisk_info
+        mdisk_info.f_blocks = 34676992
+        mdisk_info.f_bfree = 28398016
+        mdisk_info.f_frsize = 4096
+        mdisk_info.f_bavail = 26630646
+        m_get_nets.return_value = {'eth1': {'network_rx': 996,
+                                            'network_tx': 418},
+                                   'eth2': {'network_rx': 848,
+                                            'network_tx': 578}}
+        m_load.return_value = ['0.09', '0.11', '0.10']
+        m_count.return_value = 5
+        self.udp_driver.get_subscribed_amp_compile_info.return_value = [
+            'keepalived', 'ipvsadm']
+        self.udp_driver.is_listener_running.side_effect = [True, False]
+        original_version = api_server.VERSION
+        api_server.VERSION = self.API_VERSION
+        expected_dict = {u'active': True,
+                         u'api_version': self.API_VERSION,
+                         u'cpu': {u'soft_irq': u'8336',
+                                  u'system': u'52554',
+                                  u'total': 7503411,
+                                  u'user': u'252551'},
+                         u'disk': {u'available': 109079126016,
+                                   u'used': 25718685696},
+                         u'haproxy_count': 5,
+                         u'haproxy_version': self.HAPROXY_VERSION,
+                         u'keepalived_version': self.KEEPALIVED_VERSION,
+                         u'ipvsadm_version': self.IPVSADM_VERSION,
+                         u'udp_listener_process_count': 1,
+                         u'hostname': u'FAKE_HOST',
+                         u'listeners': list(set([self.FAKE_LISTENER_ID_1,
+                                                 self.FAKE_LISTENER_ID_2,
+                                                 self.FAKE_LISTENER_ID_3,
+                                                 self.FAKE_LISTENER_ID_4])),
+                         u'load': [u'0.09', u'0.11', u'0.10'],
+                         u'memory': {u'buffers': 344792,
+                                     u'cached': 4271856,
+                                     u'free': 12685624,
+                                     u'shared': 9520,
+                                     u'slab': 534384,
+                                     u'swap_used': 0,
+                                     u'total': 21692784},
+                         u'networks': {u'eth1': {u'network_rx': 996,
+                                                 u'network_tx': 418},
+                                       u'eth2': {u'network_rx': 848,
+                                                 u'network_tx': 578}},
+                         u'packages': {},
+                         u'topology': u'SINGLE',
+                         u'topology_status': u'OK'}
+        actual = self.amp_info.compile_amphora_details(self.udp_driver)
+        self.assertEqual(expected_dict, actual.json)
+        api_server.VERSION = original_version
+
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'is_listener_running')
     def test__count_haproxy_process(self, mock_is_running):
@@ -62,6 +257,29 @@ class TestAmphoraInfo(base.TestCase):
         result = self.amp_info._count_haproxy_processes(
             [uuidutils.generate_uuid(), uuidutils.generate_uuid()])
         self.assertEqual(1, result)
+
+    def test__count_udp_listener_processes(self):
+        self.udp_driver.is_listener_running.side_effect = [True, False, True]
+        expected = 2
+        actual = self.amp_info._count_udp_listener_processes(
+            self.udp_driver, [self.FAKE_LISTENER_ID_1,
+                              self.FAKE_LISTENER_ID_2,
+                              self.FAKE_LISTENER_ID_3])
+        self.assertEqual(expected, actual)
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._get_version_of_installed_package')
+    def test__get_extend_body_from_udp_driver(self, m_get_version):
+        self.udp_driver.get_subscribed_amp_compile_info.return_value = [
+            'keepalived', 'ipvsadm']
+        m_get_version.side_effect = self._return_version
+        expected = {
+            "keepalived_version": self.KEEPALIVED_VERSION,
+            "ipvsadm_version": self.IPVSADM_VERSION
+        }
+        actual = self.amp_info._get_extend_body_from_udp_driver(
+            self.udp_driver)
+        self.assertEqual(expected, actual)
 
     def test__get_meminfo(self):
         # Known data test

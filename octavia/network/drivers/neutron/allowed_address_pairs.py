@@ -136,29 +136,41 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         rules = self.neutron_client.list_security_group_rules(
             security_group_id=sec_grp_id)
         updated_ports = [
-            listener.protocol_port for listener in load_balancer.listeners
+            (listener.protocol_port,
+             constants.PROTOCOL_TCP.lower()
+             if listener.protocol != constants.PROTOCOL_UDP else
+             constants.PROTOCOL_UDP.lower())
+            for listener in load_balancer.listeners
             if listener.provisioning_status != constants.PENDING_DELETE and
             listener.provisioning_status != constants.DELETED]
+        # As the peer port will hold the tcp connection for keepalived and
+        # haproxy session synchronization, so here the security group rule
+        # should be just related with tcp protocol only.
         peer_ports = [
-            listener.peer_port for listener in load_balancer.listeners
+            (listener.peer_port,
+             constants.PROTOCOL_TCP.lower())
+            for listener in load_balancer.listeners
             if listener.provisioning_status != constants.PENDING_DELETE and
             listener.provisioning_status != constants.DELETED]
         updated_ports.extend(peer_ports)
         # Just going to use port_range_max for now because we can assume that
         # port_range_max and min will be the same since this driver is
         # responsible for creating these rules
-        old_ports = [rule.get('port_range_max')
+        old_ports = [(rule.get('port_range_max'), rule.get('protocol'))
                      for rule in rules.get('security_group_rules', [])
                      # Don't remove egress rules and don't
                      # confuse other protocols with None ports
                      # with the egress rules.  VRRP uses protocol
                      # 51 and 112
                      if rule.get('direction') != 'egress' and
-                     rule.get('protocol', '').lower() == 'tcp']
+                     rule.get('protocol', '').lower() in ['tcp', 'udp']]
         add_ports = set(updated_ports) - set(old_ports)
         del_ports = set(old_ports) - set(updated_ports)
         for rule in rules.get('security_group_rules', []):
-            if rule.get('port_range_max') in del_ports:
+            if (rule.get('protocol', '') and
+                    rule.get('protocol', '').lower() in ['tcp', 'udp'] and
+                    (rule.get('port_range_max'),
+                     rule.get('protocol')) in del_ports):
                 rule_id = rule.get('id')
                 try:
                     self.neutron_client.delete_security_group_rule(rule_id)
@@ -167,9 +179,10 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                              "it is already deleted.", rule_id)
 
         ethertype = self._get_ethertype_for_ip(load_balancer.vip.ip_address)
-        for port in add_ports:
-            self._create_security_group_rule(sec_grp_id, 'TCP', port_min=port,
-                                             port_max=port,
+        for port_protocol in add_ports:
+            self._create_security_group_rule(sec_grp_id, port_protocol[1],
+                                             port_min=port_protocol[0],
+                                             port_max=port_protocol[0],
                                              ethertype=ethertype)
 
         # Currently we are using the VIP network for VRRP

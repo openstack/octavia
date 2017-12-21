@@ -118,6 +118,31 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
 
         if db_lb:
             expected_listener_count = len(db_lb.listeners)
+
+            # For udp listener, the udp health won't send out by amp agent.
+            # Once the default_pool of udp listener have the first enabled
+            # member, then the health will be sent out. So during this period,
+            # need to figure out the udp listener and ignore them by changing
+            # expected_listener_count.
+            for listener in db_lb.listeners:
+                need_remove = False
+                if listener.protocol == constants.PROTOCOL_UDP:
+                    enabled_members = ([member
+                                        for member in
+                                        listener.default_pool.members
+                                        if member.enabled]
+                                       if listener.default_pool else [])
+                    if listener.default_pool:
+                        if not listener.default_pool.members:
+                            need_remove = True
+                        elif not enabled_members:
+                            need_remove = True
+                    else:
+                        need_remove = True
+
+                if need_remove:
+                    expected_listener_count = expected_listener_count - 1
+
             if 'PENDING' in db_lb.provisioning_status:
                 ignore_listener_count = True
         else:

@@ -53,3 +53,5 @@ post-down /sbin/ip {{ '-6 ' if vip_ipv6 }}route del {{ hr.network }} via {{ hr.g
 {%- endfor %}
 post-up /sbin/ip {{ '-6 ' if vip_ipv6 }}rule add from {{ vip }}/32 table 1 priority 100
 post-down /sbin/ip {{ '-6 ' if vip_ipv6 }}rule del from {{ vip }}/32 table 1 priority 100
+post-up /sbin/ip{{ '6' if vip_ipv6 }}tables -t nat -A POSTROUTING -p udp -o {{ interface }} -j MASQUERADE
+post-down /sbin/ip{{ '6' if vip_ipv6 }}tables -t nat -D POSTROUTING -p udp -o {{ interface }} -j MASQUERADE

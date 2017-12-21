@@ -25,6 +25,8 @@ import six
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.amphorae.backends.health_daemon import health_sender
 from octavia.amphorae.backends.utils import haproxy_query
+from octavia.amphorae.backends.utils import keepalivedlvs_query
+
 
 if six.PY2:
     import Queue as queue  # pylint: disable=wrong-import-order
@@ -143,4 +145,28 @@ def build_stats_message():
                     pools = listener_dict['pools']
                     pools[pool_id] = {"status": pool['status'],
                                       "members": pool['members']}
+
+    # UDP listener part
+    udp_listener_ids = util.get_udp_listeners()
+    if udp_listener_ids:
+        listeners_stats = keepalivedlvs_query.get_udp_listeners_stats()
+        if listeners_stats:
+            for listener_id, listener_stats in listeners_stats.items():
+                pool_status = keepalivedlvs_query.get_udp_listener_pool_status(
+                    listener_id)
+                udp_listener_dict = dict()
+                udp_listener_dict['status'] = listener_stats['status']
+                udp_listener_dict['stats'] = {
+                    'tx': listener_stats['stats']['bout'],
+                    'rx': listener_stats['stats']['bin'],
+                    'conns': listener_stats['stats']['scur'],
+                    'totconns': listener_stats['stats']['stot'],
+                    'ereq': listener_stats['stats']['ereq']
+                }
+                if pool_status:
+                    udp_listener_dict['pools'] = {
+                        pool_status['lvs']['uuid']: {
+                            "status": pool_status['lvs']['status'],
+                            "members": pool_status['lvs']['members']}}
+                msg['listeners'][listener_id] = udp_listener_dict
     return msg

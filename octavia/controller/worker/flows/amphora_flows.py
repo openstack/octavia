@@ -384,6 +384,16 @@ class AmphoraFlows(object):
         failover_amphora_flow.add(database_tasks.GetAmphoraeFromLoadbalancer(
             requires=constants.LOADBALANCER, provides=constants.AMPHORAE))
 
+        # Plug the VIP ports into the new amphora
+        # The reason for moving these steps here is the udp listeners want to
+        # do some kernel configuration before Listener update for forbidding
+        # failure during rebuild amphora.
+        failover_amphora_flow.add(network_tasks.PlugVIPPort(
+            requires=(constants.AMPHORA, constants.AMPHORAE_NETWORK_CONFIG)))
+        failover_amphora_flow.add(amphora_driver_tasks.AmphoraPostVIPPlug(
+            requires=(constants.AMPHORA, constants.LOADBALANCER,
+                      constants.AMPHORAE_NETWORK_CONFIG)))
+
         # Listeners update needs to be run on all amphora to update
         # their peer configurations. So parallelize this with an
         # unordered subflow.
@@ -413,13 +423,6 @@ class AmphoraFlows(object):
             amp_index += 1
 
         failover_amphora_flow.add(update_amps_subflow)
-
-        # Plug the VIP ports into the new amphora
-        failover_amphora_flow.add(network_tasks.PlugVIPPort(
-            requires=(constants.AMPHORA, constants.AMPHORAE_NETWORK_CONFIG)))
-        failover_amphora_flow.add(amphora_driver_tasks.AmphoraPostVIPPlug(
-            requires=(constants.AMPHORA, constants.LOADBALANCER,
-                      constants.AMPHORAE_NETWORK_CONFIG)))
 
         # Plug the member networks into the new amphora
         failover_amphora_flow.add(network_tasks.CalculateAmphoraDelta(

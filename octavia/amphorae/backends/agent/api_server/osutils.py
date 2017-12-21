@@ -315,6 +315,10 @@ class RH(BaseOS):
     ETH_X_ALIAS_VIP_CONF = 'rh_plug_vip_ethX_alias.conf.j2'
     ROUTE_ETH_X_CONF = 'rh_route_ethX.conf.j2'
     RULE_ETH_X_CONF = 'rh_rule_ethX.conf.j2'
+    # The reason of make them as jinja templates is the current scripts force
+    # to add the iptables, so leave it now for future extending if possible.
+    ETH_IFUP_LOCAL_SCRIPT = 'rh_plug_port_eth_ifup_local.conf.j2'
+    ETH_IFDOWN_LOCAL_SCRIPT = 'rh_plug_port_eth_ifdown_local.conf.j2'
 
     @classmethod
     def is_os_name(cls, os_name):
@@ -411,6 +415,8 @@ class RH(BaseOS):
             route_rules_interface_file_path, primary_interface,
             render_host_routes, template_rules, gateway, vip, netmask)
 
+        self._write_ifup_ifdown_local_scripts_if_possible()
+
     def write_static_routes_interface_file(self, interface_file_path,
                                            interface, host_routes,
                                            template_routes, gateway,
@@ -460,6 +466,7 @@ class RH(BaseOS):
             self.write_static_routes_interface_file(
                 routes_interface_file_path, netns_interface,
                 host_routes, template_routes, None, None, None)
+            self._write_ifup_ifdown_local_scripts_if_possible()
 
     def bring_interfaces_up(self, ip, primary_interface, secondary_interface):
         if ip.version == 4:
@@ -472,6 +479,43 @@ class RH(BaseOS):
 
     def has_ifup_all(self):
         return False
+
+    def _write_ifup_ifdown_local_scripts_if_possible(self):
+        if self._check_ifup_ifdown_local_scripts_exists():
+            template_ifup_local = j2_env.get_template(
+                self.ETH_IFUP_LOCAL_SCRIPT)
+            self.write_port_interface_if_local_scripts(template_ifup_local)
+            template_ifdown_local = j2_env.get_template(
+                self.ETH_IFDOWN_LOCAL_SCRIPT)
+            self.write_port_interface_if_local_scripts(template_ifdown_local,
+                                                       ifup=False)
+
+    def _check_ifup_ifdown_local_scripts_exists(self):
+        file_names = ['ifup-local', 'ifdown-local']
+        target_dir = '/sbin/'
+        res = []
+        for file_name in file_names:
+            if os.path.exists(os.path.join(target_dir, file_name)):
+                res.append(True)
+            else:
+                res.append(False)
+
+        # This means we only add the scripts when both of them are non-exists
+        return not any(res)
+
+    def write_port_interface_if_local_scripts(
+            self, template_script, ifup=True):
+        file_name = 'ifup' + '-local'
+        mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        if not ifup:
+            file_name = 'ifdown' + '-local'
+        with os.fdopen(
+                os.open(os.path.join(
+                    '/sbin/', file_name), flags, mode), 'w') as text_file:
+            text = template_script.render()
+            text_file.write(text)
+        os.chmod(os.path.join('/sbin/', file_name), stat.S_IEXEC)
 
 
 class CentOS(RH):

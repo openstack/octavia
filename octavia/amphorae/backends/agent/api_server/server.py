@@ -25,6 +25,7 @@ from octavia.amphorae.backends.agent.api_server import keepalived
 from octavia.amphorae.backends.agent.api_server import listener
 from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.agent.api_server import plug
+from octavia.amphorae.backends.agent.api_server import udp_listener_base
 
 PATH_PREFIX = '/' + api_server.VERSION
 
@@ -42,12 +43,25 @@ def register_app_error_handler(app):
         app.register_error_handler(code, make_json_error)
 
 
+def check_and_return_request_listener_protocol(request):
+    try:
+        protocol_dict = request.get_json()
+        assert type(protocol_dict) is dict
+        assert 'protocol' in protocol_dict
+    except Exception:
+        raise exceptions.BadRequest(
+            description='Invalid protocol information for Listener')
+    return protocol_dict['protocol']
+
+
 class Server(object):
     def __init__(self):
         self.app = flask.Flask(__name__)
         self._osutils = osutils.BaseOS.get_os_util()
         self._keepalived = keepalived.Keepalived()
         self._listener = listener.Listener()
+        self._udp_listener = (udp_listener_base.UdpListenerApiServerBase.
+                              get_server_driver())
         self._plug = plug.Plug(self._osutils)
         self._amphora_info = amphora_info.AmphoraInfo(self._osutils)
 
@@ -58,8 +72,17 @@ class Server(object):
                               view_func=self.upload_haproxy_config,
                               methods=['PUT'])
         self.app.add_url_rule(rule=PATH_PREFIX +
+                              '/listeners/<amphora_id>/<listener_id>'
+                              '/udp_listener',
+                              view_func=self.upload_udp_listener_config,
+                              methods=['PUT'])
+        self.app.add_url_rule(rule=PATH_PREFIX +
                               '/listeners/<listener_id>/haproxy',
                               view_func=self.get_haproxy_config,
+                              methods=['GET'])
+        self.app.add_url_rule(rule=PATH_PREFIX +
+                              '/listeners/<listener_id>/udp_listener',
+                              view_func=self.get_udp_listener_config,
                               methods=['GET'])
         self.app.add_url_rule(rule=PATH_PREFIX +
                               '/listeners/<listener_id>/<action>',
@@ -113,25 +136,48 @@ class Server(object):
     def upload_haproxy_config(self, amphora_id, listener_id):
         return self._listener.upload_haproxy_config(amphora_id, listener_id)
 
+    def upload_udp_listener_config(self, amphora_id, listener_id):
+        return self._udp_listener.upload_udp_listener_config(listener_id)
+
     def get_haproxy_config(self, listener_id):
         return self._listener.get_haproxy_config(listener_id)
 
+    def get_udp_listener_config(self, listener_id):
+        return self._udp_listener.get_udp_listener_config(listener_id)
+
     def start_stop_listener(self, listener_id, action):
+        protocol = check_and_return_request_listener_protocol(
+            flask.request)
+        if protocol == 'UDP':
+            return self._udp_listener.manage_udp_listener(
+                listener_id, action)
         return self._listener.start_stop_listener(listener_id, action)
 
     def delete_listener(self, listener_id):
+        protocol = check_and_return_request_listener_protocol(
+            flask.request)
+        if protocol == 'UDP':
+            return self._udp_listener.delete_udp_listener(listener_id)
         return self._listener.delete_listener(listener_id)
 
     def get_details(self):
-        return self._amphora_info.compile_amphora_details()
+        return self._amphora_info.compile_amphora_details(
+            extend_udp_driver=self._udp_listener)
 
     def get_info(self):
-        return self._amphora_info.compile_amphora_info()
+        return self._amphora_info.compile_amphora_info(
+            extend_udp_driver=self._udp_listener)
 
     def get_all_listeners_status(self):
-        return self._listener.get_all_listeners_status()
+        udp_listeners = self._udp_listener.get_all_udp_listeners_status()
+        return self._listener.get_all_listeners_status(
+            other_listeners=udp_listeners)
 
     def get_listener_status(self, listener_id):
+        protocol = check_and_return_request_listener_protocol(
+            flask.request)
+        if protocol == 'UDP':
+            return self._udp_listener.get_udp_listener_status(listener_id)
         return self._listener.get_listener_status(listener_id)
 
     def upload_certificate(self, listener_id, filename):

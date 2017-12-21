@@ -14,6 +14,7 @@
 
 
 import os
+import re
 import subprocess
 
 from oslo_config import cfg
@@ -41,6 +42,56 @@ def init_path(listener_id, init_system):
         raise UnknownInitError()
 
 
+def keepalived_lvs_dir():
+    return os.path.join(CONF.haproxy_amphora.base_path, 'lvs')
+
+
+def keepalived_lvs_init_path(init_system, listener_id):
+    if init_system == consts.INIT_SYSTEMD:
+        return os.path.join(consts.SYSTEMD_DIR,
+                            consts.KEEPALIVED_SYSTEMD_PREFIX %
+                            str(listener_id))
+    elif init_system == consts.INIT_UPSTART:
+        return os.path.join(consts.UPSTART_DIR,
+                            consts.KEEPALIVED_UPSTART_PREFIX %
+                            str(listener_id))
+    elif init_system == consts.INIT_SYSVINIT:
+        return os.path.join(consts.SYSVINIT_DIR,
+                            consts.KEEPALIVED_SYSVINIT_PREFIX %
+                            str(listener_id))
+    else:
+        raise UnknownInitError()
+
+
+def keepalived_backend_check_script_dir():
+    return os.path.join(CONF.haproxy_amphora.base_path, 'lvs/check/')
+
+
+def keepalived_backend_check_script_path():
+    return os.path.join(keepalived_backend_check_script_dir(),
+                        'udp_check.sh')
+
+
+def keepalived_lvs_pids_path(listener_id):
+    pids_path = {}
+    for file_ext in ['pid', 'vrrp.pid', 'check.pid']:
+        pids_path[file_ext] = (
+            os.path.join(CONF.haproxy_amphora.base_path,
+                         ('lvs/octavia-keepalivedlvs-%s.%s') %
+                         (str(listener_id), file_ext)))
+    return pids_path['pid'], pids_path['vrrp.pid'], pids_path['check.pid']
+
+
+def keepalived_lvs_cfg_path(listener_id):
+    return os.path.join(CONF.haproxy_amphora.base_path,
+                        ('lvs/octavia-keepalivedlvs-%s.conf') %
+                        str(listener_id))
+
+
+def keepalived_lvs_iptables_dir():
+    return os.path.join(CONF.haproxy_amphora.base_path, 'lvs/iptables/')
+
+
 def haproxy_dir(listener_id):
     return os.path.join(CONF.haproxy_amphora.base_path, listener_id)
 
@@ -55,6 +106,12 @@ def config_path(listener_id):
 
 def get_haproxy_pid(listener_id):
     with open(pid_path(listener_id), 'r') as f:
+        return f.readline().rstrip()
+
+
+def get_keepalivedlvs_pid(listener_id):
+    pid_file, _, _ = keepalived_lvs_pids_path(listener_id)
+    with open(pid_file, 'r') as f:
         return f.readline().rstrip()
 
 
@@ -123,6 +180,24 @@ def get_listeners():
 def is_listener_running(listener_id):
     return os.path.exists(pid_path(listener_id)) and os.path.exists(
         os.path.join('/proc', get_haproxy_pid(listener_id)))
+
+
+def get_udp_listeners():
+    result = []
+    if os.path.exists(keepalived_lvs_dir()):
+        for f in os.listdir(keepalived_lvs_dir()):
+            if f.endswith('.conf'):
+                prefix = f.split('.')[0]
+                if re.search("octavia-keepalivedlvs-", prefix):
+                    result.append(f.split(
+                        'octavia-keepalivedlvs-')[1].split('.')[0])
+    return result
+
+
+def is_udp_listener_running(listener_id):
+    pid_file, _, _ = keepalived_lvs_pids_path(listener_id)
+    return os.path.exists(pid_file) and os.path.exists(
+        os.path.join('/proc', get_keepalivedlvs_pid(listener_id)))
 
 
 def get_os_init_system():

@@ -27,6 +27,8 @@ mtu {{ mtu }}
 up route add -net {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
 down route del -net {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
 {%- endfor %}
+post-up /sbin/ip{{ '6' if ipv6 }}tables -t nat -A POSTROUTING -p udp -o {{ interface }} -j MASQUERADE
+post-down /sbin/ip{{ '6' if ipv6 }}tables -t nat -D POSTROUTING -p udp -o {{ interface }} -j MASQUERADE
 {%- else %}
 iface {{ interface }} inet dhcp
 auto {{ interface }}:0

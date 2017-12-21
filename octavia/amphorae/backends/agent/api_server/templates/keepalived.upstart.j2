@@ -22,4 +22,8 @@ stop on runlevel [!2345]
 
 respawn
 
+{% if vrrp_pid and check_pid %}
+exec /sbin/ip netns exec {{ amphora_nsname }} {{ keepalived_cmd }} -n -D -d -f {{ keepalived_cfg }} -p {{ keepalived_pid }} -r {{ vrrp_pid }} -c {{ check_pid }}
+{% else %}
 exec /sbin/ip netns exec {{ amphora_nsname }} {{ keepalived_cmd }} -n -D -d -f {{ keepalived_cfg }} -p {{ keepalived_pid }}
+{% endif %}

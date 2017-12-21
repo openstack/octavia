@@ -362,7 +362,7 @@ class Listener(object):
 
         return webob.Response(json={'message': 'OK'})
 
-    def get_all_listeners_status(self):
+    def get_all_listeners_status(self, other_listeners=None):
         """Gets the status of all listeners
 
         This method will not consult the stats socket
@@ -386,6 +386,8 @@ class Listener(object):
                 'type': listener_type,
             })
 
+        if other_listeners:
+            listeners = listeners + other_listeners
         return webob.Response(json=listeners, content_type='application/json')
 
     def get_listener_status(self, listener_id):

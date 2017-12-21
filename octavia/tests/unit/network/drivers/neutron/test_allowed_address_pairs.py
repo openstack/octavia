@@ -639,8 +639,12 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             server=t_constants.MOCK_COMPUTE_ID, port_id=port2.get('id'))
 
     def test_update_vip(self):
-        listeners = [data_models.Listener(protocol_port=80, peer_port=1024),
-                     data_models.Listener(protocol_port=443, peer_port=1025)]
+        listeners = [data_models.Listener(protocol_port=80, peer_port=1024,
+                                          protocol=constants.PROTOCOL_TCP),
+                     data_models.Listener(protocol_port=443, peer_port=1025,
+                                          protocol=constants.PROTOCOL_TCP),
+                     data_models.Listener(protocol_port=50, peer_port=1026,
+                                          protocol=constants.PROTOCOL_UDP)]
         vip = data_models.Vip(ip_address='10.0.0.2')
         lb = data_models.LoadBalancer(id='1', listeners=listeners, vip=vip)
         list_sec_grps = self.driver.neutron_client.list_security_groups
@@ -661,9 +665,19 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'security_group_rule': {
                 'security_group_id': 'secgrp-1',
                 'direction': 'ingress',
-                'protocol': 'TCP',
+                'protocol': 'tcp',
                 'port_range_min': 1024,
                 'port_range_max': 1024,
+                'ethertype': 'IPv4'
+            }
+        }
+        expected_create_rule_udp_peer = {
+            'security_group_rule': {
+                'security_group_id': 'secgrp-1',
+                'direction': 'ingress',
+                'protocol': 'tcp',
+                'port_range_min': 1026,
+                'port_range_max': 1026,
                 'ethertype': 'IPv4'
             }
         }
@@ -671,7 +685,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'security_group_rule': {
                 'security_group_id': 'secgrp-1',
                 'direction': 'ingress',
-                'protocol': 'TCP',
+                'protocol': 'tcp',
                 'port_range_min': 1025,
                 'port_range_max': 1025,
                 'ethertype': 'IPv4'
@@ -681,20 +695,39 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'security_group_rule': {
                 'security_group_id': 'secgrp-1',
                 'direction': 'ingress',
-                'protocol': 'TCP',
+                'protocol': 'tcp',
                 'port_range_min': 443,
                 'port_range_max': 443,
                 'ethertype': 'IPv4'
             }
         }
+        expected_create_rule_udp = {
+            'security_group_rule': {
+                'security_group_id': 'secgrp-1',
+                'direction': 'ingress',
+                'protocol': 'udp',
+                'port_range_min': 50,
+                'port_range_max': 50,
+                'ethertype': 'IPv4'
+            }
+        }
+
         create_rule.assert_has_calls([mock.call(expected_create_rule_1),
+                                      mock.call(expected_create_rule_udp_peer),
                                       mock.call(expected_create_rule_2),
-                                      mock.call(expected_create_rule_3)])
+                                      mock.call(expected_create_rule_3),
+                                      mock.call(expected_create_rule_udp)],
+                                     any_order=True)
 
     def test_update_vip_when_listener_deleted(self):
-        listeners = [data_models.Listener(protocol_port=80),
+        listeners = [data_models.Listener(protocol_port=80,
+                                          protocol=constants.PROTOCOL_TCP),
                      data_models.Listener(
                          protocol_port=443,
+                         protocol=constants.PROTOCOL_TCP,
+                         provisioning_status=constants.PENDING_DELETE),
+                     data_models.Listener(
+                         protocol_port=50, protocol=constants.PROTOCOL_UDP,
                          provisioning_status=constants.PENDING_DELETE)]
         vip = data_models.Vip(ip_address='10.0.0.2')
         lb = data_models.LoadBalancer(id='1', listeners=listeners, vip=vip)
@@ -703,7 +736,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         fake_rules = {
             'security_group_rules': [
                 {'id': 'rule-80', 'port_range_max': 80, 'protocol': 'tcp'},
-                {'id': 'rule-22', 'port_range_max': 443, 'protocol': 'tcp'}
+                {'id': 'rule-22', 'port_range_max': 443, 'protocol': 'tcp'},
+                {'id': 'rule-udp-50', 'port_range_max': 50, 'protocol': 'tcp'}
             ]
         }
         list_rules = self.driver.neutron_client.list_security_group_rules
@@ -711,7 +745,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         delete_rule = self.driver.neutron_client.delete_security_group_rule
         create_rule = self.driver.neutron_client.create_security_group_rule
         self.driver.update_vip(lb)
-        delete_rule.assert_called_once_with('rule-22')
+        delete_rule.assert_has_calls(
+            [mock.call('rule-22'), mock.call('rule-udp-50')])
         self.assertTrue(create_rule.called)
 
     def test_update_vip_when_no_listeners(self):

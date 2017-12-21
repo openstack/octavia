@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Don't try to run the directory when it is empty
+shopt -s nullglob
+
+status=0
+for file in {{ keepalived_lvs_pid_dir }}/*
+do
+  file_ext=${file#*.}
+  case $file_ext in
+      pid) echo "Check keepalived pid file: " $file;;
+      *) continue;;
+  esac
+  {% if init_system == consts.INIT_SYSTEMD %}
+  systemctl status $(basename $file .pid) > /dev/null
+  {% elif init_system in (consts.INIT_UPSTART, consts.INIT_SYSVINIT) %}
+  kill -0 `cat $file`
+  {% endif %}
+  status=$(( $status + $? ))
+done
+exit $status

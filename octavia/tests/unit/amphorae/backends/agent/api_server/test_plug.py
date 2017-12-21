@@ -88,9 +88,17 @@ class TestPlug(base.TestCase):
             'details': 'VIP {vip} plugged on interface {interface}'.format(
                 vip=FAKE_IP_IPV4, interface='eth1')
         }, status=202)
-        mock_nspopen.assert_called_once_with(
-            'amphora-haproxy', ['/sbin/sysctl', '--system'],
-            stdout=subprocess.PIPE)
+        calls = [mock.call('amphora-haproxy', ['/sbin/sysctl', '--system'],
+                           stdout=subprocess.PIPE),
+                 mock.call('amphora-haproxy', ['modprobe', 'ip_vs'],
+                           stdout=subprocess.PIPE),
+                 mock.call('amphora-haproxy',
+                           ['/sbin/sysctl', '-w', 'net.ipv4.ip_forward=1'],
+                           stdout=subprocess.PIPE),
+                 mock.call('amphora-haproxy',
+                           ['/sbin/sysctl', '-w', 'net.ipv4.vs.conntrack=1'],
+                           stdout=subprocess.PIPE)]
+        mock_nspopen.assert_has_calls(calls, any_order=True)
 
     @mock.patch('pyroute2.NSPopen')
     @mock.patch.object(plug, "webob")
@@ -116,9 +124,18 @@ class TestPlug(base.TestCase):
             'details': 'VIP {vip} plugged on interface {interface}'.format(
                 vip=FAKE_IP_IPV6_EXPANDED, interface='eth1')
         }, status=202)
-        mock_nspopen.assert_called_once_with(
-            'amphora-haproxy', ['/sbin/sysctl', '--system'],
-            stdout=subprocess.PIPE)
+        calls = [mock.call('amphora-haproxy', ['/sbin/sysctl', '--system'],
+                           stdout=subprocess.PIPE),
+                 mock.call('amphora-haproxy', ['modprobe', 'ip_vs'],
+                           stdout=subprocess.PIPE),
+                 mock.call('amphora-haproxy',
+                           ['/sbin/sysctl', '-w',
+                            'net.ipv6.conf.all.forwarding=1'],
+                           stdout=subprocess.PIPE),
+                 mock.call('amphora-haproxy',
+                           ['/sbin/sysctl', '-w', 'net.ipv4.vs.conntrack=1'],
+                           stdout=subprocess.PIPE)]
+        mock_nspopen.assert_has_calls(calls, any_order=True)
 
     @mock.patch.object(plug, "webob")
     @mock.patch('pyroute2.IPRoute')
@@ -191,7 +208,11 @@ class TestPlugNetwork(base.TestCase):
             'up route add -net {dest1} gw {nexthop} dev {netns_interface}\n'
             'down route del -net {dest1} gw {nexthop} dev {netns_interface}\n'
             'up route add -net {dest2} gw {nexthop} dev {netns_interface}\n'
-            'down route del -net {dest2} gw {nexthop} dev {netns_interface}\n')
+            'down route del -net {dest2} gw {nexthop} dev {netns_interface}\n'
+            'post-up /sbin/iptables -t nat -A POSTROUTING -p udp -o '
+            'eth1234 -j MASQUERADE\n'
+            'post-down /sbin/iptables -t nat -D POSTROUTING -p udp -o eth1234 '
+            '-j MASQUERADE\n')
 
         template_port = osutils.j2_env.get_template('plug_port_ethX.conf.j2')
         text = self.test_plug._osutils._generate_network_file_text(

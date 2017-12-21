@@ -127,9 +127,25 @@ class Plug(object):
         sysctl = pyroute2.NSPopen(consts.AMPHORA_NAMESPACE,
                                   [consts.SYSCTL_CMD, '--system'],
                                   stdout=subprocess.PIPE)
+
         sysctl.communicate()
         sysctl.wait()
         sysctl.release()
+
+        cmd_list = [['modprobe', 'ip_vs'],
+                    [consts.SYSCTL_CMD, '-w', 'net.ipv4.vs.conntrack=1']]
+        if ip.version == 4:
+            # For lvs function, enable ip_vs kernel module, enable ip_forward
+            # conntrack in amphora network namespace.
+            cmd_list.append([consts.SYSCTL_CMD, '-w', 'net.ipv4.ip_forward=1'])
+        elif ip.version == 6:
+            cmd_list.append([consts.SYSCTL_CMD, '-w',
+                             'net.ipv6.conf.all.forwarding=1'])
+        for cmd in cmd_list:
+            ns_exec = pyroute2.NSPopen(consts.AMPHORA_NAMESPACE, cmd,
+                                       stdout=subprocess.PIPE)
+            ns_exec.wait()
+            ns_exec.release()
 
         with pyroute2.IPRoute() as ipr:
             # Move the interfaces into the namespace

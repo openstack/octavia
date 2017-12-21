@@ -438,6 +438,7 @@ KEEPALIVED_JINJA2_UPSTART = 'keepalived.upstart.j2'
 KEEPALIVED_JINJA2_SYSTEMD = 'keepalived.systemd.j2'
 KEEPALIVED_JINJA2_SYSVINIT = 'keepalived.sysvinit.j2'
 CHECK_SCRIPT_CONF = 'keepalived_check_script.conf.j2'
+KEEPALIVED_CHECK_SCRIPT = 'keepalived_lvs_check_script.sh.j2'
 
 PLUGGED_INTERFACES = '/var/lib/octavia/plugged_interfaces'
 HAPROXY_USER_GROUP_CFG = '/var/lib/octavia/haproxy-default-user-group.conf'
@@ -481,6 +482,10 @@ INIT_PROC_COMM_PATH = '/proc/1/comm'
 KEEPALIVED_SYSTEMD = 'octavia-keepalived.service'
 KEEPALIVED_SYSVINIT = 'octavia-keepalived'
 KEEPALIVED_UPSTART = 'octavia-keepalived.conf'
+
+KEEPALIVED_SYSTEMD_PREFIX = 'octavia-keepalivedlvs-%s.service'
+KEEPALIVED_SYSVINIT_PREFIX = 'octavia-keepalivedlvs-%s'
+KEEPALIVED_UPSTART_PREFIX = 'octavia-keepalivedlvs-%s.conf'
 
 # Authentication
 KEYSTONE = 'keystone'

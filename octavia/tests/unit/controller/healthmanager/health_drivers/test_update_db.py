@@ -1079,6 +1079,57 @@ class TestUpdateHealthDb(base.TestCase):
             self.mock_session(), mock_lb.id,
             operating_status='ONLINE')
 
+    def test_update_health_forbid_to_stale_udp_listener_amphora(self):
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {},
+            "recv_time": time.time()
+        }
+
+        mock_lb = mock.Mock()
+        mock_lb.id = self.FAKE_UUID_1
+        mock_lb.pools = []
+        mock_lb.listeners = []
+        mock_lb.provisioning_status = constants.ACTIVE
+        mock_lb.operating_status = 'blah'
+
+        # The default pool of udp listener1 has no enabled member
+        mock_member1 = mock.Mock()
+        mock_member1.id = 'member-id-1'
+        mock_member1.enabled = False
+        mock_pool1 = mock.Mock()
+        mock_pool1.id = "pool-id-1"
+        mock_pool1.members = [mock_member1]
+        mock_listener1 = mock.Mock()
+        mock_listener1.id = 'listener-id-1'
+        mock_listener1.default_pool = mock_pool1
+        mock_listener1.protocol = constants.PROTOCOL_UDP
+
+        # The default pool of udp listener2 has no member
+        mock_pool2 = mock.Mock()
+        mock_pool2.id = "pool-id-2"
+        mock_pool2.members = []
+        mock_listener2 = mock.Mock()
+        mock_listener2.id = 'listener-id-2'
+        mock_listener2.default_pool = mock_pool2
+        mock_listener2.protocol = constants.PROTOCOL_UDP
+
+        # The udp listener3 has no default_pool
+        mock_listener3 = mock.Mock()
+        mock_listener3.id = 'listener-id-3'
+        mock_listener3.default_pool = None
+        mock_listener3.protocol = constants.PROTOCOL_UDP
+
+        mock_lb.listeners.extend([mock_listener1, mock_listener2,
+                                  mock_listener3])
+        mock_lb.pools.extend([mock_pool1, mock_pool2])
+
+        self.amphora_repo.get_lb_for_amphora.return_value = mock_lb
+        self.hm.update_health(health, '192.0.2.1')
+        self.assertTrue(self.amphora_repo.get_lb_for_amphora.called)
+        self.assertTrue(self.loadbalancer_repo.update.called)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
 
 class TestUpdateStatsDb(base.TestCase):
 

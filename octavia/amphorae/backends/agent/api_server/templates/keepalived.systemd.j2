@@ -8,7 +8,11 @@ Wants=network-online.target
 SELinuxContext=system_u:system_r:keepalived_t:s0
 Type=forking
 KillMode=process
+{% if vrrp_pid and check_pid %}
+ExecStart=/sbin/ip netns exec {{ amphora_nsname }} {{ keepalived_cmd }} -D -d -f {{ keepalived_cfg }} -p {{ keepalived_pid }} -r {{ vrrp_pid }} -c {{ check_pid }}
+{% else %}
 ExecStart=/sbin/ip netns exec {{ amphora_nsname }} {{ keepalived_cmd }} -D -d -f {{ keepalived_cfg }} -p {{ keepalived_pid }}
+{% endif %}
 ExecReload=/bin/kill -HUP $MAINPID
 PIDFile={{ keepalived_pid }}
 

@@ -32,48 +32,68 @@ class AmphoraInfo(object):
     def __init__(self, osutils):
         self._osutils = osutils
 
-    def compile_amphora_info(self):
-        return webob.Response(
-            json={'hostname': socket.gethostname(),
-                  'haproxy_version':
-                      self._get_version_of_installed_package('haproxy'),
-                  'api_version': api_server.VERSION})
+    def compile_amphora_info(self, extend_udp_driver=None):
+        extend_body = {}
+        if extend_udp_driver:
+            extend_body = self._get_extend_body_from_udp_driver(
+                extend_udp_driver)
+        body = {'hostname': socket.gethostname(),
+                'haproxy_version':
+                    self._get_version_of_installed_package('haproxy'),
+                'api_version': api_server.VERSION}
+        if extend_body:
+            body.update(extend_body)
+        return webob.Response(json=body)
 
-    def compile_amphora_details(self):
-        listener_list = util.get_listeners()
+    def compile_amphora_details(self, extend_udp_driver=None):
+        haproxy_listener_list = util.get_listeners()
+        extend_body = {}
+        udp_listener_list = []
+        if extend_udp_driver:
+            udp_listener_list = util.get_udp_listeners()
+            extend_data = self._get_extend_body_from_udp_driver(
+                extend_udp_driver)
+            udp_count = self._count_udp_listener_processes(extend_udp_driver,
+                                                           udp_listener_list)
+            extend_body['udp_listener_process_count'] = udp_count
+            extend_body.update(extend_data)
         meminfo = self._get_meminfo()
         cpu = self._cpu()
         st = os.statvfs('/')
-        return webob.Response(
-            json={'hostname': socket.gethostname(),
-                  'haproxy_version':
-                      self._get_version_of_installed_package('haproxy'),
-                  'api_version': api_server.VERSION,
-                  'networks': self._get_networks(),
-                  'active': True,
-                  'haproxy_count':
-                      self._count_haproxy_processes(listener_list),
-                  'cpu': {
-                      'total': cpu['total'],
-                      'user': cpu['user'],
-                      'system': cpu['system'],
-                      'soft_irq': cpu['softirq'], },
-                  'memory': {
-                      'total': meminfo['MemTotal'],
-                      'free': meminfo['MemFree'],
-                      'buffers': meminfo['Buffers'],
-                      'cached': meminfo['Cached'],
-                      'swap_used': meminfo['SwapCached'],
-                      'shared': meminfo['Shmem'],
-                      'slab': meminfo['Slab'], },
-                  'disk': {
-                      'used': (st.f_blocks - st.f_bfree) * st.f_frsize,
-                      'available': st.f_bavail * st.f_frsize},
-                  'load': self._load(),
-                  'topology': consts.TOPOLOGY_SINGLE,
-                  'topology_status': consts.TOPOLOGY_STATUS_OK,
-                  'listeners': listener_list,
-                  'packages': {}})
+        body = {'hostname': socket.gethostname(),
+                'haproxy_version':
+                    self._get_version_of_installed_package('haproxy'),
+                'api_version': api_server.VERSION,
+                'networks': self._get_networks(),
+                'active': True,
+                'haproxy_count':
+                    self._count_haproxy_processes(haproxy_listener_list),
+                'cpu': {
+                    'total': cpu['total'],
+                    'user': cpu['user'],
+                    'system': cpu['system'],
+                    'soft_irq': cpu['softirq'], },
+                'memory': {
+                    'total': meminfo['MemTotal'],
+                    'free': meminfo['MemFree'],
+                    'buffers': meminfo['Buffers'],
+                    'cached': meminfo['Cached'],
+                    'swap_used': meminfo['SwapCached'],
+                    'shared': meminfo['Shmem'],
+                    'slab': meminfo['Slab'], },
+                'disk': {
+                    'used': (st.f_blocks - st.f_bfree) * st.f_frsize,
+                    'available': st.f_bavail * st.f_frsize},
+                'load': self._load(),
+                'topology': consts.TOPOLOGY_SINGLE,
+                'topology_status': consts.TOPOLOGY_STATUS_OK,
+                'listeners': list(
+                    set(haproxy_listener_list + udp_listener_list))
+                if udp_listener_list else haproxy_listener_list,
+                'packages': {}}
+        if extend_body:
+            body.update(extend_body)
+        return webob.Response(json=body)
 
     def _get_version_of_installed_package(self, name):
 
@@ -88,6 +108,22 @@ class AmphoraInfo(object):
                 # optional check if it's still running
                 num += 1
         return num
+
+    def _count_udp_listener_processes(self, udp_driver, listener_list):
+        num = 0
+        for listener_id in listener_list:
+            if udp_driver.is_listener_running(listener_id):
+                # optional check if it's still running
+                num += 1
+        return num
+
+    def _get_extend_body_from_udp_driver(self, extend_udp_driver):
+        extend_info = extend_udp_driver.get_subscribed_amp_compile_info()
+        extend_data = {}
+        for extend in extend_info:
+            package_version = self._get_version_of_installed_package(extend)
+            extend_data['%s_version' % extend] = package_version
+        return extend_data
 
     def _get_meminfo(self):
         re_parser = re.compile(r'^(?P<key>\S*):\s*(?P<value>\d*)\s*kB')

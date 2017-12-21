@@ -135,6 +135,9 @@ amphora_agent_opts = [
                       "controller to run before terminating the socket.")),
     # Do not specify in octavia.conf, loaded at runtime
     cfg.StrOpt('amphora_id', help=_("The amphora ID.")),
+    cfg.StrOpt('amphora_udp_driver',
+               default='keepalived_lvs',
+               help='The UDP API backend for amphora agent.'),
 ]
 
 networking_opts = [

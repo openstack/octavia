@@ -30,6 +30,7 @@ from octavia.amphorae.drivers.keepalived import vrrp_rest_driver
 from octavia.common.config import cfg
 from octavia.common import constants as consts
 from octavia.common.jinja.haproxy import jinja_cfg
+from octavia.common.jinja.lvs import jinja_cfg as jinja_udp_cfg
 from octavia.common.tls_utils import cert_parser
 from octavia.common import utils
 
@@ -59,6 +60,7 @@ class HaproxyAmphoraLoadBalancerDriver(
             base_crt_dir=CONF.haproxy_amphora.base_cert_dir,
             haproxy_template=CONF.haproxy_amphora.haproxy_template,
             connection_logging=CONF.haproxy_amphora.connection_logging)
+        self.udp_jinja = jinja_udp_cfg.LvsJinjaTemplater()
 
     def update_amphora_listeners(self, listeners, amphora_index,
                                  amphorae, timeout_dict=None):
@@ -87,36 +89,64 @@ class HaproxyAmphoraLoadBalancerDriver(
         for listener in listeners:
             LOG.debug("%s updating listener %s on amphora %s",
                       self.__class__.__name__, listener.id, amp.id)
-            certs = self._process_tls_certificates(listener)
-            # Generate HaProxy configuration from listener object
-            config = self.jinja.build_config(
-                host_amphora=amp,
-                listener=listener,
-                tls_cert=certs['tls_cert'],
-                user_group=CONF.haproxy_amphora.user_group)
-            self.client.upload_config(amp, listener.id, config,
-                                      timeout_dict=timeout_dict)
-            self.client.reload_listener(amp, listener.id,
-                                        timeout_dict=timeout_dict)
-
-    def update(self, listener, vip):
-        LOG.debug("Amphora %s haproxy, updating listener %s, vip %s",
-                  self.__class__.__name__, listener.protocol_port,
-                  vip.ip_address)
-
-        # Process listener certificate info
-        certs = self._process_tls_certificates(listener)
-
-        for amp in listener.load_balancer.amphorae:
-            if amp.status != consts.DELETED:
+            if listener.protocol == 'UDP':
+                # Generate Keepalived LVS configuration from listener object
+                config = self.udp_jinja.build_config(listener=listener)
+                self.client.upload_udp_config(amp, listener.id, config,
+                                              timeout_dict=timeout_dict)
+                self.client.reload_listener(amp, listener.id,
+                                            listener.protocol,
+                                            timeout_dict=timeout_dict)
+            else:
+                certs = self._process_tls_certificates(listener)
                 # Generate HaProxy configuration from listener object
                 config = self.jinja.build_config(
                     host_amphora=amp,
                     listener=listener,
                     tls_cert=certs['tls_cert'],
                     user_group=CONF.haproxy_amphora.user_group)
-                self.client.upload_config(amp, listener.id, config)
-                self.client.reload_listener(amp, listener.id)
+                self.client.upload_config(amp, listener.id, config,
+                                          timeout_dict=timeout_dict)
+                self.client.reload_listener(amp, listener.id,
+                                            timeout_dict=timeout_dict)
+
+    def _udp_update(self, listener, vip):
+        LOG.debug("Amphora %s keepalivedlvs, updating "
+                  "listener %s, vip %s",
+                  self.__class__.__name__, listener.protocol_port,
+                  vip.ip_address)
+
+        for amp in listener.load_balancer.amphorae:
+            if amp.status != consts.DELETED:
+                # Generate Keepalived LVS configuration from listener object
+                config = self.udp_jinja.build_config(listener=listener)
+                self.client.upload_udp_config(amp, listener.id, config)
+                self.client.reload_listener(amp, listener.id,
+                                            listener.protocol)
+
+    def update(self, listener, vip):
+        if listener.protocol == 'UDP':
+            self._udp_update(listener, vip)
+        else:
+            LOG.debug("Amphora %s haproxy, updating listener %s, "
+                      "vip %s", self.__class__.__name__,
+                      listener.protocol_port,
+                      vip.ip_address)
+
+            # Process listener certificate info
+            certs = self._process_tls_certificates(listener)
+
+            for amp in listener.load_balancer.amphorae:
+                if amp.status != consts.DELETED:
+                    # Generate HaProxy configuration from listener object
+                    config = self.jinja.build_config(
+                        host_amphora=amp,
+                        listener=listener,
+                        tls_cert=certs['tls_cert'],
+                        user_group=CONF.haproxy_amphora.user_group)
+                    self.client.upload_config(amp, listener.id, config)
+                    self.client.reload_listener(amp, listener.id,
+                                                listener.protocol)
 
     def upload_cert_amp(self, amp, pem):
         LOG.debug("Amphora %s updating cert in REST driver "
@@ -124,13 +154,37 @@ class HaproxyAmphoraLoadBalancerDriver(
                   self.__class__.__name__, amp.id)
         self.client.update_cert_for_rotation(amp, pem)
 
+    def _check_if_need_add_listener_protocol(self, func):
+        # as _apply func will be called by create/update/delete and some cert
+        # related function. But there is only a port of them can accept
+        # listener protocol parameter, including:
+        # start/stop functions call _apply by functools.
+        # delete function call _apply directly.
+        # escape cert operation based on function name.
+        # So add this check for verify if the target function need a protocol
+        # parameter.
+        called_by_functools = (not hasattr(func, '__name__') and
+                               hasattr(func, 'func') and
+                               func.func.__name__.find('cert') < 0)
+        called_directly = (hasattr(func, '__name__') and
+                           func.__name__.find('cert') < 0)
+        return called_directly or called_by_functools
+
     def _apply(self, func, listener=None, amphora=None, *args):
         if amphora is None:
             for amp in listener.load_balancer.amphorae:
                 if amp.status != consts.DELETED:
+                    if self._check_if_need_add_listener_protocol(func):
+                        _list = list(args)
+                        _list.append(listener.protocol)
+                        args = _list
                     func(amp, listener.id, *args)
         else:
             if amphora.status != consts.DELETED:
+                if self._check_if_need_add_listener_protocol(func):
+                    _list = list(args)
+                    _list.append(listener.protocol)
+                    args = _list
                 func(amphora, listener.id, *args)
 
     def stop(self, listener, vip):
@@ -374,17 +428,21 @@ class AmphoraAPIClient(object):
             data=config)
         return exc.check_exception(r)
 
-    def get_listener_status(self, amp, listener_id):
+    def get_listener_status(self, amp, listener_id, protocol=None):
+        protocol_dict = {'protocol': protocol}
         r = self.get(
             amp,
-            'listeners/{listener_id}'.format(listener_id=listener_id))
+            'listeners/{listener_id}'.format(listener_id=listener_id),
+            json=protocol_dict)
         if exc.check_exception(r):
             return r.json()
         return None
 
-    def _action(self, action, amp, listener_id, timeout_dict=None):
+    def _action(self, action, amp, listener_id, protocol, timeout_dict=None):
+        protocol_dict = {'protocol': protocol}
         r = self.put(amp, 'listeners/{listener_id}/{action}'.format(
-            listener_id=listener_id, action=action), timeout_dict=timeout_dict)
+            listener_id=listener_id, action=action), timeout_dict=timeout_dict,
+            json=protocol_dict)
         return exc.check_exception(r)
 
     def upload_cert_pem(self, amp, listener_id, pem_filename, pem_file):
@@ -407,9 +465,11 @@ class AmphoraAPIClient(object):
             return r.json().get("md5sum")
         return None
 
-    def delete_listener(self, amp, listener_id):
+    def delete_listener(self, amp, listener_id, protocol):
+        protocol_dict = {'protocol': protocol}
         r = self.delete(
-            amp, 'listeners/{listener_id}'.format(listener_id=listener_id))
+            amp, 'listeners/{listener_id}'.format(listener_id=listener_id),
+            json=protocol_dict)
 
         return exc.check_exception(r, (404,))
 
@@ -463,3 +523,11 @@ class AmphoraAPIClient(object):
         if exc.check_exception(r):
             return r.json()
         return None
+
+    def upload_udp_config(self, amp, listener_id, config, timeout_dict=None):
+        r = self.put(
+            amp,
+            'listeners/{amphora_id}/{listener_id}/udp_listener'.format(
+                amphora_id=amp.id, listener_id=listener_id), timeout_dict,
+            data=config)
+        return exc.check_exception(r)
