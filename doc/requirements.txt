@@ -10,6 +10,7 @@ sphinxcontrib-nwdiag
 sphinxcontrib-seqdiag
 graphviz
 openstackdocstheme>=1.11.0  # Apache-2.0
+os-api-ref>=1.0.0 # Apache-2.0
 
 # This needs to be installed after above modules
 pydotplus

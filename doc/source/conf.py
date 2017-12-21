@@ -11,9 +11,14 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
-import subprocess
 import os
+import sys
+
+from sphinx import apidoc
+
+sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('.'))
+
 from tools import create_flow_docs
 
 # Generate our flow diagrams
@@ -24,7 +29,6 @@ create_flow_docs.generate(
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../../octavia'))
 
 # -- General configuration -----------------------------------------------------
 
@@ -294,3 +298,25 @@ html_theme_options = {
 repository_name = 'openstack/octavia'
 bug_project = 'octavia'
 bug_tag = 'docs'
+
+# TODO(mordred) We should extract this into a sphinx plugin
+def run_apidoc(_):
+    cur_dir = os.path.abspath(os.path.dirname(__file__))
+    out_dir = os.path.join(cur_dir, 'contributor', 'modules')
+    module = os.path.join(cur_dir, '..', '..', 'octavia')
+    # Keep the order of arguments same as the sphinx-apidoc help, otherwise it
+    # would cause unexpected errors:
+    # sphinx-apidoc [options] -o <output_path> <module_path>
+    # [exclude_pattern, ...]
+    apidoc.main([
+        '--force',
+        '-o',
+        out_dir,
+        module,
+        'octavia/tests',
+        'octavia/db/migration'
+    ])
+
+
+def setup(app):
+    app.connect('builder-inited', run_apidoc)

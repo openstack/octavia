@@ -81,7 +81,7 @@ Indices and Search
 .. toctree::
    :hidden:
 
-   modules/autoindex
+   modules/modules
 
 * :ref:`genindex`
 * :ref:`modindex`
