@@ -24,7 +24,7 @@ import six
 from stevedore import driver as stevedore_driver
 
 from octavia.amphorae.driver_exceptions import exceptions as driver_except
-from octavia.amphorae.drivers import driver_base as driver_base
+from octavia.amphorae.drivers import driver_base
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.keepalived import vrrp_rest_driver
 from octavia.common.config import cfg

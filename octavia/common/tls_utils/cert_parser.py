@@ -24,7 +24,7 @@ from pyasn1.codec.der import encoder as der_encoder
 from pyasn1_modules import rfc2315
 import six
 
-from octavia.common import data_models as data_models
+from octavia.common import data_models
 import octavia.common.exceptions as exceptions
 
 X509_BEG = b'-----BEGIN CERTIFICATE-----'
