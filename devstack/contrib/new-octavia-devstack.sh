@@ -16,6 +16,7 @@ git clone https://github.com/openstack-dev/devstack.git $HOME/devstack
 
 cat <<EOF > $HOME/devstack/localrc
 enable_plugin barbican https://review.openstack.org/openstack/barbican
+enable_plugin neutron https://review.openstack.org/openstack/neutron
 enable_plugin octavia https://review.openstack.org/openstack/octavia
 LIBS_FROM_GIT+=python-octaviaclient
 
@@ -39,7 +40,7 @@ ENABLED_SERVICES+=,placement-api,placement-client
 # Glance
 ENABLED_SERVICES+=,g-api,g-reg
 # Neutron
-ENABLED_SERVICES+=,q-svc,q-agt,q-dhcp,q-l3,q-meta,neutron
+ENABLED_SERVICES+=,neutron,q-agt,q-dhcp,q-l3,q-meta,q-qos,q-svc
 # Tempest (optional)
 #ENABLED_SERVICES+=,tempest
 # Octavia
