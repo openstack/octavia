@@ -255,6 +255,55 @@ This is generally suitable when load balancing a non-HTTP TCP-based service.
     neutron lbaas-member-create --subnet private-subnet --address 192.0.2.11 --protocol-port 80 pool1
 
 
+Deploy a QoS ruled load balancer
+--------------------------------
+This solution limits the bandwidth available through the Load Balancer's VIP by
+applying a Neutron Quality of Service(QoS) policy to the VIP, so Load Balancer
+can accept the QoS Policy from Neutron; Then limits the vip of Load Balancer
+incoming or outgoing traffic.
+
+.. note::
+   Before using this feature, please make sure the Neutron QoS externsion(qos)
+   is enabled on runing OpenStack environment by command
+
+   .. code-block:: console
+
+      openstack extension list
+
+**Scenario description**:
+
+* QoS-policy created from Neutron with bandwidth-limit-rules by us.
+* Back-end servers 192.0.2.10 and 192.0.2.11 on subnet *private-subnet* have
+  been configured with an HTTP application on TCP port 80.
+* Subnet *public-subnet* is a shared external subnet created by the cloud
+  operator which is reachable from the internet.
+* We want to configure a basic load balancer and want to limit the traffic
+  bandwidth when web traffic reaches the vip.
+
+**Solution**:
+
+1. Create QoS policy *qos-policy-bandwidth* with *bandwidth_limit* in Neutron.
+2. Create load balancer *lb1* on subnet *public-subnet* with the id of
+   *qos-policy-bandwidth*.
+3. Create listener *listener1*.
+4. Create pool *pool1* as *listener1*'s default pool.
+5. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
+
+**CLI commands**:
+
+::
+
+    openstack network qos policy create qos-policy-bandwidth
+    openstack network qos rule create --type bandwidth_limit --max-kbps 1024 --max-burst-kbits 1024 qos-policy-bandwidth
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --vip-qos-policy-id qos-policy-bandwidth
+    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --name listener1 lb1 --protocol HTTP --protocol-port 80
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
+    openstack loadbalancer member create --subnet-id <private_subnet_id> --address 192.0.2.10 --protocol-port 80 pool1
+    openstack loadbalancer member create --subnet-id <private_subnet_id> --address 192.0.2.11 --protocol-port 80 pool1
+
+
 Deploy a non-terminated HTTPS load balancer
 -------------------------------------------
 A non-terminated HTTPS load balancer acts effectively like a generic TCP load
