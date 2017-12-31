@@ -1634,7 +1634,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_load_balancer)
         conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
-        # ### Test listner quota
+        # ### Test listener quota
         # Test decrement on zero in use quota
         project_id = uuidutils.generate_uuid()
         quota = {'in_use_listener': 0}

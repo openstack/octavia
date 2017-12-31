@@ -1388,9 +1388,7 @@ class TestDatabaseTasks(base.TestCase):
             HM_ID,
             provisioning_status=constants.ERROR)
 
-    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_update_load_balancer_in_db(self,
-                                        mock_listner_repo_update,
                                         mock_generate_uuid,
                                         mock_LOG,
                                         mock_get_session,
@@ -1427,11 +1425,9 @@ class TestDatabaseTasks(base.TestCase):
             id=LB_ID,
             provisioning_status=constants.ERROR)
 
-    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     @mock.patch('octavia.db.repositories.VipRepository.update')
     def test_update_vip_in_db_during_update_loadbalancer(self,
                                                          mock_vip_update,
-                                                         mock_listner_update,
                                                          mock_generate_uuid,
                                                          mock_LOG,
                                                          mock_get_session,
@@ -1455,9 +1451,7 @@ class TestDatabaseTasks(base.TestCase):
         repo.VipRepository.update.assert_called_once_with('TEST', LB_ID,
                                                           qos_policy_id='fool')
 
-    @mock.patch('octavia.db.repositories.ListenerRepository.update')
     def test_update_listener_in_db(self,
-                                   mock_listner_repo_update,
                                    mock_generate_uuid,
                                    mock_LOG,
                                    mock_get_session,
@@ -1829,9 +1823,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_amp_health_repo_update.assert_called_once_with(
             'TEST', amphora_id=AMP_ID, busy=True)
 
-    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_update_lb_server_group_in_db(self,
-                                          mock_listner_repo_update,
                                           mock_generate_uuid,
                                           mock_LOG,
                                           mock_get_session,
