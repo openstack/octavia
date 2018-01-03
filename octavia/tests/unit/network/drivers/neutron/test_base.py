@@ -411,6 +411,28 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.assertEqual(t_constants.MOCK_IP_ADDRESS2,
                          port2.fixed_ips[0].ip_address)
 
+    def test_get_unique_port_by_name(self):
+        """Test _get_resources_by_filters, when result is unique"""
+        list_port = self.driver.neutron_client.list_ports
+        list_port.return_value = {
+            'ports': [t_constants.MOCK_NEUTRON_PORT]
+        }
+
+        port = self.driver._get_resources_by_filters(
+            'port', unique_item=True, name=t_constants.MOCK_PORT_NAME)
+
+        self.assertIsInstance(port, network_models.Port)
+        self.assertEqual(t_constants.MOCK_PORT_ID, port.id)
+
+    def test_get_non_existing_port_by_name(self):
+        """Test _get_resources_by_filters, when result is empty"""
+        list_port = self.driver.neutron_client.list_ports
+        list_port.return_value = {'ports': []}
+
+        self.assertRaises(network_base.PortNotFound,
+                          self.driver._get_resources_by_filters,
+                          'port', unique_item=True, name='port1')
+
     def test_get_qos_policy(self):
         get_qos = self.driver.neutron_client.show_qos_policy
         get_qos.return_value = {'policy': {
