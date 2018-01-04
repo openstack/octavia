@@ -58,6 +58,11 @@ class Endpoint(object):
                  load_balancer_id)
         self.worker.failover_loadbalancer(load_balancer_id)
 
+    def failover_amphora(self, context, amphora_id):
+        LOG.info('Failing over amphora \'%s\'...',
+                 amphora_id)
+        self.worker.failover_amphora(amphora_id)
+
     def create_listener(self, context, listener_id):
         LOG.info('Creating listener \'%s\'...', listener_id)
         self.worker.create_listener(listener_id)
