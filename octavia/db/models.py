@@ -218,6 +218,11 @@ class HealthMonitor(base_models.BASE, base_models.IdMixin,
 
     __v2_wsme__ = health_monitor.HealthMonitorResponse
 
+    __table_args__ = (
+        sa.UniqueConstraint('pool_id',
+                            name='uq_health_monitor_pool'),
+    )
+
     type = sa.Column(
         sa.String(36),
         sa.ForeignKey("health_monitor_type.name",

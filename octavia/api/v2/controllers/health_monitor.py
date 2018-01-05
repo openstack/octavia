@@ -129,9 +129,8 @@ class HealthMonitorController(base.BaseController):
         try:
             return self.repositories.health_monitor.create(
                 lock_session, **hm_dict)
-        except odb_exceptions.DBDuplicateEntry as de:
-            if ['id'] == de.columns:
-                raise exceptions.IDAlreadyExists()
+        except odb_exceptions.DBDuplicateEntry:
+            raise exceptions.DuplicateHealthMonitor()
         except odb_exceptions.DBError:
             # TODO(blogan): will have to do separate validation protocol
             # before creation or update since the exception messages

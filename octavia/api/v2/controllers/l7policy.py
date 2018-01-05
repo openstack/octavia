@@ -107,9 +107,8 @@ class L7PolicyController(base.BaseController):
         try:
             return self.repositories.l7policy.create(lock_session,
                                                      **l7policy_dict)
-        except odb_exceptions.DBDuplicateEntry as de:
-            if ['id'] == de.columns:
-                raise exceptions.IDAlreadyExists()
+        except odb_exceptions.DBDuplicateEntry:
+            raise exceptions.IDAlreadyExists()
         except odb_exceptions.DBError:
             # TODO(blogan): will have to do separate validation protocol
             # before creation or update since the exception messages

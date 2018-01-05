@@ -114,9 +114,8 @@ class PoolsController(base.BaseController):
             return self.repositories.create_pool_on_load_balancer(
                 lock_session, pool_dict,
                 listener_id=listener_id)
-        except odb_exceptions.DBDuplicateEntry as de:
-            if ['id'] == de.columns:
-                raise exceptions.IDAlreadyExists()
+        except odb_exceptions.DBDuplicateEntry:
+            raise exceptions.IDAlreadyExists()
         except odb_exceptions.DBError:
             # TODO(blogan): will have to do separate validation protocol
             # before creation or update since the exception messages
