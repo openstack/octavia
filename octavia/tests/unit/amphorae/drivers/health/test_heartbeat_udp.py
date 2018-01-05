@@ -92,6 +92,7 @@ class TestHeartbeatUDP(base.TestCase):
         recvfrom.return_value = bin_msg, 2
         (obj, srcaddr) = getter.dorecv()
         self.assertEqual(2, srcaddr)
+        self.assertIsNotNone(obj.pop('recv_time'))
         self.assertEqual({"testkey": "TEST"}, obj)
 
     @mock.patch('socket.getaddrinfo')

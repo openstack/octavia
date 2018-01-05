@@ -13,6 +13,7 @@
 # under the License.
 
 import datetime
+import time
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -26,6 +27,7 @@ from octavia.controller.healthmanager import update_serializer
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -35,7 +37,7 @@ class UpdateHealthDb(object):
         # first setup repo for amphora, listener,member(nodes),pool repo
         self.event_streamer = stevedore_driver.DriverManager(
             namespace='octavia.controller.queues',
-            name=cfg.CONF.health_manager.event_streamer_driver,
+            name=CONF.health_manager.event_streamer_driver,
             invoke_on_load=True).driver
         self.amphora_repo = repo.AmphoraRepository()
         self.amphora_health_repo = repo.AmphoraHealthRepository()
@@ -43,7 +45,7 @@ class UpdateHealthDb(object):
         self.loadbalancer_repo = repo.LoadBalancerRepository()
         self.member_repo = repo.MemberRepository()
         self.pool_repo = repo.PoolRepository()
-        self.sync_prv_status = cfg.CONF.health_manager.sync_provisioning_status
+        self.sync_prv_status = CONF.health_manager.sync_provisioning_status
 
     def emit(self, info_type, info_id, info_obj):
         cnt = update_serializer.InfoContainer(info_type, info_id, info_obj)
@@ -113,6 +115,19 @@ class UpdateHealthDb(object):
         if len(listeners) == expected_listener_count:
 
             lock_session = db_api.get_session(autocommit=False)
+
+            # if we're running too far behind, warn and bail
+            proc_delay = time.time() - health['recv_time']
+            hb_interval = CONF.health_manager.heartbeat_interval
+            if proc_delay >= hb_interval:
+                LOG.warning('Amphora %(id)s health message was processed too '
+                            'slowly: %(delay)ss! The system may be overloaded '
+                            'or otherwise malfunctioning. This heartbeat has '
+                            'been ignored and no update was made to the '
+                            'amphora health entry. THIS IS NOT GOOD.',
+                            {'id': health['id'], 'delay': proc_delay})
+                return
+
             # if the input amphora is healthy, we update its db info
             try:
                 self.amphora_health_repo.replace(
@@ -295,7 +310,7 @@ class UpdateStatsDb(stats.StatsMixin):
         super(UpdateStatsDb, self).__init__()
         self.event_streamer = stevedore_driver.DriverManager(
             namespace='octavia.controller.queues',
-            name=cfg.CONF.health_manager.event_streamer_driver,
+            name=CONF.health_manager.event_streamer_driver,
             invoke_on_load=True).driver
         self.repo_listener = repo.ListenerRepository()
 

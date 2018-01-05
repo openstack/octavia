@@ -13,6 +13,7 @@
 # under the License.
 
 import random
+import time
 
 import mock
 from oslo_config import cfg
@@ -115,7 +116,8 @@ class TestUpdateHealthDb(base.TestCase):
                                   }
                 }
                 }
-            }
+            },
+            "recv_time": time.time()
         }
 
         mock_lb, mock_listener1, mock_pool1, mock_member1 = (
@@ -140,7 +142,9 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
-            "listeners": {}}
+            "listeners": {},
+            "recv_time": time.time()
+        }
 
         mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree(listener=False, pool=False))
@@ -150,11 +154,29 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_repo.get_all_lbs_on_amphora.called)
         self.assertTrue(self.loadbalancer_repo.update.called)
 
+    def test_update_health_recv_time_stale(self):
+        hb_interval = cfg.CONF.health_manager.heartbeat_interval
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {},
+            "recv_time": time.time() - hb_interval - 1  # extra -1 for buffer
+        }
+
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
+            self._make_mock_lb_tree(listener=False, pool=False))
+        self.hm.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_repo.get_all_lbs_on_amphora.called)
+        # Receive time is stale, so we shouldn't see this called
+        self.assertFalse(self.loadbalancer_repo.update.called)
+
     def test_update_health_replace_error(self):
 
         health = {
             "id": self.FAKE_UUID_1,
-            "listeners": {}
+            "listeners": {},
+            "recv_time": time.time()
         }
 
         self.session_mock.commit.side_effect = TestException('boom')
@@ -176,7 +198,8 @@ class TestUpdateHealthDb(base.TestCase):
                                   }
                 }
                 }
-            }
+            },
+            "recv_time": time.time()
         }
 
         mock_lb, mock_listener1, mock_pool1, mock_member1 = (
@@ -226,7 +249,8 @@ class TestUpdateHealthDb(base.TestCase):
                                   }
                 }
                 }
-            }
+            },
+            "recv_time": time.time()
         }
 
         mock_lb, mock_listener1, mock_pool1, mock_member1 = (
@@ -270,7 +294,8 @@ class TestUpdateHealthDb(base.TestCase):
                                   }
                 }
                 }
-            }
+            },
+            "recv_time": time.time()
         }
 
         mock_lb, mock_listener1, mock_pool1, mock_members = (
@@ -311,7 +336,8 @@ class TestUpdateHealthDb(base.TestCase):
                                   }
                 }
                 }
-            }
+            },
+            "recv_time": time.time()
         }
 
         mock_lb, mock_listener1, mock_pool1, mock_member1 = (
@@ -342,7 +368,8 @@ class TestUpdateHealthDb(base.TestCase):
                     "pools": {
                         "pool-id-1": {
                             "status": constants.UP,
-                            "members": {"member-id-1": constants.DRAIN}}}}}}
+                            "members": {"member-id-1": constants.DRAIN}}}}},
+            "recv_time": time.time()}
 
         mock_lb, mock_listener1, mock_pool1, mock_member1 = (
             self._make_mock_lb_tree())
@@ -381,7 +408,8 @@ class TestUpdateHealthDb(base.TestCase):
                     "pools": {
                         "pool-id-1": {
                             "status": constants.UP,
-                            "members": {"member-id-1": constants.MAINT}}}}}}
+                            "members": {"member-id-1": constants.MAINT}}}}},
+            "recv_time": time.time()}
 
         mock_lb, mock_listener1, mock_pool1, mock_member1 = (
             self._make_mock_lb_tree())
@@ -420,7 +448,8 @@ class TestUpdateHealthDb(base.TestCase):
                     "pools": {
                         "pool-id-1": {
                             "status": constants.UP,
-                            "members": {"member-id-1": "blah"}}}}}}
+                            "members": {"member-id-1": "blah"}}}}},
+            "recv_time": time.time()}
 
         mock_lb, mock_listener1, mock_pool1, mock_member1 = (
             self._make_mock_lb_tree())
@@ -454,7 +483,8 @@ class TestUpdateHealthDb(base.TestCase):
                                   }
                 }
                 }
-            }
+            },
+            "recv_time": time.time()
         }
 
         mock_lb, mock_listener1, mock_pool1, mock_member1 = (
@@ -497,7 +527,8 @@ class TestUpdateHealthDb(base.TestCase):
                                   }
                 }
                 }
-            }
+            },
+            "recv_time": time.time()
         }
 
         mock_lb, mock_listener1, mock_pool1, mock_member1 = (
@@ -538,7 +569,8 @@ class TestUpdateHealthDb(base.TestCase):
                         "pool-id-1": {
                             "status": constants.UP,
                             "members": {
-                                "member-id-1": constants.UP}}}}}}
+                                "member-id-1": constants.UP}}}}},
+            "recv_time": time.time()}
 
         mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree(members=2))
@@ -581,7 +613,8 @@ class TestUpdateHealthDb(base.TestCase):
                                   }
                 }
                 }
-            }
+            },
+            "recv_time": time.time()
         }
 
         mock_lb, mock_listener1, mock_pool1, mock_member1 = (
@@ -631,7 +664,8 @@ class TestUpdateHealthDb(base.TestCase):
                                   }
                 }
                 }
-            }
+            },
+            "recv_time": time.time()
         }
 
         mock_lb, mock_listener1, mock_pool1, mock_member1 = (
@@ -705,7 +739,8 @@ class TestUpdateHealthDb(base.TestCase):
                         }
                     }
                 }
-            }
+            },
+            "recv_time": time.time()
         }
 
         mock_lb, mock_listener1, mock_pool1, mock_members = (
@@ -762,7 +797,8 @@ class TestUpdateHealthDb(base.TestCase):
                                   }
                 }
                 }
-            }
+            },
+            "recv_time": time.time()
         }
 
         self.hm.listener_repo.update.side_effect = (
@@ -815,7 +851,8 @@ class TestUpdateHealthDb(base.TestCase):
                         }
                     }
                 }
-            }
+            },
+            "recv_time": time.time()
         }
 
         mock_lb, mock_listener1, mock_pool1, mock_members = (
@@ -838,7 +875,8 @@ class TestUpdateHealthDb(base.TestCase):
     def test_update_health_lb_admin_down(self):
         health = {
             "id": self.FAKE_UUID_1,
-            "listeners": {}}
+            "listeners": {},
+            "recv_time": time.time()}
 
         mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree(listener=False, pool=False))
@@ -855,7 +893,8 @@ class TestUpdateHealthDb(base.TestCase):
     def test_update_health_lb_admin_up(self):
         health = {
             "id": self.FAKE_UUID_1,
-            "listeners": {}}
+            "listeners": {},
+            "recv_time": time.time()}
 
         mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree(listener=False, pool=False))

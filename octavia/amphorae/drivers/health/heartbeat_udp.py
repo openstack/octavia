@@ -14,6 +14,7 @@
 
 from concurrent import futures
 import socket
+import time
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -166,6 +167,7 @@ class UDPStatusGetter(object):
         (data, srcaddr) = self.sock.recvfrom(UDP_MAX_SIZE)
         LOG.debug('Received packet from %s', srcaddr)
         obj = status_message.unwrap_envelope(data, self.key)
+        obj['recv_time'] = time.time()
         return obj, srcaddr
 
     def check(self):
