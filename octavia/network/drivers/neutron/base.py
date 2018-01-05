@@ -189,11 +189,11 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             conversion_function = getattr(
                 utils,
                 'convert_%s_dict_to_model' % resource_type)
-            if unique_item:
-                return conversion_function(resource['%ss' % resource_type][0])
-            elif not resource['%ss' % resource_type]:
+            if not resource['%ss' % resource_type]:
                 # no items found
                 raise neutron_client_exceptions.NotFound()
+            elif unique_item:
+                return conversion_function(resource['%ss' % resource_type][0])
             else:
                 return list(map(conversion_function,
                                 resource['%ss' % resource_type]))
