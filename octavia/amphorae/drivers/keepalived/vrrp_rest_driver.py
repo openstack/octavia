@@ -15,7 +15,7 @@
 from oslo_log import log as logging
 import six
 
-from octavia.amphorae.drivers import driver_base as driver_base
+from octavia.amphorae.drivers import driver_base
 from octavia.amphorae.drivers.keepalived.jinja import jinja_cfg
 from octavia.common import constants
 

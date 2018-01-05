@@ -15,8 +15,8 @@
 import mock
 from oslo_utils import uuidutils
 
-from octavia.db import models as models
-from octavia.network.drivers.noop_driver import driver as driver
+from octavia.db import models
+from octavia.network.drivers.noop_driver import driver
 import octavia.tests.unit.base as base
 
 

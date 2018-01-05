@@ -26,7 +26,7 @@ from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy import rest_api_driver as driver
 from octavia.db import models
 from octavia.network import data_models as network_models
-from octavia.tests.unit import base as base
+from octavia.tests.unit import base
 from octavia.tests.unit.common.sample_configs import sample_certs
 from octavia.tests.unit.common.sample_configs import sample_configs
 

@@ -14,7 +14,7 @@
 #    under the License.
 
 from octavia.common.jinja.haproxy import jinja_cfg
-from octavia.tests.unit import base as base
+from octavia.tests.unit import base
 from octavia.tests.unit.common.sample_configs import sample_configs
 
 

@@ -14,7 +14,7 @@
 
 from oslo_log import log as logging
 
-from octavia.amphorae.drivers import driver_base as driver_base
+from octavia.amphorae.drivers import driver_base
 
 LOG = logging.getLogger(__name__)
 

@@ -14,7 +14,7 @@
 
 from oslo_utils import uuidutils
 
-from octavia.compute.drivers.noop_driver import driver as driver
+from octavia.compute.drivers.noop_driver import driver
 import octavia.tests.unit.base as base
 
 
