@@ -75,7 +75,7 @@ class HAProxyQuery(object):
         return dict_results
 
     def show_stat(self, proxy_iid=-1, object_type=-1, server_id=-1):
-        """Get and parse output from 'show status' command.
+        """Get and parse output from 'show stat' command.
 
         :param proxy_iid: Proxy ID (column 27 in CSV output). -1 for all.
         :param object_type: Select the type of dumpable object. Values can
