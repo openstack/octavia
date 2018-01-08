@@ -28,8 +28,8 @@
               - ^releasenotes/.*$
               - ^tempest/hacking/.*$
               - ^tempest/tests/.*$
-        - octavia-tox-functional
-        - octavia-tox-functional-py35:
+        - openstack-tox-functional
+        - openstack-tox-functional-py35:
             branches: ^(?!stable/ocata).*$
         - octavia-v1-dsvm-scenario:
             irrelevant-files:
@@ -93,8 +93,8 @@
     gate:
       queue: octavia
       jobs:
-        - octavia-tox-functional
-        - octavia-tox-functional-py35:
+        - openstack-tox-functional
+        - openstack-tox-functional-py35:
             branches: ^(?!stable/ocata).*$
         - octavia-v1-dsvm-scenario:
             irrelevant-files:

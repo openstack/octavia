@@ -1,16 +1,4 @@
 - job:
-    name: octavia-tox-functional
-    parent: openstack-tox
-    vars:
-      tox_envlist: functional
-
-- job:
-    name: octavia-tox-functional-py35
-    parent: openstack-tox
-    vars:
-      tox_envlist: functional-py35
-
-- job:
     name: octavia-v1-dsvm-scenario
     parent: legacy-dsvm-base
     run: playbooks/legacy/octavia-v1-dsvm-scenario/run.yaml
