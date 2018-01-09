@@ -1,0 +1,1 @@
+curl -X PUT -H "X-Auth-Token: <token>" http://198.51.100.10:9876/v2.0/octavia/amphorae/6bd55cd3-802e-447e-a518-1e74e23bb106/failover

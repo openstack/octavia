@@ -144,3 +144,44 @@ Response Example
 
 .. literalinclude:: examples/amphora-show-response.json
    :language: javascript
+
+Failover Amphora
+================
+
+.. rest_method:: PUT /v2.0/octavia/amphorae/{amphora_id}/failover
+
+Force an amphora to failover.
+
+If you are not an administrative user, the service returns the HTTP
+``Forbidden (403)`` response code.
+
+This operation does not require a request body.
+
+.. rest_status_code:: success ../http-status.yaml
+
+   - 202
+
+.. rest_status_code:: error ../http-status.yaml
+
+   - 400
+   - 401
+   - 403
+   - 500
+
+Request
+-------
+
+.. rest_parameters:: ../parameters.yaml
+
+   - amphora_id: path-amphora-id
+
+Curl Example
+------------
+
+.. literalinclude:: examples/amphora-failover-curl
+   :language: bash
+
+Response
+--------
+
+There is no body content for the response of a successful PUT request.
