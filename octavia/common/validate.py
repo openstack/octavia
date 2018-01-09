@@ -234,6 +234,15 @@ def port_exists(port_id):
     return port
 
 
+def check_port_in_use(port):
+    """Raise an exception when a port is used."""
+    if port.device_id:
+        raise exceptions.ValidationException(detail=_(
+            "Port %(port_id)s is already used by device %(device_id)s ") %
+            {'port_id': port.id, 'device_id': port.device_id})
+    return False
+
+
 def subnet_exists(subnet_id):
     """Raises an exception when a subnet does not exist."""
     network_driver = utils.get_network_driver()

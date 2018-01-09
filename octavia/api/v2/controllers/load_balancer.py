@@ -131,6 +131,7 @@ class LoadBalancersController(base.BaseController):
     @staticmethod
     def _validate_port_and_fill_or_validate_subnet(load_balancer):
         port = validate.port_exists(port_id=load_balancer.vip_port_id)
+        validate.check_port_in_use(port)
         load_balancer.vip_network_id = port.network_id
 
         # validate the request vip port whether applied the qos_policy and
