@@ -269,6 +269,17 @@ class TestValidations(base.TestCase):
             net_mock.return_value.get_port.return_value = port
             self.assertEqual(validate.port_exists(port_id), port)
 
+    def test_check_port_in_use(self):
+        port_id = uuidutils.generate_uuid()
+        device_id = uuidutils.generate_uuid()
+        port = network_models.Port(id=port_id, device_id=device_id)
+        with mock.patch(
+                 'octavia.common.utils.get_network_driver') as net_mock:
+            net_mock.return_value.get_port.device_id = port
+            self.assertRaises(
+                exceptions.ValidationException,
+                validate.check_port_in_use, port)
+
     def test_subnet_exists_with_bad_subnet(self):
         subnet_id = uuidutils.generate_uuid()
         with mock.patch(
