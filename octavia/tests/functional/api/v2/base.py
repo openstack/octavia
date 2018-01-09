@@ -65,6 +65,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     AMPHORAE_PATH = '/octavia/amphorae'
     AMPHORA_PATH = AMPHORAE_PATH + '/{amphora_id}'
+    AMPHORA_FAILOVER_PATH = AMPHORA_PATH + '/failover'
 
     NOT_AUTHORIZED_BODY = {
         'debuginfo': None, 'faultcode': 'Client',

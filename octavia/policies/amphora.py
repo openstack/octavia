@@ -29,6 +29,14 @@ rules = [
         "Show Amphora details",
         [{'method': 'GET', 'path': '/v2.0/octavia/amphorae/{amphora_id}'}]
     ),
+    policy.DocumentedRuleDefault(
+        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AMPHORA,
+                                    action=constants.RBAC_PUT_FAILOVER),
+        constants.RULE_API_ADMIN,
+        "Failover Amphora",
+        [{'method': 'PUT',
+          'path': '/v2.0/octavia/amphorae/{amphora_id}/failover'}]
+    ),
 ]
 
 
