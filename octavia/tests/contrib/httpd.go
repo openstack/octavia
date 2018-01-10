@@ -95,7 +95,7 @@ func main() {
 	flag.Parse()
 
 	resp = fmt.Sprintf("%s", *idPtr)
-	sess_cookie.Name = "JESSIONID"
+	sess_cookie.Name = "JSESSIONID"
 	sess_cookie.Value = *idPtr
 
 	http.HandleFunc("/", root_handler)
