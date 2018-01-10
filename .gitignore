@@ -33,3 +33,4 @@ tempest.log
 
 # Files created by releasenotes build
 releasenotes/build
+api-ref/build
