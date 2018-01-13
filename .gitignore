@@ -11,6 +11,7 @@ doc/source/configuration/_static/octavia.policy.yaml.sample
 doc/source/contributor/devref/erd.svg
 doc/source/contributor/devref/flow_diagrams/
 doc/source/contributor/modules
+api-ref/build
 .idea/*
 *.DS_Store
 *.pyc
