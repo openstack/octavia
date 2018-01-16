@@ -16,7 +16,6 @@
 from concurrent import futures
 import functools
 
-from futurist import periodics
 from oslo_config import cfg
 from oslo_db import exception as db_exc
 from oslo_log import log as logging
@@ -62,8 +61,6 @@ class HealthManager(object):
         self.amp_health_repo = repo.AmphoraHealthRepository()
         self.dead = exit_event
 
-    @periodics.periodic(CONF.health_manager.health_check_interval,
-                        run_immediately=True)
     def health_check(self):
         stats = {
             'failover_attempted': 0,

@@ -18,7 +18,7 @@ import os
 import signal
 import sys
 
-from futurist.periodics import PeriodicWorker
+from futurist import periodics
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -47,8 +47,15 @@ def hm_listener(exit_event):
 
 def hm_health_check(exit_event):
     hm = health_manager.HealthManager(exit_event)
-    health_check = PeriodicWorker([(hm.health_check, None, None)],
-                                  schedule_strategy='aligned_last_finished')
+
+    @periodics.periodic(CONF.health_manager.health_check_interval,
+                        run_immediately=True)
+    def periodic_health_check():
+        hm.health_check()
+
+    health_check = periodics.PeriodicWorker(
+        [(periodic_health_check, None, None)],
+        schedule_strategy='aligned_last_finished')
 
     def hm_exit(*args, **kwargs):
         health_check.stop()
