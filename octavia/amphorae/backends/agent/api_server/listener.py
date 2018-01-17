@@ -195,11 +195,10 @@ class Listener(object):
             if not os.path.exists(netns_path):
                 with os.fdopen(os.open(netns_path, flags, mode),
                                'w') as text_file:
-                    text = JINJA_ENV.get_template(AMPHORA_NETNS +
-                                                  '.systemd.j2').render(
+                    text = JINJA_ENV.get_template(
+                        AMPHORA_NETNS + '.systemd.j2').render(
                             amphora_nsname=consts.AMPHORA_NAMESPACE,
-                            HasIFUPAll=self._osutils.has_ifup_all()
-                            )
+                            HasIFUPAll=self._osutils.has_ifup_all())
                     text_file.write(text)
 
         if not os.path.exists(init_path):

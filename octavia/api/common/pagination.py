@@ -205,8 +205,8 @@ class PaginationHelper(object):
         # Add filtering
         if CONF.api_settings.allow_filtering:
             # Exclude (valid) arguments that are not used for data filtering
-            filter_params = {k: v for k, v in self.params.items(
-                ) if k not in self._auxiliary_arguments}
+            filter_params = {k: v for k, v in self.params.items()
+                             if k not in self._auxiliary_arguments}
 
             secondary_query_filter = filter_params.pop(
                 "project_id", None) if (model == models.Amphora) else None

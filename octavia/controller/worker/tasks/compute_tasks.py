@@ -141,8 +141,7 @@ class CertComputeCreate(ComputeCreate):
         return super(CertComputeCreate, self).execute(
             amphora_id, config_drive_files=config_drive_files,
             build_type_priority=build_type_priority,
-            server_group_id=server_group_id, ports=ports,
-            )
+            server_group_id=server_group_id, ports=ports)
 
 
 class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
