@@ -15,6 +15,10 @@
 
 import logging
 
+from oslo_config import cfg
+from oslo_utils import excutils
+from taskflow.listeners import logging as tf_logging
+
 from octavia.common import base_taskflow
 from octavia.common import constants
 from octavia.controller.worker.flows import amphora_flows
@@ -27,10 +31,6 @@ from octavia.controller.worker.flows import member_flows
 from octavia.controller.worker.flows import pool_flows
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
-
-from oslo_config import cfg
-from oslo_utils import excutils
-from taskflow.listeners import logging as tf_logging
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
