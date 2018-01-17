@@ -175,7 +175,7 @@ class Repositories(object):
         :param session: A Sql Alchemy database session.
         :param lb_dict: Dictionary representation of a load balancer
         :param vip_dict: Dictionary representation of a vip
-        :returns: octava.common.data_models.LoadBalancer
+        :returns: octavia.common.data_models.LoadBalancer
         """
         with session.begin(subtransactions=True):
             if not lb_dict.get('id'):
