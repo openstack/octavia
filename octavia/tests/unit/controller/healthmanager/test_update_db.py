@@ -238,25 +238,18 @@ class TestUpdateHealthDb(base.TestCase):
         self.hm.update_health(health)
         self.assertTrue(not self.amphora_health_repo.replace.called)
 
-    def test_update_lb_pool_health_online(self):
+    def test_update_lb_pool_health_offline(self):
 
         health = {
             "id": self.FAKE_UUID_1,
             "listeners": {
-                "listener-id-1": {"status": constants.OPEN, "pools": {
-                    "pool-id-1": {"status": constants.UP,
-                                  "members": {"member-id-1": constants.UP}
-                                  }
-                }
-                }
+                "listener-id-1": {"status": constants.OPEN, "pools": {}}
             },
             "recv_time": time.time()
         }
 
         mock_lb, mock_listener1, mock_pool1, mock_member1 = (
             self._make_mock_lb_tree())
-        # I'm not sure why we were testing this, but we were -- leaving it
-        mock_listener1.pools = []
 
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
@@ -269,19 +262,61 @@ class TestUpdateHealthDb(base.TestCase):
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
+        self.pool_repo.update.assert_any_call(
+            self.session_mock, mock_pool1.id,
+            operating_status=constants.OFFLINE
+        )
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+    def test_update_lb_multiple_listeners_one_error_pool(self):
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {"status": constants.OPEN, "pools": {
+                    "pool-id-1": {"status": constants.DOWN,
+                                  "members": {"member-id-1": constants.ERROR}}
+                }},
+                "listener-id-2": {"status": constants.OPEN, "pools": {
+                    "pool-id-2": {"status": constants.UP,
+                                  "members": {"member-id-2": constants.UP}}
+                }}
+            },
+            "recv_time": time.time()
+        }
 
-                # We should not double process a shared pool
-                self.hm.pool_repo.update.assert_called_once_with(
-                    self.session_mock, pool_id,
-                    operating_status=constants.ONLINE)
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree())
 
-                for member_id, member in six.iteritems(
-                        pool.get('members', {})):
-                    self.member_repo.update.assert_any_call(
-                        self.session_mock, member_id,
-                        operating_status=constants.ONLINE)
+        mock_member2 = mock.Mock()
+        mock_member2.id = 'member-id-2'
+        mock_pool2 = mock.Mock()
+        mock_pool2.id = "pool-id-2"
+        mock_pool2.members = [mock_member2]
+        mock_listener2 = mock.Mock()
+        mock_listener2.id = 'listener-id-2'
+        mock_listener2.pools = [mock_pool2]
+
+        mock_lb.listeners.append(mock_listener2)
+        mock_lb.pools.append(mock_pool2)
+
+        self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # test listener, member
+        for listener_id, listener in six.iteritems(
+                health.get('listeners')):
+            self.listener_repo.update.assert_any_call(
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
+
+        # Call count should be exactly 2, as each pool should be processed once
+        self.assertEqual(2, self.pool_repo.update.call_count)
+        self.pool_repo.update.assert_has_calls([
+            mock.call(self.session_mock, mock_pool1.id,
+                      operating_status=constants.ERROR),
+            mock.call(self.session_mock, mock_pool2.id,
+                      operating_status=constants.ONLINE)
+        ])
 
     def test_update_lb_and_list_pool_health_online(self):
 

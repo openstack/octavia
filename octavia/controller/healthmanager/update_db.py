@@ -203,16 +203,16 @@ class UpdateHealthDb(object):
 
                 # Process pools bound to listeners
                 for db_pool in db_listener.pools:
-                    lb_status, processed_pools = self._process_pool_status(
-                        session, db_pool, pools, lb_status)
+                    lb_status = self._process_pool_status(
+                        session, db_pool, pools, lb_status, processed_pools)
 
             # Process pools bound to the load balancer
             for db_pool in db_lb.pools:
                 # Don't re-process pools shared with listeners
                 if db_pool.id in processed_pools:
                     continue
-                lb_status, processed_pools = self._process_pool_status(
-                    session, db_pool, pools, lb_status)
+                lb_status = self._process_pool_status(
+                    session, db_pool, [], lb_status, processed_pools)
 
             # Update the load balancer status last
             try:
@@ -224,11 +224,10 @@ class UpdateHealthDb(object):
             except sqlalchemy.orm.exc.NoResultFound:
                 LOG.error("Load balancer %s is not in DB", db_lb.id)
 
-    def _process_pool_status(self, session, db_pool, pools, lb_status):
+    def _process_pool_status(self, session, db_pool, pools, lb_status,
+                             processed_pools):
         pool_status = None
         pool_id = db_pool.id
-
-        processed_pools = []
 
         if pool_id not in pools:
             pool_status = constants.OFFLINE
@@ -309,7 +308,7 @@ class UpdateHealthDb(object):
         except sqlalchemy.orm.exc.NoResultFound:
             LOG.error("Pool %s is not in DB", pool_id)
 
-        return lb_status, processed_pools
+        return lb_status
 
 
 class UpdateStatsDb(stats.StatsMixin):
