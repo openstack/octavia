@@ -108,7 +108,7 @@ class NoopDistributorDriver(driver_base.DistributorDriver):
     def get_delete_distributor_subflow(self):
         return self.driver.get_delete_distributor_subflow()
 
-    def get_add_vip_flow(self):
+    def get_add_vip_subflow(self):
         return self.driver.get_add_vip_subflow()
 
     def get_remove_vip_subflow(self):
