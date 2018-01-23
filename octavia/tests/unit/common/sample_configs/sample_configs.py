@@ -695,7 +695,8 @@ def sample_l7rule_tuple(id,
         enabled=enabled)
 
 
-def sample_base_expected_config(frontend=None, backend=None, peers=None):
+def sample_base_expected_config(frontend=None, backend=None,
+                                peers=None, global_opts=None):
     if frontend is None:
         frontend = ("frontend sample_listener_id_1\n"
                     "    option httplog\n"
@@ -717,7 +718,9 @@ def sample_base_expected_config(frontend=None, backend=None, peers=None):
                    "    server sample_member_id_2 10.0.0.98:82 weight 13 "
                    "check inter 30s fall 3 rise 2 cookie sample_member_id_2\n")
     if peers is None:
-        peers = ("\n\n")
+        peers = "\n\n"
+    if global_opts is None:
+        global_opts = "    maxconn 98\n\n"
     return ("# Configuration for test-lb\n"
             "global\n"
             "    daemon\n"
@@ -726,9 +729,8 @@ def sample_base_expected_config(frontend=None, backend=None, peers=None):
             "    log /dev/log local0\n"
             "    log /dev/log local1 notice\n"
             "    stats socket /var/lib/octavia/sample_listener_id_1.sock"
-            " mode 0666 level user\n"
-            "    maxconn 98\n"
-            "    external-check\n\n"
+            " mode 0666 level user\n" +
+            global_opts +
             "defaults\n"
             "    log global\n"
             "    retries 3\n"

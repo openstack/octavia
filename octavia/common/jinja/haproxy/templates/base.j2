@@ -24,7 +24,15 @@ global
     {% if loadbalancer.global_connection_limit is defined %}
     maxconn {{ loadbalancer.global_connection_limit }}
     {% endif %}
+    {% set found_ns = namespace(found=false) %}
+    {% for pool in loadbalancer.listener.pools if pool.enabled %}
+        {% if pool.health_monitor and pool.health_monitor.enabled and
+              pool.health_monitor.type == constants.HEALTH_MONITOR_PING and
+              found_ns.found == false %}
+          {% set found_ns.found = true %}
     external-check
+        {% endif %}
+    {% endfor %}
 
 defaults
     log global
