@@ -1,5 +1,6 @@
 dib-init-system
-install-static
 package-installs
+pkg-map
 pip-and-virtualenv
 source-repositories
+svc-map

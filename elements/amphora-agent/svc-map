@@ -1,2 +1,3 @@
 amphora-agent:
   default: amphora-agent
+  redhat: octavia-amphora-agent

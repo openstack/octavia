@@ -85,6 +85,7 @@ Command syntax:
         '-i' is the base OS (default: ubuntu)
         '-n' disable sshd (default: enabled)
         '-o' is the output image file name
+        '-p' install amphora-agent from distribution packages (default: disabled)"
         '-r' enable the root account in the generated image (default: disabled)
         '-s' is the image size to produce in gigabytes (default: 2)
         '-t' is the image type (default: qcow2)
@@ -129,6 +130,36 @@ OCTAVIA_REPO_PATH
     - Directory containing octavia
     - Default: <directory above the script location>
     - Reference: https://github.com/openstack/octavia
+
+Using distribution packages for amphora agent
+---------------------------------------------
+By default, amphora agent is installed from Octavia Git repository.
+To use distribution packages, use the "-p" option.
+
+Note this needs a base system image with the required repositories enabled (for
+example RDO repositories for CentOS/Fedora). One of these variables must be
+set:
+
+DIB_LOCAL_IMAGE
+    - Path to the locally downloaded image
+    - Default: None
+
+DIB_CLOUD_IMAGES
+    - Directory base URL to download the image from
+    - Default: depends on the distribution
+
+For example to build a CentOS 7 amphora with Pike RPM packages:
+.. code:: bash
+
+    # Get image
+    $ wget https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2
+
+    # Add repository
+    $ virt-customize -a CentOS-7-x86_64-GenericCloud.qcow2  --selinux-relabel --run-command 'yum install -y centos-release-openstack-pike'
+
+    # Point to modified image and run script
+    $ export DIB_LOCAL_IMAGE=/home/stack/CentOS-7-x86_64-GenericCloud.qcow2
+    $ ./diskimage-create.sh -p -i centos
 
 RHEL specific variables
 ------------------------

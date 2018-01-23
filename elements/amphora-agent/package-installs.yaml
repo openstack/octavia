@@ -1,4 +1,10 @@
+amphora-agent:
+  installtype: package
 build-essential:
+  installtype: source
 libffi-dev:
+  installtype: source
 libssl-dev:
+  installtype: source
 python-dev:
+  installtype: source

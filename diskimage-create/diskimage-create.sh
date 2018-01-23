@@ -23,11 +23,12 @@ usage() {
     echo "            [-a i386 | **amd64** | armhf ]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
-    echo "            [-d **xenial** | trusty | <other release id> ]"
+    echo "            [-d **xenial**/**7** | trusty | <other release id> ]"
     echo "            [-h]"
     echo "            [-i **ubuntu** | fedora | centos | rhel ]"
     echo "            [-n]"
     echo "            [-o **amphora-x64-haproxy** | <filename> ]"
+    echo "            [-p]"
     echo "            [-r <root password> ]"
     echo "            [-s **2** | <size in GB> ]"
     echo "            [-t **qcow2** | tar | vhd ]"
@@ -42,6 +43,7 @@ usage() {
     echo "        '-i' is the base OS (default: ubuntu)"
     echo "        '-n' disable sshd (default: enabled)"
     echo "        '-o' is the output image file name"
+    echo "        '-p' install amphora-agent from distribution packages (default: disabled)"
     echo "        '-r' enable the root account in the generated image (default: disabled)"
     echo "        '-s' is the image size to produce in gigabytes (default: 2)"
     echo "        '-t' is the image type (default: qcow2)"
@@ -76,7 +78,7 @@ if [ -z $OCTAVIA_REPO_PATH ]; then
 fi
 dib_enable_tracing=
 
-while getopts "a:b:c:d:hi:no:t:r:s:vw:x" opt; do
+while getopts "a:b:c:d:hi:no:pt:r:s:vw:x" opt; do
     case $opt in
         a)
             AMP_ARCH=$OPTARG
@@ -119,6 +121,9 @@ while getopts "a:b:c:d:hi:no:t:r:s:vw:x" opt; do
         ;;
         o)
             AMP_OUTPUTFILENAME=$(readlink -f $OPTARG)
+        ;;
+        p)
+            export DIB_INSTALLTYPE_amphora_agent=package
         ;;
         t)
             AMP_IMAGETYPE=$OPTARG
@@ -169,8 +174,8 @@ AMP_BASEOS=${AMP_BASEOS:-"ubuntu"}
 
 if [ "$AMP_BASEOS" = "ubuntu" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"xenial"}
-else
-    export DIB_RELEASE=${AMP_DIB_RELEASE}
+elif [ "${AMP_BASEOS}" = "centos" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
+    export DIB_RELEASE=${AMP_DIB_RELEASE:-"7"}
 fi
 
 AMP_OUTPUTFILENAME=${AMP_OUTPUTFILENAME:-"$PWD/amphora-x64-haproxy"}
@@ -299,14 +304,11 @@ pushd $TEMP > /dev/null
 
 # Setup the elements list
 
-if [ "$AMP_BASEOS" = "ubuntu" ]; then
-    AMP_element_sequence=${AMP_element_sequence:-"base vm ubuntu"}
-elif [ "$AMP_BASEOS" = "fedora" ]; then
-    AMP_element_sequence=${AMP_element_sequence:-"base vm fedora selinux-permissive"}
-elif [ "$AMP_BASEOS" = "centos" ]; then
-    AMP_element_sequence=${AMP_element_sequence:-"base vm centos7 selinux-permissive"}
-elif [ "$AMP_BASEOS" = "rhel" ]; then
-    AMP_element_sequence=${AMP_element_sequence:-"base vm rhel7 selinux-permissive"}
+AMP_element_sequence=${AMP_element_sequence:-"base vm"}
+if [ "${AMP_BASEOS}" = "centos" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
+    AMP_element_sequence="$AMP_element_sequence ${AMP_BASEOS}${DIB_RELEASE}"
+else
+    AMP_element_sequence="$AMP_element_sequence ${AMP_BASEOS}"
 fi
 
 # Add our backend element (haproxy, etc.)
@@ -318,17 +320,11 @@ if [ "$AMP_ROOTPW" ]; then
 fi
 
 # Add the Amphora Agent and Pyroute elements
-if [ "$AMP_BASEOS" = "ubuntu" ]; then
-    AMP_element_sequence="$AMP_element_sequence rebind-sshd"
-    AMP_element_sequence="$AMP_element_sequence no-resolvconf"
-    AMP_element_sequence="$AMP_element_sequence amphora-agent"
-elif [ "$AMP_BASEOS" = "rhel" ]; then
-    AMP_element_sequence="$AMP_element_sequence no-resolvconf"
-    AMP_element_sequence="$AMP_element_sequence amphora-agent-rhel"
-else
-    AMP_element_sequence="$AMP_element_sequence no-resolvconf"
-    AMP_element_sequence="$AMP_element_sequence amphora-agent"
-fi
+AMP_element_sequence="$AMP_element_sequence rebind-sshd"
+AMP_element_sequence="$AMP_element_sequence no-resolvconf"
+AMP_element_sequence="$AMP_element_sequence amphora-agent"
+#TODO(bcafarel): make this conditional
+AMP_element_sequence="$AMP_element_sequence selinux-permissive"
 
 # Add keepalived-octavia element
 AMP_element_sequence="$AMP_element_sequence keepalived-octavia"
