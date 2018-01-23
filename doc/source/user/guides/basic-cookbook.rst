@@ -67,13 +67,13 @@ below.
 
 ::
 
-    neutron lbaas-loadbalancer-create --name lb1 public-subnet
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    neutron lbaas-loadbalancer-show lb1
-    neutron lbaas-listener-create --name listener1 --loadbalancer lb1 --protocol HTTP --protocol-port 80
-    neutron lbaas-pool-create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
 
 
 .. _basic-lb-with-hm:
@@ -112,14 +112,14 @@ a floating IP. See :ref:`basic-lb-with-hm-and-fip` below.
 
 ::
 
-    neutron lbaas-loadbalancer-create --name lb1 public-subnet
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    neutron lbaas-loadbalancer-show lb1
-    neutron lbaas-listener-create --name listener1 --loadbalancer lb1 --protocol HTTP --protocol-port 80
-    neutron lbaas-pool-create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    neutron lbaas-healthmonitor-create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url_path /healthcheck --pool pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
+    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url-path /healthcheck pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
 
 
 .. _basic-lb-with-hm-and-fip:
@@ -163,17 +163,17 @@ DVR is in use. See: https://bugs.launchpad.net/neutron/+bug/1583694
 
 ::
 
-    neutron lbaas-loadbalancer-create --name lb1 private-subnet
+    openstack loadbalancer create --name lb1 --vip-subnet-id private-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    neutron lbaas-loadbalancer-show lb1
-    neutron lbaas-listener-create --name listener1 --loadbalancer lb1 --protocol HTTP --protocol-port 80
-    neutron lbaas-pool-create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    neutron lbaas-healthmonitor-create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url_path /healthcheck --pool pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.11 --protocol-port 80 pool1
-    neutron floatingip-create public
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
+    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url-path /healthcheck pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack floating ip create public
     # The following IDs should be visible in the output of previous commands
-    neutron floatingip-associate <floating_ip_id> <load_balancer_vip_port_id>
+    openstack floating ip set --port <load_balancer_vip_port_id> <floating_ip_id>
 
 
 Deploy a basic HTTP load balancer with session persistence
@@ -207,14 +207,14 @@ Deploy a basic HTTP load balancer with session persistence
 
 ::
 
-    neutron lbaas-loadbalancer-create --name lb1 public-subnet
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    neutron lbaas-loadbalancer-show lb1
-    neutron lbaas-listener-create --name listener1 --loadbalancer lb1 --protocol HTTP --protocol-port 80
-    neutron lbaas-pool-create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --session-persistence type=APP_COOKIE,cookie_name=PHPSESSIONID
-    neutron lbaas-healthmonitor-create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url_path /healthcheck --pool pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --session-persistence type=APP_COOKIE,cookie_name=PHPSESSIONID
+    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url-path /healthcheck pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
 
 
 Deploy a TCP load balancer
@@ -245,14 +245,14 @@ This is generally suitable when load balancing a non-HTTP TCP-based service.
 
 ::
 
-    neutron lbaas-loadbalancer-create --name lb1 public-subnet
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    neutron lbaas-loadbalancer-show lb1
-    neutron lbaas-listener-create --name listener1 --loadbalancer lb1 --protocol TCP --protocol-port 23456
-    neutron lbaas-pool-create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol TCP
-    neutron lbaas-healthmonitor-create --delay 5 --max-retries 4 --timeout 10 --type TCP --pool pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --name listener1 --protocol TCP --protocol-port 23456 lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol TCP
+    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type TCP pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
 
 
 Deploy a QoS ruled load balancer
@@ -340,14 +340,14 @@ cannot be used with non-terminated HTTPS.
 
 ::
 
-    neutron lbaas-loadbalancer-create --name lb1 public-subnet
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    neutron lbaas-loadbalancer-show lb1
-    neutron lbaas-listener-create --name listener1 --loadbalancer lb1 --protocol HTTPS --protocol-port 443
-    neutron lbaas-pool-create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTPS
-    neutron lbaas-healthmonitor-create --delay 5 --max-retries 4 --timeout 10 --type TCP --pool pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.10 --protocol-port 443 pool1
-    neutron lbaas-member-create --subnet private-subnet --address 192.0.2.11 --protocol-port 443 pool1
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --name listener1 --protocol HTTPS --protocol-port 443 lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTPS
+    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTPS --url-path /healthcheck pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 443 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 443 pool1
 
 
 .. _basic-tls-terminated-listener:
