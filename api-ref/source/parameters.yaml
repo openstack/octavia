@@ -6,49 +6,49 @@ path-amphora-id:
     The ID of the amphora to query.
   in: path
   required: true
-  type: string
+  type: uuid
 path-healthmonitor-id:
   description: |
     The ID of the health monitor to query.
   in: path
   required: true
-  type: string
+  type: uuid
 path-l7policy-id:
   description: |
     The ID of the L7 policy to query.
   in: path
   required: true
-  type: string
+  type: uuid
 path-l7rule-id:
   description: |
     The ID of the L7 rule to query.
   in: path
   required: true
-  type: string
+  type: uuid
 path-listener-id:
   description: |
     The ID of the listener to query.
   in: path
   required: true
-  type: string
+  type: uuid
 path-loadbalancer-id:
   description: |
     The ID of the load balancer to query.
   in: path
   required: true
-  type: string
+  type: uuid
 path-member-id:
   description: |
     The ID of the member to query.
   in: path
   required: true
-  type: string
+  type: uuid
 path-pool-id:
   description: |
     The ID of the pool to query.
   in: path
   required: true
-  type: string
+  type: uuid
 path-project-id:
   description: |
     The ID of the project to query.
@@ -136,7 +136,7 @@ amphora-id:
     The associated amphora ID.
   in: body
   required: true
-  type: string
+  type: uuid
 amphora-role:
   description: |
     The role of the amphora. One of ``STANDALONE``, ``MASTER``, ``BACKUP``.
@@ -210,7 +210,7 @@ compute-id:
     The ID of the amphora resource in the compute system.
   in: body
   required: true
-  type: string
+  type: uuid
 connection_limit:
   description: |
     The maximum number of connections permitted for this listener. Default
@@ -236,13 +236,13 @@ default_pool_id:
     The ID of the pool used by the listener if no L7 policies match.
   in: body
   required: true
-  type: string
+  type: uuid
 default_pool_id-optional:
   description: |
     The ID of the pool used by the listener if no L7 policies match.
   in: body
   required: false
-  type: string
+  type: uuid
 default_tls_container_ref:
   description: |
     The URI to the `key manager service
@@ -340,7 +340,7 @@ healthmonitor-id:
     The associated health monitor ID.
   in: body
   required: true
-  type: string
+  type: uuid
 healthmonitor-max-retries:
   description: |
     The number of successful checks before changing the ``operating status``
@@ -418,7 +418,7 @@ id:
     The ID of the resource.
   in: body
   required: true
-  type: string
+  type: uuid
 insert_headers:
   description: |
     A dictionary of optional headers to insert into the request before it is
@@ -466,7 +466,7 @@ l7policy-id:
     The ID of the L7 policy.
   in: body
   required: true
-  type: string
+  type: uuid
 l7policy-ids:
   description: |
     A list of L7 policy IDs.
@@ -491,14 +491,14 @@ l7policy-redirect-pool_id:
     Only valid if ``action`` is ``REDIRECT_TO_POOL``.
   in: body
   required: true
-  type: string
+  type: uuid
 l7policy-redirect-pool_id-optional:
   description: |
     Requests matching this policy will be redirected to the pool with this ID.
     Only valid if ``action`` is ``REDIRECT_TO_POOL``.
   in: body
   required: false
-  type: string
+  type: uuid
 l7policy-redirect-url:
   description: |
     Requests matching this policy will be redirected to this URL.
@@ -538,7 +538,7 @@ l7rule-id:
     The ID of the L7 rule.
   in: body
   required: true
-  type: string
+  type: uuid
 l7rule-invert:
   description: |
     When ``true`` the logic of the rule is inverted. For example, with
@@ -631,14 +631,14 @@ listener-id:
     The ID of the listener.
   in: body
   required: true
-  type: string
+  type: uuid
 listener-id-pool-optional:
   description: |
     The ID of the listener for the pool. Either ``listener_id`` or
     ``loadbalancer_id`` must be specified.
   in: body
   required: false
-  type: string
+  type: uuid
 listener-ids:
   description: |
     A list of listener IDs.
@@ -674,14 +674,14 @@ loadbalancer-id:
     The ID of the load balancer.
   in: body
   required: true
-  type: string
+  type: uuid
 loadbalancer-id-pool-optional:
   description: |
     The ID of the load balancer for the pool. Either ``listener_id`` or
     ``loadbalancer_id`` must be specified.
   in: body
   required: false
-  type: string
+  type: uuid
 loadbalancer-ids:
   description: |
     A list of load balancer IDs.
@@ -705,7 +705,7 @@ member-id:
     The ID of the member.
   in: body
   required: true
-  type: string
+  type: uuid
 member-ids:
   description: |
     A list of member IDs.
@@ -769,7 +769,7 @@ pool-id:
     The ID of the pool.
   in: body
   required: true
-  type: string
+  type: uuid
 pool-optional:
   description: |
     A pool object.
@@ -996,13 +996,13 @@ subnet_id:
     The subnet ID the member service is accessible from.
   in: body
   required: true
-  type: string
+  type: uuid
 subnet_id-optional:
   description: |
     The subnet ID the member service is accessible from.
   in: body
   required: false
-  type: string
+  type: uuid
 total_connections:
   description: |
     The total connections handled.
@@ -1038,52 +1038,52 @@ vip_network_id:
     The ID of the network for the Virtual IP (VIP).
   in: body
   required: true
-  type: string
+  type: uuid
 vip_network_id-optional:
   description: |
     The ID of the network for the Virtual IP (VIP). One of ``vip_network_id``,
     ``vip_port_id``, or ``vip_subnet_id`` must be specified.
   in: body
   required: false
-  type: string
+  type: uuid
 vip_port_id:
   description: |
     The ID of the Virtual IP (VIP) port.
   in: body
   required: true
-  type: string
+  type: uuid
 vip_port_id-optional:
   description: |
     The ID of the Virtual IP (VIP) port. One of ``vip_network_id``,
     ``vip_port_id``, or ``vip_subnet_id`` must be specified.
   in: body
   required: false
-  type: string
+  type: uuid
 vip_qos_policy_id:
   description: |
     The ID of the QoS Policy which will apply to the Virtual IP (VIP).
   in: body
   required: true
-  type: string
+  type: uuid
 vip_qos_policy_id-optional:
   description: |
     The ID of the QoS Policy which will apply to the Virtual IP (VIP).
   in: body
   required: false
-  type: string
+  type: uuid
 vip_subnet_id:
   description: |
     The ID of the subnet for the Virtual IP (VIP).
   in: body
   required: true
-  type: string
+  type: uuid
 vip_subnet_id-optional:
   description: |
     The ID of the subnet for the Virtual IP (VIP). One of ``vip_network_id``,
     ``vip_port_id``, or ``vip_subnet_id`` must be specified.
   in: body
   required: false
-  type: string
+  type: uuid
 vrrp-id:
   description: |
     The vrrp group's ID for the amphora.
@@ -1107,7 +1107,7 @@ vrrp-port-id:
     The vrrp port's ID in the networking system.
   in: body
   required: true
-  type: string
+  type: uuid
 vrrp-priority:
   description: |
     The priority of the amphora in the vrrp group.
