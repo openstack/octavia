@@ -1,7 +1,6 @@
 # Note: Some official OpenStack wide jobs are still defined in the
 #       project-config repository
 - project:
-    name: openstack/octavia
     check:
       jobs:
         - neutron-lbaasv2-dsvm-api
