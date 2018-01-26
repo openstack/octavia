@@ -13,9 +13,9 @@
       License for the specific language governing permissions and limitations
       under the License.
 
-==================================================
-Basic Load Balancing Cookbook Using Neutron Client
-==================================================
+===============================================================
+Basic Load Balancing Cookbook Using Neutron Client (deprecated)
+===============================================================
 
 .. warning:: The neutron client used in this document is deprecated. We
              strongly encourage you to use the OpenStack Client and Octavia
