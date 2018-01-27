@@ -24,6 +24,7 @@ import six
 from octavia.common import clients
 from octavia.common import constants
 from octavia.common import data_models
+from octavia.common import exceptions
 from octavia.i18n import _
 from octavia.network import base
 from octavia.network import data_models as n_data_models
@@ -474,9 +475,17 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                             'Skipping.'.format(port_id=unplugger.port_id,
                                                compute_id=compute_id))
 
-    def update_vip(self, load_balancer):
+    def update_vip(self, load_balancer, for_delete=False):
         sec_grp = self._get_lb_security_group(load_balancer.id)
-        self._update_security_group_rules(load_balancer, sec_grp.get('id'))
+        if sec_grp:
+            self._update_security_group_rules(load_balancer, sec_grp.get('id'))
+        elif not for_delete:
+            raise exceptions.MissingVIPSecurityGroup(lb_id=load_balancer.id)
+        else:
+            LOG.warning('VIP security group missing when updating the VIP for '
+                        'delete on load balancer: {lb_id}. Skipping update '
+                        'because this is for delete.'.format(
+                            lb_id=load_balancer.id))
 
     def failover_preparation(self, amphora):
         if self.dns_integration_enabled:

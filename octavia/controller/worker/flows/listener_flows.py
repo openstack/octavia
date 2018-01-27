@@ -73,7 +73,7 @@ class ListenerFlows(object):
             requires=constants.LISTENER))
         delete_listener_flow.add(amphora_driver_tasks.ListenerDelete(
             requires=[constants.LOADBALANCER, constants.LISTENER]))
-        delete_listener_flow.add(network_tasks.UpdateVIP(
+        delete_listener_flow.add(network_tasks.UpdateVIPForDelete(
             requires=constants.LOADBALANCER))
         delete_listener_flow.add(database_tasks.DeleteListenerInDB(
             requires=constants.LISTENER))
@@ -93,7 +93,7 @@ class ListenerFlows(object):
         """
         delete_listener_flow = linear_flow.Flow(constants.DELETE_LISTENER_FLOW)
         # Should cascade delete all L7 policies
-        delete_listener_flow.add(network_tasks.UpdateVIP(
+        delete_listener_flow.add(network_tasks.UpdateVIPForDelete(
             name='delete_update_vip_' + listener_name,
             requires=constants.LOADBALANCER))
         delete_listener_flow.add(database_tasks.DeleteListenerInDB(
