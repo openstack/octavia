@@ -331,10 +331,6 @@ epub_copyright = u'2014, OpenStack Octavia Team'
 policy_generator_config_file = '../../etc/policy/octavia-policy-generator.conf'
 sample_policy_basename = 'configuration/_static/octavia'
 
-# openstackdocstheme options
-html_theme_options = {
-    'display_toc': False
-}
 repository_name = 'openstack/octavia'
 bug_project = '908'
 bug_tag = 'docs'
