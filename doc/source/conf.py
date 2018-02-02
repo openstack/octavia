@@ -15,6 +15,7 @@
 import os
 import sys
 
+import openstackdocstheme
 from pydotplus import graphviz
 import sadisplay
 from sphinx import apidoc
@@ -137,6 +138,7 @@ html_theme = 'openstackdocs'
 # further.  For a list of options available for each theme, see the
 # documentation.
 # html_theme_options = {}
+html_theme_options = {'show_other_versions': True}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
@@ -206,6 +208,14 @@ htmlhelp_basename = 'Octavia-Specsdoc'
 
 # -- Options for LaTeX output -------------------------------------------------
 
+pdf_theme_path = openstackdocstheme.get_pdf_theme_path()
+openstack_logo = openstackdocstheme.get_openstack_logo_path()
+
+latex_custom_template = r"""
+\newcommand{\openstacklogo}{%s}
+\usepackage{%s}
+""" % (openstack_logo, pdf_theme_path)
+
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     # 'papersize': 'letterpaper',
@@ -214,7 +224,7 @@ latex_elements = {
     # 'pointsize': '10pt',
 
     # Additional stuff for the LaTeX preamble.
-    # 'preamble': '',
+    'preamble': latex_custom_template,
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -222,11 +232,13 @@ latex_elements = {
 # [howto/manual]).
 latex_documents = [(
     'index',
-    'Octavia-specs.tex',
-    u'Octavia Specs',
+    'Octavia.tex',
+    u'Octavia Documentation',
     u'OpenStack Octavia Team',
     'manual'
 )]
+
+latex_engine = 'xelatex'
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
@@ -324,7 +336,7 @@ html_theme_options = {
     'display_toc': False
 }
 repository_name = 'openstack/octavia'
-bug_project = 'octavia'
+bug_project = '908'
 bug_tag = 'docs'
 
 
