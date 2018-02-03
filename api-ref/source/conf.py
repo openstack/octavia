@@ -25,6 +25,8 @@
 import os
 import sys
 
+import openstackdocstheme
+
 from octavia.version import version_info
 
 extensions = [
@@ -39,7 +41,7 @@ html_theme_options = {
     "sidebar_mode": "toc"
 }
 repository_name = 'openstack/octavia'
-bug_project = 'octavia'
+bug_project = '908'
 bug_tag = 'api-ref'
 
 
@@ -192,6 +194,14 @@ htmlhelp_basename = 'octaviadoc'
 
 # -- Options for LaTeX output -------------------------------------------------
 
+pdf_theme_path = openstackdocstheme.get_pdf_theme_path()
+openstack_logo = openstackdocstheme.get_openstack_logo_path()
+
+latex_custom_template = r"""
+\newcommand{\openstacklogo}{%s}
+\usepackage{%s}
+""" % (openstack_logo, pdf_theme_path)
+
 # The paper size ('letter' or 'a4').
 # latex_paper_size = 'letter'
 
@@ -205,6 +215,14 @@ latex_documents = [
     ('index', 'Octavia.tex', u'OpenStack Octavia API Documentation',
      u'OpenStack Foundation', 'manual'),
 ]
+
+latex_elements = {
+    # ...
+    # Additional stuff for the LaTeX preamble.
+    'preamble': latex_custom_template,
+}
+
+latex_engine = 'xelatex'
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
