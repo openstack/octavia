@@ -180,7 +180,7 @@ class AbstractNetworkDriver(object):
         :return: [octavia.network.data_models.Instance]
         """
 
-    def update_vip(self, load_balancer):
+    def update_vip(self, load_balancer, for_delete):
         """Hook for the driver to update the VIP information.
 
         This method will be called upon the change of a load_balancer
@@ -189,6 +189,8 @@ class AbstractNetworkDriver(object):
         state of the passed in load_balancer.
 
         :param load_balancer: octavia.common.data_models.LoadBalancer instance
+        :param for_delete: Boolean indicating if this update is for a delete
+        :raises: MissingVIPSecurityGroup
         :return: None
         """
         pass

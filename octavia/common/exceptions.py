@@ -331,3 +331,7 @@ class InvalidMarker(APIException):
 class InvalidLimit(APIException):
     msg = _("Supplied pagination limit '%(key)s' is not valid.")
     code = 400
+
+
+class MissingVIPSecurityGroup(OctaviaException):
+    message = _('VIP security group is missing for load balancer: %(lb_id)s')

@@ -373,6 +373,16 @@ class UpdateVIP(BaseNetworkTask):
         self.network_driver.update_vip(loadbalancer)
 
 
+class UpdateVIPForDelete(BaseNetworkTask):
+    """Task to update a VIP for listener delete flows."""
+
+    def execute(self, loadbalancer):
+        LOG.debug("Updating VIP for listener delete on load_balancer %s.",
+                  loadbalancer.id)
+
+        self.network_driver.update_vip(loadbalancer, for_delete=True)
+
+
 class GetAmphoraeNetworkConfigs(BaseNetworkTask):
     """Task to retrieve amphorae network details."""
 

@@ -108,11 +108,12 @@ class NoopManager(object):
             compute_id, 'get_plugged_networks')
         return []
 
-    def update_vip(self, loadbalancer):
-        LOG.debug("Network %s no-op, update_vip loadbalancer %s",
-                  self.__class__.__name__, loadbalancer)
+    def update_vip(self, loadbalancer, for_delete=False):
+        LOG.debug("Network %s no-op, update_vip loadbalancer %s "
+                  "with for delete %s",
+                  self.__class__.__name__, loadbalancer, for_delete)
         self.networkconfigconfig[loadbalancer.id] = (
-            loadbalancer, 'update_vip')
+            loadbalancer, for_delete, 'update_vip')
 
     def get_network(self, network_id):
         LOG.debug("Network %s no-op, get_network network_id %s",
@@ -231,8 +232,8 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def get_plugged_networks(self, amphora_id):
         return self.driver.get_plugged_networks(amphora_id)
 
-    def update_vip(self, loadbalancer):
-        self.driver.update_vip(loadbalancer)
+    def update_vip(self, loadbalancer, for_delete=False):
+        self.driver.update_vip(loadbalancer, for_delete)
 
     def get_network(self, network_id):
         return self.driver.get_network(network_id)

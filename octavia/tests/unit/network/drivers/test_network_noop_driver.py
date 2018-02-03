@@ -104,7 +104,7 @@ class TestNoopNetworkDriver(base.TestCase):
 
     def test_update_vip(self):
         self.driver.update_vip(self.load_balancer)
-        self.assertEqual((self.load_balancer, 'update_vip'),
+        self.assertEqual((self.load_balancer, False, 'update_vip'),
                          self.driver.driver.networkconfigconfig[(
                              self.load_balancer.id
                          )])

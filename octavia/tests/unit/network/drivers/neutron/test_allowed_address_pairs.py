@@ -24,6 +24,7 @@ from oslo_utils import uuidutils
 from octavia.common import clients
 from octavia.common import constants
 from octavia.common import data_models
+from octavia.common import exceptions
 from octavia.network import base as network_base
 from octavia.network import data_models as network_models
 from octavia.network.drivers.neutron import allowed_address_pairs
@@ -695,6 +696,28 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         delete_rule.side_effect = neutron_exceptions.NotFound
         self.driver.update_vip(lb)
         delete_rule.assert_called_once_with('ssh-rule')
+
+    def test_update_vip_when_security_group_missing(self):
+        listeners = []
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(id='1', listeners=listeners, vip=vip)
+        list_sec_grps = self.driver.neutron_client.list_security_groups
+        list_sec_grps.return_value = {'security_groups': []}
+        self.assertRaises(exceptions.MissingVIPSecurityGroup,
+                          self.driver.update_vip,
+                          lb)
+
+    @mock.patch('octavia.network.drivers.neutron.allowed_address_pairs.'
+                'AllowedAddressPairsDriver._update_security_group_rules')
+    def test_update_vip_for_delete_when_security_group_missing(self,
+                                                               update_rules):
+        listeners = []
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(id='1', listeners=listeners, vip=vip)
+        list_sec_grps = self.driver.neutron_client.list_security_groups
+        list_sec_grps.return_value = {'security_groups': []}
+        self.driver.update_vip(lb, for_delete=True)
+        update_rules.assert_not_called()
 
     def test_failover_preparation(self):
         original_dns_integration_state = self.driver.dns_integration_enabled

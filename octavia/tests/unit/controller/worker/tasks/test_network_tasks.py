@@ -558,6 +558,15 @@ class TestNetworkTasks(base.TestCase):
         net_task.execute(lb)
         mock_driver.update_vip.assert_called_once_with(lb)
 
+    def test_update_vip_for_delete(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        vip = o_data_models.Vip()
+        lb = o_data_models.LoadBalancer(vip=vip)
+        net_task = network_tasks.UpdateVIPForDelete()
+        net_task.execute(lb)
+        mock_driver.update_vip.assert_called_once_with(lb, for_delete=True)
+
     def test_get_amphorae_network_configs(self, mock_get_net_driver):
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
