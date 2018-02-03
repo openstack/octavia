@@ -7,7 +7,10 @@ Octavia User
    :maxdepth: 1
 
    Command Line Interface Reference <https://docs.openstack.org/python-octaviaclient/latest/cli/index.html>
+
    guides/*
+
+   sdks.rst
 
 Indices and Search
 ------------------
