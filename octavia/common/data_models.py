@@ -431,6 +431,17 @@ class LoadBalancer(BaseDataModel):
         self.created_at = created_at
         self.updated_at = updated_at
 
+    def update(self, update_dict):
+        for key, value in update_dict.items():
+            if key == 'vip':
+                if self.vip is not None:
+                    self.vip.update(value)
+                else:
+                    value.update({'load_balancer_id': self.id})
+                    self.vip = Vip(**value)
+            else:
+                setattr(self, key, value)
+
 
 class VRRPGroup(BaseDataModel):
 
