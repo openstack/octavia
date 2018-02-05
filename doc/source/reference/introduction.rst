@@ -62,7 +62,7 @@ In accomplishing its role, Octavia makes use of other OpenStack projects:
   configuration and management.
 
 Octavia is designed to interact with the components listed previously. In each
-case, we’ve taken care to define this interaction through a driver interface.
+case, we've taken care to define this interaction through a driver interface.
 That way, external components can be swapped out with functionally-equivalent
 replacements— without having to restructure major components of Octavia. For
 example, if you use an SDN solution other than Neutron in your environment, it
@@ -97,7 +97,7 @@ terms as they are defined and used within the context of the Octavia project
 and Neutron LBaaS version 2. This glossary is available here: :doc:`glossary`
 
 If you are familiar with Neutron LBaaS version 1 terms and usage, it is
-especially important for you to understand how the meanings of the terms “VIP,"
+especially important for you to understand how the meanings of the terms "VIP,"
 "load balancer," and "load balancing," have changed in Neutron LBaaS version 2.
 
 Our use of these terms should remain consistent with the :doc:`glossary`

@@ -373,7 +373,7 @@ Network driver changes
 ~~~~~~~~~~~~~~~~~~~~~~
 
 * Support the creation, connection, and configuration of the various
-  networks and interfaces as described in ‘high-level topology' diagram.
+  networks and interfaces as described in 'high-level topology' diagram.
 
 * Adding a new loadbalancer requires attaching the Distributor to the
   loadbalancer's front-end network, adding a VIP port to the Distributor,
