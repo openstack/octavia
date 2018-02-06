@@ -94,7 +94,7 @@ response body. Validation errors require that you correct the error
 and submit the request again.
 
 All the rules associated with a given policy are logically ANDed together. A
-request must match all the policy’s rules to match the policy.
+request must match all the policy's rules to match the policy.
 
 If you need to express a logical OR operation between rules, then do this by
 creating multiple policies with the same action.

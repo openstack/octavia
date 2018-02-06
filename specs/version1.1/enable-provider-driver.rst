@@ -776,12 +776,12 @@ Member
   Existing members are matched based on address/port combination.
 
   For example, assume a pool currently has two members. These members have the
-  following address/port combinations: ‘192.0.2.15:80’ and ‘192.0.2.16:80’.
+  following address/port combinations: '192.0.2.15:80' and '192.0.2.16:80'.
   Now assume a PUT request is made that includes members with address/port
-  combinations: ‘192.0.2.16:80’ and ‘192.0.2.17:80’. The member ‘192.0.2.15:80’
-  will be deleted because it was not in the request. The member ‘192.0.2.16:80’
+  combinations: '192.0.2.16:80' and '192.0.2.17:80'. The member '192.0.2.15:80'
+  will be deleted because it was not in the request. The member '192.0.2.16:80'
   will be updated to match the request data for that member, because it was
-  matched. The member ‘192.0.2.17:80’ will be created, because no such member
+  matched. The member '192.0.2.17:80' will be created, because no such member
   existed.
 
   The members will be in the ``PENDING_CREATE``, ``PENDING_UPDATE``, or
