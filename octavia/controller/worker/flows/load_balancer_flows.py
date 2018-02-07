@@ -224,11 +224,11 @@ class LoadBalancerFlows(object):
         delete_LB_flow.add(listeners_delete)
         delete_LB_flow.add(network_tasks.UnplugVIP(
             requires=constants.LOADBALANCER))
+        delete_LB_flow.add(network_tasks.DeallocateVIP(
+            requires=constants.LOADBALANCER))
         delete_LB_flow.add(compute_tasks.DeleteAmphoraeOnLoadBalancer(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(database_tasks.MarkLBAmphoraeDeletedInDB(
-            requires=constants.LOADBALANCER))
-        delete_LB_flow.add(network_tasks.DeallocateVIP(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(database_tasks.DisableLBAmphoraeHealthMonitoring(
             requires=constants.LOADBALANCER))
@@ -279,11 +279,11 @@ class LoadBalancerFlows(object):
         delete_LB_flow.add(listeners_delete)
         delete_LB_flow.add(network_tasks.UnplugVIP(
             requires=constants.LOADBALANCER))
+        delete_LB_flow.add(network_tasks.DeallocateVIP(
+            requires=constants.LOADBALANCER))
         delete_LB_flow.add(compute_tasks.DeleteAmphoraeOnLoadBalancer(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(database_tasks.MarkLBAmphoraeDeletedInDB(
-            requires=constants.LOADBALANCER))
-        delete_LB_flow.add(network_tasks.DeallocateVIP(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(database_tasks.DisableLBAmphoraeHealthMonitoring(
             requires=constants.LOADBALANCER))
