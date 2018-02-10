@@ -62,8 +62,8 @@ Response Parameters
    - vip_address: vip_address
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
-   - vip_subnet_id: vip_subnet_id
    - vip_qos_policy_id: vip_qos_policy_id
+   - vip_subnet_id: vip_subnet_id
 
 Response Example
 ----------------
@@ -171,8 +171,8 @@ Request
    - vip_address: vip_address-optional
    - vip_network_id: vip_network_id-optional
    - vip_port_id: vip_port_id-optional
-   - vip_subnet_id: vip_subnet_id-optional
    - vip_qos_policy_id: vip_qos_policy_id-optional
+   - vip_subnet_id: vip_subnet_id-optional
 
 Request Example
 ----------------
@@ -208,8 +208,8 @@ Response Parameters
    - vip_address: vip_address
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
-   - vip_subnet_id: vip_subnet_id
    - vip_qos_policy_id: vip_qos_policy_id
+   - vip_subnet_id: vip_subnet_id
 
 Response Example
 ----------------
@@ -300,8 +300,8 @@ Response Parameters
    - vip_address: vip_address
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
-   - vip_subnet_id: vip_subnet_id
    - vip_qos_policy_id: vip_qos_policy_id
+   - vip_subnet_id: vip_subnet_id
 
 Response Example
 ----------------
@@ -384,8 +384,8 @@ Response Parameters
    - vip_address: vip_address
    - vip_network_id: vip_network_id
    - vip_port_id: vip_port_id
-   - vip_subnet_id: vip_subnet_id
    - vip_qos_policy_id: vip_qos_policy_id
+   - vip_subnet_id: vip_subnet_id
 
 Response Example
 ----------------
