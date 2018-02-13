@@ -1050,6 +1050,26 @@ class TestListener(base.BaseAPITest):
             listener_id=api_listener['id'])
         self.delete(listener_path, status=409)
 
+    def test_delete_already_deleted(self):
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1', description='desc1',
+                                       admin_state_up=False)
+        lb_id = lb['loadbalancer'].get('id')
+        self.set_lb_status(lb_id)
+        lb_listener = {'name': 'listener1', 'description': 'desc1',
+                       'admin_state_up': False,
+                       'protocol': constants.PROTOCOL_HTTP,
+                       'protocol_port': 80, 'connection_limit': 10,
+                       'loadbalancer_id': lb_id}
+        body = self._build_body(lb_listener)
+        api_listener = self.post(
+            self.LISTENERS_PATH, body).json.get(self.root_tag)
+        # This updates the child objects
+        self.set_lb_status(lb_id, status=constants.DELETED)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=api_listener['id'])
+        self.delete(listener_path, status=204)
+
     def test_create_with_tls_termination_data(self):
         cert_id = uuidutils.generate_uuid()
         listener = self.create_listener(constants.PROTOCOL_TERMINATED_HTTPS,

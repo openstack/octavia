@@ -457,6 +457,9 @@ class LoadBalancersController(base.BaseController):
         self._auth_validate_action(context, db_lb.project_id,
                                    constants.RBAC_DELETE)
 
+        if db_lb.provisioning_status == constants.DELETED:
+            return
+
         with db_api.get_lock_session() as lock_session:
             if (db_lb.listeners or db_lb.pools) and not cascade:
                 msg = _("Cannot delete Load Balancer %s - "

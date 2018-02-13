@@ -1432,6 +1432,17 @@ class TestLoadBalancer(base.BaseAPITest):
         self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')))
         self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')), status=409)
 
+    def test_delete_already_deleted(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       description='desc1',
+                                       admin_state_up=False)
+        lb_dict = lb.get(self.root_tag)
+        lb = self.set_lb_status(lb_dict.get('id'), status=constants.DELETED)
+        self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')), status=204)
+
     def test_delete(self):
         project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
