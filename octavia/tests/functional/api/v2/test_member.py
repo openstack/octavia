@@ -23,8 +23,6 @@ from octavia.common import data_models
 from octavia.network import base as network_base
 from octavia.tests.functional.api.v2 import base
 
-import testtools
-
 
 class TestMember(base.BaseAPITest):
 
@@ -621,11 +619,11 @@ class TestMember(base.BaseAPITest):
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=self.pool_with_listener_id, member_id=api_member.get('id'))
 
-    @testtools.skip("Enable this with v2 Health Monitor patch")
     def test_create_with_health_monitor(self):
-        self.create_health_monitor_with_listener(
-            self.lb_id, self.listener_id, self.pool_with_listener_id,
-            constants.HEALTH_MONITOR_PING, 1, 1, 1, 1)
+        self.create_health_monitor(self.pool_with_listener_id,
+                                   constants.HEALTH_MONITOR_HTTP,
+                                   1, 1, 1, 1)
+        self.set_lb_status(self.lb_id)
         api_member = self.create_member(
             self.pool_with_listener_id, '10.0.0.1', 80).get(self.root_tag)
         self.assert_correct_status(
@@ -1043,3 +1041,11 @@ class TestMember(base.BaseAPITest):
                     params={'cascade': "true"})
         self.delete(self.member_path.format(
             member_id=member.get('id')), status=409)
+
+    def test_delete_already_deleted(self):
+        member = self.create_member(
+            self.pool_id, address="10.0.0.1",
+            protocol_port=80).get(self.root_tag)
+        self.set_lb_status(self.lb_id, status=constants.DELETED)
+        self.delete(self.member_path.format(
+            member_id=member.get('id')), status=204)

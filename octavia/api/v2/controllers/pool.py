@@ -288,6 +288,9 @@ class PoolsController(base.BaseController):
         self._auth_validate_action(context, db_pool.project_id,
                                    constants.RBAC_DELETE)
 
+        if db_pool.provisioning_status == constants.DELETED:
+            return
+
         self._test_lb_and_listener_statuses(
             context.session, lb_id=db_pool.load_balancer_id,
             listener_ids=self._get_affected_listener_ids(db_pool))

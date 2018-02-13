@@ -247,6 +247,9 @@ class MemberController(base.BaseController):
         self._auth_validate_action(context, db_member.project_id,
                                    constants.RBAC_DELETE)
 
+        if db_member.provisioning_status == constants.DELETED:
+            return
+
         self._test_lb_and_listener_and_pool_statuses(context.session,
                                                      member=db_member)
         self.repositories.member.update(

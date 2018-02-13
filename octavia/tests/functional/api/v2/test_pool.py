@@ -23,8 +23,6 @@ import octavia.common.context
 from octavia.common import data_models
 from octavia.tests.functional.api.v2 import base
 
-import testtools
-
 
 class TestPool(base.BaseAPITest):
 
@@ -1134,7 +1132,6 @@ class TestPool(base.BaseAPITest):
             listener_prov_status=constants.PENDING_UPDATE,
             pool_prov_status=constants.PENDING_UPDATE)
 
-    @testtools.skip('This test should pass with a validation layer')
     def test_update_bad_session_persistence(self):
         sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               "cookie_name": "test_cookie_name"}
@@ -1149,7 +1146,7 @@ class TestPool(base.BaseAPITest):
         response = self.get(self.POOL_PATH.format(
             pool_id=api_pool.get('id'))).json.get(self.root_tag)
         sess_p = response.get('session_persistence')
-        sess_p['type'] = 'persistence_type'
+        sess_p['type'] = 'fake_type'
         new_pool = {'session_persistence': sess_p}
         self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
                  self._build_body(new_pool), status=400)
@@ -1266,3 +1263,14 @@ class TestPool(base.BaseAPITest):
                     params={'cascade': "true"})
         self.delete(self.POOL_PATH.format(pool_id=api_pool.get('id')),
                     status=409)
+
+    def test_delete_already_deleted(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        # This updates the child objects
+        self.set_lb_status(self.lb_id, status=constants.DELETED)
+        self.delete(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                    status=204)

@@ -244,6 +244,9 @@ class HealthMonitorController(base.BaseController):
         self._auth_validate_action(context, db_hm.project_id,
                                    constants.RBAC_DELETE)
 
+        if db_hm.provisioning_status == constants.DELETED:
+            return
+
         self._test_lb_and_listener_and_pool_statuses(context.session, db_hm)
 
         self.repositories.health_monitor.update(

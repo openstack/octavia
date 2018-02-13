@@ -233,6 +233,9 @@ class L7RuleController(base.BaseController):
         self._auth_validate_action(context, db_l7rule.project_id,
                                    constants.RBAC_DELETE)
 
+        if db_l7rule.provisioning_status == constants.DELETED:
+            return
+
         self._test_lb_listener_policy_statuses(context.session)
 
         self.repositories.l7rule.update(

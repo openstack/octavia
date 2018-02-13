@@ -1006,3 +1006,13 @@ class TestL7Policy(base.BaseAPITest):
         self.delete(self.L7POLICY_PATH.format(
                     l7policy_id=l7policy.get('id')),
                     status=409)
+
+    def test_delete_already_deleted(self):
+        l7policy = self.create_l7policy(self.listener_id,
+                                        constants.L7POLICY_ACTION_REJECT,
+                                        ).get(self.root_tag)
+        # This updates the child objects
+        self.set_lb_status(self.lb_id, status=constants.DELETED)
+        self.delete(self.L7POLICY_PATH.format(
+                    l7policy_id=l7policy.get('id')),
+                    status=204)

@@ -847,15 +847,13 @@ class TestHealthMonitor(base.BaseAPITest):
             hm_prov_status=constants.ACTIVE)
 
     def test_bad_update(self):
-        self.skip("This test will need reviewed after a validation layer is "
-                  "built")
-        self.create_health_monitor(self.lb_id,
-                                   self.pool_id,
-                                   constants.HEALTH_MONITOR_HTTP,
-                                   1, 1, 1, 1)
-        new_hm = {'type': 'bad_type', 'delay': 2}
+        api_hm = self.create_health_monitor(self.pool_with_listener_id,
+                                            constants.HEALTH_MONITOR_HTTP,
+                                            1, 1, 1, 1).get(self.root_tag)
+        new_hm = {'http_method': 'bad_method', 'delay': 2}
         self.set_lb_status(self.lb_id)
-        self.put(self.HM_PATH, self._build_body(new_hm), status=400)
+        self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+                 self._build_body(new_hm), status=400)
 
     def test_update_with_bad_handler(self):
         api_hm = self.create_health_monitor(
@@ -1046,3 +1044,12 @@ class TestHealthMonitor(base.BaseAPITest):
                     params={'cascade': "true"})
         self.delete(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
                     status=409)
+
+    def test_delete_already_deleted(self):
+        api_hm = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1).get(self.root_tag)
+        # This updates the child objects
+        self.set_lb_status(self.lb_id, status=constants.DELETED)
+        self.delete(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+                    status=204)
