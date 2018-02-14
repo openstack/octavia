@@ -40,7 +40,8 @@ ENABLED_SERVICES+=,placement-api,placement-client
 # Glance
 ENABLED_SERVICES+=,g-api,g-reg
 # Neutron
-ENABLED_SERVICES+=,neutron,q-agt,q-dhcp,q-l3,q-meta,q-qos,q-svc
+ENABLED_SERVICES+=,neutron-api,neutron-agent,neutron-dhcp,neutron-l3
+ENABLED_SERVICES+=,neutron-metadata-agent,neutron-qos
 # Tempest (optional)
 #ENABLED_SERVICES+=,tempest
 # Octavia

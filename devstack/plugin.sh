@@ -326,9 +326,9 @@ function create_mgmt_network_interface {
     MGMT_PORT_IP=$(openstack port show -f value -c fixed_ips $MGMT_PORT_ID | awk '{FS=",| "; gsub(",",""); gsub("'\''",""); for(i = 1; i <= NF; ++i) {if ($i ~ /^ip_address/) {n=index($i, "="); if (substr($i, n+1) ~ "\\.") print substr($i, n+1)}}}')
     if function_exists octavia_create_network_interface_device ; then
         octavia_create_network_interface_device o-hm0 $MGMT_PORT_ID $MGMT_PORT_MAC
-    elif [[ $Q_AGENT == "openvswitch" ]]; then
+    elif [[ $NEUTRON_AGENT == "openvswitch" || $Q_AGENT == "openvswitch" ]]; then
         sudo ovs-vsctl -- --may-exist add-port ${OVS_BRIDGE:-br-int} o-hm0 -- set Interface o-hm0 type=internal -- set Interface o-hm0 external-ids:iface-status=active -- set Interface o-hm0 external-ids:attached-mac=$MGMT_PORT_MAC -- set Interface o-hm0 external-ids:iface-id=$MGMT_PORT_ID -- set Interface o-hm0 external-ids:skip_cleanup=true
-    elif [[ $Q_AGENT == "linuxbridge" ]]; then
+    elif [[ $NEUTRON_AGENT == "linuxbridge" || $Q_AGENT == "linuxbridge" ]]; then
         if ! ip link show o-hm0 ; then
             sudo ip link add o-hm0 type veth peer name o-bhm0
             NETID=$(openstack network show lb-mgmt-net -c id -f value)
@@ -524,9 +524,9 @@ function octavia_stop {
     [ ! -z "$pids" ] && sudo kill $pids
     if function_exists octavia_delete_network_interface_device ; then
         octavia_delete_network_interface_device o-hm0
-    elif [[ $Q_AGENT == "openvswitch" ]]; then
+    elif [[ $NEUTRON_AGENT == "openvswitch" || $Q_AGENT == "openvswitch" ]]; then
         :  # Do nothing
-    elif [[ $Q_AGENT == "linuxbridge" ]]; then
+    elif [[ $NEUTRON_AGENT == "linuxbridge" || $Q_AGENT == "linuxbridge" ]]; then
         if ip link show o-hm0 ; then
             sudo ip link del o-hm0
         fi
@@ -576,8 +576,8 @@ function add_load-balancer_roles {
 # check for service enabled
 if is_service_enabled $OCTAVIA; then
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then # main-ha node stuff only
-        if ! is_service_enabled $Q_SVC; then
-            die "The neutron $Q_SVC service must be enabled to use $OCTAVIA"
+        if ! is_service_enabled $NEUTRON_ANY; then
+            die "The neutron-api/q-svc service must be enabled to use $OCTAVIA"
         fi
 
         if [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then

@@ -79,8 +79,8 @@ GITDIR["python-octaviaclient"]=$DEST/python-octaviaclient
 NEUTRON_LBAAS_DIR=$DEST/neutron-lbaas
 NEUTRON_LBAAS_CONF=$NEUTRON_CONF_DIR/neutron_lbaas.conf
 OCTAVIA_SERVICE_PROVIDER=${OCTAVIA_SERVICE_PROVIDER:-"LOADBALANCERV2:Octavia:neutron_lbaas.drivers.octavia.driver.OctaviaDriver:default"}
-Q_SVC=${Q_SVC:-"q-svc"}
-LBAAS_V2=${LBAAS_V2:-"q-lbaasv2"}
+NEUTRON_ANY=${NEUTRON_ANY:-"q-svc neutron-api"}
+LBAAS_V2=${LBAAS_V2:-"neutron-lbaasv2"}
 
 # HA-deployment related settings
 OCTAVIA_USE_PREGENERATED_SSH_KEY=${OCTAVIA_USE_PREGENERATED_SSH_KEY:-"False"}
