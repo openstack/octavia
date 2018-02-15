@@ -184,7 +184,8 @@ class BaseOS(object):
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            LOG.error('Failed to if up %s due to error: %s', interface, e)
+            LOG.error('Failed to ifup %s due to error: %s %s', interface, e,
+                      e.output)
             raise exceptions.HTTPException(
                 response=webob.Response(json=dict(
                     message='Error plugging {0}'.format(what),
@@ -197,8 +198,9 @@ class BaseOS(object):
             ns=consts.AMPHORA_NAMESPACE, params=interface))
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError:
-            pass
+        except subprocess.CalledProcessError as e:
+            LOG.info('Ignoring failure to ifdown %s due to error: %s %s',
+                     interface, e, e.output)
 
     def bring_interfaces_up(self, ip, primary_interface, secondary_interface):
         self._bring_if_down(primary_interface)

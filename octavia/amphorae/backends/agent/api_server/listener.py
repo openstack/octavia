@@ -141,7 +141,7 @@ class Listener(object):
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            LOG.error("Failed to verify haproxy file: %s", e)
+            LOG.error("Failed to verify haproxy file: %s %s", e, e.output)
             # Save the last config that failed validation for debugging
             os.rename(name, ''.join([name, '-failed']))
             return webob.Response(
@@ -226,8 +226,9 @@ class Listener(object):
                 subprocess.check_output(init_enable_cmd.split(),
                                         stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                LOG.error("Failed to enable haproxy-%(list)s service: %(err)s",
-                          {'list': listener_id, 'err': e})
+                LOG.error("Failed to enable haproxy-%(list)s service: "
+                          "%(err)s %(out)s", {'list': listener_id, 'err': e,
+                                              'out': e.output})
                 return webob.Response(json=dict(
                     message="Error enabling haproxy-{0} service".format(
                             listener_id), details=e.output), status=500)
@@ -267,8 +268,10 @@ class Listener(object):
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             if 'Job is already running' not in e.output:
-                LOG.debug("Failed to %(action)s HAProxy service: %(err)s",
-                          {'action': action, 'err': e})
+                LOG.debug(
+                    "Failed to %(action)s haproxy-%(list)s service: %(err)s "
+                    "%(out)s", {'action': action, 'list': listener_id,
+                                'err': e, 'out': e.output})
                 return webob.Response(json=dict(
                     message="Error {0}ing haproxy".format(action),
                     details=e.output), status=500)
@@ -300,7 +303,8 @@ class Listener(object):
             try:
                 subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                LOG.error("Failed to stop HAProxy service: %s", e)
+                LOG.error("Failed to stop haproxy-%s service: %s %s",
+                          listener_id, e, e.output)
                 return webob.Response(json=dict(
                     message="Error stopping haproxy",
                     details=e.output), status=500)
@@ -343,7 +347,8 @@ class Listener(object):
                                         stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to disable haproxy-%(list)s service: "
-                          "%(err)s", {'list': listener_id, 'err': e})
+                          "%(err)s %(out)s", {'list': listener_id, 'err': e,
+                                              'out': e.output})
                 return webob.Response(json=dict(
                     message="Error disabling haproxy-{0} service".format(
                             listener_id), details=e.output), status=500)
