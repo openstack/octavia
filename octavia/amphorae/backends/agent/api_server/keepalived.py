@@ -109,7 +109,7 @@ class Keepalived(object):
                                         stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
                 LOG.debug('Failed to enable octavia-keepalived service: '
-                          '%(err)s', {'err': e})
+                          '%(err)s %(output)s', {'err': e, 'output': e.output})
                 return webob.Response(json=dict(
                     message="Error enabling octavia-keepalived service",
                     details=e.output), status=500)
@@ -134,10 +134,11 @@ class Keepalived(object):
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            LOG.debug('Failed to %s keepalived service: %s', action, e)
+            LOG.debug('Failed to %s octavia-keepalived service: %s %s',
+                      action, e, e.output)
             return webob.Response(json=dict(
-                message="Failed to {0} keepalived service".format(action),
-                details=e.output), status=500)
+                message="Failed to {0} octavia-keepalived service".format(
+                    action), details=e.output), status=500)
 
         return webob.Response(
             json=dict(message='OK',
