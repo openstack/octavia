@@ -107,10 +107,10 @@ class OctaviaBase(models.ModelBase):
     def apply_filter(query, model, filters):
         translated_filters = {}
         child_map = {}
-        # Convert admin_state_up to proper type
-        if 'admin_state_up' in filters:
-            filters['admin_state_up'] = strutils.bool_from_string(
-                filters['admin_state_up'])
+        # Convert enabled to proper type
+        if 'enabled' in filters:
+            filters['enabled'] = strutils.bool_from_string(
+                filters['enabled'])
         for attr, name_map in model.__v2_wsme__._child_map.items():
             for k, v in name_map.items():
                 if v in filters:

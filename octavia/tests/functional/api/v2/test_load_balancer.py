@@ -1038,6 +1038,21 @@ class TestLoadBalancer(base.BaseAPITest):
             self.assertIn(u'project_id', lb.keys())
             self.assertNotIn(u'description', lb.keys())
 
+    def test_get_all_admin_state_up_filter(self):
+        self.create_load_balancer(uuidutils.generate_uuid(),
+                                  admin_state_up=True,
+                                  name='lb1',
+                                  project_id=self.project_id)
+        self.create_load_balancer(uuidutils.generate_uuid(),
+                                  admin_state_up=False,
+                                  name='lb2',
+                                  project_id=self.project_id)
+
+        lbs = self.get(self.LBS_PATH, params={'admin_state_up': 'false'}).json
+        self.assertEqual(1, len(lbs['loadbalancers']))
+        self.assertFalse(lbs['loadbalancers'][0]['admin_state_up'])
+        self.assertEqual('lb2', lbs['loadbalancers'][0]['name'])
+
     def test_get_all_filter(self):
         lb1 = self.create_load_balancer(
             uuidutils.generate_uuid(),
