@@ -59,9 +59,9 @@ class BaseController(rest.RestController):
         return converted
 
     @staticmethod
-    def _get_db_obj(session, repo, data_model, id):
+    def _get_db_obj(session, repo, data_model, id, show_deleted=True):
         """Gets an object from the database and returns it."""
-        db_obj = repo.get(session, id=id)
+        db_obj = repo.get(session, id=id, show_deleted=show_deleted)
         if not db_obj:
             LOG.exception('%(name)s %(id)s not found',
                           {'name': data_model._name(), 'id': id})
@@ -69,51 +69,66 @@ class BaseController(rest.RestController):
                 resource=data_model._name(), id=id)
         return db_obj
 
-    def _get_db_lb(self, session, id):
+    def _get_db_lb(self, session, id, show_deleted=True):
         """Get a load balancer from the database."""
         return self._get_db_obj(session, self.repositories.load_balancer,
-                                data_models.LoadBalancer, id)
+                                data_models.LoadBalancer, id,
+                                show_deleted=show_deleted)
 
-    def _get_db_listener(self, session, id):
+    def _get_db_listener(self, session, id, show_deleted=True):
         """Get a listener from the database."""
         return self._get_db_obj(session, self.repositories.listener,
-                                data_models.Listener, id)
+                                data_models.Listener, id,
+                                show_deleted=show_deleted)
 
-    def _get_db_pool(self, session, id):
+    def _get_db_pool(self, session, id, show_deleted=True):
         """Get a pool from the database."""
         return self._get_db_obj(session, self.repositories.pool,
-                                data_models.Pool, id)
+                                data_models.Pool, id,
+                                show_deleted=show_deleted)
 
-    def _get_db_member(self, session, id):
+    def _get_db_member(self, session, id, show_deleted=True):
         """Get a member from the database."""
         return self._get_db_obj(session, self.repositories.member,
-                                data_models.Member, id)
+                                data_models.Member, id,
+                                show_deleted=show_deleted)
 
-    def _get_db_l7policy(self, session, id):
+    def _get_db_hm(self, session, id, show_deleted=True):
+        """Get a health monitor from the database."""
+        return self._get_db_obj(session, self.repositories.health_monitor,
+                                data_models.HealthMonitor, id,
+                                show_deleted=show_deleted)
+
+    def _get_db_l7policy(self, session, id, show_deleted=True):
         """Get a L7 Policy from the database."""
         return self._get_db_obj(session, self.repositories.l7policy,
-                                data_models.L7Policy, id)
+                                data_models.L7Policy, id,
+                                show_deleted=show_deleted)
 
-    def _get_db_l7rule(self, session, id):
+    def _get_db_l7rule(self, session, id, show_deleted=True):
         """Get a L7 Rule from the database."""
         return self._get_db_obj(session, self.repositories.l7rule,
-                                data_models.L7Rule, id)
+                                data_models.L7Rule, id,
+                                show_deleted=show_deleted)
 
-    def _get_db_amp(self, session, id):
+    def _get_db_amp(self, session, id, show_deleted=True):
         """Gets an Amphora from the database."""
         return self._get_db_obj(session, self.repositories.amphora,
-                                data_models.Amphora, id)
+                                data_models.Amphora, id,
+                                show_deleted=show_deleted)
 
-    def _get_lb_project_id(self, session, id):
+    def _get_lb_project_id(self, session, id, show_deleted=True):
         """Get the project_id of the load balancer from the database."""
         lb = self._get_db_obj(session, self.repositories.load_balancer,
-                              data_models.LoadBalancer, id)
+                              data_models.LoadBalancer, id,
+                              show_deleted=show_deleted)
         return lb.project_id
 
-    def _get_l7policy_project_id(self, session, id):
+    def _get_l7policy_project_id(self, session, id, show_deleted=True):
         """Get the project_id of the load balancer from the database."""
         l7policy = self._get_db_obj(session, self.repositories.l7policy,
-                                    data_models.LoadBalancer, id)
+                                    data_models.LoadBalancer, id,
+                                    show_deleted=show_deleted)
         return l7policy.project_id
 
     def _get_default_quotas(self, project_id):

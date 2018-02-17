@@ -126,19 +126,15 @@ class TestHealthMonitor(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
-    def test_get_hides_deleted(self):
+    def test_get_deleted_gives_404(self):
         api_hm = self.create_health_monitor(
             self.pool_id, constants.HEALTH_MONITOR_HTTP,
             1, 1, 1, 1).get(self.root_tag)
 
-        response = self.get(self.HMS_PATH)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 1)
         self.set_object_status(self.health_monitor_repo, api_hm.get('id'),
                                provisioning_status=constants.DELETED)
-        response = self.get(self.HMS_PATH)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 0)
+        self.get(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+                 status=404)
 
     def test_bad_get(self):
         self.get(self.HM_PATH.format(
@@ -322,6 +318,20 @@ class TestHealthMonitor(base.BaseAPITest):
         self.assertIn((hm1.get('id'), hm1.get('type')), hm_id_protocols)
         self.assertIn((hm2.get('id'), hm2.get('type')), hm_id_protocols)
         self.assertIn((hm3.get('id'), hm3.get('type')), hm_id_protocols)
+
+    def test_get_all_hides_deleted(self):
+        api_hm = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1).get(self.root_tag)
+
+        response = self.get(self.HMS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.health_monitor_repo, api_hm.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.HMS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
 
     def test_get_by_project_id(self):
         project1_id = uuidutils.generate_uuid()
@@ -1035,6 +1045,15 @@ class TestHealthMonitor(base.BaseAPITest):
         self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
                  body=self._build_body(new_hm), status=409)
 
+    def test_update_already_deleted(self):
+        api_hm = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1).get(self.root_tag)
+        # This updates the child objects
+        self.set_lb_status(self.lb_id, status=constants.DELETED)
+        self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+                 body=self._build_body({'max_retries': 2}), status=404)
+
     def test_delete_when_lb_pending_delete(self):
         api_hm = self.create_health_monitor(
             self.pool_id, constants.HEALTH_MONITOR_HTTP,
@@ -1052,4 +1071,4 @@ class TestHealthMonitor(base.BaseAPITest):
         # This updates the child objects
         self.set_lb_status(self.lb_id, status=constants.DELETED)
         self.delete(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
-                    status=204)
+                    status=404)

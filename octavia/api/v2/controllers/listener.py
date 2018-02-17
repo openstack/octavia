@@ -50,24 +50,16 @@ class ListenersController(base.BaseController):
             invoke_on_load=True,
         ).driver
 
-    def _get_db_listener(self, session, id):
-        """Gets a listener object from the database."""
-        listener = super(ListenersController, self)._get_db_listener(
-            session, id)
-        load_balancer_id = listener.load_balancer_id
-        db_listener = self.repositories.listener.get(
-            session, load_balancer_id=load_balancer_id, id=id)
-        if not db_listener:
-            LOG.info("Listener %s not found.", id)
-            raise exceptions.NotFound(
-                resource=data_models.Listener._name(), id=id)
-        return db_listener
-
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text)
     def get_one(self, id):
         """Gets a single listener's details."""
         context = pecan.request.context.get('octavia_context')
-        db_listener = self._get_db_listener(context.session, id)
+        db_listener = self._get_db_listener(context.session, id,
+                                            show_deleted=False)
+
+        if not db_listener:
+            raise exceptions.NotFound(resource=data_models.Listener._name(),
+                                      id=id)
 
         self._auth_validate_action(context, db_listener.project_id,
                                    constants.RBAC_GET_ONE)
@@ -288,7 +280,8 @@ class ListenersController(base.BaseController):
         """Updates a listener on a load balancer."""
         listener = listener_.listener
         context = pecan.request.context.get('octavia_context')
-        db_listener = self._get_db_listener(context.session, id)
+        db_listener = self._get_db_listener(context.session, id,
+                                            show_deleted=False)
         load_balancer_id = db_listener.load_balancer_id
 
         self._auth_validate_action(context, db_listener.project_id,
@@ -333,14 +326,12 @@ class ListenersController(base.BaseController):
     def delete(self, id):
         """Deletes a listener from a load balancer."""
         context = pecan.request.context.get('octavia_context')
-        db_listener = self._get_db_listener(context.session, id)
+        db_listener = self._get_db_listener(context.session, id,
+                                            show_deleted=False)
         load_balancer_id = db_listener.load_balancer_id
 
         self._auth_validate_action(context, db_listener.project_id,
                                    constants.RBAC_DELETE)
-
-        if db_listener.provisioning_status == constants.DELETED:
-            return
 
         self._test_lb_and_listener_statuses(
             context.session, load_balancer_id,
@@ -382,7 +373,8 @@ class StatisticsController(base.BaseController, stats.StatsMixin):
                          status_code=200)
     def get(self):
         context = pecan.request.context.get('octavia_context')
-        db_listener = self._get_db_listener(context.session, self.id)
+        db_listener = self._get_db_listener(context.session, self.id,
+                                            show_deleted=False)
         if not db_listener:
             LOG.info("Listener %s not found.", id)
             raise exceptions.NotFound(

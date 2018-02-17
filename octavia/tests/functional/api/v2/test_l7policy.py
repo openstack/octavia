@@ -102,19 +102,15 @@ class TestL7Policy(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
-    def test_get_hides_deleted(self):
+    def test_get_deleted_gives_404(self):
         api_l7policy = self.create_l7policy(
             self.listener_id,
             constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
 
-        response = self.get(self.L7POLICIES_PATH)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 1)
         self.set_object_status(self.l7policy_repo, api_l7policy.get('id'),
                                provisioning_status=constants.DELETED)
-        response = self.get(self.L7POLICIES_PATH)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 0)
+        self.get(self.L7POLICY_PATH.format(l7policy_id=api_l7policy.get('id')),
+                 status=404)
 
     def test_bad_get(self):
         self.get(self.L7POLICY_PATH.format(
@@ -298,6 +294,20 @@ class TestL7Policy(base.BaseAPITest):
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, policies)
+
+    def test_get_all_hides_deleted(self):
+        api_l7policy = self.create_l7policy(
+            self.listener_id,
+            constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
+
+        response = self.get(self.L7POLICIES_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.l7policy_repo, api_l7policy.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.L7POLICIES_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
 
     def test_get_by_project_id(self):
         project1_id = uuidutils.generate_uuid()
@@ -1007,6 +1017,18 @@ class TestL7Policy(base.BaseAPITest):
                     l7policy_id=l7policy.get('id')),
                     status=409)
 
+    def test_update_already_deleted(self):
+        l7policy = self.create_l7policy(self.listener_id,
+                                        constants.L7POLICY_ACTION_REJECT,
+                                        ).get(self.root_tag)
+        # This updates the child objects
+        self.set_lb_status(self.lb_id, status=constants.DELETED)
+        new_l7policy = {
+            'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            'redirect_url': 'http://www.example.com'}
+        self.put(self.L7POLICY_PATH.format(l7policy_id=l7policy.get('id')),
+                 body=self._build_body(new_l7policy), status=404)
+
     def test_delete_already_deleted(self):
         l7policy = self.create_l7policy(self.listener_id,
                                         constants.L7POLICY_ACTION_REJECT,
@@ -1015,4 +1037,4 @@ class TestL7Policy(base.BaseAPITest):
         self.set_lb_status(self.lb_id, status=constants.DELETED)
         self.delete(self.L7POLICY_PATH.format(
                     l7policy_id=l7policy.get('id')),
-                    status=204)
+                    status=404)

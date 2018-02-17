@@ -42,7 +42,7 @@ class AmphoraController(base.BaseController):
     def get_one(self, id):
         """Gets a single amphora's details."""
         context = pecan.request.context.get('octavia_context')
-        db_amp = self._get_db_amp(context.session, id)
+        db_amp = self._get_db_amp(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ONE)
@@ -98,7 +98,8 @@ class FailoverController(base.BaseController):
         """Fails over an amphora"""
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
-        db_amp = self._get_db_amp(context.session, self.amp_id)
+        db_amp = self._get_db_amp(context.session, self.amp_id,
+                                  show_deleted=False)
 
         self._auth_validate_action(
             context, db_amp.load_balancer.project_id,

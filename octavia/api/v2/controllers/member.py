@@ -46,7 +46,8 @@ class MemberController(base.BaseController):
     def get(self, id):
         """Gets a single pool member's details."""
         context = pecan.request.context.get('octavia_context')
-        db_member = self._get_db_member(context.session, id)
+        db_member = self._get_db_member(context.session, id,
+                                        show_deleted=False)
 
         self._auth_validate_action(context, db_member.project_id,
                                    constants.RBAC_GET_ONE)
@@ -62,7 +63,8 @@ class MemberController(base.BaseController):
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
 
-        pool = self._get_db_pool(context.session, self.pool_id)
+        pool = self._get_db_pool(context.session, self.pool_id,
+                                 show_deleted=False)
 
         self._auth_validate_action(context, pool.project_id,
                                    constants.RBAC_GET_ALL)
@@ -210,7 +212,8 @@ class MemberController(base.BaseController):
         """Updates a pool member."""
         member = member_.member
         context = pecan.request.context.get('octavia_context')
-        db_member = self._get_db_member(context.session, id)
+        db_member = self._get_db_member(context.session, id,
+                                        show_deleted=False)
 
         self._auth_validate_action(context, db_member.project_id,
                                    constants.RBAC_PUT)
@@ -242,13 +245,11 @@ class MemberController(base.BaseController):
     def delete(self, id):
         """Deletes a pool member."""
         context = pecan.request.context.get('octavia_context')
-        db_member = self._get_db_member(context.session, id)
+        db_member = self._get_db_member(context.session, id,
+                                        show_deleted=False)
 
         self._auth_validate_action(context, db_member.project_id,
                                    constants.RBAC_DELETE)
-
-        if db_member.provisioning_status == constants.DELETED:
-            return
 
         self._test_lb_and_listener_and_pool_statuses(context.session,
                                                      member=db_member)

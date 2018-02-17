@@ -50,7 +50,7 @@ class PoolsController(base.BaseController):
     def get(self, id):
         """Gets a pool's details."""
         context = pecan.request.context.get('octavia_context')
-        db_pool = self._get_db_pool(context.session, id)
+        db_pool = self._get_db_pool(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, db_pool.project_id,
                                    constants.RBAC_GET_ONE)
@@ -253,7 +253,7 @@ class PoolsController(base.BaseController):
         """Updates a pool on a load balancer."""
         pool = pool_.pool
         context = pecan.request.context.get('octavia_context')
-        db_pool = self._get_db_pool(context.session, id)
+        db_pool = self._get_db_pool(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, db_pool.project_id,
                                    constants.RBAC_PUT)
@@ -290,16 +290,13 @@ class PoolsController(base.BaseController):
     def delete(self, id):
         """Deletes a pool from a load balancer."""
         context = pecan.request.context.get('octavia_context')
-        db_pool = self._get_db_pool(context.session, id)
+        db_pool = self._get_db_pool(context.session, id, show_deleted=False)
         if len(db_pool.l7policies) > 0:
             raise exceptions.PoolInUseByL7Policy(
                 id=db_pool.id, l7policy_id=db_pool.l7policies[0].id)
 
         self._auth_validate_action(context, db_pool.project_id,
                                    constants.RBAC_DELETE)
-
-        if db_pool.provisioning_status == constants.DELETED:
-            return
 
         self._test_lb_and_listener_statuses(
             context.session, lb_id=db_pool.load_balancer_id,

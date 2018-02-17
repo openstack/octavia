@@ -100,9 +100,22 @@ class BaseRepository(object):
         :param filters: Filters to decide which entity should be retrieved.
         :returns: octavia.common.data_model
         """
-        model = session.query(self.model_class).filter_by(**filters).first()
+        deleted = filters.pop('show_deleted', True)
+        model = session.query(self.model_class).filter_by(**filters)
+
+        if not deleted:
+            if hasattr(self.model_class, 'status'):
+                model = model.filter(
+                    self.model_class.status != consts.DELETED)
+            else:
+                model = model.filter(
+                    self.model_class.provisioning_status != consts.DELETED)
+
+        model = model.first()
+
         if not model:
             return
+
         return model.to_data_model()
 
     def get_all(self, session, pagination_helper=None, **filters):

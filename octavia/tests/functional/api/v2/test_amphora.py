@@ -103,6 +103,13 @@ class TestAmphora(base.BaseAPITest):
             [mock.call(self.amp)]
         )
 
+    def test_failover_deleted(self):
+        new_amp = self._create_additional_amp()
+        self.amphora_repo.update(self.session, new_amp.id,
+                                 status=constants.DELETED)
+        self.put(self.AMPHORA_FAILOVER_PATH.format(
+            amphora_id=new_amp.id), body={}, status=404)
+
     def test_failover_bad_amp_id(self):
         self.put(self.AMPHORA_FAILOVER_PATH.format(
             amphora_id='asdf'), body={}, status=404)
@@ -149,17 +156,12 @@ class TestAmphora(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
-    def test_get_hides_deleted(self):
+    def test_get_deleted_gives_404(self):
         new_amp = self._create_additional_amp()
 
-        response = self.get(self.AMPHORAE_PATH)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 2)
         self.amphora_repo.update(self.session, new_amp.id,
                                  status=constants.DELETED)
-        response = self.get(self.AMPHORAE_PATH)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 1)
+        self.get(self.AMPHORA_PATH.format(amphora_id=new_amp.id), status=404)
 
     def test_bad_get(self):
         self.get(self.AMPHORA_PATH.format(
@@ -209,6 +211,18 @@ class TestAmphora(base.BaseAPITest):
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, amps)
+
+    def test_get_all_hides_deleted(self):
+        new_amp = self._create_additional_amp()
+
+        response = self.get(self.AMPHORAE_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 2)
+        self.amphora_repo.update(self.session, new_amp.id,
+                                 status=constants.DELETED)
+        response = self.get(self.AMPHORAE_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
 
     def test_get_by_loadbalancer_id(self):
         amps = self.get(

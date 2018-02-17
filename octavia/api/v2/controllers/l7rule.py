@@ -45,7 +45,8 @@ class L7RuleController(base.BaseController):
     def get(self, id):
         """Gets a single l7rule's details."""
         context = pecan.request.context.get('octavia_context')
-        db_l7rule = self._get_db_l7rule(context.session, id)
+        db_l7rule = self._get_db_l7rule(context.session, id,
+                                        show_deleted=False)
 
         self._auth_validate_action(context, db_l7rule.project_id,
                                    constants.RBAC_GET_ONE)
@@ -61,7 +62,8 @@ class L7RuleController(base.BaseController):
         pcontext = pecan.request.context
         context = pcontext.get('octavia_context')
 
-        l7policy = self._get_db_l7policy(context.session, self.l7policy_id)
+        l7policy = self._get_db_l7policy(context.session, self.l7policy_id,
+                                         show_deleted=False)
 
         self._auth_validate_action(context, l7policy.project_id,
                                    constants.RBAC_GET_ALL)
@@ -190,7 +192,8 @@ class L7RuleController(base.BaseController):
         """Updates a l7rule."""
         l7rule = l7rule_.rule
         context = pecan.request.context.get('octavia_context')
-        db_l7rule = self._get_db_l7rule(context.session, id)
+        db_l7rule = self._get_db_l7rule(context.session, id,
+                                        show_deleted=False)
         new_l7rule = db_l7rule.to_dict()
         new_l7rule.update(l7rule.to_dict())
         new_l7rule = data_models.L7Rule.from_dict(new_l7rule)
@@ -228,7 +231,8 @@ class L7RuleController(base.BaseController):
     def delete(self, id):
         """Deletes a l7rule."""
         context = pecan.request.context.get('octavia_context')
-        db_l7rule = self._get_db_l7rule(context.session, id)
+        db_l7rule = self._get_db_l7rule(context.session, id,
+                                        show_deleted=False)
 
         self._auth_validate_action(context, db_l7rule.project_id,
                                    constants.RBAC_DELETE)

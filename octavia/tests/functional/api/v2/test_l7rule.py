@@ -101,20 +101,16 @@ class TestL7Rule(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response)
 
-    def test_get_hides_deleted(self):
+    def test_get_deleted_gives_404(self):
         api_l7rule = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,
             constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
             '/api').get(self.root_tag)
 
-        response = self.get(self.l7rules_path)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 1)
         self.set_object_status(self.l7rule_repo, api_l7rule.get('id'),
                                provisioning_status=constants.DELETED)
-        response = self.get(self.l7rules_path)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 0)
+        self.get(self.l7rule_path.format(l7rule_id=api_l7rule.get('id')),
+                 status=404)
 
     def test_get_bad_parent_policy(self):
         bad_path = (self.L7RULES_PATH.format(
@@ -343,6 +339,21 @@ class TestL7Rule(base.BaseAPITest):
         response = self.get(self.l7rules_path).json.get(self.root_tag_list)
         self.assertIsInstance(response, list)
         self.assertEqual(0, len(response))
+
+    def test_get_all_hides_deleted(self):
+        api_l7rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+
+        response = self.get(self.l7rules_path)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.l7rule_repo, api_l7rule.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.l7rules_path)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
 
     def test_create_host_name_rule(self):
         api_l7rule = self.create_l7rule(
@@ -907,6 +918,21 @@ class TestL7Rule(base.BaseAPITest):
         self.delete(self.l7rule_path.format(l7rule_id=l7rule.get('id')),
                     status=409)
 
+    def test_update_already_deleted(self):
+        l7rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        # This updates the child objects
+        self.set_lb_status(self.lb_id, status=constants.DELETED)
+        new_l7rule = {'type': constants.L7RULE_TYPE_COOKIE,
+                      'compare_type':
+                          constants.L7RULE_COMPARE_TYPE_ENDS_WITH,
+                      'value': 'some-string',
+                      'key': 'some-cookie'}
+        self.put(self.l7rule_path.format(l7rule_id=l7rule.get('id')),
+                 body=self._build_body(new_l7rule), status=404)
+
     def test_delete_already_deleted(self):
         l7rule = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,
@@ -915,4 +941,4 @@ class TestL7Rule(base.BaseAPITest):
         # This updates the child objects
         self.set_lb_status(self.lb_id, status=constants.DELETED)
         self.delete(self.l7rule_path.format(l7rule_id=l7rule.get('id')),
-                    status=204)
+                    status=404)
