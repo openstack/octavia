@@ -153,8 +153,8 @@ healthmanager_opts = [
                default=10,
                help=_('Number of threads performing amphora failovers.')),
     cfg.IntOpt('status_update_threads',
-               default=50,
-               help=_('Number of threads performing amphora status update.')),
+               default=None,
+               help=_('Number of processes for amphora status update.')),
     cfg.StrOpt('heartbeat_key',
                help=_('key used to validate amphora sending'
                       'the message'), secret=True),
@@ -177,6 +177,14 @@ healthmanager_opts = [
     cfg.IntOpt('heartbeat_interval',
                default=10,
                help=_('Sleep time between sending heartbeats.')),
+
+    # Used for updating health and stats
+    cfg.StrOpt('health_update_driver', default='health_db',
+               help=_('Driver for updating amphora health system.')),
+    cfg.StrOpt('stats_update_driver', default='stats_db',
+               help=_('Driver for updating amphora statistics.')),
+
+    # Used for synchronizing neutron-lbaas and octavia
     cfg.StrOpt('event_streamer_driver',
                help=_('Specifies which driver to use for the event_streamer '
                       'for syncing the octavia and neutron_lbaas dbs. If you '
