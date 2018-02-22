@@ -44,12 +44,29 @@ class TestNoopNetworkDriver(base.TestCase):
 
         self.vip = models.Vip()
         self.vip.ip_address = "10.0.0.1"
+        self.vip.subnet_id = uuidutils.generate_uuid()
+        self.vip.port_id = uuidutils.generate_uuid()
         self.amphora_id = self.FAKE_UUID_1
         self.compute_id = self.FAKE_UUID_2
         self.subnet_id = self.FAKE_UUID_3
         self.subnet_name = 'subnet1'
         self.qos_policy_id = self.FAKE_UUID_5
         self.vrrp_port_id = self.FAKE_UUID_6
+
+        self.amphora1 = models.Amphora()
+        self.amphora1.id = uuidutils.generate_uuid()
+        self.amphora1.vrrp_port_id = uuidutils.generate_uuid()
+        self.amphora1.ha_port_id = uuidutils.generate_uuid()
+        self.amphora1.vrrp_ip = '10.0.1.10'
+        self.amphora1.ha_ip = '10.0.1.11'
+        self.amphora2 = models.Amphora()
+        self.amphora2.id = uuidutils.generate_uuid()
+        self.amphora2.vrrp_port_id = uuidutils.generate_uuid()
+        self.amphora2.ha_port_id = uuidutils.generate_uuid()
+        self.amphora2.vrrp_ip = '10.0.2.10'
+        self.amphora2.ha_ip = '10.0.2.11'
+        self.load_balancer.amphorae = [self.amphora1, self.amphora2]
+        self.load_balancer.vip = self.vip
 
     def test_allocate_vip(self):
         self.driver.allocate_vip(self.load_balancer)
@@ -169,11 +186,14 @@ class TestNoopNetworkDriver(base.TestCase):
         )
 
     def test_get_network_configs(self):
-        self.driver.get_network_configs(self.load_balancer)
+        amp_config = self.driver.get_network_configs(self.load_balancer)
         self.assertEqual(
             (self.load_balancer, 'get_network_configs'),
             self.driver.driver.networkconfigconfig[self.load_balancer.id]
         )
+        self.assertEqual(2, len(amp_config))
+        self.assertEqual(self.amphora1, amp_config[self.amphora1.id].amphora)
+        self.assertEqual(self.amphora2, amp_config[self.amphora2.id].amphora)
 
     def test_get_qos_policy(self):
         self.driver.get_qos_policy(self.qos_policy_id)
