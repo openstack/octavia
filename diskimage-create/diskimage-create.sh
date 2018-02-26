@@ -128,7 +128,7 @@ while getopts "a:b:c:d:ehi:no:pt:r:s:vw:x" opt; do
             AMP_OUTPUTFILENAME=$(readlink -f $OPTARG)
         ;;
         p)
-            export DIB_INSTALLTYPE_amphora_agent=package
+            AMP_PACKAGE_INSTALL=1
         ;;
         r)
             AMP_ROOTPW=$OPTARG
@@ -190,6 +190,8 @@ AMP_IMAGETYPE=${AMP_IMAGETYPE:-"qcow2"}
 AMP_IMAGESIZE=${AMP_IMAGESIZE:-2}
 
 AMP_DISABLE_SSHD=${AMP_DISABLE_SSHD:-0}
+
+AMP_PACKAGE_INSTALL=${AMP_PACKAGE_INSTALL:-0}
 
 AMP_ENABLE_FULL_MAC_SECURITY=${AMP_ENABLE_FULL_MAC_SECURITY:-0}
 
@@ -318,6 +320,12 @@ else
     AMP_element_sequence="$AMP_element_sequence ${AMP_BASEOS}"
 fi
 
+if [ "$AMP_PACKAGE_INSTALL" -eq 1 ]; then
+    export DIB_INSTALLTYPE_amphora_agent=package
+else
+    # We will need pip for amphora-agent
+    AMP_element_sequence="$AMP_element_sequence pip-and-virtualenv"
+fi
 # Add our backend element (haproxy, etc.)
 AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
 
