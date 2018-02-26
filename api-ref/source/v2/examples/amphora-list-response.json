@@ -16,7 +16,9 @@
             "vrrp_interface": "eth1",
             "vrrp_id": 1,
             "vrrp_priority": 100,
-            "cached_zone": "zone1"
+            "cached_zone": "zone1",
+            "created_at": "2017-05-10T18:14:44",
+            "updated_at": "2017-05-10T23:08:12"
         },
         {
             "id": "89c186a3-cb16-497b-b099-c4bd40316642",
@@ -34,7 +36,9 @@
             "vrrp_interface": "eth1",
             "vrrp_id": 1,
             "vrrp_priority": 200,
-            "cached_zone": "zone2"
+            "cached_zone": "zone2",
+            "created_at": "2017-06-11T19:15:45",
+            "updated_at": "2017-06-11T24:09:13"
         }
     ]
 }

@@ -52,7 +52,9 @@ class TestAmphora(base.BaseAPITest):
             'vrrp_interface': 'eth1',
             'vrrp_id': 1,
             'vrrp_priority': 100,
-            'cached_zone': None
+            'cached_zone': None,
+            'created_at': datetime.datetime.now(),
+            'updated_at': datetime.datetime.now(),
         }
         self.amp = self.amphora_repo.create(self.session, **self.amp_args)
         self.amp_id = self.amp.id
@@ -82,6 +84,10 @@ class TestAmphora(base.BaseAPITest):
                          response.pop('loadbalancer_id'))
         self.assertEqual(source.pop('cert_expiration').isoformat(),
                          response.pop('cert_expiration'))
+        self.assertEqual(source.pop('created_at').isoformat(),
+                         response.pop('created_at'))
+        self.assertEqual(source.pop('updated_at').isoformat(),
+                         response.pop('updated_at'))
         self.assertEqual(source, response)
 
     def test_get(self):
