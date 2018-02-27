@@ -6,4 +6,12 @@ set -o xtrace
 
 if [ "$DISTRO_NAME" == "ubuntu" ] && [ "$DIB_RELEASE" == "trusty" ]; then
     echo deb http://archive.ubuntu.com/ubuntu trusty-backports main restricted universe multiverse > /etc/apt/sources.list.d/backports.list
+elif [ "$DISTRO_NAME" == "centos7" ]; then
+    cat > /etc/yum.repos.d/CentOS-PaaS.repo <<EOF
+[paas]
+name=CentOS-7 - PaaS
+baseurl=http://mirror.centos.org/centos/7/paas/\$basearch/openshift-origin/
+gpgcheck=0
+enabled=1
+EOF
 fi

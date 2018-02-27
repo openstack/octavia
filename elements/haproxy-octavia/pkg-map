@@ -9,6 +9,9 @@
     "distro": {
         "ubuntu": {
             "haproxy": "haproxy"
+        },
+        "centos7": {
+            "haproxy": "haproxy18"
         }
     },
     "family": {
