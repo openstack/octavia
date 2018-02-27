@@ -423,6 +423,12 @@ id:
   in: body
   required: true
   type: uuid
+image-id:
+  description: |
+    The ID of the glance image used for the amphora.
+  in: body
+  required: true
+  type: uuid
 insert_headers:
   description: |
     A dictionary of optional headers to insert into the request before it is

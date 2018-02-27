@@ -42,6 +42,7 @@ class AmphoraResponse(BaseAmphoraType):
     cached_zone = wtypes.wsattr(wtypes.StringType())
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
+    image_id = wtypes.wsattr(wtypes.UuidType())
 
     @classmethod
     def from_data_model(cls, data_model, children=False):

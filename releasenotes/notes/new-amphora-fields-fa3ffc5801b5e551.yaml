@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Amphora API now returns the field `image_id` which is the ID of the glance
+    image used to boot the amphora.
