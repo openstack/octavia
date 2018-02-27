@@ -67,6 +67,8 @@ Response Parameters
    - vrrp_id: vrrp-id
    - vrrp_priority: vrrp-priority
    - cached_zone: cached-zone
+   - created_at: created_at
+   - updated_at: updated_at
 
 Response Example
 ----------------
@@ -138,6 +140,8 @@ Response Parameters
    - vrrp_id: vrrp-id
    - vrrp_priority: vrrp-priority
    - cached_zone: cached-zone
+   - created_at: created_at
+   - updated_at: updated_at
 
 Response Example
 ----------------

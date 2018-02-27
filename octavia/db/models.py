@@ -484,7 +484,7 @@ class SNI(base_models.BASE):
                                                     cascade="delete"))
 
 
-class Amphora(base_models.BASE, base_models.IdMixin):
+class Amphora(base_models.BASE, base_models.IdMixin, models.TimestampMixin):
 
     __data_model__ = data_models.Amphora
 
