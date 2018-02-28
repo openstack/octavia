@@ -17,6 +17,7 @@ import datetime
 
 from oslo_utils import uuidutils
 
+from octavia.common import constants
 from octavia.common import data_models
 import octavia.tests.unit.base as base
 
@@ -36,6 +37,9 @@ class TestDataModels(base.TestCase):
         self.VIP_PORT_ID = uuidutils.generate_uuid()
         self.VIP_QOS_ID = uuidutils.generate_uuid()
         self.POOL_ID = uuidutils.generate_uuid()
+        self.AMP_ID = uuidutils.generate_uuid()
+        self.COMPUTE_ID = uuidutils.generate_uuid()
+        self.IMAGE_ID = uuidutils.generate_uuid()
 
         self.LB_obj = data_models.LoadBalancer(
             id=self.LB_ID,
@@ -88,6 +92,29 @@ class TestDataModels(base.TestCase):
             type='adhesive',
             cookie_name='chocolate',
             pool=None)
+
+        self.AMP_obj = data_models.Amphora(
+            id=self.AMP_ID,
+            load_balancer_id=self.LB_ID,
+            compute_id=self.COMPUTE_ID,
+            status=constants.ACTIVE,
+            lb_network_ip=None,
+            vrrp_ip=None,
+            ha_ip=None,
+            vrrp_port_id=None,
+            ha_port_id=self.VIP_PORT_ID,
+            load_balancer=self.LB_obj,
+            role=constants.ROLE_MASTER,
+            cert_expiration=None,
+            cert_busy=False,
+            vrrp_interface=None,
+            vrrp_id=None,
+            vrrp_priority=constants.ROLE_MASTER_PRIORITY,
+            cached_zone=None,
+            created_at=self.CREATED_AT,
+            updated_at=self.UPDATED_AT,
+            image_id=self.IMAGE_ID
+        )
 
         super(TestDataModels, self).setUp()
 
@@ -336,3 +363,52 @@ class TestDataModels(base.TestCase):
         test_Pool_obj.update(update_dict)
 
         self.assertEqual(reference_SP_obj, test_Pool_obj.session_persistence)
+
+    def test_Amphora_update(self):
+
+        new_id = uuidutils.generate_uuid()
+        new_status = constants.ERROR
+        new_role = constants.ROLE_BACKUP
+        new_vrrp_priority = constants.ROLE_BACKUP_PRIORITY
+        new_created_at = self.CREATED_AT + datetime.timedelta(minutes=5)
+        new_updated_at = self.UPDATED_AT + datetime.timedelta(minutes=10)
+        new_image_id = uuidutils.generate_uuid()
+
+        update_dict = {
+            'id': new_id,
+            'status': new_status,
+            'role': new_role,
+            'vrrp_priority': new_vrrp_priority,
+            'created_at': new_created_at,
+            'updated_at': new_updated_at,
+            'image_id': new_image_id
+        }
+
+        test_Amp_obj = copy.deepcopy(self.AMP_obj)
+
+        reference_Amp_obj = data_models.Amphora(
+            id=new_id,
+            load_balancer_id=self.LB_ID,
+            compute_id=self.COMPUTE_ID,
+            status=new_status,
+            lb_network_ip=None,
+            vrrp_ip=None,
+            ha_ip=None,
+            vrrp_port_id=None,
+            ha_port_id=self.VIP_PORT_ID,
+            load_balancer=self.LB_obj,
+            role=new_role,
+            cert_expiration=None,
+            cert_busy=False,
+            vrrp_interface=None,
+            vrrp_id=None,
+            vrrp_priority=constants.ROLE_BACKUP_PRIORITY,
+            cached_zone=None,
+            created_at=new_created_at,
+            updated_at=new_updated_at,
+            image_id=new_image_id
+        )
+
+        test_Amp_obj.update(update_dict)
+
+        self.assertEqual(reference_Amp_obj, test_Amp_obj)

@@ -49,6 +49,8 @@ HA_IP = '192.0.5.4'
 AMP_ROLE = 'FAKE_ROLE'
 VRRP_ID = random.randrange(255)
 VRRP_PRIORITY = random.randrange(100)
+CACHED_ZONE = 'zone1'
+IMAGE_ID = uuidutils.generate_uuid()
 
 _amphora_mock = mock.MagicMock()
 _amphora_mock.id = AMP_ID
@@ -116,6 +118,10 @@ zfJ3Bo+P7In9fsHbyDAqIhMwDQYJKoZIhvcNAQELBQADQQBenkZ2k7RgZqgj+dxA
 D7BF8MN1oUAOpyYqAjkGddSEuMyNmwtHKZI1dyQ0gBIQdiU9yAG2oTbUIK4msbBV
 uJIQ
 -----END CERTIFICATE-----"""
+_compute_mock = mock.MagicMock()
+_compute_mock.lb_network_ip = LB_NET_IP
+_compute_mock.cached_zone = CACHED_ZONE
+_compute_mock.image_id = IMAGE_ID
 
 
 @mock.patch('octavia.db.repositories.AmphoraRepository.delete')
@@ -861,6 +867,31 @@ class TestDatabaseTasks(base.TestCase):
             status=constants.ERROR,
             compute_id=COMPUTE_ID,
             lb_network_ip=LB_NET_IP)
+
+    @mock.patch('octavia.db.repositories.AmphoraRepository.get')
+    def test_update_amphora_info(self,
+                                 mock_amphora_repo_get,
+                                 mock_generate_uuid,
+                                 mock_LOG,
+                                 mock_get_session,
+                                 mock_loadbalancer_repo_update,
+                                 mock_listener_repo_update,
+                                 mock_amphora_repo_update,
+                                 mock_amphora_repo_delete):
+
+        update_amphora_info = database_tasks.UpdateAmphoraInfo()
+        update_amphora_info.execute(AMP_ID, _compute_mock)
+
+        repo.AmphoraRepository.update.assert_called_once_with(
+            'TEST',
+            AMP_ID,
+            lb_network_ip=LB_NET_IP,
+            cached_zone=CACHED_ZONE,
+            image_id=IMAGE_ID)
+
+        repo.AmphoraRepository.get.assert_called_once_with(
+            'TEST',
+            id=AMP_ID)
 
     def test_mark_listener_active_in_db(self,
                                         mock_generate_uuid,

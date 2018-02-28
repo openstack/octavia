@@ -69,6 +69,7 @@ Response Parameters
    - cached_zone: cached-zone
    - created_at: created_at
    - updated_at: updated_at
+   - image_id: image-id
 
 Response Example
 ----------------
@@ -142,6 +143,7 @@ Response Parameters
    - cached_zone: cached-zone
    - created_at: created_at
    - updated_at: updated_at
+   - image_id: image-id
 
 Response Example
 ----------------

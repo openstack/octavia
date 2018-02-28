@@ -876,7 +876,8 @@ class UpdateAmphoraInfo(BaseDatabaseTask):
         self.amphora_repo.update(
             db_apis.get_session(), amphora_id,
             lb_network_ip=compute_obj.lb_network_ip,
-            cached_zone=compute_obj.cached_zone)
+            cached_zone=compute_obj.cached_zone,
+            image_id=compute_obj.image_id)
         return self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
 
 
