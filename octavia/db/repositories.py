@@ -954,6 +954,33 @@ class AmphoraRepository(BaseRepository):
             data_model_list = [model.to_data_model() for model in lb_list]
             return data_model_list
 
+    def get_all_deleted_expiring_amphora(self, session, exp_age=None):
+
+        """Get all previously deleted amphora that are now expiring.
+
+        :param session: A Sql Alchemy database session.
+        :param exp_age: A standard datetime delta which is used to see for how
+                        long can an amphora live without updates before it is
+                        considered expired (default:
+                        CONF.house_keeping.amphora_expiry_age)
+        :returns: [octavia.common.data_model]
+        """
+        if not exp_age:
+            exp_age = datetime.timedelta(
+                seconds=CONF.house_keeping.amphora_expiry_age)
+
+        expiry_time = datetime.datetime.utcnow() - exp_age
+
+        query = session.query(self.model_class).filter_by(
+            status=consts.DELETED).filter(
+            self.model_class.updated_at < expiry_time)
+        # Only make one trip to the database
+        query = query.options(joinedload('*'))
+        model_list = query.all()
+
+        data_model_list = [model.to_data_model() for model in model_list]
+        return data_model_list
+
     def get_spare_amphora_count(self, session):
         """Get the count of the spare amphora.
 
@@ -1096,8 +1123,8 @@ class AmphoraHealthRepository(BaseRepository):
                 model_kwargs['amphora_id'] = amphora_id
                 self.create(session, **model_kwargs)
 
-    def check_amphora_expired(self, session, amphora_id, exp_age=None):
-        """check if a specific amphora is expired
+    def check_amphora_health_expired(self, session, amphora_id, exp_age=None):
+        """check if a specific amphora is expired in the amphora_health table
 
         :param session: A Sql Alchemy database session.
         :param amphora_id: id of an amphora object
@@ -1111,16 +1138,28 @@ class AmphoraHealthRepository(BaseRepository):
             exp_age = datetime.timedelta(
                 seconds=CONF.house_keeping.amphora_expiry_age)
 
-        timestamp = datetime.datetime.utcnow() - exp_age
-        amphora_health = self.get(session, amphora_id=amphora_id)
-        if amphora_health is not None:
-            return amphora_health.last_update < timestamp
-        else:
-            # Amphora was just destroyed.
-            return True
+        expiry_time = datetime.datetime.utcnow() - exp_age
+
+        amphora_model = (
+            session.query(models.AmphoraHealth)
+            .filter_by(amphora_id=amphora_id)
+            .filter(models.AmphoraHealth.last_update > expiry_time)
+        ).first()
+        # This will return a value if:
+        # * there is an entry in the table for this amphora_id
+        # AND
+        # * the entry was last updated more recently than our expiry_time
+        # Receiving any value means that the amp is unexpired.
+
+        # In contrast, we receive no value if:
+        # * there is no entry for this amphora_id
+        # OR
+        # * the entry was last updated before our expiry_time
+        # In this case, the amphora is expired.
+        return amphora_model is None
 
     def get_stale_amphora(self, session):
-        """Retrieves a staled amphora from the health manager database.
+        """Retrieves a stale amphora from the health manager database.
 
         :param session: A Sql Alchemy database session.
         :returns: [octavia.common.data_model]

@@ -33,7 +33,6 @@ class AmphoraIDToErrorOnRevertTask(BaseLifecycleTask):
 
     def revert(self, amphora_id, *args, **kwargs):
         self.task_utils.mark_amphora_status_error(amphora_id)
-        self.task_utils.unmark_amphora_health_busy(amphora_id)
 
 
 class AmphoraToErrorOnRevertTask(AmphoraIDToErrorOnRevertTask):

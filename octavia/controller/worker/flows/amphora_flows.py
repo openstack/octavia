@@ -290,7 +290,7 @@ class AmphoraFlows(object):
         return delete_amphora_flow
 
     def get_failover_flow(self, role=constants.ROLE_STANDALONE,
-                          status=constants.AMPHORA_READY):
+                          load_balancer_id=None):
         """Creates a flow to failover a stale amphora
 
         :returns: The flow for amphora failover
@@ -329,16 +329,16 @@ class AmphoraFlows(object):
         failover_amphora_flow.add(network_tasks.WaitForPortDetach(
             rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
             requires=constants.AMPHORA))
-        failover_amphora_flow.add(
-            database_tasks.DisableAmphoraHealthMonitoring(
-                rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
-                requires=constants.AMPHORA))
         failover_amphora_flow.add(database_tasks.MarkAmphoraDeletedInDB(
             rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
             requires=constants.AMPHORA))
 
         # If this is an unallocated amp (spares pool), we're done
-        if status != constants.AMPHORA_ALLOCATED:
+        if not load_balancer_id:
+            failover_amphora_flow.add(
+                database_tasks.DisableAmphoraHealthMonitoring(
+                    rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
+                    requires=constants.AMPHORA))
             return failover_amphora_flow
 
         # Save failed amphora details for later
@@ -413,6 +413,10 @@ class AmphoraFlows(object):
 
         failover_amphora_flow.add(amphora_driver_tasks.ListenersStart(
             requires=(constants.LOADBALANCER, constants.LISTENERS)))
+        failover_amphora_flow.add(
+            database_tasks.DisableAmphoraHealthMonitoring(
+                rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
+                requires=constants.AMPHORA))
 
         return failover_amphora_flow
 

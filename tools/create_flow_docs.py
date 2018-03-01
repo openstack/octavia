@@ -55,7 +55,7 @@ def generate(flow_list, output_directory):
                     current_tuple[2] == 'get_failover_flow'):
                 current_engine = engines.load(
                     get_flow_method(role=constants.ROLE_STANDALONE,
-                                    status=constants.AMPHORA_ALLOCATED))
+                                    load_balancer_id=None))
             elif (current_tuple[1] == 'LoadBalancerFlows' and
                   current_tuple[2] == 'get_create_load_balancer_flow'):
                 current_engine = engines.load(

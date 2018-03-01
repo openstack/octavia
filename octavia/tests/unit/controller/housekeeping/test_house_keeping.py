@@ -12,8 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import datetime
+
 import mock
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.common import constants
@@ -49,13 +52,14 @@ class TestSpareCheck(base.TestCase):
 
         self.spare_amp.amp_repo = self.amp_repo
         self.spare_amp.cw = self.cw
-        self.CONF = cfg.CONF
+        self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
     @mock.patch('octavia.db.api.get_session')
     def test_spare_check_diff_count(self, session):
         """When spare amphora count does not meet the requirement."""
         session.return_value = session
-        self.CONF.house_keeping.spare_amphora_pool_size = self.FAKE_CNF_SPAR1
+        self.CONF.config(group="house_keeping",
+                         spare_amphora_pool_size=self.FAKE_CNF_SPAR1)
         self.amp_repo.get_spare_amphora_count.return_value = (
             self.FAKE_CUR_SPAR1)
         self.spare_amp.spare_check()
@@ -68,7 +72,8 @@ class TestSpareCheck(base.TestCase):
     def test_spare_check_no_diff_count(self, session):
         """When spare amphora count meets the requirement."""
         session.return_value = session
-        self.CONF.house_keeping.spare_amphora_pool_size = self.FAKE_CNF_SPAR2
+        self.CONF.config(group="house_keeping",
+                         spare_amphora_pool_size=self.FAKE_CNF_SPAR2)
         self.amp_repo.get_spare_amphora_count.return_value = (
             self.FAKE_CUR_SPAR2)
         self.spare_amp.spare_check()
@@ -83,7 +88,7 @@ class TestDatabaseCleanup(base.TestCase):
     FAKE_IP = "10.0.0.1"
     FAKE_UUID_1 = uuidutils.generate_uuid()
     FAKE_UUID_2 = uuidutils.generate_uuid()
-    FAKE_EXP_AGE = 10
+    FAKE_EXP_AGE = 60
 
     def setUp(self):
         super(TestDatabaseCleanup, self).setUp()
@@ -95,48 +100,84 @@ class TestDatabaseCleanup(base.TestCase):
 
         self.dbclean.amp_repo = self.amp_repo
         self.dbclean.amp_health_repo = self.amp_health_repo
-        self.CONF = cfg.CONF
+        self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
     @mock.patch('octavia.db.api.get_session')
     def test_delete_old_amphorae_True(self, session):
         """When the deleted amphorae is expired."""
         session.return_value = session
-        self.CONF.house_keeping.amphora_expiry_age = self.FAKE_EXP_AGE
+        self.CONF.config(group="house_keeping",
+                         amphora_expiry_age=self.FAKE_EXP_AGE)
+        expired_time = datetime.datetime.utcnow() - datetime.timedelta(
+            seconds=self.FAKE_EXP_AGE + 1)
         amphora = self.amp.create(session, id=self.FAKE_UUID_1,
                                   compute_id=self.FAKE_UUID_2,
                                   status=constants.DELETED,
                                   lb_network_ip=self.FAKE_IP,
                                   vrrp_ip=self.FAKE_IP,
-                                  ha_ip=self.FAKE_IP)
-        self.amp_repo.get_all.return_value = ([amphora], None)
-        self.amp_health_repo.check_amphora_expired.return_value = True
+                                  ha_ip=self.FAKE_IP,
+                                  updated_at=expired_time)
+        self.amp_repo.get_all_deleted_expiring_amphora.return_value = [amphora]
+        self.amp_health_repo.check_amphora_health_expired.return_value = True
         self.dbclean.delete_old_amphorae()
-        self.assertTrue(self.amp_repo.get_all.called)
-        self.assertTrue(self.amp_health_repo.check_amphora_expired.called)
+        self.assertTrue(self.amp_repo.get_all_deleted_expiring_amphora.called)
+        self.assertTrue(
+            self.amp_health_repo.check_amphora_health_expired.called)
         self.assertTrue(self.amp_repo.delete.called)
 
     @mock.patch('octavia.db.api.get_session')
     def test_delete_old_amphorae_False(self, session):
         """When the deleted amphorae is not expired."""
         session.return_value = session
-        self.CONF.house_keeping.amphora_expiry_age = self.FAKE_EXP_AGE
+        self.CONF.config(group="house_keeping",
+                         amphora_expiry_age=self.FAKE_EXP_AGE)
+        self.amp.create(session, id=self.FAKE_UUID_1,
+                        compute_id=self.FAKE_UUID_2,
+                        status=constants.DELETED,
+                        lb_network_ip=self.FAKE_IP,
+                        vrrp_ip=self.FAKE_IP,
+                        ha_ip=self.FAKE_IP,
+                        updated_at=datetime.datetime.now())
+        self.amp_repo.get_all_deleted_expiring_amphora.return_value = []
+        self.dbclean.delete_old_amphorae()
+        self.assertTrue(self.amp_repo.get_all_deleted_expiring_amphora.called)
+        self.assertFalse(
+            self.amp_health_repo.check_amphora_health_expired.called)
+        self.assertFalse(self.amp_repo.delete.called)
+
+    @mock.patch('octavia.db.api.get_session')
+    def test_delete_old_amphorae_Zombie(self, session):
+        """When the deleted amphorae is expired but is a zombie!
+
+        This is when the amphora is expired in the amphora table, but in the
+        amphora_health table there are newer records, meaning the amp checked
+        in with the healthmanager *after* it was deleted (and craves brains).
+        """
+        session.return_value = session
+        self.CONF.config(group="house_keeping",
+                         amphora_expiry_age=self.FAKE_EXP_AGE)
+        expired_time = datetime.datetime.utcnow() - datetime.timedelta(
+            seconds=self.FAKE_EXP_AGE + 1)
         amphora = self.amp.create(session, id=self.FAKE_UUID_1,
                                   compute_id=self.FAKE_UUID_2,
                                   status=constants.DELETED,
                                   lb_network_ip=self.FAKE_IP,
                                   vrrp_ip=self.FAKE_IP,
-                                  ha_ip=self.FAKE_IP)
-        self.amp_repo.get_all.return_value = ([amphora], None)
-        self.amp_health_repo.check_amphora_expired.return_value = False
+                                  ha_ip=self.FAKE_IP,
+                                  updated_at=expired_time)
+        self.amp_repo.get_all_deleted_expiring_amphora.return_value = [amphora]
+        self.amp_health_repo.check_amphora_health_expired.return_value = False
         self.dbclean.delete_old_amphorae()
-        self.assertTrue(self.amp_repo.get_all.called)
-        self.assertTrue(self.amp_health_repo.check_amphora_expired.called)
+        self.assertTrue(self.amp_repo.get_all_deleted_expiring_amphora.called)
+        self.assertTrue(
+            self.amp_health_repo.check_amphora_health_expired.called)
         self.assertFalse(self.amp_repo.delete.called)
 
     @mock.patch('octavia.db.api.get_session')
     def test_delete_old_load_balancer(self, session):
         """Check delete of load balancers in DELETED provisioning status."""
-        self.CONF.house_keeping.load_balancer_expiry_age = self.FAKE_EXP_AGE
+        self.CONF.config(group="house_keeping",
+                         load_balancer_expiry_age=self.FAKE_EXP_AGE)
         session.return_value = session
         load_balancer = self.lb.create(session, id=self.FAKE_UUID_1,
                                        provisioning_status=constants.DELETED,

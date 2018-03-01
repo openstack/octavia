@@ -1155,9 +1155,9 @@ class TestControllerWorker(base.TestCase):
         mock_update.assert_called_with('TEST', LB_ID,
                                        provisioning_status=constants.ACTIVE)
 
-    @mock.patch('octavia.db.repositories.AmphoraHealthRepository.update')
+    @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
     def test_failover_deleted_amphora(self,
-                                      mock_update,
+                                      mock_delete,
                                       mock_api_get_session,
                                       mock_dyn_log_listener,
                                       mock_taskflow_load,
@@ -1178,7 +1178,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw._perform_amphora_failover(mock_amphora, 10)
 
-        mock_update.assert_called_with('TEST', AMP_ID, busy=True)
+        mock_delete.assert_called_with('TEST', amphora_id=AMP_ID)
         mock_taskflow_load.assert_not_called()
 
     @mock.patch('octavia.controller.worker.'

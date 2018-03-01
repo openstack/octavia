@@ -2946,17 +2946,20 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
 
-    def create_amphora(self, amphora_id):
-        expiration = datetime.datetime.utcnow()
-        amphora = self.amphora_repo.create(self.session, id=amphora_id,
-                                           compute_id=self.FAKE_UUID_3,
-                                           status=constants.ACTIVE,
-                                           lb_network_ip=self.FAKE_IP,
-                                           vrrp_ip=self.FAKE_IP,
-                                           ha_ip=self.FAKE_IP,
-                                           role=constants.ROLE_MASTER,
-                                           cert_expiration=expiration,
-                                           cert_busy=False)
+    def create_amphora(self, amphora_id, **overrides):
+        settings = {
+            'id': amphora_id,
+            'compute_id': self.FAKE_UUID_3,
+            'status': constants.ACTIVE,
+            'lb_network_ip': self.FAKE_IP,
+            'vrrp_ip': self.FAKE_IP,
+            'ha_ip': self.FAKE_IP,
+            'role': constants.ROLE_MASTER,
+            'cert_expiration': datetime.datetime.utcnow(),
+            'cert_busy': False
+        }
+        settings.update(overrides)
+        amphora = self.amphora_repo.create(self.session, **settings)
         return amphora
 
     def test_get(self):
@@ -3036,6 +3039,20 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
                                                            amphora.id)
         self.assertIsNotNone(lb_list)
         self.assertIn(self.lb, lb_list)
+
+    def get_all_deleted_expiring_amphora(self):
+        exp_age = datetime.timedelta(seconds=self.FAKE_EXP_AGE)
+        updated_at = datetime.datetime.utcnow() - exp_age
+        amphora1 = self.create_amphora(
+            self.FAKE_UUID_1, updated_at=updated_at, status=constants.DELETED)
+        amphora2 = self.create_amphora(
+            self.FAKE_UUID_2, status=constants.DELETED)
+
+        expiring_list = self.amphora_repo.get_all_deleted_expiring_amphora(
+            self.session, exp_age=exp_age)
+        expiring_ids = [amp.id for amp in expiring_list]
+        self.assertIn(amphora1.id, expiring_ids)
+        self.assertNotIn(amphora2.id, expiring_ids)
 
     def test_get_spare_amphora_count(self):
         count = self.amphora_repo.get_spare_amphora_count(self.session)
@@ -3131,7 +3148,7 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
     def test_check_amphora_expired_default_exp_age(self):
         """When exp_age defaults to CONF.house_keeping.amphora_expiry_age."""
         self.create_amphora_health(self.amphora.id)
-        checkres = self.amphora_health_repo.check_amphora_expired(
+        checkres = self.amphora_health_repo.check_amphora_health_expired(
             self.session, self.amphora.id)
         # Default amphora_expiry_age value is 1 week so amphora shouldn't be
         # considered expired.
@@ -3142,13 +3159,13 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
         exp_age = datetime.timedelta(
             seconds=self.FAKE_EXP_AGE)
         self.create_amphora_health(self.amphora.id)
-        checkres = self.amphora_health_repo.check_amphora_expired(
+        checkres = self.amphora_health_repo.check_amphora_health_expired(
             self.session, self.amphora.id, exp_age)
         self.assertTrue(checkres)
 
     def test_check_amphora_expired_with_no_age(self):
         """When the amphora_health entry is missing in the DB."""
-        checkres = self.amphora_health_repo.check_amphora_expired(
+        checkres = self.amphora_health_repo.check_amphora_health_expired(
             self.session, self.amphora.id)
         self.assertTrue(checkres)
 

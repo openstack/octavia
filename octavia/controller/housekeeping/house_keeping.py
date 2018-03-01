@@ -72,18 +72,24 @@ class DatabaseCleanup(object):
             seconds=CONF.house_keeping.amphora_expiry_age)
 
         session = db_api.get_session()
-        amphora, _ = self.amp_repo.get_all(session, status=constants.DELETED)
+        expiring_amphora = self.amp_repo.get_all_deleted_expiring_amphora(
+            session, exp_age=exp_age)
 
-        for amp in amphora:
-            if self.amp_health_repo.check_amphora_expired(session, amp.id,
-                                                          exp_age):
-                LOG.info('Attempting to delete Amphora id : %s', amp.id)
+        for amp in expiring_amphora:
+            # If we're here, we already think the amp is expiring according to
+            # the amphora table. Now check it is expired in the health table.
+            # In this way, we ensure that amps aren't deleted unless they are
+            # both expired AND no longer receiving zombie heartbeats.
+            if self.amp_health_repo.check_amphora_health_expired(
+                    session, amp.id, exp_age):
+                LOG.debug('Attempting to purge db record for Amphora ID: %s',
+                          amp.id)
                 self.amp_repo.delete(session, id=amp.id)
                 try:
                     self.amp_health_repo.delete(session, amphora_id=amp.id)
                 except sqlalchemy_exceptions.NoResultFound:
                     pass  # Best effort delete, this record might not exist
-                LOG.info('Deleted Amphora id : %s', amp.id)
+                LOG.info('Purged db record for Amphora ID: %s', amp.id)
 
     def cleanup_load_balancers(self):
         """Checks the DB for old load balancers and triggers their removal."""

@@ -732,11 +732,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         if amp.status == constants.DELETED:
             LOG.warning('Amphora %s is marked DELETED in the database but '
-                        'was submitted for failover. Marking it busy in the '
+                        'was submitted for failover. Deleting it from the '
                         'amphora health table to exclude it from health '
                         'checks and skipping the failover.', amp.id)
-            self._amphora_health_repo.update(db_apis.get_session(), amp.id,
-                                             busy=True)
+            self._amphora_health_repo.delete(db_apis.get_session(),
+                                             amphora_id=amp.id)
             return
 
         if (CONF.house_keeping.spare_amphora_pool_size == 0) and (
@@ -755,8 +755,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                     lb[0].server_group_id)
 
         failover_amphora_tf = self._taskflow_load(
-            self._amphora_flows.get_failover_flow(role=amp.role,
-                                                  status=amp.status),
+            self._amphora_flows.get_failover_flow(
+                role=amp.role, load_balancer_id=amp.load_balancer_id),
             store=stored_params)
 
         with tf_logging.DynamicLoggingListener(
