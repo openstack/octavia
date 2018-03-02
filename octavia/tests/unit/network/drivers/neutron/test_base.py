@@ -106,6 +106,17 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
             self.driver._add_security_group_to_port,
             t_constants.MOCK_SECURITY_GROUP_ID, t_constants.MOCK_PORT_ID)
 
+    def test__get_ports_by_security_group(self):
+        self.driver.neutron_client.list_ports.return_value = {
+            "ports": [
+                t_constants.MOCK_NEUTRON_PORT['port'],
+                t_constants.MOCK_NEUTRON_PORT2['port']]
+        }
+        ports = self.driver._get_ports_by_security_group(
+            t_constants.MOCK_SECURITY_GROUP_ID)
+        self.assertEqual(1, len(ports))
+        self.assertIn(t_constants.MOCK_NEUTRON_PORT['port'], ports)
+
     def test__create_security_group(self):
         sg_return = self.driver._create_security_group(
             t_constants.MOCK_SECURITY_GROUP_NAME)
