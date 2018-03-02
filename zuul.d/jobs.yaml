@@ -76,3 +76,29 @@
     post-run: playbooks/legacy/octavia-v1-dsvm-scenario-lxd/post.yaml
     required-projects:
       - openstack/nova-lxd
+
+- job:
+    name: publish-openstack-octavia-amphora-image
+    parent: publish-openstack-artifacts
+    run: playbooks/image-build/run.yaml
+    post-run: playbooks/image-build/post.yaml
+    required-projects:
+        - openstack/diskimage-builder
+        - openstack/octavia
+- job:
+    name: publish-openstack-octavia-amphora-image-ubuntu
+    parent: publish-openstack-octavia-amphora-image
+    description: |
+      Publish Ubuntu-based amphora image to tarballs.o.o.
+    vars:
+        amphora_os: ubuntu
+        amphora_os_release: xenial
+- job:
+    name: publish-openstack-octavia-amphora-image-centos
+    parent: publish-openstack-octavia-amphora-image
+    description: |
+      Publish CentOS-based amphora image to tarballs.o.o.
+    vars:
+        amphora_os: centos
+        amphora_image_size: 3
+        amphora_os_release: 7

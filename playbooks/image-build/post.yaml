@@ -1,0 +1,10 @@
+- hosts: all
+  name: Copy image
+  tasks:
+    - synchronize:
+        dest: "{{ zuul.executor.log_root }}"
+        mode: pull
+        src: "{{ ansible_user_dir }}/test-images"
+        verify_host: true
+        rsync_opts:
+          - "--exclude=/*/*/"
