@@ -243,43 +243,58 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         LOG.exception(message)
         raise base.DeallocateVIPException(message)
 
-    @staticmethod
-    def _filter_amphora(amp):
-        return amp.status == constants.AMPHORA_ALLOCATED
-
     def _delete_security_group(self, vip, port):
         if self.sec_grp_enabled:
             sec_grp = self._get_lb_security_group(vip.load_balancer.id)
             if sec_grp:
-                sec_grp = sec_grp.get('id')
+                sec_grp_id = sec_grp.get('id')
                 LOG.info(
                     "Removing security group %(sg)s from port %(port)s",
-                    {'sg': sec_grp, 'port': vip.port_id})
+                    {'sg': sec_grp_id, 'port': vip.port_id})
                 raw_port = None
                 try:
                     if port:
                         raw_port = self.neutron_client.show_port(port.id)
                 except Exception:
                     LOG.warning('Unable to get port information for port '
-                                ' %s. Continuing to delete the security '
+                                '%s. Continuing to delete the security '
                                 'group.', port.id)
                 if raw_port:
                     sec_grps = raw_port.get(
                         'port', {}).get('security_groups', [])
-                    if sec_grp in sec_grps:
-                        sec_grps.remove(sec_grp)
+                    if sec_grp_id in sec_grps:
+                        sec_grps.remove(sec_grp_id)
                     port_update = {'port': {'security_groups': sec_grps}}
                     self.neutron_client.update_port(port.id, port_update)
 
-                self._delete_vip_security_group(sec_grp)
+                try:
+                    self._delete_vip_security_group(sec_grp_id)
+                except base.DeallocateVIPException:
+                    # Try to delete any leftover ports on this security group.
+                    # Because this security group is created and managed by us,
+                    # it *should* only return ports that we own / can delete.
+                    LOG.warning('Failed to delete security group on first '
+                                'pass: %s', sec_grp_id)
+                    extra_ports = self._get_ports_by_security_group(sec_grp_id)
+                    for port in extra_ports:
+                        port_id = port.get('id')
+                        try:
+                            LOG.warning('Deleting extra port %s on security '
+                                        'group %s...', port_id, sec_grp_id)
+                            self.neutron_client.delete_port(port_id)
+                        except Exception:
+                            LOG.warning('Failed to delete extra port %s on '
+                                        'security group %s.',
+                                        port_id, sec_grp_id)
+                    # Now try it again
+                    self._delete_vip_security_group(sec_grp_id)
 
     def deallocate_vip(self, vip):
         """Delete the vrrp_port (instance port) in case nova didn't
 
         This can happen if a failover has occurred.
         """
-        for amphora in six.moves.filter(self._filter_amphora,
-                                        vip.load_balancer.amphorae):
+        for amphora in vip.load_balancer.amphorae:
             try:
                 self.neutron_client.delete_port(amphora.vrrp_port_id)
             except (neutron_client_exceptions.NotFound,
