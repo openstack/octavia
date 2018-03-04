@@ -1,0 +1,11 @@
+register_project_for_upgrade octavia
+register_db_to_save octavia
+
+devstack_localrc base enable_plugin octavia https://git.openstack.org/openstack/octavia stable/queens
+devstack_localrc target enable_plugin octavia https://git.openstack.org/openstack/octavia
+
+devstack_localrc base enable_service o-api o-cw o-hm o-hk octavia
+devstack_localrc target enable_service o-api o-cw o-hm o-hk octavia
+
+BASE_RUN_SMOKE=False
+TARGET_RUN_SMOKE=False

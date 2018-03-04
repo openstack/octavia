@@ -110,3 +110,15 @@
         amphora_os: centos
         amphora_image_size: 3
         amphora_os_release: 7
+
+- job:
+    name: octavia-grenade
+    parent: octavia-legacy-dsvm-base
+    run: playbooks/legacy/grenade-devstack-octavia/run.yaml
+    post-run: playbooks/legacy/grenade-devstack-octavia/post.yaml
+    required-projects:
+      - openstack-dev/grenade
+      - openstack-infra/devstack-gate
+      - openstack/octavia
+      - openstack/octavia-tempest-plugin
+      - openstack/python-octaviaclient

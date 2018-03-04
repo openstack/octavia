@@ -49,6 +49,19 @@
         - octavia-v2-dsvm-py35-scenario:
             voting: false
             branches: ^(?!stable/ocata).*$
+        - octavia-grenade:
+            branches: ^(?!stable/(ocata|queens)).*$
+            voting: false
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^octavia/tests/unit/.*$
+              - ^releasenotes/.*$
+              - ^setup.cfg$
+              - ^tools/.*$
+              - ^(test-|)requirements.txt$
+              - ^tox.ini$
     gate:
       queue: octavia
       jobs:
