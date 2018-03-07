@@ -11,11 +11,11 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import uuid
 
 from barbicanclient.v1 import containers
 from barbicanclient.v1 import secrets
 import mock
+from oslo_utils import uuidutils
 import six
 
 import octavia.certificates.common.barbican as barbican_common
@@ -33,28 +33,38 @@ class TestBarbicanManager(base.TestCase):
     def setUp(self):
         # Make a fake Container and contents
         self.barbican_endpoint = 'http://localhost:9311/v1'
-        self.container_uuid = uuid.uuid4()
+        self.container_uuid = uuidutils.generate_uuid()
+        self.certificate_uuid = uuidutils.generate_uuid()
+        self.intermediates_uuid = uuidutils.generate_uuid()
+        self.private_key_uuid = uuidutils.generate_uuid()
+        self.private_key_passphrase_uuid = uuidutils.generate_uuid()
 
         self.container_ref = '{0}/containers/{1}'.format(
             self.barbican_endpoint, self.container_uuid
         )
 
+        self.barbican_api = mock.MagicMock()
+
         self.name = 'My Fancy Cert'
         self.certificate = secrets.Secret(
-            api=mock.MagicMock(),
-            payload=sample.X509_CERT
+            api=self.barbican_api,
+            payload=sample.X509_CERT,
+            secret_ref=self.certificate_uuid
         )
         self.intermediates = secrets.Secret(
-            api=mock.MagicMock(),
-            payload=sample.X509_IMDS
+            api=self.barbican_api,
+            payload=sample.X509_IMDS,
+            secret_ref=self.intermediates_uuid
         )
         self.private_key = secrets.Secret(
-            api=mock.MagicMock(),
-            payload=sample.X509_CERT_KEY_ENCRYPTED
+            api=self.barbican_api,
+            payload=sample.X509_CERT_KEY_ENCRYPTED,
+            secret_ref=self.private_key_uuid
         )
         self.private_key_passphrase = secrets.Secret(
-            api=mock.MagicMock(),
-            payload=sample.X509_CERT_KEY_PASSPHRASE
+            api=self.barbican_api,
+            payload=sample.X509_CERT_KEY_PASSPHRASE,
+            secret_ref=self.private_key_passphrase_uuid
         )
 
         container = mock.Mock(spec=containers.CertificateContainer)
@@ -224,6 +234,23 @@ class TestBarbicanManager(base.TestCase):
                          sample.X509_IMDS_LIST)
         self.assertEqual(data.get_private_key_passphrase(),
                          six.b(self.private_key_passphrase.payload))
+
+    def test_get_cert_no_registration_raise_on_secret_access_failure(self):
+        self.bc.containers.get.return_value = self.container
+        type(self.certificate).payload = mock.PropertyMock(
+            side_effect=ValueError)
+
+        # Get the container data
+        self.assertRaises(
+            ValueError, self.cert_manager.get_cert,
+            context=self.context,
+            cert_ref=self.container_ref, check_only=True
+        )
+
+        # 'get' should be called once with the container_ref
+        self.bc.containers.get.assert_called_once_with(
+            container_ref=self.container_ref
+        )
 
     def test_delete_cert(self):
         # Attempt to deregister as a consumer

@@ -90,6 +90,9 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         patcher = mock.patch('octavia.api.handlers.controller_simulator.'
                              'handler.SimulatedControllerHandler')
         self.handler_mock = patcher.start()
+        patcher2 = mock.patch('octavia.certificates.manager.barbican.'
+                              'BarbicanCertManager')
+        self.cert_manager_mock = patcher2.start()
         self.app = self._make_app()
         self.project_id = uuidutils.generate_uuid()
 
