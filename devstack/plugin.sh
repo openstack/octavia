@@ -391,7 +391,7 @@ function configure_octavia_tempest {
 
 function create_amphora_flavor {
     # Pass even if it exists to avoid race condition on multinode
-    openstack flavor create --id auto --ram 1024 --disk 2 --vcpus 1 --private m1.amphora -f value -c id || true
+    openstack flavor create --id auto --ram 1024 --disk ${OCTAVIA_AMP_IMAGE_SIZE:-2} --vcpus 1 --private m1.amphora -f value -c id || true
     amp_flavor_id=$(openstack flavor show m1.amphora -f value -c id)
     iniset $OCTAVIA_CONF controller_worker amp_flavor_id $amp_flavor_id
 }
