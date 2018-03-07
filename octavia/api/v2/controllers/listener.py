@@ -19,6 +19,7 @@ from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_utils import excutils
 import pecan
+from stevedore import driver as stevedore_driver
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -43,6 +44,11 @@ class ListenersController(base.BaseController):
     def __init__(self):
         super(ListenersController, self).__init__()
         self.handler = self.handler.listener
+        self.cert_manager = stevedore_driver.DriverManager(
+            namespace='octavia.cert_manager',
+            name=CONF.certificates.cert_manager,
+            invoke_on_load=True,
+        ).driver
 
     def _get_db_listener(self, session, id):
         """Gets a listener object from the database."""
@@ -125,7 +131,19 @@ class ListenersController(base.BaseController):
             session, lb_id,
             provisioning_status=constants.ACTIVE)
 
-    def _validate_create_listener(self, lock_session, lb_id, listener_dict):
+    def _validate_tls_refs(self, tls_refs):
+        context = pecan.request.context.get('octavia_context')
+        bad_refs = []
+        for ref in tls_refs:
+            try:
+                self.cert_manager.get_cert(context, ref, check_only=True)
+            except Exception:
+                bad_refs.append(ref)
+
+        if bad_refs:
+            raise exceptions.CertificateRetrievalException(ref=bad_refs)
+
+    def _validate_create_listener(self, lock_session, listener_dict):
         """Validate listener for wrong protocol or duplicate listeners
 
         Update the load balancer db when provisioning status changes.
@@ -140,6 +158,10 @@ class ListenersController(base.BaseController):
 
         try:
             sni_containers = listener_dict.pop('sni_containers', [])
+            tls_refs = [sni['tls_container_id'] for sni in sni_containers]
+            if listener_dict.get('tls_certificate_id'):
+                tls_refs.append(listener_dict.get('tls_certificate_id'))
+            self._validate_tls_refs(tls_refs)
             db_listener = self.repositories.listener.create(
                 lock_session, **listener_dict)
             if sni_containers:
@@ -222,7 +244,7 @@ class ListenersController(base.BaseController):
                 lock_session, lb_id=load_balancer_id)
 
             db_listener = self._validate_create_listener(
-                lock_session, load_balancer_id, listener_dict)
+                lock_session, listener_dict)
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
@@ -240,7 +262,7 @@ class ListenersController(base.BaseController):
             self._validate_pool(lock_session, load_balancer_id,
                                 listener_dict['default_pool_id'])
         db_listener = self._validate_create_listener(
-            lock_session, load_balancer_id, listener_dict)
+            lock_session, listener_dict)
 
         # Now create l7policies
         new_l7ps = []
@@ -283,6 +305,12 @@ class ListenersController(base.BaseController):
                                 listener.default_pool_id)
         self._test_lb_and_listener_statuses(context.session, load_balancer_id,
                                             id=id)
+
+        sni_containers = listener.sni_container_refs or []
+        tls_refs = [sni for sni in sni_containers]
+        if listener.default_tls_container_ref:
+            tls_refs.append(listener.default_tls_container_ref)
+        self._validate_tls_refs(tls_refs)
 
         try:
             LOG.info("Sending Update of Listener %s to handler", id)

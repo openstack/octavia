@@ -23,6 +23,7 @@ from stevedore import driver as stevedore_driver
 
 from octavia.certificates.common import barbican as barbican_common
 from octavia.certificates.manager import cert_mgr
+from octavia.common.tls_utils import cert_parser
 
 LOG = logging.getLogger(__name__)
 
@@ -142,10 +143,19 @@ class BarbicanCertManager(cert_mgr.CertManager):
                     name=service_name,
                     url=resource_ref
                 )
-            return barbican_common.BarbicanCert(cert_container)
+            barbican_cert = barbican_common.BarbicanCert(cert_container)
+            LOG.debug('Validating certificate data for %s.', cert_ref)
+            cert_parser.validate_cert(
+                barbican_cert.get_certificate(),
+                private_key=barbican_cert.get_private_key(),
+                private_key_passphrase=(
+                    barbican_cert.get_private_key_passphrase()),
+                intermediates=barbican_cert.get_intermediates())
+            LOG.debug('Certificate data validated for %s.', cert_ref)
+            return barbican_cert
         except Exception as e:
             with excutils.save_and_reraise_exception():
-                LOG.error('Error getting %s: %s', cert_ref, e)
+                LOG.error('Error getting cert %s: %s', cert_ref, str(e))
 
     def delete_cert(self, context, cert_ref, resource_ref, service_name=None):
         """Deregister as a consumer for the specified cert.
