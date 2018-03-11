@@ -34,9 +34,6 @@
             branches: ^(?!stable/ocata).*$
         - octavia-v1-dsvm-scenario-kvm-centos.7:
             voting: false
-        - octavia-v1-dsvm-scenario-lxd:
-            voting: false
-            branches: ^(?!stable/ocata).*$
     gate:
       queue: octavia
       jobs:
@@ -63,4 +60,9 @@
             branches: ^(?!stable/ocata).*$
         - neutron-lbaasv2-dsvm-api
         - neutron-lbaasv2-dsvm-py3x-api:
+            branches: ^(?!stable/ocata).*$
+    experimental:
+      queue: octavia
+      jobs:
+        - octavia-v1-dsvm-scenario-lxd:
             branches: ^(?!stable/ocata).*$
