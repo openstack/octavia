@@ -63,8 +63,6 @@ class L7PolicyFlows(object):
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         delete_l7policy_flow.add(database_tasks.DeleteL7PolicyInDB(
             requires=constants.L7POLICY))
-        delete_l7policy_flow.add(database_tasks.MarkL7PolicyActiveInDB(
-            requires=constants.L7POLICY))
         delete_l7policy_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
 
