@@ -144,6 +144,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
                     url=resource_ref
                 )
             barbican_cert = barbican_common.BarbicanCert(cert_container)
+
             LOG.debug('Validating certificate data for %s.', cert_ref)
             cert_parser.validate_cert(
                 barbican_cert.get_certificate(),
@@ -152,6 +153,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
                     barbican_cert.get_private_key_passphrase()),
                 intermediates=barbican_cert.get_intermediates())
             LOG.debug('Certificate data validated for %s.', cert_ref)
+
             return barbican_cert
         except Exception as e:
             with excutils.save_and_reraise_exception():
@@ -180,3 +182,43 @@ class BarbicanCertManager(cert_mgr.CertManager):
             with excutils.save_and_reraise_exception():
                 LOG.error('Error deregistering as a consumer of %s: %s',
                           cert_ref, e)
+
+    def set_acls(self, context, cert_ref):
+        LOG.debug('Setting project ACLs for certificate secrets...')
+        self.auth.ensure_secret_access(context, cert_ref)
+
+        connection = self.auth.get_barbican_client(context.project_id)
+        cert_container = connection.containers.get(
+            container_ref=cert_ref
+        )
+        self.auth.ensure_secret_access(
+            context, cert_container.certificate.secret_ref)
+        self.auth.ensure_secret_access(
+            context, cert_container.private_key.secret_ref)
+        if cert_container.private_key_passphrase:
+            self.auth.ensure_secret_access(
+                context,
+                cert_container.private_key_passphrase.secret_ref)
+        if cert_container.intermediates:
+            self.auth.ensure_secret_access(
+                context, cert_container.intermediates.secret_ref)
+
+    def unset_acls(self, context, cert_ref):
+        LOG.debug('Unsetting project ACLs for certificate secrets...')
+        self.auth.revoke_secret_access(context, cert_ref)
+
+        connection = self.auth.get_barbican_client(context.project_id)
+        cert_container = connection.containers.get(
+            container_ref=cert_ref
+        )
+        self.auth.revoke_secret_access(
+            context, cert_container.certificate.secret_ref)
+        self.auth.revoke_secret_access(
+            context, cert_container.private_key.secret_ref)
+        if cert_container.private_key_passphrase:
+            self.auth.revoke_secret_access(
+                context,
+                cert_container.private_key_passphrase.secret_ref)
+        if cert_container.intermediates:
+            self.auth.revoke_secret_access(
+                context, cert_container.intermediates.secret_ref)

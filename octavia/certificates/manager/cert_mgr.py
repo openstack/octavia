@@ -38,7 +38,6 @@ class CertManager(object):
         If storage of the certificate data fails, a CertificateStorageException
         should be raised.
         """
-        pass
 
     @abc.abstractmethod
     def get_cert(self, context, cert_ref, resource_ref=None, check_only=False,
@@ -49,7 +48,6 @@ class CertManager(object):
         If the specified cert does not exist, a CertificateStorageException
         should be raised.
         """
-        pass
 
     @abc.abstractmethod
     def delete_cert(self, context, cert_ref, resource_ref, service_name=None):
@@ -58,4 +56,19 @@ class CertManager(object):
         If the specified cert does not exist, a CertificateStorageException
         should be raised.
         """
-        pass
+
+    @abc.abstractmethod
+    def set_acls(self, context, cert_ref):
+        """Adds ACLs so Octavia can access the cert objects.
+
+        If the specified cert does not exist or the addition of ACLs fails for
+        any reason, a CertificateStorageException should be raised.
+        """
+
+    @abc.abstractmethod
+    def unset_acls(self, context, cert_ref):
+        """Remove ACLs so Octavia can access the cert objects.
+
+        If the specified cert does not exist or the removal of ACLs fails for
+        any reason, a CertificateStorageException should be raised.
+        """

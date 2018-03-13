@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Added ability for Octavia to automatically set Barbican ACLs on behalf of
+    the user. Such enables users to create TLS-terminated listeners without
+    having to add the Octavia keystone user id to the ACL list. Octavia will
+    also automatically revoke access to secrets whenever load balancing
+    resources no longer require access to them.

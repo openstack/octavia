@@ -85,6 +85,7 @@ class TestBarbicanManager(base.TestCase):
 
         # Mock out the client
         self.bc = mock.Mock()
+        self.bc.containers.get.return_value = self.container
         barbican_auth = mock.Mock(spec=barbican_common.BarbicanAuth)
         barbican_auth.get_barbican_client.return_value = self.bc
 
@@ -267,3 +268,19 @@ class TestBarbicanManager(base.TestCase):
             url=self.container_ref,
             name='Octavia'
         )
+
+    def test_set_acls(self):
+        self.cert_manager.set_acls(
+            context=self.context,
+            cert_ref=self.container_ref
+        )
+
+        # our mock_bc should have one call to ensure_secret_access for each
+        # of our secrets, and the container
+        self.cert_manager.auth.ensure_secret_access.assert_has_calls([
+            mock.call(self.context, self.container_ref),
+            mock.call(self.context, self.certificate_uuid),
+            mock.call(self.context, self.intermediates_uuid),
+            mock.call(self.context, self.private_key_uuid),
+            mock.call(self.context, self.private_key_passphrase_uuid)
+        ], any_order=True)
