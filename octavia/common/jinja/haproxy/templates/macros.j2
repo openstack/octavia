@@ -175,9 +175,14 @@ frontend {{ listener.id }}
     {% else %}
         {% set proxy_protocol_opt = "" %}
     {% endif %}
-    {{ "server %s %s:%d weight %s%s%s%s"|e|format(
+    {% if member.backup %}
+        {% set member_backup_opt = " backup" %}
+    {% else %}
+        {% set member_backup_opt = "" %}
+    {% endif %}
+    {{ "server %s %s:%d weight %s%s%s%s%s"|e|format(
         member.id, member.address, member.protocol_port, member.weight,
-        hm_opt, persistence_opt, proxy_protocol_opt)|trim() }}
+        hm_opt, persistence_opt, proxy_protocol_opt, member_backup_opt)|trim() }}
 {% endmacro %}
 
 
@@ -245,6 +250,7 @@ backend {{ pool.id }}
     {% if listener.connection_limit is defined %}
     fullconn {{ listener.connection_limit }}
     {% endif %}
+    option allbackups
     {% for member in pool.members if member.enabled %}
         {{- member_macro(constants, pool, member) -}}
     {% endfor %}

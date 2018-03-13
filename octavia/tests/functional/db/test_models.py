@@ -104,7 +104,8 @@ class ModelTestMixin(object):
                   'protocol_port': 80,
                   'provisioning_status': constants.ACTIVE,
                   'operating_status': constants.ONLINE,
-                  'enabled': True}
+                  'enabled': True,
+                  'backup': False}
         kwargs.update(overrides)
         return self._insert(session, models.Member, kwargs)
 

@@ -313,7 +313,7 @@ class Pool(BaseDataModel):
 class Member(BaseDataModel):
 
     def __init__(self, id=None, project_id=None, pool_id=None, ip_address=None,
-                 protocol_port=None, weight=None, enabled=None,
+                 protocol_port=None, weight=None, backup=None, enabled=None,
                  subnet_id=None, operating_status=None, pool=None,
                  created_at=None, updated_at=None, provisioning_status=None,
                  name=None, monitor_address=None, monitor_port=None):
@@ -323,6 +323,7 @@ class Member(BaseDataModel):
         self.ip_address = ip_address
         self.protocol_port = protocol_port
         self.weight = weight
+        self.backup = backup
         self.enabled = enabled
         self.subnet_id = subnet_id
         self.operating_status = operating_status

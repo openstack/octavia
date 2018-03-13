@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Members have a new boolean option `backup`. When set to `true`, the member
+    will not receive traffic until all non-backup members are offline. Once
+    all non-backup members are offline, traffic will begin balancing between
+    the backup members.

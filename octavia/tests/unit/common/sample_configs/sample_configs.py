@@ -74,7 +74,8 @@ RET_MEMBER_1 = {
     'enabled': True,
     'operating_status': 'ACTIVE',
     'monitor_address': None,
-    'monitor_port': None}
+    'monitor_port': None,
+    'backup': False}
 
 RET_MEMBER_2 = {
     'id': 'sample_member_id_2',
@@ -85,7 +86,8 @@ RET_MEMBER_2 = {
     'enabled': True,
     'operating_status': 'ACTIVE',
     'monitor_address': None,
-    'monitor_port': None}
+    'monitor_port': None,
+    'backup': False}
 
 RET_MEMBER_3 = {
     'id': 'sample_member_id_3',
@@ -96,7 +98,8 @@ RET_MEMBER_3 = {
     'enabled': True,
     'operating_status': 'ACTIVE',
     'monitor_address': None,
-    'monitor_port': None}
+    'monitor_port': None,
+    'backup': False}
 
 RET_POOL_1 = {
     'id': 'sample_pool_id_1',
@@ -406,7 +409,7 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                           tls=False, sni=False, peer_port=None, topology=None,
                           l7=False, enabled=True, insert_headers=None,
                           be_proto=None, monitor_ip_port=False,
-                          monitor_proto=None):
+                          monitor_proto=None, backup_member=False):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
@@ -445,7 +448,8 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                 proto=be_proto, monitor=monitor, persistence=persistence,
                 persistence_type=persistence_type,
                 persistence_cookie=persistence_cookie,
-                monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto)]
+                monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto,
+                backup_member=backup_member)]
         l7policies = []
     return in_listener(
         id='sample_listener_id_1',
@@ -517,7 +521,7 @@ def sample_tls_container_tuple(id='cont_id_1', certificate=None,
 def sample_pool_tuple(proto=None, monitor=True, persistence=True,
                       persistence_type=None, persistence_cookie=None,
                       sample_pool=1, monitor_ip_port=False,
-                      monitor_proto=None):
+                      monitor_proto=None, backup_member=False):
     proto = 'HTTP' if proto is None else proto
     monitor_proto = proto if monitor_proto is None else monitor_proto
     in_pool = collections.namedtuple(
@@ -532,7 +536,8 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
         members = [sample_member_tuple('sample_member_id_1', '10.0.0.99',
                                        monitor_ip_port=monitor_ip_port),
                    sample_member_tuple('sample_member_id_2', '10.0.0.98',
-                                       monitor_ip_port=monitor_ip_port)]
+                                       monitor_ip_port=monitor_ip_port,
+                                       backup=backup_member)]
         if monitor is True:
             mon = sample_health_monitor_tuple(proto=monitor_proto)
     elif sample_pool == 2:
@@ -553,12 +558,13 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
 
 
 def sample_member_tuple(id, ip, enabled=True, operating_status='ACTIVE',
-                        monitor_ip_port=False):
+                        monitor_ip_port=False, backup=False):
     in_member = collections.namedtuple('member',
                                        'id, ip_address, protocol_port, '
                                        'weight, subnet_id, '
                                        'enabled, operating_status, '
-                                       'monitor_address, monitor_port')
+                                       'monitor_address, monitor_port, '
+                                       'backup')
     monitor_address = '192.168.1.1' if monitor_ip_port else None
     monitor_port = 9000 if monitor_ip_port else None
     return in_member(
@@ -570,7 +576,8 @@ def sample_member_tuple(id, ip, enabled=True, operating_status='ACTIVE',
         enabled=enabled,
         operating_status=operating_status,
         monitor_address=monitor_address,
-        monitor_port=monitor_port)
+        monitor_port=monitor_port,
+        backup=backup)
 
 
 def sample_session_persistence_tuple(persistence_type=None,
@@ -713,6 +720,7 @@ def sample_base_expected_config(frontend=None, backend=None,
                    "    option httpchk GET /index.html\n"
                    "    http-check expect rstatus 418\n"
                    "    fullconn 98\n"
+                   "    option allbackups\n"
                    "    server sample_member_id_1 10.0.0.99:82 weight 13 "
                    "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
                    "    server sample_member_id_2 10.0.0.98:82 weight 13 "

@@ -49,7 +49,7 @@ class RootController(rest.RestController):
             self._versions.append(
                 {
                     'status': 'CURRENT',
-                    'updated': '2017-06-22T00:00:00Z',
+                    'updated': '2018-03-14T00:00:00Z',
                     'id': 'v2.0'
                 })
         if not (v1_enabled or v2_enabled):

@@ -173,6 +173,20 @@ api_version_status:
   in: body
   required: true
   type: string
+backup:
+  description: |
+    Is the member a backup? Backup members only receive traffic when all
+    non-backup members are down.
+  in: body
+  required: true
+  type: boolean
+backup-optional:
+  description: |
+    Is the member a backup? Backup members only receive traffic when all
+    non-backup members are down.
+  in: body
+  required: false
+  type: boolean
 bytes_in:
   description: |
     The total bytes received.

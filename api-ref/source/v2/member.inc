@@ -48,6 +48,7 @@ Response Parameters
 
    - address: address-member
    - admin_state_up: admin_state_up
+   - backup: backup
    - created_at: created_at
    - id: member-id
    - monitor_address: monitor_address
@@ -105,6 +106,8 @@ request:
 
 - ``admin_state_up``. Default is ``true``.
 
+- ``backup``. Default is ``false``.
+
 - ``weight``. Default is ``1``.
 
 If you omit the ``subnet_id`` parameter, the ``vip_subnet_id`` for the parent
@@ -145,6 +148,7 @@ Request
 
    - admin_state_up: admin_state_up-default-optional
    - address: address
+   - backup: backup-optional
    - monitor_address: monitor_address-optional
    - monitor_port: monitor_port-optional
    - name: name-optional
@@ -173,6 +177,7 @@ Response Parameters
 
    - address: address-member
    - admin_state_up: admin_state_up
+   - backup: backup
    - created_at: created_at
    - id: member-id
    - monitor_address: monitor_address
@@ -238,6 +243,7 @@ Response Parameters
 
    - address: address-member
    - admin_state_up: admin_state_up
+   - backup: backup
    - created_at: created_at
    - id: member-id
    - monitor_address: monitor_address
@@ -295,6 +301,7 @@ Request
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up-default-optional
+   - backup: backup-optional
    - member_id: path-member-id
    - monitor_address: monitor_address-optional
    - monitor_port: monitor_port-optional
@@ -321,6 +328,7 @@ Response Parameters
 
    - address: address-member
    - admin_state_up: admin_state_up
+   - backup: backup
    - created_at: created_at
    - id: member-id
    - monitor_address: monitor_address
@@ -385,6 +393,7 @@ Request
 
    - admin_state_up: admin_state_up-default-optional
    - address: address
+   - backup: backup-optional
    - monitor_address: monitor_address-optional
    - monitor_port: monitor_port-optional
    - name: name-optional

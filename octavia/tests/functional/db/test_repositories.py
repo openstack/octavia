@@ -335,7 +335,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
     def test_create_load_balancer_tree(self):
         project_id = uuidutils.generate_uuid()
         member = {'project_id': project_id, 'ip_address': '11.0.0.1',
-                  'protocol_port': 80, 'enabled': True,
+                  'protocol_port': 80, 'enabled': True, 'backup': False,
                   'operating_status': constants.ONLINE,
                   'provisioning_status': constants.PENDING_CREATE,
                   'id': uuidutils.generate_uuid()}
@@ -1472,7 +1472,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             ip_address='192.0.2.1', protocol_port=80,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
-            enabled=True, pool_id=pool.id)
+            enabled=True, pool_id=pool.id, backup=False)
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    models.Member,
@@ -1501,7 +1501,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             ip_address='192.0.2.1', protocol_port=80,
             provisioning_status=constants.DELETED,
             operating_status=constants.ONLINE,
-            enabled=True, pool_id=pool.id)
+            enabled=True, pool_id=pool.id, backup=False)
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     models.Member,
@@ -1887,7 +1887,8 @@ class PoolRepositoryTest(BaseRepositoryTest):
                                          ip_address="10.0.0.1",
                                          protocol_port=80, enabled=True,
                                          provisioning_status=constants.ACTIVE,
-                                         operating_status=constants.ONLINE)
+                                         operating_status=constants.ONLINE,
+                                         backup=False)
         new_pool = self.pool_repo.get(self.session, id=pool.id)
         self.assertEqual(1, len(new_pool.members))
         self.assertEqual(member, new_pool.members[0])
@@ -1941,7 +1942,8 @@ class PoolRepositoryTest(BaseRepositoryTest):
                                          protocol_port=80,
                                          provisioning_status=constants.ACTIVE,
                                          operating_status=constants.ONLINE,
-                                         enabled=True)
+                                         enabled=True,
+                                         backup=False)
         sp = self.sp_repo.create(
             self.session, pool_id=pool.id,
             type=constants.SESSION_PERSISTENCE_HTTP_COOKIE,
@@ -1980,7 +1982,8 @@ class MemberRepositoryTest(BaseRepositoryTest):
                                          protocol_port=80,
                                          operating_status=constants.ONLINE,
                                          provisioning_status=constants.ACTIVE,
-                                         enabled=True)
+                                         enabled=True,
+                                         backup=False)
         return member
 
     def test_get(self):

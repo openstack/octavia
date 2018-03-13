@@ -62,8 +62,8 @@ def create_load_balancer(lb_dict):
         lb_dict['id'] = uuidutils.generate_uuid()
     if lb_dict.get('vip'):
         lb_dict['vip']['load_balancer_id'] = lb_dict.get('id')
-    lb_dict['provisioning_status'] = constants.PENDING_CREATE
-    lb_dict['operating_status'] = constants.OFFLINE
+    lb_dict[constants.PROVISIONING_STATUS] = constants.PENDING_CREATE
+    lb_dict[constants.OPERATING_STATUS] = constants.OFFLINE
     return lb_dict
 
 
@@ -76,8 +76,8 @@ def create_listener(listener_dict, lb_id):
     else:
         listener_dict['load_balancer_id'] = lb_id
 
-    listener_dict['provisioning_status'] = constants.PENDING_CREATE
-    listener_dict['operating_status'] = constants.OFFLINE
+    listener_dict[constants.PROVISIONING_STATUS] = constants.PENDING_CREATE
+    listener_dict[constants.OPERATING_STATUS] = constants.OFFLINE
     # NOTE(blogan): Throwing away because we should not store secure data
     # in the database nor should we send it to a handler.
     if 'tls_termination' in listener_dict:
@@ -103,8 +103,8 @@ def create_listener(listener_dict, lb_id):
 def create_l7policy(l7policy_dict, lb_id, listener_id):
     l7policy_dict = validate.sanitize_l7policy_api_args(l7policy_dict,
                                                         create=True)
-    l7policy_dict['provisioning_status'] = constants.PENDING_CREATE
-    l7policy_dict['operating_status'] = constants.OFFLINE
+    l7policy_dict[constants.PROVISIONING_STATUS] = constants.PENDING_CREATE
+    l7policy_dict[constants.OPERATING_STATUS] = constants.OFFLINE
     if not l7policy_dict.get('id'):
         l7policy_dict['id'] = uuidutils.generate_uuid()
     l7policy_dict['listener_id'] = listener_id
@@ -132,8 +132,8 @@ def create_l7policy(l7policy_dict, lb_id, listener_id):
 
 
 def create_l7rule(l7rule_dict, l7policy_id):
-    l7rule_dict['provisioning_status'] = constants.PENDING_CREATE
-    l7rule_dict['operating_status'] = constants.OFFLINE
+    l7rule_dict[constants.PROVISIONING_STATUS] = constants.PENDING_CREATE
+    l7rule_dict[constants.OPERATING_STATUS] = constants.OFFLINE
     if not l7rule_dict.get('id'):
         l7rule_dict['id'] = uuidutils.generate_uuid()
     l7rule_dict['l7policy_id'] = l7policy_id
@@ -157,24 +157,26 @@ def create_pool(pool_dict, lb_id=None):
         prepped_members = []
         for member_dict in pool_dict.get('members'):
             prepped_members.append(create_member(member_dict, pool_dict['id']))
-    pool_dict['provisioning_status'] = constants.PENDING_CREATE
-    pool_dict['operating_status'] = constants.OFFLINE
+    pool_dict[constants.PROVISIONING_STATUS] = constants.PENDING_CREATE
+    pool_dict[constants.OPERATING_STATUS] = constants.OFFLINE
     return pool_dict
 
 
 def create_member(member_dict, pool_id, has_health_monitor=False):
     member_dict['pool_id'] = pool_id
-    member_dict['provisioning_status'] = constants.PENDING_CREATE
+    member_dict[constants.PROVISIONING_STATUS] = constants.PENDING_CREATE
     if has_health_monitor:
-        member_dict['operating_status'] = constants.OFFLINE
+        member_dict[constants.OPERATING_STATUS] = constants.OFFLINE
     else:
-        member_dict['operating_status'] = constants.NO_MONITOR
+        member_dict[constants.OPERATING_STATUS] = constants.NO_MONITOR
+    if 'backup' not in member_dict:
+        member_dict['backup'] = False
     return member_dict
 
 
 def create_health_monitor(hm_dict, pool_id=None):
-    hm_dict['provisioning_status'] = constants.PENDING_CREATE
-    hm_dict['operating_status'] = constants.OFFLINE
+    hm_dict[constants.PROVISIONING_STATUS] = constants.PENDING_CREATE
+    hm_dict[constants.OPERATING_STATUS] = constants.OFFLINE
     if pool_id:
         hm_dict['id'] = pool_id
         hm_dict['pool_id'] = pool_id

@@ -61,7 +61,7 @@ class TestMember(base.BaseAPITest):
 
     def test_get(self):
         api_member = self.create_member(
-            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_id, '192.0.2.1', 80).get(self.root_tag)
         response = self.get(self.member_path.format(
             member_id=api_member.get('id'))).json.get(self.root_tag)
         self.assertEqual(api_member, response)
@@ -69,7 +69,7 @@ class TestMember(base.BaseAPITest):
 
     def test_get_authorized(self):
         api_member = self.create_member(
-            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_id, '192.0.2.1', 80).get(self.root_tag)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
@@ -99,7 +99,7 @@ class TestMember(base.BaseAPITest):
 
     def test_get_not_authorized(self):
         api_member = self.create_member(
-            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_id, '192.0.2.1', 80).get(self.root_tag)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
@@ -112,7 +112,7 @@ class TestMember(base.BaseAPITest):
 
     def test_get_hides_deleted(self):
         api_member = self.create_member(
-            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_id, '192.0.2.1', 80).get(self.root_tag)
 
         response = self.get(self.members_path)
         objects = response.json.get(self.root_tag_list)
@@ -129,10 +129,10 @@ class TestMember(base.BaseAPITest):
 
     def test_get_all(self):
         api_m_1 = self.create_member(
-            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_id, '192.0.2.1', 80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         api_m_2 = self.create_member(
-            self.pool_id, '10.0.0.2', 80).get(self.root_tag)
+            self.pool_id, '192.0.2.2', 80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         # Original objects didn't have the updated operating/provisioning
         # status that exists in the DB.
@@ -150,10 +150,10 @@ class TestMember(base.BaseAPITest):
 
     def test_get_all_authorized(self):
         api_m_1 = self.create_member(
-            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_id, '192.0.2.1', 80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         api_m_2 = self.create_member(
-            self.pool_id, '10.0.0.2', 80).get(self.root_tag)
+            self.pool_id, '192.0.2.2', 80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         # Original objects didn't have the updated operating/provisioning
         # status that exists in the DB.
@@ -196,10 +196,10 @@ class TestMember(base.BaseAPITest):
 
     def test_get_all_not_authorized(self):
         api_m_1 = self.create_member(
-            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_id, '192.0.2.1', 80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         api_m_2 = self.create_member(
-            self.pool_id, '10.0.0.2', 80).get(self.root_tag)
+            self.pool_id, '192.0.2.2', 80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         # Original objects didn't have the updated operating/provisioning
         # status that exists in the DB.
@@ -218,11 +218,11 @@ class TestMember(base.BaseAPITest):
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
     def test_get_all_sorted(self):
-        self.create_member(self.pool_id, '10.0.0.1', 80, name='member1')
+        self.create_member(self.pool_id, '192.0.2.1', 80, name='member1')
         self.set_lb_status(self.lb_id)
-        self.create_member(self.pool_id, '10.0.0.2', 80, name='member2')
+        self.create_member(self.pool_id, '192.0.2.2', 80, name='member2')
         self.set_lb_status(self.lb_id)
-        self.create_member(self.pool_id, '10.0.0.3', 80, name='member3')
+        self.create_member(self.pool_id, '192.0.2.3', 80, name='member3')
         self.set_lb_status(self.lb_id)
 
         response = self.get(self.members_path,
@@ -243,11 +243,11 @@ class TestMember(base.BaseAPITest):
                          list(reversed(member_id_names_desc)))
 
     def test_get_all_limited(self):
-        self.create_member(self.pool_id, '10.0.0.1', 80, name='member1')
+        self.create_member(self.pool_id, '192.0.2.1', 80, name='member1')
         self.set_lb_status(self.lb_id)
-        self.create_member(self.pool_id, '10.0.0.2', 80, name='member2')
+        self.create_member(self.pool_id, '192.0.2.2', 80, name='member2')
         self.set_lb_status(self.lb_id)
-        self.create_member(self.pool_id, '10.0.0.3', 80, name='member3')
+        self.create_member(self.pool_id, '192.0.2.3', 80, name='member3')
         self.set_lb_status(self.lb_id)
 
         # First two -- should have 'next' link
@@ -279,11 +279,11 @@ class TestMember(base.BaseAPITest):
         self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
 
     def test_get_all_fields_filter(self):
-        self.create_member(self.pool_id, '10.0.0.1', 80, name='member1')
+        self.create_member(self.pool_id, '192.0.2.1', 80, name='member1')
         self.set_lb_status(self.lb_id)
-        self.create_member(self.pool_id, '10.0.0.2', 80, name='member2')
+        self.create_member(self.pool_id, '192.0.2.2', 80, name='member2')
         self.set_lb_status(self.lb_id)
-        self.create_member(self.pool_id, '10.0.0.3', 80, name='member3')
+        self.create_member(self.pool_id, '192.0.2.3', 80, name='member3')
         self.set_lb_status(self.lb_id)
 
         members = self.get(self.members_path, params={
@@ -295,17 +295,17 @@ class TestMember(base.BaseAPITest):
 
     def test_get_all_filter(self):
         mem1 = self.create_member(self.pool_id,
-                                  '10.0.0.1',
+                                  '192.0.2.1',
                                   80,
                                   name='member1').get(self.root_tag)
         self.set_lb_status(self.lb_id)
         self.create_member(self.pool_id,
-                           '10.0.0.2',
+                           '192.0.2.2',
                            80,
                            name='member2').get(self.root_tag)
         self.set_lb_status(self.lb_id)
         self.create_member(self.pool_id,
-                           '10.0.0.3',
+                           '192.0.2.3',
                            80,
                            name='member3').get(self.root_tag)
         self.set_lb_status(self.lb_id)
@@ -323,8 +323,8 @@ class TestMember(base.BaseAPITest):
 
     def test_create_sans_listener(self):
         api_member = self.create_member(
-            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
-        self.assertEqual('10.0.0.1', api_member['address'])
+            self.pool_id, '192.0.2.1', 80).get(self.root_tag)
+        self.assertEqual('192.0.2.1', api_member['address'])
         self.assertEqual(80, api_member['protocol_port'])
         self.assertIsNotNone(api_member['created_at'])
         self.assertIsNone(api_member['updated_at'])
@@ -367,10 +367,10 @@ class TestMember(base.BaseAPITest):
                     return_value=override_credentials):
 
                 api_member = self.create_member(
-                    self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+                    self.pool_id, '192.0.2.1', 80).get(self.root_tag)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
-        self.assertEqual('10.0.0.1', api_member['address'])
+        self.assertEqual('192.0.2.1', api_member['address'])
         self.assertEqual(80, api_member['protocol_port'])
         self.assertIsNotNone(api_member['created_at'])
         self.assertIsNone(api_member['updated_at'])
@@ -396,7 +396,7 @@ class TestMember(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                self.project_id):
             api_member = self.create_member(
-                self.pool_id, '10.0.0.1', 80, status=403)
+                self.pool_id, '192.0.2.1', 80, status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_member)
 
@@ -404,8 +404,17 @@ class TestMember(base.BaseAPITest):
     def test_create_with_project_id_is_ignored(self):
         pid = uuidutils.generate_uuid()
         api_member = self.create_member(
-            self.pool_id, '10.0.0.1', 80, project_id=pid).get(self.root_tag)
+            self.pool_id, '192.0.2.1', 80, project_id=pid).get(self.root_tag)
         self.assertEqual(self.project_id, api_member['project_id'])
+
+    def test_create_backup(self):
+        api_member = self.create_member(
+            self.pool_id, '192.0.2.1', 80, backup=True).get(self.root_tag)
+        self.assertTrue(api_member['backup'])
+        self.set_lb_status(self.lb_id)
+        api_member = self.create_member(
+            self.pool_id, '192.0.2.1', 81, backup=False).get(self.root_tag)
+        self.assertFalse(api_member['backup'])
 
     def test_bad_create(self):
         member = {'name': 'test1'}
@@ -414,7 +423,7 @@ class TestMember(base.BaseAPITest):
     def test_create_with_bad_handler(self):
         self.handler_mock().member.create.side_effect = Exception()
         api_member = self.create_member(
-            self.pool_with_listener_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_with_listener_id, '192.0.2.1', 80).get(self.root_tag)
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=self.pool_with_listener_id,
@@ -426,12 +435,12 @@ class TestMember(base.BaseAPITest):
             member_op_status=constants.NO_MONITOR)
 
     def test_full_batch_members(self):
-        member1 = {'address': '10.0.0.1', 'protocol_port': 80}
-        member2 = {'address': '10.0.0.2', 'protocol_port': 80}
-        member3 = {'address': '10.0.0.3', 'protocol_port': 80}
-        member4 = {'address': '10.0.0.4', 'protocol_port': 80}
-        member5 = {'address': '10.0.0.5', 'protocol_port': 80}
-        member6 = {'address': '10.0.0.6', 'protocol_port': 80}
+        member1 = {'address': '192.0.2.1', 'protocol_port': 80}
+        member2 = {'address': '192.0.2.2', 'protocol_port': 80}
+        member3 = {'address': '192.0.2.3', 'protocol_port': 80}
+        member4 = {'address': '192.0.2.4', 'protocol_port': 80}
+        member5 = {'address': '192.0.2.5', 'protocol_port': 80}
+        member6 = {'address': '192.0.2.6', 'protocol_port': 80}
         members = [member1, member2, member3, member4]
         for m in members:
             self.create_member(pool_id=self.pool_id, **m)
@@ -446,12 +455,12 @@ class TestMember(base.BaseAPITest):
         ).json.get(self.root_tag_list)
 
         expected_members = [
-            ('10.0.0.1', 80, 'PENDING_UPDATE'),
-            ('10.0.0.2', 80, 'PENDING_UPDATE'),
-            ('10.0.0.3', 80, 'PENDING_DELETE'),
-            ('10.0.0.4', 80, 'PENDING_DELETE'),
-            ('10.0.0.5', 80, 'PENDING_CREATE'),
-            ('10.0.0.6', 80, 'PENDING_CREATE'),
+            ('192.0.2.1', 80, 'PENDING_UPDATE'),
+            ('192.0.2.2', 80, 'PENDING_UPDATE'),
+            ('192.0.2.3', 80, 'PENDING_DELETE'),
+            ('192.0.2.4', 80, 'PENDING_DELETE'),
+            ('192.0.2.5', 80, 'PENDING_CREATE'),
+            ('192.0.2.6', 80, 'PENDING_CREATE'),
         ]
 
         member_ids = {}
@@ -463,21 +472,22 @@ class TestMember(base.BaseAPITest):
             member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
         handler_args = self.handler_mock().member.batch_update.call_args[0]
         self.assertEqual(
-            [member_ids[('10.0.0.3', 80)], member_ids[('10.0.0.4', 80)]],
+            [member_ids[('192.0.2.3', 80)], member_ids[('192.0.2.4', 80)]],
             handler_args[0])
         self.assertEqual(
-            [member_ids[('10.0.0.5', 80)], member_ids[('10.0.0.6', 80)]],
+            [member_ids[('192.0.2.5', 80)], member_ids[('192.0.2.6', 80)]],
             handler_args[1])
         self.assertEqual(2, len(handler_args[2]))
         updated_members = [
             (handler_args[2][0].address, handler_args[2][0].protocol_port),
             (handler_args[2][1].address, handler_args[2][1].protocol_port)
         ]
-        self.assertEqual([('10.0.0.1', 80), ('10.0.0.2', 80)], updated_members)
+        self.assertEqual([('192.0.2.1', 80), ('192.0.2.2', 80)],
+                         updated_members)
 
     def test_create_batch_members(self):
-        member5 = {'address': '10.0.0.5', 'protocol_port': 80}
-        member6 = {'address': '10.0.0.6', 'protocol_port': 80}
+        member5 = {'address': '192.0.2.5', 'protocol_port': 80}
+        member6 = {'address': '192.0.2.6', 'protocol_port': 80}
 
         req_dict = [member5, member6]
         body = {self.root_tag_list: req_dict}
@@ -488,8 +498,8 @@ class TestMember(base.BaseAPITest):
         ).json.get(self.root_tag_list)
 
         expected_members = [
-            ('10.0.0.5', 80, 'PENDING_CREATE'),
-            ('10.0.0.6', 80, 'PENDING_CREATE'),
+            ('192.0.2.5', 80, 'PENDING_CREATE'),
+            ('192.0.2.6', 80, 'PENDING_CREATE'),
         ]
 
         member_ids = {}
@@ -502,13 +512,13 @@ class TestMember(base.BaseAPITest):
         handler_args = self.handler_mock().member.batch_update.call_args[0]
         self.assertEqual(0, len(handler_args[0]))
         self.assertEqual(
-            [member_ids[('10.0.0.5', 80)], member_ids[('10.0.0.6', 80)]],
+            [member_ids[('192.0.2.5', 80)], member_ids[('192.0.2.6', 80)]],
             handler_args[1])
         self.assertEqual(0, len(handler_args[2]))
 
     def test_update_batch_members(self):
-        member1 = {'address': '10.0.0.1', 'protocol_port': 80}
-        member2 = {'address': '10.0.0.2', 'protocol_port': 80}
+        member1 = {'address': '192.0.2.1', 'protocol_port': 80}
+        member2 = {'address': '192.0.2.2', 'protocol_port': 80}
         members = [member1, member2]
         for m in members:
             self.create_member(pool_id=self.pool_id, **m)
@@ -523,8 +533,8 @@ class TestMember(base.BaseAPITest):
         ).json.get(self.root_tag_list)
 
         expected_members = [
-            ('10.0.0.1', 80, 'PENDING_UPDATE'),
-            ('10.0.0.2', 80, 'PENDING_UPDATE'),
+            ('192.0.2.1', 80, 'PENDING_UPDATE'),
+            ('192.0.2.2', 80, 'PENDING_UPDATE'),
         ]
 
         member_ids = {}
@@ -542,11 +552,12 @@ class TestMember(base.BaseAPITest):
             (handler_args[2][0].address, handler_args[2][0].protocol_port),
             (handler_args[2][1].address, handler_args[2][1].protocol_port)
         ]
-        self.assertEqual([('10.0.0.1', 80), ('10.0.0.2', 80)], updated_members)
+        self.assertEqual([('192.0.2.1', 80), ('192.0.2.2', 80)],
+                         updated_members)
 
     def test_delete_batch_members(self):
-        member3 = {'address': '10.0.0.3', 'protocol_port': 80}
-        member4 = {'address': '10.0.0.4', 'protocol_port': 80}
+        member3 = {'address': '192.0.2.3', 'protocol_port': 80}
+        member4 = {'address': '192.0.2.4', 'protocol_port': 80}
         members = [member3, member4]
         for m in members:
             self.create_member(pool_id=self.pool_id, **m)
@@ -561,8 +572,8 @@ class TestMember(base.BaseAPITest):
         ).json.get(self.root_tag_list)
 
         expected_members = [
-            ('10.0.0.3', 80, 'PENDING_DELETE'),
-            ('10.0.0.4', 80, 'PENDING_DELETE'),
+            ('192.0.2.3', 80, 'PENDING_DELETE'),
+            ('192.0.2.4', 80, 'PENDING_DELETE'),
         ]
 
         member_ids = {}
@@ -574,15 +585,15 @@ class TestMember(base.BaseAPITest):
             member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
         handler_args = self.handler_mock().member.batch_update.call_args[0]
         self.assertEqual(
-            [member_ids[('10.0.0.3', 80)], member_ids[('10.0.0.4', 80)]],
+            [member_ids[('192.0.2.3', 80)], member_ids[('192.0.2.4', 80)]],
             handler_args[0])
         self.assertEqual(0, len(handler_args[1]))
         self.assertEqual(0, len(handler_args[2]))
 
     def test_create_with_attached_listener(self):
         api_member = self.create_member(
-            self.pool_with_listener_id, '10.0.0.1', 80).get(self.root_tag)
-        self.assertEqual('10.0.0.1', api_member['address'])
+            self.pool_with_listener_id, '192.0.2.1', 80).get(self.root_tag)
+        self.assertEqual('192.0.2.1', api_member['address'])
         self.assertEqual(80, api_member['protocol_port'])
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
@@ -599,10 +610,10 @@ class TestMember(base.BaseAPITest):
 
     def test_create_with_monitor_address_and_port(self):
         api_member = self.create_member(
-            self.pool_with_listener_id, '10.0.0.1', 80,
+            self.pool_with_listener_id, '192.0.2.1', 80,
             monitor_address='192.0.2.3',
             monitor_port=80).get(self.root_tag)
-        self.assertEqual('10.0.0.1', api_member['address'])
+        self.assertEqual('192.0.2.1', api_member['address'])
         self.assertEqual(80, api_member['protocol_port'])
         self.assertEqual('192.0.2.3', api_member['monitor_address'])
         self.assertEqual(80, api_member['monitor_port'])
@@ -625,7 +636,7 @@ class TestMember(base.BaseAPITest):
                                    1, 1, 1, 1)
         self.set_lb_status(self.lb_id)
         api_member = self.create_member(
-            self.pool_with_listener_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_with_listener_id, '192.0.2.1', 80).get(self.root_tag)
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=self.pool_with_listener_id, member_id=api_member.get('id'),
@@ -636,7 +647,7 @@ class TestMember(base.BaseAPITest):
             member_op_status=constants.OFFLINE)
 
     def test_duplicate_create(self):
-        member = {'address': '10.0.0.1', 'protocol_port': 80,
+        member = {'address': '192.0.2.1', 'protocol_port': 80,
                   'project_id': self.project_id}
         self.post(self.members_path, self._build_body(member))
         self.set_lb_status(self.lb_id)
@@ -648,7 +659,7 @@ class TestMember(base.BaseAPITest):
             net_mock.return_value.get_subnet = mock.Mock(
                 side_effect=network_base.SubnetNotFound('Subnet not found'))
             subnet_id = uuidutils.generate_uuid()
-            response = self.create_member(self.pool_id, '10.0.0.1', 80,
+            response = self.create_member(self.pool_id, '192.0.2.1', 80,
                                           subnet_id=subnet_id, status=400)
             err_msg = 'Subnet ' + subnet_id + ' not found.'
             self.assertEqual(response.get('faultstring'), err_msg)
@@ -659,20 +670,20 @@ class TestMember(base.BaseAPITest):
             subnet_id = uuidutils.generate_uuid()
             net_mock.return_value.get_subnet.return_value = subnet_id
             response = self.create_member(
-                self.pool_id, '10.0.0.1', 80,
+                self.pool_id, '192.0.2.1', 80,
                 subnet_id=subnet_id).get(self.root_tag)
-            self.assertEqual('10.0.0.1', response['address'])
+            self.assertEqual('192.0.2.1', response['address'])
             self.assertEqual(80, response['protocol_port'])
             self.assertEqual(subnet_id, response['subnet_id'])
 
     def test_create_bad_port_number(self):
-        member = {'address': '10.0.0.3',
+        member = {'address': '192.0.2.3',
                   'protocol_port': constants.MIN_PORT_NUMBER - 1}
         resp = self.post(self.members_path, self._build_body(member),
                          status=400)
         self.assertIn('Value should be greater or equal to',
                       resp.json.get('faultstring'))
-        member = {'address': '10.0.0.3',
+        member = {'address': '192.0.2.3',
                   'protocol_port': constants.MAX_PORT_NUMBER + 1}
         resp = self.post(self.members_path, self._build_body(member),
                          status=400)
@@ -681,14 +692,14 @@ class TestMember(base.BaseAPITest):
 
     def test_create_over_quota(self):
         self.start_quota_mock(data_models.Member)
-        member = {'address': '10.0.0.3', 'protocol_port': 81}
+        member = {'address': '192.0.2.3', 'protocol_port': 81}
         self.post(self.members_path, self._build_body(member), status=403)
 
     def test_update_with_attached_listener(self):
         old_name = "name1"
         new_name = "name2"
         api_member = self.create_member(
-            self.pool_with_listener_id, '10.0.0.1', 80,
+            self.pool_with_listener_id, '192.0.2.1', 80,
             name=old_name).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         new_member = {'name': new_name}
@@ -714,7 +725,7 @@ class TestMember(base.BaseAPITest):
         old_name = "name1"
         new_name = "name2"
         api_member = self.create_member(
-            self.pool_with_listener_id, '10.0.0.1', 80,
+            self.pool_with_listener_id, '192.0.2.1', 80,
             name=old_name).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         new_member = {'name': new_name}
@@ -766,7 +777,7 @@ class TestMember(base.BaseAPITest):
         old_name = "name1"
         new_name = "name2"
         api_member = self.create_member(
-            self.pool_with_listener_id, '10.0.0.1', 80,
+            self.pool_with_listener_id, '192.0.2.1', 80,
             name=old_name).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         new_member = {'name': new_name}
@@ -796,7 +807,7 @@ class TestMember(base.BaseAPITest):
         old_name = "name1"
         new_name = "name2"
         api_member = self.create_member(
-            self.pool_id, '10.0.0.1', 80, name=old_name).get(self.root_tag)
+            self.pool_id, '192.0.2.1', 80, name=old_name).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         member_path = self.member_path.format(
             member_id=api_member.get('id'))
@@ -820,14 +831,14 @@ class TestMember(base.BaseAPITest):
 
     def test_bad_update(self):
         api_member = self.create_member(
-            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_id, '192.0.2.1', 80).get(self.root_tag)
         new_member = {'protocol_port': 'ten'}
         self.put(self.member_path.format(member_id=api_member.get('id')),
                  self._build_body(new_member), status=400)
 
     def test_update_with_bad_handler(self):
         api_member = self.create_member(
-            self.pool_with_listener_id, '10.0.0.1', 80,
+            self.pool_with_listener_id, '192.0.2.1', 80,
             name="member1").get(self.root_tag)
         self.set_lb_status(self.lb_id)
         new_member = {'name': "member2"}
@@ -841,7 +852,7 @@ class TestMember(base.BaseAPITest):
 
     def test_delete(self):
         api_member = self.create_member(
-            self.pool_with_listener_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_with_listener_id, '192.0.2.1', 80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         member = self.get(self.member_path_listener.format(
             member_id=api_member.get('id'))).json.get(self.root_tag)
@@ -871,7 +882,7 @@ class TestMember(base.BaseAPITest):
 
     def test_delete_authorized(self):
         api_member = self.create_member(
-            self.pool_with_listener_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_with_listener_id, '192.0.2.1', 80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         member = self.get(self.member_path_listener.format(
             member_id=api_member.get('id'))).json.get(self.root_tag)
@@ -925,7 +936,7 @@ class TestMember(base.BaseAPITest):
 
     def test_delete_not_authorized(self):
         api_member = self.create_member(
-            self.pool_with_listener_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_with_listener_id, '192.0.2.1', 80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         member = self.get(self.member_path_listener.format(
             member_id=api_member.get('id'))).json.get(self.root_tag)
@@ -958,7 +969,7 @@ class TestMember(base.BaseAPITest):
 
     def test_delete_with_bad_handler(self):
         api_member = self.create_member(
-            self.pool_with_listener_id, '10.0.0.1', 80).get(self.root_tag)
+            self.pool_with_listener_id, '192.0.2.1', 80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         member = self.get(self.member_path_listener.format(
             member_id=api_member.get('id'))).json.get(self.root_tag)
@@ -979,12 +990,12 @@ class TestMember(base.BaseAPITest):
             member_prov_status=constants.ERROR)
 
     def test_create_when_lb_pending_update(self):
-        self.create_member(self.pool_id, address="10.0.0.2",
+        self.create_member(self.pool_id, address="192.0.2.2",
                            protocol_port=80)
         self.set_lb_status(self.lb_id)
         self.put(self.LB_PATH.format(lb_id=self.lb_id),
                  body={'loadbalancer': {'name': 'test_name_change'}})
-        member = {'address': '10.0.0.1', 'protocol_port': 80,
+        member = {'address': '192.0.2.1', 'protocol_port': 80,
                   'project_id': self.project_id}
         self.post(self.members_path,
                   body=self._build_body(member),
@@ -992,7 +1003,7 @@ class TestMember(base.BaseAPITest):
 
     def test_update_when_lb_pending_update(self):
         member = self.create_member(
-            self.pool_id, address="10.0.0.1", protocol_port=80,
+            self.pool_id, address="192.0.2.1", protocol_port=80,
             name="member1").get(self.root_tag)
         self.set_lb_status(self.lb_id)
         self.put(self.LB_PATH.format(lb_id=self.lb_id),
@@ -1003,7 +1014,7 @@ class TestMember(base.BaseAPITest):
 
     def test_delete_when_lb_pending_update(self):
         member = self.create_member(
-            self.pool_id, address="10.0.0.1",
+            self.pool_id, address="192.0.2.1",
             protocol_port=80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         self.put(self.LB_PATH.format(lb_id=self.lb_id),
@@ -1012,19 +1023,19 @@ class TestMember(base.BaseAPITest):
             member_id=member.get('id')), status=409)
 
     def test_create_when_lb_pending_delete(self):
-        self.create_member(self.pool_id, address="10.0.0.1",
+        self.create_member(self.pool_id, address="192.0.2.1",
                            protocol_port=80)
         self.set_lb_status(self.lb_id)
         self.delete(self.LB_PATH.format(lb_id=self.lb_id),
                     params={'cascade': "true"})
-        member = {'address': '10.0.0.2', 'protocol_port': 88,
+        member = {'address': '192.0.2.2', 'protocol_port': 88,
                   'project_id': self.project_id}
         self.post(self.members_path, body=self._build_body(member),
                   status=409)
 
     def test_update_when_lb_pending_delete(self):
         member = self.create_member(
-            self.pool_id, address="10.0.0.1", protocol_port=80,
+            self.pool_id, address="192.0.2.1", protocol_port=80,
             name="member1").get(self.root_tag)
         self.set_lb_status(self.lb_id)
         self.delete(self.LB_PATH.format(lb_id=self.lb_id),
@@ -1034,7 +1045,7 @@ class TestMember(base.BaseAPITest):
 
     def test_delete_when_lb_pending_delete(self):
         member = self.create_member(
-            self.pool_id, address="10.0.0.1",
+            self.pool_id, address="192.0.2.1",
             protocol_port=80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         self.delete(self.LB_PATH.format(lb_id=self.lb_id),
@@ -1044,7 +1055,7 @@ class TestMember(base.BaseAPITest):
 
     def test_delete_already_deleted(self):
         member = self.create_member(
-            self.pool_id, address="10.0.0.1",
+            self.pool_id, address="192.0.2.1",
             protocol_port=80).get(self.root_tag)
         self.set_lb_status(self.lb_id, status=constants.DELETED)
         self.delete(self.member_path.format(
