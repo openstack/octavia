@@ -187,6 +187,22 @@ class NoopManager(object):
         self.networkconfigconfig[(loadbalancer.id)] = (
             loadbalancer, 'get_network_configs')
 
+        amp_configs = {}
+        for amp in loadbalancer.amphorae:
+            vrrp_port = self.get_port(amp.vrrp_port_id)
+            ha_port = self.get_port(amp.ha_port_id)
+            amp_configs[amp.id] = network_models.AmphoraNetworkConfig(
+                amphora=amp,
+                vip_subnet=self.get_subnet(loadbalancer.vip.subnet_id),
+                vip_port=self.get_port(loadbalancer.vip.port_id),
+                vrrp_subnet=self.get_subnet(
+                    vrrp_port.get_subnet_id(amp.vrrp_ip)),
+                vrrp_port=vrrp_port,
+                ha_subnet=self.get_subnet(
+                    ha_port.get_subnet_id(amp.ha_ip)),
+                ha_port=ha_port)
+        return amp_configs
+
     def wait_for_port_detach(self, amphora):
         LOG.debug("failover %s no-op, wait_for_port_detach, amphora id %s",
                   self.__class__.__name__, amphora.id)
