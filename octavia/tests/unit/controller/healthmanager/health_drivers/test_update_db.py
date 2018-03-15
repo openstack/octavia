@@ -183,7 +183,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         self.amphora_repo.get_all_lbs_on_amphora.return_value = []
 
-        self.assertRaises(TestException, self.hm.update_health, health)
+        self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
         self.session_mock.rollback.assert_called_once()
 
