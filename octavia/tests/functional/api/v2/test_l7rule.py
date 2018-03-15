@@ -503,6 +503,7 @@ class TestL7Rule(base.BaseAPITest):
             l7rule_prov_status=constants.PENDING_CREATE,
             l7rule_op_status=constants.OFFLINE)
 
+    @mock.patch('octavia.common.constants.MAX_L7RULES_PER_L7POLICY', new=2)
     def test_create_too_many_rules(self):
         for i in range(0, constants.MAX_L7RULES_PER_L7POLICY):
             self.create_l7rule(
