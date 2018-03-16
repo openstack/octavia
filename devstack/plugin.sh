@@ -220,6 +220,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF controller_worker amphora_driver ${OCTAVIA_AMPHORA_DRIVER}
     iniset $OCTAVIA_CONF controller_worker compute_driver ${OCTAVIA_COMPUTE_DRIVER}
     iniset $OCTAVIA_CONF controller_worker network_driver ${OCTAVIA_NETWORK_DRIVER}
+    iniset $OCTAVIA_CONF controller_worker amp_image_tag ${OCTAVIA_AMP_IMAGE_TAG}
 
     iniuncomment $OCTAVIA_CONF health_manager heartbeat_key
     iniset $OCTAVIA_CONF health_manager heartbeat_key ${OCTAVIA_HEALTH_KEY}
@@ -311,6 +312,17 @@ function octavia_configure {
         fi
     fi
 
+    if [ $OCTAVIA_NODE == 'main' ]; then
+        configure_octavia_api_haproxy
+        # make sure octavia is reachable from haproxy
+        iniset $OCTAVIA_CONF DEFAULT bind_port ${OCTAVIA_HA_PORT}
+        iniset $OCTAVIA_CONF DEFAULT bind_host 0.0.0.0
+    fi
+    if [ $OCTAVIA_NODE != 'main' ] && [ $OCTAVIA_NODE != 'standalone' ] ; then
+        # make sure octavia is reachable from haproxy from main node
+        iniset $OCTAVIA_CONF DEFAULT bind_port ${OCTAVIA_HA_PORT}
+        iniset $OCTAVIA_CONF DEFAULT bind_host 0.0.0.0
+    fi
 }
 
 function create_mgmt_network_interface {
@@ -340,7 +352,6 @@ function create_mgmt_network_interface {
         die "Unknown network controller. Please define octavia_create_network_interface_device"
     fi
     sudo ip link set dev o-hm0 address $MGMT_PORT_MAC
-    sudo dhclient -v o-hm0 -cf $OCTAVIA_DHCLIENT_CONF
     sudo iptables -I INPUT -i o-hm0 -p udp --dport 5555 -j ACCEPT
 
     if [ $OCTAVIA_CONTROLLER_IP_PORT_LIST == 'auto' ] ; then
@@ -417,79 +428,12 @@ function configure_octavia_api_haproxy {
 
 function octavia_start {
 
-    # Several steps in this function would more logically be in the configure function, but
-    # we need nova, glance, and neutron to be running.
-
-    if [ $OCTAVIA_NODE != 'main' ] && [ $OCTAVIA_NODE != 'standalone' ]  && [ $OCTAVIA_NODE != 'api' ]; then
-        # without the other services enabled apparently we don't have
-        # credentials at this point
-        TOP_DIR=$(cd $(dirname "$0") && pwd)
-        source ${TOP_DIR}/openrc admin admin
+    if  ! ps aux | grep -q [o]-hm0 ; then
+        sudo dhclient -v o-hm0 -cf $OCTAVIA_DHCLIENT_CONF
     fi
-
-    if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
-        # things that should only happen on the ha main node / or once
-        openstack keypair create --public-key ${OCTAVIA_AMP_SSH_KEY_PATH}.pub ${OCTAVIA_AMP_SSH_KEY_NAME}
-
-        # Check if an amphora image is already loaded
-        AMPHORA_IMAGE_NAME=$(openstack image list --property name=${OCTAVIA_AMP_IMAGE_NAME} -f value -c Name)
-        export AMPHORA_IMAGE_NAME
-
-        if [ "$AMPHORA_IMAGE_NAME" == ${OCTAVIA_AMP_IMAGE_NAME} ]; then
-            echo "Found existing amphora image: $AMPHORA_IMAGE_NAME"
-            echo "Skipping amphora image build"
-            export DISABLE_AMP_IMAGE_BUILD=True
-        fi
-
-        if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
-            build_octavia_worker_image
-        fi
-
-        OCTAVIA_AMP_IMAGE_ID=$(openstack image list -f value --property name=${OCTAVIA_AMP_IMAGE_NAME} -c ID)
-
-        if [ -n "$OCTAVIA_AMP_IMAGE_ID" ]; then
-            openstack image set --tag ${OCTAVIA_AMP_IMAGE_TAG} ${OCTAVIA_AMP_IMAGE_ID}
-        fi
-
-        # Create a management network.
-        build_mgmt_network
-
-        create_octavia_accounts
-
-        # Adds service and endpoint
-        if is_service_enabled tempest; then
-            configure_octavia_tempest ${OCTAVIA_AMP_NETWORK_ID}
-        fi
-    fi
-
-    if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
-        set_octavia_worker_image_owner_id
-    fi
-
-    if [ $OCTAVIA_NODE != 'api' ] ; then
-        create_mgmt_network_interface
-
-        create_amphora_flavor
-        configure_lb_mgmt_sec_grp
-    fi
-
-    iniset $OCTAVIA_CONF controller_worker amp_image_tag ${OCTAVIA_AMP_IMAGE_TAG}
-
-    OCTAVIA_AMP_NETWORK_ID=$(openstack network show lb-mgmt-net -f value -c id)
-
-    iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
 
     if [ $OCTAVIA_NODE == 'main' ]; then
-        configure_octavia_api_haproxy
         run_process $OCTAVIA_API_HAPROXY "/usr/sbin/haproxy -db -V -f ${OCTAVIA_CONF_DIR}/haproxy.cfg"
-        # make sure octavia is reachable from haproxy
-        iniset $OCTAVIA_CONF DEFAULT bind_port ${OCTAVIA_HA_PORT}
-        iniset $OCTAVIA_CONF DEFAULT bind_host 0.0.0.0
-    fi
-    if [ $OCTAVIA_NODE != 'main' ] && [ $OCTAVIA_NODE != 'standalone' ] ; then
-        # make sure octavia is reachable from haproxy from main node
-        iniset $OCTAVIA_CONF DEFAULT bind_port ${OCTAVIA_HA_PORT}
-        iniset $OCTAVIA_CONF DEFAULT bind_host 0.0.0.0
     fi
 
     if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
@@ -501,11 +445,6 @@ function octavia_start {
     run_process $OCTAVIA_CONSUMER  "$OCTAVIA_CONSUMER_BINARY $OCTAVIA_CONSUMER_ARGS"
     run_process $OCTAVIA_HOUSEKEEPER  "$OCTAVIA_HOUSEKEEPER_BINARY $OCTAVIA_HOUSEKEEPER_ARGS"
     run_process $OCTAVIA_HEALTHMANAGER  "$OCTAVIA_HEALTHMANAGER_BINARY $OCTAVIA_HEALTHMANAGER_ARGS"
-
-    if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
-        add_load-balancer_roles
-    fi
-
 }
 
 function octavia_stop {
@@ -520,7 +459,7 @@ function octavia_stop {
     stop_process $OCTAVIA_HEALTHMANAGER
 
     # Kill dhclient process started for o-hm0 interface
-    pids=$(ps aux | awk '/o-hm0/ { print $2 }')
+    pids=$(ps aux | awk '/[o]-hm0/ { print $2 }')
     [ ! -z "$pids" ] && sudo kill $pids
     if function_exists octavia_delete_network_interface_device ; then
         octavia_delete_network_interface_device o-hm0
@@ -573,6 +512,66 @@ function add_load-balancer_roles {
     openstack role add --user demo --project demo load-balancer_member
 }
 
+function octavia_init {
+   if [ $OCTAVIA_NODE != 'main' ] && [ $OCTAVIA_NODE != 'standalone' ]  && [ $OCTAVIA_NODE != 'api' ]; then
+       # without the other services enabled apparently we don't have
+       # credentials at this point
+       TOP_DIR=$(cd $(dirname "$0") && pwd)
+       source ${TOP_DIR}/openrc admin admin
+   fi
+
+   if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
+       # things that should only happen on the ha main node / or once
+       if ! openstack keypair show ${OCTAVIA_AMP_SSH_KEY_NAME} ; then
+           openstack keypair create --public-key ${OCTAVIA_AMP_SSH_KEY_PATH}.pub ${OCTAVIA_AMP_SSH_KEY_NAME}
+       fi
+
+       # Check if an amphora image is already loaded
+       AMPHORA_IMAGE_NAME=$(openstack image list --property name=${OCTAVIA_AMP_IMAGE_NAME} -f value -c Name)
+       export AMPHORA_IMAGE_NAME
+
+       if [ "$AMPHORA_IMAGE_NAME" == ${OCTAVIA_AMP_IMAGE_NAME} ]; then
+           echo "Found existing amphora image: $AMPHORA_IMAGE_NAME"
+           echo "Skipping amphora image build"
+           export DISABLE_AMP_IMAGE_BUILD=True
+       fi
+
+       if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
+           build_octavia_worker_image
+       fi
+
+       OCTAVIA_AMP_IMAGE_ID=$(openstack image list -f value --property name=${OCTAVIA_AMP_IMAGE_NAME} -c ID)
+
+       if [ -n "$OCTAVIA_AMP_IMAGE_ID" ]; then
+           openstack image set --tag ${OCTAVIA_AMP_IMAGE_TAG} ${OCTAVIA_AMP_IMAGE_ID}
+       fi
+
+       # Create a management network.
+       build_mgmt_network
+       OCTAVIA_AMP_NETWORK_ID=$(openstack network show lb-mgmt-net -f value -c id)
+       iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
+
+       create_octavia_accounts
+
+       # Adds service and endpoint
+       if is_service_enabled tempest; then
+           configure_octavia_tempest ${OCTAVIA_AMP_NETWORK_ID}
+       fi
+
+       add_load-balancer_roles
+   fi
+
+   if [ $OCTAVIA_NODE != 'api' ] ; then
+       create_mgmt_network_interface
+       create_amphora_flavor
+       configure_lb_mgmt_sec_grp
+   fi
+
+   if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
+       set_octavia_worker_image_owner_id
+   fi
+}
+
 # check for service enabled
 if is_service_enabled $OCTAVIA; then
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then # main-ha node stuff only
@@ -601,7 +600,10 @@ if is_service_enabled $OCTAVIA; then
 
     elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
         # Initialize and start the octavia service
-        echo_summary "Initializing octavia"
+        echo_summary "Initializing Octavia"
+        octavia_init
+
+        echo_summary "Starting Octavia"
         octavia_start
     fi
 fi
