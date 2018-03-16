@@ -29,7 +29,7 @@ oslo.utils>=3.33.0 # Apache-2.0
 pyasn1!=0.2.3,>=0.1.8 # BSD
 pyasn1-modules>=0.0.6 # BSD
 PyMySQL>=0.7.6 # MIT License
-python-barbicanclient!=4.5.0,!=4.5.1,>=4.0.0 # Apache-2.0
+python-barbicanclient>=4.5.2 # Apache-2.0
 python-glanceclient>=2.8.0 # Apache-2.0
 python-novaclient>=9.1.0 # Apache-2.0
 pyOpenSSL>=17.1.0 # Apache-2.0

@@ -8,7 +8,7 @@ sphinxcontrib-blockdiag>=1.5.4 # BSD
 sphinxcontrib-nwdiag>=0.9.5 # BSD
 sphinxcontrib-seqdiag>=0.8.4 # BSD
 docutils>=0.11 # OSI-Approved Open Source, Public Domain
-sphinx!=1.6.6,>=1.6.2 # BSD
+sphinx!=1.6.6,!=1.6.7,>=1.6.2 # BSD
 graphviz!=0.5.0,>=0.4 # MIT License
 openstackdocstheme>=1.18.1 # Apache-2.0
 sadisplay>=0.4.8 # BSD
