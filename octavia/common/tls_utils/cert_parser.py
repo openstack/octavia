@@ -50,10 +50,10 @@ def validate_cert(certificate, private_key=None,
     :returns: boolean
     """
     cert = _get_x509_from_pem_bytes(certificate)
-    if intermediates:
-        for imd in get_intermediates_pems(intermediates):
-            # Loading the certificates validates them
-            pass
+    if intermediates and not isinstance(intermediates, list):
+        # If the intermediates are in a list, then they are already loaded.
+        # Load the certificates to validate them, if they weren't already.
+        list(get_intermediates_pems(intermediates))
     if private_key:
         pkey = _read_private_key(private_key,
                                  passphrase=private_key_passphrase)
@@ -71,7 +71,7 @@ def _read_private_key(private_key_pem, passphrase=None):
     :param passphrase: Optional passphrase needed to decrypt the private key
     :returns: a RSAPrivatekey object
     """
-    if passphrase:
+    if passphrase and type(passphrase) == six.text_type:
         passphrase = passphrase.encode("utf-8")
     if type(private_key_pem) == six.text_type:
         private_key_pem = private_key_pem.encode('utf-8')

@@ -467,6 +467,25 @@ class TestListener(base.BaseAPITest):
         self.create_listener(constants.PROTOCOL_HTTP, 80, self.lb_id,
                              status=409)
 
+    def test_create_bad_tls_ref(self):
+        sni1 = uuidutils.generate_uuid()
+        sni2 = uuidutils.generate_uuid()
+        tls_ref = uuidutils.generate_uuid()
+        lb_listener = {'name': 'listener1', 'default_pool_id': None,
+                       'protocol': constants.PROTOCOL_TERMINATED_HTTPS,
+                       'protocol_port': 80,
+                       'sni_container_refs': [sni1, sni2],
+                       'default_tls_container_ref': tls_ref,
+                       'loadbalancer_id': self.lb_id}
+
+        body = self._build_body(lb_listener)
+        self.cert_manager_mock().get_cert.side_effect = [
+            Exception("bad cert"), None, Exception("bad_cert")]
+        response = self.post(self.LISTENERS_PATH, body, status=400).json
+        self.assertIn(sni1, response['faultstring'])
+        self.assertNotIn(sni2, response['faultstring'])
+        self.assertIn(tls_ref, response['faultstring'])
+
     def test_create_with_default_pool_id(self):
         lb_listener = {'name': 'listener1',
                        'default_pool_id': self.pool_id,
@@ -982,6 +1001,37 @@ class TestListener(base.BaseAPITest):
         listener_path = self.LISTENER_PATH.format(
             listener_id=listener['listener'].get('id'))
         self.put(listener_path, {}, status=400)
+
+    def test_update_bad_tls_ref(self):
+        sni1 = uuidutils.generate_uuid()
+        sni2 = uuidutils.generate_uuid()
+        tls_ref = uuidutils.generate_uuid()
+        tls_ref2 = uuidutils.generate_uuid()
+        lb_listener = {'name': 'listener1', 'default_pool_id': None,
+                       'protocol': constants.PROTOCOL_TERMINATED_HTTPS,
+                       'protocol_port': 80,
+                       'sni_container_refs': [sni1, sni2],
+                       'default_tls_container_ref': tls_ref,
+                       'loadbalancer_id': self.lb_id}
+
+        body = self._build_body(lb_listener)
+        api_listener = self.post(
+            self.LISTENERS_PATH, body).json['listener']
+        self.set_lb_status(self.lb_id)
+        lb_listener_put = {
+            'default_tls_container_ref': tls_ref2,
+            'sni_container_refs': [sni1, sni2]
+        }
+        body = self._build_body(lb_listener_put)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=api_listener['id'])
+        self.cert_manager_mock().get_cert.side_effect = [
+            Exception("bad cert"), None, Exception("bad cert")]
+        response = self.put(listener_path, body, status=400).json
+        self.assertIn(tls_ref2, response['faultstring'])
+        self.assertIn(sni1, response['faultstring'])
+        self.assertNotIn(sni2, response['faultstring'])
+        self.assertNotIn(tls_ref, response['faultstring'])
 
     def test_update_pending_update(self):
         lb = self.create_load_balancer(uuidutils.generate_uuid())

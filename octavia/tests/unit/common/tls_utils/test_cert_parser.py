@@ -78,13 +78,24 @@ class TestTLSParseUtils(base.TestCase):
         self.assertTrue(
             cert_parser.validate_cert(
                 sample_certs.X509_CERT,
-                private_key=sample_certs.X509_CERT_KEY,
-                intermediates=(sample_certs.TEST_X509_IMDS +
-                               b"\nParser should ignore junk\n")))
+                private_key=sample_certs.X509_CERT_KEY.decode('utf-8')))
         self.assertRaises(exceptions.MisMatchedKey,
                           cert_parser.validate_cert,
                           sample_certs.X509_CERT,
                           private_key=sample_certs.X509_CERT_KEY_2)
+
+    def test_validate_cert_handles_intermediates(self):
+        self.assertTrue(
+            cert_parser.validate_cert(
+                sample_certs.X509_CERT,
+                private_key=sample_certs.X509_CERT_KEY,
+                intermediates=(sample_certs.X509_IMDS +
+                               b"\nParser should ignore junk\n")))
+        self.assertTrue(
+            cert_parser.validate_cert(
+                sample_certs.X509_CERT,
+                private_key=sample_certs.X509_CERT_KEY,
+                intermediates=sample_certs.X509_IMDS_LIST))
 
     def test_split_x509s(self):
         imds = []

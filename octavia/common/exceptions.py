@@ -132,6 +132,11 @@ class MisMatchedKey(OctaviaException):
     message = _("Key and x509 certificate do not match")
 
 
+class CertificateRetrievalException(APIException):
+    msg = _('Could not retrieve certificate: %(ref)s')
+    code = 400
+
+
 class CertificateStorageException(OctaviaException):
     message = _('Could not store certificate: %(msg)s')
 
