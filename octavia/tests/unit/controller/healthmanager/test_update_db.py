@@ -131,7 +131,7 @@ class TestUpdateHealthDb(base.TestCase):
         session_mock.commit.side_effect = TestException('boom')
         self.mock_session.return_value = session_mock
 
-        self.assertRaises(TestException, self.hm.update_health, health)
+        self.hm.update_health(health)
         self.assertTrue(self.amphora_health_repo.replace.called)
         session_mock.rollback.assert_called_once()
 
