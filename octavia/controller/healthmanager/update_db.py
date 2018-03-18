@@ -74,6 +74,14 @@ class UpdateHealthDb(object):
             self.emit(entity_type, entity_id, message)
 
     def update_health(self, health):
+        # The executor will eat any exceptions from the update_health code
+        # so we need to wrap it and log the unhandled exception
+        try:
+            self._update_health(health)
+        except Exception:
+            LOG.exception('update_health encountered an unknown error')
+
+    def _update_health(self, health):
         """This function is to update db info based on amphora status
 
         :param health: map object that contains amphora, listener, member info
@@ -318,6 +326,14 @@ class UpdateStatsDb(stats.StatsMixin):
         self.event_streamer.emit(cnt)
 
     def update_stats(self, health_message):
+        # The executor will eat any exceptions from the update_stats code
+        # so we need to wrap it and log the unhandled exception
+        try:
+            self._update_stats(health_message)
+        except Exception:
+            LOG.exception('update_stats encountered an unknown error')
+
+    def _update_stats(self, health_message):
         """This function is to update the db with listener stats
 
         :param health_message: The health message containing the listener stats
