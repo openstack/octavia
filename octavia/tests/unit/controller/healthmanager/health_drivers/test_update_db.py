@@ -74,12 +74,13 @@ class TestUpdateHealthDb(base.TestCase):
         self.hm.member_repo = self.member_repo
         self.hm.pool_repo = self.pool_repo
 
-    def _make_mock_lb_tree(self, listener=True, pool=True, members=1):
+    def _make_mock_lb_tree(self, listener=True, pool=True, members=1,
+                           lb_prov_status=constants.ACTIVE):
         mock_lb = mock.Mock()
         mock_lb.id = self.FAKE_UUID_1
         mock_lb.pools = []
         mock_lb.listeners = []
-        mock_lb.provisioning_status = constants.ACTIVE
+        mock_lb.provisioning_status = lb_prov_status
         mock_lb.operating_status = 'blah'
 
         mock_listener1 = None
@@ -153,6 +154,42 @@ class TestUpdateHealthDb(base.TestCase):
         self.hm.update_health(health)
         self.assertTrue(self.amphora_repo.get_all_lbs_on_amphora.called)
         self.assertTrue(self.loadbalancer_repo.update.called)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+    def test_update_health_lb_pending_no_listener(self):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {},
+            "recv_time": time.time()
+        }
+
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
+            self._make_mock_lb_tree(listener=True, pool=False,
+                                    lb_prov_status=constants.PENDING_UPDATE))
+        self.hm.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_repo.get_all_lbs_on_amphora.called)
+        self.assertTrue(self.loadbalancer_repo.update.called)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+    def test_update_health_missing_listener(self):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {},
+            "recv_time": time.time()
+        }
+
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
+            self._make_mock_lb_tree(listener=True, pool=False))
+        self.hm.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_repo.get_all_lbs_on_amphora.called)
+        self.assertTrue(self.loadbalancer_repo.update.called)
+        self.assertFalse(self.amphora_health_repo.replace.called)
 
     def test_update_health_recv_time_stale(self):
         hb_interval = cfg.CONF.health_manager.heartbeat_interval
