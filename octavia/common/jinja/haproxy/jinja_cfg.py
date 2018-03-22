@@ -58,10 +58,7 @@ class JinjaTemplater(object):
                  base_crt_dir=None,
                  haproxy_template=None,
                  log_http=None,
-                 log_server=None,
-                 timeout_client=None,
-                 timeout_server=None,
-                 timeout_connect=None):
+                 log_server=None):
         """HaProxy configuration generation
 
         :param base_amp_path: Base path for amphora data
@@ -69,9 +66,6 @@ class JinjaTemplater(object):
         :param haproxy_template: Absolute path to Jinja template
         :param log_http: Haproxy HTTP logging path
         :param log_server: Haproxy Server logging path
-        :param timeout_client: Timeout client
-        :param timeout_server: Timeout server
-        :param timeout_connect: Timeout connect
         """
 
         self.base_amp_path = base_amp_path or BASE_PATH
@@ -79,9 +73,6 @@ class JinjaTemplater(object):
         self.haproxy_template = haproxy_template or HAPROXY_TEMPLATE
         self.log_http = log_http
         self.log_server = log_server
-        self.timeout_client = timeout_client
-        self.timeout_server = timeout_server
-        self.timeout_connect = timeout_connect
 
     def build_config(self, host_amphora, listener, tls_cert,
                      socket_path=None,
@@ -139,10 +130,7 @@ class JinjaTemplater(object):
              'user_group': user_group,
              'stats_sock': socket_path,
              'log_http': self.log_http,
-             'log_server': self.log_server,
-             'timeout_client': self.timeout_client,
-             'timeout_server': self.timeout_server,
-             'timeout_connect': self.timeout_connect},
+             'log_server': self.log_server},
             constants=constants)
 
     def _transform_loadbalancer(self, host_amphora, loadbalancer, listener,
@@ -200,7 +188,16 @@ class JinjaTemplater(object):
             'insert_headers': listener.insert_headers,
             'topology': listener.load_balancer.topology,
             'amphorae': listener.load_balancer.amphorae,
-            'enabled': listener.enabled
+            'enabled': listener.enabled,
+            'timeout_client_data': (listener.timeout_client_data or
+                                    constants.DEFAULT_TIMEOUT_CLIENT_DATA),
+            'timeout_member_connect': (listener.timeout_member_connect or
+                                       constants.DEFAULT_TIMEOUT_MEMBER_CONNECT
+                                       ),
+            'timeout_member_data': (listener.timeout_member_data or
+                                    constants.DEFAULT_TIMEOUT_MEMBER_DATA),
+            'timeout_tcp_inspect': (listener.timeout_tcp_inspect or
+                                    constants.DEFAULT_TIMEOUT_TCP_INSPECT),
         }
         if listener.connection_limit and listener.connection_limit > -1:
             ret_value['connection_limit'] = listener.connection_limit

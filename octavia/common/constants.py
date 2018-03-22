@@ -76,6 +76,15 @@ MAX_WEIGHT = 256
 MIN_HM_RETRIES = 1
 MAX_HM_RETRIES = 10
 
+# 1 year:     y     d    h    m    ms
+MAX_TIMEOUT = 365 * 24 * 60 * 60 * 1000
+MIN_TIMEOUT = 0
+
+DEFAULT_TIMEOUT_CLIENT_DATA = 50000
+DEFAULT_TIMEOUT_MEMBER_CONNECT = 5000
+DEFAULT_TIMEOUT_MEMBER_DATA = 50000
+DEFAULT_TIMEOUT_TCP_INSPECT = 0
+
 # Note: The database Amphora table has a foreign key constraint against
 #       the provisioning_status table
 # Amphora has been allocated to a load balancer

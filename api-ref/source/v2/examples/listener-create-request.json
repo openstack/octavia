@@ -15,6 +15,10 @@
         "sni_container_refs": [
             "http://198.51.100.10:9311/v1/containers/a570068c-d295-4780-91d4-3046a325db51",
             "http://198.51.100.10:9311/v1/containers/aaebb31e-7761-4826-8cb4-2b829caca3ee"
-        ]
+        ],
+        "timeout_client_data": 50000,
+        "timeout_member_connect": 5000,
+        "timeout_member_data": 50000,
+        "timeout_tcp_inspect": 0
     }
 }

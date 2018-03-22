@@ -351,7 +351,9 @@ class Listener(BaseDataModel):
                  tls_certificate_id=None, stats=None, default_pool=None,
                  load_balancer=None, sni_containers=None, peer_port=None,
                  l7policies=None, pools=None, insert_headers=None,
-                 created_at=None, updated_at=None):
+                 created_at=None, updated_at=None,
+                 timeout_client_data=None, timeout_member_connect=None,
+                 timeout_member_data=None, timeout_tcp_inspect=None):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -375,6 +377,10 @@ class Listener(BaseDataModel):
         self.pools = pools or []
         self.created_at = created_at
         self.updated_at = updated_at
+        self.timeout_client_data = timeout_client_data
+        self.timeout_member_connect = timeout_member_connect
+        self.timeout_member_data = timeout_member_data
+        self.timeout_tcp_inspect = timeout_tcp_inspect
 
     def update(self, update_dict):
         for key, value in update_dict.items():

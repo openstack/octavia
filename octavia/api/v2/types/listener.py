@@ -46,6 +46,10 @@ class ListenerResponse(BaseListenerType):
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
     loadbalancers = wtypes.wsattr([types.IdOnlyType])
+    timeout_client_data = wtypes.wsattr(wtypes.IntegerType())
+    timeout_member_connect = wtypes.wsattr(wtypes.IntegerType())
+    timeout_member_data = wtypes.wsattr(wtypes.IntegerType())
+    timeout_tcp_inspect = wtypes.wsattr(wtypes.IntegerType())
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -109,6 +113,22 @@ class ListenerPOST(BaseListenerType):
     insert_headers = wtypes.wsattr(
         wtypes.DictType(str, wtypes.StringType(max_length=255)))
     loadbalancer_id = wtypes.wsattr(wtypes.UuidType(), mandatory=True)
+    timeout_client_data = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
+                           maximum=constants.MAX_TIMEOUT),
+        default=constants.DEFAULT_TIMEOUT_CLIENT_DATA)
+    timeout_member_connect = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
+                           maximum=constants.MAX_TIMEOUT),
+        default=constants.DEFAULT_TIMEOUT_MEMBER_CONNECT)
+    timeout_member_data = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
+                           maximum=constants.MAX_TIMEOUT),
+        default=constants.DEFAULT_TIMEOUT_MEMBER_DATA)
+    timeout_tcp_inspect = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
+                           maximum=constants.MAX_TIMEOUT),
+        default=constants.DEFAULT_TIMEOUT_TCP_INSPECT)
 
 
 class ListenerRootPOST(types.BaseType):
@@ -128,6 +148,18 @@ class ListenerPUT(BaseListenerType):
     default_pool_id = wtypes.wsattr(wtypes.UuidType())
     insert_headers = wtypes.wsattr(
         wtypes.DictType(str, wtypes.StringType(max_length=255)))
+    timeout_client_data = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
+                           maximum=constants.MAX_TIMEOUT))
+    timeout_member_connect = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
+                           maximum=constants.MAX_TIMEOUT))
+    timeout_member_data = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
+                           maximum=constants.MAX_TIMEOUT))
+    timeout_tcp_inspect = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
+                           maximum=constants.MAX_TIMEOUT))
 
 
 class ListenerRootPUT(types.BaseType):
@@ -154,6 +186,22 @@ class ListenerSingleCreate(BaseListenerType):
     l7policies = wtypes.wsattr([l7policy.L7PolicySingleCreate], default=[])
     insert_headers = wtypes.wsattr(
         wtypes.DictType(str, wtypes.StringType(max_length=255)))
+    timeout_client_data = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
+                           maximum=constants.MAX_TIMEOUT),
+        default=constants.DEFAULT_TIMEOUT_CLIENT_DATA)
+    timeout_member_connect = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
+                           maximum=constants.MAX_TIMEOUT),
+        default=constants.DEFAULT_TIMEOUT_MEMBER_CONNECT)
+    timeout_member_data = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
+                           maximum=constants.MAX_TIMEOUT),
+        default=constants.DEFAULT_TIMEOUT_MEMBER_DATA)
+    timeout_tcp_inspect = wtypes.wsattr(
+        wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
+                           maximum=constants.MAX_TIMEOUT),
+        default=constants.DEFAULT_TIMEOUT_TCP_INSPECT)
 
 
 class ListenerStatusResponse(BaseListenerType):

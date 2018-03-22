@@ -1,0 +1,11 @@
+---
+features:
+  - |
+    Listeners have four new timeout settings:
+
+    * `timeout_client_data`: Frontend client inactivity timeout
+    * `timeout_member_connect`: Backend member connection timeout
+    * `timeout_member_data`: Backend member inactivity timeout
+    * `timeout_tcp_inspect`: Time to wait for TCP packets for content inspection
+
+    The value for all of these fields is expected to be in milliseconds.

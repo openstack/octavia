@@ -424,7 +424,7 @@ class TestListener(base.BaseAPITest):
         listener_path = self.listener_path
         self.get(listener_path.format(listener_id='SEAN-CONNERY'), status=404)
 
-    def test_create(self, **optionals):
+    def test_create(self, response_status=201, **optionals):
         sni1 = uuidutils.generate_uuid()
         sni2 = uuidutils.generate_uuid()
         lb_listener = {'name': 'listener1', 'default_pool_id': None,
@@ -439,7 +439,9 @@ class TestListener(base.BaseAPITest):
                        'loadbalancer_id': self.lb_id}
         lb_listener.update(optionals)
         body = self._build_body(lb_listener)
-        response = self.post(self.LISTENERS_PATH, body)
+        response = self.post(self.LISTENERS_PATH, body, status=response_status)
+        if response_status >= 300:
+            return response
         listener_api = response.json['listener']
         extra_expects = {'provisioning_status': constants.PENDING_CREATE,
                          'operating_status': constants.OFFLINE}
@@ -460,6 +462,52 @@ class TestListener(base.BaseAPITest):
         self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
                                       constants.PENDING_UPDATE)
         self.assert_final_listener_statuses(self.lb_id, listener_api.get('id'))
+        return listener_api
+
+    def test_create_with_timeouts(self):
+        optionals = {
+            'timeout_client_data': 1,
+            'timeout_member_connect': 2,
+            'timeout_member_data': constants.MIN_TIMEOUT,
+            'timeout_tcp_inspect': constants.MAX_TIMEOUT,
+        }
+        listener_api = self.test_create(**optionals)
+        self.assertEqual(1, listener_api.get('timeout_client_data'))
+        self.assertEqual(2, listener_api.get('timeout_member_connect'))
+        self.assertEqual(constants.MIN_TIMEOUT,
+                         listener_api.get('timeout_member_data'))
+        self.assertEqual(constants.MAX_TIMEOUT,
+                         listener_api.get('timeout_tcp_inspect'))
+
+    def test_create_with_timeouts_too_high(self):
+        optionals = {
+            'timeout_client_data': 1,
+            'timeout_member_connect': 2,
+            'timeout_member_data': 3,
+            'timeout_tcp_inspect': constants.MAX_TIMEOUT + 1,
+        }
+        resp = self.test_create(response_status=400, **optionals).json
+        fault = resp.get('faultstring')
+        self.assertIn(
+            'Invalid input for field/attribute timeout_tcp_inspect', fault)
+        self.assertIn(
+            'Value should be lower or equal to {0}'.format(
+                constants.MAX_TIMEOUT), fault)
+
+    def test_create_with_timeouts_too_low(self):
+        optionals = {
+            'timeout_client_data': 1,
+            'timeout_member_connect': 2,
+            'timeout_member_data': 3,
+            'timeout_tcp_inspect': constants.MIN_TIMEOUT - 1,
+        }
+        resp = self.test_create(response_status=400, **optionals).json
+        fault = resp.get('faultstring')
+        self.assertIn(
+            'Invalid input for field/attribute timeout_tcp_inspect', fault)
+        self.assertIn(
+            'Value should be greater or equal to {0}'.format(
+                constants.MIN_TIMEOUT), fault)
 
     def test_create_duplicate_fails(self):
         self.create_listener(constants.PROTOCOL_HTTP, 80, self.lb_id)
@@ -720,15 +768,18 @@ class TestListener(base.BaseAPITest):
             default_pool_id=None).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         new_listener = {'name': 'listener2', 'admin_state_up': True,
-                        'default_pool_id': self.pool_id}
+                        'default_pool_id': self.pool_id,
+                        'timeout_client_data': 1,
+                        'timeout_member_connect': 2,
+                        'timeout_member_data': 3,
+                        'timeout_tcp_inspect': 4}
         body = self._build_body(new_listener)
         listener_path = self.LISTENER_PATH.format(
             listener_id=listener['id'])
         api_listener = self.put(listener_path, body).json.get(self.root_tag)
-        update_expect = {'name': 'listener2', 'admin_state_up': True,
-                         'default_pool_id': self.pool_id,
-                         'provisioning_status': constants.PENDING_UPDATE,
+        update_expect = {'provisioning_status': constants.PENDING_UPDATE,
                          'operating_status': constants.ONLINE}
+        update_expect.update(new_listener)
         listener.update(update_expect)
         self.assertEqual(listener['created_at'], api_listener['created_at'])
         self.assertNotEqual(listener['updated_at'], api_listener['updated_at'])

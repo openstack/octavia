@@ -39,7 +39,8 @@ class TestHaproxyCfg(base.TestCase):
               "sample_listener_id_1/FakeCN.pem "
               "crt /var/lib/octavia/certs/sample_listener_id_1\n"
               "    mode http\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n"
+              "    timeout client 50000\n\n")
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -49,6 +50,8 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
@@ -77,7 +80,8 @@ class TestHaproxyCfg(base.TestCase):
               "ssl crt /var/lib/octavia/certs/"
               "sample_listener_id_1/FakeCN.pem\n"
               "    mode http\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n"
+              "    timeout client 50000\n\n")
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -87,6 +91,8 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
@@ -116,6 +122,8 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
@@ -139,6 +147,8 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "addr 192.168.1.1 port 9000 "
@@ -155,6 +165,72 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs.sample_base_expected_config(backend=be),
             rendered_obj)
 
+    def test_render_template_custom_timeouts(self):
+        fe = ("frontend sample_listener_id_1\n"
+              "    option httplog\n"
+              "    maxconn 98\n"
+              "    bind 10.0.0.2:80\n"
+              "    mode http\n"
+              "    default_backend sample_pool_id_1\n"
+              "    timeout client 2\n\n")
+        be = ("backend sample_pool_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31s\n"
+              "    option httpchk GET /index.html\n"
+              "    http-check expect rstatus 418\n"
+              "    fullconn 98\n"
+              "    option allbackups\n"
+              "    timeout connect 1\n"
+              "    timeout server 3\n"
+              "    server sample_member_id_1 10.0.0.99:82 weight 13 "
+              "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 weight 13 "
+              "check inter 30s fall 3 rise 2 cookie sample_member_id_2\n\n")
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
+            sample_configs.sample_listener_tuple(timeout_member_connect=1,
+                                                 timeout_client_data=2,
+                                                 timeout_member_data=3))
+        self.assertEqual(
+            sample_configs.sample_base_expected_config(frontend=fe,
+                                                       backend=be),
+            rendered_obj)
+
+    def test_render_template_null_timeouts(self):
+        fe = ("frontend sample_listener_id_1\n"
+              "    option httplog\n"
+              "    maxconn 98\n"
+              "    bind 10.0.0.2:80\n"
+              "    mode http\n"
+              "    default_backend sample_pool_id_1\n"
+              "    timeout client 50000\n\n")
+        be = ("backend sample_pool_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31s\n"
+              "    option httpchk GET /index.html\n"
+              "    http-check expect rstatus 418\n"
+              "    fullconn 98\n"
+              "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
+              "    server sample_member_id_1 10.0.0.99:82 weight 13 "
+              "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 weight 13 "
+              "check inter 30s fall 3 rise 2 cookie sample_member_id_2\n\n")
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
+            sample_configs.sample_listener_tuple(timeout_member_connect=None,
+                                                 timeout_client_data=None,
+                                                 timeout_member_data=None))
+        self.assertEqual(
+            sample_configs.sample_base_expected_config(frontend=fe,
+                                                       backend=be),
+            rendered_obj)
+
     def test_render_template_member_monitor_addr_port(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
@@ -165,6 +241,8 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "addr 192.168.1.1 port 9000 "
@@ -186,7 +264,8 @@ class TestHaproxyCfg(base.TestCase):
               "    maxconn 98\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n"
+              "    timeout client 50000\n\n")
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
@@ -196,6 +275,8 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check check-ssl verify none inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
@@ -214,7 +295,8 @@ class TestHaproxyCfg(base.TestCase):
               "    maxconn 98\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n"
+              "    timeout client 50000\n\n")
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
@@ -223,6 +305,8 @@ class TestHaproxyCfg(base.TestCase):
               "    option ssl-hello-chk\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
@@ -243,6 +327,8 @@ class TestHaproxyCfg(base.TestCase):
               "    cookie SRV insert indirect nocache\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
@@ -263,6 +349,8 @@ class TestHaproxyCfg(base.TestCase):
               "    external-check command /var/lib/octavia/ping-wrapper.sh\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
@@ -283,13 +371,16 @@ class TestHaproxyCfg(base.TestCase):
               "    maxconn 98\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n"
+              "    timeout client 50000\n\n")
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
@@ -306,12 +397,15 @@ class TestHaproxyCfg(base.TestCase):
               "    maxconn 98\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n"
+              "    timeout client 50000\n\n")
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
@@ -327,6 +421,8 @@ class TestHaproxyCfg(base.TestCase):
               "    balance roundrobin\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
@@ -347,6 +443,8 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2\n"
               "    server sample_member_id_2 10.0.0.98:82 "
@@ -371,6 +469,8 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2\n"
               "    server sample_member_id_2 10.0.0.98:82 "
@@ -403,7 +503,8 @@ class TestHaproxyCfg(base.TestCase):
               ".example.com\n"
               "    http-request deny if sample_l7rule_id_4 "
               "sample_l7rule_id_5\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n"
+              "    timeout client 50000\n\n")
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -413,6 +514,8 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 check "
               "inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 check "
@@ -427,6 +530,8 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_3 10.0.0.97:82 weight 13 check "
               "inter 30s fall 3 rise 2 cookie sample_member_id_3\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
@@ -446,6 +551,8 @@ class TestHaproxyCfg(base.TestCase):
               "    option forwardfor\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
@@ -472,6 +579,8 @@ class TestHaproxyCfg(base.TestCase):
               "    http-request set-header X-Forwarded-Port %[dst_port]\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
@@ -495,6 +604,8 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    fullconn 98\n"
               "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1 send-proxy\n"

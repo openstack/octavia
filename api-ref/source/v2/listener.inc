@@ -63,6 +63,10 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
+   - timeout_client_data: timeout_client_data
+   - timeout_member_connect: timeout_member_connect
+   - timeout_member_data: timeout_member_data
+   - timeout_tcp_inspect: timeout_tcp_inspect
    - updated_at: updated_at
 
 Response Example
@@ -145,6 +149,10 @@ Request
    - protocol: protocol
    - protocol_port: protocol_port
    - sni_container_refs: sni_container_refs-optional
+   - timeout_client_data: timeout_client_data-optional
+   - timeout_member_connect: timeout_member_connect-optional
+   - timeout_member_data: timeout_member_data-optional
+   - timeout_tcp_inspect: timeout_tcp_inspect-optional
 
 .. _header_insertions:
 
@@ -204,6 +212,10 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
+   - timeout_client_data: timeout_client_data
+   - timeout_member_connect: timeout_member_connect
+   - timeout_member_data: timeout_member_data
+   - timeout_tcp_inspect: timeout_tcp_inspect
    - updated_at: updated_at
 
 Response Example
@@ -273,6 +285,10 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
+   - timeout_client_data: timeout_client_data
+   - timeout_member_connect: timeout_member_connect
+   - timeout_member_data: timeout_member_data
+   - timeout_tcp_inspect: timeout_tcp_inspect
    - updated_at: updated_at
 
 Response Example
@@ -323,6 +339,10 @@ Request
    - listener_id: path-listener-id
    - name: name-optional
    - sni_container_refs: sni_container_refs-optional
+   - timeout_client_data: timeout_client_data-optional
+   - timeout_member_connect: timeout_member_connect-optional
+   - timeout_member_data: timeout_member_data-optional
+   - timeout_tcp_inspect: timeout_tcp_inspect-optional
 
 Request Example
 ---------------
@@ -359,6 +379,10 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
+   - timeout_client_data: timeout_client_data
+   - timeout_member_connect: timeout_member_connect
+   - timeout_member_data: timeout_member_data
+   - timeout_tcp_inspect: timeout_tcp_inspect
    - updated_at: updated_at
 
 Response Example
