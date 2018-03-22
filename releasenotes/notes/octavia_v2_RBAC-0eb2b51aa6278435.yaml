@@ -3,7 +3,7 @@ features:
   - |
     The Octavia v2 API now supports Role Based Access Control (RBAC).
     The default rules require users to have a load-balancer_* role to be
-    able to access the Octavia v2 API.  This can be overriden with the
+    able to access the Octavia v2 API.  This can be overridden with the
     admin_or_owner-policy.json sample file provided.
     See the `Octavia Policies
     <https://docs.openstack.org/octavia/latest/configuration/policy.html>`_
