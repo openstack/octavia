@@ -37,4 +37,4 @@ Java
 Python
 ======
 
-`OpenStack SDK <https://docs.openstack.org/python-openstacksdk/latest/>`_
+`OpenStack SDK <https://docs.openstack.org/openstacksdk/latest/>`_
