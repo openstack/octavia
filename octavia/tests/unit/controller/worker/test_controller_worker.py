@@ -1108,7 +1108,7 @@ class TestControllerWorker(base.TestCase):
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_failover_amphora(self,
                               mock_update,
-                              mock_get_update_listener_flow,
+                              mock_get_failover_flow,
                               mock_api_get_session,
                               mock_dyn_log_listener,
                               mock_taskflow_load,
@@ -1139,6 +1139,32 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.run.assert_called_once_with()
         mock_update.assert_called_with('TEST', LB_ID,
                                        provisioning_status=constants.ACTIVE)
+
+    @mock.patch('octavia.db.repositories.AmphoraHealthRepository.update')
+    def test_failover_deleted_amphora(self,
+                                      mock_update,
+                                      mock_api_get_session,
+                                      mock_dyn_log_listener,
+                                      mock_taskflow_load,
+                                      mock_pool_repo_get,
+                                      mock_member_repo_get,
+                                      mock_l7rule_repo_get,
+                                      mock_l7policy_repo_get,
+                                      mock_listener_repo_get,
+                                      mock_lb_repo_get,
+                                      mock_health_mon_repo_get,
+                                      mock_amp_repo_get):
+
+        mock_taskflow_load.reset_mock()
+        mock_amphora = mock.MagicMock()
+        mock_amphora.id = AMP_ID
+        mock_amphora.status = constants.DELETED
+
+        cw = controller_worker.ControllerWorker()
+        cw._perform_amphora_failover(mock_amphora, 10)
+
+        mock_update.assert_called_with('TEST', AMP_ID, busy=True)
+        mock_taskflow_load.assert_not_called()
 
     @mock.patch('octavia.controller.worker.'
                 'controller_worker.ControllerWorker._perform_amphora_failover')
