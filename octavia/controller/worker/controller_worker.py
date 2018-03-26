@@ -50,6 +50,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         self._l7rule_flows = l7rule_flows.L7RuleFlows()
 
         self._amphora_repo = repo.AmphoraRepository()
+        self._amphora_health_repo = repo.AmphoraHealthRepository()
         self._health_mon_repo = repo.HealthMonitorRepository()
         self._lb_repo = repo.LoadBalancerRepository()
         self._listener_repo = repo.ListenerRepository()
@@ -628,6 +629,16 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                              constants.LOADBALANCER_ID: amp.load_balancer_id,
                              constants.BUILD_TYPE_PRIORITY:
                                  constants.LB_CREATE_FAILOVER_PRIORITY}
+
+            if amp.status == constants.DELETED:
+                LOG.warning('Amphora %s is marked DELETED in the database '
+                            'but was submitted for failover. Marking it busy '
+                            'in the amphora health table to exclude it from '
+                            'health checks and skipping the failover.',
+                            amp.id)
+                self._amphora_health_repo.update(db_apis.get_session(), amp.id,
+                                                 busy=True)
+                return
 
             # if we run with anti-affinity we need to set the server group
             # as well
