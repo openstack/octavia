@@ -29,9 +29,11 @@
         - octavia-v1-dsvm-scenario
         - octavia-v1-dsvm-py3x-scenario:
             branches: ^(?!stable/ocata).*$
-        - octavia-v1-dsvm-scenario-multinode
+        - octavia-v1-dsvm-scenario-multinode:
+            voting: false
         - octavia-v1-dsvm-py3x-scenario-multinode:
             branches: ^(?!stable/ocata).*$
+            voting: false
         - octavia-v1-dsvm-scenario-kvm-centos.7:
             voting: false
     gate:
@@ -55,9 +57,11 @@
         - octavia-v1-dsvm-scenario
         - octavia-v1-dsvm-py3x-scenario:
             branches: ^(?!stable/ocata).*$
-        - octavia-v1-dsvm-scenario-multinode
+        - octavia-v1-dsvm-scenario-multinode:
+            voting: false
         - octavia-v1-dsvm-py3x-scenario-multinode:
             branches: ^(?!stable/ocata).*$
+            voting: false
         - neutron-lbaasv2-dsvm-api
         - neutron-lbaasv2-dsvm-py3x-api:
             branches: ^(?!stable/ocata).*$
