@@ -20,7 +20,7 @@ enable_plugin neutron https://review.openstack.org/openstack/neutron
 enable_plugin octavia https://review.openstack.org/openstack/octavia
 LIBS_FROM_GIT+=python-octaviaclient
 
-KEYSTONE_TOKEN_FORMAT=UUID
+KEYSTONE_TOKEN_FORMAT=fernet
 
 DATABASE_PASSWORD=secretdatabase
 RABBIT_PASSWORD=secretrabbit
