@@ -21,6 +21,7 @@ reference
 import datetime
 
 from oslo_config import cfg
+from oslo_db import api as oslo_db_api
 from oslo_db import exception as db_exception
 from oslo_log import log as logging
 from oslo_utils import excutils
@@ -1307,6 +1308,12 @@ class L7PolicyRepository(BaseRepository):
 class QuotasRepository(BaseRepository):
     model_class = models.Quotas
 
+    # This is used with an autocommit session (non-lock_session)
+    # Since this is for the initial quota record creation it locks the table
+    # which can lead to recoverable deadlocks. Thus we use the deadlock
+    # retry wrapper here. This may not be appropriate for other sessions
+    # and or queries. Use with caution.
+    @oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)
     def update(self, session, project_id, **model_kwargs):
         with session.begin(subtransactions=True):
             kwargs_quota = model_kwargs['quota']
