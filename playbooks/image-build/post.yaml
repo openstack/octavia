@@ -2,7 +2,7 @@
   name: Copy image
   tasks:
     - synchronize:
-        dest: "{{ zuul.executor.log_root }}"
+        dest: "{{ zuul.executor.work_root }}/artifacts/"
         mode: pull
         src: "{{ ansible_user_dir }}/test-images"
         verify_host: true
