@@ -110,6 +110,7 @@ class UpdateHealthDb(object):
         expected_listener_count = 0
         db_lbs_on_amp = self.amphora_repo.get_all_lbs_on_amphora(session,
                                                                  health['id'])
+        ignore_listener_count = False
         listeners = health['listeners']
 
         # We need to loop over the lbs here to make sure we update the
@@ -117,10 +118,12 @@ class UpdateHealthDb(object):
         # failovers. Unfortunately that means looping over this list twice.
         for db_lb in db_lbs_on_amp:
             expected_listener_count += len(db_lb.listeners)
+            if 'PENDING' in db_lb.provisioning_status:
+                ignore_listener_count = True
 
         # Do not update amphora health if the reporting listener count
         # does not match the expected listener count
-        if len(listeners) == expected_listener_count:
+        if len(listeners) == expected_listener_count or ignore_listener_count:
 
             lock_session = db_api.get_session(autocommit=False)
 
