@@ -1,7 +1,0 @@
-- project:
-    check:
-      jobs:
-        - openstack-tox-lower-constraints
-    gate:
-      jobs:
-        - openstack-tox-lower-constraints
