@@ -175,11 +175,11 @@ class NoopManager(object):
         LOG.debug("failover %s no-op, failover_preparation, amphora id %s",
                   self.__class__.__name__, amphora.id)
 
-    def plug_port(self, compute_id, port):
-        LOG.debug("Network %s no-op, plug_port compute_id %s, port_id "
-                  "%s", self.__class__.__name__, compute_id, port.id)
-        self.networkconfigconfig[(compute_id, port)] = (
-            compute_id, port, 'plug_port')
+    def plug_port(self, amphora, port):
+        LOG.debug("Network %s no-op, plug_port amphora.id %s, port_id "
+                  "%s", self.__class__.__name__, amphora.id, port.id)
+        self.networkconfigconfig[(amphora.id, port.id)] = (
+            amphora, port, 'plug_port')
 
     def get_network_configs(self, loadbalancer):
         LOG.debug("Network %s no-op, get_network_configs loadbalancer id %s ",
@@ -278,8 +278,8 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def failover_preparation(self, amphora):
         self.driver.failover_preparation(amphora)
 
-    def plug_port(self, compute_id, port):
-        return self.driver.plug_port(compute_id, port)
+    def plug_port(self, amphora, port):
+        return self.driver.plug_port(amphora, port)
 
     def get_network_configs(self, loadbalancer):
         return self.driver.get_network_configs(loadbalancer)

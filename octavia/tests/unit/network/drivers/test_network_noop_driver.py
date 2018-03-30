@@ -179,10 +179,11 @@ class TestNoopNetworkDriver(base.TestCase):
         )
 
     def test_plug_port(self):
-        self.driver.plug_port(self.compute_id, self.port)
+        self.driver.plug_port(self.amphora1, self.port)
         self.assertEqual(
-            (self.compute_id, self.port, 'plug_port'),
-            self.driver.driver.networkconfigconfig[self.compute_id, self.port]
+            (self.amphora1, self.port, 'plug_port'),
+            self.driver.driver.networkconfigconfig[self.amphora1.id,
+                                                   self.port.id]
         )
 
     def test_get_network_configs(self):
