@@ -63,7 +63,7 @@ class SkippingAuthProtocol(auth_token.AuthProtocol):
     def process_request(self, request):
         path = request.path
         if path in _NOAUTH_PATHS:
-            LOG.info(('Request path is %s and it does not require keystone '
+            LOG.debug(('Request path is %s and it does not require keystone '
                       'authentication'), path)
             return None  # return NONE to reach actual logic
 
