@@ -156,20 +156,18 @@ Supported HTTP Header Insertions
    header insertions.
 
 
-+------------------+---------+------------------------------------------------+
-| Key              | Value   | Description                                    |
-+==================+=========+================================================+
-| X-Forwarded-For  | boolean | When ``true`` a ``X-Forwarded-For`` header is  |
-|                  |         | inserted into the request to the backend       |
-|                  |         | ``member`` that specifies the client IP        |
-|                  |         | address.                                       |
-+------------------+---------+------------------------------------------------+
-| X-Forwarded-Port | integer | A ``X-Forwarded-Port`` header is inserted into |
-|                  |         | the request to the backend ``member`` that     |
-|                  |         | specifies the integer provided. Typically this |
-|                  |         | is used to indicate the port the client        |
-|                  |         | connected to on the load balancer.             |
-+------------------+---------+------------------------------------------------+
++------------------+--------+------------------------------------------------+
+| Key              | Value  | Description                                    |
++==================+========+================================================+
+| X-Forwarded-For  | string | When "``true``" a ``X-Forwarded-For`` header   |
+|                  |        | is inserted into the request to the backend    |
+|                  |        | ``member`` that specifies the client IP        |
+|                  |        | address.                                       |
++------------------+--------+------------------------------------------------+
+| X-Forwarded-Port | string | When "``true``" a ``X-Forwarded-Port`` header  |
+|                  |        | is inserted into the request to the backend    |
+|                  |        | ``member`` that specifies the listener port.   |
++------------------+--------+------------------------------------------------+
 
 Request Example
 ----------------
