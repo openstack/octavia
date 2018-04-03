@@ -506,6 +506,24 @@ class TestMember(base.BaseAPITest):
             handler_args[1])
         self.assertEqual(0, len(handler_args[2]))
 
+    def test_create_batch_members_with_bad_subnet(self):
+        subnet_id = uuidutils.generate_uuid()
+        member5 = {'address': '10.0.0.5',
+                   'protocol_port': 80,
+                   'subnet_id': subnet_id}
+
+        req_dict = [member5]
+        body = {self.root_tag_list: req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=self.pool_id)
+
+        with mock.patch(
+                'octavia.common.utils.get_network_driver') as net_mock:
+            net_mock.return_value.get_subnet = mock.Mock(
+                side_effect=network_base.SubnetNotFound('Subnet not found'))
+            response = self.put(path, body, status=400).json
+            err_msg = 'Subnet ' + subnet_id + ' not found.'
+            self.assertEqual(response.get('faultstring'), err_msg)
+
     def test_update_batch_members(self):
         member1 = {'address': '10.0.0.1', 'protocol_port': 80}
         member2 = {'address': '10.0.0.2', 'protocol_port': 80}
