@@ -219,6 +219,7 @@ class LoadBalancersController(base.BaseController):
             # if the error was API ready
             if getattr(e, 'orig_code', None) is not None:
                 e.code = e.orig_code
+            if getattr(e, 'orig_msg', None) is not None:
                 e.message = e.orig_msg
                 e.msg = e.orig_msg
             raise e
