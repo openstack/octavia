@@ -128,6 +128,20 @@ class Keepalived(object):
                 message='Invalid Request',
                 details="Unknown action: {0}".format(action)), status=400)
 
+        if action == consts.AMP_ACTION_START:
+            keepalived_pid_path = util.keepalived_pid_path()
+            try:
+                # Is there a pid file for keepalived?
+                with open(keepalived_pid_path, 'r') as pid_file:
+                    pid = int(pid_file.readline())
+                os.kill(pid, 0)
+
+                # If we got here, it means the keepalived process is running.
+                # We should reload it instead of trying to start it again.
+                action = consts.AMP_ACTION_RELOAD
+            except (IOError, OSError):
+                pass
+
         cmd = ("/usr/sbin/service octavia-keepalived {action}".format(
             action=action))
 
