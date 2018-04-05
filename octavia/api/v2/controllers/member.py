@@ -293,6 +293,13 @@ class MembersController(MemberController):
         self._auth_validate_action(context, db_pool.project_id,
                                    constants.RBAC_DELETE)
 
+        # Validate member subnets
+        for member in members:
+            if member.subnet_id and not validate.subnet_exists(
+                    member.subnet_id):
+                raise exceptions.NotFound(resource='Subnet',
+                                          id=member.subnet_id)
+
         with db_api.get_lock_session() as lock_session:
             self._test_lb_and_listener_and_pool_statuses(lock_session)
 
