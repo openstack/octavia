@@ -70,20 +70,26 @@ should be possible for you to write an Octavia networking driver for your SDN
 environment, which can be a drop-in replacement for the standard Neutron
 networking driver in Octavia.
 
-It is important for you to know that Octavia is not necessarily designed as a
-complete replacement for the Neutron LBaaS project. That is to say, Octavia is
-designed to "plug in" to Neutron LBaaS in the same way that any proprietary
-vendor solution would: through a Neutron LBaaS version 2 driver interface.  You
-could think of Octavia as an "open source vendor" for Neutron LBaaS, rather
-than as a substitute for Neutron LBaaS. For this reason, we recommend that
-tenants configure load balancing services with Octavia through the Neutron
-LBaaS version 2 CLI and API.
+As of Pike, it is recommended to run Octavia as a standalone load balancing
+solution. Neutron LBaaS is deprecated in the Queens release, and Octavia is its
+replacement. Whenever possible, operators are **strongly** advised to migrate
+to Octavia. For end-users, this transition should be relatively seamless,
+because Octavia supports the Neutron LBaaS v2 API and it has a similar CLI
+interface. Alternatively, if end-users cannot migrate on their side in the
+forseable future, operators could enable the experimental Octavia proxy plugin
+in Neutron LBaaS.
 
-Soon, Octavia will supplant Neutron LBaaS as the load balancing solution for
-OpenStack.  At that time, third-party vendor drivers that presently "plug in"
-to Neutron LBaaS will plug in to Octavia instead. For end-users, this
-transition should be relatively seamless, because Octavia supports the Neutron
-LBaaS v2 API and it has a similar CLI interface.
+It is also possible to use Octavia as a Neutron LBaaS plugin, in the same way
+as any other vendor. You can think of Octavia as an "open source vendor" for
+Neutron LBaaS.
+
+Soon, Octavia will support third-party vendor drivers just like Neutron LBaaS,
+and will then fully replace Neutron LBaaS as the load balancing solution for
+OpenStack. At that time, third-party vendor drivers that presently "plug in" to
+Neutron LBaaS will plug in to Octavia instead.
+
+For further information on OpenStack Neutron LBaaS deprecation, please refer to
+https://wiki.openstack.org/wiki/Neutron/LBaaS/Deprecation.
 
 
 Octavia terminology
