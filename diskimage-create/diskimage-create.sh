@@ -26,7 +26,7 @@ usage() {
     echo "            [-d **xenial**/**7** | trusty | <other release id> ]"
     echo "            [-e]"
     echo "            [-h]"
-    echo "            [-i **ubuntu** | fedora | centos | rhel ]"
+    echo "            [-i **ubuntu-minimal** | fedora | centos | rhel ]"
     echo "            [-n]"
     echo "            [-o **amphora-x64-haproxy** | <filename> ]"
     echo "            [-p]"
@@ -114,11 +114,15 @@ while getopts "a:b:c:d:ehi:no:pt:r:s:vw:x" opt; do
         i)
             AMP_BASEOS=$OPTARG
             if [ $AMP_BASEOS != "ubuntu" ] && \
+                [ $AMP_BASEOS != "ubuntu-minimal" ] && \
                 [ $AMP_BASEOS != "fedora" ] && \
                 [ $AMP_BASEOS != "centos" ] && \
                 [ $AMP_BASEOS != "rhel" ]; then
                 echo "Error: Unsupported base OS " $AMP_BASEOS " specified"
                 exit 3
+            fi
+            if [ $AMP_BASEOS == "ubuntu" ]; then
+                AMP_BASEOS="ubuntu-minimal"
             fi
         ;;
         n)
@@ -175,9 +179,9 @@ AMP_BACKEND=${AMP_BACKEND:-"haproxy-octavia"}
 
 AMP_CACHEDIR=${AMP_CACHEDIR:-"$HOME/.cache/image-create"}
 
-AMP_BASEOS=${AMP_BASEOS:-"ubuntu"}
+AMP_BASEOS=${AMP_BASEOS:-"ubuntu-minimal"}
 
-if [ "$AMP_BASEOS" = "ubuntu" ]; then
+if [ "$AMP_BASEOS" = "ubuntu-minimal" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"xenial"}
 elif [ "${AMP_BASEOS}" = "centos" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"7"}
@@ -274,7 +278,7 @@ if [ "$platform" = 'NAME="Ubuntu"' ]; then
 
     # Also check if we can build the BASEOS on this Ubuntu version
     UBUNTU_VERSION=`lsb_release -r | awk '{print $2}'`
-    if [ "$AMP_BASEOS" != "ubuntu" ] && \
+    if [ "$AMP_BASEOS" != "ubuntu-minimal" ] && \
         [ 1 -eq $(echo "$UBUNTU_VERSION < 14.04" | bc) ]; then
             echo "Ubuntu minimum version 14.04 required to build $AMP_BASEOS."
             echo "Earlier versions don't support the extended attributes required."
@@ -371,7 +375,7 @@ fi
 
 # Build the image
 
-if [ "$AMP_BASEOS" = "ubuntu" ]; then
+if [ "$AMP_BASEOS" = "ubuntu-minimal" ]; then
     export DIB_CLOUD_INIT_DATASOURCES=$CLOUD_INIT_DATASOURCES
 fi
 

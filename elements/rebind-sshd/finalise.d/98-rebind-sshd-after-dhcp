@@ -3,6 +3,7 @@
 # isc dhcpd specific section
 if [[ $DISTRO_NAME = "ubuntu" || $DISTRO_NAME = "debian" ]]; then
 
+  mkdir -p /etc/dhcp/dhclient-enter-hooks.d
   echo '#!/bin/sh
 if [ "$reason" = "BOUND" ]; then
     if `grep -q "#ListenAddress 0.0.0.0" /etc/ssh/sshd_config`; then

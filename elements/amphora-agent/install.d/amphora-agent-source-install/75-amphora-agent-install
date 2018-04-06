@@ -7,11 +7,17 @@ set -eu
 set -o pipefail
 
 SCRIPTDIR=$(dirname $0)
+AMP_VENV=/opt/amphora-agent-venv
 
-pip install -U -c /opt/upper-constraints.txt /opt/amphora-agent
+# Create a virutal environment to contain the amphora agent
+${DIB_PYTHON} -m virtualenv $AMP_VENV
 
-# Accommodate centos default install location
-ln -s /bin/amphora-agent /usr/local/bin/amphora-agent || true
+$AMP_VENV/bin/pip install pip --upgrade
+
+$AMP_VENV/bin/pip install -U -c /opt/upper-constraints.txt /opt/amphora-agent
+
+# Link the amphora-agent out to /usr/local/bin where the startup scripts look
+ln -s $AMP_VENV/bin/amphora-agent /usr/local/bin/amphora-agent || true
 
 mkdir /etc/octavia
 # we assume certs, etc will come in through the config drive

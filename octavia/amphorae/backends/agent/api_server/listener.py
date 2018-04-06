@@ -201,6 +201,7 @@ class Listener(object):
                             HasIFUPAll=self._osutils.has_ifup_all())
                     text_file.write(text)
 
+        hap_major, hap_minor = haproxy_compatibility.get_haproxy_versions()
         if not os.path.exists(init_path):
             with os.fdopen(os.open(init_path, flags, mode), 'w') as text_file:
 
@@ -215,7 +216,9 @@ class Listener(object):
                                       respawn_interval),
                     amphora_netns=AMPHORA_NETNS,
                     amphora_nsname=consts.AMPHORA_NAMESPACE,
-                    HasIFUPAll=self._osutils.has_ifup_all()
+                    HasIFUPAll=self._osutils.has_ifup_all(),
+                    haproxy_major_version=hap_major,
+                    haproxy_minor_version=hap_minor
                 )
                 text_file.write(text)
 

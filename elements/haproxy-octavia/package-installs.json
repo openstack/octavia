@@ -1,3 +1,4 @@
 {
-    "haproxy": null
+    "haproxy": null,
+    "iputils-ping": null
 }

@@ -52,6 +52,14 @@
     post-run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario/post.yaml
 
 - job:
+    name: octavia-v1-dsvm-scenario-ubuntu.bionic
+    parent: octavia-v1-dsvm-scenario
+    vars:
+      devstack_localrc:
+        OCTAVIA_AMP_BASE_OS: ubuntu
+        OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: bionic
+
+- job:
     name: octavia-v1-dsvm-scenario-multinode
     parent: octavia-legacy-dsvm-base-multinode
     run: playbooks/legacy/octavia-v1-dsvm-scenario-multinode/run.yaml

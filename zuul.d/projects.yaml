@@ -37,6 +37,8 @@
             voting: false
         - octavia-v1-dsvm-scenario-kvm-centos.7:
             voting: false
+        - octavia-v1-dsvm-scenario-ubuntu.bionic:
+            voting: false
     gate:
       queue: octavia
       jobs:
