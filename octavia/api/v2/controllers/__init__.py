@@ -46,7 +46,7 @@ class BaseV2Controller(base.BaseController):
 
     @wsme_pecan.wsexpose(wtypes.text)
     def get(self):
-        return "v2.0"
+        return "v2"
 
 
 class OctaviaV2Controller(base.BaseController):
@@ -58,7 +58,7 @@ class OctaviaV2Controller(base.BaseController):
 
     @wsme_pecan.wsexpose(wtypes.text)
     def get(self):
-        return "v2.0"
+        return "v2"
 
 
 class V2Controller(BaseV2Controller):

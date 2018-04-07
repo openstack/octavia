@@ -21,7 +21,7 @@ rules = [
                                     action=constants.RBAC_GET_ALL),
         constants.RULE_API_READ,
         "List enabled providers",
-        [{'method': 'GET', 'path': '/v2.0/lbaas/providers'}]
+        [{'method': 'GET', 'path': '/v2/lbaas/providers'}]
     ),
 ]
 

@@ -21,21 +21,21 @@ rules = [
                                     action=constants.RBAC_GET_ALL),
         constants.RULE_API_READ,
         "List Load Balancers",
-        [{'method': 'GET', 'path': '/v2.0/lbaas/loadbalancers'}]
+        [{'method': 'GET', 'path': '/v2/lbaas/loadbalancers'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LOADBALANCER,
                                     action=constants.RBAC_GET_ALL_GLOBAL),
         constants.RULE_API_READ_GLOBAL,
         "List Load Balancers including resources owned by others",
-        [{'method': 'GET', 'path': '/v2.0/lbaas/loadbalancers'}]
+        [{'method': 'GET', 'path': '/v2/lbaas/loadbalancers'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LOADBALANCER,
                                     action=constants.RBAC_POST),
         constants.RULE_API_WRITE,
         "Create a Load Balancer",
-        [{'method': 'POST', 'path': '/v2.0/lbaas/loadbalancers'}]
+        [{'method': 'POST', 'path': '/v2/lbaas/loadbalancers'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LOADBALANCER,
@@ -43,7 +43,7 @@ rules = [
         constants.RULE_API_READ,
         "Show Load Balancer details",
         [{'method': 'GET',
-          'path': '/v2.0/lbaas/loadbalancers/{loadbalancer_id}'}]
+          'path': '/v2/lbaas/loadbalancers/{loadbalancer_id}'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LOADBALANCER,
@@ -51,7 +51,7 @@ rules = [
         constants.RULE_API_WRITE,
         "Update a Load Balancer",
         [{'method': 'PUT',
-          'path': '/v2.0/lbaas/loadbalancers/{loadbalancer_id}'}]
+          'path': '/v2/lbaas/loadbalancers/{loadbalancer_id}'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LOADBALANCER,
@@ -59,7 +59,7 @@ rules = [
         constants.RULE_API_WRITE,
         "Remove a Load Balancer",
         [{'method': 'DELETE',
-          'path': '/v2.0/lbaas/loadbalancers/{loadbalancer_id}'}]
+          'path': '/v2/lbaas/loadbalancers/{loadbalancer_id}'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LOADBALANCER,
@@ -67,7 +67,7 @@ rules = [
         constants.RULE_API_READ,
         "Show Load Balancer statistics",
         [{'method': 'GET',
-          'path': '/v2.0/lbaas/loadbalancers/{loadbalancer_id}/stats'}]
+          'path': '/v2/lbaas/loadbalancers/{loadbalancer_id}/stats'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LOADBALANCER,
@@ -75,7 +75,7 @@ rules = [
         constants.RULE_API_READ,
         "Show Load Balancer status",
         [{'method': 'GET',
-          'path': '/v2.0/lbaas/loadbalancers/{loadbalancer_id}/status'}]
+          'path': '/v2/lbaas/loadbalancers/{loadbalancer_id}/status'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LOADBALANCER,
@@ -83,7 +83,7 @@ rules = [
         constants.RULE_API_ADMIN,
         "Failover a Load Balancer",
         [{'method': 'PUT',
-          'path': '/v2.0/lbaas/loadbalancers/{loadbalancer_id}/failover'}]
+          'path': '/v2/lbaas/loadbalancers/{loadbalancer_id}/failover'}]
     ),
 ]
 

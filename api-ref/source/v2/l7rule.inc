@@ -3,7 +3,7 @@
 List L7 Rules
 =============
 
-.. rest_method:: GET /v2.0/lbaas/l7policies/{l7policy_id}/rules
+.. rest_method:: GET /v2/lbaas/l7policies/{l7policy_id}/rules
 
 Lists all L7 rules for the project.
 
@@ -68,7 +68,7 @@ Response Example
 Create an L7 Rule
 =================
 
-.. rest_method:: POST /v2.0/lbaas/l7policies/{l7policy_id}/rules
+.. rest_method:: POST /v2/lbaas/l7policies/{l7policy_id}/rules
 
 Creates a L7 rule.
 
@@ -82,7 +82,7 @@ In the response, the L7 rule :ref:`provisioning status<prov_status>` is
 ``ACTIVE``, ``PENDING_CREATE``, or ``ERROR``.
 
 If the status is ``PENDING_CREATE``, issue GET
-``/v2.0/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}`` to view the
+``/v2/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}`` to view the
 progress of the provisioning operation. When the L7 rule status changes
 to ``ACTIVE``, the L7 rule is successfully provisioned and
 is ready for further configuration.
@@ -166,7 +166,7 @@ Response Example
 Show L7 Rule details
 ==========================
 
-.. rest_method:: GET /v2.0/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}
+.. rest_method:: GET /v2/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}
 
 Shows the details of a L7 rule.
 
@@ -229,7 +229,7 @@ Response Example
 Update a L7 Rule
 ================
 
-.. rest_method:: PUT /v2.0/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}
+.. rest_method:: PUT /v2/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}
 
 Updates a L7 rule.
 
@@ -308,7 +308,7 @@ Response Example
 Remove a L7 Rule
 ================
 
-.. rest_method:: DELETE /v2.0/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}
+.. rest_method:: DELETE /v2/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}
 
 Removes a L7 rule and its associated configuration from the project.
 

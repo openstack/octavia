@@ -1,7 +1,13 @@
 .. -*- rst -*-
 
-This section introduces readers to OpenStack Octavia v2.0 ReSTful HTTP API and
+This section introduces readers to OpenStack Octavia v2 ReSTful HTTP API and
 provides guidelines on how to use it.
+
+.. note::
+    To clarify the Octavia API versioning we have updated the endpoint to
+    support both the previously documented /v2.0 and the new path of /v2.
+    They are exactly the same API and /v2.0 will be a supported alias for the
+    life of the v2 API.
 
 Service Endpoints
 =================
@@ -40,8 +46,8 @@ returned with the identity token.
 
 
 For instance, if the ``endpoint URL`` is ``http://198.51.100.10:9876/`` then
-the full API call for ``/v2.0/lbaas/loadbalancers`` is
-``http://198.51.100.10:9876/v2.0/lbaas/loadbalancers``.
+the full API call for ``/v2/lbaas/loadbalancers`` is
+``http://198.51.100.10:9876/v2/lbaas/loadbalancers``.
 
 Depending on the deployment, the ``load-balancer`` ``endpoint URL`` might be
 http or https, a custom port, a custom path, and include your project id. The
@@ -51,8 +57,8 @@ applications, even if they are only expected to work at a single site. It
 should always be discovered from the Identity token.
 
 As such, for the rest of this document we will be using short hand where ``GET
-/v2.0/lbaas/loadbalancers`` really means ``GET
-{your_load-balancer_endpoint_URL}/v2.0/lbaas/loadbalancers``.
+/v2/lbaas/loadbalancers`` really means ``GET
+{your_load-balancer_endpoint_URL}/v2/lbaas/loadbalancers``.
 
 Neutron-lbaas and Octavia v2 APIs
 =================================
@@ -78,7 +84,7 @@ applications to access load balancing via the Octavia v2 API.
 Authentication and authorization
 ================================
 
-The Octavia API v2.0 uses the `OpenStack Identity service
+The Octavia API v2 uses the `OpenStack Identity service
 <https://docs.openstack.org/keystone/latest/>`_ as the default authentication
 service. When Keystone is enabled, users that submit requests to the Octavia
 service must provide an authentication token in **X-Auth-Token** request
@@ -106,19 +112,19 @@ deployment to deployment.
 Request and response formats
 ============================
 
-The Octavia API v2.0 supports JSON data serialization request and response
+The Octavia API v2 supports JSON data serialization request and response
 formats only.
 
 Request format
 --------------
 
-The Octavia API v2.0 only accepts requests with the JSON data serialization
+The Octavia API v2 only accepts requests with the JSON data serialization
 format. The ``Content-Type`` header is ignored.
 
 Response format
 ---------------
 
-The Octavia API v2.0 always responds with the JSON data serialization
+The Octavia API v2 always responds with the JSON data serialization
 format. The ``Accept`` header is ignored.
 
 Query extension
@@ -134,16 +140,16 @@ Query extension
 Filtering and column selection
 ==============================
 
-The Octavia API v2.0 supports filtering based on all top level attributes of
+The Octavia API v2 supports filtering based on all top level attributes of
 a resource. Filters are applicable to all list requests.
 
 For example, the following request returns all loadbalancers named ``foobar``:
 
 .. code::
 
-    GET /v2.0/lbaas/loadbalancers?name=foobar
+    GET /v2/lbaas/loadbalancers?name=foobar
 
-When you specify multiple filters, the Octavia API v2.0 returns only objects
+When you specify multiple filters, the Octavia API v2 returns only objects
 that meet all filtering criteria. The operation applies an AND condition among
 the filters.
 
@@ -156,23 +162,23 @@ Alternatively, you can issue a distinct request for each filter and build a
 response set from the received responses on the client-side.
 
 By default, Octavia returns all attributes for any show or list call. The
-Octavia API v2.0 has a mechanism to limit the set of attributes returned.
+Octavia API v2 has a mechanism to limit the set of attributes returned.
 For example, return ``id``.
 
 You can use the ``fields`` query parameter to control the attributes returned
-from the Octavia API v2.0.
+from the Octavia API v2.
 
 For example, the following request returns only ``id`` and ``name`` for each
 load balancer:
 
 .. code::
 
-    GET /v2.0/lbaas/loadbalancers.json?fields=id&fields=name
+    GET /v2/lbaas/loadbalancers.json?fields=id&fields=name
 
 Synchronous versus asynchronous plug-in behavior
 ================================================
 
-The Octavia API v2.0 presents a logical model of load balancers consisting
+The Octavia API v2 presents a logical model of load balancers consisting
 of listeners, pools, and members. It is up to the OpenStack Octavia plug-in
 to communicate with the underlying infrastructure to ensure load balancing
 is consistent with the logical model. A plug-in might perform these
@@ -194,10 +200,10 @@ Octavia plug-in has successfully completed the configuration of the resource.
 Bulk-create
 ===========
 
-The Octavia v2.0 API does not support bulk create. You cannot create more than
+The Octavia v2 API does not support bulk create. You cannot create more than
 one load balancer per API call.
 
-The Octavia v2.0 API does support single call create which allows you to
+The Octavia v2 API does support single call create which allows you to
 create a fully populated load balancer in one API call. This is discussed
 in the load balancer create section of this reference.
 
@@ -226,17 +232,17 @@ with three items. The first page was retrieved through:
 
 .. code::
 
-    GET http://198.51.100.10:9876/v2.0/lbaas/loadbalancers.json?limit=2
+    GET http://198.51.100.10:9876/v2/lbaas/loadbalancers.json?limit=2
 
 If a particular plug-in does not support pagination operations the Octavia API
-v2.0 will emulate the pagination behavior so that users can expect the same
+v2 will emulate the pagination behavior so that users can expect the same
 behavior regardless of the particular plug-in running in the background.
 
 **Example load balancer list, first page: JSON request**
 
 .. code::
 
-    GET /v2.0/lbaas/loadbalancers.json?limit=2 HTTP/1.1
+    GET /v2/lbaas/loadbalancers.json?limit=2 HTTP/1.1
     Host: 198.51.100.10:9876
     Content-Type: application/json
     Accept: application/json
@@ -281,11 +287,11 @@ behavior regardless of the particular plug-in running in the background.
         ],
         "loadbalancers_links": [
             {
-                "href": "http://198.51.100.10:9876/v2.0/lbaas/loadbalancers.json?limit=2&marker=0fdb0ca7-0a38-4aea-891c-daaed40bcafe",
+                "href": "http://198.51.100.10:9876/v2/lbaas/loadbalancers.json?limit=2&marker=0fdb0ca7-0a38-4aea-891c-daaed40bcafe",
                 "rel": "next"
             },
             {
-                "href": "http://198.51.100.10:9876/v2.0/lbaas/loadbalancers.json?limit=2&marker=34d5f4a5-cbbc-43a0-878f-b8a26370e6e7&page_reverse=True",
+                "href": "http://198.51.100.10:9876/v2/lbaas/loadbalancers.json?limit=2&marker=34d5f4a5-cbbc-43a0-878f-b8a26370e6e7&page_reverse=True",
                 "rel": "previous"
             }
         ]
@@ -298,7 +304,7 @@ The last page won't show the "next" links
 
 .. code::
 
-    GET /v2.0/lbaas/loadbalancers.json?limit=2&marker=4ef465f3-0233-44af-b93d-9d3eae4daf85 HTTP/1.1
+    GET /v2/lbaas/loadbalancers.json?limit=2&marker=4ef465f3-0233-44af-b93d-9d3eae4daf85 HTTP/1.1
     Host: 198.51.100.10:9876
     Content-Type: application/json
     Accept: application/json
@@ -329,7 +335,7 @@ The last page won't show the "next" links
         ],
         "loadbalancers_links": [
             {
-                "href": "http://198.51.100.10:9876/v2.0/lbaas/loadbalancers.json?limit=2&marker=4ef465f3-0233-44af-b93d-9d3eae4daf85&page_reverse=True",
+                "href": "http://198.51.100.10:9876/v2/lbaas/loadbalancers.json?limit=2&marker=4ef465f3-0233-44af-b93d-9d3eae4daf85&page_reverse=True",
                 "rel": "previous"
             }
         ]
@@ -380,14 +386,14 @@ and the number of ``sort_key`` and ``sort_dir`` provided must be same. The
 values are ``asc`` (ascending) and ``desc`` (descending).
 
 If a particular plug-in does not support sorting operations the Octavia API
-v2.0 emulates the sorting behavior so that users can expect the same behavior
+v2 emulates the sorting behavior so that users can expect the same behavior
 regardless of the particular plug-in that runs in the background.
 
 
 Response Codes
 ==============
 
-The following HTTP response status codes are used by the Octavia v2.0 API.
+The following HTTP response status codes are used by the Octavia v2 API.
 
 Success
 -------
@@ -406,7 +412,7 @@ Success
 Faults
 ------
 
-The Octavia API v2.0 returns an error response if a failure occurs while
+The Octavia API v2 returns an error response if a failure occurs while
 processing a request. Octavia uses only standard HTTP error codes.
 4\ *nn* errors indicate problems in the particular request being sent from
 the client.
@@ -445,7 +451,7 @@ the client.
 Status Codes
 ============
 
-Octavia API v2.0 entities have two status codes present in the response body.
+Octavia API v2 entities have two status codes present in the response body.
 The ``provisioning_status`` describes the lifecycle status of the entity while
 the ``operating_status`` provides the observed status of the entity.
 

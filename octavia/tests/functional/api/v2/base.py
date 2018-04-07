@@ -29,7 +29,8 @@ from octavia.tests.functional.db import base as base_db_test
 
 class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
-    BASE_PATH = '/v2.0'
+    BASE_PATH = '/v2'
+    BASE_PATH_v2_0 = '/v2.0'
 
     # /lbaas/loadbalancers
     LBS_PATH = '/lbaas/loadbalancers'
@@ -124,6 +125,9 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     def _get_full_path(self, path):
         return ''.join([self.BASE_PATH, path])
 
+    def _get_full_path_v2_0(self, path):
+        return ''.join([self.BASE_PATH_v2_0, path])
+
     def _build_body(self, json):
         return {self.root_tag: json}
 
@@ -144,9 +148,13 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                                    expect_errors=expect_errors)
         return response
 
-    def post(self, path, body, headers=None, status=201, expect_errors=False):
+    def post(self, path, body, headers=None, status=201, expect_errors=False,
+             use_v2_0=False):
         headers = headers or {}
-        full_path = self._get_full_path(path)
+        if use_v2_0:
+            full_path = self._get_full_path_v2_0(path)
+        else:
+            full_path = self._get_full_path(path)
         response = self.app.post_json(full_path,
                                       params=body,
                                       headers=headers,

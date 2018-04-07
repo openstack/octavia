@@ -3,7 +3,7 @@
 List Load Balancers
 ===================
 
-.. rest_method:: GET /v2.0/lbaas/loadbalancers
+.. rest_method:: GET /v2/lbaas/loadbalancers
 
 Lists all load balancers for the project.
 
@@ -74,7 +74,7 @@ Response Example
 Create a Load Balancer
 ======================
 
-.. rest_method:: POST /v2.0/lbaas/loadbalancers
+.. rest_method:: POST /v2/lbaas/loadbalancers
 
 Creates a load balancer.
 
@@ -88,7 +88,7 @@ In the response, the load balancer :ref:`provisioning status<prov_status>` is
 ``ACTIVE``, ``PENDING_CREATE``, or ``ERROR``.
 
 If the status is ``PENDING_CREATE``, issue GET
-``/v2.0/lbaas/loadbalancers/{loadbalancer_id}`` to view the progress of
+``/v2/lbaas/loadbalancers/{loadbalancer_id}`` to view the progress of
 the provisioning operation. When the load balancer status changes
 to ``ACTIVE``, the load balancer is successfully provisioned and
 is ready for further configuration.
@@ -243,7 +243,7 @@ Response Example
 Show Load Balancer details
 ==========================
 
-.. rest_method:: GET /v2.0/lbaas/loadbalancers/{loadbalancer_id}
+.. rest_method:: GET /v2/lbaas/loadbalancers/{loadbalancer_id}
 
 Shows the details of a load balancer.
 
@@ -312,7 +312,7 @@ Response Example
 Update a Load Balancer
 ======================
 
-.. rest_method:: PUT /v2.0/lbaas/loadbalancers/{loadbalancer_id}
+.. rest_method:: PUT /v2/lbaas/loadbalancers/{loadbalancer_id}
 
 Updates a load balancer.
 
@@ -396,7 +396,7 @@ Response Example
 Remove a Load Balancer
 ======================
 
-.. rest_method:: DELETE /v2.0/lbaas/loadbalancers/{loadbalancer_id}
+.. rest_method:: DELETE /v2/lbaas/loadbalancers/{loadbalancer_id}
 
 Removes a load balancer and its associated configuration from the project.
 
@@ -441,7 +441,7 @@ There is no body content for the response of a successful DELETE request.
 Get Load Balancer statistics
 ============================
 
-.. rest_method:: GET /v2.0/lbaas/loadbalancers/{loadbalancer_id}/stats
+.. rest_method:: GET /v2/lbaas/loadbalancers/{loadbalancer_id}/stats
 
 Shows the current statistics for a load balancer.
 
@@ -499,7 +499,7 @@ Response Example
 Get the Load Balancer status tree
 =================================
 
-.. rest_method:: GET /v2.0/lbaas/loadbalancers/{loadbalancer_id}/status
+.. rest_method:: GET /v2/lbaas/loadbalancers/{loadbalancer_id}/status
 
 Shows the status tree for a load balancer.
 
@@ -574,7 +574,7 @@ Response Example
 Failover a load balancer
 ========================
 
-.. rest_method:: PUT /v2.0/lbaas/loadbalancers/{loadbalancer_id}/failover
+.. rest_method:: PUT /v2/lbaas/loadbalancers/{loadbalancer_id}/failover
 
 Performs a failover of a load balancer.
 

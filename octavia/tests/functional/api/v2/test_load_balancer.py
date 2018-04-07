@@ -74,6 +74,19 @@ class TestLoadBalancer(base.BaseAPITest):
         self._assert_request_matches_response(lb_json, api_lb)
         return api_lb
 
+    # Make sure the /v2.0 alias is maintained for the life of the v2 API
+    def test_create_v2_0(self, **optionals):
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, use_v2_0=True)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_request_matches_response(lb_json, api_lb)
+        return api_lb
+
     def test_create_using_tenant_id(self):
         lb_json = {'name': 'test1',
                    'vip_subnet_id': uuidutils.generate_uuid(),

@@ -168,7 +168,7 @@ class TestPaginationHelper(base.TestCase):
 
     @mock.patch('octavia.api.common.pagination.request')
     def test_make_links_next(self, request_mock):
-        request_mock.path = "/lbaas/v2.0/pools/1/members"
+        request_mock.path = "/lbaas/v2/pools/1/members"
         request_mock.path_url = "http://localhost" + request_mock.path
         member1 = models.Member()
         member1.id = uuidutils.generate_uuid()
@@ -188,7 +188,7 @@ class TestPaginationHelper(base.TestCase):
 
     @mock.patch('octavia.api.common.pagination.request')
     def test_make_links_prev(self, request_mock):
-        request_mock.path = "/lbaas/v2.0/pools/1/members"
+        request_mock.path = "/lbaas/v2/pools/1/members"
         request_mock.path_url = "http://localhost" + request_mock.path
         member1 = models.Member()
         member1.id = uuidutils.generate_uuid()
@@ -214,7 +214,7 @@ class TestPaginationHelper(base.TestCase):
 
     @mock.patch('octavia.api.common.pagination.request')
     def test_make_links_with_configured_url(self, request_mock):
-        request_mock.path = "/lbaas/v2.0/pools/1/members"
+        request_mock.path = "/lbaas/v2/pools/1/members"
         request_mock.path_url = "http://localhost" + request_mock.path
         api_base_uri = "https://127.0.0.1"
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))

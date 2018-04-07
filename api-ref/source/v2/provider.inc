@@ -3,7 +3,7 @@
 List Providers
 ==============
 
-.. rest_method:: GET /v2.0/lbaas/providers
+.. rest_method:: GET /v2/lbaas/providers
 
 Lists all enabled provider drivers.
 

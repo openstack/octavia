@@ -20,11 +20,11 @@ from tempest.lib.common import rest_client
 class QuotasClient(rest_client.RestClient):
     """Tests Quotas API."""
 
-    _QUOTAS_URL = "v2.0/lbaas/quotas/{project_id}"
+    _QUOTAS_URL = "v2/lbaas/quotas/{project_id}"
 
     def list_quotas(self, params=None):
         """List all non-default quotas."""
-        url = "v2.0/lbaas/quotas"
+        url = "v2/lbaas/quotas"
         if params:
             url = '{0}?{1}'.format(url, parse.urlencode(params))
         resp, body = self.get(url)

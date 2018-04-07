@@ -21,14 +21,14 @@ rules = [
                                     action=constants.RBAC_GET_ALL),
         constants.RULE_API_ADMIN,
         "List Amphorae",
-        [{'method': 'GET', 'path': '/v2.0/octavia/amphorae'}]
+        [{'method': 'GET', 'path': '/v2/octavia/amphorae'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AMPHORA,
                                     action=constants.RBAC_GET_ONE),
         constants.RULE_API_ADMIN,
         "Show Amphora details",
-        [{'method': 'GET', 'path': '/v2.0/octavia/amphorae/{amphora_id}'}]
+        [{'method': 'GET', 'path': '/v2/octavia/amphorae/{amphora_id}'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AMPHORA,
@@ -36,7 +36,7 @@ rules = [
         constants.RULE_API_ADMIN,
         "Failover Amphora",
         [{'method': 'PUT',
-          'path': '/v2.0/octavia/amphorae/{amphora_id}/failover'}]
+          'path': '/v2/octavia/amphorae/{amphora_id}/failover'}]
     ),
 ]
 
