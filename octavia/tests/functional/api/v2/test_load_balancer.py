@@ -1941,7 +1941,11 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'provisioning_status': constants.PENDING_CREATE,
             'operating_status': constants.OFFLINE,
             'insert_headers': {},
-            'project_id': self._project_id
+            'project_id': self._project_id,
+            'timeout_client_data': constants.DEFAULT_TIMEOUT_CLIENT_DATA,
+            'timeout_member_connect': constants.DEFAULT_TIMEOUT_MEMBER_CONNECT,
+            'timeout_member_data': constants.DEFAULT_TIMEOUT_MEMBER_DATA,
+            'timeout_tcp_inspect': constants.DEFAULT_TIMEOUT_TCP_INSPECT,
         }
         if create_sni_containers:
             create_listener['sni_container_refs'] = create_sni_containers

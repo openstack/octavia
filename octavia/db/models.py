@@ -442,6 +442,10 @@ class Listener(base_models.BASE, base_models.IdMixin,
 
     peer_port = sa.Column(sa.Integer(), nullable=True)
     insert_headers = sa.Column(sa.PickleType())
+    timeout_client_data = sa.Column(sa.Integer, nullable=True)
+    timeout_member_connect = sa.Column(sa.Integer, nullable=True)
+    timeout_member_data = sa.Column(sa.Integer, nullable=True)
+    timeout_tcp_inspect = sa.Column(sa.Integer, nullable=True)
 
     # This property should be a unique list of the default_pool and anything
     # referenced by enabled L7Policies with at least one rule that also

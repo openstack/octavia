@@ -245,7 +245,12 @@ RET_LISTENER = {
     'pools': [RET_POOL_1],
     'l7policies': [],
     'enabled': True,
-    'insert_headers': {}}
+    'insert_headers': {},
+    'timeout_client_data': 50000,
+    'timeout_member_connect': 5000,
+    'timeout_member_data': 50000,
+    'timeout_tcp_inspect': 0,
+}
 
 RET_LISTENER_L7 = {
     'id': 'sample_listener_id_1',
@@ -261,7 +266,12 @@ RET_LISTENER_L7 = {
     'l7policies': [RET_L7POLICY_1, RET_L7POLICY_2, RET_L7POLICY_3,
                    RET_L7POLICY_4, RET_L7POLICY_5, RET_L7POLICY_6],
     'enabled': True,
-    'insert_headers': {}}
+    'insert_headers': {},
+    'timeout_client_data': 50000,
+    'timeout_member_connect': 5000,
+    'timeout_member_data': 50000,
+    'timeout_tcp_inspect': 0,
+}
 
 RET_LISTENER_TLS = {
     'id': 'sample_listener_id_1',
@@ -409,7 +419,11 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                           tls=False, sni=False, peer_port=None, topology=None,
                           l7=False, enabled=True, insert_headers=None,
                           be_proto=None, monitor_ip_port=False,
-                          monitor_proto=None, backup_member=False):
+                          monitor_proto=None, backup_member=False,
+                          timeout_client_data=50000,
+                          timeout_member_connect=5000,
+                          timeout_member_data=50000,
+                          timeout_tcp_inspect=0):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
@@ -422,7 +436,9 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                     'connection_limit, tls_certificate_id, '
                     'sni_container_ids, default_tls_container, '
                     'sni_containers, load_balancer, peer_port, pools, '
-                    'l7policies, enabled, insert_headers',)
+                    'l7policies, enabled, insert_headers, timeout_client_data,'
+                    'timeout_member_connect, timeout_member_data, '
+                    'timeout_tcp_inspect',)
     if l7:
         pools = [
             sample_pool_tuple(
@@ -492,7 +508,11 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
         pools=pools,
         l7policies=l7policies,
         enabled=enabled,
-        insert_headers=insert_headers
+        insert_headers=insert_headers,
+        timeout_client_data=timeout_client_data,
+        timeout_member_connect=timeout_member_connect,
+        timeout_member_data=timeout_member_data,
+        timeout_tcp_inspect=timeout_tcp_inspect
     )
 
 
@@ -703,32 +723,41 @@ def sample_l7rule_tuple(id,
 
 
 def sample_base_expected_config(frontend=None, backend=None,
-                                peers=None, global_opts=None):
+                                peers=None, global_opts=None, defaults=None):
     if frontend is None:
         frontend = ("frontend sample_listener_id_1\n"
                     "    option httplog\n"
                     "    maxconn 98\n"
                     "    bind 10.0.0.2:80\n"
                     "    mode http\n"
-                    "    default_backend sample_pool_id_1\n\n")
+                    "    default_backend sample_pool_id_1\n"
+                    "    timeout client 50000\n\n")
     if backend is None:
         backend = ("backend sample_pool_id_1\n"
                    "    mode http\n"
                    "    balance roundrobin\n"
                    "    cookie SRV insert indirect nocache\n"
-                   "    timeout check 31\n"
+                   "    timeout check 31s\n"
                    "    option httpchk GET /index.html\n"
                    "    http-check expect rstatus 418\n"
                    "    fullconn 98\n"
                    "    option allbackups\n"
+                   "    timeout connect 5000\n"
+                   "    timeout server 50000\n"
                    "    server sample_member_id_1 10.0.0.99:82 weight 13 "
                    "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
                    "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-                   "check inter 30s fall 3 rise 2 cookie sample_member_id_2\n")
+                   "check inter 30s fall 3 rise 2 cookie sample_member_id_2\n"
+                   "\n")
     if peers is None:
         peers = "\n\n"
     if global_opts is None:
         global_opts = "    maxconn 98\n\n"
+    if defaults is None:
+        defaults = ("defaults\n"
+                    "    log global\n"
+                    "    retries 3\n"
+                    "    option redispatch\n\n")
     return ("# Configuration for test-lb\n"
             "global\n"
             "    daemon\n"
@@ -738,11 +767,4 @@ def sample_base_expected_config(frontend=None, backend=None,
             "    log /dev/log local1 notice\n"
             "    stats socket /var/lib/octavia/sample_listener_id_1.sock"
             " mode 0666 level user\n" +
-            global_opts +
-            "defaults\n"
-            "    log global\n"
-            "    retries 3\n"
-            "    option redispatch\n"
-            "    timeout connect 5000\n"
-            "    timeout client 50000\n"
-            "    timeout server 50000\n\n" + peers + frontend + backend)
+            global_opts + defaults + peers + frontend + backend)

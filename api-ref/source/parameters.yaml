@@ -1029,6 +1029,56 @@ subnet_id-optional:
   in: body
   required: false
   type: uuid
+timeout_client_data:
+  description: |
+    Frontend client inactivity timeout in milliseconds. Default: 50000.
+  in: body
+  required: true
+  type: integer
+timeout_client_data-optional:
+  description: |
+    Frontend client inactivity timeout in milliseconds. Default: 50000.
+  in: body
+  required: false
+  type: integer
+timeout_member_connect:
+  description: |
+    Backend member connection timeout in milliseconds. Default: 5000.
+  in: body
+  required: true
+  type: integer
+timeout_member_connect-optional:
+  description: |
+    Backend member connection timeout in milliseconds. Default: 5000.
+  in: body
+  required: false
+  type: integer
+timeout_member_data:
+  description: |
+    Backend member inactivity timeout in milliseconds. Default: 50000.
+  in: body
+  required: true
+  type: integer
+timeout_member_data-optional:
+  description: |
+    Backend member inactivity timeout in milliseconds. Default: 50000.
+  in: body
+  required: false
+  type: integer
+timeout_tcp_inspect:
+  description: |
+    Time, in milliseconds, to wait for additional TCP packets for content
+    inspection. Default: 0.
+  in: body
+  required: true
+  type: integer
+timeout_tcp_inspect-optional:
+  description: |
+    Time, in milliseconds, to wait for additional TCP packets for content
+    inspection. Default: 0.
+  in: body
+  required: false
+  type: integer
 total_connections:
   description: |
     The total connections handled.

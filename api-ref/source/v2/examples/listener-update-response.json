@@ -30,6 +30,10 @@
                 "id": "5e618272-339d-4a80-8d14-dbc093091bb1"
             }
         ],
-        "name": "great_updated_tls_listener"
+        "name": "great_updated_tls_listener",
+        "timeout_client_data": 100000,
+        "timeout_member_connect": 1000,
+        "timeout_member_data": 100000,
+        "timeout_tcp_inspect": 5
     }
 }

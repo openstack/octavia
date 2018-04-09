@@ -136,6 +136,10 @@ frontend {{ listener.id }}
     {% if listener.default_pool and listener.default_pool.enabled %}
     default_backend {{ listener.default_pool.id }}
     {% endif %}
+    timeout client {{ listener.timeout_client_data }}
+    {% if listener.timeout_tcp_inspect %}
+    tcp-request inspect-delay {{ listener.timeout_tcp_inspect }}
+    {% endif %}
 {% endmacro %}
 
 
@@ -251,6 +255,8 @@ backend {{ pool.id }}
     fullconn {{ listener.connection_limit }}
     {% endif %}
     option allbackups
+    timeout connect {{ listener.timeout_member_connect }}
+    timeout server {{ listener.timeout_member_data }}
     {% for member in pool.members if member.enabled %}
         {{- member_macro(constants, pool, member) -}}
     {% endfor %}

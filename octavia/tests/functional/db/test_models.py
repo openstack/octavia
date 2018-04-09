@@ -335,6 +335,17 @@ class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertIsNotNone(listener.created_at)
         self.assertIsNone(listener.updated_at)
 
+    def test_create_with_timeouts(self):
+        timeouts = {
+            'timeout_client_data': 1,
+            'timeout_member_connect': 2,
+            'timeout_member_data': constants.MIN_TIMEOUT,
+            'timeout_tcp_inspect': constants.MAX_TIMEOUT,
+        }
+        listener = self.create_listener(self.session, **timeouts)
+        for item in timeouts:
+            self.assertEqual(timeouts[item], getattr(listener, item))
+
     def test_update(self):
         listener = self.create_listener(self.session)
         self.assertIsNone(listener.updated_at)
@@ -345,6 +356,24 @@ class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
             models.Listener).filter_by(id=listener_id).first()
         self.assertEqual('test1', new_listener.name)
         self.assertIsNotNone(new_listener.updated_at)
+
+    def test_update_with_timeouts(self):
+        listener = self.create_listener(self.session)
+        listener_id = listener.id
+
+        timeouts = {
+            'timeout_client_data': 1,
+            'timeout_member_connect': 2,
+            'timeout_member_data': 3,
+            'timeout_tcp_inspect': 4,
+        }
+
+        for item in timeouts:
+            setattr(listener, item, timeouts[item])
+        new_listener = self.session.query(
+            models.Listener).filter_by(id=listener_id).first()
+        for item in timeouts:
+            self.assertEqual(timeouts[item], getattr(new_listener, item))
 
     def test_delete(self):
         listener = self.create_listener(self.session)
