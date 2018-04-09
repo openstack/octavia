@@ -54,19 +54,15 @@ class UDPStatusSender(object):
             self.dests.append(addr)  # Just grab the first match
             break
 
-    def dosend(self, obj):
-        envelope_str = status_message.wrap_envelope(obj, self.key)
-        addrinfo = round_robin_addr(self.dests)
+    def _send_msg(self, dest, msg):
+        envelope_str = status_message.wrap_envelope(msg, self.key)
         # dest = (family, socktype, proto, canonname, sockaddr)
         # e.g. 0 = sock family, 4 = sockaddr - what we actually need
-        if addrinfo is None:
-            LOG.error('No controller address found. Unable to send heartbeat.')
-            return
         try:
-            if addrinfo[0] == socket.AF_INET:
-                self.v4sock.sendto(envelope_str, addrinfo[4])
-            elif addrinfo[0] == socket.AF_INET6:
-                self.v6sock.sendto(envelope_str, addrinfo[4])
+            if dest[0] == socket.AF_INET:
+                self.v4sock.sendto(envelope_str, dest[4])
+            elif dest[0] == socket.AF_INET6:
+                self.v6sock.sendto(envelope_str, dest[4])
         except socket.error:
             # Pass here as on amp boot it will get one or more
             # error: [Errno 101] Network is unreachable
@@ -74,3 +70,10 @@ class UDPStatusSender(object):
             # No harm in trying to send as it will still failover
             # if the message isn't received
             pass
+
+    def dosend(self, obj):
+        dest = round_robin_addr(self.dests)
+        if dest is None:
+            LOG.error('No controller address found. Unable to send heartbeat.')
+            return
+        self._send_msg(dest, obj)
