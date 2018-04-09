@@ -472,9 +472,24 @@ class TestPool(base.BaseAPITest):
         pools = self.get(self.POOLS_PATH, params={
             'fields': ['id', 'project_id']}).json
         for pool in pools['pools']:
-            self.assertIn(u'id', pool.keys())
-            self.assertIn(u'project_id', pool.keys())
-            self.assertNotIn(u'description', pool.keys())
+            self.assertIn(u'id', pool)
+            self.assertIn(u'project_id', pool)
+            self.assertNotIn(u'description', pool)
+
+    def test_get_one_fields_filter(self):
+        pool1 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool1').get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+
+        pool = self.get(
+            self.POOL_PATH.format(pool_id=pool1.get('id')),
+            params={'fields': ['id', 'project_id']}).json.get(self.root_tag)
+        self.assertIn(u'id', pool)
+        self.assertIn(u'project_id', pool)
+        self.assertNotIn(u'description', pool)
 
     def test_get_all_filter(self):
         po1 = self.create_pool(

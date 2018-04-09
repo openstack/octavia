@@ -54,8 +54,8 @@ class HealthMonitorController(base.BaseController):
         return db_hm
 
     @wsme_pecan.wsexpose(hm_types.HealthMonitorRootResponse, wtypes.text,
-                         wtypes.text)
-    def get_one(self, id):
+                         [wtypes.text], ignore_extra_args=True)
+    def get_one(self, id, fields=None):
         """Gets a single healthmonitor's details."""
         context = pecan.request.context.get('octavia_context')
         db_hm = self._get_db_hm(context.session, id)
@@ -65,6 +65,8 @@ class HealthMonitorController(base.BaseController):
 
         result = self._convert_db_to_type(
             db_hm, hm_types.HealthMonitorResponse)
+        if fields is not None:
+            result = self._filter_fields([result], fields)[0]
         return hm_types.HealthMonitorRootResponse(healthmonitor=result)
 
     @wsme_pecan.wsexpose(hm_types.HealthMonitorsRootResponse, wtypes.text,
