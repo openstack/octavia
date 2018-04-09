@@ -1,0 +1,7 @@
+---
+deprecations:
+  - |
+    The quota objects named `health_monitor` and `load_balancer` have been
+    renamed to `healthmonitor` and `loadbalancer`, respectively. The old names
+    are deprecated, and will be removed in the T cycle.
+

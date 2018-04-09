@@ -50,9 +50,9 @@ Response Parameters
 
 .. rest_parameters:: ../parameters.yaml
 
-   - health_monitor: quota-health_monitor
+   - healthmonitor: quota-health_monitor
    - listener: quota-listener
-   - load_balancer: quota-load_balancer
+   - loadbalancer: quota-load_balancer
    - member: quota-member
    - pool: quota-pool
    - project_id: project_id
@@ -98,9 +98,9 @@ Response Parameters
 
 .. rest_parameters:: ../parameters.yaml
 
-   - health_monitor: quota-health_monitor
+   - healthmonitor: quota-health_monitor
    - listener: quota-listener
-   - load_balancer: quota-load_balancer
+   - loadbalancer: quota-load_balancer
    - member: quota-member
    - pool: quota-pool
 
@@ -155,9 +155,9 @@ Response Parameters
 
 .. rest_parameters:: ../parameters.yaml
 
-   - health_monitor: quota-health_monitor
+   - healthmonitor: quota-health_monitor
    - listener: quota-listener
-   - load_balancer: quota-load_balancer
+   - loadbalancer: quota-load_balancer
    - member: quota-member
    - pool: quota-pool
 
@@ -205,9 +205,9 @@ Request
 
 .. rest_parameters:: ../parameters.yaml
 
-   - health_monitor: quota-health_monitor-optional
+   - healthmonitor: quota-health_monitor-optional
    - listener: quota-listener-optional
-   - load_balancer: quota-load_balancer-optional
+   - loadbalancer: quota-load_balancer-optional
    - member: quota-member-optional
    - pool: quota-pool-optional
    - project_id: path-project-id
@@ -229,9 +229,9 @@ Response Parameters
 
 .. rest_parameters:: ../parameters.yaml
 
-   - health_monitor: quota-health_monitor
+   - healthmonitor: quota-health_monitor
    - listener: quota-listener
-   - load_balancer: quota-load_balancer
+   - loadbalancer: quota-load_balancer
    - member: quota-member
    - pool: quota-pool
 

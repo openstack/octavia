@@ -97,6 +97,40 @@ class TestQuotas(base.BaseAPITest):
 
         quota1['project_id'] = quota1['tenant_id'] = project_id1
         quota2['project_id'] = quota2['tenant_id'] = project_id2
+        # Expected deprecated names until T
+        quota1['healthmonitor'] = quota1['health_monitor']
+        quota1['loadbalancer'] = quota1['load_balancer']
+        quota2['healthmonitor'] = quota2['health_monitor']
+        quota2['loadbalancer'] = quota2['load_balancer']
+
+        expected = {'quotas': [quota1, quota2], 'quotas_links': []}
+        self.assertEqual(expected, quota_list)
+
+    def test_deprecated_get_and_put_vars(self):
+        project_id1 = uuidutils.generate_uuid()
+        project_id2 = uuidutils.generate_uuid()
+        quota_path1 = self.QUOTA_PATH.format(project_id=project_id1)
+        quota1 = {'load_balancer': constants.QUOTA_UNLIMITED, 'listener': 30,
+                  'pool': 30, 'health_monitor': 30, 'member': 30}
+        body1 = {'quota': quota1}
+        self.put(quota_path1, body1, status=202)
+        quota_path2 = self.QUOTA_PATH.format(project_id=project_id2)
+        quota2 = {'loadbalancer': 50, 'listener': 50, 'pool': 50,
+                  'healthmonitor': 50, 'member': 50}
+        body2 = {'quota': quota2}
+        self.put(quota_path2, body2, status=202)
+
+        response = self.get(self.QUOTAS_PATH)
+        quota_list = response.json
+
+        quota1['project_id'] = quota1['tenant_id'] = project_id1
+        quota2['project_id'] = quota2['tenant_id'] = project_id2
+        # Expected deprecated names until T
+        quota1['healthmonitor'] = quota1['health_monitor']
+        quota1['loadbalancer'] = quota1['load_balancer']
+        quota2['health_monitor'] = quota2['healthmonitor']
+        quota2['load_balancer'] = quota2['loadbalancer']
+
         expected = {'quotas': [quota1, quota2], 'quotas_links': []}
         self.assertEqual(expected, quota_list)
 

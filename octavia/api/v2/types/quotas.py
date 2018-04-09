@@ -20,6 +20,9 @@ from octavia.common import constants as consts
 
 class QuotaBase(base.BaseType):
     """Individual quota definitions."""
+    loadbalancer = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    # Misspelled version, deprecated in Rocky
     load_balancer = wtypes.wsattr(wtypes.IntegerType(
         minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
     listener = wtypes.wsattr(wtypes.IntegerType(
@@ -28,8 +31,19 @@ class QuotaBase(base.BaseType):
         minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
     pool = wtypes.wsattr(wtypes.IntegerType(
         minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    healthmonitor = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    # Misspelled version, deprecated in Rocky
     health_monitor = wtypes.wsattr(wtypes.IntegerType(
         minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+
+    def to_dict(self, render_unsets=False):
+        quota_dict = super(QuotaBase, self).to_dict(render_unsets)
+        if 'loadbalancer' in quota_dict:
+            quota_dict['load_balancer'] = quota_dict.pop('loadbalancer')
+        if 'healthmonitor' in quota_dict:
+            quota_dict['health_monitor'] = quota_dict.pop('healthmonitor')
+        return quota_dict
 
 
 class QuotaResponse(base.BaseType):
@@ -47,19 +61,28 @@ class QuotaResponse(base.BaseType):
 class QuotaAllBase(base.BaseType):
     """Wrapper object for get all quotas responses."""
     project_id = wtypes.wsattr(wtypes.StringType())
+    loadbalancer = wtypes.wsattr(wtypes.IntegerType())
+    # Misspelled version, deprecated in Rocky, remove in T
     load_balancer = wtypes.wsattr(wtypes.IntegerType())
     listener = wtypes.wsattr(wtypes.IntegerType())
     member = wtypes.wsattr(wtypes.IntegerType())
     pool = wtypes.wsattr(wtypes.IntegerType())
+    healthmonitor = wtypes.wsattr(wtypes.IntegerType())
+    # Misspelled version, deprecated in Rocky, remove in T
     health_monitor = wtypes.wsattr(wtypes.IntegerType())
 
-    _type_to_model_map = {}
+    _type_to_model_map = {'loadbalancer': 'load_balancer',
+                          'healthmonitor': 'health_monitor'}
     _child_map = {}
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
         quotas = super(QuotaAllBase, cls).from_data_model(
             data_model, children=children)
+        # For backwards compatibility, remove in T
+        quotas.load_balancer = quotas.loadbalancer
+        # For backwards compatibility, remove in T
+        quotas.health_monitor = quotas.healthmonitor
         return quotas
 
 
