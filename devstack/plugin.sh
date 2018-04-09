@@ -300,6 +300,10 @@ function octavia_configure {
     iniset $OCTAVIA_CONF certificates ca_private_key ${OCTAVIA_CERTS_DIR}/private/cakey.pem
     iniset $OCTAVIA_CONF certificates ca_private_key_passphrase foobar
 
+    if [[ "$OCTAVIA_USE_LEGACY_RBAC" == "True" ]]; then
+        cp $OCTAVIA_DIR/etc/policy/admin_or_owner-policy.json $OCTAVIA_CONF_DIR/policy.json
+    fi
+
     # create dhclient.conf file for dhclient
     mkdir -m755 -p $OCTAVIA_DHCLIENT_DIR
     cp $OCTAVIA_DIR/etc/dhcp/dhclient.conf $OCTAVIA_DHCLIENT_CONF
