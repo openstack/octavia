@@ -38,8 +38,8 @@ class AmphoraController(base.BaseController):
         self.handler = self.handler.amphora
 
     @wsme_pecan.wsexpose(amp_types.AmphoraRootResponse, wtypes.text,
-                         wtypes.text)
-    def get_one(self, id):
+                         [wtypes.text], ignore_extra_args=True)
+    def get_one(self, id, fields=None):
         """Gets a single amphora's details."""
         context = pecan.request.context.get('octavia_context')
         db_amp = self._get_db_amp(context.session, id, show_deleted=False)
@@ -49,6 +49,8 @@ class AmphoraController(base.BaseController):
 
         result = self._convert_db_to_type(
             db_amp, amp_types.AmphoraResponse)
+        if fields is not None:
+            result = self._filter_fields([result], fields)[0]
         return amp_types.AmphoraRootResponse(amphora=result)
 
     @wsme_pecan.wsexpose(amp_types.AmphoraeRootResponse, [wtypes.text],

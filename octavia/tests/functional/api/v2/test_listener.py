@@ -324,9 +324,22 @@ class TestListener(base.BaseAPITest):
         lis = self.get(self.LISTENERS_PATH, params={
             'fields': ['id', 'project_id']}).json
         for li in lis['listeners']:
-            self.assertIn(u'id', li.keys())
-            self.assertIn(u'project_id', li.keys())
-            self.assertNotIn(u'description', li.keys())
+            self.assertIn(u'id', li)
+            self.assertIn(u'project_id', li)
+            self.assertNotIn(u'description', li)
+
+    def test_get_one_fields_filter(self):
+        listener1 = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, self.lb_id,
+            name='listener1').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        li = self.get(
+            self.LISTENER_PATH.format(listener_id=listener1.get('id')),
+            params={'fields': ['id', 'project_id']}).json.get(self.root_tag)
+        self.assertIn(u'id', li)
+        self.assertIn(u'project_id', li)
+        self.assertNotIn(u'description', li)
 
     def test_get_all_filter(self):
         li1 = self.create_listener(constants.PROTOCOL_HTTP,

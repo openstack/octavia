@@ -41,8 +41,9 @@ class L7RuleController(base.BaseController):
         self.l7policy_id = l7policy_id
         self.handler = self.handler.l7rule
 
-    @wsme_pecan.wsexpose(l7rule_types.L7RuleRootResponse, wtypes.text)
-    def get(self, id):
+    @wsme_pecan.wsexpose(l7rule_types.L7RuleRootResponse, wtypes.text,
+                         [wtypes.text], ignore_extra_args=True)
+    def get(self, id, fields=None):
         """Gets a single l7rule's details."""
         context = pecan.request.context.get('octavia_context')
         db_l7rule = self._get_db_l7rule(context.session, id,
@@ -51,8 +52,10 @@ class L7RuleController(base.BaseController):
         self._auth_validate_action(context, db_l7rule.project_id,
                                    constants.RBAC_GET_ONE)
 
-        result = self._convert_db_to_type(db_l7rule,
-                                          l7rule_types.L7RuleResponse)
+        result = self._convert_db_to_type(
+            db_l7rule, l7rule_types.L7RuleResponse)
+        if fields is not None:
+            result = self._filter_fields([result], fields)[0]
         return l7rule_types.L7RuleRootResponse(rule=result)
 
     @wsme_pecan.wsexpose(l7rule_types.L7RulesRootResponse, [wtypes.text],

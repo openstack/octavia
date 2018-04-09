@@ -522,9 +522,30 @@ class TestHealthMonitor(base.BaseAPITest):
         hms = self.get(self.HMS_PATH, params={
             'fields': ['id', 'project_id']}).json
         for hm in hms['healthmonitors']:
-            self.assertIn(u'id', hm.keys())
-            self.assertIn(u'project_id', hm.keys())
-            self.assertNotIn(u'description', hm.keys())
+            self.assertIn(u'id', hm)
+            self.assertIn(u'project_id', hm)
+            self.assertNotIn(u'description', hm)
+
+    def test_get_one_fields_filter(self):
+        pool1 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool1').get('pool')
+        self.set_lb_status(self.lb_id)
+
+        self.set_lb_status(self.lb_id)
+        hm1 = self.create_health_monitor(
+            pool1.get('id'), constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1, name='hm1').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        hm = self.get(
+            self.HM_PATH.format(healthmonitor_id=hm1.get('id')),
+            params={'fields': ['id', 'project_id']}).json.get(self.root_tag)
+        self.assertIn(u'id', hm)
+        self.assertIn(u'project_id', hm)
+        self.assertNotIn(u'description', hm)
 
     def test_get_all_filter(self):
         pool1 = self.create_pool(

@@ -50,8 +50,9 @@ class ListenersController(base.BaseController):
             invoke_on_load=True,
         ).driver
 
-    @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text)
-    def get_one(self, id):
+    @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text,
+                         [wtypes.text], ignore_extra_args=True)
+    def get_one(self, id, fields=None):
         """Gets a single listener's details."""
         context = pecan.request.context.get('octavia_context')
         db_listener = self._get_db_listener(context.session, id,
@@ -66,6 +67,8 @@ class ListenersController(base.BaseController):
 
         result = self._convert_db_to_type(db_listener,
                                           listener_types.ListenerResponse)
+        if fields is not None:
+            result = self._filter_fields([result], fields)[0]
         return listener_types.ListenerRootResponse(listener=result)
 
     @wsme_pecan.wsexpose(listener_types.ListenersRootResponse, wtypes.text,
