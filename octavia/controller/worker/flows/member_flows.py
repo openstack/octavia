@@ -173,7 +173,8 @@ class MemberFlows(object):
         # Update existing members
         unordered_members_flow.add(
             lifecycle_tasks.MembersToErrorOnRevertTask(
-                inject={constants.MEMBERS: updated_members},
+                # updated_members is a list of (obj, dict), only pass `obj`
+                inject={constants.MEMBERS: [m[0] for m in updated_members]},
                 name='{flow}-updated'.format(
                     flow=constants.MEMBER_TO_ERROR_ON_REVERT_FLOW)))
         for m, um in updated_members:
