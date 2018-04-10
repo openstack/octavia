@@ -300,8 +300,8 @@ function octavia_configure {
     iniset $OCTAVIA_CONF certificates ca_private_key_passphrase foobar
 
     # create dhclient.conf file for dhclient
-    mkdir -m755 -p $OCTAVIA_DHCLIENT_DIR
-    cp $OCTAVIA_DIR/etc/dhcp/dhclient.conf $OCTAVIA_DHCLIENT_CONF
+    sudo mkdir -m755 -p $OCTAVIA_DHCLIENT_DIR
+    sudo cp $OCTAVIA_DIR/etc/dhcp/dhclient.conf $OCTAVIA_DHCLIENT_CONF
 
     if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
         if [[ "$WSGI_MODE" == "uwsgi" ]]; then
