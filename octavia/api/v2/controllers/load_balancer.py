@@ -483,15 +483,19 @@ class LoadBalancersController(base.BaseController):
     def _lookup(self, id, *remainder):
         """Overridden pecan _lookup method for custom routing.
 
-        Currently it checks if this was a statuses request and routes
-        the request to the StatusesController.
+        Currently it checks if this was a status request and routes
+        the request to the StatusController.
+
+        'statuses' is aliased here for backward compatibility with
+        neutron-lbaas LBaaS v2 API.
         """
         if id and len(remainder) and (remainder[0] == 'status' or
+                                      remainder[0] == 'statuses' or
                                       remainder[0] == 'stats' or
                                       remainder[0] == 'failover'):
             controller = remainder[0]
             remainder = remainder[1:]
-            if controller == 'status':
+            if controller == 'status' or controller == 'statuses':
                 return StatusController(lb_id=id), remainder
             elif controller == 'stats':
                 return StatisticsController(lb_id=id), remainder
