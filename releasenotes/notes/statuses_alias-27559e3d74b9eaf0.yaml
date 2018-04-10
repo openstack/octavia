@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixes a neutron-lbaas LBaaS v2 API compatibility issue when requesting a
+    load balancer status tree via '/statuses'.
