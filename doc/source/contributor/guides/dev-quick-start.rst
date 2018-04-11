@@ -364,7 +364,7 @@ defaults. Your specific environment may require more than this:
 +-----------------------+-------------------------------+
 | keystone_authtoken    | admin_user                    |
 +-----------------------+-------------------------------+
-| keystone_authtoken    | auth_uri                      |
+| keystone_authtoken    | www_authenticate_uri          |
 +-----------------------+-------------------------------+
 | keystone_authtoken    | auth_version                  |
 +-----------------------+-------------------------------+
