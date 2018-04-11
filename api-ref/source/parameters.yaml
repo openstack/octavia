@@ -973,7 +973,7 @@ session_persistence-optional:
 session_persistence_cookie:
   description: |
     The name of the cookie to use for session persistence. Only applicable to
-    the ``APP_COOKIE`` session persistence type.
+    the ``APP_COOKIE`` session persistence type where it is required.
   in: body
   required: false
   type: string

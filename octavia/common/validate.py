@@ -293,3 +293,29 @@ def is_ip_member_of_cidr(address, cidr):
     if netaddr.IPAddress(address) in netaddr.IPNetwork(cidr):
         return True
     return False
+
+
+def check_session_persistence(SP_dict):
+    try:
+        if SP_dict['cookie_name']:
+            if SP_dict['type'] != constants.SESSION_PERSISTENCE_APP_COOKIE:
+                raise exceptions.ValidationException(detail=_(
+                    'Field "cookie_name" can only be specified with session '
+                    'persistence of type "APP_COOKIE".'))
+            bad_cookie_name = re.compile(r'[\x00-\x20\x22\x28-\x29\x2c\x2f'
+                                         r'\x3a-\x40\x5b-\x5d\x7b\x7d\x7f]+')
+            valid_chars = re.compile(r'[\x00-\xff]+')
+            if (bad_cookie_name.search(SP_dict['cookie_name']) or
+                    not valid_chars.search(SP_dict['cookie_name'])):
+                raise exceptions.ValidationException(detail=_(
+                    'Supplied "cookie_name" is invalid.'))
+        if (SP_dict['type'] == constants.SESSION_PERSISTENCE_APP_COOKIE and
+                not SP_dict['cookie_name']):
+            raise exceptions.ValidationException(detail=_(
+                'Field "cookie_name" must be specified when using the '
+                '"APP_COOKIE" session persistence type.'))
+    except exceptions.ValidationException:
+        raise
+    except Exception:
+        raise exceptions.ValidationException(detail=_(
+            'Invalid session_persistence provided.'))

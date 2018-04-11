@@ -373,3 +373,44 @@ class TestValidations(base.TestCase):
             self.assertRaises(exceptions.InvalidSubresource,
                               validate.qos_policy_exists,
                               qos_policy_id)
+
+    def test_check_session_persistence(self):
+        valid_cookie_name_dict = {'type': 'APP_COOKIE',
+                                  'cookie_name': 'chocolate_chip'}
+        invalid_cookie_name_dict = {'type': 'APP_COOKIE',
+                                    'cookie_name': '@chocolate_chip'}
+        invalid_type_HTTP_cookie_name_dict = {'type': 'HTTP_COOKIE',
+                                              'cookie_name': 'chocolate_chip'}
+        invalid_type_IP_cookie_name_dict = {'type': 'SOURCE_IP',
+                                            'cookie_name': 'chocolate_chip'}
+        invalid_missing_cookie_name_dict = {'type': 'APP_COOKIE'}
+
+        # Validate that a good cookie name passes
+        validate.check_session_persistence(valid_cookie_name_dict)
+
+        # Test raises with providing an invalid cookie name
+        self.assertRaises(exceptions.ValidationException,
+                          validate.check_session_persistence,
+                          invalid_cookie_name_dict)
+
+        # Test raises type HTTP_COOKIE and providing cookie_name
+        self.assertRaises(exceptions.ValidationException,
+                          validate.check_session_persistence,
+                          invalid_type_HTTP_cookie_name_dict)
+
+        # Test raises type SOURCE_IP and providing cookie_name
+        self.assertRaises(exceptions.ValidationException,
+                          validate.check_session_persistence,
+                          invalid_type_IP_cookie_name_dict)
+
+        # Test raises when type APP_COOKIE but no cookie_name
+        self.assertRaises(exceptions.ValidationException,
+                          validate.check_session_persistence,
+                          invalid_missing_cookie_name_dict)
+
+        # Test catch all exception raises a user friendly message
+        with mock.patch('re.compile') as compile_mock:
+            compile_mock.side_effect = Exception
+            self.assertRaises(exceptions.ValidationException,
+                              validate.check_session_persistence,
+                              valid_cookie_name_dict)

@@ -29,6 +29,7 @@ from octavia.api.v2.types import pool as pool_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.common import validate
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _
@@ -171,6 +172,10 @@ class PoolsController(base.BaseController):
         self._auth_validate_action(context, pool.project_id,
                                    constants.RBAC_POST)
 
+        if pool.session_persistence:
+            sp_dict = pool.session_persistence.to_dict(render_unsets=False)
+            validate.check_session_persistence(sp_dict)
+
         lock_session = db_api.get_session(autocommit=False)
         try:
             if self.repositories.check_quota_met(
@@ -253,12 +258,17 @@ class PoolsController(base.BaseController):
         self._auth_validate_action(context, db_pool.project_id,
                                    constants.RBAC_PUT)
 
+        if pool.session_persistence:
+            sp_dict = pool.session_persistence.to_dict(render_unsets=False)
+            validate.check_session_persistence(sp_dict)
+
         self._test_lb_and_listener_statuses(
             context.session, lb_id=db_pool.load_balancer_id,
             listener_ids=self._get_affected_listener_ids(db_pool))
         self.repositories.pool.update(
             context.session, db_pool.id,
             provisioning_status=constants.PENDING_UPDATE)
+
         try:
             LOG.info("Sending Update of Pool %s to handler", id)
             self.handler.update(db_pool, pool)
