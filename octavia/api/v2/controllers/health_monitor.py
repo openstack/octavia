@@ -218,7 +218,7 @@ class HealthMonitorController(base.BaseController):
             provisioning_status=constants.PENDING_UPDATE)
 
         try:
-            LOG.info("Sending Update of Health Monitor for Pool %s to "
+            LOG.info("Sending Update of Health Monitor %s to "
                      "handler", id)
             self.handler.update(db_hm, health_monitor)
         except Exception:
@@ -254,7 +254,7 @@ class HealthMonitorController(base.BaseController):
             provisioning_status=constants.PENDING_DELETE)
 
         try:
-            LOG.info("Sending Deletion of Health Monitor for Pool %s to "
+            LOG.info("Sending Deletion of Health Monitor %s to "
                      "handler", id)
             self.handler.delete(db_hm)
         except Exception:
