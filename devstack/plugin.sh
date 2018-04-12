@@ -24,6 +24,8 @@ function octaviaclient_install {
     if use_library_from_git "python-octaviaclient"; then
         git_clone_by_name "python-octaviaclient"
         setup_dev_lib "python-octaviaclient"
+    else
+        pip_install_gr python-octaviaclient
     fi
 }
 
