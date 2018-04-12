@@ -14,6 +14,7 @@
 
 import datetime
 import time
+import timeit
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -105,6 +106,7 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
             }
 
         """
+        start_time = timeit.default_timer()
         session = db_api.get_session()
 
         # We need to see if all of the listeners are reporting in
@@ -227,6 +229,8 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
                 )
             except sqlalchemy.orm.exc.NoResultFound:
                 LOG.error("Load balancer %s is not in DB", db_lb.id)
+        LOG.debug('Health Update finished in: {0} seconds'.format(
+            timeit.default_timer() - start_time))
 
     def _process_pool_status(self, session, db_pool, pools, lb_status,
                              processed_pools):
