@@ -28,7 +28,7 @@ class TestHealthUpdateLogger(base.TestCase):
     @mock.patch('octavia.controller.healthmanager.health_drivers'
                 '.update_logging.LOG')
     def test_update_health(self, mock_log):
-        self.logger.update_health({'id': 1})
+        self.logger.update_health({'id': 1}, '192.0.2.1')
         self.assertEqual(1, mock_log.info.call_count)
 
 
@@ -40,5 +40,5 @@ class TestStatsUpdateLogger(base.TestCase):
     @mock.patch('octavia.controller.healthmanager.health_drivers'
                 '.update_logging.LOG')
     def test_update_stats(self, mock_log):
-        self.logger.update_stats({'id': 1})
+        self.logger.update_stats({'id': 1}, '192.0.2.1')
         self.assertEqual(1, mock_log.info.call_count)

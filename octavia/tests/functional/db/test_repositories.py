@@ -2978,13 +2978,12 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         self.assertIsNotNone(new_amphora)
         self.assertIsInstance(new_amphora, models.Amphora)
 
-    def test_get_all_lbs_on_amphora(self):
+    def test_get_lb_for_amphora(self):
         amphora = self.create_amphora(self.FAKE_UUID_1)
         self.amphora_repo.associate(self.session, self.lb.id, amphora.id)
-        lb_list = self.amphora_repo.get_all_lbs_on_amphora(self.session,
-                                                           amphora.id)
-        self.assertIsNotNone(lb_list)
-        self.assertIn(self.lb, lb_list)
+        lb = self.amphora_repo.get_lb_for_amphora(self.session, amphora.id)
+        self.assertIsNotNone(lb)
+        self.assertEqual(self.lb, lb)
 
     def test_get_spare_amphora_count(self):
         count = self.amphora_repo.get_spare_amphora_count(self.session)

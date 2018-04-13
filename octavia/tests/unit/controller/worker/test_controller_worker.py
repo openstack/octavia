@@ -1213,13 +1213,13 @@ class TestControllerWorker(base.TestCase):
                 'amphora_flows.AmphoraFlows.get_failover_flow',
                 return_value=_flow_mock)
     @mock.patch(
-        'octavia.db.repositories.AmphoraRepository.get_all_lbs_on_amphora',
-        return_value=[_load_balancer_mock])
+        'octavia.db.repositories.AmphoraRepository.get_lb_for_amphora',
+        return_value=_load_balancer_mock)
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_failover_amphora_anti_affinity(self,
                                             mock_update,
                                             mock_get_update_listener_flow,
-                                            mock_get_all_lbs_for_amp_mock,
+                                            mock_get_lb_for_amphora,
                                             mock_api_get_session,
                                             mock_dyn_log_listener,
                                             mock_taskflow_load,

@@ -898,21 +898,33 @@ class AmphoraRepository(BaseRepository):
 
         return amp.to_data_model()
 
-    def get_all_lbs_on_amphora(self, session, amphora_id):
+    @staticmethod
+    def get_lb_for_amphora(session, amphora_id):
         """Get all of the load balancers on an amphora.
 
         :param session: A Sql Alchemy database session.
         :param amphora_id: The amphora id to list the load balancers from
         :returns: [octavia.common.data_model]
         """
-        with session.begin(subtransactions=True):
-            lb_subquery = (session.query(self.model_class.load_balancer_id).
-                           filter_by(id=amphora_id).subquery())
-            lb_list = (session.query(models.LoadBalancer).
-                       filter(models.LoadBalancer.id.in_(lb_subquery)).
-                       options(joinedload('*')).all())
-            data_model_list = [model.to_data_model() for model in lb_list]
-            return data_model_list
+        with session.begin():
+            db_lb = (
+                # Get LB records
+                session.query(models.LoadBalancer)
+                # Joined to amphora records
+                .filter(models.LoadBalancer.id ==
+                        models.Amphora.load_balancer_id)
+                # For just this amphora
+                .filter(models.Amphora.id == amphora_id)
+                # Where the amphora is not DELETED
+                .filter(models.Amphora.status != consts.DELETED)
+                # And the LB is also not DELETED
+                .filter(models.LoadBalancer.provisioning_status !=
+                        consts.DELETED)
+                # And what does this do? Some SQLAlchemy magic?
+                .options(joinedload('*'))
+            ).first()
+            if db_lb:
+                return db_lb.to_data_model()
 
     def get_spare_amphora_count(self, session):
         """Get the count of the spare amphora.
