@@ -68,22 +68,24 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
             message.update({constants.OPERATING_STATUS: new_op_status})
         if self.sync_prv_status:
             LOG.debug("%s %s provisioning_status %s. "
-                      "Updating db and sending event.",
+                      "Sending event.",
                       entity_type, entity_id, current_prov_status)
             message.update(
                 {constants.PROVISIONING_STATUS: current_prov_status})
         if message:
             self.emit(entity_type, entity_id, message)
 
-    def update_health(self, health):
+    def update_health(self, health, srcaddr):
         # The executor will eat any exceptions from the update_health code
         # so we need to wrap it and log the unhandled exception
         try:
-            self._update_health(health)
+            self._update_health(health, srcaddr)
         except Exception:
-            LOG.exception('update_health encountered an unknown error')
+            LOG.exception('update_health encountered an unknown error '
+                          'processing health message for amphora {0} with IP '
+                          '{1}'.format(health['id'], srcaddr))
 
-    def _update_health(self, health):
+    def _update_health(self, health, srcaddr):
         """This function is to update db info based on amphora status
 
         :param health: map object that contains amphora, listener, member info
@@ -110,19 +112,30 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
         session = db_api.get_session()
 
         # We need to see if all of the listeners are reporting in
-        expected_listener_count = 0
-        db_lbs_on_amp = self.amphora_repo.get_all_lbs_on_amphora(session,
-                                                                 health['id'])
+        db_lb = self.amphora_repo.get_lb_for_amphora(session, health['id'])
         ignore_listener_count = False
         listeners = health['listeners']
+
+        if not db_lb:
+            # If this is not a spare amp, log and skip it.
+            amp = self.amphora_repo.get(session, id=health['id'])
+            if not amp or amp.load_balancer_id:
+                # This is debug and not warning because this can happen under
+                # normal deleting operations.
+                LOG.debug('Received a health heartbeat from amphora {0} with '
+                          'IP {1} that should not exist. This amphora may be '
+                          'in the process of being deleted, in which case you '
+                          'will only see this message a few times. However if '
+                          'it is repeating this amphora should be manually '
+                          'deleted.'.format(health['id'], srcaddr))
+                return
 
         # We need to loop over the lbs here to make sure we update the
         # amphora_health record as soon as possible to prevent unnecessary
         # failovers. Unfortunately that means looping over this list twice.
-        for db_lb in db_lbs_on_amp:
-            expected_listener_count += len(db_lb.listeners)
-            if 'PENDING' in db_lb.provisioning_status:
-                ignore_listener_count = True
+        expected_listener_count = len(db_lb.listeners)
+        if 'PENDING' in db_lb.provisioning_status:
+            ignore_listener_count = True
 
         # Do not update amphora health if the reporting listener count
         # does not match the expected listener count
@@ -157,78 +170,76 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
                         {'id': health['id'], 'found': len(listeners),
                          'expected': expected_listener_count})
 
-        for db_lb in db_lbs_on_amp:
+        processed_pools = []
 
-            processed_pools = []
+        # We got a heartbeat so lb is healthy until proven otherwise
+        if db_lb.enabled is False:
+            lb_status = constants.OFFLINE
+        else:
+            lb_status = constants.ONLINE
 
-            # We got a heartbeat so lb is healthy until proven otherwise
-            if db_lb.enabled is False:
-                lb_status = constants.OFFLINE
+        for db_listener in db_lb.listeners:
+            listener_status = None
+            listener_id = db_listener.id
+            listener = None
+
+            if listener_id not in listeners:
+                listener_status = constants.OFFLINE
             else:
-                lb_status = constants.ONLINE
+                listener = listeners[listener_id]
 
-            for db_listener in db_lb.listeners:
-                listener_status = None
-                listener_id = db_listener.id
-                listener = None
-
-                if listener_id not in listeners:
-                    listener_status = constants.OFFLINE
+                # OPEN = HAProxy listener status nbconn < maxconn
+                if listener.get('status') == constants.OPEN:
+                    listener_status = constants.ONLINE
+                # FULL = HAProxy listener status not nbconn < maxconn
+                elif listener.get('status') == constants.FULL:
+                    listener_status = constants.DEGRADED
+                    if lb_status == constants.ONLINE:
+                        lb_status = constants.DEGRADED
                 else:
-                    listener = listeners[listener_id]
+                    LOG.warning(('Listener %(list)s reported status of '
+                                 '%(status)s'),
+                                {'list': listener_id,
+                                 'status': listener.get('status')})
 
-                    # OPEN = HAProxy listener status nbconn < maxconn
-                    if listener.get('status') == constants.OPEN:
-                        listener_status = constants.ONLINE
-                    # FULL = HAProxy listener status not nbconn < maxconn
-                    elif listener.get('status') == constants.FULL:
-                        listener_status = constants.DEGRADED
-                        if lb_status == constants.ONLINE:
-                            lb_status = constants.DEGRADED
-                    else:
-                        LOG.warning(('Listener %(list)s reported status of '
-                                     '%(status)s'),
-                                    {'list': listener_id,
-                                     'status': listener.get('status')})
-
-                try:
-                    if listener_status is not None:
-                        self._update_status_and_emit_event(
-                            session, self.listener_repo, constants.LISTENER,
-                            listener_id, listener_status,
-                            db_listener.operating_status,
-                            db_listener.provisioning_status
-                        )
-                except sqlalchemy.orm.exc.NoResultFound:
-                    LOG.error("Listener %s is not in DB", listener_id)
-
-                if not listener:
-                    continue
-
-                pools = listener['pools']
-
-                # Process pools bound to listeners
-                for db_pool in db_listener.pools:
-                    lb_status = self._process_pool_status(
-                        session, db_pool, pools, lb_status, processed_pools)
-
-            # Process pools bound to the load balancer
-            for db_pool in db_lb.pools:
-                # Don't re-process pools shared with listeners
-                if db_pool.id in processed_pools:
-                    continue
-                lb_status = self._process_pool_status(
-                    session, db_pool, [], lb_status, processed_pools)
-
-            # Update the load balancer status last
             try:
-                self._update_status_and_emit_event(
-                    session, self.loadbalancer_repo,
-                    constants.LOADBALANCER, db_lb.id, lb_status,
-                    db_lb.operating_status, db_lb.provisioning_status
-                )
+                if listener_status is not None:
+                    self._update_status_and_emit_event(
+                        session, self.listener_repo, constants.LISTENER,
+                        listener_id, listener_status,
+                        db_listener.operating_status,
+                        db_listener.provisioning_status
+                    )
             except sqlalchemy.orm.exc.NoResultFound:
-                LOG.error("Load balancer %s is not in DB", db_lb.id)
+                LOG.error("Listener %s is not in DB", listener_id)
+
+            if not listener:
+                continue
+
+            pools = listener['pools']
+
+            # Process pools bound to listeners
+            for db_pool in db_listener.pools:
+                lb_status = self._process_pool_status(
+                    session, db_pool, pools, lb_status, processed_pools)
+
+        # Process pools bound to the load balancer
+        for db_pool in db_lb.pools:
+            # Don't re-process pools shared with listeners
+            if db_pool.id in processed_pools:
+                continue
+            lb_status = self._process_pool_status(
+                session, db_pool, [], lb_status, processed_pools)
+
+        # Update the load balancer status last
+        try:
+            self._update_status_and_emit_event(
+                session, self.loadbalancer_repo,
+                constants.LOADBALANCER, db_lb.id, lb_status,
+                db_lb.operating_status, db_lb.provisioning_status
+            )
+        except sqlalchemy.orm.exc.NoResultFound:
+            LOG.error("Load balancer %s is not in DB", db_lb.id)
         LOG.debug('Health Update finished in: {0} seconds'.format(
             timeit.default_timer() - start_time))
 
@@ -335,15 +346,17 @@ class UpdateStatsDb(update_base.StatsUpdateBase, stats.StatsMixin):
         cnt = update_serializer.InfoContainer(info_type, info_id, info_obj)
         self.event_streamer.emit(cnt)
 
-    def update_stats(self, health_message):
+    def update_stats(self, health_message, srcaddr):
         # The executor will eat any exceptions from the update_stats code
         # so we need to wrap it and log the unhandled exception
         try:
-            self._update_stats(health_message)
+            self._update_stats(health_message, srcaddr)
         except Exception:
-            LOG.exception('update_stats encountered an unknown error')
+            LOG.exception('update_stats encountered an unknown error '
+                          'processing stats for amphora {0} with IP '
+                          '{1}'.format(health_message['id'], srcaddr))
 
-    def _update_stats(self, health_message):
+    def _update_stats(self, health_message, srcaddr):
         """This function is to update the db with listener stats
 
         :param health_message: The health message containing the listener stats
@@ -392,12 +405,21 @@ class UpdateStatsDb(update_base.StatsUpdateBase, stats.StatsMixin):
             self.listener_stats_repo.replace(
                 session, listener_id, amphora_id, **stats)
 
-            listener_stats = self.get_listener_stats(session, listener_id)
-            self.emit(
-                'listener_stats', listener_id, listener_stats.get_stats())
+            if (CONF.health_manager.event_streamer_driver !=
+                    constants.NOOP_EVENT_STREAMER):
+                listener_stats = self.get_listener_stats(session, listener_id)
+                self.emit(
+                    'listener_stats', listener_id, listener_stats.get_stats())
 
-            listener_db = self.repo_listener.get(session, id=listener_id)
-            lb_stats = self.get_loadbalancer_stats(
-                session, listener_db.load_balancer_id)
-            self.emit('loadbalancer_stats',
-                      listener_db.load_balancer_id, lb_stats.get_stats())
+                listener_db = self.repo_listener.get(session, id=listener_id)
+                if not listener_db:
+                    LOG.debug('Received health stats for a non-existent '
+                              'listener {0} for amphora {1} with IP '
+                              '{2}.'.format(listener_id, amphora_id,
+                                            srcaddr))
+                    return
+
+                lb_stats = self.get_loadbalancer_stats(
+                    session, listener_db.load_balancer_id)
+                self.emit('loadbalancer_stats',
+                          listener_db.load_balancer_id, lb_stats.get_stats())

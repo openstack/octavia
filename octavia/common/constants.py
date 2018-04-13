@@ -400,6 +400,8 @@ MAX_QUOTA = 2000000000
 
 API_VERSION = '0.5'
 
+NOOP_EVENT_STREAMER = 'noop_event_streamer'
+
 HAPROXY_BASE_PEER_PORT = 1025
 KEEPALIVED_JINJA2_UPSTART = 'keepalived.upstart.j2'
 KEEPALIVED_JINJA2_SYSTEMD = 'keepalived.systemd.j2'

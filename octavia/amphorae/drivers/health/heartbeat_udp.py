@@ -29,22 +29,22 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-def update_health(obj):
+def update_health(obj, srcaddr):
     handler = stevedore_driver.DriverManager(
         namespace='octavia.amphora.health_update_drivers',
         name=CONF.health_manager.health_update_driver,
         invoke_on_load=True
     ).driver
-    handler.update_health(obj)
+    handler.update_health(obj, srcaddr)
 
 
-def update_stats(obj):
+def update_stats(obj, srcaddr):
     handler = stevedore_driver.DriverManager(
         namespace='octavia.amphora.stats_update_drivers',
         name=CONF.health_manager.stats_update_driver,
         invoke_on_load=True
     ).driver
-    handler.update_stats(obj)
+    handler.update_stats(obj, srcaddr)
 
 
 class UDPStatusGetter(object):
@@ -193,7 +193,7 @@ class UDPStatusGetter(object):
                         'Exception: %s', srcaddr, e)
             raise exceptions.InvalidHMACException()
         obj['recv_time'] = time.time()
-        return obj, srcaddr
+        return obj, srcaddr[0]
 
     def check(self):
         try:
@@ -209,5 +209,5 @@ class UDPStatusGetter(object):
                         'heartbeat packet. Ignoring this packet. '
                         'Exception: %s', e)
         else:
-            self.executor.submit(update_health, obj)
-            self.executor.submit(update_stats, obj)
+            self.executor.submit(update_health, obj, srcaddr)
+            self.executor.submit(update_stats, obj, srcaddr)
