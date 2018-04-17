@@ -342,6 +342,7 @@ fi
 AMP_element_sequence="$AMP_element_sequence rebind-sshd"
 AMP_element_sequence="$AMP_element_sequence no-resolvconf"
 AMP_element_sequence="$AMP_element_sequence amphora-agent"
+AMP_element_sequence="$AMP_element_sequence sos"
 
 if [ "$AMP_ENABLE_FULL_MAC_SECURITY" -ne 1 ]; then
     # SELinux systems

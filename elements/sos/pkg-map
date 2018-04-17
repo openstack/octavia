@@ -1,0 +1,10 @@
+{
+  "family": {
+    "redhat": {
+      "sos": "sos"
+    }
+  },
+  "default": {
+    "sos": ""
+  }
+}
