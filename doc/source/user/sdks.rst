@@ -29,6 +29,11 @@ support OpenStack load balancing. If not, open a bug for them!
           LBaaS team. Please submit bugs for these projects through their
           respective bug tracking systems.
 
+Go
+==
+
+`Gophercloud <https://github.com/gophercloud/gophercloud>`_
+
 Java
 ====
 
