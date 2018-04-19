@@ -664,12 +664,12 @@ class TestLoadBalancer(base.BaseAPITest):
         lb_json = {'name': 'test1',
                    'vip_subnet_id': uuidutils.generate_uuid(),
                    'project_id': self.project_id,
-                   'flavor': 'BOGUS'
+                   'flavor_id': 'BOGUS'
                    }
         lb_json.update(optionals)
         body = self._build_body(lb_json)
         response = self.post(self.LBS_PATH, body, status=400)
-        self.assertIn("Invalid input for field/attribute flavor. Value: "
+        self.assertIn("Invalid input for field/attribute flavor_id. Value: "
                       "'BOGUS'. Value should be one of:",
                       response.json.get('faultstring'))
 
@@ -1553,7 +1553,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             # for this test without interfering with a ton of stuff, and it is
             # expected that this would be overwritten anyway, so 'ANY' is fine?
             'vip_network_id': mock.ANY,
-            'flavor': '',
+            'flavor_id': '',
             'provider': 'octavia'
         }
         expected_lb.update(create_lb)
