@@ -48,7 +48,7 @@ Response Parameters
    - admin_state_up: admin_state_up
    - created_at: created_at
    - description: description
-   - flavor: flavor-id
+   - flavor_id: flavor-id
    - id: loadbalancer-id
    - listeners: listeners
    - loadbalancers: loadbalancers
@@ -102,7 +102,7 @@ and submit the request again.
 Administrative users can specify a project ID that is different than
 their own to create load balancers for other projects.
 
-An optional ``flavor`` attribute can be used to create the load balancer
+An optional ``flavor_id`` attribute can be used to create the load balancer
 using a pre-configured octavia flavor.  Flavors are created by the operator
 to allow custom load balancer configurations, such as allocating more
 memory for the load balancer.
@@ -115,7 +115,7 @@ You can also specify the ``provider`` attribute when you create a
 load balancer. The ``provider`` attribute specifies which backend should
 be used to create the load balancer.  This could be the default provider
 (``octavia``) or a vendor supplied ``provider`` if one has been installed.
-Setting both a flavor and a provider will result in a conflict error.
+Setting both a flavor_id and a provider will result in a conflict error.
 
 Specifying a Virtual IP (VIP) is mandatory. There are three ways to specify
 a VIP network for the load balancer:
@@ -162,7 +162,7 @@ Request
 
    - admin_state_up: admin_state_up-default-optional
    - description: description-optional
-   - flavor: flavor-id-optional
+   - flavor_id: flavor-id-optional
    - listeners: listeners-optional
    - loadbalancer: loadbalancer
    - name: name-optional
@@ -194,7 +194,7 @@ Response Parameters
    - admin_state_up: admin_state_up
    - created_at: created_at
    - description: description
-   - flavor: flavor-id
+   - flavor_id: flavor-id
    - id: loadbalancer-id
    - listeners: listeners
    - loadbalancer: loadbalancer
@@ -286,7 +286,7 @@ Response Parameters
    - admin_state_up: admin_state_up
    - created_at: created_at
    - description: description
-   - flavor: flavor-id
+   - flavor_id: flavor-id
    - id: loadbalancer-id
    - loadbalancer: loadbalancer
    - listeners: listeners
@@ -370,7 +370,7 @@ Response Parameters
    - admin_state_up: admin_state_up
    - created_at: created_at
    - description: description
-   - flavor: flavor-id
+   - flavor_id: flavor-id
    - id: loadbalancer-id
    - listeners: listeners
    - loadbalancer: loadbalancer

@@ -52,7 +52,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
     listeners = wtypes.wsattr([types.IdOnlyType])
     pools = wtypes.wsattr([types.IdOnlyType])
     provider = wtypes.wsattr(wtypes.StringType())
-    flavor = wtypes.wsattr(wtypes.StringType())
+    flavor_id = wtypes.wsattr(wtypes.StringType())
     vip_qos_policy_id = wtypes.wsattr(wtypes.UuidType())
 
     @classmethod
@@ -76,8 +76,8 @@ class LoadBalancerResponse(BaseLoadBalancerType):
         result.pools = [
             pool_model.from_data_model(i) for i in data_model.pools]
 
-        if not result.flavor:
-            result.flavor = ""
+        if not result.flavor_id:
+            result.flavor_id = ""
         if not result.provider:
             result.provider = "octavia"
 
@@ -125,7 +125,7 @@ class LoadBalancerPOST(BaseLoadBalancerType):
     provider = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROVIDERS))
     # TODO(johnsom) This should be dynamic based on the loaded flavors
     #               once flavors are implemented.
-    flavor = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_FLAVORS))
+    flavor_id = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_FLAVORS))
 
 
 class LoadBalancerRootPOST(types.BaseType):
