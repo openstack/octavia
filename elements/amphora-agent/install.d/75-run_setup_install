@@ -6,6 +6,17 @@ fi
 set -eu
 set -o pipefail
 
+SCRIPTDIR=$(dirname $0)
+
+# pip 10 fails when installing the amphora-agent due to a package conflict
+# in oslo.config PyYAML and the python3-yaml installed in the base images.
+# We cannot backport the venv fix from master as the stable branch uses
+# the ubuntu element which does not have enough disk space to install with the
+# venv.
+# So to make a minimal fix for the stable branches we are going to pin pip
+# in the amphora image.
+pip install -U --force-reinstall -c ${SCRIPTDIR}/cap-pip.txt pip
+
 pip install -U -c /opt/upper-constraints.txt /opt/amphora-agent
 
 # Accommodate centos default install location

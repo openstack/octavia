@@ -1132,7 +1132,7 @@ class TestListener(base.BaseAPITest):
 
     def _getStats(self, listener_id):
         res = self.get(self.LISTENER_PATH.format(
-                           listener_id=listener_id + "/stats"))
+            listener_id=listener_id + "/stats"))
         return res.json.get('stats')
 
     def test_statistics(self):
@@ -1230,6 +1230,6 @@ class TestListener(base.BaseAPITest):
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
             res = self.get(self.LISTENER_PATH.format(
-                               listener_id=li['id'] + "/stats"), status=403)
+                listener_id=li['id'] + "/stats"), status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, res.json)
