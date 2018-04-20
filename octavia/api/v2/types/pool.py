@@ -141,8 +141,8 @@ class PoolRootPOST(types.BaseType):
 
 class PoolPUT(BasePoolType):
     """Defines attributes that are acceptable of a PUT request."""
-    name = wtypes.wsattr(wtypes.StringType())
-    description = wtypes.wsattr(wtypes.StringType())
+    name = wtypes.wsattr(wtypes.StringType(max_length=255))
+    description = wtypes.wsattr(wtypes.StringType(max_length=255))
     admin_state_up = wtypes.wsattr(bool)
     lb_algorithm = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_LB_ALGORITHMS))
