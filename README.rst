@@ -12,7 +12,7 @@ Octavia
 =======
 
 .. image:: https://img.shields.io/pypi/v/octavia.svg
-    :target: https://pypi.python.org/pypi/octavia/
+    :target: https://pypi.org/project/octavia/
     :alt: Latest Version
 
 Octavia is an operator-grade open source scalable load balancer for use in

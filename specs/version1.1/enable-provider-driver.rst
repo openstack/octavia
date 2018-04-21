@@ -62,7 +62,7 @@ option passed in by the caller, the driver should raise an
 
 It is recommended that drivers use the
 `jsonschema <https://github.com/Julian/jsonschema>`_ package or
-`voluptuous <https://pypi.python.org/pypi/voluptuous>`_ to validate the
+`voluptuous <https://pypi.org/project/voluptuous/>`_ to validate the
 request against the current driver capabilities.
 
 See the `Exception Model`_ below for more details.
