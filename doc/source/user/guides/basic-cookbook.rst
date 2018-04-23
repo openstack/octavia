@@ -358,7 +358,7 @@ balancer features, like Layer 7 features and header manipulation.
     openstack acl user add -u admin_id $(openstack secret list | awk '/ cert1 / {print $2}')
     openstack acl user add -u admin_id $(openstack secret list | awk '/ key1 / {print $2}')
     openstack acl user add -u admin_id $(openstack secret list | awk '/ intermediates1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_container1 / {print $2}')
+    openstack acl user add -u admin_id $(openstack secret container list | awk '/ tls_container1 / {print $2}')
     neutron lbaas-loadbalancer-create --name lb1 public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
     neutron lbaas-loadbalancer-show lb1
@@ -432,11 +432,11 @@ listener using Server Name Indication (SNI) technology.
     openstack acl user add -u admin_id $(openstack secret list | awk '/ cert1 / {print $2}')
     openstack acl user add -u admin_id $(openstack secret list | awk '/ key1 / {print $2}')
     openstack acl user add -u admin_id $(openstack secret list | awk '/ intermediates1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_container1 / {print $2}')
+    openstack acl user add -u admin_id $(openstack secret container list | awk '/ tls_container1 / {print $2}')
     openstack acl user add -u admin_id $(openstack secret list | awk '/ cert2 / {print $2}')
     openstack acl user add -u admin_id $(openstack secret list | awk '/ key2 / {print $2}')
     openstack acl user add -u admin_id $(openstack secret list | awk '/ intermediates2 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_container2 / {print $2}')
+    openstack acl user add -u admin_id $(openstack secret container list | awk '/ tls_container2 / {print $2}')
     neutron lbaas-loadbalancer-create --name lb1 public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
     neutron lbaas-loadbalancer-show lb1
@@ -510,7 +510,7 @@ HTTP just get redirected to the HTTPS listener), then please see `the example
     openstack acl user add -u admin_id $(openstack secret list | awk '/ cert1 / {print $2}')
     openstack acl user add -u admin_id $(openstack secret list | awk '/ key1 / {print $2}')
     openstack acl user add -u admin_id $(openstack secret list | awk '/ intermediates1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_container1 / {print $2}')
+    openstack acl user add -u admin_id $(openstack secret container list | awk '/ tls_container1 / {print $2}')
     neutron lbaas-loadbalancer-create --name lb1 public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
     neutron lbaas-loadbalancer-show lb1
