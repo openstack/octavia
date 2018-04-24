@@ -23,6 +23,7 @@ from stevedore import driver as stevedore_driver
 
 from octavia.common import constants
 from octavia.common import stats
+from octavia.controller.healthmanager.health_drivers import update_base
 from octavia.controller.healthmanager import update_serializer
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
@@ -31,7 +32,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class UpdateHealthDb(object):
+class UpdateHealthDb(update_base.HealthUpdateBase):
     def __init__(self):
         super(UpdateHealthDb, self).__init__()
         # first setup repo for amphora, listener,member(nodes),pool repo
@@ -311,7 +312,7 @@ class UpdateHealthDb(object):
         return lb_status
 
 
-class UpdateStatsDb(stats.StatsMixin):
+class UpdateStatsDb(update_base.StatsUpdateBase, stats.StatsMixin):
 
     def __init__(self):
         super(UpdateStatsDb, self).__init__()

@@ -24,7 +24,7 @@ import sqlalchemy
 
 from octavia.common import constants
 from octavia.common import data_models
-from octavia.controller.healthmanager import update_db
+from octavia.controller.healthmanager.health_drivers import update_db
 from octavia.db import models as db_models
 from octavia.tests.unit import base
 

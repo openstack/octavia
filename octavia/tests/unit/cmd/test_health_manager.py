@@ -23,13 +23,9 @@ class TestHealthManagerCMD(base.TestCase):
     def setUp(self):
         super(TestHealthManagerCMD, self).setUp()
 
-    @mock.patch('octavia.controller.healthmanager.'
-                'update_db.UpdateStatsDb')
-    @mock.patch('octavia.controller.healthmanager.'
-                'update_db.UpdateHealthDb')
     @mock.patch('octavia.amphorae.drivers.health.'
                 'heartbeat_udp.UDPStatusGetter')
-    def test_hm_listener(self, mock_getter, mock_health, mock_stats):
+    def test_hm_listener(self, mock_getter):
         getter_mock = mock.MagicMock()
         check_mock = mock.MagicMock()
         getter_mock.check = check_mock
@@ -37,7 +33,7 @@ class TestHealthManagerCMD(base.TestCase):
         mock_getter.return_value = getter_mock
         self.assertRaisesRegex(Exception, 'break',
                                health_manager.hm_listener)
-        mock_getter.assert_called_once_with(mock_health(), mock_stats())
+        mock_getter.assert_called_once()
         self.assertEqual(2, getter_mock.check.call_count)
 
     @mock.patch('octavia.cmd.health_manager.true_func')
