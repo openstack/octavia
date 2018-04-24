@@ -193,8 +193,10 @@ DELTAS = 'deltas'
 HEALTH_MON = 'health_mon'
 LISTENER = 'listener'
 LISTENERS = 'listeners'
+LISTENER_ID = 'listener_id'
 LOADBALANCER = 'loadbalancer'
 LOADBALANCER_ID = 'loadbalancer_id'
+LOAD_BALANCER_ID = 'load_balancer_id'
 SERVER_GROUP_ID = 'server_group_id'
 ANTI_AFFINITY = 'anti-affinity'
 SOFT_ANTI_AFFINITY = 'soft-anti-affinity'
@@ -220,6 +222,10 @@ ADDED_PORTS = 'added_ports'
 PORTS = 'ports'
 MEMBER_PORTS = 'member_ports'
 LOADBALANCER_TOPOLOGY = 'topology'
+HEALTH_MONITOR_ID = 'health_monitor_id'
+L7POLICY_ID = 'l7policy_id'
+L7RULE_ID = 'l7rule_id'
+LOAD_BALANCER_UPDATES = 'load_balancer_updates'
 
 CERT_ROTATE_AMPHORA_FLOW = 'octavia-cert-rotate-amphora-flow'
 CREATE_AMPHORA_FLOW = 'octavia-create-amphora-flow'
@@ -489,7 +495,6 @@ RBAC_GET_STATUS = 'get_status'
 # PROVIDERS
 # TODO(johnsom) When providers are implemented, this should be removed.
 OCTAVIA = 'octavia'
-SUPPORTED_PROVIDERS = OCTAVIA,
 
 # FLAVORS
 # TODO(johnsom) When flavors are implemented, this should be removed.

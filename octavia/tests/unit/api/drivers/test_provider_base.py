@@ -30,7 +30,7 @@ class TestProviderBase(base.TestCase):
     def test_create_vip_port(self):
         self.assertRaises(exceptions.NotImplementedError,
                           self.driver.create_vip_port,
-                          False, False)
+                          False, False, False)
 
     def test_loadbalancer_create(self):
         self.assertRaises(exceptions.NotImplementedError,

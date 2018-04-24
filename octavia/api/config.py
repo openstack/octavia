@@ -28,6 +28,7 @@ app = {
 # WSME Configurations
 # See https://wsme.readthedocs.org/en/latest/integrate.html#configuration
 wsme = {
-    # Keeping debug True for now so we can easily troubleshoot.
-    'debug': True
+    # Provider driver uses 501 if the driver is not installed.
+    # Don't dump a stack trace for 501s
+    'debug': False
 }

@@ -231,6 +231,7 @@ class PoolsController(base.BaseController):
             hm['project_id'] = db_pool.project_id
             new_hm = health_monitor.HealthMonitorController()._graph_create(
                 lock_session, hm)
+            db_pool.health_monitor = new_hm
 
         # Now check quotas for members
         if members and self.repositories.check_quota_met(
@@ -245,7 +246,8 @@ class PoolsController(base.BaseController):
             new_members.append(
                 member.MembersController(db_pool.id)._graph_create(
                     lock_session, m))
-        return db_pool, new_hm, new_members
+        db_pool.members = new_members
+        return db_pool
 
     @wsme_pecan.wsexpose(pool_types.PoolRootResponse, wtypes.text,
                          body=pool_types.PoolRootPut, status_code=200)

@@ -343,6 +343,7 @@ class LoadBalancer(base_models.BASE, base_models.IdMixin,
                                 backref=orm.backref("load_balancer",
                                                     uselist=False))
     server_group_id = sa.Column(sa.String(36), nullable=True)
+    provider = sa.Column(sa.String(64), nullable=True)
 
 
 class VRRPGroup(base_models.BASE):

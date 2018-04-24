@@ -419,7 +419,7 @@ class LoadBalancer(BaseDataModel):
                  provisioning_status=None, operating_status=None, enabled=None,
                  topology=None, vip=None, listeners=None, amphorae=None,
                  pools=None, vrrp_group=None, server_group_id=None,
-                 created_at=None, updated_at=None):
+                 created_at=None, updated_at=None, provider=None):
 
         self.id = id
         self.project_id = project_id
@@ -437,6 +437,7 @@ class LoadBalancer(BaseDataModel):
         self.server_group_id = server_group_id
         self.created_at = created_at
         self.updated_at = updated_at
+        self.provider = provider
 
     def update(self, update_dict):
         for key, value in update_dict.items():

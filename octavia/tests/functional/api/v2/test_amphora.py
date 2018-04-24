@@ -128,10 +128,11 @@ class TestAmphora(base.BaseAPITest):
         self.put(self.AMPHORA_FAILOVER_PATH.format(
             amphora_id=new_amp.id), body={}, status=404)
 
-    def test_failover_bad_amp_id(self):
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_failover_bad_amp_id(self, mock_cast):
         self.put(self.AMPHORA_FAILOVER_PATH.format(
             amphora_id='asdf'), body={}, status=404)
-        self.assertFalse(self.handler_mock().amphora.failover.called)
+        self.assertFalse(mock_cast.called)
 
     def test_get_authorized(self):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
