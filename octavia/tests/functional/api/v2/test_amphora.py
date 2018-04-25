@@ -103,6 +103,24 @@ class TestAmphora(base.BaseAPITest):
             [mock.call(self.amp)]
         )
 
+    def test_failover_spare(self):
+        amp_args = {
+            'compute_id': uuidutils.generate_uuid(),
+            'status': constants.AMPHORA_READY,
+            'lb_network_ip': '192.168.1.2',
+            'cert_expiration': datetime.datetime.now(),
+            'cert_busy': False,
+            'cached_zone': 'zone1',
+            'created_at': datetime.datetime.now(),
+            'updated_at': datetime.datetime.now(),
+            'image_id': uuidutils.generate_uuid(),
+        }
+        amp = self.amphora_repo.create(self.session, **amp_args)
+        self.put(self.AMPHORA_FAILOVER_PATH.format(
+            amphora_id=amp.id), body={}, status=202)
+        self.handler_mock().amphora.failover.assert_has_calls(
+            [mock.call(amp)])
+
     def test_failover_deleted(self):
         new_amp = self._create_additional_amp()
         self.amphora_repo.update(self.session, new_amp.id,
@@ -155,6 +173,49 @@ class TestAmphora(base.BaseAPITest):
         # Reset api auth setting
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
+
+    def test_failover_authorized(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': True,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                self.put(self.AMPHORA_FAILOVER_PATH.format(
+                    amphora_id=self.amp_id), body={}, status=202)
+
+        # Reset api auth setting
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.handler_mock().amphora.failover.assert_has_calls(
+            [mock.call(self.amp)])
+
+    def test_failover_not_authorized(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            response = self.put(self.AMPHORA_FAILOVER_PATH.format(
+                amphora_id=self.amp_id), body={}, status=403)
+        # Reset api auth setting
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
+        self.handler_mock().amphora.failover.assert_not_called()
 
     def test_get_deleted_gives_404(self):
         new_amp = self._create_additional_amp()

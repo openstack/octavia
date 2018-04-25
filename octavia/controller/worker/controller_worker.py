@@ -702,6 +702,10 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         try:
             amp = self._amphora_repo.get(db_apis.get_session(),
                                          id=amphora_id)
+            if not amp:
+                LOG.warning("Could not fetch Amphora %s from DB, ignoring "
+                            "failover request.", amphora_id)
+                return
             self._perform_amphora_failover(
                 amp, constants.LB_CREATE_FAILOVER_PRIORITY)
             if amp.load_balancer_id:
