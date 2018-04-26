@@ -5,7 +5,7 @@
             "admin_state_up": true,
             "project_id": "e3cd678b11784734bc366148aa37580e",
             "provisioning_status": "ACTIVE",
-            "flavor": "a7ae5d5a-d855-4f9a-b187-af66b53f4d04",
+            "flavor_id": "",
             "vip_subnet_id": "d4af86e1-0051-488c-b7a0-527f97490c9a",
             "listeners": [
                 {

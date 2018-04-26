@@ -3,7 +3,7 @@
         "description": "My favorite load balancer",
         "admin_state_up": true,
         "project_id": "e3cd678b11784734bc366148aa37580e",
-        "flavor": "",
+        "flavor_id": "",
         "listeners": [
             {
                 "name": "http_listener",

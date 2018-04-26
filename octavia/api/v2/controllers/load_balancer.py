@@ -274,8 +274,8 @@ class LoadBalancersController(base.BaseController):
             # Remove these lines as they are implemented.
             if 'provider' in lb_dict:
                 del lb_dict['provider']
-            if 'flavor' in lb_dict:
-                del lb_dict['flavor']
+            if 'flavor_id' in lb_dict:
+                del lb_dict['flavor_id']
 
             db_lb = self.repositories.create_load_balancer_and_vip(
                 lock_session, lb_dict, vip_dict)
