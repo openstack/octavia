@@ -63,10 +63,6 @@ class SubnetNotFound(NetworkException):
     pass
 
 
-class VIPConfigurationNotFound(NetworkException):
-    pass
-
-
 class AmphoraNotFound(NetworkException):
     pass
 

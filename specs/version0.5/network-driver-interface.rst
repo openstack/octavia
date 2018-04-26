@@ -134,7 +134,6 @@ New Exceptions defined in the octavia.network package:
 * PortNotFound
 * SubnetNotFound
 * NetworkNotFound
-* VIPConfigurationNotFound
 * AmphoraNotFound
 
 
@@ -181,7 +180,7 @@ class AbstractNetworkDriver
     * Removes any resources that reserved this virtual ip.
     * vip = VIP instance
     * returns None
-    * raises DeallocateVIPException, VIPInUse, VIPConfigurationNotFound
+    * raises DeallocateVIPException, VIPInUse
 
 * plug_network(compute_id, network_id, ip_address=None)
 
