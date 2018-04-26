@@ -21,6 +21,7 @@ import pecan.testing
 
 from octavia.api import config as pconfig
 from octavia.common import constants
+from octavia.common import exceptions
 from octavia.db import api as db_api
 from octavia.db import repositories
 from octavia.tests.functional.db import base as base_db_test
@@ -387,7 +388,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
             op_status = db_lb.operating_status
         self._set_lb_and_children_statuses(lb_id, status, op_status,
                                            autodetect=not explicit_status)
-        return self.get(self.LB_PATH.format(lb_id=lb_id)).json
+        if status != constants.DELETED:
+            return self.get(self.LB_PATH.format(lb_id=lb_id)).json
 
     @staticmethod
     def set_object_status(repo, id_, provisioning_status=constants.ACTIVE,
@@ -399,13 +401,14 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     def assert_final_listener_statuses(self, lb_id, listener_id, delete=False):
         expected_prov_status = constants.ACTIVE
         expected_op_status = constants.ONLINE
-        if delete:
-            expected_prov_status = constants.DELETED
-            expected_op_status = constants.OFFLINE
         self.set_lb_status(lb_id, status=expected_prov_status)
-        self.assert_correct_listener_status(expected_prov_status,
-                                            expected_op_status,
-                                            listener_id)
+        try:
+            self.assert_correct_listener_status(expected_prov_status,
+                                                expected_op_status,
+                                                listener_id)
+        except exceptions.NotFound:
+            if not delete:
+                raise
 
     def assert_correct_lb_status(self, lb_id,
                                  operating_status, provisioning_status):

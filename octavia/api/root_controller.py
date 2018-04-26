@@ -49,8 +49,8 @@ class RootController(rest.RestController):
             self._versions.append(
                 {
                     'status': 'CURRENT',
-                    'updated': '2018-03-23T00:00:00Z',
-                    'id': 'v2.0'
+                    'updated': '2018-04-20T00:00:00Z',
+                    'id': 'v2.1'
                 })
         if not (v1_enabled or v2_enabled):
             LOG.warning("Both v1 and v2.0 API endpoints are disabled -- is "

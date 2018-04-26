@@ -1072,6 +1072,19 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(lb1['id'],
                          lbs['loadbalancers'][0]['id'])
 
+    def test_get_all_hides_deleted(self):
+        api_lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get(self.root_tag)
+
+        response = self.get(self.LBS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.lb_repo, api_lb.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.LBS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
+
     def test_get(self):
         project_id = uuidutils.generate_uuid()
         subnet = network_models.Subnet(id=uuidutils.generate_uuid())
@@ -1108,18 +1121,14 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(network.id, response.get('vip_network_id'))
         self.assertEqual(port.id, response.get('vip_port_id'))
 
-    def test_get_hides_deleted(self):
+    def test_get_deleted_gives_404(self):
         api_lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get(self.root_tag)
 
-        response = self.get(self.LBS_PATH)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 1)
         self.set_object_status(self.lb_repo, api_lb.get('id'),
                                provisioning_status=constants.DELETED)
-        response = self.get(self.LBS_PATH)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 0)
+
+        self.get(self.LB_PATH.format(lb_id=api_lb.get('id')), status=404)
 
     def test_get_bad_lb_id(self):
         path = self.LB_PATH.format(lb_id='SEAN-CONNERY')
@@ -1447,6 +1456,19 @@ class TestLoadBalancer(base.BaseAPITest):
         self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')))
         self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')), status=409)
 
+    def test_update_already_deleted(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       description='desc1',
+                                       admin_state_up=False)
+        lb_dict = lb.get(self.root_tag)
+        lb = self.set_lb_status(lb_dict.get('id'), status=constants.DELETED)
+        lb_json = self._build_body({'name': 'John'})
+        self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
+                 lb_json, status=404)
+
     def test_delete_already_deleted(self):
         project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
@@ -1456,7 +1478,7 @@ class TestLoadBalancer(base.BaseAPITest):
                                        admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
         lb = self.set_lb_status(lb_dict.get('id'), status=constants.DELETED)
-        self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')), status=204)
+        self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')), status=404)
 
     def test_delete(self):
         project_id = uuidutils.generate_uuid()
@@ -1772,6 +1794,20 @@ class TestLoadBalancer(base.BaseAPITest):
                     return_value=override_credentials):
                 self.app.put(path, status=202)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+
+    def test_failover_deleted(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       description='desc1',
+                                       admin_state_up=False)
+        lb_dict = lb.get(self.root_tag)
+        lb = self.set_lb_status(lb_dict.get('id'), status=constants.DELETED)
+
+        path = self._get_full_path(self.LB_PATH.format(
+            lb_id=lb_dict.get('id')) + "/failover")
+        self.app.put(path, status=404)
 
     def test_create_with_bad_handler(self):
         self.handler_mock().load_balancer.create.side_effect = Exception()
@@ -2748,6 +2784,15 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, res.json)
 
+    def test_statuses_get_deleted(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid(),
+            project_id=project_id).get('loadbalancer')
+        self.set_lb_status(lb['id'], status=constants.DELETED)
+        self.get(self.LB_PATH.format(lb_id=lb['id'] + "/status"),
+                 status=404)
+
     def _getStats(self, lb_id):
         res = self.get(self.LB_PATH.format(lb_id=lb_id + "/stats"))
         return res.json.get('stats')
@@ -2851,3 +2896,19 @@ class TestLoadBalancerGraph(base.BaseAPITest):
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, res.json)
+
+    def test_statistics_get_deleted(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.set_lb_status(lb['id'])
+        li = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb.get('id')).get('listener')
+        amphora = self.create_amphora(uuidutils.generate_uuid(), lb['id'])
+        self.create_listener_stats_dynamic(
+            listener_id=li.get('id'),
+            amphora_id=amphora.id,
+            bytes_in=random.randint(1, 9),
+            bytes_out=random.randint(1, 9),
+            total_connections=random.randint(1, 9))
+        self.set_lb_status(lb['id'], status=constants.DELETED)
+        self.get(self.LB_PATH.format(lb_id=lb['id'] + "/stats"), status=404)

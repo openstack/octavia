@@ -53,7 +53,13 @@ class LoadBalancersController(base.BaseController):
     def get_one(self, id):
         """Gets a single load balancer's details."""
         context = pecan.request.context.get('octavia_context')
-        load_balancer = self._get_db_lb(context.session, id)
+        load_balancer = self._get_db_lb(context.session, id,
+                                        show_deleted=False)
+
+        if not load_balancer:
+            raise exceptions.NotFound(
+                resource=data_models.LoadBalancer._name(),
+                id=id)
 
         self._auth_validate_action(context, load_balancer.project_id,
                                    constants.RBAC_GET_ONE)
@@ -426,7 +432,7 @@ class LoadBalancersController(base.BaseController):
         """Updates a load balancer."""
         load_balancer = load_balancer.loadbalancer
         context = pecan.request.context.get('octavia_context')
-        db_lb = self._get_db_lb(context.session, id)
+        db_lb = self._get_db_lb(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, db_lb.project_id,
                                    constants.RBAC_PUT)
@@ -453,13 +459,10 @@ class LoadBalancersController(base.BaseController):
         """Deletes a load balancer."""
         context = pecan.request.context.get('octavia_context')
         cascade = strutils.bool_from_string(cascade)
-        db_lb = self._get_db_lb(context.session, id)
+        db_lb = self._get_db_lb(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, db_lb.project_id,
                                    constants.RBAC_DELETE)
-
-        if db_lb.provisioning_status == constants.DELETED:
-            return
 
         with db_api.get_lock_session() as lock_session:
             if (db_lb.listeners or db_lb.pools) and not cascade:
@@ -514,7 +517,8 @@ class StatusController(base.BaseController):
                          status_code=200)
     def get(self):
         context = pecan.request.context.get('octavia_context')
-        load_balancer = self._get_db_lb(context.session, self.id)
+        load_balancer = self._get_db_lb(context.session, self.id,
+                                        show_deleted=False)
         if not load_balancer:
             LOG.info("Load balancer %s not found.", id)
             raise exceptions.NotFound(
@@ -541,7 +545,8 @@ class StatisticsController(base.BaseController, stats.StatsMixin):
                          status_code=200)
     def get(self):
         context = pecan.request.context.get('octavia_context')
-        load_balancer = self._get_db_lb(context.session, self.id)
+        load_balancer = self._get_db_lb(context.session, self.id,
+                                        show_deleted=False)
         if not load_balancer:
             LOG.info("Load balancer %s not found.", id)
             raise exceptions.NotFound(
@@ -568,7 +573,8 @@ class FailoverController(LoadBalancersController):
     def put(self, **kwargs):
         """Fails over a loadbalancer"""
         context = pecan.request.context.get('octavia_context')
-        db_lb = self._get_db_lb(context.session, self.lb_id)
+        db_lb = self._get_db_lb(context.session, self.lb_id,
+                                show_deleted=False)
 
         self._auth_validate_action(context, db_lb.project_id,
                                    constants.RBAC_PUT_FAILOVER)

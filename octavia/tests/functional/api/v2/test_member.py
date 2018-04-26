@@ -110,18 +110,14 @@ class TestMember(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response)
 
-    def test_get_hides_deleted(self):
+    def test_get_deleted_gives_404(self):
         api_member = self.create_member(
             self.pool_id, '192.0.2.1', 80).get(self.root_tag)
 
-        response = self.get(self.members_path)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 1)
         self.set_object_status(self.member_repo, api_member.get('id'),
                                provisioning_status=constants.DELETED)
-        response = self.get(self.members_path)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 0)
+        self.get(self.member_path.format(member_id=api_member.get('id')),
+                 status=404)
 
     def test_bad_get(self):
         self.get(self.member_path.format(member_id=uuidutils.generate_uuid()),
@@ -147,6 +143,19 @@ class TestMember(base.BaseAPITest):
             m.pop('updated_at')
         for m in [api_m_1, api_m_2]:
             self.assertIn(m, response)
+
+    def test_get_all_hides_deleted(self):
+        api_member = self.create_member(
+            self.pool_id, '10.0.0.1', 80).get(self.root_tag)
+
+        response = self.get(self.members_path)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.member_repo, api_member.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.members_path)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
 
     def test_get_all_authorized(self):
         api_m_1 = self.create_member(
@@ -890,13 +899,8 @@ class TestMember(base.BaseAPITest):
             member_prov_status=constants.PENDING_DELETE)
 
         self.set_lb_status(self.lb_id)
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            pool_id=self.pool_with_listener_id, member_id=member.get('id'),
-            lb_prov_status=constants.ACTIVE,
-            listener_prov_status=constants.ACTIVE,
-            pool_prov_status=constants.ACTIVE,
-            member_prov_status=constants.DELETED)
+        member = self.get(self.member_path_listener.format(
+            member_id=api_member.get('id')), status=404)
 
     def test_delete_authorized(self):
         api_member = self.create_member(
@@ -944,13 +948,8 @@ class TestMember(base.BaseAPITest):
             member_prov_status=constants.PENDING_DELETE)
 
         self.set_lb_status(self.lb_id)
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            pool_id=self.pool_with_listener_id, member_id=member.get('id'),
-            lb_prov_status=constants.ACTIVE,
-            listener_prov_status=constants.ACTIVE,
-            pool_prov_status=constants.ACTIVE,
-            member_prov_status=constants.DELETED)
+        member = self.get(self.member_path_listener.format(
+            member_id=api_member.get('id')), status=404)
 
     def test_delete_not_authorized(self):
         api_member = self.create_member(
@@ -1061,6 +1060,14 @@ class TestMember(base.BaseAPITest):
         self.put(self.member_path.format(member_id=member.get('id')),
                  body=self._build_body({'name': "member2"}), status=409)
 
+    def test_update_when_deleted(self):
+        member = self.create_member(
+            self.pool_id, address="10.0.0.1",
+            protocol_port=80).get(self.root_tag)
+        self.set_lb_status(self.lb_id, status=constants.DELETED)
+        self.put(self.member_path.format(member_id=member.get('id')),
+                 body=self._build_body({'name': "member2"}), status=404)
+
     def test_delete_when_lb_pending_delete(self):
         member = self.create_member(
             self.pool_id, address="192.0.2.1",
@@ -1077,4 +1084,4 @@ class TestMember(base.BaseAPITest):
             protocol_port=80).get(self.root_tag)
         self.set_lb_status(self.lb_id, status=constants.DELETED)
         self.delete(self.member_path.format(
-            member_id=member.get('id')), status=204)
+            member_id=member.get('id')), status=404)

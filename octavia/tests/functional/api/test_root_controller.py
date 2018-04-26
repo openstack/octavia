@@ -48,13 +48,13 @@ class TestRootController(base_db_test.OctaviaDBTestBase):
         version_ids = tuple(v.get('id') for v in versions)
         self.assertEqual(2, len(version_ids))
         self.assertIn('v1', version_ids)
-        self.assertIn('v2.0', version_ids)
+        self.assertIn('v2.1', version_ids)
 
     def test_api_v1_disabled(self):
         versions = self._get_versions_with_config(
             api_v1_enabled=False, api_v2_enabled=True)
         self.assertEqual(1, len(versions))
-        self.assertEqual('v2.0', versions[0].get('id'))
+        self.assertEqual('v2.1', versions[0].get('id'))
 
     def test_api_v2_disabled(self):
         versions = self._get_versions_with_config(

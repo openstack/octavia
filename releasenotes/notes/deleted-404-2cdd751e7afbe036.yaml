@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixes the v2 API returning "DELETED" records until the amphora_expiry_age
+    timeout expired. The API will now immediately return a 404 HTTP status
+    code when deleted objects are requested. The API version has been raised
+    to v2.1 to reflect this change.

@@ -42,23 +42,12 @@ class HealthMonitorController(base.BaseController):
         super(HealthMonitorController, self).__init__()
         self.handler = self.handler.health_monitor
 
-    def _get_db_hm(self, session, hm_id):
-        """Gets the current health monitor object from the database."""
-        db_hm = self.repositories.health_monitor.get(
-            session, id=hm_id)
-        if not db_hm:
-            LOG.info("Health Monitor %s was not found", hm_id)
-            raise exceptions.NotFound(
-                resource=data_models.HealthMonitor._name(),
-                id=hm_id)
-        return db_hm
-
     @wsme_pecan.wsexpose(hm_types.HealthMonitorRootResponse, wtypes.text,
                          wtypes.text)
     def get_one(self, id):
         """Gets a single healthmonitor's details."""
         context = pecan.request.context.get('octavia_context')
-        db_hm = self._get_db_hm(context.session, id)
+        db_hm = self._get_db_hm(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, db_hm.project_id,
                                    constants.RBAC_GET_ONE)
@@ -206,7 +195,7 @@ class HealthMonitorController(base.BaseController):
         """Updates a health monitor."""
         context = pecan.request.context.get('octavia_context')
         health_monitor = health_monitor_.healthmonitor
-        db_hm = self._get_db_hm(context.session, id)
+        db_hm = self._get_db_hm(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, db_hm.project_id,
                                    constants.RBAC_PUT)
@@ -239,7 +228,7 @@ class HealthMonitorController(base.BaseController):
     def delete(self, id):
         """Deletes a health monitor."""
         context = pecan.request.context.get('octavia_context')
-        db_hm = self._get_db_hm(context.session, id)
+        db_hm = self._get_db_hm(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, db_hm.project_id,
                                    constants.RBAC_DELETE)

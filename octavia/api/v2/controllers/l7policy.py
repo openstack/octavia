@@ -47,7 +47,8 @@ class L7PolicyController(base.BaseController):
     def get(self, id):
         """Gets a single l7policy's details."""
         context = pecan.request.context.get('octavia_context')
-        db_l7policy = self._get_db_l7policy(context.session, id)
+        db_l7policy = self._get_db_l7policy(context.session, id,
+                                            show_deleted=False)
 
         self._auth_validate_action(context, db_l7policy.project_id,
                                    constants.RBAC_GET_ONE)
@@ -216,7 +217,8 @@ class L7PolicyController(base.BaseController):
         if l7policy_dict.get('redirect_pool_id'):
             self._get_db_pool(
                 context.session, l7policy_dict['redirect_pool_id'])
-        db_l7policy = self._get_db_l7policy(context.session, id)
+        db_l7policy = self._get_db_l7policy(context.session, id,
+                                            show_deleted=False)
         load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
             db_l7policy)
 
@@ -253,7 +255,8 @@ class L7PolicyController(base.BaseController):
     def delete(self, id):
         """Deletes a l7policy."""
         context = pecan.request.context.get('octavia_context')
-        db_l7policy = self._get_db_l7policy(context.session, id)
+        db_l7policy = self._get_db_l7policy(context.session, id,
+                                            show_deleted=False)
         load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
             db_l7policy)
 

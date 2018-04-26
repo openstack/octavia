@@ -124,21 +124,16 @@ class TestPool(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
-    def test_get_hides_deleted(self):
+    def test_get_deleted_gives_404(self):
         api_pool = self.create_pool(
             self.lb_id,
             constants.PROTOCOL_HTTP,
             constants.LB_ALGORITHM_ROUND_ROBIN,
             listener_id=self.listener_id).get(self.root_tag)
 
-        response = self.get(self.POOLS_PATH)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 1)
         self.set_object_status(self.pool_repo, api_pool.get('id'),
                                provisioning_status=constants.DELETED)
-        response = self.get(self.POOLS_PATH)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 0)
+        self.get(self.POOL_PATH.format(pool_id=api_pool.get('id')), status=404)
 
     def test_bad_get(self):
         self.get(self.POOL_PATH.format(pool_id=uuidutils.generate_uuid()),
@@ -155,6 +150,22 @@ class TestPool(base.BaseAPITest):
         self.assertIsInstance(pools, list)
         self.assertEqual(1, len(pools))
         self.assertEqual(api_pool.get('id'), pools[0].get('id'))
+
+    def test_get_all_hides_deleted(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+
+        response = self.get(self.POOLS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.pool_repo, api_pool.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.POOLS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
 
     def test_get_all_admin(self):
         project_id = uuidutils.generate_uuid()
@@ -1382,6 +1393,18 @@ class TestPool(base.BaseAPITest):
         self.delete(self.POOL_PATH.format(pool_id=api_pool.get('id')),
                     status=409)
 
+    def test_update_already_deleted(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        # This updates the child objects
+        self.set_lb_status(self.lb_id, status=constants.DELETED)
+        new_pool = {'admin_state_up': False}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool), status=404)
+
     def test_delete_already_deleted(self):
         api_pool = self.create_pool(
             self.lb_id,
@@ -1391,4 +1414,4 @@ class TestPool(base.BaseAPITest):
         # This updates the child objects
         self.set_lb_status(self.lb_id, status=constants.DELETED)
         self.delete(self.POOL_PATH.format(pool_id=api_pool.get('id')),
-                    status=204)
+                    status=404)

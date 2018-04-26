@@ -351,6 +351,19 @@ class TestListener(base.BaseAPITest):
         self.assertEqual(li1['id'],
                          lis['listeners'][0]['id'])
 
+    def test_get_all_hides_deleted(self):
+        api_listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, self.lb_id).get(self.root_tag)
+
+        response = self.get(self.LISTENERS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 1)
+        self.set_object_status(self.listener_repo, api_listener.get('id'),
+                               provisioning_status=constants.DELETED)
+        response = self.get(self.LISTENERS_PATH)
+        objects = response.json.get(self.root_tag_list)
+        self.assertEqual(len(objects), 0)
+
     def test_get(self):
         listener = self.create_listener(
             constants.PROTOCOL_HTTP, 80, self.lb_id).get(self.root_tag)
@@ -407,18 +420,14 @@ class TestListener(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
-    def test_get_hides_deleted(self):
+    def test_get_deleted_gives_404(self):
         api_listener = self.create_listener(
             constants.PROTOCOL_HTTP, 80, self.lb_id).get(self.root_tag)
 
-        response = self.get(self.LISTENERS_PATH)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 1)
         self.set_object_status(self.listener_repo, api_listener.get('id'),
                                provisioning_status=constants.DELETED)
-        response = self.get(self.LISTENERS_PATH)
-        objects = response.json.get(self.root_tag_list)
-        self.assertEqual(len(objects), 0)
+        self.get(self.LISTENER_PATH.format(listener_id=api_listener.get('id')),
+                 status=404)
 
     def test_get_bad_listener_id(self):
         listener_path = self.listener_path
@@ -1130,6 +1139,28 @@ class TestListener(base.BaseAPITest):
             listener_id=api_listener['id'])
         self.put(listener_path, body, status=409)
 
+    def test_update_deleted(self):
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1', description='desc1',
+                                       admin_state_up=False)
+        lb_id = lb['loadbalancer'].get('id')
+        self.set_lb_status(lb_id)
+        lb_listener = {'name': 'listener1', 'description': 'desc1',
+                       'admin_state_up': False,
+                       'protocol': constants.PROTOCOL_HTTP,
+                       'protocol_port': 80, 'connection_limit': 10,
+                       'loadbalancer_id': lb_id}
+        body = self._build_body(lb_listener)
+        api_listener = self.post(
+            self.LISTENERS_PATH, body).json.get(self.root_tag)
+        # This updates the child objects
+        self.set_lb_status(lb_id, status=constants.DELETED)
+        lb_listener_put = {'name': 'listener1_updated'}
+        body = self._build_body(lb_listener_put)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=api_listener['id'])
+        self.put(listener_path, body, status=404)
+
     def test_delete_pending_delete(self):
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
                                        name='lb1', description='desc1',
@@ -1169,7 +1200,7 @@ class TestListener(base.BaseAPITest):
         self.set_lb_status(lb_id, status=constants.DELETED)
         listener_path = self.LISTENER_PATH.format(
             listener_id=api_listener['id'])
-        self.delete(listener_path, status=204)
+        self.delete(listener_path, status=404)
 
     def test_create_with_tls_termination_data(self):
         cert_id = uuidutils.generate_uuid()
@@ -1354,3 +1385,21 @@ class TestListener(base.BaseAPITest):
                 listener_id=li['id'] + "/stats"), status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, res.json)
+
+    def test_statistics_get_deleted(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.set_lb_status(lb['id'])
+        li = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb.get('id')).get('listener')
+        amphora = self.create_amphora(uuidutils.generate_uuid(), lb['id'])
+        self.create_listener_stats_dynamic(
+            listener_id=li.get('id'),
+            amphora_id=amphora.id,
+            bytes_in=random.randint(1, 9),
+            bytes_out=random.randint(1, 9),
+            total_connections=random.randint(1, 9),
+            request_errors=random.randint(1, 9))
+        self.set_lb_status(lb['id'], status=constants.DELETED)
+        self.get(self.LISTENER_PATH.format(
+            listener_id=li.get('id') + "/stats"), status=404)
