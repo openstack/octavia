@@ -19,6 +19,9 @@ $AMP_VENV/bin/pip install -U -c /opt/upper-constraints.txt /opt/amphora-agent
 # Link the amphora-agent out to /usr/local/bin where the startup scripts look
 ln -s $AMP_VENV/bin/amphora-agent /usr/local/bin/amphora-agent || true
 
+# Also link out the vrrp check script(s) so they're in PATH for keepalived
+ln -s $AMP_VENV/bin/haproxy-vrrp-* /usr/local/bin/ || true
+
 mkdir /etc/octavia
 # we assume certs, etc will come in through the config drive
 mkdir /etc/octavia/certs
