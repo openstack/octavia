@@ -87,6 +87,15 @@ class TestHealthMonitor(object):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
                           self._type, body)
 
+    def test_invalid_url_path_no_leading_slash(self):
+        body = {"delay": 1, "timeout": 1, "max_retries": 1,
+                "url_path": 'blah'}
+        if self._type is hm_type.HealthMonitorPOST:
+            body.update({"type": constants.PROTOCOL_HTTP,
+                         "pool_id": uuidutils.generate_uuid()})
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
+                          self._type, body)
+
     def test_invalid_expected_codes(self):
         body = {"delay": 1, "timeout": 1, "max_retries": 1,
                 "expected_codes": "lol"}

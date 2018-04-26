@@ -55,7 +55,8 @@ def url_path(url_path):
         if (
             p_url.scheme or p_url.userinfo or p_url.host or
             p_url.port or
-            p_url.path is None
+            p_url.path is None or
+            not p_url.path.startswith('/')
         ):
             raise exceptions.InvalidURLPath(url_path=url_path)
     except Exception:
