@@ -252,6 +252,17 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         show_port.side_effect = neutron_exceptions.PortNotFoundClient
         self.driver.deallocate_vip(vip)
 
+    def test_deallocate_vip_when_port_not_found_for_update(self):
+        lb = dmh.generate_load_balancer_tree()
+        vip = data_models.Vip(port_id='1')
+        vip.load_balancer = lb
+        show_port = self.driver.neutron_client.show_port
+        show_port.return_value = {'port': {
+            'device_owner': allowed_address_pairs.OCTAVIA_OWNER}}
+        update_port = self.driver.neutron_client.update_port
+        update_port.side_effect = neutron_exceptions.PortNotFoundClient
+        self.driver.deallocate_vip(vip)
+
     def test_deallocate_vip_when_port_not_owned_by_octavia(self):
         lb = dmh.generate_load_balancer_tree()
         lb.vip.load_balancer = lb
