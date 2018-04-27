@@ -264,8 +264,15 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                         'port', {}).get('security_groups', [])
                     if sec_grp_id in sec_grps:
                         sec_grps.remove(sec_grp_id)
-                    port_update = {'port': {'security_groups': sec_grps}}
-                    self.neutron_client.update_port(port.id, port_update)
+                        port_update = {'port': {'security_groups': sec_grps}}
+                        try:
+                            self.neutron_client.update_port(port.id,
+                                                            port_update)
+                        except neutron_client_exceptions.PortNotFoundClient:
+                            LOG.warning('Unable to update port information '
+                                        'for port %s. Continuing to delete '
+                                        'the security group since port not '
+                                        'found', port.id)
 
                 try:
                     self._delete_vip_security_group(sec_grp_id)
