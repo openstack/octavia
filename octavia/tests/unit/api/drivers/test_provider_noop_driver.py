@@ -38,6 +38,9 @@ class TestNoopProviderDriver(base.TestCase):
         self.l7policy_id = uuidutils.generate_uuid()
         self.l7rule_id = uuidutils.generate_uuid()
         self.project_id = uuidutils.generate_uuid()
+        self.default_tls_container_ref = uuidutils.generate_uuid()
+        self.sni_container_ref_1 = uuidutils.generate_uuid()
+        self.sni_container_ref_2 = uuidutils.generate_uuid()
 
         self.ref_vip = data_models.VIP(
             vip_address=self.vip_address,
@@ -110,7 +113,8 @@ class TestNoopProviderDriver(base.TestCase):
             connection_limit=5,
             default_pool=self.ref_pool,
             default_pool_id=self.pool_id,
-            default_tls_container='a_pkcs12_bundle',
+            default_tls_container_data='default_cert_data',
+            default_tls_container_ref=self.default_tls_container_ref,
             description='The listener',
             insert_headers={'X-Forwarded-For': 'true'},
             l7policies=[self.ref_l7policy],
@@ -119,7 +123,9 @@ class TestNoopProviderDriver(base.TestCase):
             name='super_listener',
             protocol='avian',
             protocol_port=42,
-            sni_containers='another_pkcs12_bundle')
+            sni_container_data=['sni_cert_data_1', 'sni_cert_data_2'],
+            sni_container_refs=[self.sni_container_ref_1,
+                                self.sni_container_ref_2])
 
         self.ref_lb = data_models.LoadBalancer(
             admin_state_up=False,

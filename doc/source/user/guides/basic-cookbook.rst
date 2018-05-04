@@ -461,7 +461,7 @@ listener using Server Name Indication (SNI) technology.
     openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
     openstack loadbalancer show lb1
-    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}') --sni-container_refs $(openstack secret list | awk '/ tls_secret1 / {print $2}') $(openstack secret list | awk '/ tls_secret2 / {print $2}') lb1
+    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}') --sni-container-refs $(openstack secret list | awk '/ tls_secret1 / {print $2}') $(openstack secret list | awk '/ tls_secret2 / {print $2}') -- lb1
     openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
     openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
     openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1

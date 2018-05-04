@@ -53,8 +53,9 @@ class TestUtils(base.TestCase):
         self.network_id = uuidutils.generate_uuid()
         self.subnet_id = uuidutils.generate_uuid()
         self.qos_policy_id = uuidutils.generate_uuid()
-        self.sni_containers = [{'tls_container_id': '2'},
-                               {'tls_container_id': '3'}]
+        self.default_tls_container_ref = uuidutils.generate_uuid()
+        self.sni_container_ref_1 = uuidutils.generate_uuid()
+        self.sni_container_ref_2 = uuidutils.generate_uuid()
 
         _common_test_dict = {'provisioning_status': constants.ACTIVE,
                              'operating_status': constants.ONLINE,
@@ -356,27 +357,29 @@ class TestUtils(base.TestCase):
                                     self.provider_l7policy2]
 
         # Setup Listeners
-        self.test_listener1_dict = {'id': listener1_id,
-                                    'name': 'listener_1',
-                                    'description': 'Listener 1',
-                                    'default_pool_id': pool1_id,
-                                    'load_balancer_id': self.lb_id,
-                                    'protocol': 'avian',
-                                    'protocol_port': 90,
-                                    'connection_limit': 10000,
-                                    'tls_certificate_id': '1',
-                                    'stats': None,
-                                    'default_pool': self.test_pool1_dict,
-                                    'load_balancer': None,
-                                    'sni_containers': self.sni_containers,
-                                    'peer_port': 55,
-                                    'l7policies': self.test_l7policies,
-                                    'insert_headers': {},
-                                    'pools': None,
-                                    'timeout_client_data': 1000,
-                                    'timeout_member_connect': 2000,
-                                    'timeout_member_data': 3000,
-                                    'timeout_tcp_inspect': 4000}
+        self.test_listener1_dict = {
+            'id': listener1_id,
+            'name': 'listener_1',
+            'description': 'Listener 1',
+            'default_pool_id': pool1_id,
+            'load_balancer_id': self.lb_id,
+            'protocol': 'avian',
+            'protocol_port': 90,
+            'connection_limit': 10000,
+            'tls_certificate_id': self.default_tls_container_ref,
+            'stats': None,
+            'default_pool': self.test_pool1_dict,
+            'load_balancer': None,
+            'sni_containers': [self.sni_container_ref_1,
+                               self.sni_container_ref_2],
+            'peer_port': 55,
+            'l7policies': self.test_l7policies,
+            'insert_headers': {},
+            'pools': None,
+            'timeout_client_data': 1000,
+            'timeout_member_connect': 2000,
+            'timeout_member_data': 3000,
+            'timeout_tcp_inspect': 4000}
 
         self.test_listener1_dict.update(_common_test_dict)
 
@@ -403,12 +406,17 @@ class TestUtils(base.TestCase):
 
         self.test_db_listeners = [self.db_listener1, self.db_listener2]
 
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+
         self.provider_listener1_dict = {
             'admin_state_up': True,
             'connection_limit': 10000,
             'default_pool': self.provider_pool1_dict,
             'default_pool_id': pool1_id,
-            'default_tls_container': 'cert 1',
+            'default_tls_container_data': cert1.to_dict(),
+            'default_tls_container_ref': self.default_tls_container_ref,
             'description': 'Listener 1',
             'insert_headers': {},
             'l7policies': self.provider_l7policies_dict,
@@ -417,7 +425,9 @@ class TestUtils(base.TestCase):
             'name': 'listener_1',
             'protocol': 'avian',
             'protocol_port': 90,
-            'sni_containers': ['cert 2', 'cert 3'],
+            'sni_container_data': [cert2.to_dict(), cert3.to_dict()],
+            'sni_container_refs': [self.sni_container_ref_1,
+                                   self.sni_container_ref_2],
             'timeout_client_data': 1000,
             'timeout_member_connect': 2000,
             'timeout_member_data': 3000,
@@ -498,9 +508,11 @@ class TestUtils(base.TestCase):
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_lb_dict_to_provider_dict(self, mock_load_cert):
-        mock_load_cert.return_value = {'tls_cert': 'cert 1',
-                                       'sni_certs': ['cert 2', 'cert 3']}
-
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_load_cert.return_value = {'tls_cert': cert1,
+                                       'sni_certs': [cert2, cert3]}
         test_lb_dict = {'name': 'lb1', 'project_id': self.project_id,
                         'vip_subnet_id': self.subnet_id,
                         'vip_port_id': self.port_id,
@@ -542,16 +554,22 @@ class TestUtils(base.TestCase):
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_db_listeners_to_provider_listeners(self, mock_load_cert):
-        mock_load_cert.return_value = {'tls_cert': 'cert 1',
-                                       'sni_certs': ['cert 2', 'cert 3']}
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_load_cert.return_value = {'tls_cert': cert1,
+                                       'sni_certs': [cert2, cert3]}
         provider_listeners = utils.db_listeners_to_provider_listeners(
             self.test_db_listeners)
         self.assertEqual(self.provider_listeners, provider_listeners)
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_listener_dict_to_provider_dict(self, mock_load_cert):
-        mock_load_cert.return_value = {'tls_cert': 'cert 1',
-                                       'sni_certs': ['cert 2', 'cert 3']}
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_load_cert.return_value = {'tls_cert': cert1,
+                                       'sni_certs': [cert2, cert3]}
         provider_listener = utils.listener_dict_to_provider_dict(
             self.test_listener1_dict)
         self.assertEqual(self.provider_listener1_dict, provider_listener)

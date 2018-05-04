@@ -2350,8 +2350,11 @@ class TestLoadBalancerGraph(base.BaseAPITest):
     # TODO(johnsom) Fix this when there is a noop certificate manager
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_with_one_listener_sni_containers(self, mock_cert_data):
-        mock_cert_data.return_value = {'tls_cert': 'cert 1',
-                                       'sni_certs': ['cert 2', 'cert 3']}
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_cert_data.return_value = {'tls_cert': cert1,
+                                       'sni_certs': [cert2, cert3]}
         create_sni_containers, expected_sni_containers = (
             self._get_sni_container_bodies())
         create_listener, expected_listener = self._get_listener_bodies(
@@ -2512,9 +2515,11 @@ class TestLoadBalancerGraph(base.BaseAPITest):
     # TODO(johnsom) Fix this when there is a noop certificate manager
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_with_one_of_everything(self, mock_cert_data):
-        mock_cert_data.return_value = {'tls_cert': 'cert 1',
-                                       'sni_certs': ['cert 2', 'cert 3']}
-
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_cert_data.return_value = {'tls_cert': cert1,
+                                       'sni_certs': [cert2, cert3]}
         body, expected_lb = self._test_with_one_of_everything_helper()
         response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
@@ -2599,9 +2604,11 @@ class TestLoadBalancerGraph(base.BaseAPITest):
     # TODO(johnsom) Fix this when there is a noop certificate manager
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_create_over_quota_sanity_check(self, mock_cert_data):
-        mock_cert_data.return_value = {'tls_cert': 'cert 1',
-                                       'sni_certs': ['cert 2', 'cert 3']}
-
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_cert_data.return_value = {'tls_cert': cert1,
+                                       'sni_certs': [cert2, cert3]}
         # This one should create, as we don't check quotas on L7Policies
         body, _ = self._test_with_one_of_everything_helper()
         self.start_quota_mock(data_models.L7Policy)

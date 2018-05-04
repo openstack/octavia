@@ -125,6 +125,13 @@ class BaseController(rest.RestController):
                               show_deleted=show_deleted)
         return lb.project_id
 
+    def _get_lb_project_id_provider(self, session, id, show_deleted=True):
+        """Get the project_id of the load balancer from the database."""
+        lb = self._get_db_obj(session, self.repositories.load_balancer,
+                              data_models.LoadBalancer, id,
+                              show_deleted=show_deleted)
+        return lb.project_id, lb.provider
+
     def _get_l7policy_project_id(self, session, id, show_deleted=True):
         """Get the project_id of the load balancer from the database."""
         l7policy = self._get_db_obj(session, self.repositories.l7policy,

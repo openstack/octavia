@@ -14,6 +14,8 @@
 
 import copy
 
+import six
+
 from oslo_config import cfg
 from oslo_log import log as logging
 from stevedore import driver as stevedore_driver
@@ -109,19 +111,24 @@ def lb_dict_to_provider_dict(lb_dict, vip=None,
 def db_listeners_to_provider_listeners(db_listeners):
     provider_listeners = []
     for listener in db_listeners:
-        new_listener_dict = listener_dict_to_provider_dict(
-            listener.to_dict(recurse=True))
-        if ('default_pool' in new_listener_dict and
-                new_listener_dict['default_pool']):
-            provider_pool = db_pool_to_provider_pool(listener.default_pool)
-            new_listener_dict['default_pool_id'] = provider_pool.pool_id
-            new_listener_dict['default_pool'] = provider_pool
-        if 'l7policies' in new_listener_dict:
-            new_listener_dict['l7policies'] = (
-                db_l7policies_to_provider_l7policies(listener.l7policies))
-        provider_listeners.append(
-            driver_dm.Listener.from_dict(new_listener_dict))
+        provider_listener = db_listener_to_provider_listener(listener)
+        provider_listeners.append(provider_listener)
     return provider_listeners
+
+
+def db_listener_to_provider_listener(db_listener):
+    new_listener_dict = listener_dict_to_provider_dict(
+        db_listener.to_dict(recurse=True))
+    if ('default_pool' in new_listener_dict and
+            new_listener_dict['default_pool']):
+        provider_pool = db_pool_to_provider_pool(db_listener.default_pool)
+        new_listener_dict['default_pool_id'] = provider_pool.pool_id
+        new_listener_dict['default_pool'] = provider_pool
+    if 'l7policies' in new_listener_dict:
+        new_listener_dict['l7policies'] = (
+            db_l7policies_to_provider_l7policies(db_listener.l7policies))
+    provider_listener = driver_dm.Listener.from_dict(new_listener_dict)
+    return provider_listener
 
 
 def listener_dict_to_provider_dict(listener_dict):
@@ -133,9 +140,14 @@ def listener_dict_to_provider_dict(listener_dict):
 
     # Pull the certs out of the certificate manager to pass to the provider
     if 'tls_certificate_id' in new_listener_dict:
-        del new_listener_dict['tls_certificate_id']
+        new_listener_dict['default_tls_container_ref'] = new_listener_dict.pop(
+            'tls_certificate_id')
     if 'sni_containers' in new_listener_dict:
-        del new_listener_dict['sni_containers']
+        new_listener_dict['sni_container_refs'] = new_listener_dict.pop(
+            'sni_containers')
+    if 'sni_container_refs' in listener_dict:
+        listener_dict['sni_containers'] = listener_dict.pop(
+            'sni_container_refs')
     listener_obj = data_models.Listener(**listener_dict)
     if listener_obj.tls_certificate_id or listener_obj.sni_containers:
         SNI_objs = []
@@ -144,6 +156,9 @@ def listener_dict_to_provider_dict(listener_dict):
                 SNI_objs.append(sni)
             elif isinstance(sni, dict):
                 sni_obj = data_models.SNI(**sni)
+                SNI_objs.append(sni_obj)
+            elif isinstance(sni, six.string_types):
+                sni_obj = data_models.SNI(tls_container_id=sni)
                 SNI_objs.append(sni_obj)
             else:
                 raise Exception(_('Invalid SNI container on listener'))
@@ -155,8 +170,14 @@ def listener_dict_to_provider_dict(listener_dict):
         ).driver
         cert_dict = cert_parser.load_certificates_data(cert_manager,
                                                        listener_obj)
-        new_listener_dict['default_tls_container'] = cert_dict['tls_cert']
-        new_listener_dict['sni_containers'] = cert_dict['sni_certs']
+        if 'tls_cert' in cert_dict:
+            new_listener_dict['default_tls_container_data'] = (
+                cert_dict['tls_cert'].to_dict())
+        if 'sni_certs' in cert_dict:
+            sni_data_list = []
+            for sni in cert_dict['sni_certs']:
+                sni_data_list.append(sni.to_dict())
+            new_listener_dict['sni_container_data'] = sni_data_list
 
     # Remove the DB back references
     if 'load_balancer' in new_listener_dict:
@@ -173,11 +194,12 @@ def listener_dict_to_provider_dict(listener_dict):
         pool = new_listener_dict.pop('default_pool')
         new_listener_dict['default_pool'] = pool_dict_to_provider_dict(pool)
     provider_l7policies = []
-    l7policies = new_listener_dict.pop('l7policies')
-    for l7policy in l7policies:
-        provider_l7policy = l7policy_dict_to_provider_dict(l7policy)
-        provider_l7policies.append(provider_l7policy)
-    new_listener_dict['l7policies'] = provider_l7policies
+    if 'l7policies' in new_listener_dict:
+        l7policies = new_listener_dict.pop('l7policies')
+        for l7policy in l7policies:
+            provider_l7policy = l7policy_dict_to_provider_dict(l7policy)
+            provider_l7policies.append(provider_l7policy)
+        new_listener_dict['l7policies'] = provider_l7policies
     return new_listener_dict
 
 

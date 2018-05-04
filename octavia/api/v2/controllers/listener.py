@@ -23,6 +23,9 @@ from stevedore import driver as stevedore_driver
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
+from octavia.api.drivers import data_models as driver_dm
+from octavia.api.drivers import driver_factory
+from octavia.api.drivers import utils as driver_utils
 from octavia.api.v2.controllers import base
 from octavia.api.v2.controllers import l7policy
 from octavia.api.v2.types import listener as listener_types
@@ -178,25 +181,6 @@ class ListenersController(base.BaseController):
             raise exceptions.InvalidOption(value=listener_dict.get('protocol'),
                                            option='protocol')
 
-    def _send_listener_to_handler(self, session, db_listener):
-        try:
-            LOG.info("Sending Creation of Listener %s to handler",
-                     db_listener.id)
-            self.handler.create(db_listener)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_status(
-                    lock_session, lb_id=db_listener.load_balancer_id)
-                # Listener now goes to ERROR
-                self.repositories.listener.update(
-                    lock_session, db_listener.id,
-                    provisioning_status=constants.ERROR)
-        db_listener = self._get_db_listener(session, db_listener.id)
-        result = self._convert_db_to_type(db_listener,
-                                          listener_types.ListenerResponse)
-        return listener_types.ListenerRootResponse(listener=result)
-
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse,
                          body=listener_types.ListenerRootPOST, status_code=201)
     def post(self, listener_):
@@ -205,7 +189,7 @@ class ListenersController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
 
         load_balancer_id = listener.loadbalancer_id
-        listener.project_id = self._get_lb_project_id(
+        listener.project_id, provider = self._get_lb_project_id_provider(
             context.session, load_balancer_id)
 
         self._auth_validate_action(context, listener.project_id,
@@ -215,6 +199,9 @@ class ListenersController(base.BaseController):
                 listener.protocol == constants.PROTOCOL_TERMINATED_HTTPS):
             raise exceptions.DisabledOption(
                 value=constants.PROTOCOL_TERMINATED_HTTPS, option='protocol')
+
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
         lock_session = db_api.get_session(autocommit=False)
         try:
@@ -237,12 +224,30 @@ class ListenersController(base.BaseController):
 
             db_listener = self._validate_create_listener(
                 lock_session, listener_dict)
+
+            # Prepare the data for the driver data model
+            provider_listener = (
+                driver_utils.db_listener_to_provider_listener(db_listener))
+
+            # re-inject the sni container references lost due to SNI
+            # being a seperate table in the DB
+            provider_listener.sni_container_refs = listener.sni_container_refs
+
+            # Dispatch to the driver
+            LOG.info("Sending create Listener %s to provider %s",
+                     db_listener.id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.listener_create, provider_listener)
+
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
 
-        return self._send_listener_to_handler(context.session, db_listener)
+        db_listener = self._get_db_listener(context.session, db_listener.id)
+        result = self._convert_db_to_type(db_listener,
+                                          listener_types.ListenerResponse)
+        return listener_types.ListenerRootResponse(listener=result)
 
     def _graph_create(self, lock_session, listener_dict,
                       l7policies=None, pool_name_ids=None):
@@ -285,8 +290,10 @@ class ListenersController(base.BaseController):
                                             show_deleted=False)
         load_balancer_id = db_listener.load_balancer_id
 
-        self._auth_validate_action(context, db_listener.project_id,
-                                   constants.RBAC_PUT)
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, load_balancer_id)
+
+        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
         # TODO(rm_work): Do we need something like this? What do we do on an
         # empty body for a PUT?
@@ -297,8 +304,6 @@ class ListenersController(base.BaseController):
         if listener.default_pool_id:
             self._validate_pool(context.session, load_balancer_id,
                                 listener.default_pool_id)
-        self._test_lb_and_listener_statuses(context.session, load_balancer_id,
-                                            id=id)
 
         sni_containers = listener.sni_container_refs or []
         tls_refs = [sni for sni in sni_containers]
@@ -306,18 +311,33 @@ class ListenersController(base.BaseController):
             tls_refs.append(listener.default_tls_container_ref)
         self._validate_tls_refs(tls_refs)
 
-        try:
-            LOG.info("Sending Update of Listener %s to handler", id)
-            self.handler.update(db_listener, listener)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_status(
-                    lock_session, lb_id=db_listener.load_balancer_id)
-                # Listener now goes to ERROR
-                self.repositories.listener.update(
-                    lock_session, db_listener.id,
-                    provisioning_status=constants.ERROR)
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
+
+        with db_api.get_lock_session() as lock_session:
+            self._test_lb_and_listener_statuses(lock_session,
+                                                load_balancer_id, id=id)
+
+            # Prepare the data for the driver data model
+            listener_dict = listener.to_dict(render_unsets=False)
+            listener_dict['id'] = id
+            provider_listener_dict = (
+                driver_utils.listener_dict_to_provider_dict(listener_dict))
+
+            # Dispatch to the driver
+            LOG.info("Sending update Listener %s to provider %s", id,
+                     driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.listener_update,
+                driver_dm.Listener.from_dict(provider_listener_dict))
+
+            # Update the database to reflect what the driver just accepted
+            self.repositories.listener.update(
+                lock_session, id, **listener.to_dict(render_unsets=False))
+
+        # Force SQL alchemy to query the DB, otherwise we get inconsistent
+        # results
+        context.session.expire_all()
         db_listener = self._get_db_listener(context.session, id)
         result = self._convert_db_to_type(db_listener,
                                           listener_types.ListenerResponse)
@@ -331,26 +351,23 @@ class ListenersController(base.BaseController):
                                             show_deleted=False)
         load_balancer_id = db_listener.load_balancer_id
 
-        self._auth_validate_action(context, db_listener.project_id,
-                                   constants.RBAC_DELETE)
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, load_balancer_id)
 
-        self._test_lb_and_listener_statuses(
-            context.session, load_balancer_id,
-            id=id, listener_status=constants.PENDING_DELETE)
+        self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
 
-        try:
-            LOG.info("Sending Deletion of Listener %s to handler",
-                     db_listener.id)
-            self.handler.delete(db_listener)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_status(
-                    lock_session, lb_id=db_listener.load_balancer_id)
-                # Listener now goes to ERROR
-                self.repositories.listener.update(
-                    lock_session, db_listener.id,
-                    provisioning_status=constants.ERROR)
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
+
+        with db_api.get_lock_session() as lock_session:
+
+            self._test_lb_and_listener_statuses(
+                lock_session, load_balancer_id,
+                id=id, listener_status=constants.PENDING_DELETE)
+
+            LOG.info("Sending delete Listener %s to provider %s", id,
+                     driver.name)
+            driver_utils.call_provider(driver.name, driver.listener_delete, id)
 
     @pecan.expose()
     def _lookup(self, id, *remainder):
