@@ -30,14 +30,13 @@ class TestHealthManagerCMD(base.TestCase):
                 'heartbeat_udp.UDPStatusGetter')
     def test_hm_listener(self, mock_getter,
                          mock_event):
-        mock_event.is_set.side_effect = [False, False]
+        mock_event.is_set.side_effect = [False, False, True]
         getter_mock = mock.MagicMock()
         check_mock = mock.MagicMock()
         getter_mock.check = check_mock
         getter_mock.check.side_effect = [None, Exception('break')]
         mock_getter.return_value = getter_mock
-        self.assertRaisesRegexp(Exception, 'break',
-                                health_manager.hm_listener, mock_event)
+        health_manager.hm_listener(mock_event)
         mock_getter.assert_called_once()
         self.assertEqual(2, getter_mock.check.call_count)
 
