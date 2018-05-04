@@ -38,7 +38,11 @@ def hm_listener(exit_event):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     udp_getter = heartbeat_udp.UDPStatusGetter()
     while not exit_event.is_set():
-        udp_getter.check()
+        try:
+            udp_getter.check()
+        except Exception as e:
+            LOG.error('Health Manager listener experienced unknown error: %s',
+                      e)
 
 
 def hm_health_check(exit_event):

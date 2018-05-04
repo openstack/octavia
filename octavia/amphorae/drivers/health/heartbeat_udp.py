@@ -184,7 +184,13 @@ class UDPStatusGetter(object):
         """
         (data, srcaddr) = self.sock.recvfrom(UDP_MAX_SIZE)
         LOG.debug('Received packet from %s', srcaddr)
-        obj = status_message.unwrap_envelope(data, self.key)
+        try:
+            obj = status_message.unwrap_envelope(data, self.key)
+        except Exception as e:
+            LOG.warning('Health Manager experienced an exception processing a '
+                        'heartbeat message from %s. Ignoring this packet. '
+                        'Exception: %s', srcaddr, e)
+            raise exceptions.InvalidHMACException()
         obj['recv_time'] = time.time()
         return obj, srcaddr
 
@@ -194,6 +200,10 @@ class UDPStatusGetter(object):
         except exceptions.InvalidHMACException:
             # Pass here as the packet was dropped and logged already
             pass
+        except Exception as e:
+            LOG.warning('Health Manager experienced an exception processing a'
+                        'heartbeat packet. Ignoring this packet. '
+                        'Exception: %s', e)
         else:
             self.executor.submit(update_health, obj)
             self.executor.submit(update_stats, obj)

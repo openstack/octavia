@@ -123,6 +123,29 @@ class TestHeartbeatUDP(base.TestCase):
         self.assertIsNotNone(obj.pop('recv_time'))
         self.assertEqual({"testkey": "TEST"}, obj)
 
+    @mock.patch('octavia.amphorae.backends.health_daemon.status_message.'
+                'unwrap_envelope')
+    @mock.patch('socket.getaddrinfo')
+    @mock.patch('socket.socket')
+    def test_dorecv_bad_packet(self, mock_socket, mock_getaddrinfo,
+                               mock_unwrap):
+        socket_mock = mock.MagicMock()
+        mock_socket.return_value = socket_mock
+        mock_unwrap.side_effect = Exception('boom')
+        mock_getaddrinfo.return_value = [range(1, 6)]
+        recvfrom = mock.MagicMock()
+        socket_mock.recvfrom = recvfrom
+
+        getter = heartbeat_udp.UDPStatusGetter()
+
+        # key = 'TEST' msg = {"testkey": "TEST"}
+        sample_msg = ('78daab562a492d2ec94ead54b252500a710d0e5'
+                      '1aa050041b506245806e5c1971e79951818394e'
+                      'a6e71ad989ff950945f9573f4ab6f83e25db8ed7')
+        bin_msg = binascii.unhexlify(sample_msg)
+        recvfrom.return_value = bin_msg, 2
+        self.assertRaises(exceptions.InvalidHMACException, getter.dorecv)
+
     @mock.patch('socket.getaddrinfo')
     @mock.patch('socket.socket')
     def test_check(self, mock_socket, mock_getaddrinfo):
