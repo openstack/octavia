@@ -305,11 +305,11 @@ class TestL7Rule(base.BaseAPITest):
         self.set_lb_status(self.lb_id)
 
         l7rus = self.get(self.l7rules_path, params={
-            'fields': ['id', 'project_id']}).json
+            'fields': ['id', 'compare_type']}).json
         for l7ru in l7rus['rules']:
             self.assertIn(u'id', l7ru.keys())
-            self.assertIn(u'project_id', l7ru.keys())
-            self.assertNotIn(u'description', l7ru.keys())
+            self.assertIn(u'compare_type', l7ru.keys())
+            self.assertNotIn(u'project_id', l7ru.keys())
 
     def test_get_all_filter(self):
         ru1 = self.create_l7rule(
