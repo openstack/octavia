@@ -55,8 +55,8 @@ class MemberController(base.BaseController):
                                           member_types.MemberResponse)
         return member_types.MemberRootResponse(member=result)
 
-    @wsme_pecan.wsexpose(member_types.MembersRootResponse, wtypes.text,
-                         [wtypes.text], ignore_extra_args=True)
+    @wsme_pecan.wsexpose(member_types.MembersRootResponse, [wtypes.text],
+                         ignore_extra_args=True)
     def get_all(self, fields=None):
         """Lists all pool members of a pool."""
         pcontext = pecan.request.context
