@@ -55,8 +55,8 @@ class L7RuleController(base.BaseController):
                                           l7rule_types.L7RuleResponse)
         return l7rule_types.L7RuleRootResponse(rule=result)
 
-    @wsme_pecan.wsexpose(l7rule_types.L7RulesRootResponse, wtypes.text,
-                         [wtypes.text], ignore_extra_args=True)
+    @wsme_pecan.wsexpose(l7rule_types.L7RulesRootResponse, [wtypes.text],
+                         ignore_extra_args=True)
     def get_all(self, fields=None):
         """Lists all l7rules of a l7policy."""
         pcontext = pecan.request.context
