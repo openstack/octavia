@@ -22,6 +22,7 @@
       pip:
         name: "{{  item }}"
         state: "latest"
+        virtualenv: /var/tmp/venv
       register: install_packages
       until: install_packages|success
       retries: 5
@@ -35,6 +36,7 @@
         state: directory
     - name: Build an amphora image for publishing
       shell: >-
+        . /var/tmp/venv/bin/activate && \
         ./diskimage-create.sh -o {{ ansible_user_dir }}/test-images/test-only-amphora-x64-haproxy-{{ amphora_os }}-{{ amphora_os_release }}.qcow2 \
               -i {{ amphora_os }} \
               -d {{ amphora_os_release }} \
