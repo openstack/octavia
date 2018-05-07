@@ -109,7 +109,14 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         self.client.cast({}, 'delete_pool', **payload)
 
     def pool_update(self, pool):
-        pass
+        pool_dict = pool.to_dict()
+        if 'admin_state_up' in pool_dict:
+            pool_dict['enabled'] = pool_dict.pop('admin_state_up')
+        pool_id = pool_dict.pop('pool_id')
+
+        payload = {consts.POOL_ID: pool_id,
+                   consts.POOL_UPDATES: pool_dict}
+        self.client.cast({}, 'update_pool', **payload)
 
     # Member
     def member_create(self, member):

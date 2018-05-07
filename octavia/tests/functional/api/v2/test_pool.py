@@ -21,6 +21,7 @@ from oslo_utils import uuidutils
 from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
+from octavia.common import exceptions
 from octavia.tests.functional.api.v2 import base
 
 
@@ -725,20 +726,19 @@ class TestPool(base.BaseAPITest):
             'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN}
         self.post(self.POOLS_PATH, self._build_body(lb_pool), status=400)
 
-    def test_create_with_bad_handler(self):
-        self.handler_mock().pool.create.side_effect = Exception()
-        api_pool = self.create_pool(
-            self.lb_id,
-            constants.PROTOCOL_HTTP,
-            constants.LB_ALGORITHM_ROUND_ROBIN,
-            listener_id=self.listener_id).get(self.root_tag)
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            pool_id=api_pool.get('id'),
-            lb_prov_status=constants.ACTIVE,
-            listener_prov_status=constants.ACTIVE,
-            pool_prov_status=constants.ERROR,
-            pool_op_status=constants.OFFLINE)
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_create_with_bad_provider(self, mock_provider):
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        lb_pool = {
+            'loadbalancer_id': self.lb_id,
+            'protocol': constants.PROTOCOL_HTTP,
+            'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+            'project_id': self.project_id}
+        response = self.post(self.POOLS_PATH, self._build_body(lb_pool),
+                             status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.json.get('faultstring'))
 
     def test_create_over_quota(self):
         self.start_quota_mock(data_models.Pool)
@@ -768,7 +768,7 @@ class TestPool(base.BaseAPITest):
         self.set_lb_status(self.lb_id)
         response = self.get(self.POOL_PATH.format(
             pool_id=api_pool.get('id'))).json.get(self.root_tag)
-        self.assertNotEqual('new_name', response.get('name'))
+        self.assertEqual('new_name', response.get('name'))
         self.assertIsNotNone(response.get('created_at'))
         self.assertIsNotNone(response.get('updated_at'))
         self.assert_correct_status(
@@ -820,7 +820,7 @@ class TestPool(base.BaseAPITest):
         self.set_lb_status(self.lb_id)
         response = self.get(self.POOL_PATH.format(
             pool_id=api_pool.get('id'))).json.get(self.root_tag)
-        self.assertNotEqual('new_name', response.get('name'))
+        self.assertEqual('new_name', response.get('name'))
         self.assertIsNotNone(response.get('created_at'))
         self.assertIsNotNone(response.get('updated_at'))
         self.assert_correct_status(
@@ -864,7 +864,8 @@ class TestPool(base.BaseAPITest):
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=api_pool.get('id'))
 
-    def test_update_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_update_with_bad_provider(self, mock_provider):
         api_pool = self.create_pool(
             self.lb_id,
             constants.PROTOCOL_HTTP,
@@ -872,13 +873,12 @@ class TestPool(base.BaseAPITest):
             listener_id=self.listener_id).get(self.root_tag)
         self.set_lb_status(lb_id=self.lb_id)
         new_pool = {'name': 'new_name'}
-        self.handler_mock().pool.update.side_effect = Exception()
-        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
-                 self._build_body(new_pool))
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            pool_id=api_pool.get('id'),
-            pool_prov_status=constants.ERROR)
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        response = self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                            self._build_body(new_pool), status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.json.get('faultstring'))
 
     def test_delete(self):
         api_pool = self.create_pool(
@@ -1005,7 +1005,8 @@ class TestPool(base.BaseAPITest):
         self.delete(self.POOL_PATH.format(
             pool_id=api_pool.get('id')), status=409)
 
-    def test_delete_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_delete_with_bad_provider(self, mock_provider):
         api_pool = self.create_pool(
             self.lb_id,
             constants.PROTOCOL_HTTP,
@@ -1021,12 +1022,10 @@ class TestPool(base.BaseAPITest):
         self.assertIsNone(api_pool.pop('updated_at'))
         self.assertIsNotNone(response.pop('updated_at'))
         self.assertEqual(api_pool, response)
-        self.handler_mock().pool.delete.side_effect = Exception()
-        self.delete(self.POOL_PATH.format(pool_id=api_pool.get('id')))
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            pool_id=api_pool.get('id'),
-            pool_prov_status=constants.ERROR)
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        self.delete(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                    status=500)
 
     def test_create_with_session_persistence(self):
         sp = {"type": constants.SESSION_PERSISTENCE_APP_COOKIE,
@@ -1125,7 +1124,7 @@ class TestPool(base.BaseAPITest):
                  self._build_body(new_pool))
         response = self.get(self.POOL_PATH.format(
             pool_id=api_pool.get('id'))).json.get(self.root_tag)
-        self.assertNotEqual(sp, response.get('session_persistence'))
+        self.assertEqual(sp, response.get('session_persistence'))
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=api_pool.get('id'),
@@ -1154,7 +1153,7 @@ class TestPool(base.BaseAPITest):
                  self._build_body(new_pool))
         response = self.get(self.POOL_PATH.format(
             pool_id=api_pool.get('id'))).json.get(self.root_tag)
-        self.assertNotEqual(sess_p, response.get('session_persistence'))
+        self.assertEqual(sess_p, response.get('session_persistence'))
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=api_pool.get('id'),
@@ -1313,7 +1312,7 @@ class TestPool(base.BaseAPITest):
         new_sp = {"pool": {"session_persistence": None}}
         response = self.put(self.POOL_PATH.format(
             pool_id=api_pool.get('id')), new_sp).json.get(self.root_tag)
-        self.assertIsNotNone(response.get('session_persistence'))
+        self.assertIsNone(response.get('session_persistence'))
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=api_pool.get('id'),
