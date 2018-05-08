@@ -21,6 +21,7 @@ from oslo_utils import uuidutils
 from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
+from octavia.common import exceptions
 from octavia.tests.functional.api.v2 import base
 
 
@@ -631,16 +632,17 @@ class TestL7Policy(base.BaseAPITest):
                     'redirect_url': 'bad url'}
         self.post(self.L7POLICIES_PATH, self._build_body(l7policy), status=400)
 
-    def test_create_with_bad_handler(self):
-        self.handler_mock().l7policy.create.side_effect = Exception()
-        api_l7policy = self.create_l7policy(self.listener_id,
-                                            constants.L7POLICY_ACTION_REJECT,
-                                            ).get(self.root_tag)
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            l7policy_id=api_l7policy.get('id'),
-            l7policy_prov_status=constants.ERROR,
-            l7policy_op_status=constants.OFFLINE)
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_create_with_bad_provider(self, mock_provider):
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        l7policy = {'listener_id': self.listener_id,
+                    'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+                    'redirect_url': 'http://a.com'}
+        response = self.post(self.L7POLICIES_PATH, self._build_body(l7policy),
+                             status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.json.get('faultstring'))
 
     def test_create_over_quota(self):
         self.start_quota_mock(data_models.L7Policy)
@@ -660,7 +662,7 @@ class TestL7Policy(base.BaseAPITest):
         response = self.put(self.L7POLICY_PATH.format(
             l7policy_id=api_l7policy.get('id')),
             self._build_body(new_l7policy)).json.get(self.root_tag)
-        self.assertEqual(constants.L7POLICY_ACTION_REJECT,
+        self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_URL,
                          response.get('action'))
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
@@ -704,7 +706,7 @@ class TestL7Policy(base.BaseAPITest):
                     self._build_body(new_l7policy)).json.get(self.root_tag)
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
-        self.assertEqual(constants.L7POLICY_ACTION_REJECT,
+        self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_URL,
                          response.get('action'))
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
@@ -774,7 +776,8 @@ class TestL7Policy(base.BaseAPITest):
             l7policy_id=api_l7policy.get('id')),
             self._build_body(new_l7policy), status=400)
 
-    def test_update_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_update_with_bad_provider(self, mock_provider):
         api_l7policy = self.create_l7policy(self.listener_id,
                                             constants.L7POLICY_ACTION_REJECT,
                                             ).get(self.root_tag)
@@ -782,14 +785,13 @@ class TestL7Policy(base.BaseAPITest):
         new_l7policy = {
             'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
             'redirect_url': 'http://www.example.com'}
-        self.handler_mock().l7policy.update.side_effect = Exception()
-        self.put(self.L7POLICY_PATH.format(
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        response = self.put(self.L7POLICY_PATH.format(
             l7policy_id=api_l7policy.get('id')),
-            self._build_body(new_l7policy))
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            l7policy_id=api_l7policy.get('id'),
-            l7policy_prov_status=constants.ERROR)
+            self._build_body(new_l7policy), status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.json.get('faultstring'))
 
     def test_update_redirect_to_pool_bad_pool_id(self):
         api_l7policy = self.create_l7policy(self.listener_id,
@@ -935,7 +937,8 @@ class TestL7Policy(base.BaseAPITest):
         self.delete(self.L7POLICY_PATH.format(
             l7policy_id=uuidutils.generate_uuid()), status=404)
 
-    def test_delete_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_delete_with_bad_provider(self, mock_provider):
         api_l7policy = self.create_l7policy(self.listener_id,
                                             constants.L7POLICY_ACTION_REJECT,
                                             ).get(self.root_tag)
@@ -949,13 +952,10 @@ class TestL7Policy(base.BaseAPITest):
         self.assertIsNone(api_l7policy.pop('updated_at'))
         self.assertIsNotNone(response.pop('updated_at'))
         self.assertEqual(api_l7policy, response)
-        self.handler_mock().l7policy.delete.side_effect = Exception()
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
         self.delete(self.L7POLICY_PATH.format(
-            l7policy_id=api_l7policy.get('id')))
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            l7policy_id=api_l7policy.get('id'),
-            l7policy_prov_status=constants.ERROR)
+            l7policy_id=api_l7policy.get('id')), status=500)
 
     def test_create_when_lb_pending_update(self):
         self.create_l7policy(self.listener_id,

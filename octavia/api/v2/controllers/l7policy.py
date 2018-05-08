@@ -21,6 +21,9 @@ import pecan
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
+from octavia.api.drivers import data_models as driver_dm
+from octavia.api.drivers import driver_factory
+from octavia.api.drivers import utils as driver_utils
 from octavia.api.v2.controllers import base
 from octavia.api.v2.controllers import l7rule
 from octavia.api.v2.types import l7policy as l7policy_types
@@ -41,7 +44,6 @@ class L7PolicyController(base.BaseController):
 
     def __init__(self):
         super(L7PolicyController, self).__init__()
-        self.handler = self.handler.l7policy
 
     @wsme_pecan.wsexpose(l7policy_types.L7PolicyRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -119,26 +121,6 @@ class L7PolicyController(base.BaseController):
             # do not give any information as to what constraint failed
             raise exceptions.InvalidOption(value='', option='')
 
-    def _send_l7policy_to_handler(self, session, db_l7policy, lb_id):
-        try:
-            LOG.info("Sending Creation of L7Policy %s to handler",
-                     db_l7policy.id)
-            self.handler.create(db_l7policy)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_and_listener_statuses(
-                    lock_session, lb_id=lb_id,
-                    listener_id=db_l7policy.listener_id)
-                # L7Policy now goes to ERROR
-                self.repositories.l7policy.update(
-                    lock_session, db_l7policy.id,
-                    provisioning_status=constants.ERROR)
-        db_l7policy = self._get_db_l7policy(session, db_l7policy.id)
-        result = self._convert_db_to_type(db_l7policy,
-                                          l7policy_types.L7PolicyResponse)
-        return l7policy_types.L7PolicyRootResponse(l7policy=result)
-
     @wsme_pecan.wsexpose(l7policy_types.L7PolicyRootResponse,
                          body=l7policy_types.L7PolicyRootPOST, status_code=201)
     def post(self, l7policy_):
@@ -154,10 +136,14 @@ class L7PolicyController(base.BaseController):
         listener = self._get_db_listener(
             context.session, listener_id)
         load_balancer_id = listener.load_balancer_id
-        l7policy.project_id = listener.project_id
+        l7policy.project_id, provider = self._get_lb_project_id_provider(
+            context.session, load_balancer_id)
 
         self._auth_validate_action(context, l7policy.project_id,
                                    constants.RBAC_POST)
+
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
         lock_session = db_api.get_session(autocommit=False)
         try:
@@ -177,13 +163,26 @@ class L7PolicyController(base.BaseController):
                 listener_ids=[listener_id])
             db_l7policy = self._validate_create_l7policy(
                 lock_session, l7policy_dict)
+
+            # Prepare the data for the driver data model
+            provider_l7policy = (
+                driver_utils.db_l7policy_to_provider_l7policy(db_l7policy))
+
+            # Dispatch to the driver
+            LOG.info("Sending create L7 Policy %s to provider %s",
+                     db_l7policy.id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.l7policy_create, provider_l7policy)
+
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
 
-        return self._send_l7policy_to_handler(context.session, db_l7policy,
-                                              lb_id=load_balancer_id)
+        db_l7policy = self._get_db_l7policy(context.session, db_l7policy.id)
+        result = self._convert_db_to_type(db_l7policy,
+                                          l7policy_types.L7PolicyResponse)
+        return l7policy_types.L7PolicyRootResponse(l7policy=result)
 
     def _graph_create(self, lock_session, policy_dict):
         load_balancer_id = policy_dict.pop('load_balancer_id', None)
@@ -225,31 +224,42 @@ class L7PolicyController(base.BaseController):
                                             show_deleted=False)
         load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
             db_l7policy)
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, load_balancer_id)
 
-        self._auth_validate_action(context, db_l7policy.project_id,
-                                   constants.RBAC_PUT)
+        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
-        self._test_lb_and_listener_statuses(context.session,
-                                            lb_id=load_balancer_id,
-                                            listener_ids=[listener_id])
-        self.repositories.l7policy.update(
-            context.session, db_l7policy.id,
-            provisioning_status=constants.PENDING_UPDATE)
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
-        try:
-            LOG.info("Sending Update of L7Policy %s to handler", id)
-            self.handler.update(
-                db_l7policy, sanitized_l7policy)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_and_listener_statuses(
-                    lock_session, lb_id=load_balancer_id,
-                    listener_id=db_l7policy.listener_id)
-                # L7Policy now goes to ERROR
-                self.repositories.l7policy.update(
-                    lock_session, db_l7policy.id,
-                    provisioning_status=constants.ERROR)
+        with db_api.get_lock_session() as lock_session:
+
+            self._test_lb_and_listener_statuses(lock_session,
+                                                lb_id=load_balancer_id,
+                                                listener_ids=[listener_id])
+
+            # Prepare the data for the driver data model
+            l7policy_dict = sanitized_l7policy.to_dict(render_unsets=False)
+            l7policy_dict['id'] = id
+            provider_l7policy_dict = (
+                driver_utils.l7policy_dict_to_provider_dict(l7policy_dict))
+
+            # Dispatch to the driver
+            LOG.info("Sending update L7 Policy %s to provider %s",
+                     id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.l7policy_update,
+                driver_dm.L7Policy.from_dict(provider_l7policy_dict))
+
+            # Update the database to reflect what the driver just accepted
+            sanitized_l7policy.provisioning_status = constants.PENDING_UPDATE
+            db_l7policy_dict = sanitized_l7policy.to_dict(render_unsets=False)
+            self.repositories.l7policy.update(lock_session, id,
+                                              **db_l7policy_dict)
+
+        # Force SQL alchemy to query the DB, otherwise we get inconsistent
+        # results
+        context.session.expire_all()
         db_l7policy = self._get_db_l7policy(context.session, id)
         result = self._convert_db_to_type(db_l7policy,
                                           l7policy_types.L7PolicyResponse)
@@ -263,34 +273,29 @@ class L7PolicyController(base.BaseController):
                                             show_deleted=False)
         load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
             db_l7policy)
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, load_balancer_id)
 
-        self._auth_validate_action(context, db_l7policy.project_id,
-                                   constants.RBAC_DELETE)
+        self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
 
         if db_l7policy.provisioning_status == constants.DELETED:
             return
 
-        self._test_lb_and_listener_statuses(context.session,
-                                            lb_id=load_balancer_id,
-                                            listener_ids=[listener_id])
-        self.repositories.l7policy.update(
-            context.session, db_l7policy.id,
-            provisioning_status=constants.PENDING_DELETE)
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
-        try:
-            LOG.info("Sending Deletion of L7Policy %s to handler",
-                     db_l7policy.id)
-            self.handler.delete(db_l7policy)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_and_listener_statuses(
-                    lock_session, lb_id=load_balancer_id,
-                    listener_id=db_l7policy.listener_id)
-                # L7Policy now goes to ERROR
-                self.repositories.l7policy.update(
-                    lock_session, db_l7policy.id,
-                    provisioning_status=constants.ERROR)
+        with db_api.get_lock_session() as lock_session:
+
+            self._test_lb_and_listener_statuses(lock_session,
+                                                lb_id=load_balancer_id,
+                                                listener_ids=[listener_id])
+            self.repositories.l7policy.update(
+                lock_session, db_l7policy.id,
+                provisioning_status=constants.PENDING_DELETE)
+
+            LOG.info("Sending delete L7 Policy %s to provider %s",
+                     id, driver.name)
+            driver_utils.call_provider(driver.name, driver.l7policy_delete, id)
 
     @pecan.expose()
     def _lookup(self, l7policy_id, *remainder):
