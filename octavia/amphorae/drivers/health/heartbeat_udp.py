@@ -18,13 +18,33 @@ import time
 
 from oslo_config import cfg
 from oslo_log import log as logging
+from stevedore import driver as stevedore_driver
 
 from octavia.amphorae.backends.health_daemon import status_message
 from octavia.common import exceptions
 from octavia.db import repositories
 
 UDP_MAX_SIZE = 64 * 1024
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
+
+
+def update_health(obj):
+    handler = stevedore_driver.DriverManager(
+        namespace='octavia.amphora.health_update_drivers',
+        name=CONF.health_manager.health_update_driver,
+        invoke_on_load=True
+    ).driver
+    handler.update_health(obj)
+
+
+def update_stats(obj):
+    handler = stevedore_driver.DriverManager(
+        namespace='octavia.amphora.stats_update_drivers',
+        name=CONF.health_manager.stats_update_driver,
+        invoke_on_load=True
+    ).driver
+    handler.update_stats(obj)
 
 
 class UDPStatusGetter(object):
@@ -33,9 +53,7 @@ class UDPStatusGetter(object):
     The heartbeats are transmitted via UDP and this class will bind to a port
     and absorb them
     """
-    def __init__(self, health_update, stats_update):
-        self.stats_update = stats_update
-        self.health_update = health_update
+    def __init__(self):
         self.key = cfg.CONF.health_manager.heartbeat_key
         self.ip = cfg.CONF.health_manager.bind_ip
         self.port = cfg.CONF.health_manager.bind_port
@@ -45,7 +63,7 @@ class UDPStatusGetter(object):
         self.sock = None
         self.update(self.key, self.ip, self.port)
 
-        self.executor = futures.ThreadPoolExecutor(
+        self.executor = futures.ProcessPoolExecutor(
             max_workers=cfg.CONF.health_manager.status_update_threads)
         self.repo = repositories.Repositories().amphorahealth
 
@@ -172,11 +190,10 @@ class UDPStatusGetter(object):
 
     def check(self):
         try:
-            (obj, _) = self.dorecv()
-            if self.health_update:
-                self.executor.submit(self.health_update.update_health, obj)
-            if self.stats_update:
-                self.executor.submit(self.stats_update.update_stats, obj)
+            obj, srcaddr = self.dorecv()
         except exceptions.InvalidHMACException:
             # Pass here as the packet was dropped and logged already
             pass
+        else:
+            self.executor.submit(update_health, obj)
+            self.executor.submit(update_stats, obj)
