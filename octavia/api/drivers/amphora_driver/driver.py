@@ -232,7 +232,14 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         self.client.cast({}, 'delete_l7rule', **payload)
 
     def l7rule_update(self, l7rule):
-        pass
+        l7rule_dict = l7rule.to_dict()
+        if 'admin_state_up' in l7rule_dict:
+            l7rule_dict['enabled'] = l7rule_dict.pop('admin_state_up')
+        l7rule_id = l7rule_dict.pop('l7rule_id')
+
+        payload = {consts.L7RULE_ID: l7rule_id,
+                   consts.L7RULE_UPDATES: l7rule_dict}
+        self.client.cast({}, 'update_l7rule', **payload)
 
     # Flavor
     def get_supported_flavor_metadata(self):

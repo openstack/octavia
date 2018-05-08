@@ -82,6 +82,12 @@ class BaseController(rest.RestController):
                                 data_models.Listener, id,
                                 show_deleted=show_deleted)
 
+    def _get_listener_and_loadbalancer_id(self, db_l7policy):
+        """Get listener and loadbalancer ids from the l7policy db_model."""
+        load_balancer_id = db_l7policy.listener.load_balancer_id
+        listener_id = db_l7policy.listener_id
+        return load_balancer_id, listener_id
+
     def _get_db_pool(self, session, id, show_deleted=True):
         """Get a pool from the database."""
         return self._get_db_obj(session, self.repositories.pool,

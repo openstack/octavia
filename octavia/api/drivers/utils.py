@@ -341,9 +341,14 @@ def l7policy_dict_to_provider_dict(l7policy_dict):
 def db_l7rules_to_provider_l7rules(db_l7rules):
     provider_l7rules = []
     for l7rule in db_l7rules:
-        new_l7rule_dict = l7rule_dict_to_provider_dict(l7rule.to_dict())
-        provider_l7rules.append(driver_dm.L7Rule.from_dict(new_l7rule_dict))
+        provider_l7rule = db_l7rule_to_provider_l7rule(l7rule)
+        provider_l7rules.append(provider_l7rule)
     return provider_l7rules
+
+
+def db_l7rule_to_provider_l7rule(db_l7rule):
+    new_l7rule_dict = l7rule_dict_to_provider_dict(db_l7rule.to_dict())
+    return driver_dm.L7Rule.from_dict(new_l7rule_dict)
 
 
 def l7rule_dict_to_provider_dict(l7rule_dict):
