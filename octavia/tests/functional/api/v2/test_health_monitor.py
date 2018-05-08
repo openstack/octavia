@@ -21,6 +21,7 @@ from oslo_utils import uuidutils
 from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
+from octavia.common import exceptions
 from octavia.tests.functional.api.v2 import base
 
 
@@ -776,20 +777,21 @@ class TestHealthMonitor(base.BaseAPITest):
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=self.pool_id)
 
-    def test_create_with_bad_handler(self):
-        self.handler_mock().health_monitor.create.side_effect = Exception()
-        api_hm = self.create_health_monitor(
-            self.pool_with_listener_id,
-            constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1).get(self.root_tag)
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            pool_id=self.pool_with_listener_id,
-            hm_id=api_hm.get('id'),
-            lb_prov_status=constants.ACTIVE,
-            listener_prov_status=constants.ACTIVE,
-            pool_prov_status=constants.ACTIVE,
-            hm_prov_status=constants.ERROR,
-            hm_op_status=constants.OFFLINE)
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_create_with_bad_provider(self, mock_provider):
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        req_dict = {'pool_id': self.pool_id,
+                    'type': constants.HEALTH_MONITOR_HTTP,
+                    'delay': 1,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': 1,
+                    'url_path': '/foo'}
+        response = self.post(self.HMS_PATH, self._build_body(req_dict),
+                             status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.json.get('faultstring'))
 
     def test_duplicate_create(self):
         self.create_health_monitor(
@@ -901,19 +903,20 @@ class TestHealthMonitor(base.BaseAPITest):
         self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
                  self._build_body(new_hm), status=400)
 
-    def test_update_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_update_with_bad_provider(self, mock_provider):
         api_hm = self.create_health_monitor(
             self.pool_with_listener_id,
             constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         new_hm = {'max_retries': 2}
-        self.handler_mock().health_monitor.update.side_effect = Exception()
-        self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
-                 self._build_body(new_hm))
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            pool_id=self.pool_with_listener_id, hm_id=api_hm.get('id'),
-            hm_prov_status=constants.ERROR)
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        response = self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm), status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.json.get('faultstring'))
 
     def test_delete(self):
         api_hm = self.create_health_monitor(
@@ -1016,7 +1019,8 @@ class TestHealthMonitor(base.BaseAPITest):
             self.HM_PATH.format(healthmonitor_id=uuidutils.generate_uuid()),
             status=404)
 
-    def test_delete_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_delete_with_bad_provider(self, mock_provider):
         api_hm = self.create_health_monitor(
             self.pool_with_listener_id,
             constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1).get(self.root_tag)
@@ -1028,12 +1032,11 @@ class TestHealthMonitor(base.BaseAPITest):
         self.assertIsNone(api_hm.pop('updated_at'))
         self.assertIsNotNone(hm.pop('updated_at'))
         self.assertEqual(api_hm, hm)
-        self.handler_mock().health_monitor.delete.side_effect = Exception()
-        self.delete(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')))
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            pool_id=self.pool_with_listener_id, hm_id=api_hm.get('id'),
-            hm_prov_status=constants.ERROR)
+
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        self.delete(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+                    status=500)
 
     def test_create_when_lb_pending_update(self):
         self.put(self.LB_PATH.format(lb_id=self.lb_id),

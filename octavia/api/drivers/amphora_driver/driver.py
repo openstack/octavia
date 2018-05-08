@@ -188,7 +188,20 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         self.client.cast({}, 'delete_health_monitor', **payload)
 
     def health_monitor_update(self, healthmonitor):
-        pass
+        healthmon_dict = healthmonitor.to_dict()
+        if 'admin_state_up' in healthmon_dict:
+            healthmon_dict['enabled'] = healthmon_dict.pop('admin_state_up')
+        if 'max_retries_down' in healthmon_dict:
+            healthmon_dict['fall_threshold'] = healthmon_dict.pop(
+                'max_retries_down')
+        if 'max_retries' in healthmon_dict:
+            healthmon_dict['rise_threshold'] = healthmon_dict.pop(
+                'max_retries')
+        healthmon_id = healthmon_dict.pop('healthmonitor_id')
+
+        payload = {consts.HEALTH_MONITOR_ID: healthmon_id,
+                   consts.HEALTH_MONITOR_UPDATES: healthmon_dict}
+        self.client.cast({}, 'update_health_monitor', **payload)
 
     # L7 Policy
     def l7policy_create(self, l7policy):
