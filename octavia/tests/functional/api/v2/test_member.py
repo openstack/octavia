@@ -17,9 +17,12 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
+from octavia.api.drivers import data_models as driver_dm
+from octavia.api.drivers import utils as driver_utils
 from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
+from octavia.common import exceptions
 from octavia.network import base as network_base
 from octavia.tests.functional.api.v2 import base
 
@@ -430,21 +433,22 @@ class TestMember(base.BaseAPITest):
         member = {'name': 'test1'}
         self.post(self.members_path, self._build_body(member), status=400)
 
-    def test_create_with_bad_handler(self):
-        self.handler_mock().member.create.side_effect = Exception()
-        api_member = self.create_member(
-            self.pool_with_listener_id, '192.0.2.1', 80).get(self.root_tag)
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            pool_id=self.pool_with_listener_id,
-            member_id=api_member.get('id'),
-            lb_prov_status=constants.ACTIVE,
-            listener_prov_status=constants.ACTIVE,
-            pool_prov_status=constants.ACTIVE,
-            member_prov_status=constants.ERROR,
-            member_op_status=constants.NO_MONITOR)
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_create_with_bad_provider(self, mock_provider):
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        response = self.create_member(self.pool_id, '192.0.2.1', 80,
+                                      status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.get('faultstring'))
 
-    def test_full_batch_members(self):
+    @mock.patch('octavia.api.drivers.driver_factory.get_driver')
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_full_batch_members(self, mock_provider, mock_get_driver):
+        mock_driver = mock.MagicMock()
+        mock_driver.name = 'noop_driver'
+        mock_get_driver.return_value = mock_driver
+
         member1 = {'address': '192.0.2.1', 'protocol_port': 80}
         member2 = {'address': '192.0.2.2', 'protocol_port': 80}
         member3 = {'address': '192.0.2.3', 'protocol_port': 80}
@@ -455,6 +459,10 @@ class TestMember(base.BaseAPITest):
         for m in members:
             self.create_member(pool_id=self.pool_id, **m)
             self.set_lb_status(self.lb_id)
+
+        # We are only concerned about the batch update, so clear out the
+        # create members calls above.
+        mock_provider.reset_mock()
 
         req_dict = [member1, member2, member5, member6]
         body = {self.root_tag_list: req_dict}
@@ -474,28 +482,39 @@ class TestMember(base.BaseAPITest):
         ]
 
         member_ids = {}
+        provider_creates = []
+        provider_updates = []
         for rm in returned_members:
             self.assertIn(
                 (rm['address'],
                  rm['protocol_port'],
                  rm['provisioning_status']), expected_members)
             member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
-        handler_args = self.handler_mock().member.batch_update.call_args[0]
-        self.assertEqual(
-            [member_ids[('192.0.2.3', 80)], member_ids[('192.0.2.4', 80)]],
-            handler_args[0])
-        self.assertEqual(
-            [member_ids[('192.0.2.5', 80)], member_ids[('192.0.2.6', 80)]],
-            handler_args[1])
-        self.assertEqual(2, len(handler_args[2]))
-        updated_members = [
-            (handler_args[2][0].address, handler_args[2][0].protocol_port),
-            (handler_args[2][1].address, handler_args[2][1].protocol_port)
-        ]
-        self.assertEqual([('192.0.2.1', 80), ('192.0.2.2', 80)],
-                         updated_members)
 
-    def test_create_batch_members(self):
+            provider_dict = driver_utils.member_dict_to_provider_dict(rm)
+            # Adjust for API response
+            if rm['provisioning_status'] == 'PENDING_UPDATE':
+                del provider_dict['name']
+                del provider_dict['subnet_id']
+                provider_updates.append(driver_dm.Member(**provider_dict))
+            elif rm['provisioning_status'] == 'PENDING_CREATE':
+                provider_dict['pool_id'] = self.pool_id
+                provider_dict['name'] = None
+                provider_creates.append(driver_dm.Member(**provider_dict))
+        # Order matters here
+        provider_creates += provider_updates
+
+        mock_provider.assert_called_once_with(u'noop_driver',
+                                              mock_driver.member_batch_update,
+                                              provider_creates)
+
+    @mock.patch('octavia.api.drivers.driver_factory.get_driver')
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_create_batch_members(self, mock_provider, mock_get_driver):
+        mock_driver = mock.MagicMock()
+        mock_driver.name = 'noop_driver'
+        mock_get_driver.return_value = mock_driver
+
         member5 = {'address': '192.0.2.5', 'protocol_port': 80}
         member6 = {'address': '192.0.2.6', 'protocol_port': 80}
 
@@ -513,18 +532,23 @@ class TestMember(base.BaseAPITest):
         ]
 
         member_ids = {}
+        provider_members = []
         for rm in returned_members:
             self.assertIn(
                 (rm['address'],
                  rm['protocol_port'],
                  rm['provisioning_status']), expected_members)
             member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
-        handler_args = self.handler_mock().member.batch_update.call_args[0]
-        self.assertEqual(0, len(handler_args[0]))
-        self.assertEqual(
-            [member_ids[('192.0.2.5', 80)], member_ids[('192.0.2.6', 80)]],
-            handler_args[1])
-        self.assertEqual(0, len(handler_args[2]))
+
+            provider_dict = driver_utils.member_dict_to_provider_dict(rm)
+            # Adjust for API response
+            provider_dict['pool_id'] = self.pool_id
+            provider_dict['name'] = None
+            provider_members.append(driver_dm.Member(**provider_dict))
+
+        mock_provider.assert_called_once_with(u'noop_driver',
+                                              mock_driver.member_batch_update,
+                                              provider_members)
 
     def test_create_batch_members_with_bad_subnet(self):
         subnet_id = uuidutils.generate_uuid()
@@ -544,13 +568,23 @@ class TestMember(base.BaseAPITest):
             err_msg = 'Subnet ' + subnet_id + ' not found.'
             self.assertEqual(response.get('faultstring'), err_msg)
 
-    def test_update_batch_members(self):
+    @mock.patch('octavia.api.drivers.driver_factory.get_driver')
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_update_batch_members(self, mock_provider, mock_get_driver):
+        mock_driver = mock.MagicMock()
+        mock_driver.name = 'noop_driver'
+        mock_get_driver.return_value = mock_driver
+
         member1 = {'address': '192.0.2.1', 'protocol_port': 80}
         member2 = {'address': '192.0.2.2', 'protocol_port': 80}
         members = [member1, member2]
         for m in members:
             self.create_member(pool_id=self.pool_id, **m)
             self.set_lb_status(self.lb_id)
+
+        # We are only concerned about the batch update, so clear out the
+        # create members calls above.
+        mock_provider.reset_mock()
 
         req_dict = [member1, member2]
         body = {self.root_tag_list: req_dict}
@@ -566,30 +600,41 @@ class TestMember(base.BaseAPITest):
         ]
 
         member_ids = {}
+        provider_members = []
         for rm in returned_members:
             self.assertIn(
                 (rm['address'],
                  rm['protocol_port'],
                  rm['provisioning_status']), expected_members)
             member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
-        handler_args = self.handler_mock().member.batch_update.call_args[0]
-        self.assertEqual(0, len(handler_args[0]))
-        self.assertEqual(0, len(handler_args[1]))
-        self.assertEqual(2, len(handler_args[2]))
-        updated_members = [
-            (handler_args[2][0].address, handler_args[2][0].protocol_port),
-            (handler_args[2][1].address, handler_args[2][1].protocol_port)
-        ]
-        self.assertEqual([('192.0.2.1', 80), ('192.0.2.2', 80)],
-                         updated_members)
 
-    def test_delete_batch_members(self):
+            provider_dict = driver_utils.member_dict_to_provider_dict(rm)
+            # Adjust for API response
+            del provider_dict['name']
+            del provider_dict['subnet_id']
+            provider_members.append(driver_dm.Member(**provider_dict))
+
+        mock_provider.assert_called_once_with(u'noop_driver',
+                                              mock_driver.member_batch_update,
+                                              provider_members)
+
+    @mock.patch('octavia.api.drivers.driver_factory.get_driver')
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_delete_batch_members(self, mock_provider, mock_get_driver):
+        mock_driver = mock.MagicMock()
+        mock_driver.name = 'noop_driver'
+        mock_get_driver.return_value = mock_driver
+
         member3 = {'address': '192.0.2.3', 'protocol_port': 80}
         member4 = {'address': '192.0.2.4', 'protocol_port': 80}
         members = [member3, member4]
         for m in members:
             self.create_member(pool_id=self.pool_id, **m)
             self.set_lb_status(self.lb_id)
+
+        # We are only concerned about the batch update, so clear out the
+        # create members calls above.
+        mock_provider.reset_mock()
 
         req_dict = []
         body = {self.root_tag_list: req_dict}
@@ -605,18 +650,17 @@ class TestMember(base.BaseAPITest):
         ]
 
         member_ids = {}
+        provider_members = []
         for rm in returned_members:
             self.assertIn(
                 (rm['address'],
                  rm['protocol_port'],
                  rm['provisioning_status']), expected_members)
             member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
-        handler_args = self.handler_mock().member.batch_update.call_args[0]
-        self.assertEqual(
-            [member_ids[('192.0.2.3', 80)], member_ids[('192.0.2.4', 80)]],
-            handler_args[0])
-        self.assertEqual(0, len(handler_args[1]))
-        self.assertEqual(0, len(handler_args[2]))
+
+        mock_provider.assert_called_once_with(u'noop_driver',
+                                              mock_driver.member_batch_update,
+                                              provider_members)
 
     def test_create_with_attached_listener(self):
         api_member = self.create_member(
@@ -742,7 +786,7 @@ class TestMember(base.BaseAPITest):
             pool_prov_status=constants.PENDING_UPDATE,
             member_prov_status=constants.PENDING_UPDATE)
         self.set_lb_status(self.lb_id)
-        self.assertEqual(old_name, response.get('name'))
+        self.assertEqual(new_name, response.get('name'))
         self.assertEqual(api_member.get('created_at'),
                          response.get('created_at'))
         self.assert_correct_status(
@@ -794,7 +838,7 @@ class TestMember(base.BaseAPITest):
             pool_prov_status=constants.PENDING_UPDATE,
             member_prov_status=constants.PENDING_UPDATE)
         self.set_lb_status(self.lb_id)
-        self.assertEqual(old_name, response.get('name'))
+        self.assertEqual(new_name, response.get('name'))
         self.assertEqual(api_member.get('created_at'),
                          response.get('created_at'))
         self.assert_correct_status(
@@ -850,7 +894,7 @@ class TestMember(base.BaseAPITest):
             pool_prov_status=constants.PENDING_UPDATE,
             member_prov_status=constants.PENDING_UPDATE)
         self.set_lb_status(self.lb_id)
-        self.assertEqual(old_name, response.get('name'))
+        self.assertEqual(new_name, response.get('name'))
         self.assertEqual(api_member.get('created_at'),
                          response.get('created_at'))
         self.assert_correct_status(
@@ -864,19 +908,20 @@ class TestMember(base.BaseAPITest):
         self.put(self.member_path.format(member_id=api_member.get('id')),
                  self._build_body(new_member), status=400)
 
-    def test_update_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_update_with_bad_provider(self, mock_provider):
         api_member = self.create_member(
             self.pool_with_listener_id, '192.0.2.1', 80,
             name="member1").get(self.root_tag)
         self.set_lb_status(self.lb_id)
         new_member = {'name': "member2"}
-        self.handler_mock().member.update.side_effect = Exception()
-        self.put(self.member_path_listener.format(
-            member_id=api_member.get('id')), self._build_body(new_member))
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            pool_id=self.pool_with_listener_id, member_id=api_member.get('id'),
-            member_prov_status=constants.ERROR)
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        response = self.put(self.member_path_listener.format(
+            member_id=api_member.get('id')), self._build_body(new_member),
+            status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.json.get('faultstring'))
 
     def test_delete(self):
         api_member = self.create_member(
@@ -985,7 +1030,8 @@ class TestMember(base.BaseAPITest):
         self.delete(self.member_path.format(
             member_id=uuidutils.generate_uuid()), status=404)
 
-    def test_delete_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_delete_with_bad_provider(self, mock_provider):
         api_member = self.create_member(
             self.pool_with_listener_id, '192.0.2.1', 80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
@@ -996,16 +1042,11 @@ class TestMember(base.BaseAPITest):
         self.assertIsNone(api_member.pop('updated_at'))
         self.assertIsNotNone(member.pop('updated_at'))
         self.assertEqual(api_member, member)
-        self.handler_mock().member.delete.side_effect = Exception()
+
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
         self.delete(self.member_path_listener.format(
-            member_id=api_member.get('id')))
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            pool_id=self.pool_with_listener_id, member_id=member.get('id'),
-            lb_prov_status=constants.ACTIVE,
-            listener_prov_status=constants.ACTIVE,
-            pool_prov_status=constants.ACTIVE,
-            member_prov_status=constants.ERROR)
+            member_id=api_member.get('id')), status=500)
 
     def test_create_when_lb_pending_update(self):
         self.create_member(self.pool_id, address="192.0.2.2",

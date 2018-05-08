@@ -21,6 +21,9 @@ import pecan
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
+from octavia.api.drivers import data_models as driver_dm
+from octavia.api.drivers import driver_factory
+from octavia.api.drivers import utils as driver_utils
 from octavia.api.v2.controllers import base
 from octavia.api.v2.types import member as member_types
 from octavia.common import constants
@@ -40,7 +43,6 @@ class MemberController(base.BaseController):
     def __init__(self, pool_id):
         super(MemberController, self).__init__()
         self.pool_id = pool_id
-        self.handler = self.handler.member
 
     @wsme_pecan.wsexpose(member_types.MemberRootResponse, wtypes.text)
     def get(self, id):
@@ -140,24 +142,6 @@ class MemberController(base.BaseController):
             # do not give any information as to what constraint failed
             raise exceptions.InvalidOption(value='', option='')
 
-    def _send_member_to_handler(self, session, db_member):
-        try:
-            LOG.info("Sending Creation of Member %s to handler", db_member.id)
-            self.handler.create(db_member)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_listener_pool_statuses(
-                    lock_session, member=db_member)
-                # Member now goes to ERROR
-                self.repositories.member.update(
-                    lock_session, db_member.id,
-                    provisioning_status=constants.ERROR)
-        db_member = self._get_db_member(session, db_member.id)
-        result = self._convert_db_to_type(db_member,
-                                          member_types.MemberResponse)
-        return member_types.MemberRootResponse(member=result)
-
     @wsme_pecan.wsexpose(member_types.MemberRootResponse,
                          body=member_types.MemberRootPOST, status_code=201)
     def post(self, member_):
@@ -169,11 +153,14 @@ class MemberController(base.BaseController):
             raise exceptions.NotFound(resource='Subnet',
                                       id=member.subnet_id)
         pool = self.repositories.pool.get(context.session, id=self.pool_id)
-        member.project_id = self._get_lb_project_id(context.session,
-                                                    pool.load_balancer_id)
+        member.project_id, provider = self._get_lb_project_id_provider(
+            context.session, pool.load_balancer_id)
 
         self._auth_validate_action(context, member.project_id,
                                    constants.RBAC_POST)
+
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
         lock_session = db_api.get_session(autocommit=False)
         try:
@@ -190,12 +177,26 @@ class MemberController(base.BaseController):
             self._test_lb_and_listener_and_pool_statuses(lock_session)
 
             db_member = self._validate_create_member(lock_session, member_dict)
+
+            # Prepare the data for the driver data model
+            provider_member = (
+                driver_utils.db_member_to_provider_member(db_member))
+
+            # Dispatch to the driver
+            LOG.info("Sending create Member %s to provider %s",
+                     db_member.id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.member_create, provider_member)
+
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
 
-        return self._send_member_to_handler(context.session, db_member)
+        db_member = self._get_db_member(context.session, db_member.id)
+        result = self._convert_db_to_type(db_member,
+                                          member_types.MemberResponse)
+        return member_types.MemberRootResponse(member=result)
 
     def _graph_create(self, lock_session, member_dict):
         pool = self.repositories.pool.get(lock_session, id=self.pool_id)
@@ -215,27 +216,41 @@ class MemberController(base.BaseController):
         db_member = self._get_db_member(context.session, id,
                                         show_deleted=False)
 
-        self._auth_validate_action(context, db_member.project_id,
-                                   constants.RBAC_PUT)
+        pool = self.repositories.pool.get(context.session,
+                                          id=db_member.pool_id)
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, pool.load_balancer_id)
 
-        self._test_lb_and_listener_and_pool_statuses(context.session,
-                                                     member=db_member)
-        self.repositories.member.update(
-            context.session, db_member.id,
-            provisioning_status=constants.PENDING_UPDATE)
+        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
-        try:
-            LOG.info("Sending Update of Member %s to handler", id)
-            self.handler.update(db_member, member)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_listener_pool_statuses(
-                    lock_session, member=db_member)
-                # Member now goes to ERROR
-                self.repositories.member.update(
-                    lock_session, db_member.id,
-                    provisioning_status=constants.ERROR)
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
+
+        with db_api.get_lock_session() as lock_session:
+            self._test_lb_and_listener_and_pool_statuses(lock_session,
+                                                         member=db_member)
+
+            # Prepare the data for the driver data model
+            member_dict = member.to_dict(render_unsets=False)
+            member_dict['id'] = id
+            provider_member_dict = (
+                driver_utils.member_dict_to_provider_dict(member_dict))
+
+            # Dispatch to the driver
+            LOG.info("Sending update Member %s to provider %s", id,
+                     driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.member_update,
+                driver_dm.Member.from_dict(provider_member_dict))
+
+            # Update the database to reflect what the driver just accepted
+            member.provisioning_status = constants.PENDING_UPDATE
+            db_member_dict = member.to_dict(render_unsets=False)
+            self.repositories.member.update(lock_session, id, **db_member_dict)
+
+        # Force SQL alchemy to query the DB, otherwise we get inconsistent
+        # results
+        context.session.expire_all()
         db_member = self._get_db_member(context.session, id)
         result = self._convert_db_to_type(db_member,
                                           member_types.MemberResponse)
@@ -248,27 +263,26 @@ class MemberController(base.BaseController):
         db_member = self._get_db_member(context.session, id,
                                         show_deleted=False)
 
-        self._auth_validate_action(context, db_member.project_id,
-                                   constants.RBAC_DELETE)
+        pool = self.repositories.pool.get(context.session,
+                                          id=db_member.pool_id)
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, pool.load_balancer_id)
 
-        self._test_lb_and_listener_and_pool_statuses(context.session,
-                                                     member=db_member)
-        self.repositories.member.update(
-            context.session, db_member.id,
-            provisioning_status=constants.PENDING_DELETE)
+        self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
 
-        try:
-            LOG.info("Sending Deletion of Member %s to handler", db_member.id)
-            self.handler.delete(db_member)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_listener_pool_statuses(
-                    lock_session, member=db_member)
-                # Member now goes to ERROR
-                self.repositories.member.update(
-                    lock_session, db_member.id,
-                    provisioning_status=constants.ERROR)
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
+
+        with db_api.get_lock_session() as lock_session:
+            self._test_lb_and_listener_and_pool_statuses(lock_session,
+                                                         member=db_member)
+            self.repositories.member.update(
+                lock_session, db_member.id,
+                provisioning_status=constants.PENDING_DELETE)
+
+            LOG.info("Sending delete Member %s to provider %s", id,
+                     driver.name)
+            driver_utils.call_provider(driver.name, driver.member_delete, id)
 
 
 class MembersController(MemberController):
@@ -286,13 +300,13 @@ class MembersController(MemberController):
         db_pool = self._get_db_pool(context.session, self.pool_id)
         old_members = db_pool.members
 
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, db_pool.load_balancer_id)
+
         # Check POST+PUT+DELETE since this operation is all of 'CUD'
-        self._auth_validate_action(context, db_pool.project_id,
-                                   constants.RBAC_POST)
-        self._auth_validate_action(context, db_pool.project_id,
-                                   constants.RBAC_PUT)
-        self._auth_validate_action(context, db_pool.project_id,
-                                   constants.RBAC_DELETE)
+        self._auth_validate_action(context, project_id, constants.RBAC_POST)
+        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
+        self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
 
         # Validate member subnets
         for member in members:
@@ -300,6 +314,9 @@ class MembersController(MemberController):
                     member.subnet_id):
                 raise exceptions.NotFound(resource='Subnet',
                                           id=member.subnet_id)
+
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
         with db_api.get_lock_session() as lock_session:
             self._test_lb_and_listener_and_pool_statuses(lock_session)
@@ -331,25 +348,30 @@ class MembersController(MemberController):
                 if (m.ip_address, m.protocol_port) not in new_member_uniques:
                     deleted_members.append(m)
 
+            provider_members = []
             # Create new members
-            new_members_created = []
             for m in new_members:
                 m = m.to_dict(render_unsets=False)
                 m['project_id'] = db_pool.project_id
-                new_members_created.append(self._graph_create(lock_session, m))
+                created_member = self._graph_create(lock_session, m)
+                provider_member = driver_utils.db_member_to_provider_member(
+                    created_member)
+                provider_members.append(provider_member)
             # Update old members
             for m in updated_members:
                 self.repositories.member.update(
                     lock_session, m.id,
                     provisioning_status=constants.PENDING_UPDATE)
+                provider_members.append(
+                    driver_utils.db_member_to_provider_member(m))
             # Delete old members
             for m in deleted_members:
                 self.repositories.member.update(
                     lock_session, m.id,
                     provisioning_status=constants.PENDING_DELETE)
 
-            LOG.info("Sending Full Member Update to handler")
-            new_member_ids = [m.id for m in new_members_created]
-            old_member_ids = [m.id for m in deleted_members]
-            self.handler.batch_update(
-                old_member_ids, new_member_ids, updated_members)
+            # Dispatch to the driver
+            LOG.info("Sending Pool %s batch member update to provider %s",
+                     db_pool.id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.member_batch_update, provider_members)

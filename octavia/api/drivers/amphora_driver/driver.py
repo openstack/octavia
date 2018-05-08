@@ -22,6 +22,8 @@ from octavia.api.drivers import utils as driver_utils
 from octavia.common import constants as consts
 from octavia.common import data_models
 from octavia.common import utils
+from octavia.db import api as db_apis
+from octavia.db import repositories
 from octavia.network import base as network_base
 
 CONF = cfg.CONF
@@ -38,6 +40,7 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             namespace=consts.RPC_NAMESPACE_CONTROLLER_AGENT,
             topic=topic, version="1.0", fanout=False)
         self.client = messaging.RPCClient(self.transport, target=self.target)
+        self.repositories = repositories.Repositories()
 
     # Load Balancer
     def create_vip_port(self, loadbalancer_id, project_id, vip_dictionary):
@@ -128,10 +131,52 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         self.client.cast({}, 'delete_member', **payload)
 
     def member_update(self, member):
-        pass
+        member_dict = member.to_dict()
+        if 'admin_state_up' in member_dict:
+            member_dict['enabled'] = member_dict.pop('admin_state_up')
+        member_id = member_dict.pop('member_id')
+
+        payload = {consts.MEMBER_ID: member_id,
+                   consts.MEMBER_UPDATES: member_dict}
+        self.client.cast({}, 'update_member', **payload)
 
     def member_batch_update(self, members):
-        pass
+        # Get a list of existing members
+        pool_id = members[0].pool_id
+        db_pool = self.repositories.pool.get(db_apis.get_session(), id=pool_id)
+        old_members = db_pool.members
+
+        old_member_uniques = {
+            (m.ip_address, m.protocol_port): m.id for m in old_members}
+        new_member_uniques = [
+            (m.address, m.protocol_port) for m in members]
+
+        # Find members that are brand new or updated
+        new_members = []
+        updated_members = []
+        for m in members:
+            if (m.address, m.protocol_port) not in old_member_uniques:
+                new_members.append(m)
+            else:
+                m.id = old_member_uniques[(m.address, m.protocol_port)]
+                member_dict = m.to_dict(render_unsets=False)
+                member_dict['id'] = member_dict.pop('member_id')
+                if 'address' in member_dict:
+                    member_dict['ip_address'] = member_dict.pop('address')
+                if 'admin_state_up' in member_dict:
+                    member_dict['enabled'] = member_dict.pop('admin_state_up')
+                updated_members.append(member_dict)
+
+        # Find members that are deleted
+        deleted_members = []
+        for m in old_members:
+            if (m.ip_address, m.protocol_port) not in new_member_uniques:
+                deleted_members.append(m)
+
+        payload = {'old_member_ids': [m.id for m in deleted_members],
+                   'new_member_ids': [m.member_id for m in new_members],
+                   'updated_members': updated_members}
+        self.client.cast({}, 'batch_update_members', **payload)
 
     # Health Monitor
     def health_monitor_create(self, healthmonitor):
