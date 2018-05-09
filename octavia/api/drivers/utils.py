@@ -52,7 +52,7 @@ def call_provider(provider, driver_method, *args, **kwargs):
                       provider, e.operator_fault_string)
         raise exceptions.ProviderDriverError(prov=provider,
                                              user_msg=e.user_fault_string)
-    except driver_exceptions.NotImplementedError as e:
+    except (driver_exceptions.NotImplementedError, NotImplementedError) as e:
         LOG.info("Provider '%s' raised a not implemented error: %s",
                  provider, e.operator_fault_string)
         raise exceptions.ProviderNotImplementedError(
@@ -126,7 +126,7 @@ def db_listener_to_provider_listener(db_listener):
         provider_pool = db_pool_to_provider_pool(db_listener.default_pool)
         new_listener_dict['default_pool_id'] = provider_pool.pool_id
         new_listener_dict['default_pool'] = provider_pool
-    if 'l7policies' in new_listener_dict:
+    if new_listener_dict.get('l7policies', None):
         new_listener_dict['l7policies'] = (
             db_l7policies_to_provider_l7policies(db_listener.l7policies))
     provider_listener = driver_dm.Listener.from_dict(new_listener_dict)
@@ -154,16 +154,15 @@ def listener_dict_to_provider_dict(listener_dict):
     if listener_obj.tls_certificate_id or listener_obj.sni_containers:
         SNI_objs = []
         for sni in listener_obj.sni_containers:
-            if isinstance(sni, data_models.SNI):
-                SNI_objs.append(sni)
-            elif isinstance(sni, dict):
+            if isinstance(sni, dict):
                 sni_obj = data_models.SNI(**sni)
                 SNI_objs.append(sni_obj)
             elif isinstance(sni, six.string_types):
                 sni_obj = data_models.SNI(tls_container_id=sni)
                 SNI_objs.append(sni_obj)
             else:
-                raise Exception(_('Invalid SNI container on listener'))
+                raise exceptions.ValidationException(
+                    detail=_('Invalid SNI container on listener'))
         listener_obj.sni_containers = SNI_objs
         cert_manager = stevedore_driver.DriverManager(
             namespace='octavia.cert_manager',
@@ -221,7 +220,7 @@ def db_pool_to_provider_pool(db_pool):
         provider_healthmonitor = db_HM_to_provider_HM(db_pool.health_monitor)
         new_pool_dict['healthmonitor'] = provider_healthmonitor
     # Don't leave a 'members' None here, we want it to pass through to Unset
-    if 'members' in new_pool_dict:
+    if new_pool_dict.get('members', None):
         del new_pool_dict['members']
     if db_pool.members:
         provider_members = db_members_to_provider_members(db_pool.members)

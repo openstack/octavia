@@ -50,7 +50,6 @@ class LoadBalancersController(base.BaseController):
 
     def __init__(self):
         super(LoadBalancersController, self).__init__()
-        self.handler = self.handler.load_balancer
 
     @wsme_pecan.wsexpose(lb_types.LoadBalancerRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)

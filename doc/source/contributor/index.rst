@@ -29,6 +29,12 @@ Internal APIs
 
    api/*
 
+.. Note:: The documents listed below are design documents and specifications
+          created and approved at a previous point in time. The code base and
+          current functionality may deviate from these original documents.
+          Please see the Octavia documentation for the current feature
+          details.
+
 Design Documentation
 --------------------
 

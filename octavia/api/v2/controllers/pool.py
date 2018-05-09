@@ -47,7 +47,6 @@ class PoolsController(base.BaseController):
 
     def __init__(self):
         super(PoolsController, self).__init__()
-        self.handler = self.handler.pool
 
     @wsme_pecan.wsexpose(pool_types.PoolRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)

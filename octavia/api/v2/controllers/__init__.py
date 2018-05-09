@@ -22,6 +22,7 @@ from octavia.api.v2.controllers import l7policy
 from octavia.api.v2.controllers import listener
 from octavia.api.v2.controllers import load_balancer
 from octavia.api.v2.controllers import pool
+from octavia.api.v2.controllers import provider
 from octavia.api.v2.controllers import quotas
 
 
@@ -41,6 +42,7 @@ class BaseV2Controller(base.BaseController):
         self.l7policies = l7policy.L7PolicyController()
         self.healthmonitors = health_monitor.HealthMonitorController()
         self.quotas = quotas.QuotasController()
+        self.providers = provider.ProviderController()
 
     @wsme_pecan.wsexpose(wtypes.text)
     def get(self):

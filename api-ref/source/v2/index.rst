@@ -51,6 +51,11 @@ Quotas
 ------
 .. include:: quota.inc
 
+---------
+Providers
+---------
+.. include:: provider.inc
+
 --------
 Amphorae
 --------

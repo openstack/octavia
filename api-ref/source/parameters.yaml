@@ -862,6 +862,18 @@ provider:
   in: body
   required: true
   type: string
+provider-description:
+  description: |
+    Provider description.
+  in: body
+  required: true
+  type: string
+provider-name:
+  description: |
+    Provider name.
+  in: body
+  required: true
+  type: string
 provider-optional:
   description: |
     Provider name for the load balancer. Default is ``octavia``.

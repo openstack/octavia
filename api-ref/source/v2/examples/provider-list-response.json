@@ -1,0 +1,12 @@
+{
+    "providers": [
+        {
+            "name": "amphora",
+            "description": "The Octavia Amphora driver."
+        },
+        {
+            "name": "octavia",
+            "description": "Deprecated alias of the Octavia Amphora driver."
+        }
+    ]
+}

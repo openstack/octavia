@@ -16,6 +16,7 @@
 import logging
 
 from oslo_config import cfg
+import oslo_messaging as messaging
 from oslo_utils import excutils
 import pecan
 from wsme import types as wtypes
@@ -35,7 +36,6 @@ class AmphoraController(base.BaseController):
 
     def __init__(self):
         super(AmphoraController, self).__init__()
-        self.handler = self.handler.amphora
 
     @wsme_pecan.wsexpose(amp_types.AmphoraRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -92,7 +92,12 @@ class FailoverController(base.BaseController):
 
     def __init__(self, amp_id):
         super(FailoverController, self).__init__()
-        self.handler = self.handler.amphora
+        topic = cfg.CONF.oslo_messaging.topic
+        self.transport = messaging.get_rpc_transport(cfg.CONF)
+        self.target = messaging.Target(
+            namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
+            topic=topic, version="1.0", fanout=False)
+        self.client = messaging.RPCClient(self.transport, target=self.target)
         self.amp_id = amp_id
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
@@ -117,9 +122,10 @@ class FailoverController(base.BaseController):
                 context, context.project_id, constants.RBAC_PUT_FAILOVER)
 
         try:
-            LOG.info("Sending failover request for amphora %s to the handler",
+            LOG.info("Sending failover request for amphora %s to the queue",
                      self.amp_id)
-            self.handler.failover(db_amp)
+            payload = {constants.AMPHORA_ID: db_amp.id}
+            self.client.cast({}, 'failover_amphora', **payload)
         except Exception:
             with excutils.save_and_reraise_exception(reraise=False):
                 self.repositories.load_balancer.update(

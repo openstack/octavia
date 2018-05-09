@@ -487,6 +487,7 @@ RBAC_L7POLICY = '{}:l7policy:'.format(LOADBALANCER_API)
 RBAC_L7RULE = '{}:l7rule:'.format(LOADBALANCER_API)
 RBAC_QUOTA = '{}:quota:'.format(LOADBALANCER_API)
 RBAC_AMPHORA = '{}:amphora:'.format(LOADBALANCER_API)
+RBAC_PROVIDER = '{}:provider:'.format(LOADBALANCER_API)
 RBAC_POST = 'post'
 RBAC_PUT = 'put'
 RBAC_PUT_FAILOVER = 'put_failover'

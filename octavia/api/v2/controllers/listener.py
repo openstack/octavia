@@ -46,7 +46,6 @@ class ListenersController(base.BaseController):
 
     def __init__(self):
         super(ListenersController, self).__init__()
-        self.handler = self.handler.listener
         self.cert_manager = stevedore_driver.DriverManager(
             namespace='octavia.cert_manager',
             name=CONF.certificates.cert_manager,
