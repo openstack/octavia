@@ -262,10 +262,12 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
             members = pool['members']
             for db_member in db_pool.members:
                 member_status = None
+                member_db_status = db_member.operating_status
                 member_id = db_member.id
 
                 if member_id not in members:
-                    member_status = constants.OFFLINE
+                    if member_db_status != constants.NO_MONITOR:
+                        member_status = constants.OFFLINE
                 else:
                     status = members[member_id]
 

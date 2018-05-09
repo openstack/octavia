@@ -74,8 +74,8 @@ class TestUpdateHealthDb(base.TestCase):
         self.hm.member_repo = self.member_repo
         self.hm.pool_repo = self.pool_repo
 
-    def _make_mock_lb_tree(self, listener=True, pool=True, members=1,
-                           lb_prov_status=constants.ACTIVE):
+    def _make_mock_lb_tree(self, listener=True, pool=True, health_monitor=True,
+                           members=1, lb_prov_status=constants.ACTIVE):
         mock_lb = mock.Mock()
         mock_lb.id = self.FAKE_UUID_1
         mock_lb.pools = []
@@ -102,6 +102,10 @@ class TestUpdateHealthDb(base.TestCase):
             for i in range(members):
                 mock_member_x = mock.Mock()
                 mock_member_x.id = 'member-id-%s' % (i + 1)
+                if health_monitor:
+                    mock_member_x.operating_status = 'NOTHING_MATCHABLE'
+                else:
+                    mock_member_x.operating_status = constants.NO_MONITOR
                 mock_pool1.members.append(mock_member_x)
             mock_members = mock_pool1.members
 
@@ -586,6 +590,44 @@ class TestUpdateHealthDb(base.TestCase):
                     self.member_repo.update.assert_any_call(
                         self.session_mock, member_id,
                         operating_status=constants.ERROR)
+
+    def test_update_health_member_missing_no_hm(self):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {"status": constants.OPEN, "pools": {
+                    "pool-id-1": {"status": constants.UP,
+                                  "members": {}
+                                  }
+                }
+                }
+            },
+            "recv_time": time.time()
+        }
+
+        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+            self._make_mock_lb_tree(health_monitor=False))
+        self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # test listener, member
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
+
+            self.listener_repo.update.assert_any_call(
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
+
+            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+
+                self.hm.pool_repo.update.assert_any_call(
+                    self.session_mock, pool_id,
+                    operating_status=constants.ONLINE)
+
+                self.member_repo.update.assert_not_called()
 
     def test_update_health_member_no_check(self):
 
