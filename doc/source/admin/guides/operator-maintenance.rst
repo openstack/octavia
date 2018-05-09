@@ -52,6 +52,28 @@ streamed to the Octavia database and made available via the status
 tree or other API methods. For critical applications we recommend to
 poll this information in regular intervals.
 
+Monitoring Load Balancers
+-------------------------
+
+For critical applications, we recommend to monitor the access to the
+application with a tool which polls the application from various points
+on the Internet and measures response times. Alerts should be triggered
+when repsonse times become too high.
+
+An additional check might be to monitor the provisioning status of a
+load balancer (see
+https://developer.openstack.org/api-ref/load-balancer/v2/#status-codes)
+and alert depending on the application if the provisioning status is
+not ACTIVE. For some applications other states might not lead to alerts:
+For instance if an application is making regular changes to the pool
+several PENDING stages should not alert as well.
+
+In most cases, when a load balancer is in states other than ACTIVE it
+will still be passing traffic, which is why the response time check
+mentioned above is recommended. However, even if the load balancer
+is still functioning, it is advisable to investigate and potentially
+recreate it if it is stuck in a non-ACTIVE state.
+
 Monitoring load balancer functionality
 --------------------------------------
 
@@ -384,3 +406,21 @@ during routine maintenance but only when a compromise is strongly suspected.
    will allow this key to be changed without failover. At that time there would
    be a procedure to halt health monitoring while the keys are rotated and then
    resume health monitoring.
+
+Handling a VM Node Failure
+--------------------------
+
+If a node fails which is running amphora, Octavia will automatically failover
+the amphora to a different node (capacity permitting). In some cases, the
+node can be recovered (e.g. through a hard reset) and the hypervisor might
+bring back the amphora vms. In this case, an operator should manually delete
+all amphora on this specific node since Octavia assumes they have been
+deleted as part of the failover and will not touch them again.
+
+.. note::
+    As a safety measure an operator can, prior to deleting, manually check if
+    the VM is in use. First, use the Amphora API to obtain the current list of
+    amphorae, then match the nova instance ID to the compute_id column in the
+    amphora API response (it is not currently possible to filter amphora by
+    compute_id). If there are any matches where the amphora status is not
+    'DELETED', the amphora is still considered to be in use.
