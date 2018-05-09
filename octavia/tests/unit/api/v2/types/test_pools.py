@@ -86,6 +86,22 @@ class TestPoolPOST(base.BaseTypesTest):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
+    def test_too_long_name(self):
+        body = {"name": "n" * 256,
+                "loadbalancer_id": uuidutils.generate_uuid(),
+                "protocol": constants.PROTOCOL_HTTP,
+                "lb_algorithm": constants.LB_ALGORITHM_ROUND_ROBIN}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_too_long_description(self):
+        body = {"description": "d" * 256,
+                "loadbalancer_id": uuidutils.generate_uuid(),
+                "protocol": constants.PROTOCOL_HTTP,
+                "lb_algorithm": constants.LB_ALGORITHM_ROUND_ROBIN}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
     def test_invalid_load_balacer_id(self):
         body = {"loadbalancer_id": 10,
                 "protocol": constants.PROTOCOL_HTTP,
@@ -127,6 +143,16 @@ class TestPoolPUT(base.BaseTypesTest):
 
     def test_invalid_name(self):
         body = {"name": 10}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_too_long_name(self):
+        body = {"name": "n" * 256}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_too_long_description(self):
+        body = {"description": "d" * 256}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
