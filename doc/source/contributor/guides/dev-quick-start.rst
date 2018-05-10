@@ -483,9 +483,9 @@ Example:
 
 ::
 
-    # neutron lbaas-loadbalancer-create --name lb1 private-subnet
-    # neutron lbaas-loadbalancer-show lb1  # Keep re-running this command until this shows a provisioning status of 'ACTIVE'
-    # neutron lbaas-listener-create --name listener1 --loadbalancer lb1 --protocol HTTP --protocol-port 80
+    # openstack loadbalancer create --name lb1 --vip-subnet-id private-subnet
+    # openstack loadbalancer show lb1
+    # openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
 
 Upon executing the above, log files should indicate that an amphora is deployed
 to house the load balancer, and that this load balancer is further modified to
