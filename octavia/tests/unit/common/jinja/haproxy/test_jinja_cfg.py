@@ -234,6 +234,23 @@ class TestHaproxyCfg(base.TestCase):
         self.assertEqual(sample_configs.sample_base_expected_config(
             backend=be), rendered_obj)
 
+    def test_render_template_disabled_member(self):
+        be = ("backend sample_pool_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    fullconn 1000000\n"
+              "    server sample_member_id_1 10.0.0.99:82 weight 13 "
+              "cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 weight 13 "
+              "cookie sample_member_id_2 disabled\n\n")
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
+            sample_configs.sample_listener_tuple(proto='HTTP', monitor=False,
+                                                 disabled_member=True))
+        self.assertEqual(sample_configs.sample_base_expected_config(
+            backend=be), rendered_obj)
+
     def test_render_template_ping_monitor_http(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
