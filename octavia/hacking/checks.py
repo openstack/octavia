@@ -82,7 +82,8 @@ def assert_true_instance(logical_line):
     O316
     """
     if assert_trueinst_re.match(logical_line):
-        yield (0, "O316: assertTrue(isinstance(a, b)) sentences not allowed")
+        yield (0, "O316: assertTrue(isinstance(a, b)) sentences not allowed. "
+               "Use assertIsInstance instead.")
 
 
 def assert_equal_or_not_none(logical_line):
