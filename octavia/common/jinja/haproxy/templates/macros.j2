@@ -184,9 +184,15 @@ frontend {{ listener.id }}
     {% else %}
         {% set member_backup_opt = "" %}
     {% endif %}
-    {{ "server %s %s:%d weight %s%s%s%s%s"|e|format(
+    {% if member.enabled %}
+        {% set member_enabled_opt = "" %}
+    {% else %}
+        {% set member_enabled_opt = " disabled" %}
+    {% endif %}
+    {{ "server %s %s:%d weight %s%s%s%s%s%s"|e|format(
         member.id, member.address, member.protocol_port, member.weight,
-        hm_opt, persistence_opt, proxy_protocol_opt, member_backup_opt)|trim() }}
+        hm_opt, persistence_opt, proxy_protocol_opt, member_backup_opt,
+        member_enabled_opt)|trim() }}
 {% endmacro %}
 
 
@@ -257,7 +263,7 @@ backend {{ pool.id }}
     option allbackups
     timeout connect {{ listener.timeout_member_connect }}
     timeout server {{ listener.timeout_member_data }}
-    {% for member in pool.members if member.enabled %}
+    {% for member in pool.members %}
         {{- member_macro(constants, pool, member) -}}
     {% endfor %}
 {% endmacro %}

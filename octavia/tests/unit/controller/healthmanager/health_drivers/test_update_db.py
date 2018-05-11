@@ -96,6 +96,11 @@ class TestUpdateHealthDb(base.TestCase):
             mock_pool1 = mock.Mock()
             mock_pool1.id = "pool-id-1"
             mock_pool1.members = []
+            if health_monitor:
+                mock_hm1 = mock.Mock()
+                mock_pool1.health_monitor = mock_hm1
+            else:
+                mock_pool1.health_monitor = None
             mock_lb.pools = [mock_pool1]
             if mock_listener1:
                 mock_listener1.pools = [mock_pool1]
@@ -125,7 +130,7 @@ class TestUpdateHealthDb(base.TestCase):
             "recv_time": time.time()
         }
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
 
@@ -243,7 +248,7 @@ class TestUpdateHealthDb(base.TestCase):
             "recv_time": time.time()
         }
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
@@ -289,7 +294,7 @@ class TestUpdateHealthDb(base.TestCase):
             "recv_time": time.time()
         }
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
 
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
@@ -324,7 +329,7 @@ class TestUpdateHealthDb(base.TestCase):
             "recv_time": time.time()
         }
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
 
         mock_member2 = mock.Mock()
@@ -416,7 +421,7 @@ class TestUpdateHealthDb(base.TestCase):
             "recv_time": time.time()
         }
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
@@ -447,7 +452,7 @@ class TestUpdateHealthDb(base.TestCase):
                             "members": {"member-id-1": constants.DRAIN}}}}},
             "recv_time": time.time()}
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
@@ -487,7 +492,7 @@ class TestUpdateHealthDb(base.TestCase):
                             "members": {"member-id-1": constants.MAINT}}}}},
             "recv_time": time.time()}
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
@@ -527,7 +532,7 @@ class TestUpdateHealthDb(base.TestCase):
                             "members": {"member-id-1": "blah"}}}}},
             "recv_time": time.time()}
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
@@ -563,7 +568,7 @@ class TestUpdateHealthDb(base.TestCase):
             "recv_time": time.time()
         }
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
 
@@ -606,7 +611,7 @@ class TestUpdateHealthDb(base.TestCase):
             "recv_time": time.time()
         }
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree(health_monitor=False))
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
 
@@ -629,6 +634,48 @@ class TestUpdateHealthDb(base.TestCase):
 
                 self.member_repo.update.assert_not_called()
 
+    def test_update_health_member_down_no_hm(self):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {"status": constants.OPEN, "pools": {
+                    "pool-id-1": {"status": constants.UP,
+                                  "members": {"member-id-1": constants.MAINT}
+                                  }
+                }
+                }
+            },
+            "recv_time": time.time()
+        }
+
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
+            self._make_mock_lb_tree(health_monitor=False))
+        mock_members[0].admin_state_up = False
+        mock_members[0].operating_status = constants.NO_MONITOR
+        self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
+
+        self.hm.update_health(health)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # test listener, member
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
+
+            self.listener_repo.update.assert_any_call(
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
+
+            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+
+                self.hm.pool_repo.update.assert_any_call(
+                    self.session_mock, pool_id,
+                    operating_status=constants.ONLINE)
+
+                self.member_repo.update.assert_any_call(
+                    self.session_mock, mock_members[0].id,
+                    operating_status=constants.OFFLINE)
+
     def test_update_health_member_no_check(self):
 
         health = {
@@ -645,7 +692,7 @@ class TestUpdateHealthDb(base.TestCase):
             "recv_time": time.time()
         }
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
@@ -731,7 +778,7 @@ class TestUpdateHealthDb(base.TestCase):
             "recv_time": time.time()
         }
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
         self.hm.update_health(health)
@@ -782,7 +829,7 @@ class TestUpdateHealthDb(base.TestCase):
             "recv_time": time.time()
         }
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
 
@@ -924,7 +971,7 @@ class TestUpdateHealthDb(base.TestCase):
         self.hm.loadbalancer_repo.update.side_effect = (
             [sqlalchemy.orm.exc.NoResultFound])
 
-        mock_lb, mock_listener1, mock_pool1, mock_member1 = (
+        mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
         self.amphora_repo.get_all_lbs_on_amphora.return_value = [mock_lb]
 
