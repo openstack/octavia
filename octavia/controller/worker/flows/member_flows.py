@@ -51,12 +51,12 @@ class MemberFlows(object):
             requires=(constants.LOADBALANCER, constants.LISTENERS)))
         create_member_flow.add(database_tasks.MarkMemberActiveInDB(
             requires=constants.MEMBER))
+        create_member_flow.add(database_tasks.MarkPoolActiveInDB(
+            requires=constants.POOL))
         create_member_flow.add(database_tasks.
                                MarkLBAndListenersActiveInDB(
                                    requires=(constants.LOADBALANCER,
                                              constants.LISTENERS)))
-        create_member_flow.add(database_tasks.MarkPoolActiveInDB(
-            requires=constants.POOL))
 
         return create_member_flow
 
@@ -82,12 +82,12 @@ class MemberFlows(object):
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         delete_member_flow.add(database_tasks.DecrementMemberQuota(
             requires=constants.MEMBER))
+        delete_member_flow.add(database_tasks.MarkPoolActiveInDB(
+            requires=constants.POOL))
         delete_member_flow.add(database_tasks.
                                MarkLBAndListenersActiveInDB(
                                    requires=[constants.LOADBALANCER,
                                              constants.LISTENERS]))
-        delete_member_flow.add(database_tasks.MarkPoolActiveInDB(
-            requires=constants.POOL))
 
         return delete_member_flow
 
