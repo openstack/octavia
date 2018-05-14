@@ -18,7 +18,6 @@ import sys
 import openstackdocstheme
 from pydotplus import graphviz
 import sadisplay
-from sphinx import apidoc
 
 import octavia.db.models as models
 
@@ -65,7 +64,8 @@ extensions = [
     'sphinx.ext.graphviz',
     'openstackdocstheme',
     'oslo_config.sphinxext',
-    'oslo_policy.sphinxpolicygen'
+    'oslo_policy.sphinxpolicygen',
+    'sphinxcontrib.apidoc'
 ]
 
 todo_include_todos = True
@@ -335,25 +335,9 @@ repository_name = 'openstack/octavia'
 bug_project = '908'
 bug_tag = 'docs'
 
-
-# TODO(mordred) We should extract this into a sphinx plugin
-def run_apidoc(_):
-    cur_dir = os.path.abspath(os.path.dirname(__file__))
-    out_dir = os.path.join(cur_dir, 'contributor', 'modules')
-    module = os.path.join(cur_dir, '..', '..', 'octavia')
-    # Keep the order of arguments same as the sphinx-apidoc help, otherwise it
-    # would cause unexpected errors:
-    # sphinx-apidoc [options] -o <output_path> <module_path>
-    # [exclude_pattern, ...]
-    apidoc.main([
-        '--force',
-        '-o',
-        out_dir,
-        module,
-        'octavia/tests',
-        'octavia/db/migration'
-    ])
-
-
-def setup(app):
-    app.connect('builder-inited', run_apidoc)
+apidoc_output_dir = 'contributor/modules'
+apidoc_module_dir = '../../octavia'
+apidoc_excluded_paths = [
+  'tests',
+  'db/migration'
+]
