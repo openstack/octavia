@@ -32,7 +32,7 @@ usage() {
     echo "            [-p]"
     echo "            [-r <root password> ]"
     echo "            [-s **2** | <size in GB> ]"
-    echo "            [-t **qcow2** | tar | vhd ]"
+    echo "            [-t **qcow2** | tar | vhd | raw ]"
     echo "            [-v]"
     echo "            [-w <working directory> ]"
     echo
@@ -148,7 +148,8 @@ while getopts "a:b:c:d:ehi:no:pt:r:s:vw:x" opt; do
             AMP_IMAGETYPE=$OPTARG
             if [ $AMP_IMAGETYPE != "qcow2" ] && \
                 [ $AMP_IMAGETYPE != "tar" ] && \
-                [ $AMP_IMAGETYPE != "vhd" ]; then
+                [ $AMP_IMAGETYPE != "vhd" ] && \
+                [ $AMP_IMAGETYPE != "raw" ]; then
                 echo "Error: Unsupported image type " $AMP_IMAGETYPE " specified"
                 exit 3
             fi
