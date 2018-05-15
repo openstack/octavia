@@ -381,14 +381,18 @@ function build_mgmt_network {
     openstack security group rule create --protocol icmp lb-mgmt-sec-grp
     openstack security group rule create --protocol tcp --dst-port 22 lb-mgmt-sec-grp
     openstack security group rule create --protocol tcp --dst-port 9443 lb-mgmt-sec-grp
-    openstack security group rule create --protocol icmpv6 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
-    openstack security group rule create --protocol tcp --dst-port 22 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
-    openstack security group rule create --protocol tcp --dst-port 9443 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
+    if [ $IPV6_ENABLED == 'true' ] ; then
+        openstack security group rule create --protocol icmpv6 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
+        openstack security group rule create --protocol tcp --dst-port 22 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
+        openstack security group rule create --protocol tcp --dst-port 9443 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
+    fi
 
     # Create security group and rules
     openstack security group create lb-health-mgr-sec-grp
     openstack security group rule create --protocol udp --dst-port $OCTAVIA_HM_LISTEN_PORT lb-health-mgr-sec-grp
-    openstack security group rule create --protocol udp --dst-port $OCTAVIA_HM_LISTEN_PORT --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
+    if [ $IPV6_ENABLED == 'true' ] ; then
+        openstack security group rule create --protocol udp --dst-port $OCTAVIA_HM_LISTEN_PORT --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
+    fi
 }
 
 function configure_lb_mgmt_sec_grp {
