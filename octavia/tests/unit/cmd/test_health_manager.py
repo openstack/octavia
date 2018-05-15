@@ -89,8 +89,7 @@ class TestHealthManagerCMD(base.TestCase):
 
         mock_listener_proc.start.assert_called_once_with()
         mock_health_proc.start.assert_called_once_with()
-        mock_listener_proc.join.assert_called_once_with()
+        self.assertEqual(2, mock_listener_proc.join.call_count)
         mock_health_proc.join.assert_called_once_with()
-        mock_listener_proc.terminate.assert_called_once_with()
         mock_kill.assert_called_once_with(mock_health_proc.pid,
                                           signal.SIGINT)
