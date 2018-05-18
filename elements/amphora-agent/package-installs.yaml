@@ -2,3 +2,9 @@ build-essential:
 libffi-dev:
 libssl-dev:
 python-dev:
+snapd:
+  phase: post-install.d
+  uninstall: True
+ubuntu-core-launcher:
+  phase: post-install.d
+  uninstall: True
