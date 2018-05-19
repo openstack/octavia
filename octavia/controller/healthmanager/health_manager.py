@@ -21,6 +21,7 @@ from oslo_db import exception as db_exc
 from oslo_log import log as logging
 from oslo_utils import excutils
 
+from octavia.common import constants
 from octavia.controller.worker import controller_worker as cw
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
@@ -58,8 +59,22 @@ class HealthManager(object):
         self.cw = cw.ControllerWorker()
         self.threads = CONF.health_manager.failover_threads
         self.executor = futures.ThreadPoolExecutor(max_workers=self.threads)
+        self.amp_repo = repo.AmphoraRepository()
         self.amp_health_repo = repo.AmphoraHealthRepository()
+        self.lb_repo = repo.LoadBalancerRepository()
         self.dead = exit_event
+
+    def _test_and_set_failover_prov_status(self, lock_session, lb_id):
+        if self.lb_repo.set_status_for_failover(lock_session, lb_id,
+                                                constants.PENDING_UPDATE):
+            return True
+        else:
+            db_lb = self.lb_repo.get(lock_session, id=lb_id)
+            prov_status = db_lb.provisioning_status
+            LOG.warning("Load balancer %(id)s is in immutable state "
+                        "%(state)s. Skipping failover.",
+                        {"state": prov_status, "id": db_lb.id})
+            return False
 
     def health_check(self):
         stats = {
@@ -72,24 +87,38 @@ class HealthManager(object):
             lock_session = db_api.get_session(autocommit=False)
             amp = None
             try:
-                amp = self.amp_health_repo.get_stale_amphora(lock_session)
+                amp_health = self.amp_health_repo.get_stale_amphora(
+                    lock_session)
+                if amp_health:
+                    amp = self.amp_repo.get(lock_session,
+                                            id=amp_health.amphora_id)
+                    # If there is an associated LB, attempt to set it to
+                    # PENDING_UPDATE. If it is already immutable, skip the
+                    # amphora on this cycle
+                    if amp and amp.load_balancer_id:
+                        if not self._test_and_set_failover_prov_status(
+                                lock_session, amp.load_balancer_id):
+                            lock_session.rollback()
+                            break
                 lock_session.commit()
             except db_exc.DBDeadlock:
                 LOG.debug('Database reports deadlock. Skipping.')
                 lock_session.rollback()
+                amp_health = None
             except db_exc.RetryRequest:
                 LOG.debug('Database is requesting a retry. Skipping.')
                 lock_session.rollback()
+                amp_health = None
             except Exception:
                 with excutils.save_and_reraise_exception():
                     lock_session.rollback()
 
-            if amp is None:
+            if amp_health is None:
                 break
 
-            LOG.info("Stale amphora's id is: %s", amp.amphora_id)
+            LOG.info("Stale amphora's id is: %s", amp_health.amphora_id)
             fut = self.executor.submit(
-                self.cw.failover_amphora, amp.amphora_id)
+                self.cw.failover_amphora, amp_health.amphora_id)
             fut.add_done_callback(
                 functools.partial(update_stats_on_done, stats)
             )
