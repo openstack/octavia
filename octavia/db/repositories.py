@@ -694,6 +694,33 @@ class LoadBalancerRepository(BaseRepository):
             session.add(lb)
             return True
 
+    def set_status_for_failover(self, session, id, status,
+                                raise_exception=False):
+        """Tests and sets a load balancer provisioning status.
+
+        Puts a lock on the load balancer table to check the status of a
+        load balancer.  If the status is ACTIVE or ERROR then the status of
+        the load balancer is updated and the method returns True.  If the
+        status is not ACTIVE, then nothing is done and False is returned.
+
+        :param session: A Sql Alchemy database session.
+        :param id: id of Load Balancer
+        :param status: Status to set Load Balancer if check passes.
+        :param raise_exception: If True, raise ImmutableObject on failure
+        :returns: bool
+        """
+        with session.begin(subtransactions=True):
+            lb = session.query(self.model_class).with_for_update().filter_by(
+                id=id).one()
+            if lb.provisioning_status not in consts.FAILOVERABLE_STATUSES:
+                if raise_exception:
+                    raise exceptions.ImmutableObject(
+                        resource='Load Balancer', id=id)
+                return False
+            lb.provisioning_status = status
+            session.add(lb)
+            return True
+
     def check_load_balancer_expired(self, session, lb_id, exp_age=None):
         """Checks if a given load balancer is expired.
 
