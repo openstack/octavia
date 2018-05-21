@@ -114,6 +114,8 @@ class TestListener(base.BaseAPITest):
             self.assertIn(sni, sni_ex)
         self.assertIsNotNone(listener_api.pop('created_at'))
         self.assertIsNone(listener_api.pop('updated_at'))
+        self.assertEqual(listener_api['project_id'],
+                         listener_api.pop('tenant_id'))
         lb_listener['project_id'] = self.project_id
         self.assertEqual(lb_listener, listener_api)
         self.assert_correct_lb_status(self.lb.get('id'),
@@ -198,6 +200,8 @@ class TestListener(base.BaseAPITest):
         lb_listener['id'] = listener_api.get('id')
         self.assertIsNotNone(listener_api.pop('created_at'))
         self.assertIsNone(listener_api.pop('updated_at'))
+        self.assertEqual(listener_api['project_id'],
+                         listener_api.pop('tenant_id'))
         self.assertEqual(lb_listener, listener_api)
         self.assert_correct_lb_status(self.lb.get('id'),
                                       constants.PENDING_UPDATE,

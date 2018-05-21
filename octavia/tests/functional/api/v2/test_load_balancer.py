@@ -72,6 +72,17 @@ class TestLoadBalancer(base.BaseAPITest):
         self._assert_request_matches_response(lb_json, api_lb)
         return api_lb
 
+    def test_create_using_tenant_id(self):
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'tenant_id': self.project_id
+                   }
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_request_matches_response(lb_json, api_lb)
+        return api_lb
+
     def test_create_without_vip(self):
         lb_json = {'name': 'test1',
                    'project_id': self.project_id}
@@ -1865,6 +1876,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         observed_graph_copy = copy.deepcopy(observed_graph)
         del observed_graph_copy['created_at']
         del observed_graph_copy['updated_at']
+        self.assertEqual(observed_graph_copy['project_id'],
+                         observed_graph_copy.pop('tenant_id'))
 
         obs_lb_id = observed_graph_copy.pop('id')
         self.assertTrue(uuidutils.is_uuid_like(obs_lb_id))
@@ -1881,6 +1894,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         for observed_listener in observed_listeners:
             del observed_listener['created_at']
             del observed_listener['updated_at']
+            self.assertEqual(observed_listener['project_id'],
+                             observed_listener.pop('tenant_id'))
 
             self.assertTrue(uuidutils.is_uuid_like(
                 observed_listener.pop('id')))
@@ -1895,7 +1910,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
                 default_pool.pop('id')
                 default_pool.pop('created_at')
                 default_pool.pop('updated_at')
-                hm = default_pool.get('healthmonitor')
+                hm = default_pool.get('health_monitor')
                 if hm:
                     self.assertTrue(hm.get('id'))
                     hm.pop('id')
@@ -1911,6 +1926,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
                 for o_l7policy in o_l7policies:
                     o_l7policy.pop('created_at')
                     o_l7policy.pop('updated_at')
+                    self.assertEqual(o_l7policy['project_id'],
+                                     o_l7policy.pop('tenant_id'))
                     if o_l7policy.get('redirect_pool_id'):
                         r_pool_id = o_l7policy.pop('redirect_pool_id')
                         self.assertTrue(uuidutils.is_uuid_like(r_pool_id))
@@ -1922,6 +1939,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
                     for l7rule in l7rules:
                         l7rule.pop('created_at')
                         l7rule.pop('updated_at')
+                        self.assertEqual(l7rule['project_id'],
+                                         l7rule.pop('tenant_id'))
                         self.assertTrue(l7rule.pop('id'))
             self.assertIn(observed_listener, expected_listeners)
 

@@ -17,6 +17,7 @@ import logging
 from oslo_config import cfg
 from pecan import rest
 from stevedore import driver as stevedore_driver
+from wsme import types as wtypes
 
 from octavia.common import constants
 from octavia.common import data_models
@@ -203,7 +204,7 @@ class BaseController(rest.RestController):
                 members = self._get_attrs(obj)
                 for member in members:
                     if member not in fields:
-                        delattr(object_list[index], member)
+                        setattr(obj, member, wtypes.Unset)
         return object_list
 
     @staticmethod

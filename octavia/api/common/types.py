@@ -74,6 +74,37 @@ class URLPathType(wtypes.UserType):
         return value
 
 
+class BaseMeta(wtypes.BaseMeta):
+    def __new__(mcs, name, bases, dct):
+        def get_tenant_id(self):
+            tenant_id = getattr(self, '_tenant_id', wtypes.Unset)
+            # If tenant_id was explicitly set to Unset, return that
+            if tenant_id is wtypes.Unset and self._unset_tenant:
+                return tenant_id
+            # Otherwise, assume we can return project_id
+            return self.project_id
+
+        def set_tenant_id(self, tenant_id):
+            self._tenant_id = tenant_id
+
+            if tenant_id is wtypes.Unset:
+                # Record that tenant_id was explicitly Unset
+                self._unset_tenant = True
+            else:
+                # Reset 'unset' state, and update project_id as well
+                self._unset_tenant = False
+                self.project_id = tenant_id
+
+        if 'project_id' in dct and 'tenant_id' not in dct:
+            dct['tenant_id'] = wtypes.wsproperty(
+                wtypes.StringType(max_length=36),
+                get_tenant_id, set_tenant_id)
+            # This will let us know if tenant_id was explicitly set to Unset
+            dct['_unset_tenant'] = False
+        return super(BaseMeta, mcs).__new__(mcs, name, bases, dct)
+
+
+@six.add_metaclass(BaseMeta)
 class BaseType(wtypes.Base):
     @classmethod
     def _full_response(cls):
