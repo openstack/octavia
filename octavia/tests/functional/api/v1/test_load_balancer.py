@@ -457,6 +457,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         observed_graph_copy = copy.deepcopy(observed_graph)
         del observed_graph_copy['created_at']
         del observed_graph_copy['updated_at']
+        self.assertEqual(observed_graph_copy['project_id'],
+                         observed_graph_copy.pop('tenant_id'))
         obs_lb_id = observed_graph_copy.pop('id')
 
         self.assertTrue(uuidutils.is_uuid_like(obs_lb_id))
@@ -466,6 +468,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         for observed_listener in observed_listeners:
             del observed_listener['created_at']
             del observed_listener['updated_at']
+            self.assertEqual(observed_listener['project_id'],
+                             observed_listener.pop('tenant_id'))
 
             self.assertTrue(uuidutils.is_uuid_like(
                 observed_listener.pop('id')))
@@ -476,15 +480,19 @@ class TestLoadBalancerGraph(base.BaseAPITest):
                 default_pool.pop('id')
                 default_pool.pop('created_at')
                 default_pool.pop('updated_at')
-                hm = default_pool.get('healthmonitor')
+                self.assertEqual(default_pool['project_id'],
+                                 default_pool.pop('tenant_id'))
+                hm = default_pool.get('health_monitor')
                 if hm:
-                    self.assertTrue(hm.get('id'))
-                    hm.pop('id')
+                    self.assertEqual(hm['project_id'],
+                                     hm.pop('tenant_id'))
                 for member in default_pool.get('members', []):
                     self.assertTrue(member.get('id'))
                     member.pop('id')
                     member.pop('created_at')
                     member.pop('updated_at')
+                    self.assertEqual(member['project_id'],
+                                     member.pop('tenant_id'))
             if observed_listener.get('sni_containers'):
                 observed_listener['sni_containers'].sort()
             o_l7policies = observed_listener.get('l7policies')
@@ -496,6 +504,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
                         r_pool.pop('id')
                         r_pool.pop('created_at')
                         r_pool.pop('updated_at')
+                        self.assertEqual(r_pool['project_id'],
+                                         r_pool.pop('tenant_id'))
                         self.assertTrue(o_l7policy.get('redirect_pool_id'))
                         o_l7policy.pop('redirect_pool_id')
                         if r_pool.get('members'):
@@ -504,6 +514,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
                                 r_member.pop('id')
                                 r_member.pop('created_at')
                                 r_member.pop('updated_at')
+                                self.assertEqual(r_member['project_id'],
+                                                 r_member.pop('tenant_id'))
                     self.assertTrue(o_l7policy.get('id'))
                     o_l7policy.pop('id')
                     l7rules = o_l7policy.get('l7rules')
