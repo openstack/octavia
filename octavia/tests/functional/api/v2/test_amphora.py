@@ -283,11 +283,11 @@ class TestAmphora(base.BaseAPITest):
 
     def test_get_all_fields_filter(self):
         amps = self.get(self.AMPHORAE_PATH, params={
-            'fields': ['id', 'compute_id']}).json
+            'fields': ['id', 'role']}).json
         for amp in amps['amphorae']:
             self.assertIn(u'id', amp.keys())
-            self.assertIn(u'compute_id', amp.keys())
-            self.assertNotIn(u'vrrp_ip', amp.keys())
+            self.assertIn(u'role', amp.keys())
+            self.assertNotIn(u'ha_port_id', amp.keys())
 
     def test_get_all_filter(self):
         self._create_additional_amp()

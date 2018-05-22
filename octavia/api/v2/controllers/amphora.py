@@ -51,8 +51,8 @@ class AmphoraController(base.BaseController):
             db_amp, amp_types.AmphoraResponse)
         return amp_types.AmphoraRootResponse(amphora=result)
 
-    @wsme_pecan.wsexpose(amp_types.AmphoraeRootResponse, wtypes.text,
-                         [wtypes.text], ignore_extra_args=True)
+    @wsme_pecan.wsexpose(amp_types.AmphoraeRootResponse, [wtypes.text],
+                         ignore_extra_args=True)
     def get_all(self, fields=None):
         """Gets all health monitors."""
         pcontext = pecan.request.context
