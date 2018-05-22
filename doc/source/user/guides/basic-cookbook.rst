@@ -264,7 +264,7 @@ incoming or outgoing traffic.
 
 .. note::
    Before using this feature, please make sure the Neutron QoS externsion(qos)
-   is enabled on runing OpenStack environment by command
+   is enabled on running OpenStack environment by command
 
    .. code-block:: console
 
