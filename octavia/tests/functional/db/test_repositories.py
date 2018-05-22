@@ -2760,6 +2760,53 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         lb = self.lb_repo.get(self.session, id=lb_id)
         self.assertEqual(constants.PENDING_DELETE, lb.provisioning_status)
 
+    def test_set_status_for_failover_immutable(self):
+        lb_id = uuidutils.generate_uuid()
+        self.lb_repo.create(self.session, id=lb_id,
+                            provisioning_status=constants.PENDING_CREATE,
+                            operating_status=constants.OFFLINE,
+                            enabled=True)
+        self.assertFalse(self.lb_repo.set_status_for_failover(
+            self.session, lb_id, constants.PENDING_UPDATE))
+        lb = self.lb_repo.get(self.session, id=lb_id)
+        self.assertEqual(constants.PENDING_CREATE, lb.provisioning_status)
+
+    def test_set_status_for_failover_immutable_raise(self):
+        lb_id = uuidutils.generate_uuid()
+        self.lb_repo.create(self.session, id=lb_id,
+                            provisioning_status=constants.PENDING_CREATE,
+                            operating_status=constants.OFFLINE,
+                            enabled=True)
+        self.assertRaises(exceptions.ImmutableObject,
+                          self.lb_repo.set_status_for_failover,
+                          self.session, lb_id,
+                          status=constants.PENDING_UPDATE,
+                          raise_exception=True)
+        lb = self.lb_repo.get(self.session, id=lb_id)
+        self.assertEqual(constants.PENDING_CREATE, lb.provisioning_status)
+
+    def test_set_status_for_failover_mutable(self):
+        lb_id = uuidutils.generate_uuid()
+        self.lb_repo.create(self.session, id=lb_id,
+                            provisioning_status=constants.ACTIVE,
+                            operating_status=constants.OFFLINE,
+                            enabled=True)
+        self.lb_repo.set_status_for_failover(
+            self.session, lb_id, constants.PENDING_UPDATE)
+        lb = self.lb_repo.get(self.session, id=lb_id)
+        self.assertEqual(constants.PENDING_UPDATE, lb.provisioning_status)
+
+    def test_set_status_for_failover_error(self):
+        lb_id = uuidutils.generate_uuid()
+        self.lb_repo.create(self.session, id=lb_id,
+                            provisioning_status=constants.ERROR,
+                            operating_status=constants.OFFLINE,
+                            enabled=True)
+        self.lb_repo.set_status_for_failover(
+            self.session, lb_id, constants.PENDING_UPDATE)
+        lb = self.lb_repo.get(self.session, id=lb_id)
+        self.assertEqual(constants.PENDING_UPDATE, lb.provisioning_status)
+
     def test_check_load_balancer_expired_default_exp_age(self):
         """When exp_age defaults to load_balancer_expiry_age."""
         newdate = datetime.datetime.utcnow() - datetime.timedelta(minutes=10)
