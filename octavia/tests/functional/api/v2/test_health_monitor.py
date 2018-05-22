@@ -740,6 +740,21 @@ class TestHealthMonitor(base.BaseAPITest):
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=self.pool_id)
 
+    def test_create_ping_when_ping_disabled(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(group='api_settings',
+                         allow_ping_health_monitors=False)
+        req_dict = {'pool_id': self.pool_id,
+                    'type': constants.HEALTH_MONITOR_PING,
+                    'delay': 1,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': 1}
+        self.post(self.HMS_PATH, self._build_body(req_dict), status=400)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id)
+
     def test_create_with_bad_handler(self):
         self.handler_mock().health_monitor.create.side_effect = Exception()
         api_hm = self.create_health_monitor(
