@@ -420,6 +420,7 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                           l7=False, enabled=True, insert_headers=None,
                           be_proto=None, monitor_ip_port=False,
                           monitor_proto=None, backup_member=False,
+                          disabled_member=False,
                           timeout_client_data=50000,
                           timeout_member_connect=5000,
                           timeout_member_data=50000,
@@ -465,7 +466,7 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                 persistence_type=persistence_type,
                 persistence_cookie=persistence_cookie,
                 monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto,
-                backup_member=backup_member)]
+                backup_member=backup_member, disabled_member=disabled_member)]
         l7policies = []
     return in_listener(
         id='sample_listener_id_1',
@@ -541,7 +542,8 @@ def sample_tls_container_tuple(id='cont_id_1', certificate=None,
 def sample_pool_tuple(proto=None, monitor=True, persistence=True,
                       persistence_type=None, persistence_cookie=None,
                       sample_pool=1, monitor_ip_port=False,
-                      monitor_proto=None, backup_member=False):
+                      monitor_proto=None, backup_member=False,
+                      disabled_member=False):
     proto = 'HTTP' if proto is None else proto
     monitor_proto = proto if monitor_proto is None else monitor_proto
     in_pool = collections.namedtuple(
@@ -557,7 +559,8 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
                                        monitor_ip_port=monitor_ip_port),
                    sample_member_tuple('sample_member_id_2', '10.0.0.98',
                                        monitor_ip_port=monitor_ip_port,
-                                       backup=backup_member)]
+                                       backup=backup_member,
+                                       enabled=not disabled_member)]
         if monitor is True:
             mon = sample_health_monitor_tuple(proto=monitor_proto)
     elif sample_pool == 2:
