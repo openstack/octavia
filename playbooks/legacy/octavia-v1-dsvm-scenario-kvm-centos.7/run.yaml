@@ -33,6 +33,7 @@
           OCTAVIA_HYPERVISOR=kvm
           OCTAVIA_AMP_BASE_OS=centos
           OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID=7
+          OCTAVIA_AMP_IMAGE_SIZE=3
 
           EOF
         executable: /bin/bash
