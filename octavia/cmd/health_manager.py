@@ -43,6 +43,9 @@ def hm_listener(exit_event):
         except Exception as e:
             LOG.error('Health Manager listener experienced unknown error: %s',
                       e)
+    LOG.info('Waiting for executor to shutdown...')
+    udp_getter.executor.shutdown()
+    LOG.info('Executor shutdown finished.')
 
 
 def hm_health_check(exit_event):
@@ -93,7 +96,7 @@ def main():
         exit_event.set()
         os.kill(hm_health_check_proc.pid, signal.SIGINT)
         hm_health_check_proc.join()
-        hm_listener_proc.terminate()
+        hm_listener_proc.join()
 
     signal.signal(signal.SIGTERM, process_cleanup)
 

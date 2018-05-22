@@ -82,6 +82,7 @@ class UDPStatusGetter(object):
             if self.sock is not None:
                 self.sock.close()
             self.sock = socket.socket(ai_family, socket.SOCK_DGRAM)
+            self.sock.settimeout(1)
             self.sock.bind(self.sockaddr)
             if cfg.CONF.health_manager.sock_rlimit > 0:
                 rlimit = cfg.CONF.health_manager.sock_rlimit
@@ -197,6 +198,9 @@ class UDPStatusGetter(object):
     def check(self):
         try:
             obj, srcaddr = self.dorecv()
+        except socket.timeout:
+            # Pass here as this is an expected cycling of the listen socket
+            pass
         except exceptions.InvalidHMACException:
             # Pass here as the packet was dropped and logged already
             pass
