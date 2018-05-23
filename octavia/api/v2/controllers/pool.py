@@ -22,6 +22,9 @@ import pecan
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
+from octavia.api.drivers import data_models as driver_dm
+from octavia.api.drivers import driver_factory
+from octavia.api.drivers import utils as driver_utils
 from octavia.api.v2.controllers import base
 from octavia.api.v2.controllers import health_monitor
 from octavia.api.v2.controllers import member
@@ -126,24 +129,6 @@ class PoolsController(base.BaseController):
             # do not give any information as to what constraint failed
             raise exceptions.InvalidOption(value='', option='')
 
-    def _send_pool_to_handler(self, session, db_pool, listener_id):
-        try:
-            LOG.info("Sending Creation of Pool %s to handler", db_pool.id)
-            self.handler.create(db_pool)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_and_listener_statuses(
-                    lock_session, lb_id=db_pool.load_balancer_id,
-                    listener_ids=[listener_id] if listener_id else [])
-                # Pool now goes to ERROR
-                self.repositories.pool.update(
-                    lock_session, db_pool.id,
-                    provisioning_status=constants.ERROR)
-        db_pool = self._get_db_pool(session, db_pool.id)
-        result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
-        return pool_types.PoolRootResponse(pool=result)
-
     @wsme_pecan.wsexpose(pool_types.PoolRootResponse,
                          body=pool_types.PoolRootPOST, status_code=201)
     def post(self, pool_):
@@ -160,13 +145,14 @@ class PoolsController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
 
         if pool.loadbalancer_id:
-            pool.project_id = self._get_lb_project_id(context.session,
-                                                      pool.loadbalancer_id)
+            pool.project_id, provider = self._get_lb_project_id_provider(
+                context.session, pool.loadbalancer_id)
         elif pool.listener_id:
             listener = self.repositories.listener.get(
                 context.session, id=pool.listener_id)
-            pool.project_id = listener.project_id
             pool.loadbalancer_id = listener.load_balancer_id
+            pool.project_id, provider = self._get_lb_project_id_provider(
+                context.session, pool.loadbalancer_id)
         else:
             msg = _("Must provide at least one of: "
                     "loadbalancer_id, listener_id")
@@ -178,6 +164,9 @@ class PoolsController(base.BaseController):
         if pool.session_persistence:
             sp_dict = pool.session_persistence.to_dict(render_unsets=False)
             validate.check_session_persistence(sp_dict)
+
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
         lock_session = db_api.get_session(autocommit=False)
         try:
@@ -204,13 +193,25 @@ class PoolsController(base.BaseController):
 
             db_pool = self._validate_create_pool(
                 lock_session, pool_dict, listener_id)
+
+            # Prepare the data for the driver data model
+            provider_pool = (
+                driver_utils.db_pool_to_provider_pool(db_pool))
+
+            # Dispatch to the driver
+            LOG.info("Sending create Pool %s to provider %s",
+                     db_pool.id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.pool_create, provider_pool)
+
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
 
-        return self._send_pool_to_handler(context.session, db_pool,
-                                          listener_id=listener_id)
+        db_pool = self._get_db_pool(context.session, db_pool.id)
+        result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
+        return pool_types.PoolRootResponse(pool=result)
 
     def _graph_create(self, session, lock_session, pool_dict):
         load_balancer_id = pool_dict['load_balancer_id']
@@ -260,33 +261,44 @@ class PoolsController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         db_pool = self._get_db_pool(context.session, id, show_deleted=False)
 
-        self._auth_validate_action(context, db_pool.project_id,
-                                   constants.RBAC_PUT)
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, db_pool.load_balancer_id)
+
+        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
         if pool.session_persistence:
             sp_dict = pool.session_persistence.to_dict(render_unsets=False)
             validate.check_session_persistence(sp_dict)
 
-        self._test_lb_and_listener_statuses(
-            context.session, lb_id=db_pool.load_balancer_id,
-            listener_ids=self._get_affected_listener_ids(db_pool))
-        self.repositories.pool.update(
-            context.session, db_pool.id,
-            provisioning_status=constants.PENDING_UPDATE)
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
-        try:
-            LOG.info("Sending Update of Pool %s to handler", id)
-            self.handler.update(db_pool, pool)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_and_listener_statuses(
-                    lock_session, lb_id=db_pool.load_balancer_id,
-                    listener_ids=self._get_affected_listener_ids(db_pool))
-                # Pool now goes to ERROR
-                self.repositories.pool.update(
-                    lock_session, db_pool.id,
-                    provisioning_status=constants.ERROR)
+        with db_api.get_lock_session() as lock_session:
+            self._test_lb_and_listener_statuses(
+                context.session, lb_id=db_pool.load_balancer_id,
+                listener_ids=self._get_affected_listener_ids(db_pool))
+
+            # Prepare the data for the driver data model
+            pool_dict = pool.to_dict(render_unsets=False)
+            pool_dict['id'] = id
+            provider_pool_dict = (
+                driver_utils.pool_dict_to_provider_dict(pool_dict))
+
+            # Dispatch to the driver
+            LOG.info("Sending update Pool %s to provider %s", id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.pool_update,
+                driver_dm.Pool.from_dict(provider_pool_dict))
+
+            # Update the database to reflect what the driver just accepted
+            pool.provisioning_status = constants.PENDING_UPDATE
+            db_pool_dict = pool.to_dict(render_unsets=False)
+            self.repositories.update_pool_and_sp(lock_session, id,
+                                                 db_pool_dict)
+
+        # Force SQL alchemy to query the DB, otherwise we get inconsistent
+        # results
+        context.session.expire_all()
         db_pool = self._get_db_pool(context.session, id)
         result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
         return pool_types.PoolRootResponse(pool=result)
@@ -300,29 +312,24 @@ class PoolsController(base.BaseController):
             raise exceptions.PoolInUseByL7Policy(
                 id=db_pool.id, l7policy_id=db_pool.l7policies[0].id)
 
-        self._auth_validate_action(context, db_pool.project_id,
-                                   constants.RBAC_DELETE)
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, db_pool.load_balancer_id)
 
-        self._test_lb_and_listener_statuses(
-            context.session, lb_id=db_pool.load_balancer_id,
-            listener_ids=self._get_affected_listener_ids(db_pool))
-        self.repositories.pool.update(
-            context.session, db_pool.id,
-            provisioning_status=constants.PENDING_DELETE)
+        self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
 
-        try:
-            LOG.info("Sending Deletion of Pool %s to handler", db_pool.id)
-            self.handler.delete(db_pool)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_and_listener_statuses(
-                    lock_session, lb_id=db_pool.load_balancer_id,
-                    listener_ids=self._get_affected_listener_ids(db_pool))
-                # Pool now goes to ERROR
-                self.repositories.pool.update(
-                    lock_session, db_pool.id,
-                    provisioning_status=constants.ERROR)
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
+
+        with db_api.get_lock_session() as lock_session:
+            self._test_lb_and_listener_statuses(
+                lock_session, lb_id=db_pool.load_balancer_id,
+                listener_ids=self._get_affected_listener_ids(db_pool))
+            self.repositories.pool.update(
+                lock_session, db_pool.id,
+                provisioning_status=constants.PENDING_DELETE)
+
+            LOG.info("Sending delete Pool %s to provider %s", id, driver.name)
+            driver_utils.call_provider(driver.name, driver.pool_delete, id)
 
     @pecan.expose()
     def _lookup(self, pool_id, *remainder):
