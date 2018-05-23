@@ -102,6 +102,12 @@ api_opts = [
                 help=_("Allow users to create TLS Terminated listeners?")),
     cfg.BoolOpt('allow_ping_health_monitors', default=True,
                 help=_("Allow users to create PING type Health Monitors?")),
+    cfg.ListOpt('enabled_provider_drivers',
+                help=_('List of enabled provider drivers. Must match the '
+                       'driver name in the octavia.api.drivers entrypoint.'),
+                default=['amphora', 'octavia']),
+    cfg.StrOpt('default_provider_driver', default='amphora',
+               help=_('Default provider driver.')),
 ]
 
 # Options only used by the amphora agent

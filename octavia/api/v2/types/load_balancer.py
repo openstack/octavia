@@ -120,9 +120,7 @@ class LoadBalancerPOST(BaseLoadBalancerType):
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     listeners = wtypes.wsattr([listener.ListenerSingleCreate], default=[])
     pools = wtypes.wsattr([pool.PoolSingleCreate], default=[])
-    # TODO(johnsom) This should be dynamic based on the loaded providers
-    #               once providers are implemented.
-    provider = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROVIDERS))
+    provider = wtypes.wsattr(wtypes.StringType(max_length=64))
     # TODO(johnsom) This should be dynamic based on the loaded flavors
     #               once flavors are implemented.
     flavor_id = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_FLAVORS))

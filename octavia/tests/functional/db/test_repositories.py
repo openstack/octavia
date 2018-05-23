@@ -127,6 +127,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
               'operating_status': constants.OFFLINE,
               'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
               'vrrp_group': None,
+              'provider': 'amphora',
               'server_group_id': uuidutils.generate_uuid(),
               'project_id': uuidutils.generate_uuid(),
               'id': uuidutils.generate_uuid()}

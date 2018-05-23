@@ -37,6 +37,7 @@ class TestNoopProviderDriver(base.TestCase):
         self.healthmonitor_id = uuidutils.generate_uuid()
         self.l7policy_id = uuidutils.generate_uuid()
         self.l7rule_id = uuidutils.generate_uuid()
+        self.project_id = uuidutils.generate_uuid()
 
         self.ref_vip = data_models.VIP(
             vip_address=self.vip_address,
@@ -75,7 +76,6 @@ class TestNoopProviderDriver(base.TestCase):
             description='Olympic swimming pool',
             healthmonitor=self.ref_healthmonitor,
             lb_algorithm='A_Fast_One',
-            listener_id=self.listener_id,
             loadbalancer_id=self.loadbalancer_id,
             members=[self.ref_member],
             name='Osborn',
@@ -128,7 +128,7 @@ class TestNoopProviderDriver(base.TestCase):
             listeners=[self.ref_listener],
             loadbalancer_id=self.loadbalancer_id,
             name='favorite_lb',
-            project_id=uuidutils.generate_uuid(),
+            project_id=self.project_id,
             vip_address=self.vip_address,
             vip_network_id=self.vip_network_id,
             vip_port_id=self.vip_port_id,
@@ -140,6 +140,7 @@ class TestNoopProviderDriver(base.TestCase):
 
     def test_create_vip_port(self):
         vip_dict = self.driver.create_vip_port(self.loadbalancer_id,
+                                               self.project_id,
                                                self.ref_vip.to_dict())
 
         self.assertEqual(self.ref_vip.to_dict(), vip_dict)

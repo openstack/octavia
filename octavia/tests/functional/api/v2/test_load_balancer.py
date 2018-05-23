@@ -20,9 +20,11 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
+from octavia.api.drivers import exceptions as provider_exceptions
 from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
+from octavia.common import exceptions
 from octavia.network import base as network_base
 from octavia.network import data_models as network_models
 from octavia.tests.functional.api.v2 import base
@@ -314,13 +316,19 @@ class TestLoadBalancer(base.BaseAPITest):
             'vip_port_id': port.id, 'admin_state_up': False,
             'project_id': self.project_id}
         body = self._build_body(lb_json)
+        # This test needs the provider driver to not supply the VIP port
+        # so mocking noop to not supply a VIP port.
         with mock.patch(
                 "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".get_network") as mock_get_network, mock.patch(
             "octavia.network.drivers.noop_driver.driver.NoopManager"
-                ".get_port") as mock_get_port:
+                ".get_port") as mock_get_port, mock.patch(
+            "octavia.api.drivers.noop_driver.driver.NoopManager."
+                "create_vip_port") as mock_provider:
             mock_get_network.return_value = network
             mock_get_port.return_value = port
+            mock_provider.side_effect = (provider_exceptions.
+                                         NotImplementedError())
             response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
@@ -466,17 +474,23 @@ class TestLoadBalancer(base.BaseAPITest):
             'vip_network_id': network.id, 'vip_port_id': port.id,
             'admin_state_up': False, 'project_id': self.project_id}
         body = self._build_body(lb_json)
+        # This test needs the provider driver to not supply the VIP port
+        # so mocking noop to not supply a VIP port.
         with mock.patch(
                 "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".get_network") as mock_get_network, mock.patch(
             "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".get_port") as mock_get_port, mock.patch(
             "octavia.network.drivers.noop_driver.driver.NoopManager"
-                ".allocate_vip") as mock_allocate_vip:
+                ".allocate_vip") as mock_allocate_vip, mock.patch(
+            "octavia.api.drivers.noop_driver.driver.NoopManager."
+                "create_vip_port") as mock_provider:
             mock_get_network.return_value = network
             mock_get_port.return_value = port
             mock_allocate_vip.side_effect = TestNeutronException(
                 "octavia_msg", "neutron_msg", 409)
+            mock_provider.side_effect = (provider_exceptions.
+                                         NotImplementedError())
             response = self.post(self.LBS_PATH, body, status=409)
         # Make sure the faultstring contains the neutron error and not
         # the octavia error message
@@ -786,7 +800,10 @@ class TestLoadBalancer(base.BaseAPITest):
                    }
         lb_json.update(optionals)
         body = self._build_body(lb_json)
-        response = self.post(self.LBS_PATH, body)
+        with mock.patch('oslo_messaging.get_rpc_transport'):
+            with mock.patch('oslo_messaging.Target'):
+                with mock.patch('oslo_messaging.RPCClient'):
+                    response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
         return api_lb
@@ -800,8 +817,7 @@ class TestLoadBalancer(base.BaseAPITest):
         lb_json.update(optionals)
         body = self._build_body(lb_json)
         response = self.post(self.LBS_PATH, body, status=400)
-        self.assertIn("Invalid input for field/attribute provider. Value: "
-                      "'BOGUS'. Value should be one of:",
+        self.assertIn("Provider 'BOGUS' is not enabled.",
                       response.json.get('faultstring'))
 
     def test_create_flavor_bogus(self, **optionals):
@@ -1271,7 +1287,7 @@ class TestLoadBalancer(base.BaseAPITest):
                             lb_json)
         api_lb = response.json.get(self.root_tag)
         self.assertIsNotNone(api_lb.get('vip_subnet_id'))
-        self.assertEqual('lb1', api_lb.get('name'))
+        self.assertEqual('lb2', api_lb.get('name'))
         self.assertEqual(project_id, api_lb.get('project_id'))
         self.assertEqual('desc1', api_lb.get('description'))
         self.assertFalse(api_lb.get('admin_state_up'))
@@ -1372,7 +1388,7 @@ class TestLoadBalancer(base.BaseAPITest):
         api_lb = response.json.get(self.root_tag)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertIsNotNone(api_lb.get('vip_subnet_id'))
-        self.assertEqual('lb1', api_lb.get('name'))
+        self.assertEqual('lb2', api_lb.get('name'))
         self.assertEqual(project_id, api_lb.get('project_id'))
         self.assertEqual('desc1', api_lb.get('description'))
         self.assertFalse(api_lb.get('admin_state_up'))
@@ -1832,28 +1848,33 @@ class TestLoadBalancer(base.BaseAPITest):
             lb_id=lb_dict.get('id')) + "/failover")
         self.app.put(path, status=404)
 
-    def test_create_with_bad_handler(self):
-        self.handler_mock().load_balancer.create.side_effect = Exception()
-        api_lb = self.create_load_balancer(
-            uuidutils.generate_uuid()).get(self.root_tag)
-        self.assert_correct_status(
-            lb_id=api_lb.get('id'),
-            lb_prov_status=constants.ERROR,
-            lb_op_status=constants.OFFLINE)
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_create_with_bad_provider(self, mock_provider):
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        lb_json = {'name': 'test-lb',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id}
+        response = self.post(self.LBS_PATH, self._build_body(lb_json),
+                             status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.json.get('faultstring'))
 
-    def test_update_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_update_with_bad_provider(self, mock_provider):
         api_lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get(self.root_tag)
         self.set_lb_status(lb_id=api_lb.get('id'))
         new_listener = {'name': 'new_name'}
-        self.handler_mock().load_balancer.update.side_effect = Exception()
-        self.put(self.LB_PATH.format(lb_id=api_lb.get('id')),
-                 self._build_body(new_listener))
-        self.assert_correct_status(
-            lb_id=api_lb.get('id'),
-            lb_prov_status=constants.ERROR)
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        response = self.put(self.LB_PATH.format(lb_id=api_lb.get('id')),
+                            self._build_body(new_listener), status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.json.get('faultstring'))
 
-    def test_delete_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_delete_with_bad_provider(self, mock_provider):
         api_lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get(self.root_tag)
         self.set_lb_status(lb_id=api_lb.get('id'))
@@ -1866,11 +1887,95 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertIsNone(api_lb.pop('updated_at'))
         self.assertIsNotNone(response.pop('updated_at'))
         self.assertEqual(api_lb, response)
-        self.handler_mock().load_balancer.delete.side_effect = Exception()
-        self.delete(self.LB_PATH.format(lb_id=api_lb.get('id')))
-        self.assert_correct_status(
-            lb_id=api_lb.get('id'),
-            lb_prov_status=constants.ERROR)
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        self.delete(self.LB_PATH.format(lb_id=api_lb.get('id')), status=500)
+
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_create_with_provider_not_implemented(self, mock_provider):
+        mock_provider.side_effect = exceptions.ProviderNotImplementedError(
+            prov='bad_driver', user_msg='broken')
+        lb_json = {'name': 'test-lb',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id}
+        response = self.post(self.LBS_PATH, self._build_body(lb_json),
+                             status=501)
+        self.assertIn('Provider \'bad_driver\' does not support a requested '
+                      'action: broken', response.json.get('faultstring'))
+
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_update_with_provider_not_implemented(self, mock_provider):
+        api_lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get(self.root_tag)
+        self.set_lb_status(lb_id=api_lb.get('id'))
+        new_listener = {'name': 'new_name'}
+        mock_provider.side_effect = exceptions.ProviderNotImplementedError(
+            prov='bad_driver', user_msg='broken')
+        response = self.put(self.LB_PATH.format(lb_id=api_lb.get('id')),
+                            self._build_body(new_listener), status=501)
+        self.assertIn('Provider \'bad_driver\' does not support a requested '
+                      'action: broken', response.json.get('faultstring'))
+
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_delete_with_provider_not_implemented(self, mock_provider):
+        api_lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get(self.root_tag)
+        self.set_lb_status(lb_id=api_lb.get('id'))
+        # Set status to ACTIVE/ONLINE because set_lb_status did it in the db
+        api_lb['provisioning_status'] = constants.ACTIVE
+        api_lb['operating_status'] = constants.ONLINE
+        response = self.get(self.LB_PATH.format(
+            lb_id=api_lb.get('id'))).json.get(self.root_tag)
+
+        self.assertIsNone(api_lb.pop('updated_at'))
+        self.assertIsNotNone(response.pop('updated_at'))
+        self.assertEqual(api_lb, response)
+        mock_provider.side_effect = exceptions.ProviderNotImplementedError(
+            prov='bad_driver', user_msg='broken')
+        self.delete(self.LB_PATH.format(lb_id=api_lb.get('id')), status=501)
+
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_create_with_provider_unsupport_option(self, mock_provider):
+        mock_provider.side_effect = exceptions.ProviderUnsupportedOptionError(
+            prov='bad_driver', user_msg='broken')
+        lb_json = {'name': 'test-lb',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id}
+        response = self.post(self.LBS_PATH, self._build_body(lb_json),
+                             status=501)
+        self.assertIn('Provider \'bad_driver\' does not support a requested '
+                      'option: broken', response.json.get('faultstring'))
+
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_update_with_provider_unsupport_option(self, mock_provider):
+        api_lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get(self.root_tag)
+        self.set_lb_status(lb_id=api_lb.get('id'))
+        new_listener = {'name': 'new_name'}
+        mock_provider.side_effect = exceptions.ProviderUnsupportedOptionError(
+            prov='bad_driver', user_msg='broken')
+        response = self.put(self.LB_PATH.format(lb_id=api_lb.get('id')),
+                            self._build_body(new_listener), status=501)
+        self.assertIn('Provider \'bad_driver\' does not support a requested '
+                      'option: broken', response.json.get('faultstring'))
+
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_delete_with_provider_unsupport_option(self, mock_provider):
+        api_lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get(self.root_tag)
+        self.set_lb_status(lb_id=api_lb.get('id'))
+        # Set status to ACTIVE/ONLINE because set_lb_status did it in the db
+        api_lb['provisioning_status'] = constants.ACTIVE
+        api_lb['operating_status'] = constants.ONLINE
+        response = self.get(self.LB_PATH.format(
+            lb_id=api_lb.get('id'))).json.get(self.root_tag)
+
+        self.assertIsNone(api_lb.pop('updated_at'))
+        self.assertIsNotNone(response.pop('updated_at'))
+        self.assertEqual(api_lb, response)
+        mock_provider.side_effect = exceptions.ProviderUnsupportedOptionError(
+            prov='bad_driver', user_msg='broken')
+        self.delete(self.LB_PATH.format(lb_id=api_lb.get('id')), status=501)
 
 
 class TestLoadBalancerGraph(base.BaseAPITest):
@@ -1964,6 +2069,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'vip_subnet_id': uuidutils.generate_uuid(),
             'vip_port_id': uuidutils.generate_uuid(),
             'vip_address': '198.51.100.10',
+            'provider': 'noop_driver',
             'listeners': create_listeners,
             'pools': create_pools or []
         }
@@ -1980,7 +2086,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'vip_network_id': mock.ANY,
             'vip_qos_policy_id': None,
             'flavor_id': '',
-            'provider': 'octavia'
+            'provider': 'noop_driver'
         }
         expected_lb.update(create_lb)
         expected_lb['listeners'] = expected_listeners
@@ -2253,7 +2359,11 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    def test_with_one_listener_sni_containers(self):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_with_one_listener_sni_containers(self, mock_cert_data):
+        mock_cert_data.return_value = {'tls_cert': 'cert 1',
+                                       'sni_certs': ['cert 2', 'cert 3']}
         create_sni_containers, expected_sni_containers = (
             self._get_sni_container_bodies())
         create_listener, expected_listener = self._get_listener_bodies(
@@ -2411,7 +2521,12 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         body = self._build_body(create_lb)
         return body, expected_lb
 
-    def test_with_one_of_everything(self):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_with_one_of_everything(self, mock_cert_data):
+        mock_cert_data.return_value = {'tls_cert': 'cert 1',
+                                       'sni_certs': ['cert 2', 'cert 3']}
+
         body, expected_lb = self._test_with_one_of_everything_helper()
         response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
@@ -2493,7 +2608,12 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         self.start_quota_mock(data_models.HealthMonitor)
         self.post(self.LBS_PATH, body, status=403)
 
-    def test_create_over_quota_sanity_check(self):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_over_quota_sanity_check(self, mock_cert_data):
+        mock_cert_data.return_value = {'tls_cert': 'cert 1',
+                                       'sni_certs': ['cert 2', 'cert 3']}
+
         # This one should create, as we don't check quotas on L7Policies
         body, _ = self._test_with_one_of_everything_helper()
         self.start_quota_mock(data_models.L7Policy)

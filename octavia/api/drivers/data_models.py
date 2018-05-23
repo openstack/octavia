@@ -17,9 +17,14 @@
 
 import six
 
+from oslo_log import log as logging
+
+LOG = logging.getLogger(__name__)
+
 
 class BaseDataModel(object):
-    def to_dict(self, calling_classes=None, recurse=False, **kwargs):
+    def to_dict(self, calling_classes=None, recurse=False,
+                render_unsets=False, **kwargs):
         """Converts a data model to a dictionary."""
         calling_classes = calling_classes or []
         ret = {}
@@ -36,24 +41,35 @@ class BaseDataModel(object):
                             if type(self) not in calling_classes:
                                 ret[attr].append(
                                     item.to_dict(calling_classes=(
-                                        calling_classes + [type(self)])))
+                                        calling_classes + [type(self)]),
+                                        render_unsets=render_unsets))
                             else:
-                                ret[attr] = None
+                                ret[attr].append(None)
                         else:
-                            ret[attr] = item
+                            ret[attr].append(item)
                 elif isinstance(getattr(self, attr), BaseDataModel):
                     if type(self) not in calling_classes:
                         ret[attr] = value.to_dict(
+                            render_unsets=render_unsets,
                             calling_classes=calling_classes + [type(self)])
                     else:
                         ret[attr] = None
                 elif six.PY2 and isinstance(value, six.text_type):
                     ret[attr.encode('utf8')] = value.encode('utf8')
+                elif isinstance(value, UnsetType):
+                    if render_unsets:
+                        ret[attr] = None
+                    else:
+                        continue
                 else:
                     ret[attr] = value
             else:
-                if isinstance(getattr(self, attr), (BaseDataModel, list)):
-                    ret[attr] = None
+                if (isinstance(getattr(self, attr), (BaseDataModel, list)) or
+                        isinstance(value, UnsetType)):
+                    if render_unsets:
+                        ret[attr] = None
+                    else:
+                        continue
                 else:
                     ret[attr] = value
 
@@ -72,32 +88,49 @@ class BaseDataModel(object):
         return cls(**dict)
 
 
+class UnsetType(object):
+    def __bool__(self):
+        return False
+    __nonzero__ = __bool__
+
+    def __repr__(self):
+        return 'Unset'
+
+
+Unset = UnsetType()
+
+
 class LoadBalancer(BaseDataModel):
-    def __init__(self, admin_state_up=None, description=None, flavor=None,
-                 listeners=None, loadbalancer_id=None, name=None,
-                 project_id=None, vip_address=None, vip_network_id=None,
-                 vip_port_id=None, vip_subnet_id=None):
+    def __init__(self, admin_state_up=Unset, description=Unset, flavor=Unset,
+                 listeners=Unset, loadbalancer_id=Unset, name=Unset,
+                 pools=Unset, project_id=Unset, vip_address=Unset,
+                 vip_network_id=Unset, vip_port_id=Unset, vip_subnet_id=Unset,
+                 vip_qos_policy_id=Unset):
 
         self.admin_state_up = admin_state_up
         self.description = description
-        self.flavor = flavor or {}
-        self.listeners = listeners or []
+        self.flavor = flavor
+        self.listeners = listeners
         self.loadbalancer_id = loadbalancer_id
         self.name = name
+        self.pools = pools
         self.project_id = project_id
         self.vip_address = vip_address
         self.vip_network_id = vip_network_id
         self.vip_port_id = vip_port_id
         self.vip_subnet_id = vip_subnet_id
+        self.vip_qos_policy_id = vip_qos_policy_id
 
 
 class Listener(BaseDataModel):
-    def __init__(self, admin_state_up=None, connection_limit=None,
-                 default_pool=None, default_pool_id=None,
-                 default_tls_container=None, description=None,
-                 insert_headers=None, l7policies=None, listener_id=None,
-                 loadbalancer_id=None, name=None, protocol=None,
-                 protocol_port=None, sni_containers=None):
+    def __init__(self, admin_state_up=Unset, connection_limit=Unset,
+                 default_pool=Unset, default_pool_id=Unset,
+                 default_tls_container=Unset, description=Unset,
+                 insert_headers=Unset, l7policies=Unset, listener_id=Unset,
+                 loadbalancer_id=Unset, name=Unset, protocol=Unset,
+                 protocol_port=Unset, sni_containers=Unset,
+                 timeout_client_data=Unset, timeout_member_connect=Unset,
+                 timeout_member_data=Unset, timeout_tcp_inspect=Unset):
 
         self.admin_state_up = admin_state_up
         self.connection_limit = connection_limit
@@ -105,40 +138,43 @@ class Listener(BaseDataModel):
         self.default_pool_id = default_pool_id
         self.default_tls_container = default_tls_container
         self.description = description
-        self.insert_headers = insert_headers or {}
-        self.l7policies = l7policies or []
+        self.insert_headers = insert_headers
+        self.l7policies = l7policies
         self.listener_id = listener_id
         self.loadbalancer_id = loadbalancer_id
         self.name = name
         self.protocol = protocol
         self.protocol_port = protocol_port
         self.sni_containers = sni_containers
+        self.timeout_client_data = timeout_client_data
+        self.timeout_member_connect = timeout_member_connect
+        self.timeout_member_data = timeout_member_data
+        self.timeout_tcp_inspect = timeout_tcp_inspect
 
 
 class Pool(BaseDataModel):
-    def __init__(self, admin_state_up=None, description=None,
-                 healthmonitor=None, lb_algorithm=None, listener_id=None,
-                 loadbalancer_id=None, members=None, name=None, pool_id=None,
-                 protocol=None, session_persistence=None):
+    def __init__(self, admin_state_up=Unset, description=Unset,
+                 healthmonitor=Unset, lb_algorithm=Unset,
+                 loadbalancer_id=Unset, members=Unset, name=Unset,
+                 pool_id=Unset, protocol=Unset, session_persistence=Unset):
 
         self.admin_state_up = admin_state_up
         self.description = description
         self.healthmonitor = healthmonitor
         self.lb_algorithm = lb_algorithm
-        self.listener_id = listener_id
         self.loadbalancer_id = loadbalancer_id
-        self.members = members or []
+        self.members = members
         self.name = name
         self.pool_id = pool_id
         self.protocol = protocol
-        self.session_persistence = session_persistence or {}
+        self.session_persistence = session_persistence
 
 
 class Member(BaseDataModel):
-    def __init__(self, address=None, admin_state_up=None, member_id=None,
-                 monitor_address=None, monitor_port=None, name=None,
-                 pool_id=None, protocol_port=None, subnet_id=None,
-                 weight=None):
+    def __init__(self, address=Unset, admin_state_up=Unset, member_id=Unset,
+                 monitor_address=Unset, monitor_port=Unset, name=Unset,
+                 pool_id=Unset, protocol_port=Unset, subnet_id=Unset,
+                 weight=Unset, backup=Unset):
 
         self.address = address
         self.admin_state_up = admin_state_up
@@ -150,13 +186,14 @@ class Member(BaseDataModel):
         self.protocol_port = protocol_port
         self.subnet_id = subnet_id
         self.weight = weight
+        self.backup = backup
 
 
 class HealthMonitor(BaseDataModel):
-    def __init__(self, admin_state_up=None, delay=None, expected_codes=None,
-                 healthmonitor_id=None, http_method=None, max_retries=None,
-                 max_retries_down=None, name=None, pool_id=None, timeout=None,
-                 type=None, url_path=None):
+    def __init__(self, admin_state_up=Unset, delay=Unset, expected_codes=Unset,
+                 healthmonitor_id=Unset, http_method=Unset, max_retries=Unset,
+                 max_retries_down=Unset, name=Unset, pool_id=Unset,
+                 timeout=Unset, type=Unset, url_path=Unset):
 
         self.admin_state_up = admin_state_up
         self.delay = delay
@@ -173,9 +210,10 @@ class HealthMonitor(BaseDataModel):
 
 
 class L7Policy(BaseDataModel):
-    def __init__(self, action=None, admin_state_up=None, description=None,
-                 l7policy_id=None, listener_id=None, name=None, position=None,
-                 redirect_pool_id=None, redirect_url=None, rules=None):
+    def __init__(self, action=Unset, admin_state_up=Unset, description=Unset,
+                 l7policy_id=Unset, listener_id=Unset, name=Unset,
+                 position=Unset, redirect_pool_id=Unset, redirect_url=Unset,
+                 rules=Unset):
 
         self.action = action
         self.admin_state_up = admin_state_up
@@ -186,13 +224,13 @@ class L7Policy(BaseDataModel):
         self.position = position
         self.redirect_pool_id = redirect_pool_id
         self.redirect_url = redirect_url
-        self.rules = rules or []
+        self.rules = rules
 
 
 class L7Rule(BaseDataModel):
-    def __init__(self, admin_state_up=None, compare_type=None, invert=None,
-                 key=None, l7policy_id=None, l7rule_id=None, type=None,
-                 value=None):
+    def __init__(self, admin_state_up=Unset, compare_type=Unset, invert=Unset,
+                 key=Unset, l7policy_id=Unset, l7rule_id=Unset, type=Unset,
+                 value=Unset):
 
         self.admin_state_up = admin_state_up
         self.compare_type = compare_type
@@ -205,10 +243,12 @@ class L7Rule(BaseDataModel):
 
 
 class VIP(BaseDataModel):
-    def __init__(self, vip_address=None, vip_network_id=None, vip_port_id=None,
-                 vip_subnet_id=None):
+    def __init__(self, vip_address=Unset, vip_network_id=Unset,
+                 vip_port_id=Unset, vip_subnet_id=Unset,
+                 vip_qos_policy_id=Unset):
 
         self.vip_address = vip_address
         self.vip_network_id = vip_network_id
         self.vip_port_id = vip_port_id
         self.vip_subnet_id = vip_subnet_id
+        self.vip_qos_policy_id = vip_qos_policy_id

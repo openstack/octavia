@@ -113,6 +113,8 @@ Load balancer
   +-----------------+--------+-----------------------------------------------+
   | name            | string | Human-readable name of the resource.          |
   +-----------------+--------+-----------------------------------------------+
+  | pools           | list   | A list of `Pool object`_.                     |
+  +-----------------+--------+-----------------------------------------------+
   | project_id      | string | ID of the project owning this resource.       |
   +-----------------+--------+-----------------------------------------------+
   | vip_address     | string | The IP address of the Virtual IP (VIP).       |
@@ -120,6 +122,8 @@ Load balancer
   | vip_network_id  | string | The ID of the network for the VIP.            |
   +-----------------+--------+-----------------------------------------------+
   | vip_port_id     | string | The ID of the VIP port.                       |
+  +-----------------+--------+-----------------------------------------------+
+  |vip_qos_policy_id| string | The ID of the qos policy for the VIP.         |
   +-----------------+--------+-----------------------------------------------+
   | vip_subnet_id   | string | The ID of the subnet for the VIP.             |
   +-----------------+--------+-----------------------------------------------+
@@ -145,11 +149,15 @@ Load balancer
   +-----------------+--------+-----------------------------------------------+
   | Name            | Type   | Description                                   |
   +=================+========+===============================================+
+  | project_id      | string | ID of the project owning this resource.       |
+  +-----------------+--------+-----------------------------------------------+
   | vip_address     | string | The IP address of the Virtual IP (VIP).       |
   +-----------------+--------+-----------------------------------------------+
   | vip_network_id  | string | The ID of the network for the VIP.            |
   +-----------------+--------+-----------------------------------------------+
   | vip_port_id     | string | The ID of the VIP port.                       |
+  +-----------------+--------+-----------------------------------------------+
+  |vip_qos_policy_id| string | The ID of the qos policy for the VIP.         |
   +-----------------+--------+-----------------------------------------------+
   | vip_subnet_id   | string | The ID of the subnet for the VIP.             |
   +-----------------+--------+-----------------------------------------------+
@@ -364,6 +372,21 @@ Listener
   +-----------------------+--------+------------------------------------------+
   | sni_containers        | object | A pkcs12 format set of certificates.     |
   +-----------------------+--------+------------------------------------------+
+  | timeout_client_data   | int    | Frontend client inactivity timeout in    |
+  |                       |        | milliseconds.                            |
+  +-----------------------+--------+------------------------------------------+
+  | timeout_member_connect| int    | Backend member connection timeout in     |
+  |                       |        | milliseconds.                            |
+  +-----------------------+--------+------------------------------------------+
+  | timeout_member_data   | int    | Backend member inactivity timeout in     |
+  |                       |        | milliseconds.                            |
+  +-----------------------+--------+------------------------------------------+
+  | timeout_tcp_inspect   | int    | Time, in milliseconds, to wait for       |
+  |                       |        | additional TCP packets for content       |
+  |                       |        | inspection.                              |
+  +-----------------------+--------+------------------------------------------+
+
+
 
   .. _Supported HTTP Header Insertions:
 
@@ -533,11 +556,7 @@ Pool
   |                       |        | ROUND_ROBIN, LEAST_CONNECTIONS, or       |
   |                       |        | SOURCE_IP.                               |
   +-----------------------+--------+------------------------------------------+
-  | listener_id           | string | ID of listener. Required if              |
-  |                       |        | loadbalancer_id not specified.           |
-  +-----------------------+--------+------------------------------------------+
-  | loadbalancer_id       | string | ID of load balancer. Required if         |
-  |                       |        | listener_id not specified.               |
+  | loadbalancer_id       | string | ID of load balancer.                     |
   +-----------------------+--------+------------------------------------------+
   | members               | list   | A list of `Member objects`_.             |
   +-----------------------+--------+------------------------------------------+
@@ -683,6 +702,10 @@ Member
   |                       |        | receive traffic from the load balancer.  |
   +-----------------------+--------+------------------------------------------+
   | admin_state_up        | bool   | Admin state: True if up, False if down.  |
+  +-----------------------+--------+------------------------------------------+
+  | backup                | bool   | Is the member a backup? Backup members   |
+  |                       |        | only receive traffic when all non-backup |
+  |                       |        | members are down.                        |
   +-----------------------+--------+------------------------------------------+
   | member_id             | string | ID of member to create.                  |
   +-----------------------+--------+------------------------------------------+

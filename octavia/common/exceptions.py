@@ -340,3 +340,30 @@ class InvalidLimit(APIException):
 
 class MissingVIPSecurityGroup(OctaviaException):
     message = _('VIP security group is missing for load balancer: %(lb_id)s')
+
+
+class ProviderNotEnabled(APIException):
+    msg = _("Provider '%(prov)s' is not enabled.")
+    code = 400
+
+
+class ProviderNotFound(APIException):
+    msg = _("Provider '%(prov)s' was not found.")
+    code = 501
+
+
+class ProviderDriverError(APIException):
+    msg = _("Provider '%(prov)s' reports error: %(user_msg)s")
+    code = 500
+
+
+class ProviderNotImplementedError(APIException):
+    msg = _("Provider '%(prov)s' does not support a requested action: "
+            "%(user_msg)s")
+    code = 501
+
+
+class ProviderUnsupportedOptionError(APIException):
+    msg = _("Provider '%(prov)s' does not support a requested option: "
+            "%(user_msg)s")
+    code = 501

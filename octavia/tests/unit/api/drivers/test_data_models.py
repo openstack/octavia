@@ -32,6 +32,7 @@ class TestProviderDataModels(base.TestCase):
         self.vip_port_id = uuidutils.generate_uuid()
         self.vip_subnet_id = uuidutils.generate_uuid()
         self.listener_id = uuidutils.generate_uuid()
+        self.vip_qos_policy_id = uuidutils.generate_uuid()
 
         self.ref_listener = data_models.Listener(
             admin_state_up=True,
@@ -59,7 +60,8 @@ class TestProviderDataModels(base.TestCase):
             vip_address=self.vip_address,
             vip_network_id=self.vip_network_id,
             vip_port_id=self.vip_port_id,
-            vip_subnet_id=self.vip_subnet_id)
+            vip_subnet_id=self.vip_subnet_id,
+            vip_qos_policy_id=self.vip_qos_policy_id)
 
         self.ref_lb_dict = {'project_id': self.project_id,
                             'flavor': {'cake': 'chocolate'},
@@ -67,37 +69,38 @@ class TestProviderDataModels(base.TestCase):
                             'admin_state_up': False,
                             'loadbalancer_id': self.loadbalancer_id,
                             'vip_port_id': self.vip_port_id,
-                            'listeners': None,
                             'vip_address': self.vip_address,
                             'description': 'One great load balancer',
                             'vip_subnet_id': self.vip_subnet_id,
-                            'name': 'favorite_lb'}
+                            'name': 'favorite_lb',
+                            'vip_qos_policy_id': self.vip_qos_policy_id}
+
+        self.ref_listener = {'admin_state_up': True,
+                             'connection_limit': 5000,
+                             'default_pool_id': None,
+                             'default_tls_container': 'a_pkcs12_bundle',
+                             'description': 'The listener',
+                             'insert_headers': {'X-Forwarded-For': 'true'},
+                             'listener_id': self.listener_id,
+                             'loadbalancer_id': self.loadbalancer_id,
+                             'name': 'super_listener',
+                             'protocol': 'avian',
+                             'protocol_port': 42,
+                             'sni_containers': 'another_pkcs12_bundle'}
 
         self.ref_lb_dict_with_listener = {
             'admin_state_up': False,
             'description': 'One great load balancer',
             'flavor': {'cake': 'chocolate'},
-            'listeners': [{'admin_state_up': True,
-                           'connection_limit': 5000,
-                           'default_pool': None,
-                           'default_pool_id': None,
-                           'default_tls_container': 'a_pkcs12_bundle',
-                           'description': 'The listener',
-                           'insert_headers': {'X-Forwarded-For': 'true'},
-                           'l7policies': None,
-                           'listener_id': self.listener_id,
-                           'loadbalancer_id': self.loadbalancer_id,
-                           'name': 'super_listener',
-                           'protocol': 'avian',
-                           'protocol_port': 42,
-                           'sni_containers': 'another_pkcs12_bundle'}],
+            'listeners': [self.ref_listener],
             'loadbalancer_id': self.loadbalancer_id,
             'name': 'favorite_lb',
             'project_id': self.project_id,
             'vip_address': self.vip_address,
             'vip_network_id': self.vip_network_id,
             'vip_port_id': self.vip_port_id,
-            'vip_subnet_id': self.vip_subnet_id}
+            'vip_subnet_id': self.vip_subnet_id,
+            'vip_qos_policy_id': self.vip_qos_policy_id}
 
     def test_equality(self):
         second_ref_lb = deepcopy(self.ref_lb)
@@ -126,10 +129,65 @@ class TestProviderDataModels(base.TestCase):
 
         self.assertEqual(self.ref_lb_dict, ref_lb_converted_to_dict)
 
+    def test_to_dict_partial(self):
+        ref_lb = data_models.LoadBalancer(loadbalancer_id=self.loadbalancer_id)
+        ref_lb_dict = {'loadbalancer_id': self.loadbalancer_id}
+
+        ref_lb_converted_to_dict = ref_lb.to_dict()
+
+        self.assertEqual(ref_lb_dict, ref_lb_converted_to_dict)
+
+    def test_to_dict_render_unsets(self):
+
+        ref_lb_converted_to_dict = self.ref_lb.to_dict(render_unsets=True)
+
+        new_ref_lib_dict = deepcopy(self.ref_lb_dict)
+        new_ref_lib_dict['pools'] = None
+        new_ref_lib_dict['listeners'] = None
+
+        self.assertEqual(new_ref_lib_dict, ref_lb_converted_to_dict)
+
     def test_to_dict_recursive(self):
         ref_lb_converted_to_dict = self.ref_lb.to_dict(recurse=True)
 
         self.assertEqual(self.ref_lb_dict_with_listener,
+                         ref_lb_converted_to_dict)
+
+    def test_to_dict_recursive_partial(self):
+        ref_lb = data_models.LoadBalancer(
+            loadbalancer_id=self.loadbalancer_id,
+            listeners=[self.ref_listener])
+
+        ref_lb_dict_with_listener = {
+            'loadbalancer_id': self.loadbalancer_id,
+            'listeners': [self.ref_listener]}
+
+        ref_lb_converted_to_dict = ref_lb.to_dict(recurse=True)
+
+        self.assertEqual(ref_lb_dict_with_listener, ref_lb_converted_to_dict)
+
+    def test_to_dict_recursive_render_unset(self):
+        ref_lb = data_models.LoadBalancer(
+            admin_state_up=False,
+            description='One great load balancer',
+            flavor={'cake': 'chocolate'},
+            listeners=[self.ref_listener],
+            loadbalancer_id=self.loadbalancer_id,
+            project_id=self.project_id,
+            vip_address=self.vip_address,
+            vip_network_id=self.vip_network_id,
+            vip_port_id=self.vip_port_id,
+            vip_subnet_id=self.vip_subnet_id,
+            vip_qos_policy_id=self.vip_qos_policy_id)
+
+        ref_lb_dict_with_listener = deepcopy(self.ref_lb_dict_with_listener)
+        ref_lb_dict_with_listener['pools'] = None
+        ref_lb_dict_with_listener['name'] = None
+
+        ref_lb_converted_to_dict = ref_lb.to_dict(recurse=True,
+                                                  render_unsets=True)
+
+        self.assertEqual(ref_lb_dict_with_listener,
                          ref_lb_converted_to_dict)
 
     def test_from_dict(self):

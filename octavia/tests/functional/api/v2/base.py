@@ -79,6 +79,12 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.conf.config(group="controller_worker",
                          network_driver='network_noop_driver')
         self.conf.config(group='api_settings', auth_strategy=constants.NOAUTH)
+        self.conf.config(group='api_settings',
+                         default_provider_driver='noop_driver')
+        # We still need to test with the "octavia" alias
+        self.conf.config(group='api_settings',
+                         enabled_provider_drivers='amphora, noop_driver, '
+                                                  'octavia')
         self.lb_repo = repositories.LoadBalancerRepository()
         self.listener_repo = repositories.ListenerRepository()
         self.listener_stats_repo = repositories.ListenerStatisticsRepository()

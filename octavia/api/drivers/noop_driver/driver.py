@@ -27,14 +27,15 @@ class NoopManager(object):
         self.driverconfig = {}
 
     # Load Balancer
-    def create_vip_port(self, loadbalancer_id, vip_dictionary):
+    def create_vip_port(self, loadbalancer_id, project_id, vip_dictionary):
         LOG.debug('Provider %s no-op, create_vip_port loadbalancer %s',
                   self.__class__.__name__, loadbalancer_id)
 
-        self.driverconfig[loadbalancer_id] = (loadbalancer_id, vip_dictionary,
+        self.driverconfig[loadbalancer_id] = (loadbalancer_id, project_id,
+                                              vip_dictionary,
                                               'create_vip_port')
 
-        vip_address = vip_dictionary.get('vip_address', '192.0.2.5')
+        vip_address = vip_dictionary.get('vip_address', '198.0.2.5')
         vip_network_id = vip_dictionary.get('vip_network_id',
                                             uuidutils.generate_uuid())
         vip_port_id = vip_dictionary.get('vip_port_id',
@@ -222,8 +223,9 @@ class NoopProviderDriver(driver_base.ProviderDriver):
         self.driver = NoopManager()
 
     # Load Balancer
-    def create_vip_port(self, loadbalancer_id, vip_dictionary):
-        return self.driver.create_vip_port(loadbalancer_id, vip_dictionary)
+    def create_vip_port(self, loadbalancer_id, project_id, vip_dictionary):
+        return self.driver.create_vip_port(loadbalancer_id, project_id,
+                                           vip_dictionary)
 
     def loadbalancer_create(self, loadbalancer):
         self.driver.loadbalancer_create(loadbalancer)

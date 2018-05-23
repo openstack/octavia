@@ -22,6 +22,9 @@ import pecan
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
+from octavia.api.drivers import data_models as driver_dm
+from octavia.api.drivers import driver_factory
+from octavia.api.drivers import utils as driver_utils
 from octavia.api.v2.controllers import base
 from octavia.api.v2.controllers import listener
 from octavia.api.v2.controllers import pool
@@ -252,6 +255,9 @@ class LoadBalancersController(base.BaseController):
 
         self._validate_vip_request_object(load_balancer)
 
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(load_balancer.provider)
+
         lock_session = db_api.get_session(autocommit=False)
         try:
             if self.repositories.check_quota_met(
@@ -268,34 +274,57 @@ class LoadBalancersController(base.BaseController):
             ))
             vip_dict = lb_dict.pop('vip', {})
 
+            # Make sure we store the right provider in the DB
+            lb_dict['provider'] = driver.name
+
             # NoneType can be weird here, have to force type a second time
             listeners = lb_dict.pop('listeners', []) or []
             pools = lb_dict.pop('pools', []) or []
 
-            # TODO(johnsom) Remove provider and flavor from the lb_dict
-            # as they have not been implemented beyond the API yet.
-            # Remove these lines as they are implemented.
-            if 'provider' in lb_dict:
-                del lb_dict['provider']
-            if 'flavor_id' in lb_dict:
-                del lb_dict['flavor_id']
+            # TODO(johnsom) Remove flavor from the lb_dict
+            # as it has not been implemented beyond the API yet.
+            # Remove this line when it is implemented.
+            lb_dict.pop('flavor', None)
 
             db_lb = self.repositories.create_load_balancer_and_vip(
                 lock_session, lb_dict, vip_dict)
 
-            # create vip port if not exist
-            vip = self._create_vip_port_if_not_exist(db_lb)
+            # See if the provider driver wants to create the VIP port
+            try:
+                provider_vip_dict = driver_utils.vip_dict_to_provider_dict(
+                    vip_dict)
+                vip_dict = driver_utils.call_provider(
+                    driver.name, driver.create_vip_port, db_lb.id,
+                    db_lb.project_id, provider_vip_dict)
+                vip = driver_utils.provider_vip_dict_to_vip_obj(vip_dict)
+            except exceptions.ProviderNotImplementedError:
+                # create vip port if not exist, driver didn't want to create
+                # the VIP port
+                vip = self._create_vip_port_if_not_exist(db_lb)
+                LOG.info('Created VIP port %s for provider %s.',
+                         vip.port_id, driver.name)
+
             self.repositories.vip.update(
                 lock_session, db_lb.id,
                 ip_address=vip.ip_address,
                 port_id=vip.port_id,
                 network_id=vip.network_id,
-                subnet_id=vip.subnet_id
-            )
+                subnet_id=vip.subnet_id)
 
             if listeners or pools:
                 db_pools, db_lists = self._graph_create(
                     context.session, lock_session, db_lb, listeners, pools)
+
+            # Prepare the data for the driver data model
+            driver_lb_dict = driver_utils.lb_dict_to_provider_dict(
+                lb_dict, vip, db_pools, db_lists)
+
+            # Dispatch to the driver
+            LOG.info("Sending create Load Balancer %s to provider %s",
+                     db_lb.id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.loadbalancer_create,
+                driver_dm.LoadBalancer.from_dict(driver_lb_dict))
 
             lock_session.commit()
         except odb_exceptions.DBDuplicateEntry:
@@ -304,17 +333,6 @@ class LoadBalancersController(base.BaseController):
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
-
-        # Handler will be responsible for sending to controller
-        try:
-            LOG.info("Sending created Load Balancer %s to the handler",
-                     db_lb.id)
-            self.handler.create(db_lb)
-        except Exception:
-            with excutils.save_and_reraise_exception(reraise=False):
-                self.repositories.load_balancer.update(
-                    context.session, db_lb.id,
-                    provisioning_status=constants.ERROR)
 
         db_lb = self._get_db_lb(context.session, db_lb.id)
 
@@ -397,9 +415,8 @@ class LoadBalancersController(base.BaseController):
                                                           attr=attr))
             p['load_balancer_id'] = db_lb.id
             p['project_id'] = db_lb.project_id
-            new_pool, new_hm, new_members = (
-                pool.PoolsController()._graph_create(
-                    session, lock_session, p))
+            new_pool = (pool.PoolsController()._graph_create(
+                session, lock_session, p))
             new_pools.append(new_pool)
             pool_name_ids[new_pool.name] = new_pool.id
 
@@ -445,14 +462,39 @@ class LoadBalancersController(base.BaseController):
                                wtypes.UnsetType) and
                 db_lb.vip.qos_policy_id != load_balancer.vip_qos_policy_id):
             validate.qos_policy_exists(load_balancer.vip_qos_policy_id)
-        self._test_lb_status(context.session, id)
-        try:
-            LOG.info("Sending updated Load Balancer %s to the handler", id)
-            self.handler.update(db_lb, load_balancer)
-        except Exception:
-            with excutils.save_and_reraise_exception(reraise=False):
-                self.repositories.load_balancer.update(
-                    context.session, id, provisioning_status=constants.ERROR)
+
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(db_lb.provider)
+
+        with db_api.get_lock_session() as lock_session:
+            self._test_lb_status(lock_session, id)
+
+            # Prepare the data for the driver data model
+            lb_dict = load_balancer.to_dict(render_unsets=False)
+            lb_dict['id'] = id
+            vip_dict = lb_dict.pop('vip', {})
+            lb_dict = driver_utils.lb_dict_to_provider_dict(lb_dict)
+            if 'qos_policy_id' in vip_dict:
+                lb_dict['vip_qos_policy_id'] = vip_dict['qos_policy_id']
+
+            # Dispatch to the driver
+            LOG.info("Sending update Load Balancer %s to provider "
+                     "%s", id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.loadbalancer_update,
+                driver_dm.LoadBalancer.from_dict(lb_dict))
+
+            db_lb_dict = load_balancer.to_dict(render_unsets=False)
+            if 'vip' in db_lb_dict:
+                db_vip_dict = db_lb_dict.pop('vip')
+                self.repositories.vip.update(lock_session, id, **db_vip_dict)
+            if db_lb_dict:
+                self.repositories.load_balancer.update(lock_session, id,
+                                                       **db_lb_dict)
+
+        # Force SQL alchemy to query the DB, otherwise we get inconsistent
+        # results
+        context.session.expire_all()
         db_lb = self._get_db_lb(context.session, id)
         result = self._convert_db_to_type(db_lb, lb_types.LoadBalancerResponse)
         return lb_types.LoadBalancerRootResponse(loadbalancer=result)
@@ -467,6 +509,9 @@ class LoadBalancersController(base.BaseController):
         self._auth_validate_action(context, db_lb.project_id,
                                    constants.RBAC_DELETE)
 
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(db_lb.provider)
+
         with db_api.get_lock_session() as lock_session:
             if (db_lb.listeners or db_lb.pools) and not cascade:
                 msg = _("Cannot delete Load Balancer %s - "
@@ -476,14 +521,10 @@ class LoadBalancersController(base.BaseController):
             self._test_lb_status(lock_session, id,
                                  lb_status=constants.PENDING_DELETE)
 
-        try:
-            LOG.info("Sending deleted Load Balancer %s to the handler", id)
-            self.handler.delete(db_lb, cascade)
-        except Exception:
-            with excutils.save_and_reraise_exception(reraise=False):
-                self.repositories.load_balancer.update(
-                    context.session, id,
-                    provisioning_status=constants.ERROR)
+            LOG.info("Sending delete Load Balancer %s to provider %s",
+                     id, driver.name)
+            driver_utils.call_provider(driver.name, driver.loadbalancer_delete,
+                                       id, cascade)
 
     @pecan.expose()
     def _lookup(self, id, *remainder):
@@ -582,13 +623,12 @@ class FailoverController(LoadBalancersController):
         self._auth_validate_action(context, db_lb.project_id,
                                    constants.RBAC_PUT_FAILOVER)
 
-        self._test_lb_status(context.session, self.lb_id)
-        try:
-            LOG.info("Sending failover request for lb %s to the handler",
-                     self.lb_id)
-            self.handler.failover(db_lb)
-        except Exception:
-            with excutils.save_and_reraise_exception(reraise=False):
-                self.repositories.load_balancer.update(
-                    context.session, self.lb_id,
-                    provisioning_status=constants.ERROR)
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(db_lb.provider)
+
+        with db_api.get_lock_session() as lock_session:
+            self._test_lb_status(lock_session, self.lb_id)
+            LOG.info("Sending failover request for load balancer %s to the "
+                     "provider %s", self.lb_id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.loadbalancer_failover, self.lb_id)

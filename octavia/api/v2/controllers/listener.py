@@ -275,7 +275,8 @@ class ListenersController(base.BaseController):
                 l7p['redirect_pool_id'] = pool_id
             new_l7ps.append(l7policy.L7PolicyController()._graph_create(
                 lock_session, l7p))
-        return db_listener, new_l7ps
+        db_listener.l7policies = new_l7ps
+        return db_listener
 
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text,
                          body=listener_types.ListenerRootPUT, status_code=200)

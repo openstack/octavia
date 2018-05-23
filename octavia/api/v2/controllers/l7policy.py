@@ -200,6 +200,7 @@ class L7PolicyController(base.BaseController):
                 l7rule.L7RuleController(db_policy.id)._graph_create(
                     lock_session, r))
 
+        db_policy.l7rules = new_rules
         return db_policy
 
     @wsme_pecan.wsexpose(l7policy_types.L7PolicyRootResponse,
