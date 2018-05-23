@@ -23,6 +23,7 @@ from oslo_utils import uuidutils
 from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
+from octavia.common import exceptions
 from octavia.tests.functional.api.v2 import base
 
 
@@ -446,7 +447,14 @@ class TestListener(base.BaseAPITest):
         listener_path = self.listener_path
         self.get(listener_path.format(listener_id='SEAN-CONNERY'), status=404)
 
-    def test_create(self, response_status=201, **optionals):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create(self, mock_cert_data, response_status=201, **optionals):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_cert_data.return_value = {'tls_cert': cert1,
+                                       'sni_certs': [cert2, cert3]}
         sni1 = uuidutils.generate_uuid()
         sni2 = uuidutils.generate_uuid()
         lb_listener = {'name': 'listener1', 'default_pool_id': None,
@@ -643,18 +651,27 @@ class TestListener(base.BaseAPITest):
         body = self._build_body(lb_listener)
         self.post(self.LISTENERS_PATH, body, status=403)
 
-    def test_create_with_bad_handler(self):
-        self.handler_mock().listener.create.side_effect = Exception()
-        api_listener = self.create_listener(
-            constants.PROTOCOL_HTTP, 80,
-            self.lb_id).get(self.root_tag)
-        self.assert_correct_status(
-            lb_id=self.lb_id,
-            listener_id=api_listener.get('id'),
-            listener_prov_status=constants.ERROR,
-            listener_op_status=constants.OFFLINE)
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_create_with_bad_provider(self, mock_provider):
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        lb_listener = {'name': 'listener1',
+                       'protocol': constants.PROTOCOL_HTTP,
+                       'protocol_port': 80,
+                       'loadbalancer_id': self.lb_id}
+        body = self._build_body(lb_listener)
+        response = self.post(self.LISTENERS_PATH, body, status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.json.get('faultstring'))
 
-    def test_create_authorized(self, **optionals):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_authorized(self, mock_cert_data, **optionals):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_cert_data.return_value = {'tls_cert': cert1,
+                                       'sni_certs': [cert2, cert3]}
         sni1 = uuidutils.generate_uuid()
         sni2 = uuidutils.generate_uuid()
         lb_listener = {'name': 'listener1', 'default_pool_id': None,
@@ -744,21 +761,23 @@ class TestListener(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
-    def test_update_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_update_with_bad_provider(self, mock_provider):
         api_listener = self.create_listener(
             constants.PROTOCOL_HTTP, 80,
             self.lb_id).get(self.root_tag)
         self.set_lb_status(lb_id=self.lb_id)
         new_listener = {'name': 'new_name'}
-        self.handler_mock().listener.update.side_effect = Exception()
-        self.put(self.LISTENER_PATH.format(listener_id=api_listener.get('id')),
-                 self._build_body(new_listener))
-        self.assert_correct_status(
-            lb_id=self.lb_id,
-            listener_id=api_listener.get('id'),
-            listener_prov_status=constants.ERROR)
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        response = self.put(
+            self.LISTENER_PATH.format(listener_id=api_listener.get('id')),
+            self._build_body(new_listener), status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.json.get('faultstring'))
 
-    def test_delete_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_delete_with_bad_provider(self, mock_provider):
         api_listener = self.create_listener(
             constants.PROTOCOL_HTTP, 80,
             self.lb_id).get(self.root_tag)
@@ -768,19 +787,19 @@ class TestListener(base.BaseAPITest):
         api_listener['operating_status'] = constants.ONLINE
         response = self.get(self.LISTENER_PATH.format(
             listener_id=api_listener.get('id'))).json.get(self.root_tag)
-
         self.assertIsNone(api_listener.pop('updated_at'))
         self.assertIsNotNone(response.pop('updated_at'))
         self.assertEqual(api_listener, response)
-        self.handler_mock().listener.delete.side_effect = Exception()
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
         self.delete(self.LISTENER_PATH.format(
-            listener_id=api_listener.get('id')))
-        self.assert_correct_status(
-            lb_id=self.lb_id,
-            listener_id=api_listener.get('id'),
-            listener_prov_status=constants.ERROR)
+            listener_id=api_listener.get('id')), status=500)
 
-    def test_update(self):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update(self, mock_cert_data):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
         tls_uuid = uuidutils.generate_uuid()
         listener = self.create_listener(
             constants.PROTOCOL_TCP, 80, self.lb_id,
@@ -834,7 +853,11 @@ class TestListener(base.BaseAPITest):
         self.assert_final_listener_statuses(self.lb_id,
                                             listener['listener']['id'])
 
-    def test_update_authorized(self):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_authorized(self, mock_cert_data):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
         tls_uuid = uuidutils.generate_uuid()
         listener = self.create_listener(
             constants.PROTOCOL_TCP, 80, self.lb_id,
@@ -888,7 +911,11 @@ class TestListener(base.BaseAPITest):
         self.assert_final_listener_statuses(self.lb_id,
                                             api_listener['id'])
 
-    def test_update_not_authorized(self):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_not_authorized(self, mock_cert_data):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
         tls_uuid = uuidutils.generate_uuid()
         listener = self.create_listener(
             constants.PROTOCOL_TCP, 80, self.lb_id,
@@ -1075,7 +1102,12 @@ class TestListener(base.BaseAPITest):
             listener_id=listener['listener'].get('id'))
         self.put(listener_path, {}, status=400)
 
-    def test_update_bad_tls_ref(self):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_bad_tls_ref(self, mock_cert_data):
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_cert_data.return_value = {'sni_certs': [cert2, cert3]}
         sni1 = uuidutils.generate_uuid()
         sni2 = uuidutils.generate_uuid()
         tls_ref = uuidutils.generate_uuid()
@@ -1215,7 +1247,14 @@ class TestListener(base.BaseAPITest):
             listener_id=api_listener['id'])
         self.delete(listener_path, status=404)
 
-    def test_create_with_tls_termination_data(self):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_with_tls_termination_data(self, mock_cert_data):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_cert_data.return_value = {'tls_cert': cert1,
+                                       'sni_certs': [cert2, cert3]}
         cert_id = uuidutils.generate_uuid()
         listener = self.create_listener(constants.PROTOCOL_TERMINATED_HTTPS,
                                         80, self.lb_id,
@@ -1225,7 +1264,11 @@ class TestListener(base.BaseAPITest):
         get_listener = self.get(listener_path).json['listener']
         self.assertEqual(cert_id, get_listener['default_tls_container_ref'])
 
-    def test_update_with_tls_termination_data(self):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_tls_termination_data(self, mock_cert_data):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
         cert_id = uuidutils.generate_uuid()
         listener = self.create_listener(constants.PROTOCOL_TERMINATED_HTTPS,
                                         80, self.lb_id)
@@ -1237,7 +1280,8 @@ class TestListener(base.BaseAPITest):
         self.put(listener_path,
                  self._build_body({'default_tls_container_ref': cert_id}))
         get_listener = self.get(listener_path).json['listener']
-        self.assertIsNone(get_listener.get('default_tls_container_ref'))
+        self.assertEqual(cert_id,
+                         get_listener.get('default_tls_container_ref'))
 
     def test_create_with_tls_termination_disabled(self):
         self.conf.config(group='api_settings',
@@ -1252,7 +1296,14 @@ class TestListener(base.BaseAPITest):
             .format(constants.PROTOCOL_TERMINATED_HTTPS),
             listener.get('faultstring'))
 
-    def test_create_with_sni_data(self):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_with_sni_data(self, mock_cert_data):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_cert_data.return_value = {'tls_cert': cert1,
+                                       'sni_certs': [cert2, cert3]}
         sni_id1 = uuidutils.generate_uuid()
         sni_id2 = uuidutils.generate_uuid()
         listener = self.create_listener(constants.PROTOCOL_HTTP, 80,
@@ -1264,7 +1315,12 @@ class TestListener(base.BaseAPITest):
         self.assertItemsEqual([sni_id1, sni_id2],
                               get_listener['sni_container_refs'])
 
-    def test_update_with_sni_data(self):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_sni_data(self, mock_cert_data):
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_cert_data.return_value = {'sni_certs': [cert2, cert3]}
         sni_id1 = uuidutils.generate_uuid()
         sni_id2 = uuidutils.generate_uuid()
         listener = self.create_listener(constants.PROTOCOL_HTTP, 80,

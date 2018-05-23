@@ -42,6 +42,7 @@ class BaseDataModel(object):
                                 ret[attr].append(
                                     item.to_dict(calling_classes=(
                                         calling_classes + [type(self)]),
+                                        recurse=True,
                                         render_unsets=render_unsets))
                             else:
                                 ret[attr].append(None)
@@ -125,18 +126,21 @@ class LoadBalancer(BaseDataModel):
 class Listener(BaseDataModel):
     def __init__(self, admin_state_up=Unset, connection_limit=Unset,
                  default_pool=Unset, default_pool_id=Unset,
-                 default_tls_container=Unset, description=Unset,
+                 default_tls_container_ref=Unset,
+                 default_tls_container_data=Unset, description=Unset,
                  insert_headers=Unset, l7policies=Unset, listener_id=Unset,
                  loadbalancer_id=Unset, name=Unset, protocol=Unset,
-                 protocol_port=Unset, sni_containers=Unset,
-                 timeout_client_data=Unset, timeout_member_connect=Unset,
-                 timeout_member_data=Unset, timeout_tcp_inspect=Unset):
+                 protocol_port=Unset, sni_container_refs=Unset,
+                 sni_container_data=Unset, timeout_client_data=Unset,
+                 timeout_member_connect=Unset, timeout_member_data=Unset,
+                 timeout_tcp_inspect=Unset):
 
         self.admin_state_up = admin_state_up
         self.connection_limit = connection_limit
         self.default_pool = default_pool
         self.default_pool_id = default_pool_id
-        self.default_tls_container = default_tls_container
+        self.default_tls_container_data = default_tls_container_data
+        self.default_tls_container_ref = default_tls_container_ref
         self.description = description
         self.insert_headers = insert_headers
         self.l7policies = l7policies
@@ -145,7 +149,8 @@ class Listener(BaseDataModel):
         self.name = name
         self.protocol = protocol
         self.protocol_port = protocol_port
-        self.sni_containers = sni_containers
+        self.sni_container_data = sni_container_data
+        self.sni_container_refs = sni_container_refs
         self.timeout_client_data = timeout_client_data
         self.timeout_member_connect = timeout_member_connect
         self.timeout_member_data = timeout_member_data

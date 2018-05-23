@@ -226,6 +226,7 @@ HEALTH_MONITOR_ID = 'health_monitor_id'
 L7POLICY_ID = 'l7policy_id'
 L7RULE_ID = 'l7rule_id'
 LOAD_BALANCER_UPDATES = 'load_balancer_updates'
+LISTENER_UPDATES = 'listener_updates'
 
 CERT_ROTATE_AMPHORA_FLOW = 'octavia-cert-rotate-amphora-flow'
 CREATE_AMPHORA_FLOW = 'octavia-create-amphora-flow'
