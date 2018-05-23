@@ -1045,9 +1045,21 @@ class TestLoadBalancer(base.BaseAPITest):
         lbs = self.get(self.LBS_PATH, params={
             'fields': ['id', 'project_id']}).json
         for lb in lbs['loadbalancers']:
-            self.assertIn(u'id', lb.keys())
-            self.assertIn(u'project_id', lb.keys())
-            self.assertNotIn(u'description', lb.keys())
+            self.assertIn(u'id', lb)
+            self.assertIn(u'project_id', lb)
+            self.assertNotIn(u'description', lb)
+
+    def test_get_one_fields_filter(self):
+        lb1 = self.create_load_balancer(
+            uuidutils.generate_uuid(),
+            name='lb1', project_id=self.project_id).get(self.root_tag)
+
+        lb = self.get(
+            self.LB_PATH.format(lb_id=lb1.get('id')),
+            params={'fields': ['id', 'project_id']}).json.get(self.root_tag)
+        self.assertIn(u'id', lb)
+        self.assertIn(u'project_id', lb)
+        self.assertNotIn(u'description', lb)
 
     def test_get_all_admin_state_up_filter(self):
         self.create_load_balancer(uuidutils.generate_uuid(),

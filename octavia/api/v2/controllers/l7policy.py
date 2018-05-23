@@ -43,8 +43,9 @@ class L7PolicyController(base.BaseController):
         super(L7PolicyController, self).__init__()
         self.handler = self.handler.l7policy
 
-    @wsme_pecan.wsexpose(l7policy_types.L7PolicyRootResponse, wtypes.text)
-    def get(self, id):
+    @wsme_pecan.wsexpose(l7policy_types.L7PolicyRootResponse, wtypes.text,
+                         [wtypes.text], ignore_extra_args=True)
+    def get(self, id, fields=None):
         """Gets a single l7policy's details."""
         context = pecan.request.context.get('octavia_context')
         db_l7policy = self._get_db_l7policy(context.session, id,
@@ -53,8 +54,10 @@ class L7PolicyController(base.BaseController):
         self._auth_validate_action(context, db_l7policy.project_id,
                                    constants.RBAC_GET_ONE)
 
-        result = self._convert_db_to_type(db_l7policy,
-                                          l7policy_types.L7PolicyResponse)
+        result = self._convert_db_to_type(
+            db_l7policy, l7policy_types.L7PolicyResponse)
+        if fields is not None:
+            result = self._filter_fields([result], fields)[0]
         return l7policy_types.L7PolicyRootResponse(l7policy=result)
 
     @wsme_pecan.wsexpose(l7policy_types.L7PoliciesRootResponse, wtypes.text,

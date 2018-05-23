@@ -49,8 +49,9 @@ class LoadBalancersController(base.BaseController):
         super(LoadBalancersController, self).__init__()
         self.handler = self.handler.load_balancer
 
-    @wsme_pecan.wsexpose(lb_types.LoadBalancerRootResponse, wtypes.text)
-    def get_one(self, id):
+    @wsme_pecan.wsexpose(lb_types.LoadBalancerRootResponse, wtypes.text,
+                         [wtypes.text], ignore_extra_args=True)
+    def get_one(self, id, fields=None):
         """Gets a single load balancer's details."""
         context = pecan.request.context.get('octavia_context')
         load_balancer = self._get_db_lb(context.session, id,
@@ -66,6 +67,8 @@ class LoadBalancersController(base.BaseController):
 
         result = self._convert_db_to_type(
             load_balancer, lb_types.LoadBalancerResponse)
+        if fields is not None:
+            result = self._filter_fields([result], fields)[0]
         return lb_types.LoadBalancerRootResponse(loadbalancer=result)
 
     @wsme_pecan.wsexpose(lb_types.LoadBalancersRootResponse, wtypes.text,
