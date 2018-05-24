@@ -84,6 +84,8 @@ def _base_to_provider_dict(current_dict, include_project_id=False):
         new_dict['admin_state_up'] = new_dict.pop('enabled')
     if 'project_id' in new_dict and not include_project_id:
         del new_dict['project_id']
+    if 'tenant_id' in new_dict:
+        del new_dict['tenant_id']
     return new_dict
 
 
@@ -262,9 +264,13 @@ def pool_dict_to_provider_dict(pool_dict):
 def db_members_to_provider_members(db_members):
     provider_members = []
     for member in db_members:
-        new_member_dict = member_dict_to_provider_dict(member.to_dict())
-        provider_members.append(driver_dm.Member.from_dict(new_member_dict))
+        provider_members.append(db_member_to_provider_member(member))
     return provider_members
+
+
+def db_member_to_provider_member(db_member):
+    new_member_dict = member_dict_to_provider_dict(db_member.to_dict())
+    return driver_dm.Member.from_dict(new_member_dict)
 
 
 def member_dict_to_provider_dict(member_dict):
