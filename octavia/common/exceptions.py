@@ -383,3 +383,11 @@ class ObjectInUse(APIException):
 class ProviderFlavorMismatchError(APIException):
     msg = _("Flavor '%(flav)s' is not compatible with provider '%(prov)s'")
     code = 400
+
+
+class VolumeDeleteException(OctaviaException):
+    message = _('Failed to delete volume instance.')
+
+
+class VolumeGetException(OctaviaException):
+    message = _('Failed to retrieve volume instance.')

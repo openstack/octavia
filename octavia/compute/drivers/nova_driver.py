@@ -18,6 +18,7 @@ import string
 from novaclient import exceptions as nova_exceptions
 from oslo_config import cfg
 from oslo_log import log as logging
+from stevedore import driver as stevedore_driver
 
 from octavia.common import clients
 from octavia.common import constants
@@ -88,6 +89,11 @@ class VirtualMachineManager(compute_base.ComputeBase):
         self.manager = self._nova_client.servers
         self.server_groups = self._nova_client.server_groups
         self.flavor_manager = self._nova_client.flavors
+        self.volume_driver = stevedore_driver.DriverManager(
+            namespace='octavia.volume.drivers',
+            name=CONF.controller_worker.volume_driver,
+            invoke_on_load=True
+        ).driver
 
     def build(self, name="amphora_name", amphora_flavor=None,
               image_id=None, image_tag=None, image_owner=None,
@@ -122,6 +128,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
 
         '''
 
+        volume_id = None
         try:
             network_ids = network_ids or []
             port_ids = port_ids or []
@@ -143,9 +150,25 @@ class VirtualMachineManager(compute_base.ComputeBase):
                     [r.choice(string.ascii_uppercase + string.digits)
                      for i in range(CONF.nova.random_amphora_name_length - 1)]
                 ))
-
+            block_device_mapping = {}
+            if CONF.controller_worker.volume_driver != \
+                    constants.VOLUME_NOOP_DRIVER:
+                # creating volume
+                LOG.debug('Creating volume for amphora from image %s',
+                          image_id)
+                volume_id = self.volume_driver.create_volume_from_image(
+                    image_id)
+                LOG.debug('Created boot volume %s for amphora', volume_id)
+                # If use volume based, does not require image ID anymore
+                image_id = None
+                # Boot from volume with parameters: target device name = vda,
+                # device id = volume_id, device type and size unspecified,
+                # delete-on-terminate = true (volume will be deleted by Nova
+                # on instance termination)
+                block_device_mapping = {'vda': '%s:::true' % volume_id}
             amphora = self.manager.create(
                 name=name, image=image_id, flavor=amphora_flavor,
+                block_device_mapping=block_device_mapping,
                 key_name=key_name, security_groups=sec_groups,
                 nics=nics,
                 files=config_drive_files,
@@ -157,6 +180,9 @@ class VirtualMachineManager(compute_base.ComputeBase):
 
             return amphora.id
         except Exception as e:
+            if CONF.controller_worker.volume_driver != \
+                    constants.VOLUME_NOOP_DRIVER:
+                self.volume_driver.delete_volume(volume_id)
             LOG.exception("Nova failed to build the instance due to: %s", e)
             raise exceptions.ComputeBuildException(fault=e)
 
@@ -216,6 +242,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
 
         lb_network_ip = None
         availability_zone = None
+        image_id = None
         fault = None
 
         try:
@@ -242,12 +269,34 @@ class VirtualMachineManager(compute_base.ComputeBase):
                       'os-interfaces extension failed.')
 
         fault = getattr(nova_response, 'fault', None)
+        if CONF.controller_worker.volume_driver == \
+                constants.VOLUME_NOOP_DRIVER:
+            image_id = nova_response.image.get("id")
+        else:
+            try:
+                volumes = self._nova_client.volumes.get_server_volumes(
+                    nova_response.id)
+            except Exception:
+                LOG.debug('Extracting volumes through nova '
+                          'os-volumes extension failed.')
+                volumes = []
+            if not volumes:
+                LOG.warning('Boot volume not found for volume backed '
+                            'amphora instance %s ', nova_response.id)
+            else:
+                if len(volumes) > 1:
+                    LOG.warning('Found more than one (%s) volumes '
+                                'for amphora instance %s',
+                                len(volumes), nova_response.id)
+                volume_id = volumes[0].volumeId
+                image_id = self.volume_driver.get_image_from_volume(volume_id)
+
         response = models.Amphora(
             compute_id=nova_response.id,
             status=nova_response.status,
             lb_network_ip=lb_network_ip,
             cached_zone=availability_zone,
-            image_id=nova_response.image.get("id"),
+            image_id=image_id,
             compute_flavor=nova_response.flavor.get("id")
         )
         return response, fault

@@ -1,0 +1,14 @@
+---
+features:
+  - |
+    Allow creation of volume based amphora.
+    Many deploy production use volume based instances because of more flexibility.
+    Octavia will create volume and attach this to the amphora.
+
+    Have new settings:
+    * `volume_driver`: Whether to use volume driver (cinder) to create volume backed amphorae.
+    * `volume_size`: Size of root volume for Amphora Instance when using Cinder
+    * `volume_type` : Type of volume for Amphorae volume root disk
+    * `volume_create_retry_interval`: Interval time to wait volume is created in available state
+    * `volume_create_timeout`: Timeout When volume is not create success
+    * `volume_create_max_retries`: Maximum number of retries to create volume
