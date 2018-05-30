@@ -17,7 +17,9 @@ import logging
 
 from oslo_config import cfg
 from oslo_utils import excutils
+from sqlalchemy.orm import exc as db_exceptions
 from taskflow.listeners import logging as tf_logging
+import tenacity
 
 from octavia.common import base_taskflow
 from octavia.common import constants
@@ -34,6 +36,11 @@ from octavia.db import repositories as repo
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
+
+RETRY_ATTEMPTS = 15
+RETRY_INITIAL_DELAY = 1
+RETRY_BACKOFF = 1
+RETRY_MAX = 5
 
 
 class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
@@ -109,15 +116,24 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             delete_amp_tf.run()
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
+        wait=tenacity.wait_incrementing(
+            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
+        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
     def create_health_monitor(self, health_monitor_id):
         """Creates a health monitor.
 
         :param pool_id: ID of the pool to create a health monitor on
         :returns: None
-        :raises NoSuitablePool: Unable to find the node pool
+        :raises NoResultFound: Unable to find the object
         """
         health_mon = self._health_mon_repo.get(db_apis.get_session(),
                                                id=health_monitor_id)
+        if not health_mon:
+            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
+                        '60 seconds.', 'health_monitor', health_monitor_id)
+            raise db_exceptions.NoResultFound
 
         pool = health_mon.pool
         listeners = pool.listeners
@@ -185,15 +201,25 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             update_hm_tf.run()
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
+        wait=tenacity.wait_incrementing(
+            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
+        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
     def create_listener(self, listener_id):
         """Creates a listener.
 
         :param listener_id: ID of the listener to create
         :returns: None
-        :raises NoSuitableLB: Unable to find the load balancer
+        :raises NoResultFound: Unable to find the object
         """
         listener = self._listener_repo.get(db_apis.get_session(),
                                            id=listener_id)
+        if not listener:
+            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
+                        '60 seconds.', 'listener', listener_id)
+            raise db_exceptions.NoResultFound
+
         load_balancer = listener.load_balancer
 
         create_listener_tf = self._taskflow_load(self._listener_flows.
@@ -251,6 +277,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         with tf_logging.DynamicLoggingListener(update_listener_tf, log=LOG):
             update_listener_tf.run()
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
+        wait=tenacity.wait_incrementing(
+            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
+        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
     def create_load_balancer(self, load_balancer_id):
         """Creates a load balancer by allocating Amphorae.
 
@@ -260,8 +291,13 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         :param load_balancer_id: ID of the load balancer to create
         :returns: None
-        :raises NoSuitableAmphoraException: Unable to allocate an Amphora.
+        :raises NoResultFound: Unable to find the object
         """
+        lb = self._lb_repo.get(db_apis.get_session(), id=load_balancer_id)
+        if not lb:
+            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
+                        '60 seconds.', 'load_balancer', load_balancer_id)
+            raise db_exceptions.NoResultFound
 
         store = {constants.LOADBALANCER_ID: load_balancer_id,
                  constants.BUILD_TYPE_PRIORITY:
@@ -273,7 +309,6 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             constants.LOADBALANCER_TOPOLOGY: topology
         }
 
-        lb = self._lb_repo.get(db_apis.get_session(), id=load_balancer_id)
         create_lb_flow = self._lb_flows.get_create_load_balancer_flow(
             topology=topology, listeners=lb.listeners)
 
@@ -330,6 +365,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             update_lb_tf.run()
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
+        wait=tenacity.wait_incrementing(
+            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
+        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
     def create_member(self, member_id):
         """Creates a pool member.
 
@@ -339,6 +379,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         """
         member = self._member_repo.get(db_apis.get_session(),
                                        id=member_id)
+        if not member:
+            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
+                        '60 seconds.', 'member', member_id)
+            raise db_exceptions.NoResultFound
+
         pool = member.pool
         listeners = pool.listeners
         load_balancer = pool.load_balancer
@@ -434,15 +479,24 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             update_member_tf.run()
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
+        wait=tenacity.wait_incrementing(
+            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
+        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
     def create_pool(self, pool_id):
         """Creates a node pool.
 
         :param pool_id: ID of the pool to create
         :returns: None
-        :raises NoSuitableLB: Unable to find the load balancer
+        :raises NoResultFound: Unable to find the object
         """
         pool = self._pool_repo.get(db_apis.get_session(),
                                    id=pool_id)
+        if not pool:
+            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
+                        '60 seconds.', 'pool', pool_id)
+            raise db_exceptions.NoResultFound
 
         listeners = pool.listeners
         load_balancer = pool.load_balancer
@@ -506,15 +560,24 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             update_pool_tf.run()
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
+        wait=tenacity.wait_incrementing(
+            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
+        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
     def create_l7policy(self, l7policy_id):
         """Creates an L7 Policy.
 
         :param l7policy_id: ID of the l7policy to create
         :returns: None
-        :raises NoSuitableLB: Unable to find the load balancer
+        :raises NoResultFound: Unable to find the object
         """
         l7policy = self._l7policy_repo.get(db_apis.get_session(),
                                            id=l7policy_id)
+        if not l7policy:
+            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
+                        '60 seconds.', 'l7policy', l7policy_id)
+            raise db_exceptions.NoResultFound
 
         listeners = [l7policy.listener]
         load_balancer = l7policy.listener.load_balancer
@@ -574,15 +637,25 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             update_l7policy_tf.run()
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
+        wait=tenacity.wait_incrementing(
+            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
+        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
     def create_l7rule(self, l7rule_id):
         """Creates an L7 Rule.
 
         :param l7rule_id: ID of the l7rule to create
         :returns: None
-        :raises NoSuitableLB: Unable to find the load balancer
+        :raises NoResultFound: Unable to find the object
         """
         l7rule = self._l7rule_repo.get(db_apis.get_session(),
                                        id=l7rule_id)
+        if not l7rule:
+            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
+                        '60 seconds.', 'l7rule', l7rule_id)
+            raise db_exceptions.NoResultFound
+
         l7policy = l7rule.l7policy
         listeners = [l7policy.listener]
         load_balancer = l7policy.listener.load_balancer

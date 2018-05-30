@@ -224,10 +224,6 @@ class GlanceNoTaggedImages(OctaviaException):
     message = _("No Glance images are tagged with %(tag)s tag.")
 
 
-class NoSuitableAmphoraException(OctaviaException):
-    message = _('Unable to allocate an amphora due to: %(msg)s')
-
-
 # This is an internal use exception for the taskflow work flow
 # and will not be exposed to the customer.  This means it is a
 # normal part of operation while waiting for compute to go active
