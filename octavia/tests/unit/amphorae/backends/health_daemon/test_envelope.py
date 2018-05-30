@@ -37,3 +37,20 @@ class TestEnvelope(base.TestCase):
             args = (envelope, 'samplekey?')
             self.assertRaises(exceptions.InvalidHMACException,
                               status_message.unwrap_envelope, *args)
+
+    def test_message_hmac_compatibility(self):
+        seq = 42
+        statusMsg = {'seq': seq,
+                     'status': 'OK',
+                     'id': str(uuid.uuid4())}
+
+        envelope = status_message.wrap_envelope(statusMsg, 'samplekey1',
+                                                hex=False)
+        obj = status_message.unwrap_envelope(envelope, 'samplekey1')
+
+        self.assertEqual('OK', obj['status'])
+        self.assertEqual(seq, obj['seq'])
+
+        args = (envelope, 'samplekey?')
+        self.assertRaises(exceptions.InvalidHMACException,
+                          status_message.unwrap_envelope, *args)
