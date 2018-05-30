@@ -28,9 +28,11 @@ IP_PORT = ['192.0.2.10:5555', '192.0.2.10:5555']
 KEY = 'TEST'
 PORT = random.randrange(1, 9000)
 SAMPLE_MSG = {'testkey': 'TEST'}
-SAMPLE_MSG_BIN = binascii.unhexlify('78daab562a492d2ec94ead54b252500a710d0e5'
-                                    '1aa050041b506245806e5c1971e79951818394e'
-                                    'a6e71ad989ff950945f9573f4ab6f83e25db8ed7')
+SAMPLE_MSG_BIN = binascii.unhexlify('78daab562a492d2ec94ead54b252500a710d0e51a'
+                                    'a050041b506243538303665356331393731653739'
+                                    '39353138313833393465613665373161643938396'
+                                    '66639353039343566393537336634616236663833'
+                                    '653235646238656437')
 
 
 class TestHealthSender(base.TestCase):
