@@ -53,6 +53,30 @@ class TestHealthMonitor(base.BaseAPITest):
         self.pool_with_listener_id = (
             self.pool_with_listener.get('pool').get('id'))
         self.set_lb_status(self.lb_id)
+        self._setup_udp_lb_resources()
+
+    def _setup_udp_lb_resources(self):
+        self.udp_lb = self.create_load_balancer(uuidutils.generate_uuid()).get(
+            'loadbalancer')
+        self.udp_lb_id = self.udp_lb.get('id')
+        self.set_lb_status(self.udp_lb_id)
+
+        self.udp_listener = self.create_listener(
+            constants.PROTOCOL_UDP, 8888,
+            self.udp_lb_id).get('listener')
+        self.udp_listener_id = self.udp_listener.get('id')
+        self.set_lb_status(self.udp_lb_id)
+
+        self.udp_pool_with_listener = self.create_pool(
+            None, constants.PROTOCOL_UDP, constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.udp_listener_id)
+        self.udp_pool_with_listener_id = (
+            self.udp_pool_with_listener.get('pool').get('id'))
+        self.set_lb_status(self.udp_lb_id)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(
+            group='api_settings',
+            udp_connect_min_interval_health_monitor='3')
 
     def test_get(self):
         api_hm = self.create_health_monitor(
@@ -656,6 +680,144 @@ class TestHealthMonitor(base.BaseAPITest):
         self.assertEqual('/', api_hm.get('url_path'))
         self.assertEqual('200', api_hm.get('expected_codes'))
 
+    def test_create_udp_case(self):
+        api_hm = self.create_health_monitor(
+            self.udp_pool_with_listener_id,
+            constants.HEALTH_MONITOR_UDP_CONNECT,
+            3, 1, 1, 1).get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id,
+            pool_id=self.udp_pool_with_listener_id, hm_id=api_hm.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_CREATE,
+            hm_op_status=constants.OFFLINE)
+        self.set_lb_status(self.udp_lb_id)
+        self.assertEqual(constants.HEALTH_MONITOR_UDP_CONNECT,
+                         api_hm.get('type'))
+        self.assertEqual(3, api_hm.get('delay'))
+        self.assertEqual(1, api_hm.get('timeout'))
+        self.assertEqual(1, api_hm.get('max_retries_down'))
+        self.assertEqual(1, api_hm.get('max_retries'))
+        # Verify the L7 fields is None
+        self.assertIsNone(api_hm.get('http_method'))
+        self.assertIsNone(api_hm.get('url_path'))
+        self.assertIsNone(api_hm.get('expected_codes'))
+
+    def test_udp_case_when_udp_connect_min_interval_health_monitor_set(self):
+        # negative case first
+        req_dict = {'pool_id': self.udp_pool_with_listener_id,
+                    'type': constants.HEALTH_MONITOR_UDP_CONNECT,
+                    'delay': 1,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': 1}
+        res = self.post(self.HMS_PATH, self._build_body(req_dict), status=400,
+                        expect_errors=True)
+        expect_error_msg = ("Validation failure: The request delay value 1 "
+                            "should be larger than 3 for %s health monitor "
+                            "type.") % constants.HEALTH_MONITOR_UDP_CONNECT
+
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id,
+            pool_id=self.udp_pool_with_listener_id)
+
+        # pass cases
+        self.conf.config(
+            group='api_settings',
+            udp_connect_min_interval_health_monitor='-3')
+        res = self.post(self.HMS_PATH, self._build_body(req_dict))
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id,
+            pool_id=self.udp_pool_with_listener_id,
+            hm_id=res.json['healthmonitor']['id'],
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_CREATE,
+            hm_op_status=constants.OFFLINE)
+
+    def test_negative_create_udp_case(self):
+        req_dict = {'pool_id': self.udp_pool_with_listener_id,
+                    'delay': 3,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': 1}
+        expect_error_msg = ("Validation failure: The associated pool protocol "
+                            "is %(pool_protocol)s, so only a %(type)s health "
+                            "monitor is supported.") % {
+            'pool_protocol': constants.PROTOCOL_UDP,
+            'type': constants.HEALTH_MONITOR_UDP_CONNECT}
+
+        # Not allowed types, url_path, expected_codes specified.
+        update_req = {'type': constants.HEALTH_MONITOR_TCP}
+        req_dict.update(update_req)
+        res = self.post(self.HMS_PATH, self._build_body(req_dict), status=400,
+                        expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id,
+            pool_id=self.udp_pool_with_listener_id)
+
+        update_req = {'type': constants.HEALTH_MONITOR_UDP_CONNECT}
+        req_dict.update(update_req)
+        for req in [{'http_method':
+                     constants.HEALTH_MONITOR_HTTP_METHOD_GET},
+                    {'url_path': constants.HEALTH_MONITOR_DEFAULT_URL_PATH},
+                    {'expected_codes':
+                        constants.HEALTH_MONITOR_DEFAULT_EXPECTED_CODES}]:
+            req_dict.update(req)
+            res = self.post(self.HMS_PATH, self._build_body(req_dict),
+                            status=400,
+                            expect_errors=True)
+            self.assertEqual(expect_error_msg, res.json['faultstring'])
+            self.assert_correct_status(
+                lb_id=self.udp_lb_id, listener_id=self.udp_listener_id,
+                pool_id=self.udp_pool_with_listener_id)
+
+        # Hit error during create with a non-UDP pool
+        req_dict = {'pool_id': self.pool_with_listener_id,
+                    'delay': 1,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': 1,
+                    'type': constants.HEALTH_MONITOR_UDP_CONNECT}
+        expect_error_msg = ("Validation failure: The %(type)s type is only "
+                            "supported for pools of type "
+                            "%(protocol)s.") % {
+            'type': constants.HEALTH_MONITOR_UDP_CONNECT,
+            'protocol': constants.PROTOCOL_UDP}
+        res = self.post(self.HMS_PATH, self._build_body(req_dict),
+                        status=400,
+                        expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id,
+            pool_id=self.udp_pool_with_listener_id)
+
+    def test_ensure_L7_fields_filled_during_create(self):
+        # Create a health monitor with a load balancer pool
+        api_hm = self.create_health_monitor(
+            self.pool_id,
+            constants.PROTOCOL_HTTP,
+            1, 1, 1, 1).get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id, hm_id=api_hm.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_CREATE,
+            hm_op_status=constants.OFFLINE)
+        self.set_lb_status(self.lb_id)
+        self.assertEqual(constants.HEALTH_MONITOR_HTTP_DEFAULT_METHOD,
+                         api_hm.get('http_method'))
+        self.assertEqual(constants.HEALTH_MONITOR_DEFAULT_URL_PATH,
+                         api_hm.get('url_path'))
+        self.assertEqual(constants.HEALTH_MONITOR_DEFAULT_EXPECTED_CODES,
+                         api_hm.get('expected_codes'))
+
     def test_create_authorized(self):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
@@ -1036,6 +1198,61 @@ class TestHealthMonitor(base.BaseAPITest):
             listener_prov_status=constants.ACTIVE,
             pool_prov_status=constants.ACTIVE,
             hm_prov_status=constants.ACTIVE)
+
+    def test_update_udp_case(self):
+        api_hm = self.create_health_monitor(
+            self.udp_pool_with_listener_id,
+            constants.HEALTH_MONITOR_UDP_CONNECT, 3, 1, 1, 1).get(
+            self.root_tag)
+        self.set_lb_status(self.udp_lb_id)
+        new_hm = {'max_retries': 2}
+        self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm))
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id,
+            pool_id=self.udp_pool_with_listener_id, hm_id=api_hm.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_UPDATE)
+
+    def test_negative_update_udp_case(self):
+        api_hm = self.create_health_monitor(
+            self.udp_pool_with_listener_id,
+            constants.HEALTH_MONITOR_UDP_CONNECT, 3, 1, 1, 1).get(
+            self.root_tag)
+        self.set_lb_status(self.udp_lb_id)
+
+        # Hit error during update with invalid parameter
+        req_dict = {'delay': 3,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': 1,
+                    'http_method': constants.HEALTH_MONITOR_HTTP_METHOD_GET}
+        expect_error_msg = (("http_method is not a valid option for health "
+                             "monitors of type %s") %
+                            constants.HEALTH_MONITOR_UDP_CONNECT)
+        res = self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+                       self._build_body(req_dict),
+                       status=400, expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id,
+            pool_id=self.udp_pool_with_listener_id)
+
+        # Hit error during update with smaller delay value
+        req_dict = {'delay': 1}
+        expect_error_msg = ("Validation failure: The request delay value 1 "
+                            "should be larger than 3 for %s health monitor "
+                            "type.") % constants.HEALTH_MONITOR_UDP_CONNECT
+        res = self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+                       self._build_body(req_dict),
+                       status=400, expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id,
+            pool_id=self.udp_pool_with_listener_id)
 
     def test_bad_update(self):
         api_hm = self.create_health_monitor(self.pool_with_listener_id,

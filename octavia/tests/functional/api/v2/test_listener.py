@@ -539,6 +539,60 @@ class TestListener(base.BaseAPITest):
             'Value should be greater or equal to {0}'.format(
                 constants.MIN_TIMEOUT), fault)
 
+    def test_create_udp_case(self):
+        api_listener = self.create_listener(constants.PROTOCOL_UDP, 6666,
+                                            self.lb_id).get(self.root_tag)
+        self.assertEqual(constants.PROTOCOL_UDP, api_listener.get('protocol'))
+        self.assertEqual(6666, api_listener.get('protocol_port'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=api_listener.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_CREATE,
+            listener_op_status=constants.OFFLINE)
+
+    def test_negative_create_udp_case(self):
+        sni1 = uuidutils.generate_uuid()
+        sni2 = uuidutils.generate_uuid()
+        req_dict = {'name': 'listener1', 'default_pool_id': None,
+                    'description': 'desc1',
+                    'admin_state_up': False,
+                    'protocol': constants.PROTOCOL_UDP,
+                    'protocol_port': 6666, 'connection_limit': 10,
+                    'default_tls_container_ref': uuidutils.generate_uuid(),
+                    'sni_container_refs': [sni1, sni2],
+                    'insert_headers': {
+                        "X-Forwarded-Port": "true",
+                        "X-Forwarded-For": "true"},
+                    'loadbalancer_id': self.lb_id}
+        expect_error_msg = (
+            "Validation failure: %s protocol listener does not support TLS or "
+            "header insertion.") % constants.PROTOCOL_UDP
+        res = self.post(self.LISTENERS_PATH, self._build_body(req_dict),
+                        status=400, expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(lb_id=self.lb_id)
+
+        # Default pool protocol is udp which is different with listener
+        # protocol.
+        udp_pool_id = self.create_pool(
+            self.lb_id, constants.PROTOCOL_UDP,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool').get('id')
+        self.set_lb_status(self.lb_id)
+        lb_listener = {'name': 'listener1',
+                       'default_pool_id': udp_pool_id,
+                       'description': 'desc1',
+                       'admin_state_up': False,
+                       'protocol': constants.PROTOCOL_HTTP,
+                       'protocol_port': 80,
+                       'loadbalancer_id': self.lb_id}
+        expect_error_msg = ("Validation failure: Listeners of type %s can "
+                            "only have pools of "
+                            "type UDP.") % constants.PROTOCOL_UDP
+        res = self.post(self.LISTENERS_PATH, self._build_body(lb_listener),
+                        status=400, expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(lb_id=self.lb_id)
+
     def test_create_duplicate_fails(self):
         self.create_listener(constants.PROTOCOL_HTTP, 80, self.lb_id)
         self.set_lb_status(self.lb_id)
@@ -829,6 +883,31 @@ class TestListener(base.BaseAPITest):
                                       constants.PENDING_UPDATE)
         self.assert_final_listener_statuses(self.lb_id,
                                             api_listener['id'])
+
+    def test_negative_update_udp_case(self):
+        api_listener = self.create_listener(constants.PROTOCOL_UDP, 6666,
+                                            self.lb_id).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        sni1 = uuidutils.generate_uuid()
+        sni2 = uuidutils.generate_uuid()
+        new_listener = {'name': 'new-listener',
+                        'admin_state_up': True,
+                        'connection_limit': 10,
+                        'default_tls_container_ref':
+                            uuidutils.generate_uuid(),
+                        'sni_container_refs': [sni1, sni2],
+                        'insert_headers': {
+                            "X-Forwarded-Port": "true",
+                            "X-Forwarded-For": "true"}}
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=api_listener['id'])
+        expect_error_msg = (
+            "Validation failure: %s protocol listener does not support TLS or "
+            "header insertion.") % constants.PROTOCOL_UDP
+        res = self.put(listener_path, self._build_body(new_listener),
+                       status=400, expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(lb_id=self.lb_id)
 
     def test_update_bad_listener_id(self):
         self.put(self.listener_path.format(listener_id='SEAN-CONNERY'),

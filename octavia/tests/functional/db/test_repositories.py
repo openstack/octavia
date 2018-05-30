@@ -185,7 +185,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'provisioning_status': constants.ACTIVE}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
-              'pool_id': pool['id']}
+              'pool_id': pool['id'],
+              'persistence_granularity': None,
+              'persistence_timeout': None}
         pool.update({'session_persistence': sp})
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
@@ -248,7 +250,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'provisioning_status': constants.ACTIVE}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
-              'pool_id': pool['id']}
+              'pool_id': pool['id'],
+              'persistence_granularity': None,
+              'persistence_timeout': None}
         pool.update({'session_persistence': sp})
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
@@ -287,7 +291,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, pool, listener_id=self.listener.id)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
         update_sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
-                     'cookie_name': 'monster_cookie'}
+                     'cookie_name': 'monster_cookie',
+                     'persistence_granularity': None,
+                     'persistence_timeout': None}
         update_pool.update({'session_persistence': update_sp})
         new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool)

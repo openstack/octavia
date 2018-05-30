@@ -47,6 +47,19 @@ class TestPool(base.BaseAPITest):
         self.listener_id = self.listener.get('id')
 
         self.set_lb_status(self.lb_id)
+        self._setup_udp_lb_resources()
+
+    def _setup_udp_lb_resources(self):
+        self.udp_lb = self.create_load_balancer(uuidutils.generate_uuid()).get(
+            'loadbalancer')
+        self.udp_lb_id = self.udp_lb.get('id')
+        self.set_lb_status(self.udp_lb_id)
+
+        self.udp_listener = self.create_listener(
+            constants.PROTOCOL_UDP, 8888,
+            self.udp_lb_id).get('listener')
+        self.udp_listener_id = self.udp_listener.get('id')
+        self.set_lb_status(self.udp_lb_id)
 
     def test_get(self):
         api_pool = self.create_pool(
@@ -717,6 +730,120 @@ class TestPool(base.BaseAPITest):
             **optionals).get(self.root_tag)
         self.assertEqual(self.project_id, api_pool.get('project_id'))
 
+    def test_create_udp_case_source_ip(self):
+        sp = {"type": constants.SESSION_PERSISTENCE_SOURCE_IP,
+              "persistence_timeout": 3,
+              "persistence_granularity": '255.255.255.0'}
+        api_pool = self.create_pool(
+            None,
+            constants.PROTOCOL_UDP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.udp_listener_id,
+            session_persistence=sp).get(self.root_tag)
+        self.assertEqual(constants.PROTOCOL_UDP, api_pool.get('protocol'))
+        self.assertEqual(constants.LB_ALGORITHM_ROUND_ROBIN,
+                         api_pool.get('lb_algorithm'))
+        self.assertEqual(constants.SESSION_PERSISTENCE_SOURCE_IP,
+                         api_pool.get('session_persistence')['type'])
+        self.assertEqual(3, api_pool.get(
+            'session_persistence')['persistence_timeout'])
+        self.assertEqual('255.255.255.0', api_pool.get(
+            'session_persistence')['persistence_granularity'])
+        self.assertIsNone(api_pool.get(
+            'session_persistence')['cookie_name'])
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_CREATE,
+            pool_op_status=constants.OFFLINE)
+
+    def test_negative_create_udp_case(self):
+        # Error create pool with udp protocol but non-udp-type
+        sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+              "cookie_name": 'test-cookie-name'}
+        req_dict = {
+            'listener_id': self.udp_listener_id,
+            'protocol': constants.PROTOCOL_UDP,
+            'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+            'session_persistence': sp}
+        expect_error_msg = ("Validation failure: Cookie names are not "
+                            "supported for %s pools.") % constants.PROTOCOL_UDP
+        res = self.post(self.POOLS_PATH, self._build_body(req_dict),
+                        status=400, expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id)
+
+        # Error create pool with any non-udp-types and udp session persistence
+        # options.
+        sp = {"type": constants.SESSION_PERSISTENCE_SOURCE_IP,
+              "persistence_timeout": 3,
+              "persistence_granularity": '255.255.255.0'}
+        req_dict = {
+            'listener_id': self.udp_listener_id,
+            'protocol': constants.PROTOCOL_UDP,
+            'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+            'session_persistence': None}
+        for type in [constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+                     constants.SESSION_PERSISTENCE_APP_COOKIE]:
+            expect_error_msg = ("Validation failure: Session persistence of "
+                                "type %s is not supported for %s protocol "
+                                "pools.") % (type, constants.PROTOCOL_UDP)
+            sp.update({'type': type})
+            req_dict['session_persistence'] = sp
+            res = self.post(self.POOLS_PATH, self._build_body(req_dict),
+                            status=400,
+                            expect_errors=True)
+            self.assertEqual(expect_error_msg, res.json['faultstring'])
+            self.assert_correct_status(
+                lb_id=self.udp_lb_id, listener_id=self.udp_listener_id)
+
+        # Error create pool with source ip session persistence and wrong
+        # options.
+        sp = {"type": constants.SESSION_PERSISTENCE_SOURCE_IP,
+              "persistence_timeout": 3,
+              "persistence_granularity": '255.255.255.0',
+              "cookie_name": 'test-cookie-name'}
+        req_dict = {
+            'listener_id': self.udp_listener_id,
+            'protocol': constants.PROTOCOL_UDP,
+            'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+            'session_persistence': sp}
+        expect_error_msg = (
+            "Validation failure: session_persistence %s type for %s "
+            "protocol only accepts: type, persistence_timeout, "
+            "persistence_granularity.") % (
+            constants.SESSION_PERSISTENCE_SOURCE_IP, constants.PROTOCOL_UDP)
+        res = self.post(self.POOLS_PATH, self._build_body(req_dict),
+                        status=400, expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id)
+
+        # Error create non-udp pool with udp session persistence
+        sps = [{"type": constants.SESSION_PERSISTENCE_SOURCE_IP,
+                "persistence_timeout": 3,
+                "persistence_granularity": '255.255.255.0'},
+               {"type": constants.SESSION_PERSISTENCE_APP_COOKIE,
+                "persistence_timeout": 3,
+                "persistence_granularity": '255.255.255.0'}]
+        req_dict = {
+            'listener_id': self.listener_id,
+            'protocol': constants.PROTOCOL_HTTP,
+            'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN}
+        expect_error_msg = ("Validation failure: persistence_timeout and "
+                            "persistence_granularity is only for %s protocol "
+                            "pools.") % constants.PROTOCOL_UDP
+        for s in sps:
+            req_dict.update({'session_persistence': s})
+            res = self.post(self.POOLS_PATH, self._build_body(req_dict),
+                            status=400, expect_errors=True)
+            self.assertEqual(expect_error_msg, res.json['faultstring'])
+            self.assert_correct_status(
+                lb_id=self.lb_id, listener_id=self.listener_id)
+
     def test_bad_create(self):
         pool = {'name': 'test1'}
         self.post(self.POOLS_PATH, self._build_body(pool), status=400)
@@ -869,6 +996,115 @@ class TestPool(base.BaseAPITest):
         self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
                                       constants.ACTIVE)
 
+    def test_update_get_session_persistence_from_db_if_no_request(self):
+        sp = {"type": constants.SESSION_PERSISTENCE_SOURCE_IP,
+              "persistence_timeout": 3,
+              "persistence_granularity": '255.255.255.0'}
+        optionals = {"listener_id": self.udp_listener_id,
+                     "session_persistence": sp}
+        api_pool = self.create_pool(
+            None,
+            constants.PROTOCOL_UDP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            **optionals).get(self.root_tag)
+        self.set_lb_status(lb_id=self.udp_lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        sess_p = response.get('session_persistence')
+        ty = sess_p.pop('type')
+        sess_p['persistence_timeout'] = 4
+        sess_p['persistence_granularity'] = "255.255.0.0"
+        new_pool = {'session_persistence': sess_p}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool))
+        sess_p['type'] = ty
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        self.assertEqual(sess_p, response.get('session_persistence'))
+        self.assert_correct_status(
+            listener_id=self.udp_listener_id,
+            pool_id=api_pool.get('id'),
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE)
+
+    def test_update_udp_case_source_ip(self):
+        sp = {"type": constants.SESSION_PERSISTENCE_SOURCE_IP,
+              "persistence_timeout": 3,
+              "persistence_granularity": '255.255.255.0'}
+        optionals = {"listener_id": self.udp_listener_id,
+                     "session_persistence": sp}
+        api_pool = self.create_pool(
+            None,
+            constants.PROTOCOL_UDP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            **optionals).get(self.root_tag)
+        self.set_lb_status(lb_id=self.udp_lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        sess_p = response.get('session_persistence')
+        sess_p['persistence_timeout'] = 4
+        sess_p['persistence_granularity'] = "255.255.0.0"
+        new_pool = {'session_persistence': sess_p}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool))
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        self.assertEqual(sess_p, response.get('session_persistence'))
+        self.assert_correct_status(
+            listener_id=self.udp_listener_id,
+            pool_id=api_pool.get('id'),
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE)
+
+        self.set_lb_status(self.udp_lb_id)
+        self.set_object_status(self.pool_repo, api_pool.get('id'))
+        # Negative cases
+        # Error during update pool with non-UDP type and cookie_name.
+        expect_error_msg = (
+            "Validation failure: Cookie names are not supported for %s"
+            " pools.") % constants.PROTOCOL_UDP
+        sess_p['type'] = constants.SESSION_PERSISTENCE_HTTP_COOKIE
+        sess_p['cookie_name'] = 'test-cookie-name'
+        new_pool = {'session_persistence': sess_p}
+        res = self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                       self._build_body(new_pool), status=400,
+                       expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id)
+
+        # Error during update pool with source ip type and more options.
+        expect_error_msg = (
+            "Validation failure: session_persistence %s type for %s protocol "
+            "only accepts: type, persistence_timeout, "
+            "persistence_granularity.") % (
+            constants.SESSION_PERSISTENCE_SOURCE_IP, constants.PROTOCOL_UDP)
+        sess_p['type'] = constants.SESSION_PERSISTENCE_SOURCE_IP
+        sess_p['cookie_name'] = 'test-cookie-name'
+        sess_p['persistence_timeout'] = 4
+        sess_p['persistence_granularity'] = "255.255.0.0"
+        res = self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                       self._build_body(new_pool), status=400,
+                       expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id)
+
+        # Error during update pool with non-UDP session persistence type.
+        sess_p['cookie_name'] = None
+        for ty in [constants.SESSION_PERSISTENCE_APP_COOKIE,
+                   constants.SESSION_PERSISTENCE_HTTP_COOKIE]:
+            expect_error_msg = ("Validation failure: Session persistence of "
+                                "type %s is not supported for %s protocol "
+                                "pools.") % (ty, constants.PROTOCOL_UDP)
+            sess_p['type'] = ty
+            res = self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                           self._build_body(new_pool), status=400,
+                           expect_errors=True)
+            self.assertEqual(expect_error_msg, res.json['faultstring'])
+            self.assert_correct_status(
+                lb_id=self.udp_lb_id, listener_id=self.udp_listener_id)
+
     def test_bad_update(self):
         api_pool = self.create_pool(
             self.lb_id,
@@ -898,6 +1134,27 @@ class TestPool(base.BaseAPITest):
                             self._build_body(new_pool), status=500)
         self.assertIn('Provider \'bad_driver\' reports error: broken',
                       response.json.get('faultstring'))
+
+    def test_bad_update_non_udp_pool_with_udp_fields(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        sp = {"type": constants.SESSION_PERSISTENCE_APP_COOKIE,
+              "persistence_timeout": 3,
+              "persistence_granularity": '255.255.255.0'}
+        self.set_lb_status(self.lb_id)
+        new_pool = {'session_persistence': sp}
+        expect_error_msg = ("Validation failure: persistence_timeout and "
+                            "persistence_granularity is only for %s "
+                            "protocol pools.") % constants.PROTOCOL_UDP
+        res = self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                       self._build_body(new_pool), status=400,
+                       expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id)
 
     def test_delete(self):
         api_pool = self.create_pool(
@@ -1131,7 +1388,9 @@ class TestPool(base.BaseAPITest):
 
     def test_add_session_persistence(self):
         sp = {"type": constants.SESSION_PERSISTENCE_APP_COOKIE,
-              "cookie_name": "test_cookie_name"}
+              "cookie_name": "test_cookie_name",
+              'persistence_granularity': None,
+              'persistence_timeout': None}
         api_pool = self.create_pool(
             self.lb_id,
             constants.PROTOCOL_HTTP,
@@ -1182,7 +1441,9 @@ class TestPool(base.BaseAPITest):
 
     def test_update_preserve_session_persistence(self):
         sp = {"type": constants.SESSION_PERSISTENCE_APP_COOKIE,
-              "cookie_name": "test_cookie_name"}
+              "cookie_name": "test_cookie_name",
+              'persistence_granularity': None,
+              'persistence_timeout': None}
         optionals = {"listener_id": self.listener_id,
                      "name": "name", "session_persistence": sp}
         api_pool = self.create_pool(

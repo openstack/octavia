@@ -34,6 +34,7 @@ from octavia.common import exceptions
 from octavia.common import stats
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
+from octavia.i18n import _
 
 
 CONF = cfg.CONF
@@ -113,13 +114,18 @@ class ListenersController(base.BaseController):
                 raise exceptions.ImmutableObject(resource=db_lb._name(),
                                                  id=lb_id)
 
-    def _validate_pool(self, session, lb_id, pool_id):
+    def _validate_pool(self, session, lb_id, pool_id, listener_protocol):
         """Validate pool given exists on same load balancer as listener."""
         db_pool = self.repositories.pool.get(
             session, load_balancer_id=lb_id, id=pool_id)
         if not db_pool:
             raise exceptions.NotFound(
                 resource=data_models.Pool._name(), id=pool_id)
+        if (db_pool.protocol == constants.PROTOCOL_UDP and
+                db_pool.protocol != listener_protocol):
+            msg = _("Listeners of type %s can only have pools of "
+                    "type UDP.") % constants.PROTOCOL_UDP
+            raise exceptions.ValidationException(detail=msg)
 
     def _reset_lb_status(self, session, lb_id):
         # Setting LB back to active because this should be a recoverable error
@@ -183,6 +189,10 @@ class ListenersController(base.BaseController):
             raise exceptions.InvalidOption(value=listener_dict.get('protocol'),
                                            option='protocol')
 
+    def _is_tls_or_insert_header(self, listener):
+        return (listener.default_tls_container_ref or
+                listener.sni_container_refs or listener.insert_headers)
+
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse,
                          body=listener_types.ListenerRootPOST, status_code=201)
     def post(self, listener_):
@@ -196,7 +206,11 @@ class ListenersController(base.BaseController):
 
         self._auth_validate_action(context, listener.project_id,
                                    constants.RBAC_POST)
-
+        if (listener.protocol == constants.PROTOCOL_UDP and
+                self._is_tls_or_insert_header(listener)):
+            raise exceptions.ValidationException(detail=_(
+                "%s protocol listener does not support TLS or header "
+                "insertion.") % constants.PROTOCOL_UDP)
         if (not CONF.api_settings.allow_tls_terminated_listeners and
                 listener.protocol == constants.PROTOCOL_TERMINATED_HTTPS):
             raise exceptions.DisabledOption(
@@ -220,7 +234,8 @@ class ListenersController(base.BaseController):
 
             if listener_dict['default_pool_id']:
                 self._validate_pool(context.session, load_balancer_id,
-                                    listener_dict['default_pool_id'])
+                                    listener_dict['default_pool_id'],
+                                    listener.protocol)
 
             self._test_lb_and_listener_statuses(
                 lock_session, lb_id=load_balancer_id)
@@ -260,7 +275,8 @@ class ListenersController(base.BaseController):
         l7policies = listener_dict.pop('l7policies', l7policies)
         if listener_dict.get('default_pool_id'):
             self._validate_pool(lock_session, load_balancer_id,
-                                listener_dict['default_pool_id'])
+                                listener_dict['default_pool_id'],
+                                listener_dict['protocol'])
         db_listener = self._validate_create_listener(
             lock_session, listener_dict)
 
@@ -304,9 +320,15 @@ class ListenersController(base.BaseController):
             raise exceptions.ValidationException(
                 detail='No listener object supplied.')
 
+        if (db_listener.protocol == constants.PROTOCOL_UDP and
+                self._is_tls_or_insert_header(listener)):
+            raise exceptions.ValidationException(detail=_(
+                "%s protocol listener does not support TLS or header "
+                "insertion.") % constants.PROTOCOL_UDP)
+
         if listener.default_pool_id:
             self._validate_pool(context.session, load_balancer_id,
-                                listener.default_pool_id)
+                                listener.default_pool_id, db_listener.protocol)
 
         sni_containers = listener.sni_container_refs or []
         tls_refs = [sni for sni in sni_containers]

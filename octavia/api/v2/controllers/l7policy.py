@@ -32,6 +32,7 @@ from octavia.common import exceptions
 from octavia.common import validate
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
+from octavia.i18n import _
 
 
 CONF = cfg.CONF
@@ -114,6 +115,12 @@ class L7PolicyController(base.BaseController):
             # do not give any information as to what constraint failed
             raise exceptions.InvalidOption(value='', option='')
 
+    def _escape_l7policy_udp_pool_request(self, pool):
+        if pool.protocol == constants.PROTOCOL_UDP:
+            raise exceptions.ValidationException(
+                detail=_("%s protocol pool can not be assigned to "
+                         "l7policy.") % constants.PROTOCOL_UDP)
+
     @wsme_pecan.wsexpose(l7policy_types.L7PolicyRootResponse,
                          body=l7policy_types.L7PolicyRootPOST, status_code=201)
     def post(self, l7policy_):
@@ -122,8 +129,9 @@ class L7PolicyController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         # Make sure any pool specified by redirect_pool_id exists
         if l7policy.redirect_pool_id:
-            self._get_db_pool(
+            db_pool = self._get_db_pool(
                 context.session, l7policy.redirect_pool_id)
+            self._escape_l7policy_udp_pool_request(db_pool)
         # Verify the parent listener exists
         listener_id = l7policy.listener_id
         listener = self._get_db_listener(
@@ -212,8 +220,9 @@ class L7PolicyController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         # Make sure any specified redirect_pool_id exists
         if l7policy_dict.get('redirect_pool_id'):
-            self._get_db_pool(
+            db_pool = self._get_db_pool(
                 context.session, l7policy_dict['redirect_pool_id'])
+            self._escape_l7policy_udp_pool_request(db_pool)
         db_l7policy = self._get_db_l7policy(context.session, id,
                                             show_deleted=False)
         load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(

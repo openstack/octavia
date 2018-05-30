@@ -127,6 +127,52 @@ class PoolsController(base.BaseController):
             # do not give any information as to what constraint failed
             raise exceptions.InvalidOption(value='', option='')
 
+    def _is_only_specified_in_request(self, request, **kwargs):
+        request_attrs = []
+        check_attrs = kwargs['check_exist_attrs']
+        excaped_attrs = ['from_data_model',
+                         'translate_dict_keys_to_data_model', 'to_dict']
+
+        for attr in dir(request):
+            if attr.startswith('_') or attr in excaped_attrs:
+                continue
+            else:
+                request_attrs.append(attr)
+
+        for req_attr in request_attrs:
+            if (getattr(
+                    request, req_attr) and req_attr not in check_attrs) or (
+                        not getattr(
+                            request, req_attr) and req_attr in check_attrs):
+                return False
+        return True
+
+    def _validate_pool_request_for_udp(self, request):
+        if request.session_persistence:
+            if (request.session_persistence.type ==
+                    constants.SESSION_PERSISTENCE_SOURCE_IP and
+                    not self._is_only_specified_in_request(
+                        request.session_persistence,
+                        check_exist_attrs=['type', 'persistence_timeout',
+                                           'persistence_granularity'])):
+                raise exceptions.ValidationException(detail=_(
+                    "session_persistence %s type for UDP protocol "
+                    "only accepts: type, persistence_timeout, "
+                    "persistence_granularity.") % (
+                        constants.SESSION_PERSISTENCE_SOURCE_IP))
+            elif request.session_persistence.cookie_name:
+                raise exceptions.ValidationException(detail=_(
+                    "Cookie names are not supported for %s pools.") %
+                    constants.PROTOCOL_UDP)
+            elif request.session_persistence.type in [
+                constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+                    constants.SESSION_PERSISTENCE_APP_COOKIE]:
+                raise exceptions.ValidationException(detail=_(
+                    "Session persistence of type %(type)s is not supported "
+                    "for %(protocol)s protocol pools.") % {
+                    'type': request.session_persistence.type,
+                    'protocol': constants.PROTOCOL_UDP})
+
     @wsme_pecan.wsexpose(pool_types.PoolRootResponse,
                          body=pool_types.PoolRootPOST, status_code=201)
     def post(self, pool_):
@@ -141,7 +187,15 @@ class PoolsController(base.BaseController):
         # pool_dict:
         pool = pool_.pool
         context = pecan.request.context.get('octavia_context')
-
+        if pool.protocol == constants.PROTOCOL_UDP:
+            self._validate_pool_request_for_udp(pool)
+        else:
+            if (pool.session_persistence and (
+                    pool.session_persistence.persistence_timeout or
+                    pool.session_persistence.persistence_granularity)):
+                raise exceptions.ValidationException(detail=_(
+                    "persistence_timeout and persistence_granularity "
+                    "is only for UDP protocol pools."))
         if pool.loadbalancer_id:
             pool.project_id, provider = self._get_lb_project_id_provider(
                 context.session, pool.loadbalancer_id)
@@ -265,7 +319,21 @@ class PoolsController(base.BaseController):
         project_id, provider = self._get_lb_project_id_provider(
             context.session, db_pool.load_balancer_id)
 
+        if (pool.session_persistence and
+                not pool.session_persistence.type and
+                db_pool.session_persistence and
+                db_pool.session_persistence.type):
+            pool.session_persistence.type = db_pool.session_persistence.type
         self._auth_validate_action(context, project_id, constants.RBAC_PUT)
+        if db_pool.protocol == constants.PROTOCOL_UDP:
+            self._validate_pool_request_for_udp(pool)
+        else:
+            if (pool.session_persistence and (
+                    pool.session_persistence.persistence_timeout or
+                    pool.session_persistence.persistence_granularity)):
+                raise exceptions.ValidationException(detail=_(
+                    "persistence_timeout and persistence_granularity "
+                    "is only for UDP protocol pools."))
 
         if pool.session_persistence:
             sp_dict = pool.session_persistence.to_dict(render_unsets=False)

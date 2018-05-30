@@ -24,6 +24,8 @@ class SessionPersistenceResponse(types.BaseType):
     """Defines which attributes are to be shown on any response."""
     type = wtypes.wsattr(wtypes.text)
     cookie_name = wtypes.wsattr(wtypes.text)
+    persistence_timeout = wtypes.wsattr(wtypes.IntegerType())
+    persistence_granularity = wtypes.wsattr(types.IPAddressType())
 
 
 class SessionPersistencePOST(types.BaseType):
@@ -32,6 +34,9 @@ class SessionPersistencePOST(types.BaseType):
                          mandatory=True)
     cookie_name = wtypes.wsattr(wtypes.StringType(max_length=255),
                                 default=None)
+    persistence_timeout = wtypes.wsattr(wtypes.IntegerType(), default=None)
+    persistence_granularity = wtypes.wsattr(types.IPAddressType(),
+                                            default=None)
 
 
 class SessionPersistencePUT(types.BaseType):
@@ -39,6 +44,9 @@ class SessionPersistencePUT(types.BaseType):
     type = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_SP_TYPES))
     cookie_name = wtypes.wsattr(wtypes.StringType(max_length=255),
                                 default=None)
+    persistence_timeout = wtypes.wsattr(wtypes.IntegerType(), default=None)
+    persistence_granularity = wtypes.wsattr(types.IPAddressType(),
+                                            default=None)
 
 
 class BasePoolType(types.BaseType):

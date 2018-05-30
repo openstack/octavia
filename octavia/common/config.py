@@ -114,6 +114,11 @@ api_opts = [
                          'driver.'}),
     cfg.StrOpt('default_provider_driver', default='amphora',
                help=_('Default provider driver.')),
+    cfg.IntOpt('udp_connect_min_interval_health_monitor',
+               default=3,
+               help=_("The minimum health monitor delay interval for the "
+                      "UDP-CONNECT Health Monitor type. A negative integer "
+                      "value means 'no limit'.")),
 ]
 
 # Options only used by the amphora agent

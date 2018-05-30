@@ -626,6 +626,21 @@ class TestL7Policy(base.BaseAPITest):
             'redirect_pool_id': uuidutils.generate_uuid()}
         self.post(self.L7POLICIES_PATH, self._build_body(l7policy), status=404)
 
+    def test_bad_create_redirect_to_udp_pool(self):
+        udp_pool_id = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_UDP,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool').get('id')
+        l7policy = {
+            'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            'listener_id': self.listener_id,
+            'redirect_pool_id': udp_pool_id}
+        res = self.post(self.L7POLICIES_PATH, self._build_body(l7policy),
+                        status=400, expect_errors=True)
+        expect_error_msg = ("Validation failure: %s protocol pool can not be "
+                            "assigned to l7policy.") % constants.PROTOCOL_UDP
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+
     def test_bad_create_redirect_to_url(self):
         l7policy = {'listener_id': self.listener_id,
                     'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
@@ -763,6 +778,27 @@ class TestL7Policy(base.BaseAPITest):
         self.put(self.L7POLICY_PATH.format(
             l7policy_id=api_l7policy.get('id')),
             self._build_body(new_l7policy), status=400)
+
+    def test_bad_update_redirect_to_udp_pool(self):
+        api_l7policy = self.create_l7policy(self.listener_id,
+                                            constants.L7POLICY_ACTION_REJECT,
+                                            ).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        udp_pool_id = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_UDP,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool').get('id')
+        self.set_lb_status(self.lb_id)
+        new_l7policy = {
+            'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            'redirect_pool_id': udp_pool_id}
+        res = self.put(self.L7POLICY_PATH.format(
+            l7policy_id=api_l7policy.get('id')),
+            self._build_body(new_l7policy),
+            status=400, expect_errors=True)
+        expect_error_msg = ("Validation failure: %s protocol pool can not be "
+                            "assigned to l7policy.") % constants.PROTOCOL_UDP
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
 
     def test_bad_update_redirect_to_url(self):
         api_l7policy = self.create_l7policy(self.listener_id,

@@ -31,6 +31,7 @@ from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
+from octavia.i18n import _
 
 
 CONF = cfg.CONF
@@ -148,6 +149,34 @@ class HealthMonitorController(base.BaseController):
             # do not give any information as to what constraint failed
             raise exceptions.InvalidOption(value='', option='')
 
+    def _validate_healthmonitor_request_for_udp(self, request):
+        invalid_fields = (request.http_method or request.url_path or
+                          request.expected_codes)
+        is_invalid = (hasattr(request, 'type') and
+                      (request.type != consts.HEALTH_MONITOR_UDP_CONNECT or
+                       invalid_fields))
+        if is_invalid:
+            raise exceptions.ValidationException(detail=_(
+                "The associated pool protocol is %(pool_protocol)s, so only "
+                "a %(type)s health monitor is supported.") % {
+                'pool_protocol': consts.PROTOCOL_UDP,
+                'type': consts.HEALTH_MONITOR_UDP_CONNECT})
+        # if the logic arrives here, that means the validation of request above
+        # is OK. type is UDP-CONNECT, then here we check the healthmonitor
+        # delay value is matched.
+        if request.delay:
+            conf_set = (CONF.api_settings.
+                        udp_connect_min_interval_health_monitor)
+            if conf_set < 0:
+                return
+            elif request.delay < conf_set:
+                raise exceptions.ValidationException(detail=_(
+                    "The request delay value %(delay)s should be larger than "
+                    "%(conf_set)s for %(type)s health monitor type.") % {
+                    'delay': request.delay,
+                    'conf_set': conf_set,
+                    'type': consts.HEALTH_MONITOR_UDP_CONNECT})
+
     @wsme_pecan.wsexpose(hm_types.HealthMonitorRootResponse,
                          body=hm_types.HealthMonitorRootPOST, status_code=201)
     def post(self, health_monitor_):
@@ -164,6 +193,15 @@ class HealthMonitorController(base.BaseController):
 
         health_monitor.project_id, provider = self._get_lb_project_id_provider(
             context.session, pool.load_balancer_id)
+
+        if pool.protocol == consts.PROTOCOL_UDP:
+            self._validate_healthmonitor_request_for_udp(health_monitor)
+        else:
+            if health_monitor.type == consts.HEALTH_MONITOR_UDP_CONNECT:
+                raise exceptions.ValidationException(detail=_(
+                    "The %(type)s type is only supported for pools of type "
+                    "%(protocol)s.") % {'type': health_monitor.type,
+                                        'protocol': consts.PROTOCOL_UDP})
 
         self._auth_validate_action(context, health_monitor.project_id,
                                    consts.RBAC_POST)
@@ -255,7 +293,10 @@ class HealthMonitorController(base.BaseController):
         self._auth_validate_action(context, project_id, consts.RBAC_PUT)
 
         self._validate_update_hm(db_hm, health_monitor)
-
+        # Validate health monitor update options for UDP-CONNECT type.
+        if (pool.protocol == consts.PROTOCOL_UDP and
+                db_hm.type == consts.HEALTH_MONITOR_UDP_CONNECT):
+            self._validate_healthmonitor_request_for_udp(health_monitor)
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
