@@ -1634,38 +1634,35 @@ The dictionary takes this form:
       :raises: UpdateStatusError
       :returns: None
       """
-      raise NotImplementedError()
 
 Update statistics API
 ^^^^^^^^^^^^^^^^^^^^^
 
-Provider drivers can update statistics for load balancers and listeners using
-the following API. Similar to the status function above, a single dictionary
-with multiple load balancer and/or listener statistics is used to update
-statistics in a single call. If an existing load balancer or listener is not
-included, the statistics those objects remain unchanged.
+Provider drivers can update statistics for listeners using the following API.
+Similar to the status function above, a single dictionary
+with multiple listener statistics is used to update statistics in a single
+call. If an existing listener is not included, the statistics for that object
+will remain unchanged.
 
-The general form of the input dictionary is a list of load balancer and
-listener statistics:
+The general form of the input dictionary is a list of listener statistics:
 
 .. code-block:: python
 
-  { "loadbalancers": [{"id": "123",
+  { "listeners": [{"id": "123",
                        "active_connections": 12,
                        "bytes_in": 238908,
-                       "bytes_out": 290234},
+                       "bytes_out": 290234,
                        "request_errors": 0,
                        "total_connections": 3530},...]
-    "listeners": []
   }
 
 .. code-block:: python
 
-  def update_loadbalancer_statistics(statistics):
-      """Update load balancer statistics.
+  def update_listener_statistics(statistics):
+      """Update listener statistics.
 
-      :param statistics (dict): Statistics for loadbalancers and listeners:
-            id (string): ID for load balancer or listener.
+      :param statistics (dict): Statistics for listeners:
+            id (string): ID of the listener.
             active_connections (int): Number of currently active connections.
             bytes_in (int): Total bytes received.
             bytes_out (int): Total bytes sent.
@@ -1674,7 +1671,6 @@ listener statistics:
       :raises: UpdateStatisticsError
       :returns: None
       """
-      raise NotImplementedError()
 
 Get Resource Support
 ^^^^^^^^^^^^^^^^^^^^
