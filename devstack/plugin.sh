@@ -442,7 +442,7 @@ function configure_octavia_api_haproxy {
 
 function octavia_start {
 
-    if  ! ps aux | grep -q [o]-hm0 ; then
+    if  ! ps aux | grep -q [o]-hm0 && [ $OCTAVIA_NODE != 'api' ] ; then
         sudo dhclient -v o-hm0 -cf $OCTAVIA_DHCLIENT_CONF
     fi
 
@@ -565,6 +565,15 @@ function octavia_init {
        OCTAVIA_AMP_NETWORK_ID=$(openstack network show lb-mgmt-net -f value -c id)
        iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
 
+       create_octavia_accounts
+
+       # Adds service and endpoint
+       if is_service_enabled tempest; then
+           configure_octavia_tempest ${OCTAVIA_AMP_NETWORK_ID}
+       fi
+
+       add_load-balancer_roles
+   elif [ $OCTAVIA_NODE == 'api' ] ; then
        create_octavia_accounts
 
        # Adds service and endpoint
