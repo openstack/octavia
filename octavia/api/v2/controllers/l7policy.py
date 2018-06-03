@@ -288,7 +288,10 @@ class L7PolicyController(base.BaseController):
 
             LOG.info("Sending delete L7 Policy %s to provider %s",
                      id, driver.name)
-            driver_utils.call_provider(driver.name, driver.l7policy_delete, id)
+            provider_l7policy = driver_utils.db_l7policy_to_provider_l7policy(
+                db_l7policy)
+            driver_utils.call_provider(driver.name, driver.l7policy_delete,
+                                       provider_l7policy)
 
     @pecan.expose()
     def _lookup(self, l7policy_id, *remainder):

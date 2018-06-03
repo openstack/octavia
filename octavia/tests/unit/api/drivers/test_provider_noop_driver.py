@@ -158,7 +158,7 @@ class TestNoopProviderDriver(base.TestCase):
                          self.driver.driver.driverconfig[self.loadbalancer_id])
 
     def test_loadbalancer_delete(self):
-        self.driver.loadbalancer_delete(self.loadbalancer_id, cascade=True)
+        self.driver.loadbalancer_delete(self.ref_lb, cascade=True)
 
         self.assertEqual((self.loadbalancer_id, True, 'loadbalancer_delete'),
                          self.driver.driver.driverconfig[self.loadbalancer_id])
@@ -182,7 +182,7 @@ class TestNoopProviderDriver(base.TestCase):
                          self.driver.driver.driverconfig[self.listener_id])
 
     def test_listener_delete(self):
-        self.driver.listener_delete(self.listener_id)
+        self.driver.listener_delete(self.ref_listener)
 
         self.assertEqual((self.listener_id, 'listener_delete'),
                          self.driver.driver.driverconfig[self.listener_id])
@@ -200,7 +200,7 @@ class TestNoopProviderDriver(base.TestCase):
                          self.driver.driver.driverconfig[self.pool_id])
 
     def test_pool_delete(self):
-        self.driver.pool_delete(self.pool_id)
+        self.driver.pool_delete(self.ref_pool)
 
         self.assertEqual((self.pool_id, 'pool_delete'),
                          self.driver.driver.driverconfig[self.pool_id])
@@ -218,7 +218,7 @@ class TestNoopProviderDriver(base.TestCase):
                          self.driver.driver.driverconfig[self.member_id])
 
     def test_member_delete(self):
-        self.driver.member_delete(self.member_id)
+        self.driver.member_delete(self.ref_member)
 
         self.assertEqual((self.member_id, 'member_delete'),
                          self.driver.driver.driverconfig[self.member_id])
@@ -243,7 +243,7 @@ class TestNoopProviderDriver(base.TestCase):
             self.driver.driver.driverconfig[self.healthmonitor_id])
 
     def test_health_monitor_delete(self):
-        self.driver.health_monitor_delete(self.healthmonitor_id)
+        self.driver.health_monitor_delete(self.ref_healthmonitor)
 
         self.assertEqual(
             (self.healthmonitor_id, 'health_monitor_delete'),
@@ -263,7 +263,7 @@ class TestNoopProviderDriver(base.TestCase):
                          self.driver.driver.driverconfig[self.l7policy_id])
 
     def test_l7policy_delete(self):
-        self.driver.l7policy_delete(self.l7policy_id)
+        self.driver.l7policy_delete(self.ref_l7policy)
 
         self.assertEqual((self.l7policy_id, 'l7policy_delete'),
                          self.driver.driver.driverconfig[self.l7policy_id])
@@ -281,7 +281,7 @@ class TestNoopProviderDriver(base.TestCase):
                          self.driver.driver.driverconfig[self.l7rule_id])
 
     def test_l7rule_delete(self):
-        self.driver.l7rule_delete(self.l7rule_id)
+        self.driver.l7rule_delete(self.ref_l7rule)
 
         self.assertEqual((self.l7rule_id, 'l7rule_delete'),
                          self.driver.driver.driverconfig[self.l7rule_id])

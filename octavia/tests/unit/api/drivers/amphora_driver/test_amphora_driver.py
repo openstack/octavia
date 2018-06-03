@@ -64,7 +64,9 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_loadbalancer_delete(self, mock_cast):
-        self.amp_driver.loadbalancer_delete(self.sample_data.lb_id)
+        provider_lb = driver_dm.LoadBalancer(
+            loadbalancer_id=self.sample_data.lb_id)
+        self.amp_driver.loadbalancer_delete(provider_lb)
         payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id,
                    'cascade': False}
         mock_cast.assert_called_with({}, 'delete_load_balancer', **payload)
@@ -106,7 +108,9 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_listener_delete(self, mock_cast):
-        self.amp_driver.listener_delete(self.sample_data.listener1_id)
+        provider_listener = driver_dm.Listener(
+            listener_id=self.sample_data.listener1_id)
+        self.amp_driver.listener_delete(provider_listener)
         payload = {consts.LISTENER_ID: self.sample_data.listener1_id}
         mock_cast.assert_called_with({}, 'delete_listener', **payload)
 
@@ -141,7 +145,9 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_pool_delete(self, mock_cast):
-        self.amp_driver.pool_delete(self.sample_data.pool1_id)
+        provider_pool = driver_dm.Pool(
+            pool_id=self.sample_data.pool1_id)
+        self.amp_driver.pool_delete(provider_pool)
         payload = {consts.POOL_ID: self.sample_data.pool1_id}
         mock_cast.assert_called_with({}, 'delete_pool', **payload)
 
@@ -176,7 +182,9 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_member_delete(self, mock_cast):
-        self.amp_driver.member_delete(self.sample_data.member1_id)
+        provider_member = driver_dm.Member(
+            member_id=self.sample_data.member1_id)
+        self.amp_driver.member_delete(provider_member)
         payload = {consts.MEMBER_ID: self.sample_data.member1_id}
         mock_cast.assert_called_with({}, 'delete_member', **payload)
 
@@ -280,7 +288,9 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_health_monitor_delete(self, mock_cast):
-        self.amp_driver.health_monitor_delete(self.sample_data.hm1_id)
+        provider_HM = driver_dm.HealthMonitor(
+            healthmonitor_id=self.sample_data.hm1_id)
+        self.amp_driver.health_monitor_delete(provider_HM)
         payload = {consts.HEALTH_MONITOR_ID: self.sample_data.hm1_id}
         mock_cast.assert_called_with({}, 'delete_health_monitor', **payload)
 
@@ -316,7 +326,9 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_l7policy_delete(self, mock_cast):
-        self.amp_driver.l7policy_delete(self.sample_data.l7policy1_id)
+        provider_l7policy = driver_dm.L7Policy(
+            l7policy_id=self.sample_data.l7policy1_id)
+        self.amp_driver.l7policy_delete(provider_l7policy)
         payload = {consts.L7POLICY_ID: self.sample_data.l7policy1_id}
         mock_cast.assert_called_with({}, 'delete_l7policy', **payload)
 
@@ -351,7 +363,9 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_l7rule_delete(self, mock_cast):
-        self.amp_driver.l7rule_delete(self.sample_data.l7rule1_id)
+        provider_l7rule = driver_dm.L7Rule(
+            l7rule_id=self.sample_data.l7rule1_id)
+        self.amp_driver.l7rule_delete(provider_l7rule)
         payload = {consts.L7RULE_ID: self.sample_data.l7rule1_id}
         mock_cast.assert_called_with({}, 'delete_l7rule', **payload)
 

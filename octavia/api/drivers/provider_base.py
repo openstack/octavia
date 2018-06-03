@@ -65,11 +65,11 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support creating '
                                   'load balancers. What?')
 
-    def loadbalancer_delete(self, loadbalancer_id, cascade=False):
+    def loadbalancer_delete(self, loadbalancer, cascade=False):
         """Deletes a load balancer.
 
-        :param loadbalancer_id: ID of the load balancer to delete.
-        :type loadbalancer_id: string
+        :param loadbalancer: The load balancer to delete.
+        :type loadbalancer: object
         :param cascade: If True, deletes all child objects (listeners,
           pools, etc.) in addition to the load balancer.
         :type cascade: bool
@@ -133,11 +133,11 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support creating '
                                   'listeners.')
 
-    def listener_delete(self, listener_id):
+    def listener_delete(self, listener):
         """Deletes a listener.
 
-        :param listener_id: ID of the listener to delete.
-        :type listener_id: string
+        :param listener: The listener to delete.
+        :type listener: object
         :return: Nothing if the delete request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
         :raises NotImplementedError: if driver does not support request.
@@ -183,11 +183,11 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support creating '
                                   'pools.')
 
-    def pool_delete(self, pool_id):
+    def pool_delete(self, pool):
         """Deletes a pool and its members.
 
-        :param pool_id: ID of the pool to delete.
-        :type pool_id: string
+        :param pool: The pool to delete.
+        :type pool: object
         :return: Nothing if the create request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
         :raises NotImplementedError: if driver does not support request.
@@ -233,11 +233,11 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support creating '
                                   'members.')
 
-    def member_delete(self, member_id):
+    def member_delete(self, member):
         """Deletes a pool member.
 
-        :param member_id: ID of the member to delete.
-        :type member_id: string
+        :param member: The member to delete.
+        :type member: object
         :return: Nothing if the create request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
         :raises NotImplementedError: if driver does not support request.
@@ -300,11 +300,11 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support creating '
                                   'health monitors.')
 
-    def health_monitor_delete(self, healthmonitor_id):
+    def health_monitor_delete(self, healthmonitor):
         """Deletes a healthmonitor_id.
 
-        :param healthmonitor_id: ID of the monitor to delete.
-        :type healthmonitor_id: string
+        :param healthmonitor: The monitor to delete.
+        :type healthmonitor: object
         :return: Nothing if the create request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
         :raises NotImplementedError: if driver does not support request.
@@ -350,11 +350,11 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support creating '
                                   'l7policies.')
 
-    def l7policy_delete(self, l7policy_id):
+    def l7policy_delete(self, l7policy):
         """Deletes an L7 policy.
 
-        :param l7policy_id: ID of the L7 policy to delete.
-        :type l7policy_id: string
+        :param l7policy: The L7 policy to delete.
+        :type l7policy: object
         :return: Nothing if the delete request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
         :raises NotImplementedError: if driver does not support request.
@@ -400,11 +400,11 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support creating '
                                   'l7rules.')
 
-    def l7rule_delete(self, l7rule_id):
+    def l7rule_delete(self, l7rule):
         """Deletes an L7 rule.
 
-        :param l7rule_id: ID of the L7 rule to delete.
-        :type l7rule_id: string
+        :param l7rule: The L7 rule to delete.
+        :type l7rule: object
         :return: Nothing if the delete request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
         :raises NotImplementedError: if driver does not support request.

@@ -317,5 +317,6 @@ class HealthMonitorController(base.BaseController):
 
             LOG.info("Sending delete Health Monitor %s to provider %s",
                      id, driver.name)
+            provider_healthmon = driver_utils.db_HM_to_provider_HM(db_hm)
             driver_utils.call_provider(
-                driver.name, driver.health_monitor_delete, id)
+                driver.name, driver.health_monitor_delete, provider_healthmon)

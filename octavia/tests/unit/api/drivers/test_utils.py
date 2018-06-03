@@ -132,6 +132,14 @@ class TestUtils(base.TestCase):
 
         self.assertEqual(ref_prov_lb_dict, provider_lb_dict)
 
+    def test_db_loadbalancer_to_provider_loadbalancer(self):
+        test_db_lb = data_models.LoadBalancer(id=1)
+        provider_lb = utils.db_loadbalancer_to_provider_loadbalancer(
+            test_db_lb)
+        ref_provider_lb = driver_dm.LoadBalancer(loadbalancer_id=1)
+        self.assertEqual(ref_provider_lb.to_dict(render_unsets=True),
+                         provider_lb.to_dict(render_unsets=True))
+
     def test_db_listener_to_provider_listener(self):
         test_db_list = data_models.Listener(id=1)
         provider_list = utils.db_listener_to_provider_listener(test_db_list)

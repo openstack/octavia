@@ -110,6 +110,19 @@ def lb_dict_to_provider_dict(lb_dict, vip=None,
     return new_lb_dict
 
 
+def db_loadbalancer_to_provider_loadbalancer(db_loadbalancer):
+    new_loadbalancer_dict = lb_dict_to_provider_dict(
+        db_loadbalancer.to_dict(recurse=True),
+        db_pools=db_loadbalancer.pools,
+        db_listeners=db_loadbalancer.listeners)
+    for unsupported_field in ['server_group_id', 'amphorae',
+                              'vrrp_group', 'topology', 'vip']:
+        del new_loadbalancer_dict[unsupported_field]
+    provider_loadbalancer = driver_dm.LoadBalancer.from_dict(
+        new_loadbalancer_dict)
+    return provider_loadbalancer
+
+
 def db_listeners_to_provider_listeners(db_listeners):
     provider_listeners = []
     for listener in db_listeners:
