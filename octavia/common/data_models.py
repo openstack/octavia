@@ -392,8 +392,10 @@ class Listener(BaseDataModel):
                                    len(p.l7rules) > 0 and p.enabled is True]
                     old_pool = self.default_pool
                     if old_pool.id not in l7_pool_ids:
-                        self.pools.remove(old_pool)
-                        old_pool.listeners.remove(self)
+                        if old_pool in self.pools:
+                            self.pools.remove(old_pool)
+                        if self in old_pool.listeners:
+                            old_pool.listeners.remove(self)
                 if value is not None:
                     pool = self._find_in_graph('Pool' + value)
                     if pool not in self.pools:
