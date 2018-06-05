@@ -188,7 +188,8 @@ Delete
 
 Removes an existing load balancer.
 
-Octavia will pass in the load balancer ID and cascade bollean as parameters.
+Octavia will pass in the load balancer object and cascade boolean as
+parameters.
 
 The load balancer will be in the ``PENDING_DELETE`` provisioning_status when
 it is passed to the driver. The driver will notify Octavia that the delete
@@ -221,7 +222,8 @@ Update
 Modifies an existing load balancer using the values supplied in the load
 balancer object.
 
-Octavia will pass in a load balancer object with the fields to be updated.
+Octavia will pass in the original load balancer object which is the baseline
+for the update, and a load balancer object with the fields to be updated.
 Fields not updated by the user will contain "Unset" as defined in the data
 model.
 
@@ -286,39 +288,40 @@ accepted.
          """
          raise NotImplementedError()
 
-      def loadbalancer_delete(self, loadbalancer_id, cascade=False):
-          """Deletes a load balancer.
+     def loadbalancer_delete(self, loadbalancer, cascade=False):
+         """Deletes a load balancer.
 
-          :param loadbalancer_id (string): ID of the load balancer to delete.
-          :param cascade (bool): If True, deletes all child objects (listeners,
-            pools, etc.) in addition to the load balancer.
-          :return: Nothing if the delete request was accepted.
-          :raises DriverError: An unexpected error occurred in the driver.
-          :raises NotImplementedError: if driver does not support request.
-          """
-          raise NotImplementedError()
+         :param loadbalancer (object): The load balancer object.
+         :param cascade (bool): If True, deletes all child objects (listeners,
+           pools, etc.) in addition to the load balancer.
+         :return: Nothing if the delete request was accepted.
+         :raises DriverError: An unexpected error occurred in the driver.
+         :raises NotImplementedError: if driver does not support request.
+         """
+         raise NotImplementedError()
 
-      def loadbalancer_failover(self, loadbalancer_id):
-          """Performs a fail over of a load balancer.
+     def loadbalancer_failover(self, loadbalancer_id):
+         """Performs a fail over of a load balancer.
 
-          :param loadbalancer_id (string): ID of the load balancer to failover.
-          :return: Nothing if the failover request was accepted.
-          :raises DriverError: An unexpected error occurred in the driver.
-          :raises: NotImplementedError if driver does not support request.
-          """
-          raise NotImplementedError()
+         :param loadbalancer_id (string): ID of the load balancer to failover.
+         :return: Nothing if the failover request was accepted.
+         :raises DriverError: An unexpected error occurred in the driver.
+         :raises: NotImplementedError if driver does not support request.
+         """
+         raise NotImplementedError()
 
-      def loadbalancer_update(self, loadbalancer):
-          """Updates a load balancer.
+     def loadbalancer_update(self, old_loadbalancer, new_loadbalancer):
+         """Updates a load balancer.
 
-          :param loadbalancer (object): The load balancer object.
-          :return: Nothing if the update request was accepted.
-          :raises DriverError: An unexpected error occurred in the driver.
-          :raises NotImplementedError: The driver does not support request.
-          :raises UnsupportedOptionError: The driver does not
-            support one of the configuration options.
-          """
-          raise NotImplementedError()
+         :param old_loadbalancer (object): The baseline load balancer object.
+         :param new_loadbalancer (object): The updated load balancer object.
+         :return: Nothing if the update request was accepted.
+         :raises DriverError: An unexpected error occurred in the driver.
+         :raises NotImplementedError: The driver does not support request.
+         :raises UnsupportedOptionError: The driver does not
+           support one of the configuration options.
+         """
+         raise NotImplementedError()
 
 Listener
 --------
@@ -467,7 +470,7 @@ Delete
 
 Deletes an existing listener.
 
-Octavia will pass the listener ID as a parameter.
+Octavia will pass the listener object as a parameter.
 
 The listener will be in the ``PENDING_DELETE`` provisioning_status when
 it is passed to the driver. The driver will notify Octavia that the delete
@@ -480,7 +483,8 @@ Update
 Modifies an existing listener using the values supplied in the listener
 object.
 
-Octavia will pass in a listener object with the fields to be updated.
+Octavia will pass in the original listener object which is the baseline for the
+update, and a listener object with the fields to be updated.
 Fields not updated by the user will contain "Unset" as defined in the data
 model.
 
@@ -565,20 +569,21 @@ accepted.
           """
         raise NotImplementedError()
 
-      def listener_delete(self, listener_id):
+      def listener_delete(self, listener):
           """Deletes a listener.
 
-          :param listener_id (string): ID of the listener to delete.
+          :param listener (object): The listener object.
           :return: Nothing if the delete request was accepted.
           :raises DriverError: An unexpected error occurred in the driver.
           :raises NotImplementedError: if driver does not support request.
           """
           raise NotImplementedError()
 
-      def listener_update(self, listener):
+      def listener_update(self, old_listener, new_listener):
           """Updates a listener.
 
-          :param listener (object): The listener object.
+          :param old_listener (object): The baseline listener object.
+          :param new_listener (object): The updated listener object.
           :return: Nothing if the update request was accepted.
           :raises DriverError: An unexpected error occurred in the driver.
           :raises NotImplementedError: if driver does not support request.
@@ -655,7 +660,7 @@ Delete
 
 Removes an existing pool and all of its members.
 
-Octavia will pass the pool ID as a parameter.
+Octavia will pass the pool object as a parameter.
 
 The pool will be in the ``PENDING_DELETE`` provisioning_status when
 it is passed to the driver. The driver will notify Octavia that the delete
@@ -667,7 +672,8 @@ Update
 
 Modifies an existing pool using the values supplied in the pool object.
 
-Octavia will pass in a pool object with the fields to be updated.
+Octavia will pass in the original pool object which is the baseline for the
+update, and a pool object with the fields to be updated.
 Fields not updated by the user will contain "Unset" as defined in the data
 model.
 
@@ -723,20 +729,21 @@ accepted.
           """
           raise NotImplementedError()
 
-      def pool_delete(self, pool_id):
+      def pool_delete(self, pool):
           """Deletes a pool and its members.
 
-          :param pool_id (string): ID of the pool to delete.
+          :param pool (object): The pool object.
           :return: Nothing if the create request was accepted.
           :raises DriverError: An unexpected error occurred in the driver.
           :raises NotImplementedError: if driver does not support request.
           """
           raise NotImplementedError()
 
-      def pool_update(self, pool):
+      def pool_update(self, old_pool, new_pool):
           """Updates a pool.
 
-          :param pool (object): The pool object.
+          :param old_pool (object): The baseline pool object.
+          :param new_pool (object): The updated pool object.
           :return: Nothing if the create request was accepted.
           :raises DriverError: An unexpected error occurred in the driver.
           :raises NotImplementedError: if driver does not support request.
@@ -822,7 +829,7 @@ Delete
 
 Removes a pool member.
 
-Octavia will pass the member ID as a parameter.
+Octavia will pass the member object as a parameter.
 
 The member will be in the ``PENDING_DELETE`` provisioning_status when
 it is passed to the driver. The driver will notify Octavia that the delete
@@ -834,7 +841,8 @@ Update
 
 Modifies an existing member using the values supplied in the listener object.
 
-Octavia will pass in a member object with the fields to be updated.
+Octavia will pass in the original member object which is the baseline for the
+update, and a member object with the fields to be updated.
 Fields not updated by the user will contain "Unset" as defined in the data
 model.
 
@@ -917,7 +925,6 @@ and members in the list that do not already exist should be created.
           """Creates a new member for a pool.
 
           :param member (object): The member object.
-
           :return: Nothing if the create request was accepted.
           :raises DriverError: An unexpected error occurred in the driver.
           :raises NotImplementedError: if driver does not support request.
@@ -926,22 +933,23 @@ and members in the list that do not already exist should be created.
           """
       raise NotImplementedError()
 
-      def member_delete(self, member_id):
+      def member_delete(self, member):
 
           """Deletes a pool member.
 
-          :param member_id (string): ID of the member to delete.
+          :param member (object): The member object.
           :return: Nothing if the create request was accepted.
           :raises DriverError: An unexpected error occurred in the driver.
           :raises NotImplementedError: if driver does not support request.
           """
           raise NotImplementedError()
 
-      def member_update(self, member):
+      def member_update(self, old_member, new_member):
 
           """Updates a pool member.
 
-          :param member (object): The member object.
+          :param old_member (object): The baseline member object.
+          :param new_member (object): The updated member object.
           :return: Nothing if the create request was accepted.
           :raises DriverError: An unexpected error occurred in the driver.
           :raises NotImplementedError: if driver does not support request.
@@ -1041,7 +1049,7 @@ Delete
 
 Deletes an existing health monitor.
 
-Octavia will pass in the health monitor ID as a parameter.
+Octavia will pass in the health monitor object as a parameter.
 
 The health monitor will be in the ``PENDING_DELETE`` provisioning_status
 when it is passed to the driver. The driver will notify Octavia that the
@@ -1055,7 +1063,8 @@ Update
 Modifies an existing health monitor using the values supplied in the
 health monitor object.
 
-Octavia will pass in a health monitor object with the fields to be updated.
+Octavia will pass in the original health monitor object which is the baseline
+for the update, and a health monitor object with the fields to be updated.
 Fields not updated by the user will contain "Unset" as defined in the data
 model.
 
@@ -1128,20 +1137,22 @@ accepted.
           """
           raise NotImplementedError()
 
-      def health_monitor_delete(self, healthmonitor_id):
+      def health_monitor_delete(self, healthmonitor):
           """Deletes a healthmonitor_id.
 
-          :param healthmonitor_id (string): ID of the monitor to delete.
+          :param healthmonitor (object): The health monitor object.
           :return: Nothing if the create request was accepted.
           :raises DriverError: An unexpected error occurred in the driver.
           :raises NotImplementedError: if driver does not support request.
           """
           raise NotImplementedError()
 
-      def health_monitor_update(self, healthmonitor):
+      def health_monitor_update(self, old_healthmonitor, new_healthmonitor):
           """Updates a health monitor.
 
-          :param healthmonitor (object): The health monitor object.
+          :param old_healthmonitor (object): The baseline health monitor
+            object.
+          :param new_healthmonitor (object): The updated health monitor object.
           :return: Nothing if the create request was accepted.
           :raises DriverError: An unexpected error occurred in the driver.
           :raises NotImplementedError: if driver does not support request.
@@ -1223,7 +1234,7 @@ Delete
 
 Deletes an existing L7 policy.
 
-Octavia will pass in the L7 policy ID as a parameter.
+Octavia will pass in the L7 policy object as a parameter.
 
 The l7policy will be in the ``PENDING_DELETE`` provisioning_status when
 it is passed to the driver. The driver will notify Octavia that the delete
@@ -1236,7 +1247,8 @@ Update
 Modifies an existing L7 policy using the values supplied in the l7policy
 object.
 
-Octavia will pass in an L7 policy object with the fields to be updated.
+Octavia will pass in the original L7 policy object which is the baseline for
+the update, and an L7 policy object with the fields to be updated.
 Fields not updated by the user will contain "Unset" as defined in the data
 model.
 
@@ -1298,20 +1310,21 @@ accepted.
          """
          raise NotImplementedError()
 
-     def l7policy_delete(self, l7policy_id):
+     def l7policy_delete(self, l7policy):
          """Deletes an L7 policy.
 
-         :param l7policy_id (string): ID of the L7 policy to delete.
+         :param l7policy (object): The l7policy object.
          :return: Nothing if the delete request was accepted.
          :raises DriverError: An unexpected error occurred in the driver.
          :raises NotImplementedError: if driver does not support request.
          """
          raise NotImplementedError()
 
-    def l7policy_update(self, l7policy):
+    def l7policy_update(self, old_l7policy, new_l7policy):
          """Updates an L7 policy.
 
-         :param l7policy (object): The l7policy object.
+         :param old_l7policy (object): The baseline l7policy object.
+         :param new_l7policy (object): The updated l7policy object.
          :return: Nothing if the update request was accepted.
          :raises DriverError: An unexpected error occurred in the driver.
          :raises NotImplementedError: if driver does not support request.
@@ -1384,7 +1397,7 @@ Delete
 
 Deletes an existing L7 rule.
 
-Octavia will pass in the L7 rule ID as a parameter.
+Octavia will pass in the L7 rule object as a parameter.
 
 The L7 rule will be in the ``PENDING_DELETE`` provisioning_status when
 it is passed to the driver. The driver will notify Octavia that the delete
@@ -1396,7 +1409,8 @@ Update
 
 Modifies an existing L7 rule using the values supplied in the l7rule object.
 
-Octavia will pass in an L7 rule object with the fields to be updated.
+Octavia will pass in the original L7 rule object which is the baseline for the
+update, and an L7 rule object with the fields to be updated.
 Fields not updated by the user will contain "Unset" as defined in the data
 model.
 
@@ -1456,22 +1470,23 @@ accepted.
           """
           raise NotImplementedError()
 
-      def l7rule_delete(self, l7rule_id):
+      def l7rule_delete(self, l7rule):
 
           """Deletes an L7 rule.
 
-          :param l7rule_id (string): ID of the L7 rule to delete.
+          :param l7rule (object): The L7 rule object.
           :return: Nothing if the delete request was accepted.
           :raises DriverError: An unexpected error occurred in the driver.
           :raises NotImplementedError: if driver does not support request.
           """
           raise NotImplementedError()
 
-      def l7rule_update(self, l7rule):
+      def l7rule_update(self, old_l7rule, new_l7rule):
 
           """Updates an L7 rule.
 
-          :param l7rule (object): The L7 rule object.
+          :param old_l7rule (object): The baseline L7 rule object.
+          :param new_l7rule (object): The updated L7 rule object.
           :return: Nothing if the update request was accepted.
           :raises DriverError: An unexpected error occurred in the driver.
           :raises NotImplementedError: if driver does not support request.
