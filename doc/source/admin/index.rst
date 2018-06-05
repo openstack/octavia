@@ -34,6 +34,7 @@ Operator Reference
    ../configuration/policy.rst
    Anchor.rst
    apache-httpd.rst
+   providers.rst
 
 Indices and Search
 ------------------

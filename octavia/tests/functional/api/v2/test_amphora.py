@@ -96,14 +96,15 @@ class TestAmphora(base.BaseAPITest):
             amphora_id=self.amp_id)).json.get(self.root_tag)
         self._assert_amp_equal(self.amp_args, response)
 
-    def test_failover(self):
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_failover(self, mock_cast):
         self.put(self.AMPHORA_FAILOVER_PATH.format(
             amphora_id=self.amp_id), body={}, status=202)
-        self.handler_mock().amphora.failover.assert_has_calls(
-            [mock.call(self.amp)]
-        )
+        payload = {constants.AMPHORA_ID: self.amp_id}
+        mock_cast.assert_called_with({}, 'failover_amphora', **payload)
 
-    def test_failover_spare(self):
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_failover_spare(self, mock_cast):
         amp_args = {
             'compute_id': uuidutils.generate_uuid(),
             'status': constants.AMPHORA_READY,
@@ -118,8 +119,8 @@ class TestAmphora(base.BaseAPITest):
         amp = self.amphora_repo.create(self.session, **amp_args)
         self.put(self.AMPHORA_FAILOVER_PATH.format(
             amphora_id=amp.id), body={}, status=202)
-        self.handler_mock().amphora.failover.assert_has_calls(
-            [mock.call(amp)])
+        payload = {constants.AMPHORA_ID: amp.id}
+        mock_cast.assert_called_once_with({}, 'failover_amphora', **payload)
 
     def test_failover_deleted(self):
         new_amp = self._create_additional_amp()
@@ -175,7 +176,8 @@ class TestAmphora(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
-    def test_failover_authorized(self):
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_failover_authorized(self, mock_cast):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
@@ -202,10 +204,11 @@ class TestAmphora(base.BaseAPITest):
 
         # Reset api auth setting
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
-        self.handler_mock().amphora.failover.assert_has_calls(
-            [mock.call(self.amp)])
+        payload = {constants.AMPHORA_ID: self.amp_id}
+        mock_cast.assert_called_once_with({}, 'failover_amphora', **payload)
 
-    def test_failover_not_authorized(self):
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_failover_not_authorized(self, mock_cast):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
@@ -216,7 +219,7 @@ class TestAmphora(base.BaseAPITest):
         # Reset api auth setting
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
-        self.handler_mock().amphora.failover.assert_not_called()
+        mock_cast.assert_not_called()
 
     def test_get_deleted_gives_404(self):
         new_amp = self._create_additional_amp()

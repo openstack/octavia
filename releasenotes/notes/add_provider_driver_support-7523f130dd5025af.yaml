@@ -1,0 +1,44 @@
+---
+features:
+  - |
+    Octavia now supports provider drivers. This allows third party load
+    balancing drivers to be integrated with the Octavia v2 API. Users select
+    the "provider" for a load balancer at creation time.
+  - |
+    There is now an API available to list enabled provider drivers.
+upgrade:
+  - |
+    Two new options are included with provider driver support. The
+    enabled_provider_drivers option defaults to "amphora, octavia" to support
+    existing Octavia load balancers. The default_provider_driver option
+    defaults to "amphora" for all new load balancers that do not specify a
+    provider at creation time. These defaults should cover most existing
+    deployments.
+  - |
+    The provider driver support requires a database migration and follows
+    Octavia standard rolling upgrade procedures; database migration followed
+    by rolling control plane upgrades. Existing load balancers with no
+    provider specified will be assigned "amphora" as part of the database
+    migration.
+deprecations:
+  - |
+    The Octavia API handlers are now deprecated and replaced by the new
+    provider driver support. Octavia API handlers will remain in the code to
+    support the Octavia v1 API (used for neutron-lbaas).
+  - |
+    Provider of "octavia" has been deprecated in favor of "amphora" to clarify
+    the provider driver supporting the load balancer.
+other:
+  - |
+    A provider driver developer guide has been added to the documentation to
+    aid driver providers.
+  - |
+    An operator documentation page has been added to list known Octavia
+    provider drivers and provide links to those drivers.
+    Non-reference drivers, drivers other than the "amphora" driver, will be
+    outside of the octavia code repository but are dynamically loadable via
+    a well defined interface described in the provider driver developers
+    guide.
+  - |
+    Installed drivers need to be enabled for use in the Octavia
+    configuration file once you are ready to expose the driver to users.

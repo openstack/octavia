@@ -102,10 +102,16 @@ api_opts = [
                 help=_("Allow users to create TLS Terminated listeners?")),
     cfg.BoolOpt('allow_ping_health_monitors', default=True,
                 help=_("Allow users to create PING type Health Monitors?")),
-    cfg.ListOpt('enabled_provider_drivers',
-                help=_('List of enabled provider drivers. Must match the '
-                       'driver name in the octavia.api.drivers entrypoint.'),
-                default=['amphora', 'octavia']),
+    cfg.DictOpt('enabled_provider_drivers',
+                help=_('List of enabled provider drivers and description '
+                       'dictionaries. Must match the driver name in the '
+                       'octavia.api.drivers entrypoint. Example: '
+                       '{\'amphora\': \'The Octavia Amphora driver.\', '
+                       '\'octavia\': \'Deprecated alias of the Octavia '
+                       'Amphora driver.\'}'),
+                default={'amphora': 'The Octavia Amphora driver.',
+                         'octavia': 'Deprecated alias of the Octavia Amphora '
+                         'driver.'}),
     cfg.StrOpt('default_provider_driver', default='amphora',
                help=_('Default provider driver.')),
 ]

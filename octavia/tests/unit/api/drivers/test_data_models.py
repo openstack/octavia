@@ -43,7 +43,7 @@ class TestProviderDataModels(base.TestCase):
             default_pool_id=None,
             default_tls_container_data='default_cert_data',
             default_tls_container_ref=self.default_tls_container_ref,
-            description='The listener',
+            description=data_models.Unset,
             insert_headers={'X-Forwarded-For': 'true'},
             l7policies=[],
             listener_id=self.listener_id,
@@ -87,7 +87,6 @@ class TestProviderDataModels(base.TestCase):
             'default_pool_id': None,
             'default_tls_container_data': 'default_cert_data',
             'default_tls_container_ref': self.default_tls_container_ref,
-            'description': 'The listener',
             'insert_headers': {'X-Forwarded-For': 'true'},
             'listener_id': self.listener_id,
             'l7policies': [],
@@ -140,10 +139,15 @@ class TestProviderDataModels(base.TestCase):
 
         self.assertEqual(self.ref_lb_dict, ref_lb_converted_to_dict)
 
+    def test_to_dict_private_attrs(self):
+        private_dict = {'_test': 'foo'}
+        ref_lb_converted_to_dict = self.ref_lb.to_dict(**private_dict)
+
+        self.assertEqual(self.ref_lb_dict, ref_lb_converted_to_dict)
+
     def test_to_dict_partial(self):
         ref_lb = data_models.LoadBalancer(loadbalancer_id=self.loadbalancer_id)
         ref_lb_dict = {'loadbalancer_id': self.loadbalancer_id}
-
         ref_lb_converted_to_dict = ref_lb.to_dict()
 
         self.assertEqual(ref_lb_dict, ref_lb_converted_to_dict)
@@ -205,3 +209,9 @@ class TestProviderDataModels(base.TestCase):
         lb_object = data_models.LoadBalancer.from_dict(self.ref_lb_dict)
 
         self.assertEqual(self.ref_lb, lb_object)
+
+    def test_unset_bool(self):
+        self.assertFalse(data_models.Unset)
+
+    def test_unset_repr(self):
+        self.assertEqual('Unset', repr(data_models.Unset))

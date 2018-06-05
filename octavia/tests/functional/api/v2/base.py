@@ -68,6 +68,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     AMPHORA_PATH = AMPHORAE_PATH + '/{amphora_id}'
     AMPHORA_FAILOVER_PATH = AMPHORA_PATH + '/failover'
 
+    PROVIDERS_PATH = '/lbaas/providers'
+
     NOT_AUTHORIZED_BODY = {
         'debuginfo': None, 'faultcode': 'Client',
         'faultstring': 'Policy does not allow this request to be performed.'}
@@ -75,7 +77,6 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     def setUp(self):
         super(BaseAPITest, self).setUp()
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        self.conf.config(group='api_settings', api_handler='simulated_handler')
         self.conf.config(group="controller_worker",
                          network_driver='network_noop_driver')
         self.conf.config(group='api_settings', auth_strategy=constants.NOAUTH)
@@ -83,8 +84,10 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                          default_provider_driver='noop_driver')
         # We still need to test with the "octavia" alias
         self.conf.config(group='api_settings',
-                         enabled_provider_drivers='amphora, noop_driver, '
-                                                  'octavia')
+                         enabled_provider_drivers={
+                             'amphora': 'Amp driver.',
+                             'noop_driver': 'NoOp driver.',
+                             'octavia': 'Octavia driver.'})
         self.lb_repo = repositories.LoadBalancerRepository()
         self.listener_repo = repositories.ListenerRepository()
         self.listener_stats_repo = repositories.ListenerStatisticsRepository()
@@ -94,9 +97,6 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.l7rule_repo = repositories.L7RuleRepository()
         self.health_monitor_repo = repositories.HealthMonitorRepository()
         self.amphora_repo = repositories.AmphoraRepository()
-        patcher = mock.patch('octavia.api.handlers.controller_simulator.'
-                             'handler.SimulatedControllerHandler')
-        self.handler_mock = patcher.start()
         patcher2 = mock.patch('octavia.certificates.manager.barbican.'
                               'BarbicanCertManager')
         self.cert_manager_mock = patcher2.start()
@@ -104,7 +104,6 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.project_id = uuidutils.generate_uuid()
 
         def reset_pecan():
-            patcher.stop()
             pecan.set_config({}, overwrite=True)
 
         self.addCleanup(reset_pecan)

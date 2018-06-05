@@ -143,22 +143,21 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
     def member_batch_update(self, members):
         # Get a list of existing members
         pool_id = members[0].pool_id
+        # The DB should not have updated yet, so we can still use the pool
         db_pool = self.repositories.pool.get(db_apis.get_session(), id=pool_id)
         old_members = db_pool.members
 
-        old_member_uniques = {
-            (m.ip_address, m.protocol_port): m.id for m in old_members}
-        new_member_uniques = [
-            (m.address, m.protocol_port) for m in members]
+        old_member_ids = [m.id for m in old_members]
+        # The driver will always pass objects with IDs.
+        new_member_ids = [m.member_id for m in members]
 
         # Find members that are brand new or updated
         new_members = []
         updated_members = []
         for m in members:
-            if (m.address, m.protocol_port) not in old_member_uniques:
+            if m.member_id not in old_member_ids:
                 new_members.append(m)
             else:
-                m.id = old_member_uniques[(m.address, m.protocol_port)]
                 member_dict = m.to_dict(render_unsets=False)
                 member_dict['id'] = member_dict.pop('member_id')
                 if 'address' in member_dict:
@@ -170,7 +169,7 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         # Find members that are deleted
         deleted_members = []
         for m in old_members:
-            if (m.ip_address, m.protocol_port) not in new_member_uniques:
+            if m.id not in new_member_ids:
                 deleted_members.append(m)
 
         payload = {'old_member_ids': [m.id for m in deleted_members],
@@ -240,10 +239,3 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.L7RULE_ID: l7rule_id,
                    consts.L7RULE_UPDATES: l7rule_dict}
         self.client.cast({}, 'update_l7rule', **payload)
-
-    # Flavor
-    def get_supported_flavor_metadata(self):
-        pass
-
-    def validate_flavor(self, flavor_metadata):
-        pass
