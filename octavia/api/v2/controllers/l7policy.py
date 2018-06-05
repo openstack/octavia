@@ -93,12 +93,6 @@ class L7PolicyController(base.BaseController):
             raise exceptions.ImmutableObject(resource='Load Balancer',
                                              id=lb_id)
 
-    def _get_listener_and_loadbalancer_id(self, db_l7policy):
-        """Get listener and loadbalancer ids from the l7policy db_model."""
-        load_balancer_id = db_l7policy.listener.load_balancer_id
-        listener_id = db_l7policy.listener_id
-        return load_balancer_id, listener_id
-
     def _reset_lb_and_listener_statuses(self, session, lb_id, listener_id):
         # Setting LB + listeners back to active because this should be a
         # recoverable error

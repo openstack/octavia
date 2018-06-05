@@ -20,6 +20,9 @@ import pecan
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
+from octavia.api.drivers import data_models as driver_dm
+from octavia.api.drivers import driver_factory
+from octavia.api.drivers import utils as driver_utils
 from octavia.api.v2.controllers import base
 from octavia.api.v2.types import l7rule as l7rule_types
 from octavia.common import constants
@@ -39,7 +42,6 @@ class L7RuleController(base.BaseController):
     def __init__(self, l7policy_id):
         super(L7RuleController, self).__init__()
         self.l7policy_id = l7policy_id
-        self.handler = self.handler.l7rule
 
     @wsme_pecan.wsexpose(l7rule_types.L7RuleRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -129,23 +131,6 @@ class L7RuleController(base.BaseController):
             # do not give any information as to what constraint failed
             raise exceptions.InvalidOption(value='', option='')
 
-    def _send_l7rule_to_handler(self, session, db_l7rule):
-        try:
-            LOG.info("Sending Creation of L7Rule %s to handler", db_l7rule.id)
-            self.handler.create(db_l7rule)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_listener_policy_statuses(lock_session)
-                # L7Rule now goes to ERROR
-                self.repositories.l7rule.update(
-                    lock_session, db_l7rule.id,
-                    provisioning_status=constants.ERROR)
-        db_l7rule = self._get_db_l7rule(session, db_l7rule.id)
-        result = self._convert_db_to_type(db_l7rule,
-                                          l7rule_types.L7RuleResponse)
-        return l7rule_types.L7RuleRootResponse(rule=result)
-
     @wsme_pecan.wsexpose(l7rule_types.L7RuleRootResponse,
                          body=l7rule_types.L7RuleRootPOST, status_code=201)
     def post(self, rule_):
@@ -156,12 +141,21 @@ class L7RuleController(base.BaseController):
         except Exception as e:
             raise exceptions.L7RuleValidation(error=e)
         context = pecan.request.context.get('octavia_context')
-        l7rule.project_id = self._get_l7policy_project_id(context.session,
-                                                          self.l7policy_id)
+
+        db_l7policy = self._get_db_l7policy(context.session, self.l7policy_id,
+                                            show_deleted=False)
+        load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
+            db_l7policy)
+        l7rule.project_id, provider = self._get_lb_project_id_provider(
+            context.session, load_balancer_id)
+
         self._check_l7policy_max_rules(context.session)
 
         self._auth_validate_action(context, l7rule.project_id,
                                    constants.RBAC_POST)
+
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
         lock_session = db_api.get_session(autocommit=False)
         try:
@@ -171,12 +165,26 @@ class L7RuleController(base.BaseController):
             self._test_lb_listener_policy_statuses(context.session)
 
             db_l7rule = self._validate_create_l7rule(lock_session, l7rule_dict)
+
+            # Prepare the data for the driver data model
+            provider_l7rule = (
+                driver_utils.db_l7rule_to_provider_l7rule(db_l7rule))
+
+            # Dispatch to the driver
+            LOG.info("Sending create L7 Rule %s to provider %s",
+                     db_l7rule.id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.l7rule_create, provider_l7rule)
+
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
 
-        return self._send_l7rule_to_handler(context.session, db_l7rule)
+        db_l7rule = self._get_db_l7rule(context.session, db_l7rule.id)
+        result = self._convert_db_to_type(db_l7rule,
+                                          l7rule_types.L7RuleResponse)
+        return l7rule_types.L7RuleRootResponse(rule=result)
 
     def _graph_create(self, lock_session, rule_dict):
         try:
@@ -201,30 +209,48 @@ class L7RuleController(base.BaseController):
         new_l7rule.update(l7rule.to_dict())
         new_l7rule = data_models.L7Rule.from_dict(new_l7rule)
 
-        self._auth_validate_action(context, db_l7rule.project_id,
-                                   constants.RBAC_PUT)
+        db_l7policy = self._get_db_l7policy(context.session, self.l7policy_id,
+                                            show_deleted=False)
+        load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
+            db_l7policy)
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, load_balancer_id)
+
+        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
         try:
             validate.l7rule_data(new_l7rule)
         except Exception as e:
             raise exceptions.L7RuleValidation(error=e)
-        self._test_lb_listener_policy_statuses(context.session)
 
-        self.repositories.l7rule.update(
-            context.session, db_l7rule.id,
-            provisioning_status=constants.PENDING_UPDATE)
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
-        try:
-            LOG.info("Sending Update of L7Rule %s to handler", id)
-            self.handler.update(db_l7rule, l7rule)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_listener_policy_statuses(lock_session)
-                # L7Rule now goes to ERROR
-                self.repositories.l7rule.update(
-                    lock_session, db_l7rule.id,
-                    provisioning_status=constants.ERROR)
+        with db_api.get_lock_session() as lock_session:
+
+            self._test_lb_listener_policy_statuses(lock_session)
+
+            # Prepare the data for the driver data model
+            l7rule_dict = l7rule.to_dict(render_unsets=False)
+            l7rule_dict['id'] = id
+            provider_l7rule_dict = (
+                driver_utils.l7rule_dict_to_provider_dict(l7rule_dict))
+
+            # Dispatch to the driver
+            LOG.info("Sending update L7 Rule %s to provider %s", id,
+                     driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.l7rule_update,
+                driver_dm.L7Rule.from_dict(provider_l7rule_dict))
+
+            # Update the database to reflect what the driver just accepted
+            l7rule.provisioning_status = constants.PENDING_UPDATE
+            db_l7rule_dict = l7rule.to_dict(render_unsets=False)
+            self.repositories.l7rule.update(lock_session, id, **db_l7rule_dict)
+
+        # Force SQL alchemy to query the DB, otherwise we get inconsistent
+        # results
+        context.session.expire_all()
         db_l7rule = self._get_db_l7rule(context.session, id)
         result = self._convert_db_to_type(db_l7rule,
                                           l7rule_types.L7RuleResponse)
@@ -237,26 +263,29 @@ class L7RuleController(base.BaseController):
         db_l7rule = self._get_db_l7rule(context.session, id,
                                         show_deleted=False)
 
-        self._auth_validate_action(context, db_l7rule.project_id,
-                                   constants.RBAC_DELETE)
+        db_l7policy = self._get_db_l7policy(context.session, self.l7policy_id,
+                                            show_deleted=False)
+        load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
+            db_l7policy)
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, load_balancer_id)
+
+        self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
 
         if db_l7rule.provisioning_status == constants.DELETED:
             return
 
-        self._test_lb_listener_policy_statuses(context.session)
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
-        self.repositories.l7rule.update(
-            context.session, db_l7rule.id,
-            provisioning_status=constants.PENDING_DELETE)
+        with db_api.get_lock_session() as lock_session:
 
-        try:
-            LOG.info("Sending Deletion of L7Rule %s to handler", db_l7rule.id)
-            self.handler.delete(db_l7rule)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_listener_policy_statuses(lock_session)
-                # L7Rule now goes to ERROR
-                self.repositories.l7rule.update(
-                    lock_session, db_l7rule.id,
-                    provisioning_status=constants.ERROR)
+            self._test_lb_listener_policy_statuses(lock_session)
+
+            self.repositories.l7rule.update(
+                lock_session, db_l7rule.id,
+                provisioning_status=constants.PENDING_DELETE)
+
+            LOG.info("Sending delete L7 Rule %s to provider %s", id,
+                     driver.name)
+            driver_utils.call_provider(driver.name, driver.l7rule_delete, id)

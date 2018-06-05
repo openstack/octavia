@@ -19,6 +19,7 @@ from oslo_utils import uuidutils
 
 from octavia.common import constants
 import octavia.common.context
+from octavia.common import exceptions
 from octavia.tests.functional.api.v2 import base
 
 
@@ -575,17 +576,19 @@ class TestL7Rule(base.BaseAPITest):
                   'value': 'some-string'}
         self.post(self.l7rules_path, self._build_body(l7rule), status=400)
 
-    def test_create_with_bad_handler(self):
-        self.handler_mock().l7rule.create.side_effect = Exception()
-        api_l7rule = self.create_l7rule(
-            self.l7policy_id, constants.L7RULE_TYPE_PATH,
-            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
-            '/api').get(self.root_tag)
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),
-            l7rule_prov_status=constants.ERROR,
-            l7rule_op_status=constants.OFFLINE)
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_create_with_bad_provider(self, mock_provider):
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        l7rule = {'compare_type': 'REGEX',
+                  'invert': False,
+                  'type': 'PATH',
+                  'value': '/images*',
+                  'admin_state_up': True}
+        response = self.post(self.l7rules_path, self._build_body(l7rule),
+                             status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.json.get('faultstring'))
 
     def test_update(self):
         api_l7rule = self.create_l7rule(
@@ -597,7 +600,7 @@ class TestL7Rule(base.BaseAPITest):
         response = self.put(self.l7rule_path.format(
             l7rule_id=api_l7rule.get('id')),
             self._build_body(new_l7rule)).json.get(self.root_tag)
-        self.assertEqual('/api', response.get('value'))
+        self.assertEqual('/images', response.get('value'))
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),
@@ -639,7 +642,7 @@ class TestL7Rule(base.BaseAPITest):
                     l7rule_id=api_l7rule.get('id')),
                     self._build_body(new_l7rule)).json.get(self.root_tag)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
-        self.assertEqual('/api', response.get('value'))
+        self.assertEqual('/images', response.get('value'))
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),
@@ -683,20 +686,21 @@ class TestL7Rule(base.BaseAPITest):
         self.put(self.l7rule_path.format(l7rule_id=l7rule.get('id')),
                  self._build_body(new_l7rule), status=400)
 
-    def test_update_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_update_with_bad_provider(self, mock_provider):
         api_l7rule = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,
             constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
             '/api').get(self.root_tag)
         self.set_lb_status(self.lb_id)
         new_l7rule = {'value': '/images'}
-        self.handler_mock().l7rule.update.side_effect = Exception()
-        self.put(self.l7rule_path.format(
-            l7rule_id=api_l7rule.get('id')), self._build_body(new_l7rule))
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),
-            l7rule_prov_status=constants.ERROR)
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        response = self.put(
+            self.l7rule_path.format(l7rule_id=api_l7rule.get('id')),
+            self._build_body(new_l7rule), status=500)
+        self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.json.get('faultstring'))
 
     def test_update_with_invalid_rule(self):
         api_l7rule = self.create_l7rule(
@@ -827,7 +831,8 @@ class TestL7Rule(base.BaseAPITest):
         self.delete(self.l7rule_path.format(
             l7rule_id=uuidutils.generate_uuid()), status=404)
 
-    def test_delete_with_bad_handler(self):
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_delete_with_bad_provider(self, mock_provider):
         api_l7rule = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,
             constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
@@ -843,12 +848,10 @@ class TestL7Rule(base.BaseAPITest):
         self.assertIsNotNone(response.pop('updated_at'))
         self.assertEqual(api_l7rule, response)
 
-        self.handler_mock().l7rule.delete.side_effect = Exception()
-        self.delete(self.l7rule_path.format(l7rule_id=api_l7rule.get('id')))
-        self.assert_correct_status(
-            lb_id=self.lb_id, listener_id=self.listener_id,
-            l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),
-            l7rule_prov_status=constants.ERROR)
+        mock_provider.side_effect = exceptions.ProviderDriverError(
+            prov='bad_driver', user_msg='broken')
+        self.delete(self.l7rule_path.format(l7rule_id=api_l7rule.get('id')),
+                    status=500)
 
     def test_create_when_lb_pending_update(self):
         self.create_l7rule(
