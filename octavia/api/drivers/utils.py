@@ -305,15 +305,19 @@ def hm_dict_to_provider_dict(hm_dict):
 def db_l7policies_to_provider_l7policies(db_l7policies):
     provider_l7policies = []
     for l7policy in db_l7policies:
-        new_l7policy_dict = l7policy_dict_to_provider_dict(
-            l7policy.to_dict(recurse=True))
-        if 'l7rules' in new_l7policy_dict:
-            del new_l7policy_dict['l7rules']
-            new_l7rules = db_l7rules_to_provider_l7rules(l7policy.l7rules)
-            new_l7policy_dict['rules'] = new_l7rules
-        provider_l7policies.append(
-            driver_dm.L7Policy.from_dict(new_l7policy_dict))
+        provider_l7policy = db_l7policy_to_provider_l7policy(l7policy)
+        provider_l7policies.append(provider_l7policy)
     return provider_l7policies
+
+
+def db_l7policy_to_provider_l7policy(db_l7policy):
+    new_l7policy_dict = l7policy_dict_to_provider_dict(
+        db_l7policy.to_dict(recurse=True))
+    if 'l7rules' in new_l7policy_dict:
+        del new_l7policy_dict['l7rules']
+        new_l7rules = db_l7rules_to_provider_l7rules(db_l7policy.l7rules)
+        new_l7policy_dict['rules'] = new_l7rules
+    return driver_dm.L7Policy.from_dict(new_l7policy_dict)
 
 
 def l7policy_dict_to_provider_dict(l7policy_dict):

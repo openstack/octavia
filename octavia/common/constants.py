@@ -230,6 +230,7 @@ LISTENER_UPDATES = 'listener_updates'
 POOL_UPDATES = 'pool_updates'
 MEMBER_UPDATES = 'member_updates'
 HEALTH_MONITOR_UPDATES = 'health_monitor_updates'
+L7POLICY_UPDATES = 'l7policy_updates'
 
 CERT_ROTATE_AMPHORA_FLOW = 'octavia-cert-rotate-amphora-flow'
 CREATE_AMPHORA_FLOW = 'octavia-create-amphora-flow'
