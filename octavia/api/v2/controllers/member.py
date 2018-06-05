@@ -224,11 +224,16 @@ class MemberController(base.BaseController):
             provider_member_dict = (
                 driver_utils.member_dict_to_provider_dict(member_dict))
 
+            # Also prepare the baseline object data
+            old_provider_member = driver_utils.db_member_to_provider_member(
+                db_member)
+
             # Dispatch to the driver
             LOG.info("Sending update Member %s to provider %s", id,
                      driver.name)
             driver_utils.call_provider(
                 driver.name, driver.member_update,
+                old_provider_member,
                 driver_dm.Member.from_dict(provider_member_dict))
 
             # Update the database to reflect what the driver just accepted

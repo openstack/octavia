@@ -238,11 +238,16 @@ class L7PolicyController(base.BaseController):
             provider_l7policy_dict = (
                 driver_utils.l7policy_dict_to_provider_dict(l7policy_dict))
 
+            # Also prepare the baseline object data
+            old_provider_l7policy = (
+                driver_utils.db_l7policy_to_provider_l7policy(db_l7policy))
+
             # Dispatch to the driver
             LOG.info("Sending update L7 Policy %s to provider %s",
                      id, driver.name)
             driver_utils.call_provider(
                 driver.name, driver.l7policy_update,
+                old_provider_l7policy,
                 driver_dm.L7Policy.from_dict(provider_l7policy_dict))
 
             # Update the database to reflect what the driver just accepted

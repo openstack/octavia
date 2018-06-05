@@ -79,20 +79,24 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_loadbalancer_update(self, mock_cast):
+        old_provider_lb = driver_dm.LoadBalancer(
+            loadbalancer_id=self.sample_data.lb_id)
         provider_lb = driver_dm.LoadBalancer(
             loadbalancer_id=self.sample_data.lb_id, admin_state_up=True)
         lb_dict = {'enabled': True}
-        self.amp_driver.loadbalancer_update(provider_lb)
+        self.amp_driver.loadbalancer_update(old_provider_lb, provider_lb)
         payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id,
                    consts.LOAD_BALANCER_UPDATES: lb_dict}
         mock_cast.assert_called_with({}, 'update_load_balancer', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_loadbalancer_update_name(self, mock_cast):
+        old_provider_lb = driver_dm.LoadBalancer(
+            loadbalancer_id=self.sample_data.lb_id)
         provider_lb = driver_dm.LoadBalancer(
             loadbalancer_id=self.sample_data.lb_id, name='Great LB')
         lb_dict = {'name': 'Great LB'}
-        self.amp_driver.loadbalancer_update(provider_lb)
+        self.amp_driver.loadbalancer_update(old_provider_lb, provider_lb)
         payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id,
                    consts.LOAD_BALANCER_UPDATES: lb_dict}
         mock_cast.assert_called_with({}, 'update_load_balancer', **payload)
@@ -116,20 +120,26 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_listener_update(self, mock_cast):
+        old_provider_listener = driver_dm.Listener(
+            listener_id=self.sample_data.listener1_id)
         provider_listener = driver_dm.Listener(
             listener_id=self.sample_data.listener1_id, admin_state_up=False)
         listener_dict = {'enabled': False}
-        self.amp_driver.listener_update(provider_listener)
+        self.amp_driver.listener_update(old_provider_listener,
+                                        provider_listener)
         payload = {consts.LISTENER_ID: self.sample_data.listener1_id,
                    consts.LISTENER_UPDATES: listener_dict}
         mock_cast.assert_called_with({}, 'update_listener', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_listener_update_name(self, mock_cast):
+        old_provider_listener = driver_dm.Listener(
+            listener_id=self.sample_data.listener1_id)
         provider_listener = driver_dm.Listener(
             listener_id=self.sample_data.listener1_id, name='Great Listener')
         listener_dict = {'name': 'Great Listener'}
-        self.amp_driver.listener_update(provider_listener)
+        self.amp_driver.listener_update(old_provider_listener,
+                                        provider_listener)
         payload = {consts.LISTENER_ID: self.sample_data.listener1_id,
                    consts.LISTENER_UPDATES: listener_dict}
         mock_cast.assert_called_with({}, 'update_listener', **payload)
@@ -153,20 +163,24 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_pool_update(self, mock_cast):
+        old_provider_pool = driver_dm.Pool(
+            pool_id=self.sample_data.pool1_id)
         provider_pool = driver_dm.Pool(
             pool_id=self.sample_data.pool1_id, admin_state_up=True)
         pool_dict = {'enabled': True}
-        self.amp_driver.pool_update(provider_pool)
+        self.amp_driver.pool_update(old_provider_pool, provider_pool)
         payload = {consts.POOL_ID: self.sample_data.pool1_id,
                    consts.POOL_UPDATES: pool_dict}
         mock_cast.assert_called_with({}, 'update_pool', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_pool_update_name(self, mock_cast):
+        old_provider_pool = driver_dm.Pool(
+            pool_id=self.sample_data.pool1_id)
         provider_pool = driver_dm.Pool(
             pool_id=self.sample_data.pool1_id, name='Great pool')
         pool_dict = {'name': 'Great pool'}
-        self.amp_driver.pool_update(provider_pool)
+        self.amp_driver.pool_update(old_provider_pool, provider_pool)
         payload = {consts.POOL_ID: self.sample_data.pool1_id,
                    consts.POOL_UPDATES: pool_dict}
         mock_cast.assert_called_with({}, 'update_pool', **payload)
@@ -190,20 +204,24 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_member_update(self, mock_cast):
+        old_provider_member = driver_dm.Member(
+            member_id=self.sample_data.member1_id)
         provider_member = driver_dm.Member(
             member_id=self.sample_data.member1_id, admin_state_up=True)
         member_dict = {'enabled': True}
-        self.amp_driver.member_update(provider_member)
+        self.amp_driver.member_update(old_provider_member, provider_member)
         payload = {consts.MEMBER_ID: self.sample_data.member1_id,
                    consts.MEMBER_UPDATES: member_dict}
         mock_cast.assert_called_with({}, 'update_member', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_member_update_name(self, mock_cast):
+        old_provider_member = driver_dm.Member(
+            member_id=self.sample_data.member1_id)
         provider_member = driver_dm.Member(
             member_id=self.sample_data.member1_id, name='Great member')
         member_dict = {'name': 'Great member'}
-        self.amp_driver.member_update(provider_member)
+        self.amp_driver.member_update(old_provider_member, provider_member)
         payload = {consts.MEMBER_ID: self.sample_data.member1_id,
                    consts.MEMBER_UPDATES: member_dict}
         mock_cast.assert_called_with({}, 'update_member', **payload)
@@ -296,21 +314,25 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_health_monitor_update(self, mock_cast):
+        old_provider_hm = driver_dm.HealthMonitor(
+            healthmonitor_id=self.sample_data.hm1_id)
         provider_hm = driver_dm.HealthMonitor(
             healthmonitor_id=self.sample_data.hm1_id, admin_state_up=True,
             max_retries=1, max_retries_down=2)
         hm_dict = {'enabled': True, 'rise_threshold': 1, 'fall_threshold': 2}
-        self.amp_driver.health_monitor_update(provider_hm)
+        self.amp_driver.health_monitor_update(old_provider_hm, provider_hm)
         payload = {consts.HEALTH_MONITOR_ID: self.sample_data.hm1_id,
                    consts.HEALTH_MONITOR_UPDATES: hm_dict}
         mock_cast.assert_called_with({}, 'update_health_monitor', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_health_monitor_update_name(self, mock_cast):
+        old_provider_hm = driver_dm.HealthMonitor(
+            healthmonitor_id=self.sample_data.hm1_id)
         provider_hm = driver_dm.HealthMonitor(
             healthmonitor_id=self.sample_data.hm1_id, name='Great HM')
         hm_dict = {'name': 'Great HM'}
-        self.amp_driver.health_monitor_update(provider_hm)
+        self.amp_driver.health_monitor_update(old_provider_hm, provider_hm)
         payload = {consts.HEALTH_MONITOR_ID: self.sample_data.hm1_id,
                    consts.HEALTH_MONITOR_UPDATES: hm_dict}
         mock_cast.assert_called_with({}, 'update_health_monitor', **payload)
@@ -334,20 +356,26 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_l7policy_update(self, mock_cast):
+        old_provider_l7policy = driver_dm.L7Policy(
+            l7policy_id=self.sample_data.l7policy1_id)
         provider_l7policy = driver_dm.L7Policy(
             l7policy_id=self.sample_data.l7policy1_id, admin_state_up=True)
         l7policy_dict = {'enabled': True}
-        self.amp_driver.l7policy_update(provider_l7policy)
+        self.amp_driver.l7policy_update(old_provider_l7policy,
+                                        provider_l7policy)
         payload = {consts.L7POLICY_ID: self.sample_data.l7policy1_id,
                    consts.L7POLICY_UPDATES: l7policy_dict}
         mock_cast.assert_called_with({}, 'update_l7policy', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_l7policy_update_name(self, mock_cast):
+        old_provider_l7policy = driver_dm.L7Policy(
+            l7policy_id=self.sample_data.l7policy1_id)
         provider_l7policy = driver_dm.L7Policy(
             l7policy_id=self.sample_data.l7policy1_id, name='Great L7Policy')
         l7policy_dict = {'name': 'Great L7Policy'}
-        self.amp_driver.l7policy_update(provider_l7policy)
+        self.amp_driver.l7policy_update(old_provider_l7policy,
+                                        provider_l7policy)
         payload = {consts.L7POLICY_ID: self.sample_data.l7policy1_id,
                    consts.L7POLICY_UPDATES: l7policy_dict}
         mock_cast.assert_called_with({}, 'update_l7policy', **payload)
@@ -371,20 +399,24 @@ class TestAmphoraDriver(base.TestCase):
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_l7rule_update(self, mock_cast):
+        old_provider_l7rule = driver_dm.L7Rule(
+            l7rule_id=self.sample_data.l7rule1_id)
         provider_l7rule = driver_dm.L7Rule(
             l7rule_id=self.sample_data.l7rule1_id, admin_state_up=True)
         l7rule_dict = {'enabled': True}
-        self.amp_driver.l7rule_update(provider_l7rule)
+        self.amp_driver.l7rule_update(old_provider_l7rule, provider_l7rule)
         payload = {consts.L7RULE_ID: self.sample_data.l7rule1_id,
                    consts.L7RULE_UPDATES: l7rule_dict}
         mock_cast.assert_called_with({}, 'update_l7rule', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_l7rule_update_invert(self, mock_cast):
+        old_provider_l7rule = driver_dm.L7Rule(
+            l7rule_id=self.sample_data.l7rule1_id)
         provider_l7rule = driver_dm.L7Rule(
             l7rule_id=self.sample_data.l7rule1_id, invert=True)
         l7rule_dict = {'invert': True}
-        self.amp_driver.l7rule_update(provider_l7rule)
+        self.amp_driver.l7rule_update(old_provider_l7rule, provider_l7rule)
         payload = {consts.L7RULE_ID: self.sample_data.l7rule1_id,
                    consts.L7RULE_UPDATES: l7rule_dict}
         mock_cast.assert_called_with({}, 'update_l7rule', **payload)

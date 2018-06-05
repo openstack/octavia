@@ -50,7 +50,7 @@ class TestProviderBase(base.TestCase):
     def test_loadbalancer_update(self):
         self.assertRaises(exceptions.NotImplementedError,
                           self.driver.loadbalancer_update,
-                          False)
+                          False, False)
 
     def test_listener_create(self):
         self.assertRaises(exceptions.NotImplementedError,
@@ -65,7 +65,7 @@ class TestProviderBase(base.TestCase):
     def test_listener_update(self):
         self.assertRaises(exceptions.NotImplementedError,
                           self.driver.listener_update,
-                          False)
+                          False, False)
 
     def test_pool_create(self):
         self.assertRaises(exceptions.NotImplementedError,
@@ -80,7 +80,7 @@ class TestProviderBase(base.TestCase):
     def test_pool_update(self):
         self.assertRaises(exceptions.NotImplementedError,
                           self.driver.pool_update,
-                          False)
+                          False, False)
 
     def test_member_create(self):
         self.assertRaises(exceptions.NotImplementedError,
@@ -95,7 +95,7 @@ class TestProviderBase(base.TestCase):
     def test_member_update(self):
         self.assertRaises(exceptions.NotImplementedError,
                           self.driver.member_update,
-                          False)
+                          False, False)
 
     def test_member_batch_update(self):
         self.assertRaises(exceptions.NotImplementedError,
@@ -115,7 +115,7 @@ class TestProviderBase(base.TestCase):
     def test_health_monitor_update(self):
         self.assertRaises(exceptions.NotImplementedError,
                           self.driver.health_monitor_update,
-                          False)
+                          False, False)
 
     def test_l7policy_create(self):
         self.assertRaises(exceptions.NotImplementedError,
@@ -130,7 +130,7 @@ class TestProviderBase(base.TestCase):
     def test_l7policy_update(self):
         self.assertRaises(exceptions.NotImplementedError,
                           self.driver.l7policy_update,
-                          False)
+                          False, False)
 
     def test_l7rule_create(self):
         self.assertRaises(exceptions.NotImplementedError,
@@ -145,7 +145,7 @@ class TestProviderBase(base.TestCase):
     def test_l7rule_update(self):
         self.assertRaises(exceptions.NotImplementedError,
                           self.driver.l7rule_update,
-                          False)
+                          False, False)
 
     def test_get_supported_flavor_metadata(self):
         self.assertRaises(exceptions.NotImplementedError,

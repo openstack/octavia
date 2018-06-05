@@ -73,9 +73,9 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.LOAD_BALANCER_ID: loadbalancer_id}
         self.client.cast({}, 'failover_load_balancer', **payload)
 
-    def loadbalancer_update(self, loadbalancer):
+    def loadbalancer_update(self, old_loadbalancer, new_loadbalancer):
         # Adapt the provider data model to the queue schema
-        lb_dict = loadbalancer.to_dict()
+        lb_dict = new_loadbalancer.to_dict()
         if 'admin_state_up' in lb_dict:
             lb_dict['enabled'] = lb_dict.pop('admin_state_up')
         lb_id = lb_dict.pop('loadbalancer_id')
@@ -94,8 +94,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.LISTENER_ID: listener_id}
         self.client.cast({}, 'delete_listener', **payload)
 
-    def listener_update(self, listener):
-        listener_dict = listener.to_dict()
+    def listener_update(self, old_listener, new_listener):
+        listener_dict = new_listener.to_dict()
         if 'admin_state_up' in listener_dict:
             listener_dict['enabled'] = listener_dict.pop('admin_state_up')
         listener_id = listener_dict.pop('listener_id')
@@ -114,8 +114,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.POOL_ID: pool_id}
         self.client.cast({}, 'delete_pool', **payload)
 
-    def pool_update(self, pool):
-        pool_dict = pool.to_dict()
+    def pool_update(self, old_pool, new_pool):
+        pool_dict = new_pool.to_dict()
         if 'admin_state_up' in pool_dict:
             pool_dict['enabled'] = pool_dict.pop('admin_state_up')
         pool_id = pool_dict.pop('pool_id')
@@ -134,8 +134,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.MEMBER_ID: member_id}
         self.client.cast({}, 'delete_member', **payload)
 
-    def member_update(self, member):
-        member_dict = member.to_dict()
+    def member_update(self, old_member, new_member):
+        member_dict = new_member.to_dict()
         if 'admin_state_up' in member_dict:
             member_dict['enabled'] = member_dict.pop('admin_state_up')
         member_id = member_dict.pop('member_id')
@@ -191,8 +191,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.HEALTH_MONITOR_ID: healthmonitor_id}
         self.client.cast({}, 'delete_health_monitor', **payload)
 
-    def health_monitor_update(self, healthmonitor):
-        healthmon_dict = healthmonitor.to_dict()
+    def health_monitor_update(self, old_healthmonitor, new_healthmonitor):
+        healthmon_dict = new_healthmonitor.to_dict()
         if 'admin_state_up' in healthmon_dict:
             healthmon_dict['enabled'] = healthmon_dict.pop('admin_state_up')
         if 'max_retries_down' in healthmon_dict:
@@ -217,8 +217,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.L7POLICY_ID: l7policy_id}
         self.client.cast({}, 'delete_l7policy', **payload)
 
-    def l7policy_update(self, l7policy):
-        l7policy_dict = l7policy.to_dict()
+    def l7policy_update(self, old_l7policy, new_l7policy):
+        l7policy_dict = new_l7policy.to_dict()
         if 'admin_state_up' in l7policy_dict:
             l7policy_dict['enabled'] = l7policy_dict.pop('admin_state_up')
         l7policy_id = l7policy_dict.pop('l7policy_id')
@@ -237,8 +237,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.L7RULE_ID: l7rule_id}
         self.client.cast({}, 'delete_l7rule', **payload)
 
-    def l7rule_update(self, l7rule):
-        l7rule_dict = l7rule.to_dict()
+    def l7rule_update(self, old_l7rule, new_l7rule):
+        l7rule_dict = new_l7rule.to_dict()
         if 'admin_state_up' in l7rule_dict:
             l7rule_dict['enabled'] = l7rule_dict.pop('admin_state_up')
         l7rule_id = l7rule_dict.pop('l7rule_id')

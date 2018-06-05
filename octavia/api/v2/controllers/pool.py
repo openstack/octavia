@@ -285,10 +285,15 @@ class PoolsController(base.BaseController):
             provider_pool_dict = (
                 driver_utils.pool_dict_to_provider_dict(pool_dict))
 
+            # Also prepare the baseline object data
+            old_provider_pool = driver_utils.db_pool_to_provider_pool(
+                db_pool)
+
             # Dispatch to the driver
             LOG.info("Sending update Pool %s to provider %s", id, driver.name)
             driver_utils.call_provider(
                 driver.name, driver.pool_update,
+                old_provider_pool,
                 driver_dm.Pool.from_dict(provider_pool_dict))
 
             # Update the database to reflect what the driver just accepted

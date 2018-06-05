@@ -98,11 +98,13 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support failing '
                                   'over load balancers.')
 
-    def loadbalancer_update(self, loadbalancer):
+    def loadbalancer_update(self, old_loadbalancer, new_loadbalncer):
         """Updates a load balancer.
 
-        :param loadbalancer: The load balancer object.
-        :type loadbalancer: object
+        :param old_loadbalancer: The baseline load balancer object.
+        :type old_loadbalancer: object
+        :param new_loadbalancer: The updated load balancer object.
+        :type new_loadbalancer: object
         :return: Nothing if the update request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
         :raises NotImplementedError: The driver does not support request.
@@ -148,11 +150,13 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support deleting '
                                   'listeners.')
 
-    def listener_update(self, listener):
+    def listener_update(self, old_listener, new_listener):
         """Updates a listener.
 
-        :param listener: The listener object.
-        :type listener: object
+        :param old_listener: The baseline listener object.
+        :type old_listener: object
+        :param new_listener: The updated listener object.
+        :type new_listener: object
         :return: Nothing if the update request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
         :raises NotImplementedError: if driver does not support request.
@@ -198,10 +202,12 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support deleting '
                                   'pools.')
 
-    def pool_update(self, pool):
+    def pool_update(self, old_pool, new_pool):
         """Updates a pool.
 
-        :param pool: The pool object.
+        :param pool: The baseline pool object.
+        :type pool: object
+        :param pool: The updated pool object.
         :type pool: object
         :return: Nothing if the create request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
@@ -248,11 +254,13 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support deleting '
                                   'members.')
 
-    def member_update(self, member):
+    def member_update(self, old_member, new_member):
         """Updates a pool member.
 
-        :param member: The member object.
-        :type member: object
+        :param old_member: The baseline member object.
+        :type old_member: object
+        :param new_member: The updated member object.
+        :type new_member: object
         :return: Nothing if the create request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
         :raises NotImplementedError: if driver does not support request.
@@ -315,11 +323,13 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support deleting '
                                   'health monitors.')
 
-    def health_monitor_update(self, healthmonitor):
+    def health_monitor_update(self, old_healthmonitor, new_healthmonitor):
         """Updates a health monitor.
 
-        :param healthmonitor: The health monitor object.
-        :type healthmonitor: object
+        :param old_healthmonitor: The baseline health monitor object.
+        :type old_healthmonitor: object
+        :param new_healthmonitor: The updated health monitor object.
+        :type new_healthmonitor: object
         :return: Nothing if the create request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
         :raises NotImplementedError: if driver does not support request.
@@ -336,7 +346,7 @@ class ProviderDriver(object):
     def l7policy_create(self, l7policy):
         """Creates a new L7 policy.
 
-        :param l7policy: The l7policy object.
+        :param l7policy: The L7 policy object.
         :type l7policy: object
         :return: Nothing if the create request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
@@ -365,11 +375,13 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support deleting '
                                   'l7policies.')
 
-    def l7policy_update(self, l7policy):
+    def l7policy_update(self, old_l7policy, new_l7policy):
         """Updates an L7 policy.
 
-        :param l7policy: The l7policy object.
-        :type l7policy: object
+        :param old_l7policy: The baseline L7 policy object.
+        :type old_l7policy: object
+        :param new_l7policy: The updated L7 policy object.
+        :type new_l7policy: object
         :return: Nothing if the update request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
         :raises NotImplementedError: if driver does not support request.
@@ -415,11 +427,13 @@ class ProviderDriver(object):
             operator_fault_string='This provider does not support deleting '
                                   'l7rules.')
 
-    def l7rule_update(self, l7rule):
+    def l7rule_update(self, old_l7rule, new_l7rule):
         """Updates an L7 rule.
 
-        :param l7rule: The L7 rule object.
-        :type l7rule: object
+        :param old_l7rule: The baseline L7 rule object.
+        :type old_l7rule: object
+        :param new_l7rule: The updated L7 rule object.
+        :type new_l7rule: object
         :return: Nothing if the update request was accepted.
         :raises DriverError: An unexpected error occurred in the driver.
         :raises NotImplementedError: if driver does not support request.

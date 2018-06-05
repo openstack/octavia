@@ -269,11 +269,15 @@ class HealthMonitorController(base.BaseController):
             provider_healthmon_dict = (
                 driver_utils.hm_dict_to_provider_dict(healthmon_dict))
 
+            # Also prepare the baseline object data
+            old_provider_healthmon = driver_utils.db_HM_to_provider_HM(db_hm)
+
             # Dispatch to the driver
             LOG.info("Sending update Health Monitor %s to provider %s",
                      id, driver.name)
             driver_utils.call_provider(
                 driver.name, driver.health_monitor_update,
+                old_provider_healthmon,
                 driver_dm.HealthMonitor.from_dict(provider_healthmon_dict))
 
             # Update the database to reflect what the driver just accepted

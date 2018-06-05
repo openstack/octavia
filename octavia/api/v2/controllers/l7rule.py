@@ -235,11 +235,16 @@ class L7RuleController(base.BaseController):
             provider_l7rule_dict = (
                 driver_utils.l7rule_dict_to_provider_dict(l7rule_dict))
 
+            # Also prepare the baseline object data
+            old_provider_l7rule = driver_utils.db_l7rule_to_provider_l7rule(
+                db_l7rule)
+
             # Dispatch to the driver
             LOG.info("Sending update L7 Rule %s to provider %s", id,
                      driver.name)
             driver_utils.call_provider(
                 driver.name, driver.l7rule_update,
+                old_provider_l7rule,
                 driver_dm.L7Rule.from_dict(provider_l7rule_dict))
 
             # Update the database to reflect what the driver just accepted

@@ -478,11 +478,16 @@ class LoadBalancersController(base.BaseController):
             if 'qos_policy_id' in vip_dict:
                 lb_dict['vip_qos_policy_id'] = vip_dict['qos_policy_id']
 
+            # Also prepare the baseline object data
+            old_provider_lb = (
+                driver_utils.db_loadbalancer_to_provider_loadbalancer(db_lb))
+
             # Dispatch to the driver
             LOG.info("Sending update Load Balancer %s to provider "
                      "%s", id, driver.name)
             driver_utils.call_provider(
                 driver.name, driver.loadbalancer_update,
+                old_provider_lb,
                 driver_dm.LoadBalancer.from_dict(lb_dict))
 
             db_lb_dict = load_balancer.to_dict(render_unsets=False)

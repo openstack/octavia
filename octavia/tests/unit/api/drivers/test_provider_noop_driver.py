@@ -170,7 +170,7 @@ class TestNoopProviderDriver(base.TestCase):
                          self.driver.driver.driverconfig[self.loadbalancer_id])
 
     def test_loadbalancer_update(self):
-        self.driver.loadbalancer_update(self.ref_lb)
+        self.driver.loadbalancer_update(self.ref_lb, self.ref_lb)
 
         self.assertEqual((self.ref_lb, 'loadbalancer_update'),
                          self.driver.driver.driverconfig[self.loadbalancer_id])
@@ -188,7 +188,7 @@ class TestNoopProviderDriver(base.TestCase):
                          self.driver.driver.driverconfig[self.listener_id])
 
     def test_listener_update(self):
-        self.driver.listener_update(self.ref_listener)
+        self.driver.listener_update(self.ref_listener, self.ref_listener)
 
         self.assertEqual((self.ref_listener, 'listener_update'),
                          self.driver.driver.driverconfig[self.listener_id])
@@ -206,7 +206,7 @@ class TestNoopProviderDriver(base.TestCase):
                          self.driver.driver.driverconfig[self.pool_id])
 
     def test_pool_update(self):
-        self.driver.pool_update(self.ref_pool)
+        self.driver.pool_update(self.ref_pool, self.ref_pool)
 
         self.assertEqual((self.ref_pool, 'pool_update'),
                          self.driver.driver.driverconfig[self.pool_id])
@@ -224,7 +224,7 @@ class TestNoopProviderDriver(base.TestCase):
                          self.driver.driver.driverconfig[self.member_id])
 
     def test_member_update(self):
-        self.driver.member_update(self.ref_member)
+        self.driver.member_update(self.ref_member, self.ref_member)
 
         self.assertEqual((self.ref_member, 'member_update'),
                          self.driver.driver.driverconfig[self.member_id])
@@ -250,7 +250,8 @@ class TestNoopProviderDriver(base.TestCase):
             self.driver.driver.driverconfig[self.healthmonitor_id])
 
     def test_health_monitor_update(self):
-        self.driver.health_monitor_update(self.ref_healthmonitor)
+        self.driver.health_monitor_update(self.ref_healthmonitor,
+                                          self.ref_healthmonitor)
 
         self.assertEqual(
             (self.ref_healthmonitor, 'health_monitor_update'),
@@ -269,7 +270,7 @@ class TestNoopProviderDriver(base.TestCase):
                          self.driver.driver.driverconfig[self.l7policy_id])
 
     def test_l7policy_update(self):
-        self.driver.l7policy_update(self.ref_l7policy)
+        self.driver.l7policy_update(self.ref_l7policy, self.ref_l7policy)
 
         self.assertEqual((self.ref_l7policy, 'l7policy_update'),
                          self.driver.driver.driverconfig[self.l7policy_id])
@@ -287,7 +288,7 @@ class TestNoopProviderDriver(base.TestCase):
                          self.driver.driver.driverconfig[self.l7rule_id])
 
     def test_l7rule_update(self):
-        self.driver.l7rule_update(self.ref_l7rule)
+        self.driver.l7rule_update(self.ref_l7rule, self.ref_l7rule)
 
         self.assertEqual((self.ref_l7rule, 'l7rule_update'),
                          self.driver.driver.driverconfig[self.l7rule_id])
