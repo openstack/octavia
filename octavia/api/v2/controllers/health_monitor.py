@@ -22,6 +22,9 @@ import pecan
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
+from octavia.api.drivers import data_models as driver_dm
+from octavia.api.drivers import driver_factory
+from octavia.api.drivers import utils as driver_utils
 from octavia.api.v2.controllers import base
 from octavia.api.v2.types import health_monitor as hm_types
 from octavia.common import constants
@@ -40,7 +43,6 @@ class HealthMonitorController(base.BaseController):
 
     def __init__(self):
         super(HealthMonitorController, self).__init__()
-        self.handler = self.handler.health_monitor
 
     @wsme_pecan.wsexpose(hm_types.HealthMonitorRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -128,25 +130,6 @@ class HealthMonitorController(base.BaseController):
             # do not give any information as to what constraint failed
             raise exceptions.InvalidOption(value='', option='')
 
-    def _send_hm_to_handler(self, session, db_hm):
-        try:
-            LOG.info("Sending Creation of Health Monitor %s to handler",
-                     db_hm.id)
-            self.handler.create(db_hm)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_listener_pool_statuses(
-                    lock_session, db_hm)
-                # Health Monitor now goes to ERROR
-                self.repositories.health_monitor.update(
-                    lock_session, db_hm.id,
-                    provisioning_status=constants.ERROR)
-        db_hm = self._get_db_hm(session, db_hm.id)
-        result = self._convert_db_to_type(
-            db_hm, hm_types.HealthMonitorResponse)
-        return hm_types.HealthMonitorRootResponse(healthmonitor=result)
-
     @wsme_pecan.wsexpose(hm_types.HealthMonitorRootResponse,
                          body=hm_types.HealthMonitorRootPOST, status_code=201)
     def post(self, health_monitor_):
@@ -160,10 +143,15 @@ class HealthMonitorController(base.BaseController):
                 option='type', value=constants.HEALTH_MONITOR_PING)
 
         pool = self._get_db_pool(context.session, health_monitor.pool_id)
-        health_monitor.project_id = pool.project_id
+
+        health_monitor.project_id, provider = self._get_lb_project_id_provider(
+            context.session, pool.load_balancer_id)
 
         self._auth_validate_action(context, health_monitor.project_id,
                                    constants.RBAC_POST)
+
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
         lock_session = db_api.get_session(autocommit=False)
         try:
@@ -180,6 +168,16 @@ class HealthMonitorController(base.BaseController):
             self._test_lb_and_listener_and_pool_statuses(
                 lock_session, health_monitor)
             db_hm = self._validate_create_hm(lock_session, hm_dict)
+
+            # Prepare the data for the driver data model
+            provider_healthmon = (driver_utils.db_HM_to_provider_HM(db_hm))
+
+            # Dispatch to the driver
+            LOG.info("Sending create Health Monitor %s to provider %s",
+                     db_hm.id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.health_monitor_create, provider_healthmon)
+
             lock_session.commit()
         except odb_exceptions.DBError:
             lock_session.rollback()
@@ -189,7 +187,10 @@ class HealthMonitorController(base.BaseController):
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
 
-        return self._send_hm_to_handler(context.session, db_hm)
+        db_hm = self._get_db_hm(context.session, db_hm.id)
+        result = self._convert_db_to_type(
+            db_hm, hm_types.HealthMonitorResponse)
+        return hm_types.HealthMonitorRootResponse(healthmonitor=result)
 
     def _graph_create(self, lock_session, hm_dict):
         hm_dict = db_prepare.create_health_monitor(hm_dict)
@@ -205,28 +206,41 @@ class HealthMonitorController(base.BaseController):
         health_monitor = health_monitor_.healthmonitor
         db_hm = self._get_db_hm(context.session, id, show_deleted=False)
 
-        self._auth_validate_action(context, db_hm.project_id,
-                                   constants.RBAC_PUT)
+        pool = self._get_db_pool(context.session, db_hm.pool_id)
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, pool.load_balancer_id)
 
-        self._test_lb_and_listener_and_pool_statuses(context.session, db_hm)
+        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
-        self.repositories.health_monitor.update(
-            context.session, db_hm.id,
-            provisioning_status=constants.PENDING_UPDATE)
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
-        try:
-            LOG.info("Sending Update of Health Monitor %s to "
-                     "handler", id)
-            self.handler.update(db_hm, health_monitor)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_listener_pool_statuses(
-                    lock_session, db_hm)
-                # Health Monitor now goes to ERROR
-                self.repositories.health_monitor.update(
-                    lock_session, db_hm.id,
-                    provisioning_status=constants.ERROR)
+        with db_api.get_lock_session() as lock_session:
+
+            self._test_lb_and_listener_and_pool_statuses(lock_session, db_hm)
+
+            # Prepare the data for the driver data model
+            healthmon_dict = health_monitor.to_dict(render_unsets=False)
+            healthmon_dict['id'] = id
+            provider_healthmon_dict = (
+                driver_utils.hm_dict_to_provider_dict(healthmon_dict))
+
+            # Dispatch to the driver
+            LOG.info("Sending update Health Monitor %s to provider %s",
+                     id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.health_monitor_update,
+                driver_dm.HealthMonitor.from_dict(provider_healthmon_dict))
+
+            # Update the database to reflect what the driver just accepted
+            health_monitor.provisioning_status = constants.PENDING_UPDATE
+            db_hm_dict = health_monitor.to_dict(render_unsets=False)
+            self.repositories.health_monitor.update(lock_session, id,
+                                                    **db_hm_dict)
+
+        # Force SQL alchemy to query the DB, otherwise we get inconsistent
+        # results
+        context.session.expire_all()
         db_hm = self._get_db_hm(context.session, id)
         result = self._convert_db_to_type(
             db_hm, hm_types.HealthMonitorResponse)
@@ -238,28 +252,27 @@ class HealthMonitorController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         db_hm = self._get_db_hm(context.session, id, show_deleted=False)
 
-        self._auth_validate_action(context, db_hm.project_id,
-                                   constants.RBAC_DELETE)
+        pool = self._get_db_pool(context.session, db_hm.pool_id)
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, pool.load_balancer_id)
+
+        self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
 
         if db_hm.provisioning_status == constants.DELETED:
             return
 
-        self._test_lb_and_listener_and_pool_statuses(context.session, db_hm)
+        # Load the driver early as it also provides validation
+        driver = driver_factory.get_driver(provider)
 
-        self.repositories.health_monitor.update(
-            context.session, db_hm.id,
-            provisioning_status=constants.PENDING_DELETE)
+        with db_api.get_lock_session() as lock_session:
 
-        try:
-            LOG.info("Sending Deletion of Health Monitor %s to "
-                     "handler", id)
-            self.handler.delete(db_hm)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_listener_pool_statuses(
-                    lock_session, db_hm)
-                # Health Monitor now goes to ERROR
-                self.repositories.health_monitor.update(
-                    lock_session, db_hm.id,
-                    provisioning_status=constants.ERROR)
+            self._test_lb_and_listener_and_pool_statuses(lock_session, db_hm)
+
+            self.repositories.health_monitor.update(
+                lock_session, db_hm.id,
+                provisioning_status=constants.PENDING_DELETE)
+
+            LOG.info("Sending delete Health Monitor %s to provider %s",
+                     id, driver.name)
+            driver_utils.call_provider(
+                driver.name, driver.health_monitor_delete, id)
