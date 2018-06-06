@@ -98,7 +98,6 @@ class TestUtils(base.TestCase):
                         'vip_address': self.sample_data.ip_address,
                         'vip_network_id': self.sample_data.network_id,
                         'vip_qos_policy_id': self.sample_data.qos_policy_id,
-                        'provider': 'noop_driver',
                         'id': self.sample_data.lb_id,
                         'listeners': [],
                         'pools': [],
