@@ -20,7 +20,6 @@ import stat
 import subprocess
 
 import jinja2
-import netifaces
 from oslo_config import cfg
 from oslo_log import log as logging
 import pyroute2
@@ -28,6 +27,7 @@ import six
 import webob
 from werkzeug import exceptions
 
+import netifaces
 from octavia.common import constants as consts
 
 
@@ -60,7 +60,7 @@ class Plug(object):
                 else six.u(subnet_cidr))
             vip = ip.exploded
             broadcast = network.broadcast_address.exploded
-            netmask = (network.prefixlen if ip.version is 6
+            netmask = (network.prefixlen if ip.version == 6
                        else network.netmask.exploded)
             vrrp_version = None
             if vrrp_ip:

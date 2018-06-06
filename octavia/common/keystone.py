@@ -14,9 +14,10 @@
 
 from keystoneauth1 import loading as ks_loading
 from keystonemiddleware import auth_token
-from octavia.common import constants
 from oslo_config import cfg
 from oslo_log import log as logging
+
+from octavia.common import constants
 
 LOG = logging.getLogger(__name__)
 

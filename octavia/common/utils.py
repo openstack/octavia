@@ -70,8 +70,7 @@ def ip_port_str(ip_address, port):
     ip = netaddr.IPAddress(ip_address)
     if ip.version == 4:
         return "{ip}:{port}".format(ip=ip, port=port)
-    elif ip.version == 6:
-        return "[{ip}]:{port}".format(ip=ip, port=port)
+    return "[{ip}]:{port}".format(ip=ip, port=port)
 
 
 def netmask_to_prefix(netmask):

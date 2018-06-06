@@ -44,7 +44,7 @@ class Details(models.BaseDataModel):
                  active=None, haproxy_count=None, cpu=None, memory=None,
                  disk=None, load=None, listeners=None, packages=None):
         self.hostname = hostname
-        self.uuid = uuid,
+        self.uuid = uuid
         self.version = version
         self.api_version = api_version
         self.network_tx = network_tx

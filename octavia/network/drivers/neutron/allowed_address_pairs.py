@@ -82,6 +82,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                     is_correct_interface = False
             if is_correct_interface:
                 return interface
+        return None
 
     def _plug_amphora_vip(self, amphora, subnet):
         # We need a vip port owned by Octavia for Act/Stby and failover
@@ -124,11 +125,12 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         sec_grps = self.neutron_client.list_security_groups(name=sec_grp_name)
         if sec_grps and sec_grps.get('security_groups'):
             return sec_grps.get('security_groups')[0]
+        return None
 
     def _get_ethertype_for_ip(self, ip):
         address = ipaddress.ip_address(
             ip if isinstance(ip, six.text_type) else six.u(ip))
-        return 'IPv6' if address.version is 6 else 'IPv4'
+        return 'IPv6' if address.version == 6 else 'IPv4'
 
     def _update_security_group_rules(self, load_balancer, sec_grp_id):
         rules = self.neutron_client.list_security_group_rules(
@@ -276,8 +278,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                     LOG.warning('Failed to delete security group on first '
                                 'pass: %s', sec_grp_id)
                     extra_ports = self._get_ports_by_security_group(sec_grp_id)
-                    for port in extra_ports:
-                        port_id = port.get('id')
+                    for extra_port in extra_ports:
+                        port_id = extra_port.get('id')
                         try:
                             LOG.warning('Deleting extra port %s on security '
                                         'group %s...', port_id, sec_grp_id)

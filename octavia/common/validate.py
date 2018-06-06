@@ -52,12 +52,14 @@ def url_path(url_path):
     try:
         p_url = rfc3986.urlparse(rfc3986.normalize_uri(url_path))
 
-        if (
+        invalid_path = (
             p_url.scheme or p_url.userinfo or p_url.host or
             p_url.port or
             p_url.path is None or
             not p_url.path.startswith('/')
-        ):
+        )
+
+        if invalid_path:
             raise exceptions.InvalidURLPath(url_path=url_path)
     except Exception:
         raise exceptions.InvalidURLPath(url_path=url_path)
@@ -220,7 +222,7 @@ def sanitize_l7policy_api_args(l7policy, create=False):
         raise exceptions.InvalidL7PolicyAction(action='None')
 
     # See if we have anything left after that...
-    if len(l7policy.keys()) == 0:
+    if not l7policy.keys():
         raise exceptions.InvalidL7PolicyArgs(msg='Invalid update options')
     return l7policy
 

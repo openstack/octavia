@@ -535,10 +535,14 @@ class LoadBalancersController(base.BaseController):
         'statuses' is aliased here for backward compatibility with
         neutron-lbaas LBaaS v2 API.
         """
-        if id and len(remainder) and (remainder[0] == 'status' or
-                                      remainder[0] == 'statuses' or
-                                      remainder[0] == 'stats' or
-                                      remainder[0] == 'failover'):
+        is_children = (
+            id and remainder and (
+                remainder[0] == 'status' or remainder[0] == 'statuses' or (
+                    remainder[0] == 'stats' or remainder[0] == 'failover'
+                )
+            )
+        )
+        if is_children:
             controller = remainder[0]
             remainder = remainder[1:]
             if controller == 'status' or controller == 'statuses':
@@ -547,6 +551,7 @@ class LoadBalancersController(base.BaseController):
                 return StatisticsController(lb_id=id), remainder
             elif controller == 'failover':
                 return FailoverController(lb_id=id), remainder
+        return None
 
 
 class StatusController(base.BaseController):

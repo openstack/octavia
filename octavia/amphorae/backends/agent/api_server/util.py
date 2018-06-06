@@ -136,8 +136,7 @@ def get_os_init_system():
                 if os.path.exists(init_path):
                     args = [init_path, '--version']
                     init_version = subprocess.check_output(args, shell=False)
-                    if consts.INIT_UPSTART in init_version:
+                    if consts.INIT_UPSTART in str(init_version, 'utf-8'):
                         return consts.INIT_UPSTART
-                    else:
-                        return consts.INIT_SYSVINIT
+                    return consts.INIT_SYSVINIT
     return consts.INIT_UNKOWN

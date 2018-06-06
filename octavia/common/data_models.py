@@ -389,7 +389,7 @@ class Listener(BaseDataModel):
                 if self.default_pool is not None:
                     l7_pool_ids = [p.redirect_pool_id for p in self.l7policies
                                    if p.redirect_pool_id is not None and
-                                   len(p.l7rules) > 0 and p.enabled is True]
+                                   p.l7rules and p.enabled is True]
                     old_pool = self.default_pool
                     if old_pool.id not in l7_pool_ids:
                         if old_pool in self.pools:
@@ -620,7 +620,7 @@ class L7Policy(BaseDataModel):
             listener_l7pools = [
                 p.redirect_pool for p in self.listener.l7policies
                 if p.redirect_pool is not None and
-                len(p.l7rules) > 0 and p.enabled is True and
+                p.l7rules and p.enabled is True and
                 p.id != self.id]
             if pool not in listener_l7pools:
                 self.listener.pools.remove(pool)
@@ -634,7 +634,7 @@ class L7Policy(BaseDataModel):
                 self.redirect_url = None
                 pool = self._find_in_graph('Pool' + value)
                 self.redirect_pool = pool
-                if len(self.l7rules) > 0 and (self.enabled is True or (
+                if self.l7rules and (self.enabled is True or (
                         'enabled' in update_dict.keys() and
                         update_dict['enabled'] is True)):
                     if pool not in self.listener.pools:
@@ -658,7 +658,7 @@ class L7Policy(BaseDataModel):
                 if (value is True and self.action ==
                         constants.L7POLICY_ACTION_REDIRECT_TO_POOL and
                         self.redirect_pool is not None and
-                        len(self.l7rules) > 0 and
+                        self.l7rules and
                         self.redirect_pool not in self.listener.pools):
                     self.listener.pools.append(self.redirect_pool)
                     self.redirect_pool.listeners.append(self.listener)

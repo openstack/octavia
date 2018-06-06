@@ -38,7 +38,7 @@ def get_status(sock_address):
         data += x
     s.close()
     # if get nothing, means has no response
-    if len(data) == 0:
+    if not data:
         return 1
     return 0
 

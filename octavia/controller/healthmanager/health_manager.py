@@ -33,7 +33,7 @@ LOG = logging.getLogger(__name__)
 def wait_done_or_dead(futs, dead, check_timeout=1):
     while True:
         _done, not_done = futures.wait(futs, timeout=check_timeout)
-        if len(not_done) == 0:
+        if not not_done:
             break
         if dead.is_set():
             for fut in not_done:
@@ -68,13 +68,12 @@ class HealthManager(object):
         if self.lb_repo.set_status_for_failover(lock_session, lb_id,
                                                 constants.PENDING_UPDATE):
             return True
-        else:
-            db_lb = self.lb_repo.get(lock_session, id=lb_id)
-            prov_status = db_lb.provisioning_status
-            LOG.warning("Load balancer %(id)s is in immutable state "
-                        "%(state)s. Skipping failover.",
-                        {"state": prov_status, "id": db_lb.id})
-            return False
+        db_lb = self.lb_repo.get(lock_session, id=lb_id)
+        prov_status = db_lb.provisioning_status
+        LOG.warning("Load balancer %(id)s is in immutable state "
+                    "%(state)s. Skipping failover.",
+                    {"state": prov_status, "id": db_lb.id})
+        return False
 
     def health_check(self):
         stats = {

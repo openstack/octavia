@@ -67,8 +67,8 @@ def simulate_controller(data_model, delete=False, update=False, create=False,
                                operating_status=constants.ONLINE)
         elif batch_update:
             members = member
-            for member in members:
-                repo.member.update(db_api.get_session(), member.id,
+            for m in members:
+                repo.member.update(db_api.get_session(), m.id,
                                    operating_status=constants.ONLINE)
         listeners = []
         if db_mem:
