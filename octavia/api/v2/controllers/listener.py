@@ -232,7 +232,7 @@ class ListenersController(base.BaseController):
                 driver_utils.db_listener_to_provider_listener(db_listener))
 
             # re-inject the sni container references lost due to SNI
-            # being a seperate table in the DB
+            # being a separate table in the DB
             provider_listener.sni_container_refs = listener.sni_container_refs
 
             # Dispatch to the driver
