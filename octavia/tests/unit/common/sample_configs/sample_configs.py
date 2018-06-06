@@ -307,30 +307,16 @@ RET_AMPHORA = {
 
 RET_LB = {
     'host_amphora': RET_AMPHORA,
-    'name': 'test-lb',
+    'id': 'sample_loadbalancer_id_1',
     'vip_address': '10.0.0.2',
     'listener': RET_LISTENER,
     'topology': 'SINGLE',
     'enabled': True,
     'global_connection_limit': constants.HAPROXY_MAX_MAXCONN}
 
-RET_LB_TLS = {
-    'name': 'test-lb',
-    'vip_address': '10.0.0.2',
-    'listener': RET_LISTENER_TLS,
-    'enabled': True,
-    'global_connection_limit': constants.HAPROXY_MAX_MAXCONN}
-
-RET_LB_TLS_SNI = {
-    'name': 'test-lb',
-    'vip_address': '10.0.0.2',
-    'listener': RET_LISTENER_TLS_SNI,
-    'enabled': True,
-    'global_connection_limit': constants.HAPROXY_MAX_MAXCONN}
-
 RET_LB_L7 = {
     'host_amphora': RET_AMPHORA,
-    'name': 'test-lb',
+    'id': 'sample_loadbalancer_id_1',
     'vip_address': '10.0.0.2',
     'listener': RET_LISTENER_L7,
     'topology': 'SINGLE',
@@ -727,7 +713,7 @@ def sample_base_expected_config(frontend=None, backend=None,
     if global_opts is None:
         global_opts = "    maxconn {maxconn}\n\n".format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
-    return ("# Configuration for test-lb\n"
+    return ("# Configuration for loadbalancer sample_loadbalancer_id_1\n"
             "global\n"
             "    daemon\n"
             "    user nobody\n"
