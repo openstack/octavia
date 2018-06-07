@@ -164,18 +164,24 @@ Supported HTTP Header Insertions
    header insertions.
 
 
-+------------------+--------+------------------------------------------------+
-| Key              | Value  | Description                                    |
-+==================+========+================================================+
-| X-Forwarded-For  | string | When "``true``" a ``X-Forwarded-For`` header   |
-|                  |        | is inserted into the request to the backend    |
-|                  |        | ``member`` that specifies the client IP        |
-|                  |        | address.                                       |
-+------------------+--------+------------------------------------------------+
-| X-Forwarded-Port | string | When "``true``" a ``X-Forwarded-Port`` header  |
-|                  |        | is inserted into the request to the backend    |
-|                  |        | ``member`` that specifies the listener port.   |
-+------------------+--------+------------------------------------------------+
++-------------------+--------+------------------------------------------------+
+| Key               | Value  | Description                                    |
++===================+========+================================================+
+| X-Forwarded-For   | string | When "``true``" a ``X-Forwarded-For`` header   |
+|                   |        | is inserted into the request to the backend    |
+|                   |        | ``member`` that specifies the client IP        |
+|                   |        | address.                                       |
++-------------------+--------+------------------------------------------------+
+| X-Forwarded-Port  | string | When "``true``" a ``X-Forwarded-Port`` header  |
+|                   |        | is inserted into the request to the backend    |
+|                   |        | ``member`` that specifies the listener port.   |
++-------------------+--------+------------------------------------------------+
+| X-Forwarded-Proto | string | When "``true``" a ``X-Forwarded-Proto`` header |
+|                   |        | is inserted into the request to the backend    |
+|                   |        | ``member``. HTTP for the HTTP listener         |
+|                   |        | protocol type, HTTPS for the TERMINATED_HTTPS  |
+|                   |        | listener protocol type.                        |
++-------------------+--------+------------------------------------------------+
 
 Request Example
 ----------------
