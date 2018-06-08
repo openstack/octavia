@@ -152,9 +152,9 @@ class TestHealthMonitorPOST(base.BaseTypesTest, TestHealthMonitor):
                 "timeout": 1, "max_retries": 1,
                 "pool_id": uuidutils.generate_uuid()}
         hmpost = wsme_json.fromjson(self._type, body)
-        self.assertEqual('GET', hmpost.http_method)
-        self.assertEqual('/', hmpost.url_path)
-        self.assertEqual('200', hmpost.expected_codes)
+        self.assertEqual(wsme_types.Unset, hmpost.http_method)
+        self.assertEqual(wsme_types.Unset, hmpost.url_path)
+        self.assertEqual(wsme_types.Unset, hmpost.expected_codes)
         self.assertEqual(3, hmpost.max_retries_down)
         self.assertTrue(hmpost.admin_state_up)
 
@@ -165,9 +165,9 @@ class TestHealthMonitorPOST(base.BaseTypesTest, TestHealthMonitor):
                 "pool_id": uuidutils.generate_uuid(),
                 "url_path": url_path}
         hmpost = wsme_json.fromjson(self._type, body)
-        self.assertEqual('GET', hmpost.http_method)
+        self.assertEqual(wsme_types.Unset, hmpost.http_method)
         self.assertEqual(url_path, hmpost.url_path)
-        self.assertEqual('200', hmpost.expected_codes)
+        self.assertEqual(wsme_types.Unset, hmpost.expected_codes)
         self.assertEqual(3, hmpost.max_retries_down)
         self.assertTrue(hmpost.admin_state_up)
 

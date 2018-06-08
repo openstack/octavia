@@ -110,21 +110,6 @@ class MemberController(base.BaseController):
             raise exceptions.ImmutableObject(resource='Load Balancer',
                                              id=load_balancer_id)
 
-    def _reset_lb_listener_pool_statuses(self, session, member=None):
-        # Setting LB + listener + pool back to active because this should be a
-        # recoverable error
-        pool = self._get_db_pool(session, self.pool_id)
-        load_balancer_id = pool.load_balancer_id
-        self.repositories.load_balancer.update(
-            session, load_balancer_id,
-            provisioning_status=constants.ACTIVE)
-        for listener in self._get_affected_listener_ids(session, member):
-            self.repositories.listener.update(
-                session, listener,
-                provisioning_status=constants.ACTIVE)
-        self.repositories.pool.update(session, self.pool_id,
-                                      provisioning_status=constants.ACTIVE)
-
     def _validate_create_member(self, lock_session, member_dict):
         """Validate creating member on pool."""
         try:
