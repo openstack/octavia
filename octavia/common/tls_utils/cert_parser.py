@@ -14,6 +14,7 @@
 #    under the License.
 
 import base64
+import hashlib
 
 from cryptography.hazmat import backends
 from cryptography.hazmat.primitives import serialization
@@ -360,6 +361,7 @@ def load_certificates_data(cert_mngr, listener, context=None):
 
 def _map_cert_tls_container(cert):
     return data_models.TLSContainer(
+        id=hashlib.sha1(cert.get_certificate()).hexdigest(),
         primary_cn=get_primary_cn(cert),
         private_key=prepare_private_key(
             cert.get_private_key(),
