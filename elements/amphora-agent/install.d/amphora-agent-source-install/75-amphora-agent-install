@@ -9,7 +9,7 @@ set -o pipefail
 SCRIPTDIR=$(dirname $0)
 AMP_VENV=/opt/amphora-agent-venv
 
-# Create a virutal environment to contain the amphora agent
+# Create a virtual environment to contain the amphora agent
 ${DIB_PYTHON} -m virtualenv $AMP_VENV
 
 $AMP_VENV/bin/pip install pip --upgrade

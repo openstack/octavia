@@ -63,7 +63,7 @@ def call_provider(provider, driver_method, *args, **kwargs):
         raise exceptions.ProviderUnsupportedOptionError(
             prov=provider, user_msg=e.user_fault_string)
     except Exception as e:
-        LOG.exception("Provider '%s' raised an unkown error: %s",
+        LOG.exception("Provider '%s' raised an unknown error: %s",
                       provider, e)
         raise exceptions.ProviderDriverError(prov=provider, user_msg=e)
 

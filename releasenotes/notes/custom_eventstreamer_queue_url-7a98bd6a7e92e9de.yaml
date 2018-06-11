@@ -1,7 +1,7 @@
 ---
 features:
   - |
-    In some enviornments (e.g. OSA) Neutron and Octavia use different queues
+    In some environments (e.g. OSA) Neutron and Octavia use different queues
     (at least different vhosts) and so if Octavia posts to the Octavia queue
     and Neutron listens on the Neutron queue the events will never make it
     over.
