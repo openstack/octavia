@@ -201,6 +201,49 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertRaises(network_base.DeallocateVIPException,
                           self.driver.deallocate_vip, vip)
 
+    def test_deallocate_vip_when_secgrp_has_allocated_ports(self):
+        max_retries = 1
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group="networking", max_retries=max_retries)
+
+        lb = dmh.generate_load_balancer_tree()
+        lb.vip.load_balancer = lb
+        vip = lb.vip
+        show_port = self.driver.neutron_client.show_port
+        show_port.return_value = {'port': {
+            'device_owner': allowed_address_pairs.OCTAVIA_OWNER}}
+        delete_port = self.driver.neutron_client.delete_port
+        list_ports = self.driver.neutron_client.list_ports
+        list_security_groups = self.driver.neutron_client.list_security_groups
+        delete_sec_grp = self.driver.neutron_client.delete_security_group
+        security_groups = {
+            'security_groups': [
+                {'id': t_constants.MOCK_SECURITY_GROUP_ID}
+            ]
+        }
+        list_security_groups.return_value = security_groups
+        delete_grp_results = [
+            network_base.DeallocateVIPException
+            for _ in range(max_retries + 1)]  # Total tries = max_retries + 1
+        delete_grp_results.append(None)
+        delete_sec_grp.side_effect = delete_grp_results
+        list_ports.side_effect = [{
+            "ports": [t_constants.MOCK_NEUTRON_PORT['port'],
+                      t_constants.MOCK_NEUTRON_PORT2['port']]}]
+        self.driver.deallocate_vip(vip)
+        # First we expect the amp's ports to be deleted
+        dp_calls = [mock.call(amp.vrrp_port_id) for amp in lb.amphorae]
+        # Then after the SG delete fails, extra hanging-on ports are removed
+        dp_calls.append(mock.call(t_constants.MOCK_PORT_ID))
+        # Lastly we remove the vip port
+        dp_calls.append(mock.call(vip.port_id))
+        self.assertEqual(len(dp_calls), delete_port.call_count)
+        delete_port.assert_has_calls(dp_calls)
+        dsg_calls = [mock.call(t_constants.MOCK_SECURITY_GROUP_ID)
+                     for _ in range(max_retries + 2)]  # Max fail + one success
+        self.assertEqual(len(dsg_calls), delete_sec_grp.call_count)
+        delete_sec_grp.assert_has_calls(dsg_calls)
+
     def test_deallocate_vip_when_port_not_found(self):
         lb = dmh.generate_load_balancer_tree()
         vip = data_models.Vip(port_id='1')

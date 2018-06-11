@@ -46,6 +46,8 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
         self.sec_grp_enabled = self._check_extension_enabled(SEC_GRP_EXT_ALIAS)
         self.dns_integration_enabled = self._check_extension_enabled(
             DNS_INT_EXT_ALIAS)
+        self.project_id = self.neutron_client.get_auth_info().get(
+            'auth_tenant_id')
 
     def _check_extension_enabled(self, extension_alias):
         if extension_alias in self._check_extension_cache:
@@ -114,6 +116,14 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             raise base.PortNotFound(str(e))
         except Exception as e:
             raise base.NetworkException(str(e))
+
+    def _get_ports_by_security_group(self, sec_grp_id):
+        all_ports = self.neutron_client.list_ports(project=self.project_id)
+        filtered_ports = []
+        for port in all_ports.get('ports', []):
+            if sec_grp_id in port.get('security_groups', []):
+                filtered_ports.append(port)
+        return filtered_ports
 
     def _create_security_group(self, name):
         new_sec_grp = {'security_group': {'name': name}}
