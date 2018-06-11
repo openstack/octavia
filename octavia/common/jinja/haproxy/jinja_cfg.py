@@ -205,7 +205,7 @@ class JinjaTemplater(object):
             ret_value['default_tls_path'] = '%s.pem' % (
                 os.path.join(self.base_crt_dir,
                              listener.id,
-                             tls_cert.primary_cn))
+                             tls_cert.id))
         if listener.sni_containers:
             ret_value['crt_dir'] = os.path.join(self.base_crt_dir, listener.id)
         if listener.default_pool:

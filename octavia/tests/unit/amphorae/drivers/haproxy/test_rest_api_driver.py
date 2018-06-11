@@ -106,8 +106,17 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
 
         # verify result
         # this is called 3 times
-        self.driver.client.get_cert_md5sum.assert_called_with(
-            self.amp, self.sl.id, sample_certs.X509_CERT_CN_3 + '.pem')
+        gcm_calls = [
+            mock.call(self.amp, self.sl.id,
+                      self.sl.default_tls_container.id + '.pem'),
+            mock.call(self.amp, self.sl.id,
+                      sconts[0].id + '.pem'),
+            mock.call(self.amp, self.sl.id,
+                      sconts[1].id + '.pem')
+        ]
+        self.driver.client.get_cert_md5sum.assert_has_calls(gcm_calls,
+                                                            any_order=True)
+
         # this is called three times (last MD5 matches)
         fp1 = b'\n'.join([sample_certs.X509_CERT,
                           sample_certs.X509_CERT_KEY,
@@ -120,11 +129,11 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                           sample_certs.X509_IMDS]) + b'\n'
         ucp_calls = [
             mock.call(self.amp, self.sl.id,
-                      sample_certs.X509_CERT_CN + '.pem', fp1),
+                      self.sl.default_tls_container.id + '.pem', fp1),
             mock.call(self.amp, self.sl.id,
-                      sample_certs.X509_CERT_CN_2 + '.pem', fp2),
+                      sconts[0].id + '.pem', fp2),
             mock.call(self.amp, self.sl.id,
-                      sample_certs.X509_CERT_CN_3 + '.pem', fp3)
+                      sconts[1].id + '.pem', fp3)
         ]
         self.driver.client.upload_cert_pem.assert_has_calls(ucp_calls,
                                                             any_order=True)
