@@ -17,11 +17,11 @@ import abc
 
 class HealthUpdateBase(object):
     @abc.abstractmethod
-    def update_health(self, health):
+    def update_health(self, health, srcaddr):
         raise NotImplementedError()
 
 
 class StatsUpdateBase(object):
     @abc.abstractmethod
-    def update_stats(self, health_message):
+    def update_stats(self, health_message, srcaddr):
         raise NotImplementedError()

@@ -25,7 +25,7 @@ class TestHealthUpdateBase(base.TestCase):
 
     def test_update_health(self):
         self.assertRaises(NotImplementedError,
-                          self.logger.update_health, {'id': 1})
+                          self.logger.update_health, {'id': 1}, '192.0.2.1')
 
 
 class TestStatsUpdateBase(base.TestCase):
@@ -35,4 +35,4 @@ class TestStatsUpdateBase(base.TestCase):
 
     def test_update_stats(self):
         self.assertRaises(NotImplementedError,
-                          self.logger.update_stats, {'id': 1})
+                          self.logger.update_stats, {'id': 1}, '192.0.2.1')

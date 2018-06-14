@@ -20,10 +20,10 @@ LOG = logging.getLogger(__name__)
 
 
 class HealthUpdateLogger(update_base.HealthUpdateBase):
-    def update_health(self, health):
+    def update_health(self, health, srcaddr):
         LOG.info("Health update triggered for: %s", health.get('id'))
 
 
 class StatsUpdateLogger(update_base.StatsUpdateBase):
-    def update_stats(self, health_message):
+    def update_stats(self, health_message, srcaddr):
         LOG.info("Stats update triggered for: %s", health_message.get('id'))

@@ -62,24 +62,26 @@ class TestHeartbeatUDP(base.TestCase):
     @mock.patch('stevedore.driver.DriverManager')
     def test_update_health_func(self, driver_manager):
         obj = {'id': 1}
-        heartbeat_udp.update_health(obj)
+        heartbeat_udp.update_health(obj, '192.0.2.1')
         driver_manager.assert_called_once_with(
             invoke_on_load=True,
             name='health_logger',
             namespace='octavia.amphora.health_update_drivers'
         )
-        driver_manager().driver.update_health.assert_called_once_with(obj)
+        driver_manager().driver.update_health.assert_called_once_with(
+            obj, '192.0.2.1')
 
     @mock.patch('stevedore.driver.DriverManager')
     def test_update_stats_func(self, driver_manager):
         obj = {'id': 1}
-        heartbeat_udp.update_stats(obj)
+        heartbeat_udp.update_stats(obj, '192.0.2.1')
         driver_manager.assert_called_once_with(
             invoke_on_load=True,
             name='stats_logger',
             namespace='octavia.amphora.stats_update_drivers'
         )
-        driver_manager().driver.update_stats.assert_called_once_with(obj)
+        driver_manager().driver.update_stats.assert_called_once_with(
+            obj, '192.0.2.1')
 
     @mock.patch('socket.getaddrinfo')
     @mock.patch('socket.socket')
@@ -117,9 +119,9 @@ class TestHeartbeatUDP(base.TestCase):
                       '1aa050041b506245806e5c1971e79951818394e'
                       'a6e71ad989ff950945f9573f4ab6f83e25db8ed7')
         bin_msg = binascii.unhexlify(sample_msg)
-        recvfrom.return_value = bin_msg, 2
+        recvfrom.return_value = bin_msg, ('192.0.2.1', 2)
         (obj, srcaddr) = getter.dorecv()
-        self.assertEqual(2, srcaddr)
+        self.assertEqual('192.0.2.1', srcaddr)
         self.assertIsNotNone(obj.pop('recv_time'))
         self.assertEqual({"testkey": "TEST"}, obj)
 
@@ -163,8 +165,8 @@ class TestHeartbeatUDP(base.TestCase):
         getter.check()
         getter.executor.shutdown()
         mock_executor.submit.assert_has_calls(
-            [mock.call(heartbeat_udp.update_health, {'id': 1}),
-             mock.call(heartbeat_udp.update_stats, {'id': 1})])
+            [mock.call(heartbeat_udp.update_health, {'id': 1}, 2),
+             mock.call(heartbeat_udp.update_stats, {'id': 1}, 2)])
 
     @mock.patch('socket.getaddrinfo')
     @mock.patch('socket.socket')
