@@ -264,6 +264,7 @@ class TestControllerWorker(base.TestCase):
                                    mock_amp_repo_get):
 
         _flow_mock.reset_mock()
+        _health_mon_mock.provisioning_status = constants.PENDING_UPDATE
 
         cw = controller_worker.ControllerWorker()
         cw.update_health_monitor(_health_mon_mock.id,
@@ -364,6 +365,7 @@ class TestControllerWorker(base.TestCase):
                              mock_amp_repo_get):
 
         _flow_mock.reset_mock()
+        _listener_mock.provisioning_status = constants.PENDING_UPDATE
 
         cw = controller_worker.ControllerWorker()
         cw.update_listener(LB_ID, LISTENER_UPDATE_DICT)
@@ -657,6 +659,7 @@ class TestControllerWorker(base.TestCase):
                                   mock_amp_repo_get):
 
         _flow_mock.reset_mock()
+        _load_balancer_mock.provisioning_status = constants.PENDING_UPDATE
 
         cw = controller_worker.ControllerWorker()
         change = 'TEST2'
@@ -764,6 +767,7 @@ class TestControllerWorker(base.TestCase):
                            mock_amp_repo_get):
 
         _flow_mock.reset_mock()
+        _member_mock.provisioning_status = constants.PENDING_UPDATE
 
         cw = controller_worker.ControllerWorker()
         cw.update_member(MEMBER_ID, MEMBER_UPDATE_DICT)
@@ -898,6 +902,7 @@ class TestControllerWorker(base.TestCase):
                          mock_amp_repo_get):
 
         _flow_mock.reset_mock()
+        _pool_mock.provisioning_status = constants.PENDING_UPDATE
 
         cw = controller_worker.ControllerWorker()
         cw.update_pool(POOL_ID, POOL_UPDATE_DICT)
@@ -998,6 +1003,7 @@ class TestControllerWorker(base.TestCase):
                              mock_amp_repo_get):
 
         _flow_mock.reset_mock()
+        _l7policy_mock.provisioning_status = constants.PENDING_UPDATE
 
         cw = controller_worker.ControllerWorker()
         cw.update_l7policy(L7POLICY_ID, L7POLICY_UPDATE_DICT)
@@ -1100,6 +1106,7 @@ class TestControllerWorker(base.TestCase):
                            mock_amp_repo_get):
 
         _flow_mock.reset_mock()
+        _l7rule_mock.provisioning_status = constants.PENDING_UPDATE
 
         cw = controller_worker.ControllerWorker()
         cw.update_l7rule(L7RULE_ID, L7RULE_UPDATE_DICT)

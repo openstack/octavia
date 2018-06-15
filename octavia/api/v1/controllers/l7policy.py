@@ -128,6 +128,9 @@ class L7PolicyController(base.BaseController):
         db_l7policy = self._get_db_l7policy(context.session, id)
         self._test_lb_and_listener_statuses(context.session)
 
+        self.repositories.l7policy.update(
+            context.session, id, provisioning_status=constants.PENDING_UPDATE)
+
         try:
             LOG.info("Sending Update of L7Policy %s to handler", id)
             self.handler.update(

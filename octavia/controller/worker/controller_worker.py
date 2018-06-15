@@ -43,6 +43,10 @@ RETRY_BACKOFF = 1
 RETRY_MAX = 5
 
 
+def _is_provisioning_status_pending_update(lb_obj):
+    return not lb_obj.provisioning_status == constants.PENDING_UPDATE
+
+
 class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
     def __init__(self):
@@ -79,6 +83,17 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             constants.GENERATE_SERVER_PEM_TASK)
 
         super(ControllerWorker, self).__init__()
+
+    @tenacity.retry(
+        retry=(
+            tenacity.retry_if_result(_is_provisioning_status_pending_update) |
+            tenacity.retry_if_exception_type()),
+        wait=tenacity.wait_incrementing(
+            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
+        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
+    def _get_db_obj_until_pending_update(self, repo, id):
+
+        return repo.get(db_apis.get_session(), id=id)
 
     def create_amphora(self):
         """Creates an Amphora.
@@ -182,8 +197,17 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :returns: None
         :raises HMNotFound: The referenced health monitor was not found
         """
-        health_mon = self._health_mon_repo.get(db_apis.get_session(),
-                                               id=health_monitor_id)
+        health_mon = None
+        try:
+            health_mon = self._get_db_obj_until_pending_update(
+                self._health_mon_repo, health_monitor_id)
+        except tenacity.RetryError as e:
+            LOG.warning('Health monitor did not go into %s in 60 seconds. '
+                        'This either due to an in-progress Octavia upgrade '
+                        'or an overloaded and failing database. Assuming '
+                        'an upgrade is in progress and continuing.',
+                        constants.PENDING_UPDATE)
+            health_mon = e.last_attempt.result()
 
         pool = health_mon.pool
         listeners = pool.listeners
@@ -259,8 +283,17 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :returns: None
         :raises ListenerNotFound: The referenced listener was not found
         """
-        listener = self._listener_repo.get(db_apis.get_session(),
-                                           id=listener_id)
+        listener = None
+        try:
+            listener = self._get_db_obj_until_pending_update(
+                self._listener_repo, listener_id)
+        except tenacity.RetryError as e:
+            LOG.warning('Listener did not go into %s in 60 seconds. '
+                        'This either due to an in-progress Octavia upgrade '
+                        'or an overloaded and failing database. Assuming '
+                        'an upgrade is in progress and continuing.',
+                        constants.PENDING_UPDATE)
+            listener = e.last_attempt.result()
 
         load_balancer = listener.load_balancer
 
@@ -349,8 +382,18 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :returns: None
         :raises LBNotFound: The referenced load balancer was not found
         """
-        lb = self._lb_repo.get(db_apis.get_session(),
-                               id=load_balancer_id)
+        lb = None
+        try:
+            lb = self._get_db_obj_until_pending_update(
+                self._lb_repo, load_balancer_id)
+        except tenacity.RetryError as e:
+            LOG.warning('Load balancer did not go into %s in 60 seconds. '
+                        'This either due to an in-progress Octavia upgrade '
+                        'or an overloaded and failing database. Assuming '
+                        'an upgrade is in progress and continuing.',
+                        constants.PENDING_UPDATE)
+            lb = e.last_attempt.result()
+
         listeners, _ = self._listener_repo.get_all(
             db_apis.get_session(),
             load_balancer_id=load_balancer_id)
@@ -458,8 +501,18 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :returns: None
         :raises MemberNotFound: The referenced member was not found
         """
-        member = self._member_repo.get(db_apis.get_session(),
-                                       id=member_id)
+        member = None
+        try:
+            member = self._get_db_obj_until_pending_update(
+                self._member_repo, member_id)
+        except tenacity.RetryError as e:
+            LOG.warning('Member did not go into %s in 60 seconds. '
+                        'This either due to an in-progress Octavia upgrade '
+                        'or an overloaded and failing database. Assuming '
+                        'an upgrade is in progress and continuing.',
+                        constants.PENDING_UPDATE)
+            member = e.last_attempt.result()
+
         pool = member.pool
         listeners = pool.listeners
         load_balancer = pool.load_balancer
@@ -541,8 +594,17 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :returns: None
         :raises PoolNotFound: The referenced pool was not found
         """
-        pool = self._pool_repo.get(db_apis.get_session(),
-                                   id=pool_id)
+        pool = None
+        try:
+            pool = self._get_db_obj_until_pending_update(
+                self._pool_repo, pool_id)
+        except tenacity.RetryError as e:
+            LOG.warning('Pool did not go into %s in 60 seconds. '
+                        'This either due to an in-progress Octavia upgrade '
+                        'or an overloaded and failing database. Assuming '
+                        'an upgrade is in progress and continuing.',
+                        constants.PENDING_UPDATE)
+            pool = e.last_attempt.result()
 
         listeners = pool.listeners
         load_balancer = pool.load_balancer
@@ -621,8 +683,17 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :returns: None
         :raises L7PolicyNotFound: The referenced l7policy was not found
         """
-        l7policy = self._l7policy_repo.get(db_apis.get_session(),
-                                           id=l7policy_id)
+        l7policy = None
+        try:
+            l7policy = self._get_db_obj_until_pending_update(
+                self._l7policy_repo, l7policy_id)
+        except tenacity.RetryError as e:
+            LOG.warning('L7 policy did not go into %s in 60 seconds. '
+                        'This either due to an in-progress Octavia upgrade '
+                        'or an overloaded and failing database. Assuming '
+                        'an upgrade is in progress and continuing.',
+                        constants.PENDING_UPDATE)
+            l7policy = e.last_attempt.result()
 
         listeners = [l7policy.listener]
         load_balancer = l7policy.listener.load_balancer
@@ -701,8 +772,18 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :returns: None
         :raises L7RuleNotFound: The referenced l7rule was not found
         """
-        l7rule = self._l7rule_repo.get(db_apis.get_session(),
-                                       id=l7rule_id)
+        l7rule = None
+        try:
+            l7rule = self._get_db_obj_until_pending_update(
+                self._l7rule_repo, l7rule_id)
+        except tenacity.RetryError as e:
+            LOG.warning('L7 rule did not go into %s in 60 seconds. '
+                        'This either due to an in-progress Octavia upgrade '
+                        'or an overloaded and failing database. Assuming '
+                        'an upgrade is in progress and continuing.',
+                        constants.PENDING_UPDATE)
+            l7rule = e.last_attempt.result()
+
         l7policy = l7rule.l7policy
         listeners = [l7policy.listener]
         load_balancer = l7policy.listener.load_balancer

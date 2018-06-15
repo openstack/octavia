@@ -159,6 +159,10 @@ class HealthMonitorController(base.BaseController):
         db_hm = self._get_db_hm(context.session)
         self._test_lb_and_listener_statuses(context.session, hm=db_hm)
 
+        self.repositories.health_monitor.update(
+            context.session, db_hm.id,
+            provisioning_status=constants.PENDING_UPDATE)
+
         try:
             LOG.info("Sending Update of Health Monitor for Pool %s to handler",
                      self.pool_id)

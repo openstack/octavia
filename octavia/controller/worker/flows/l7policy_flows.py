@@ -80,10 +80,6 @@ class L7PolicyFlows(object):
                       constants.LOADBALANCER]))
         update_l7policy_flow.add(database_tasks.MarkL7PolicyPendingUpdateInDB(
             requires=constants.L7POLICY))
-        update_l7policy_flow.add(
-            model_tasks.UpdateAttributes(
-                rebind={constants.OBJECT: constants.L7POLICY},
-                requires=[constants.UPDATE_DICT]))
         update_l7policy_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_l7policy_flow.add(database_tasks.UpdateL7PolicyInDB(

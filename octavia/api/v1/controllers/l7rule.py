@@ -134,6 +134,9 @@ class L7RuleController(base.BaseController):
             raise exceptions.L7RuleValidation(error=e)
         self._test_lb_and_listener_statuses(context.session)
 
+        self.repositories.l7rule.update(
+            context.session, id, provisioning_status=constants.PENDING_UPDATE)
+
         try:
             LOG.info("Sending Update of L7Rule %s to handler", id)
             self.handler.update(db_l7rule, l7rule)
