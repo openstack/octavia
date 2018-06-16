@@ -13,9 +13,9 @@
 # under the License.
 #
 
-import logging
 
 from oslo_config import cfg
+from oslo_log import log as logging
 from oslo_utils import excutils
 from sqlalchemy.orm import exc as db_exceptions
 from taskflow.listeners import logging as tf_logging

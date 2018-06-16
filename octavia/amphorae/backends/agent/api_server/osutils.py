@@ -13,7 +13,6 @@
 # under the License.
 
 import ipaddress
-import logging
 import os
 import platform
 import shutil
@@ -22,6 +21,7 @@ import subprocess
 
 import jinja2
 from oslo_config import cfg
+from oslo_log import log as logging
 import six
 import webob
 from werkzeug import exceptions

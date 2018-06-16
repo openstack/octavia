@@ -14,7 +14,6 @@
 
 from __future__ import with_statement
 
-from logging import config as logging_config
 import sys
 
 from alembic import context
@@ -29,10 +28,6 @@ except AttributeError:
     print("Error: Please use the octavia-db-manage command for octavia"
           " alembic actions.")
     sys.exit(1)
-
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-logging_config.fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support

@@ -69,6 +69,7 @@ no_basestring_re = re.compile(r"\bbasestring\b")
 no_iteritems_re = re.compile(r".*\.iteritems\(\)")
 no_eventlet_re = re.compile(r'(import|from)\s+[(]?eventlet')
 no_line_continuation_backslash_re = re.compile(r'.*(\\)\n')
+no_logging_re = re.compile(r'(import|from)\s+[(]?logging')
 
 
 def _translation_checks_not_enforced(filename):
@@ -288,6 +289,19 @@ def revert_must_have_kwargs(logical_line):
         yield 0, msg
 
 
+def check_no_logging_imports(logical_line):
+    """O348 - Usage of Python logging module not allowed.
+
+    :param logical_line: The logical line to check.
+    :returns: None if the logical line passes the check, otherwise a tuple
+              is yielded that contains the offending index in logical line
+              and a message describe the check validation failure.
+    """
+    if no_logging_re.match(logical_line):
+        msg = 'O348 Usage of Python logging module not allowed, use oslo_log'
+        yield logical_line.index('logging'), msg
+
+
 def factory(register):
     register(assert_true_instance)
     register(assert_equal_or_not_none)
@@ -304,3 +318,4 @@ def factory(register):
     register(check_no_eventlet_imports)
     register(check_line_continuation_no_backslash)
     register(revert_must_have_kwargs)
+    register(check_no_logging_imports)

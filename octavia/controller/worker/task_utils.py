@@ -14,7 +14,7 @@
 
 """ Methods common to the controller work tasks."""
 
-import logging
+from oslo_log import log as logging
 
 from octavia.common import constants
 from octavia.db import api as db_apis

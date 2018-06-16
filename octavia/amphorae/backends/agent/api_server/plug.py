@@ -14,7 +14,6 @@
 # under the License.
 
 import ipaddress
-import logging
 import os
 import socket
 import stat
@@ -23,6 +22,7 @@ import subprocess
 import jinja2
 import netifaces
 from oslo_config import cfg
+from oslo_log import log as logging
 import pyroute2
 import six
 import webob

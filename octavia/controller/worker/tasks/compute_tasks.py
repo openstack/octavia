@@ -13,10 +13,10 @@
 # under the License.
 #
 
-import logging
 import time
 
 from oslo_config import cfg
+from oslo_log import log as logging
 import six
 from stevedore import driver as stevedore_driver
 from taskflow import task
