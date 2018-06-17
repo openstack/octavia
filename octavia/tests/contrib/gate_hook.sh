@@ -25,11 +25,11 @@ export DEVSTACK_LOCAL_CONFIG+=$'\n'"LIBS_FROM_GIT+=,diskimage-builder"$'\n'
 # Sort out our gate args
 . $(dirname "$0")/decode_args.sh
 
-# Note: The check for OVH instances is temporary until they resolve the
-# KVM failures as logged here:
+# Note: The check for OVH and limestone instances is temporary until they
+# resolve the KVM failures as logged here:
 # https://bugzilla.kernel.org/show_bug.cgi?id=192521
 # However, this may be resolved at OVH before the kernel bug is resolved.
-if $(egrep --quiet '(vmx|svm)' /proc/cpuinfo) && [[ ! $(hostname) =~ "ovh" ]]; then
+if $(egrep --quiet '(vmx|svm)' /proc/cpuinfo) && [[ ( ! $(hostname) =~ "ovh" || ! $(hostname) =~ "limestone" ) ]]; then
     export DEVSTACK_GATE_LIBVIRT_TYPE=kvm
 fi
 
