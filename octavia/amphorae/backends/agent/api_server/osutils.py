@@ -100,6 +100,7 @@ class BaseOS(object):
                 broadcast=broadcast,
                 netmask=netmask,
                 gateway=gateway,
+                network=utils.ip_netmask_to_cidr(vip, netmask),
                 mtu=mtu,
                 vrrp_ip=vrrp_ip,
                 vrrp_ipv6=vrrp_version is 6,
@@ -385,7 +386,7 @@ class RH(BaseOS):
 
         self.write_static_routes_interface_file(
             routes_interface_file_path, primary_interface,
-            render_host_routes, template_routes, gateway, vip)
+            render_host_routes, template_routes, gateway, vip, netmask)
 
         route_rules_interface_file_path = (
             self.get_route_rules_interface_file(primary_interface))
@@ -393,11 +394,12 @@ class RH(BaseOS):
 
         self.write_static_routes_interface_file(
             route_rules_interface_file_path, primary_interface,
-            render_host_routes, template_rules, gateway, vip)
+            render_host_routes, template_rules, gateway, vip, netmask)
 
     def write_static_routes_interface_file(self, interface_file_path,
                                            interface, host_routes,
-                                           template_routes, gateway, vip):
+                                           template_routes, gateway,
+                                           vip, netmask):
         # write static routes interface file
 
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
@@ -414,6 +416,7 @@ class RH(BaseOS):
                 interface=interface,
                 host_routes=host_routes,
                 gateway=gateway,
+                network=utils.ip_netmask_to_cidr(vip, netmask),
                 vip=vip,
             )
             text_file.write(text)
@@ -441,7 +444,7 @@ class RH(BaseOS):
 
             self.write_static_routes_interface_file(
                 routes_interface_file_path, netns_interface,
-                host_routes, template_routes, None, None)
+                host_routes, template_routes, None, None, None)
 
     def bring_interfaces_up(self, ip, primary_interface, secondary_interface):
         if ip.version == 4:

@@ -19,6 +19,7 @@
 {%- endfor %}
 # Add a source routing table to allow members to access the VIP
 {%- if gateway %}
+{{ network }} dev {{ interface }} src {{ vip }} scope link table 1
 default table 1 via {{ gateway }} dev {{ interface }}
 {%- endif %}
 {%- for hr in host_routes %}

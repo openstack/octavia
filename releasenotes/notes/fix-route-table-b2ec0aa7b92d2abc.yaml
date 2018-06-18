@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixes an issue where VIP return traffic was always routed, if a gateway
+    was defined, through the gateway address even if it was local traffic.
