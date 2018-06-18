@@ -48,3 +48,15 @@ class TestConfig(base.TestCase):
         self.assertEqual(utils.netmask_to_prefix('255.255.0.0'), 16)
         self.assertEqual(utils.netmask_to_prefix('255.255.255.0'), 24)
         self.assertEqual(utils.netmask_to_prefix('255.255.255.128'), 25)
+
+    def test_ip_netmask_to_cidr(self):
+        self.assertEqual('10.0.0.0/8',
+                         utils.ip_netmask_to_cidr('10.0.0.1', '255.0.0.0'))
+        self.assertEqual('10.0.0.0/9',
+                         utils.ip_netmask_to_cidr('10.0.0.1', '255.128.0.0'))
+        self.assertEqual('10.0.0.0/16',
+                         utils.ip_netmask_to_cidr('10.0.0.1', '255.255.0.0'))
+        self.assertEqual('10.0.0.0/20',
+                         utils.ip_netmask_to_cidr('10.0.0.1', '255.255.240.0'))
+        self.assertEqual('10.0.0.0/30', utils.ip_netmask_to_cidr(
+            '10.0.0.1', '255.255.255.252'))
