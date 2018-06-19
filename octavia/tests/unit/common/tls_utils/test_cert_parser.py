@@ -165,6 +165,7 @@ class TestTLSParseUtils(base.TestCase):
     @mock.patch('octavia.certificates.common.cert.Cert')
     def test_map_cert_tls_container(self, cert_mock):
         tls = data_models.TLSContainer(
+            id=sample_certs.X509_CERT_SHA1,
             primary_cn=sample_certs.X509_CERT_CN,
             certificate=sample_certs.X509_CERT,
             private_key=sample_certs.X509_CERT_KEY_ENCRYPTED,
@@ -176,6 +177,9 @@ class TestTLSParseUtils(base.TestCase):
         cert_mock.get_private_key_passphrase.return_value = tls.passphrase
         with mock.patch.object(cert_parser, 'get_host_names') as cp:
             cp.return_value = {'cn': sample_certs.X509_CERT_CN}
+            self.assertEqual(
+                tls.id, cert_parser._map_cert_tls_container(
+                    cert_mock).id)
             self.assertEqual(
                 tls.primary_cn, cert_parser._map_cert_tls_container(
                     cert_mock).primary_cn)

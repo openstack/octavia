@@ -36,7 +36,7 @@ class TestHaproxyCfg(base.TestCase):
               "    redirect scheme https if !{ ssl_fc }\n"
               "    bind 10.0.0.2:443 "
               "ssl crt /var/lib/octavia/certs/"
-              "sample_listener_id_1/FakeCN.pem "
+              "sample_listener_id_1/tls_container_id.pem "
               "crt /var/lib/octavia/certs/sample_listener_id_1\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1\n\n")
@@ -55,6 +55,7 @@ class TestHaproxyCfg(base.TestCase):
               "weight 13 check inter 30s fall 3 rise 2 cookie "
               "sample_member_id_2\n\n")
         tls_tupe = sample_configs.sample_tls_container_tuple(
+            id='tls_container_id',
             certificate='imaCert1', private_key='imaPrivateKey1',
             primary_cn='FakeCN')
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
@@ -74,7 +75,7 @@ class TestHaproxyCfg(base.TestCase):
               "    redirect scheme https if !{ ssl_fc }\n"
               "    bind 10.0.0.2:443 "
               "ssl crt /var/lib/octavia/certs/"
-              "sample_listener_id_1/FakeCN.pem\n"
+              "sample_listener_id_1/tls_container_id.pem\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1\n\n")
         be = ("backend sample_pool_id_1\n"
@@ -96,6 +97,7 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs.sample_listener_tuple(
                 proto='TERMINATED_HTTPS', tls=True),
             tls_cert=sample_configs.sample_tls_container_tuple(
+                id='tls_container_id',
                 certificate='ImAalsdkfjCert',
                 private_key='ImAsdlfksdjPrivateKey',
                 primary_cn="FakeCN"))

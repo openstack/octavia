@@ -41,6 +41,7 @@ class ListenerTestCase(base.TestCase):
     def test_parse_haproxy_config(self):
         # template_tls
         tls_tupe = sample_configs.sample_tls_container_tuple(
+            id='tls_container_id',
             certificate='imaCert1', private_key='imaPrivateKey1',
             primary_cn='FakeCN')
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
@@ -57,7 +58,7 @@ class ListenerTestCase(base.TestCase):
         self.assertEqual('/var/lib/octavia/sample_listener_id_1.sock',
                          res['stats_socket'])
         self.assertEqual(
-            '/var/lib/octavia/certs/sample_listener_id_1/FakeCN.pem',
+            '/var/lib/octavia/certs/sample_listener_id_1/tls_container_id.pem',
             res['ssl_crt'])
 
         # render_template_tls_no_sni
@@ -66,6 +67,7 @@ class ListenerTestCase(base.TestCase):
             sample_configs.sample_listener_tuple(
                 proto='TERMINATED_HTTPS', tls=True),
             tls_cert=sample_configs.sample_tls_container_tuple(
+                id='tls_container_id',
                 certificate='ImAalsdkfjCert',
                 private_key='ImAsdlfksdjPrivateKey',
                 primary_cn="FakeCN"))
@@ -77,7 +79,7 @@ class ListenerTestCase(base.TestCase):
         self.assertEqual(BASE_AMP_PATH + '/sample_listener_id_1.sock',
                          res['stats_socket'])
         self.assertEqual(
-            BASE_CRT_PATH + '/sample_listener_id_1/FakeCN.pem',
+            BASE_CRT_PATH + '/sample_listener_id_1/tls_container_id.pem',
             res['ssl_crt'])
 
         # render_template_http
