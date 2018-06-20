@@ -116,7 +116,11 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
         ignore_listener_count = False
         listeners = health['listeners']
 
-        if not db_lb:
+        if db_lb:
+            expected_listener_count = len(db_lb.listeners)
+            if 'PENDING' in db_lb.provisioning_status:
+                ignore_listener_count = True
+        else:
             # If this is not a spare amp, log and skip it.
             amp = self.amphora_repo.get(session, id=health['id'])
             if not amp or amp.load_balancer_id:
@@ -129,13 +133,7 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
                           'it is repeating this amphora should be manually '
                           'deleted.'.format(health['id'], srcaddr))
                 return
-
-        # We need to loop over the lbs here to make sure we update the
-        # amphora_health record as soon as possible to prevent unnecessary
-        # failovers. Unfortunately that means looping over this list twice.
-        expected_listener_count = len(db_lb.listeners)
-        if 'PENDING' in db_lb.provisioning_status:
-            ignore_listener_count = True
+            expected_listener_count = 0
 
         # Do not update amphora health if the reporting listener count
         # does not match the expected listener count
@@ -169,6 +167,10 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
                         'listeners when %(expected)i expected',
                         {'id': health['id'], 'found': len(listeners),
                          'expected': expected_listener_count})
+
+        # Don't try to update status for spares pool amphora
+        if not db_lb:
+            return
 
         processed_pools = []
 
