@@ -13,9 +13,8 @@
 # under the License.
 #
 
-import logging
-
 from oslo_config import cfg
+from oslo_log import log as logging
 import six
 from taskflow import task
 from taskflow.types import failure

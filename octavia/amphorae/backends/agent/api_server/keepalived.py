@@ -12,13 +12,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import logging
 import os
 import stat
 import subprocess
 
 import flask
 import jinja2
+from oslo_log import log as logging
 import webob
 
 from octavia.amphorae.backends.agent.api_server import listener

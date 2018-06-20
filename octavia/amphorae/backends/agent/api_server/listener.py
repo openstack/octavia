@@ -14,7 +14,6 @@
 
 import hashlib
 import io
-import logging
 import os
 import re
 import shutil
@@ -24,6 +23,7 @@ import subprocess
 import flask
 import jinja2
 from oslo_config import cfg
+from oslo_log import log as logging
 import six
 import webob
 from werkzeug import exceptions

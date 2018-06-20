@@ -12,10 +12,10 @@
 
 """Test of Policy Engine For Octavia."""
 
-import logging
 import tempfile
 
 from oslo_config import fixture as oslo_fixture
+from oslo_log import log as logging
 from oslo_policy import policy as oslo_policy
 import requests_mock
 

@@ -12,9 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
-
 import oslo_db.exception as oslo_exc
+from oslo_log import log as logging
 from oslo_utils import excutils
 import pecan
 from wsme import types as wtypes

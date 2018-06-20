@@ -13,9 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
-
 from oslo_db import exception as odb_exceptions
+from oslo_log import log as logging
 from oslo_utils import excutils
 import pecan
 from wsmeext import pecan as wsme_pecan
