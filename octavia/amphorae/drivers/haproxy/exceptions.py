@@ -15,6 +15,10 @@
 
 from webob import exc
 
+from oslo_log import log as logging
+
+LOG = logging.getLogger(__name__)
+
 
 def check_exception(response, ignore=tuple()):
     status_code = response.status_code
@@ -29,6 +33,13 @@ def check_exception(response, ignore=tuple()):
         503: ServiceUnavailable
     }
     if (status_code not in ignore) and (status_code in responses):
+        try:
+            LOG.error('Amphora agent returned unexpected result code %s with '
+                      'response %s', status_code, response.json())
+        except Exception:
+            # Handle the odd case where there is no response body
+            # like when using requests_mock which doesn't support has_body
+            pass
         raise responses[status_code]()
 
     return response
