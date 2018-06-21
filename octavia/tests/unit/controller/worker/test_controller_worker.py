@@ -1184,7 +1184,10 @@ class TestControllerWorker(base.TestCase):
                                    mock_health_mon_repo_get,
                                    mock_amp_repo_get):
         _amphora_mock2 = mock.MagicMock()
-        _load_balancer_mock.amphorae = [_amphora_mock, _amphora_mock2]
+        _amphora_mock3 = mock.MagicMock()
+        _amphora_mock3.status = constants.DELETED
+        _load_balancer_mock.amphorae = [
+            _amphora_mock, _amphora_mock2, _amphora_mock3]
         cw = controller_worker.ControllerWorker()
         cw.failover_loadbalancer('123')
         mock_perform.assert_called_with(
@@ -1193,7 +1196,8 @@ class TestControllerWorker(base.TestCase):
                                        provisioning_status=constants.ACTIVE)
 
         mock_perform.reset
-        _load_balancer_mock.amphorae = [_amphora_mock, _amphora_mock2]
+        _load_balancer_mock.amphorae = [
+            _amphora_mock, _amphora_mock2, _amphora_mock3]
         _amphora_mock2.role = constants.ROLE_BACKUP
         cw.failover_loadbalancer('123')
         # because mock2 gets failed over earlier now _amphora_mock
