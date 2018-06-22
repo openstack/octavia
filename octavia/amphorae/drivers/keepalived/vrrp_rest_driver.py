@@ -90,5 +90,6 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
 
             self.client.reload_vrrp(amp)
 
-    def get_vrrp_interface(self, amphora):
-        return self.client.get_interface(amphora, amphora.vrrp_ip)['interface']
+    def get_vrrp_interface(self, amphora, timeout_dict=None):
+        return self.client.get_interface(
+            amphora, amphora.vrrp_ip, timeout_dict=timeout_dict)['interface']

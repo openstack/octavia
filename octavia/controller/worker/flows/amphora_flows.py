@@ -16,6 +16,7 @@
 from oslo_config import cfg
 from taskflow.patterns import graph_flow
 from taskflow.patterns import linear_flow
+from taskflow.patterns import unordered_flow
 
 from octavia.common import constants
 from octavia.controller.worker.tasks import amphora_driver_tasks
@@ -62,12 +63,15 @@ class AmphoraFlows(object):
                 provides=constants.COMPUTE_ID))
         create_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
-        create_amphora_flow.add(compute_tasks.ComputeWait(
+        create_amphora_flow.add(compute_tasks.ComputeActiveWait(
             requires=(constants.COMPUTE_ID, constants.AMPHORA_ID),
             provides=constants.COMPUTE_OBJ))
         create_amphora_flow.add(database_tasks.UpdateAmphoraInfo(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
             provides=constants.AMPHORA))
+        create_amphora_flow.add(
+            amphora_driver_tasks.AmphoraComputeConnectivityWait(
+                requires=constants.AMPHORA))
         create_amphora_flow.add(database_tasks.ReloadAmphora(
             requires=constants.AMPHORA_ID,
             provides=constants.AMPHORA))
@@ -172,7 +176,7 @@ class AmphoraFlows(object):
         create_amp_for_lb_subflow.add(database_tasks.MarkAmphoraBootingInDB(
             name=sf_name + '-' + constants.MARK_AMPHORA_BOOTING_INDB,
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
-        create_amp_for_lb_subflow.add(compute_tasks.ComputeWait(
+        create_amp_for_lb_subflow.add(compute_tasks.ComputeActiveWait(
             name=sf_name + '-' + constants.COMPUTE_WAIT,
             requires=(constants.COMPUTE_ID, constants.AMPHORA_ID),
             provides=constants.COMPUTE_OBJ))
@@ -180,6 +184,10 @@ class AmphoraFlows(object):
             name=sf_name + '-' + constants.UPDATE_AMPHORA_INFO,
             requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
             provides=constants.AMPHORA))
+        create_amp_for_lb_subflow.add(
+            amphora_driver_tasks.AmphoraComputeConnectivityWait(
+                name=sf_name + '-' + constants.AMP_COMPUTE_CONNECTIVITY_WAIT,
+                requires=constants.AMPHORA))
         create_amp_for_lb_subflow.add(amphora_driver_tasks.AmphoraFinalize(
             name=sf_name + '-' + constants.AMPHORA_FINALIZE,
             requires=constants.AMPHORA))
@@ -290,7 +298,7 @@ class AmphoraFlows(object):
         return delete_amphora_flow
 
     def get_failover_flow(self, role=constants.ROLE_STANDALONE,
-                          status=constants.AMPHORA_READY):
+                          load_balancer=None):
         """Creates a flow to failover a stale amphora
 
         :returns: The flow for amphora failover
@@ -329,16 +337,16 @@ class AmphoraFlows(object):
         failover_amphora_flow.add(network_tasks.WaitForPortDetach(
             rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
             requires=constants.AMPHORA))
-        failover_amphora_flow.add(
-            database_tasks.DisableAmphoraHealthMonitoring(
-                rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
-                requires=constants.AMPHORA))
         failover_amphora_flow.add(database_tasks.MarkAmphoraDeletedInDB(
             rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
             requires=constants.AMPHORA))
 
         # If this is an unallocated amp (spares pool), we're done
-        if status != constants.AMPHORA_ALLOCATED:
+        if not load_balancer:
+            failover_amphora_flow.add(
+                database_tasks.DisableAmphoraHealthMonitoring(
+                    rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
+                    requires=constants.AMPHORA))
             return failover_amphora_flow
 
         # Save failed amphora details for later
@@ -373,9 +381,38 @@ class AmphoraFlows(object):
             provides=constants.AMPHORAE_NETWORK_CONFIG))
         failover_amphora_flow.add(database_tasks.GetListenersFromLoadbalancer(
             requires=constants.LOADBALANCER, provides=constants.LISTENERS))
+        failover_amphora_flow.add(database_tasks.GetAmphoraeFromLoadbalancer(
+            requires=constants.LOADBALANCER, provides=constants.AMPHORAE))
 
-        failover_amphora_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=(constants.LOADBALANCER, constants.LISTENERS)))
+        # Listeners update needs to be run on all amphora to update
+        # their peer configurations. So parallelize this with an
+        # unordered subflow.
+        update_amps_subflow = unordered_flow.Flow(
+            constants.UPDATE_AMPS_SUBFLOW)
+
+        timeout_dict = {
+            constants.CONN_MAX_RETRIES:
+                CONF.haproxy_amphora.active_connection_max_retries,
+            constants.CONN_RETRY_INTERVAL:
+                CONF.haproxy_amphora.active_connection_rety_interval}
+
+        # Setup parallel flows for each amp. We don't know the new amp
+        # details at flow creation time, so setup a subflow for each
+        # amp on the LB, they let the task index into a list of amps
+        # to find the amphora it should work on.
+        amp_index = 0
+        for amp in load_balancer.amphorae:
+            if amp.status == constants.DELETED:
+                continue
+            update_amps_subflow.add(
+                amphora_driver_tasks.AmpListenersUpdate(
+                    name=constants.AMP_LISTENER_UPDATE + '-' + str(amp_index),
+                    requires=(constants.LISTENERS, constants.AMPHORAE),
+                    inject={constants.AMPHORA_INDEX: amp_index,
+                            constants.TIMEOUT_DICT: timeout_dict}))
+            amp_index += 1
+
+        failover_amphora_flow.add(update_amps_subflow)
 
         # Plug the VIP ports into the new amphora
         failover_amphora_flow.add(network_tasks.PlugVIPPort(
@@ -385,12 +422,21 @@ class AmphoraFlows(object):
                       constants.AMPHORAE_NETWORK_CONFIG)))
 
         # Plug the member networks into the new amphora
-        failover_amphora_flow.add(network_tasks.CalculateDelta(
-            requires=constants.LOADBALANCER, provides=constants.DELTAS))
-        failover_amphora_flow.add(network_tasks.HandleNetworkDeltas(
-            requires=constants.DELTAS, provides=constants.ADDED_PORTS))
+        failover_amphora_flow.add(network_tasks.CalculateAmphoraDelta(
+            requires=(constants.LOADBALANCER, constants.AMPHORA),
+            provides=constants.DELTA))
+
+        failover_amphora_flow.add(network_tasks.HandleNetworkDelta(
+            requires=(constants.AMPHORA, constants.DELTA),
+            provides=constants.ADDED_PORTS))
+
         failover_amphora_flow.add(amphora_driver_tasks.AmphoraePostNetworkPlug(
             requires=(constants.LOADBALANCER, constants.ADDED_PORTS)))
+
+        failover_amphora_flow.add(database_tasks.ReloadLoadBalancer(
+            name='octavia-failover-LB-reload-2',
+            requires=constants.LOADBALANCER_ID,
+            provides=constants.LOADBALANCER))
 
         # Handle the amphora role and VRRP if necessary
         if role == constants.ROLE_MASTER:
@@ -412,7 +458,12 @@ class AmphoraFlows(object):
                     requires=constants.AMPHORA))
 
         failover_amphora_flow.add(amphora_driver_tasks.ListenersStart(
-            requires=(constants.LOADBALANCER, constants.LISTENERS)))
+            requires=(constants.LOADBALANCER, constants.LISTENERS,
+                      constants.AMPHORA)))
+        failover_amphora_flow.add(
+            database_tasks.DisableAmphoraHealthMonitoring(
+                rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
+                requires=constants.AMPHORA))
 
         return failover_amphora_flow
 

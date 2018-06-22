@@ -216,6 +216,55 @@ class GetMemberPorts(BaseNetworkTask):
         return member_ports
 
 
+class HandleNetworkDelta(BaseNetworkTask):
+    """Task to plug and unplug networks
+
+    Plug or unplug networks based on delta
+    """
+
+    def execute(self, amphora, delta):
+        """Handle network plugging based off deltas."""
+        added_ports = {}
+        added_ports[amphora.id] = []
+        for nic in delta.add_nics:
+            interface = self.network_driver.plug_network(delta.compute_id,
+                                                         nic.network_id)
+            port = self.network_driver.get_port(interface.port_id)
+            port.network = self.network_driver.get_network(port.network_id)
+            for fixed_ip in port.fixed_ips:
+                fixed_ip.subnet = self.network_driver.get_subnet(
+                    fixed_ip.subnet_id)
+            added_ports[amphora.id].append(port)
+        for nic in delta.delete_nics:
+            try:
+                self.network_driver.unplug_network(delta.compute_id,
+                                                   nic.network_id)
+            except base.NetworkNotFound:
+                LOG.debug("Network %d not found ", nic.network_id)
+            except Exception:
+                LOG.exception("Unable to unplug network")
+        return added_ports
+
+    def revert(self, result, amphora, delta, *args, **kwargs):
+        """Handle a network plug or unplug failures."""
+
+        if isinstance(result, failure.Failure):
+            return
+
+        if not delta:
+            return
+
+        LOG.warning("Unable to plug networks for amp id %s",
+                    delta.amphora_id)
+
+        for nic in delta.add_nics:
+            try:
+                self.network_driver.unplug_network(delta.compute_id,
+                                                   nic.network_id)
+            except Exception:
+                pass
+
+
 class HandleNetworkDeltas(BaseNetworkTask):
     """Task to plug and unplug networks
 
