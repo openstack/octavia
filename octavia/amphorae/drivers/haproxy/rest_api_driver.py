@@ -60,6 +60,45 @@ class HaproxyAmphoraLoadBalancerDriver(
             haproxy_template=CONF.haproxy_amphora.haproxy_template,
             connection_logging=CONF.haproxy_amphora.connection_logging)
 
+    def update_amphora_listeners(self, listeners, amphora_index,
+                                 amphorae, timeout_dict=None):
+        """Update the amphora with a new configuration.
+
+        :param listeners: List of listeners to update.
+        :type listener: list
+        :param amphora_id: The ID of the amphora to update
+        :type amphora_id: string
+        :param timeout_dict: Dictionary of timeout values for calls to the
+                             amphora. May contain: req_conn_timeout,
+                             req_read_timeout, conn_max_retries,
+                             conn_retry_interval
+        :returns: None
+
+        Updates the configuration of the listeners on a single amphora.
+        """
+        # if the amphora does not yet have listeners, no need to update them.
+        if not listeners:
+            LOG.debug('No listeners found to update.')
+            return
+        amp = amphorae[amphora_index]
+        if amp is None or amp.status == consts.DELETED:
+            return
+        # TODO(johnsom) remove when we don't have a process per listener
+        for listener in listeners:
+            LOG.debug("%s updating listener %s on amphora %s",
+                      self.__class__.__name__, listener.id, amp.id)
+            certs = self._process_tls_certificates(listener)
+            # Generate HaProxy configuration from listener object
+            config = self.jinja.build_config(
+                host_amphora=amp,
+                listener=listener,
+                tls_cert=certs['tls_cert'],
+                user_group=CONF.haproxy_amphora.user_group)
+            self.client.upload_config(amp, listener.id, config,
+                                      timeout_dict=timeout_dict)
+            self.client.reload_listener(amp, listener.id,
+                                        timeout_dict=timeout_dict)
+
     def update(self, listener, vip):
         LOG.debug("Amphora %s haproxy, updating listener %s, vip %s",
                   self.__class__.__name__, listener.protocol_port,
@@ -85,25 +124,29 @@ class HaproxyAmphoraLoadBalancerDriver(
                   self.__class__.__name__, amp.id)
         self.client.update_cert_for_rotation(amp, pem)
 
-    def _apply(self, func, listener=None, *args):
-        for amp in listener.load_balancer.amphorae:
-            if amp.status != consts.DELETED:
-                func(amp, listener.id, *args)
+    def _apply(self, func, listener=None, amphora=None, *args):
+        if amphora is None:
+            for amp in listener.load_balancer.amphorae:
+                if amp.status != consts.DELETED:
+                    func(amp, listener.id, *args)
+        else:
+            if amphora.status != consts.DELETED:
+                func(amphora, listener.id, *args)
 
     def stop(self, listener, vip):
         self._apply(self.client.stop_listener, listener)
 
-    def start(self, listener, vip):
-        self._apply(self.client.start_listener, listener)
+    def start(self, listener, vip, amphora=None):
+        self._apply(self.client.start_listener, listener, amphora)
 
     def delete(self, listener, vip):
         self._apply(self.client.delete_listener, listener)
 
     def get_info(self, amphora):
-        self.driver.get_info(amphora.lb_network_ip)
+        return self.client.get_info(amphora)
 
     def get_diagnostics(self, amphora):
-        self.driver.get_diagnostics(amphora.lb_network_ip)
+        pass
 
     def finalize_amphora(self, amphora):
         pass
@@ -186,7 +229,7 @@ class HaproxyAmphoraLoadBalancerDriver(
             pem = cert_parser.build_pem(cert)
             md5 = hashlib.md5(pem).hexdigest()  # nosec
             name = '{id}.pem'.format(id=cert.id)
-            self._apply(self._upload_cert, listener, pem, md5, name)
+            self._apply(self._upload_cert, listener, None, pem, md5, name)
 
         return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
 
@@ -251,17 +294,27 @@ class AmphoraAPIClient(object):
             port=CONF.haproxy_amphora.bind_port,
             version=API_VERSION)
 
-    def request(self, method, amp, path='/', **kwargs):
+    def request(self, method, amp, path='/', timeout_dict=None, **kwargs):
+        cfg_ha_amp = CONF.haproxy_amphora
+        if timeout_dict is None:
+            timeout_dict = {}
+        req_conn_timeout = timeout_dict.get(
+            consts.REQ_CONN_TIMEOUT, cfg_ha_amp.rest_request_conn_timeout)
+        req_read_timeout = timeout_dict.get(
+            consts.REQ_READ_TIMEOUT, cfg_ha_amp.rest_request_read_timeout)
+        conn_max_retries = timeout_dict.get(
+            consts.CONN_MAX_RETRIES, cfg_ha_amp.connection_max_retries)
+        conn_retry_interval = timeout_dict.get(
+            consts.CONN_RETRY_INTERVAL, cfg_ha_amp.connection_retry_interval)
+
         LOG.debug("request url %s", path)
         _request = getattr(self.session, method.lower())
         _url = self._base_url(amp.lb_network_ip) + path
         LOG.debug("request url %s", _url)
-        timeout_tuple = (CONF.haproxy_amphora.rest_request_conn_timeout,
-                         CONF.haproxy_amphora.rest_request_read_timeout)
         reqargs = {
             'verify': CONF.haproxy_amphora.server_ca,
             'url': _url,
-            'timeout': timeout_tuple, }
+            'timeout': (req_conn_timeout, req_read_timeout), }
         reqargs.update(kwargs)
         headers = reqargs.setdefault('headers', {})
 
@@ -269,7 +322,7 @@ class AmphoraAPIClient(object):
         self.ssl_adapter.uuid = amp.id
         exception = None
         # Keep retrying
-        for a in six.moves.xrange(CONF.haproxy_amphora.connection_max_retries):
+        for a in six.moves.xrange(conn_max_retries):
             try:
                 with warnings.catch_warnings():
                     warnings.filterwarnings(
@@ -303,20 +356,20 @@ class AmphoraAPIClient(object):
             except (requests.ConnectionError, requests.Timeout) as e:
                 exception = e
                 LOG.warning("Could not connect to instance. Retrying.")
-                time.sleep(CONF.haproxy_amphora.connection_retry_interval)
+                time.sleep(conn_retry_interval)
 
         LOG.error("Connection retries (currently set to %(max_retries)s) "
                   "exhausted.  The amphora is unavailable. Reason: "
                   "%(exception)s",
-                  {'max_retries': CONF.haproxy_amphora.connection_max_retries,
+                  {'max_retries': conn_max_retries,
                    'exception': exception})
         raise driver_except.TimeOutException()
 
-    def upload_config(self, amp, listener_id, config):
+    def upload_config(self, amp, listener_id, config, timeout_dict=None):
         r = self.put(
             amp,
             'listeners/{amphora_id}/{listener_id}/haproxy'.format(
-                amphora_id=amp.id, listener_id=listener_id),
+                amphora_id=amp.id, listener_id=listener_id), timeout_dict,
             data=config)
         return exc.check_exception(r)
 
@@ -328,9 +381,9 @@ class AmphoraAPIClient(object):
             return r.json()
         return None
 
-    def _action(self, action, amp, listener_id):
+    def _action(self, action, amp, listener_id, timeout_dict=None):
         r = self.put(amp, 'listeners/{listener_id}/{action}'.format(
-            listener_id=listener_id, action=action))
+            listener_id=listener_id, action=action), timeout_dict=timeout_dict)
         return exc.check_exception(r)
 
     def upload_cert_pem(self, amp, listener_id, pem_filename, pem_file):
@@ -403,8 +456,9 @@ class AmphoraAPIClient(object):
         r = self.put(amp, 'vrrp/{action}'.format(action=action))
         return exc.check_exception(r)
 
-    def get_interface(self, amp, ip_addr):
-        r = self.get(amp, 'interface/{ip_addr}'.format(ip_addr=ip_addr))
+    def get_interface(self, amp, ip_addr, timeout_dict=None):
+        r = self.get(amp, 'interface/{ip_addr}'.format(ip_addr=ip_addr),
+                     timeout_dict=timeout_dict)
         if exc.check_exception(r):
             return r.json()
         return None

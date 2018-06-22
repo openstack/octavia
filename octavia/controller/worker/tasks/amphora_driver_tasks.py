@@ -20,6 +20,7 @@ from stevedore import driver as stevedore_driver
 from taskflow import task
 from taskflow.types import failure
 
+from octavia.amphorae.driver_exceptions import exceptions as driver_except
 from octavia.common import constants
 from octavia.controller.worker import task_utils as task_utilities
 from octavia.db import api as db_apis
@@ -43,6 +44,25 @@ class BaseAmphoraTask(task.Task):
         self.listener_repo = repo.ListenerRepository()
         self.loadbalancer_repo = repo.LoadBalancerRepository()
         self.task_utils = task_utilities.TaskUtils()
+
+
+class AmpListenersUpdate(BaseAmphoraTask):
+    """Task to update the listeners on one amphora."""
+
+    def execute(self, listeners, amphora_index, amphorae, timeout_dict=()):
+        # Note, we don't want this to cause a revert as it may be used
+        # in a failover flow with both amps failing. Skip it and let
+        # health manager fix it.
+        try:
+            self.amphora_driver.update_amphora_listeners(
+                listeners, amphora_index, amphorae, timeout_dict)
+        except Exception as e:
+            amphora_id = amphorae[amphora_index].id
+            LOG.error('Failed to update listeners on amphora %s. Skipping '
+                      'this amphora as it is failing to update due to: %s',
+                      amphora_id, str(e))
+            self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                     status=constants.ERROR)
 
 
 class ListenersUpdate(BaseAmphoraTask):
@@ -104,10 +124,10 @@ class ListenerStart(BaseAmphoraTask):
 class ListenersStart(BaseAmphoraTask):
     """Task to start all listeners on the vip."""
 
-    def execute(self, loadbalancer, listeners):
+    def execute(self, loadbalancer, listeners, amphora=None):
         """Execute listener start routines for listeners on an amphora."""
         for listener in listeners:
-            self.amphora_driver.start(listener, loadbalancer.vip)
+            self.amphora_driver.start(listener, loadbalancer.vip, amphora)
         LOG.debug("Started the listeners on the vip")
 
     def revert(self, listeners, *args, **kwargs):
@@ -261,11 +281,27 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
     def execute(self, loadbalancer):
         """Execute post_vip_routine."""
         amps = []
+        timeout_dict = {
+            constants.CONN_MAX_RETRIES:
+                CONF.haproxy_amphora.active_connection_max_retries,
+            constants.CONN_RETRY_INTERVAL:
+                CONF.haproxy_amphora.active_connection_rety_interval}
         for amp in six.moves.filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
-            # Currently this is supported only with REST Driver
-            interface = self.amphora_driver.get_vrrp_interface(amp)
+
+            try:
+                interface = self.amphora_driver.get_vrrp_interface(
+                    amp, timeout_dict=timeout_dict)
+            except Exception as e:
+                # This can occur when an active/standby LB has no listener
+                LOG.error('Failed to get amphora VRRP interface on amphora '
+                          '%s. Skipping this amphora as it is failing due to: '
+                          '%s', amp.id, str(e))
+                self.amphora_repo.update(db_apis.get_session(), amp.id,
+                                         status=constants.ERROR)
+                continue
+
             self.amphora_repo.update(db_apis.get_session(), amp.id,
                                      vrrp_interface=interface)
             amps.append(self.amphora_repo.get(db_apis.get_session(),
@@ -317,3 +353,22 @@ class AmphoraVRRPStart(BaseAmphoraTask):
         self.amphora_driver.start_vrrp_service(loadbalancer)
         LOG.debug("Started VRRP of loadbalancer %s amphorae",
                   loadbalancer.id)
+
+
+class AmphoraComputeConnectivityWait(BaseAmphoraTask):
+    """"Task to wait for the compute instance to be up."""
+
+    def execute(self, amphora):
+        """Execute get_info routine for an amphora until it responds."""
+        try:
+            amp_info = self.amphora_driver.get_info(amphora)
+            LOG.debug('Successfuly connected to amphora %s: %s',
+                      amphora.id, amp_info)
+        except driver_except.TimeOutException:
+            LOG.error("Amphora compute instance failed to become reachable. "
+                      "This either means the compute driver failed to fully "
+                      "boot the instance inside the timeout interval or the "
+                      "instance is not reachable via the lb-mgmt-net.")
+            self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                                     status=constants.ERROR)
+            raise

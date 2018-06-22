@@ -56,8 +56,18 @@ _l7rule_mock = mock.MagicMock()
 _create_map_flow_mock = mock.MagicMock()
 _amphora_mock.load_balancer_id = LB_ID
 _amphora_mock.id = AMP_ID
+_db_session = mock.MagicMock()
 
 CONF = cfg.CONF
+
+
+class TestException(Exception):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
 
 
 @mock.patch('octavia.db.repositories.AmphoraRepository.get',
@@ -79,7 +89,7 @@ CONF = cfg.CONF
 @mock.patch('octavia.common.base_taskflow.BaseTaskFlowEngine._taskflow_load',
             return_value=_flow_mock)
 @mock.patch('taskflow.listeners.logging.DynamicLoggingListener')
-@mock.patch('octavia.db.api.get_session', return_value='TEST')
+@mock.patch('octavia.db.api.get_session', return_value=_db_session)
 class TestControllerWorker(base.TestCase):
 
     def setUp(self):
@@ -162,7 +172,7 @@ class TestControllerWorker(base.TestCase):
         cw.delete_amphora(AMP_ID)
 
         mock_amp_repo_get.assert_called_once_with(
-            'TEST',
+            _db_session,
             id=AMP_ID)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
@@ -583,7 +593,7 @@ class TestControllerWorker(base.TestCase):
         cw.delete_load_balancer(LB_ID, cascade=False)
 
         mock_lb_repo_get.assert_called_once_with(
-            'TEST',
+            _db_session,
             id=LB_ID)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
@@ -621,7 +631,7 @@ class TestControllerWorker(base.TestCase):
         cw.delete_load_balancer(LB_ID, cascade=True)
 
         mock_lb_repo_get.assert_called_once_with(
-            'TEST',
+            _db_session,
             id=LB_ID)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
@@ -663,7 +673,7 @@ class TestControllerWorker(base.TestCase):
         cw.update_load_balancer(LB_ID, change)
 
         mock_lb_repo_get.assert_called_once_with(
-            'TEST',
+            _db_session,
             id=LB_ID)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
@@ -1152,8 +1162,80 @@ class TestControllerWorker(base.TestCase):
                        }))
 
         _flow_mock.run.assert_called_once_with()
-        mock_update.assert_called_with('TEST', LB_ID,
+        mock_update.assert_called_with(_db_session, LB_ID,
                                        provisioning_status=constants.ACTIVE)
+
+    @mock.patch('octavia.controller.worker.controller_worker.ControllerWorker.'
+                '_perform_amphora_failover')
+    def test_failover_amp_missing_amp(self,
+                                      mock_perform_amp_failover,
+                                      mock_api_get_session,
+                                      mock_dyn_log_listener,
+                                      mock_taskflow_load,
+                                      mock_pool_repo_get,
+                                      mock_member_repo_get,
+                                      mock_l7rule_repo_get,
+                                      mock_l7policy_repo_get,
+                                      mock_listener_repo_get,
+                                      mock_lb_repo_get,
+                                      mock_health_mon_repo_get,
+                                      mock_amp_repo_get):
+
+        mock_amp_repo_get.return_value = None
+
+        cw = controller_worker.ControllerWorker()
+        cw.failover_amphora(AMP_ID)
+
+        mock_perform_amp_failover.assert_not_called()
+
+    @mock.patch('octavia.controller.worker.controller_worker.ControllerWorker.'
+                '_perform_amphora_failover')
+    def test_failover_amp_flow_exception(self,
+                                         mock_perform_amp_failover,
+                                         mock_api_get_session,
+                                         mock_dyn_log_listener,
+                                         mock_taskflow_load,
+                                         mock_pool_repo_get,
+                                         mock_member_repo_get,
+                                         mock_l7rule_repo_get,
+                                         mock_l7policy_repo_get,
+                                         mock_listener_repo_get,
+                                         mock_lb_repo_get,
+                                         mock_health_mon_repo_get,
+                                         mock_amp_repo_get):
+
+        mock_perform_amp_failover.side_effect = TestException('boom')
+        cw = controller_worker.ControllerWorker()
+        self.assertRaises(TestException, cw.failover_amphora, AMP_ID)
+
+    @mock.patch('octavia.controller.worker.controller_worker.ControllerWorker.'
+                '_perform_amphora_failover')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    def test_failover_amp_no_lb(self,
+                                mock_lb_update,
+                                mock_perform_amp_failover,
+                                mock_api_get_session,
+                                mock_dyn_log_listener,
+                                mock_taskflow_load,
+                                mock_pool_repo_get,
+                                mock_member_repo_get,
+                                mock_l7rule_repo_get,
+                                mock_l7policy_repo_get,
+                                mock_listener_repo_get,
+                                mock_lb_repo_get,
+                                mock_health_mon_repo_get,
+                                mock_amp_repo_get):
+
+        amphora = mock.MagicMock()
+        amphora.load_balancer_id = None
+        mock_amp_repo_get.return_value = amphora
+
+        cw = controller_worker.ControllerWorker()
+        cw.failover_amphora(AMP_ID)
+
+        mock_lb_update.assert_not_called()
+        mock_perform_amp_failover.assert_called_once_with(
+            amphora, constants.LB_CREATE_FAILOVER_PRIORITY)
 
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
     def test_failover_deleted_amphora(self,
@@ -1178,7 +1260,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw._perform_amphora_failover(mock_amphora, 10)
 
-        mock_delete.assert_called_with('TEST', amphora_id=AMP_ID)
+        mock_delete.assert_called_with(_db_session, amphora_id=AMP_ID)
         mock_taskflow_load.assert_not_called()
 
     @mock.patch('octavia.controller.worker.'
@@ -1207,7 +1289,7 @@ class TestControllerWorker(base.TestCase):
         cw.failover_loadbalancer('123')
         mock_perform.assert_called_with(
             _amphora_mock2, constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
-        mock_update.assert_called_with('TEST', '123',
+        mock_update.assert_called_with(_db_session, '123',
                                        provisioning_status=constants.ACTIVE)
 
         mock_perform.reset
@@ -1219,13 +1301,13 @@ class TestControllerWorker(base.TestCase):
         # is the last one
         mock_perform.assert_called_with(
             _amphora_mock, constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
-        mock_update.assert_called_with('TEST', '123',
+        mock_update.assert_called_with(_db_session, '123',
                                        provisioning_status=constants.ACTIVE)
 
         mock_perform.reset
         mock_perform.side_effect = OverflowError()
         self.assertRaises(OverflowError, cw.failover_loadbalancer, 123)
-        mock_update.assert_called_with('TEST', 123,
+        mock_update.assert_called_with(_db_session, 123,
                                        provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.controller.worker.flows.'
@@ -1270,7 +1352,7 @@ class TestControllerWorker(base.TestCase):
                        }))
 
         _flow_mock.run.assert_called_once_with()
-        mock_update.assert_called_with('TEST', LB_ID,
+        mock_update.assert_called_with(_db_session, LB_ID,
                                        provisioning_status=constants.ACTIVE)
 
     @mock.patch('octavia.controller.worker.flows.'
