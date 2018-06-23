@@ -640,6 +640,22 @@ class TestHealthMonitor(base.BaseAPITest):
         self.assertEqual('/', api_hm.get('url_path'))
         self.assertEqual('200', api_hm.get('expected_codes'))
 
+    def test_create_http_full(self):
+        api_hm = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1, admin_state_up=False, expected_codes='200',
+            http_method='GET', name='Test HM', url_path='/').get(self.root_tag)
+        self.assertEqual(constants.HEALTH_MONITOR_HTTP, api_hm.get('type'))
+        self.assertEqual(1, api_hm.get('delay'))
+        self.assertEqual(1, api_hm.get('timeout'))
+        self.assertEqual(1, api_hm.get('max_retries_down'))
+        self.assertEqual(1, api_hm.get('max_retries'))
+        self.assertFalse(api_hm.get('admin_state_up'))
+        self.assertEqual('Test HM', api_hm.get('name'))
+        self.assertEqual('GET', api_hm.get('http_method'))
+        self.assertEqual('/', api_hm.get('url_path'))
+        self.assertEqual('200', api_hm.get('expected_codes'))
+
     def test_create_authorized(self):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
@@ -793,6 +809,110 @@ class TestHealthMonitor(base.BaseAPITest):
         self.assertIn('Provider \'bad_driver\' reports error: broken',
                       response.json.get('faultstring'))
 
+    def test_create_with_type_none(self):
+        req_dict = {'pool_id': self.pool_id,
+                    'type': None,
+                    'delay': 1,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': 1,
+                    'url_path': '/'}
+        self.post(self.HMS_PATH, self._build_body(req_dict), status=400)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id)
+
+    def test_create_with_delay_none(self):
+        req_dict = {'pool_id': self.pool_id,
+                    'type': constants.HEALTH_MONITOR_HTTP,
+                    'delay': None,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': 1,
+                    'url_path': '/'}
+        self.post(self.HMS_PATH, self._build_body(req_dict), status=400)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id)
+
+    def test_create_with_max_retries_none(self):
+        req_dict = {'pool_id': self.pool_id,
+                    'type': constants.HEALTH_MONITOR_HTTP,
+                    'delay': 1,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': None,
+                    'url_path': '/'}
+        self.post(self.HMS_PATH, self._build_body(req_dict), status=400)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id)
+
+    def test_create_with_timeout_none(self):
+        req_dict = {'pool_id': self.pool_id,
+                    'type': constants.HEALTH_MONITOR_HTTP,
+                    'delay': 1,
+                    'timeout': None,
+                    'max_retries_down': 1,
+                    'max_retries': 1,
+                    'url_path': '/'}
+        self.post(self.HMS_PATH, self._build_body(req_dict), status=400)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id)
+
+    def test_create_with_pool_id_none(self):
+        req_dict = {'pool_id': None,
+                    'type': constants.HEALTH_MONITOR_HTTP,
+                    'delay': 1,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': 1,
+                    'url_path': '/'}
+        self.post(self.HMS_PATH, self._build_body(req_dict), status=404)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id)
+
+    def test_create_TCP_with_http_method(self):
+        req_dict = {'pool_id': self.pool_id,
+                    'type': constants.HEALTH_MONITOR_TCP,
+                    'delay': 1,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': 1,
+                    'http_method': constants.HEALTH_MONITOR_HTTP_METHOD_GET}
+        self.post(self.HMS_PATH, self._build_body(req_dict), status=400)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id)
+
+    def test_create_TCP_with_url_path(self):
+        req_dict = {'pool_id': self.pool_id,
+                    'type': constants.HEALTH_MONITOR_TCP,
+                    'delay': 1,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': 1,
+                    'url_path': '/'}
+        self.post(self.HMS_PATH, self._build_body(req_dict), status=400)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id)
+
+    def test_create_TCP_with_expected_codes(self):
+        req_dict = {'pool_id': self.pool_id,
+                    'type': constants.HEALTH_MONITOR_TCP,
+                    'delay': 1,
+                    'timeout': 1,
+                    'max_retries_down': 1,
+                    'max_retries': 1,
+                    'expected_codes': '200'}
+        self.post(self.HMS_PATH, self._build_body(req_dict), status=400)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id)
+
     def test_duplicate_create(self):
         self.create_health_monitor(
             self.pool_id, constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1)
@@ -827,6 +947,29 @@ class TestHealthMonitor(base.BaseAPITest):
             listener_prov_status=constants.PENDING_UPDATE,
             pool_prov_status=constants.PENDING_UPDATE,
             hm_prov_status=constants.PENDING_UPDATE)
+        response = self.get(self.HM_PATH.format(
+            healthmonitor_id=api_hm.get('id'))).json.get(self.root_tag)
+        self.assertEqual(2, response[constants.MAX_RETRIES])
+
+    def test_update_TCP(self):
+        api_hm = self.create_health_monitor(
+            self.pool_with_listener_id,
+            constants.HEALTH_MONITOR_TCP, 1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_hm = {'max_retries': 2}
+        self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_with_listener_id, hm_id=api_hm.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_UPDATE)
+        response = self.get(self.HM_PATH.format(
+            healthmonitor_id=api_hm.get('id'))).json.get(self.root_tag)
+        self.assertEqual(2, response[constants.MAX_RETRIES])
 
     def test_update_authorized(self):
         api_hm = self.create_health_monitor(
@@ -917,6 +1060,78 @@ class TestHealthMonitor(base.BaseAPITest):
             self._build_body(new_hm), status=500)
         self.assertIn('Provider \'bad_driver\' reports error: broken',
                       response.json.get('faultstring'))
+
+    def test_update_TCP_setting_http_method(self):
+        api_hm = self.create_health_monitor(
+            self.pool_with_listener_id,
+            constants.HEALTH_MONITOR_TCP, 1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_hm = {'http_method': constants.HEALTH_MONITOR_HTTP_METHOD_GET}
+        self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm), status=400)
+
+    def test_update_TCP_setting_url_path(self):
+        api_hm = self.create_health_monitor(
+            self.pool_with_listener_id,
+            constants.HEALTH_MONITOR_TCP, 1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_hm = {'url_path': '/'}
+        self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm), status=400)
+
+    def test_update_TCP_setting_expected_codes(self):
+        api_hm = self.create_health_monitor(
+            self.pool_with_listener_id,
+            constants.HEALTH_MONITOR_TCP, 1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_hm = {'expected_codes': '200'}
+        self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm), status=400)
+
+    def test_update_HTTP_http_method_none(self):
+        api_hm = self.create_health_monitor(
+            self.pool_with_listener_id,
+            constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_hm = {'http_method': None}
+        self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm))
+        response = self.get(self.HM_PATH.format(
+            healthmonitor_id=api_hm.get('id'))).json.get(self.root_tag)
+        self.assertEqual(constants.HEALTH_MONITOR_HTTP_METHOD_GET,
+                         response['http_method'])
+
+    def test_update_HTTP_url_path_none(self):
+        api_hm = self.create_health_monitor(
+            self.pool_with_listener_id,
+            constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_hm = {'url_path': None}
+        self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm))
+        response = self.get(self.HM_PATH.format(
+            healthmonitor_id=api_hm.get('id'))).json.get(self.root_tag)
+        self.assertEqual(constants.HEALTH_MONITOR_DEFAULT_URL_PATH,
+                         response['url_path'])
+
+    def test_update_HTTP_expected_codes_none(self):
+        api_hm = self.create_health_monitor(
+            self.pool_with_listener_id,
+            constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_hm = {'expected_codes': None}
+        self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm))
+        response = self.get(self.HM_PATH.format(
+            healthmonitor_id=api_hm.get('id'))).json.get(self.root_tag)
+        self.assertEqual(constants.HEALTH_MONITOR_DEFAULT_EXPECTED_CODES,
+                         response['expected_codes'])
 
     def test_delete(self):
         api_hm = self.create_health_monitor(

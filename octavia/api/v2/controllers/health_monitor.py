@@ -26,7 +26,7 @@ from octavia.api.drivers import driver_factory
 from octavia.api.drivers import utils as driver_utils
 from octavia.api.v2.controllers import base
 from octavia.api.v2.types import health_monitor as hm_types
-from octavia.common import constants
+from octavia.common import constants as consts
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import api as db_api
@@ -38,7 +38,7 @@ LOG = logging.getLogger(__name__)
 
 
 class HealthMonitorController(base.BaseController):
-    RBAC_TYPE = constants.RBAC_HEALTHMONITOR
+    RBAC_TYPE = consts.RBAC_HEALTHMONITOR
 
     def __init__(self):
         super(HealthMonitorController, self).__init__()
@@ -51,7 +51,7 @@ class HealthMonitorController(base.BaseController):
         db_hm = self._get_db_hm(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, db_hm.project_id,
-                                   constants.RBAC_GET_ONE)
+                                   consts.RBAC_GET_ONE)
 
         result = self._convert_db_to_type(
             db_hm, hm_types.HealthMonitorResponse)
@@ -70,7 +70,7 @@ class HealthMonitorController(base.BaseController):
 
         db_hm, links = self.repositories.health_monitor.get_all(
             context.session, show_deleted=False,
-            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+            pagination_helper=pcontext.get(consts.PAGINATION_HELPER),
             **query_filter)
         result = self._convert_db_to_type(
             db_hm, [hm_types.HealthMonitorResponse])
@@ -93,7 +93,7 @@ class HealthMonitorController(base.BaseController):
         load_balancer_id = pool.load_balancer_id
         if not self.repositories.test_and_set_lb_and_listeners_prov_status(
                 session, load_balancer_id,
-                constants.PENDING_UPDATE, constants.PENDING_UPDATE,
+                consts.PENDING_UPDATE, consts.PENDING_UPDATE,
                 listener_ids=self._get_affected_listener_ids(session, hm),
                 pool_id=hm.pool_id):
             LOG.info("Health Monitor cannot be created or modified because "
@@ -101,23 +101,42 @@ class HealthMonitorController(base.BaseController):
             raise exceptions.ImmutableObject(resource='Load Balancer',
                                              id=load_balancer_id)
 
-    def _reset_lb_listener_pool_statuses(self, session, hm):
-        # Setting LB + listener + pool back to active because this should be a
-        # recoverable error
-        pool = self._get_db_pool(session, hm.pool_id)
-        load_balancer_id = pool.load_balancer_id
-        self.repositories.load_balancer.update(
-            session, load_balancer_id,
-            provisioning_status=constants.ACTIVE)
-        for listener in self._get_affected_listener_ids(session, hm):
-            self.repositories.listener.update(
-                session, listener,
-                provisioning_status=constants.ACTIVE)
-        self.repositories.pool.update(session, hm.pool_id,
-                                      provisioning_status=constants.ACTIVE)
-
     def _validate_create_hm(self, lock_session, hm_dict):
         """Validate creating health monitor on pool."""
+        mandatory_fields = (consts.TYPE, consts.DELAY, consts.TIMEOUT,
+                            consts.POOL_ID)
+        for field in mandatory_fields:
+            if hm_dict.get(field, None) is None:
+                raise exceptions.InvalidOption(value='None', option=field)
+        # MAX_RETRIES is renamed fall_threshold so handle is special
+        if hm_dict.get(consts.RISE_THRESHOLD, None) is None:
+            raise exceptions.InvalidOption(value='None',
+                                           option=consts.MAX_RETRIES)
+
+        if hm_dict[consts.TYPE] != consts.HEALTH_MONITOR_HTTP:
+            if hm_dict.get(consts.HTTP_METHOD, None):
+                raise exceptions.InvalidOption(
+                    value=consts.HTTP_METHOD, option='health monitors of '
+                    'type {}'.format(hm_dict[consts.TYPE]))
+            if hm_dict.get(consts.URL_PATH, None):
+                raise exceptions.InvalidOption(
+                    value=consts.URL_PATH, option='health monitors of '
+                    'type {}'.format(hm_dict[consts.TYPE]))
+            if hm_dict.get(consts.EXPECTED_CODES, None):
+                raise exceptions.InvalidOption(
+                    value=consts.EXPECTED_CODES, option='health monitors of '
+                    'type {}'.format(hm_dict[consts.TYPE]))
+        else:
+            if not hm_dict.get(consts.HTTP_METHOD, None):
+                hm_dict[consts.HTTP_METHOD] = (
+                    consts.HEALTH_MONITOR_HTTP_DEFAULT_METHOD)
+            if not hm_dict.get(consts.URL_PATH, None):
+                hm_dict[consts.URL_PATH] = (
+                    consts.HEALTH_MONITOR_DEFAULT_URL_PATH)
+            if not hm_dict.get(consts.EXPECTED_CODES, None):
+                hm_dict[consts.EXPECTED_CODES] = (
+                    consts.HEALTH_MONITOR_DEFAULT_EXPECTED_CODES)
+
         try:
             return self.repositories.health_monitor.create(
                 lock_session, **hm_dict)
@@ -137,9 +156,9 @@ class HealthMonitorController(base.BaseController):
         health_monitor = health_monitor_.healthmonitor
 
         if (not CONF.api_settings.allow_ping_health_monitors and
-                health_monitor.type == constants.HEALTH_MONITOR_PING):
+                health_monitor.type == consts.HEALTH_MONITOR_PING):
             raise exceptions.DisabledOption(
-                option='type', value=constants.HEALTH_MONITOR_PING)
+                option='type', value=consts.HEALTH_MONITOR_PING)
 
         pool = self._get_db_pool(context.session, health_monitor.pool_id)
 
@@ -147,7 +166,7 @@ class HealthMonitorController(base.BaseController):
             context.session, pool.load_balancer_id)
 
         self._auth_validate_action(context, health_monitor.project_id,
-                                   constants.RBAC_POST)
+                                   consts.RBAC_POST)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
@@ -197,6 +216,29 @@ class HealthMonitorController(base.BaseController):
 
         return db_hm
 
+    def _validate_update_hm(self, db_hm, health_monitor):
+        if db_hm.type != consts.HEALTH_MONITOR_HTTP:
+            if health_monitor.http_method != wtypes.Unset:
+                raise exceptions.InvalidOption(
+                    value=consts.HTTP_METHOD, option='health monitors of '
+                    'type {}'.format(db_hm.type))
+            if health_monitor.url_path != wtypes.Unset:
+                raise exceptions.InvalidOption(
+                    value=consts.URL_PATH, option='health monitors of '
+                    'type {}'.format(db_hm.type))
+            if health_monitor.expected_codes != wtypes.Unset:
+                raise exceptions.InvalidOption(
+                    value=consts.URL_PATH, option='health monitors of '
+                    'type {}'.format(db_hm.type))
+        else:
+            # For HTTP health monitor these cannot be null/None
+            if health_monitor.http_method is None:
+                health_monitor.http_method = wtypes.Unset
+            if health_monitor.url_path is None:
+                health_monitor.url_path = wtypes.Unset
+            if health_monitor.expected_codes is None:
+                health_monitor.expected_codes = wtypes.Unset
+
     @wsme_pecan.wsexpose(hm_types.HealthMonitorRootResponse, wtypes.text,
                          body=hm_types.HealthMonitorRootPUT, status_code=200)
     def put(self, id, health_monitor_):
@@ -209,7 +251,9 @@ class HealthMonitorController(base.BaseController):
         project_id, provider = self._get_lb_project_id_provider(
             context.session, pool.load_balancer_id)
 
-        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
+        self._auth_validate_action(context, project_id, consts.RBAC_PUT)
+
+        self._validate_update_hm(db_hm, health_monitor)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
@@ -232,7 +276,7 @@ class HealthMonitorController(base.BaseController):
                 driver_dm.HealthMonitor.from_dict(provider_healthmon_dict))
 
             # Update the database to reflect what the driver just accepted
-            health_monitor.provisioning_status = constants.PENDING_UPDATE
+            health_monitor.provisioning_status = consts.PENDING_UPDATE
             db_hm_dict = health_monitor.to_dict(render_unsets=False)
             self.repositories.health_monitor.update(lock_session, id,
                                                     **db_hm_dict)
@@ -255,9 +299,9 @@ class HealthMonitorController(base.BaseController):
         project_id, provider = self._get_lb_project_id_provider(
             context.session, pool.load_balancer_id)
 
-        self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
+        self._auth_validate_action(context, project_id, consts.RBAC_DELETE)
 
-        if db_hm.provisioning_status == constants.DELETED:
+        if db_hm.provisioning_status == consts.DELETED:
             return
 
         # Load the driver early as it also provides validation
@@ -269,7 +313,7 @@ class HealthMonitorController(base.BaseController):
 
             self.repositories.health_monitor.update(
                 lock_session, db_hm.id,
-                provisioning_status=constants.PENDING_DELETE)
+                provisioning_status=consts.PENDING_DELETE)
 
             LOG.info("Sending delete Health Monitor %s to provider %s",
                      id, driver.name)

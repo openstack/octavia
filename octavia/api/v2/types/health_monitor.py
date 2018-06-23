@@ -89,14 +89,11 @@ class HealthMonitorPOST(BaseHealthMonitorType):
                            maximum=constants.MAX_HM_RETRIES),
         mandatory=True)
     http_method = wtypes.wsattr(
-        wtypes.Enum(str, *constants.SUPPORTED_HEALTH_MONITOR_HTTP_METHODS),
-        default=constants.HEALTH_MONITOR_HTTP_DEFAULT_METHOD)
+        wtypes.Enum(str, *constants.SUPPORTED_HEALTH_MONITOR_HTTP_METHODS))
     url_path = wtypes.wsattr(
-        types.URLPathType(),
-        default=constants.HEALTH_MONITOR_DEFAULT_URL_PATH)
+        types.URLPathType())
     expected_codes = wtypes.wsattr(
-        wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'),
-        default=constants.HEALTH_MONITOR_DEFAULT_EXPECTED_CODES)
+        wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'))
     admin_state_up = wtypes.wsattr(bool, default=True)
     # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
@@ -146,14 +143,10 @@ class HealthMonitorSingleCreate(BaseHealthMonitorType):
                            maximum=constants.MAX_HM_RETRIES),
         mandatory=True)
     http_method = wtypes.wsattr(
-        wtypes.Enum(str, *constants.SUPPORTED_HEALTH_MONITOR_HTTP_METHODS),
-        default=constants.HEALTH_MONITOR_HTTP_DEFAULT_METHOD)
-    url_path = wtypes.wsattr(
-        types.URLPathType(),
-        default=constants.HEALTH_MONITOR_DEFAULT_URL_PATH)
+        wtypes.Enum(str, *constants.SUPPORTED_HEALTH_MONITOR_HTTP_METHODS))
+    url_path = wtypes.wsattr(types.URLPathType())
     expected_codes = wtypes.wsattr(
-        wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'),
-        default=constants.HEALTH_MONITOR_DEFAULT_EXPECTED_CODES)
+        wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'))
     admin_state_up = wtypes.wsattr(bool, default=True)
 
 
