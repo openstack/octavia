@@ -158,9 +158,8 @@ Therefore, it's important that the subnet deployed on this network be
 sufficiently large to allow for the maximum number of amphorae and controllers
 likely to be deployed throughout the lifespan of the cloud installation.
 
-At the present time, only IPv4 subnets have been tested as the LB Network (for
-example: 172.31.0.0/16), though there are plans to eventually support IPv6
-subnets for the LB Network.
+At the present time, though IPv4 subnets are used by default for the LB Network
+(for example: 172.16.0.0/12), IPv6 subnets can be used for the LB Network.
 
 The LB Network is isolated from tenant networks on the amphorae by means of
 network namespaces on the amphorae. Therefore, operators need not be concerned
