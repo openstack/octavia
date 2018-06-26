@@ -11,7 +11,7 @@ SELinuxContext=system_u:system_r:haproxy_t:s0
 
 Environment="CONFIG={{ haproxy_cfg }}" "USERCONFIG={{ haproxy_user_group_cfg }}" "PIDFILE={{ haproxy_pid }}"
 
-ExecStartPre={{ haproxy_cmd }} -f $CONFIG -f $USERCONFIG -c -q
+ExecStartPre={{ haproxy_cmd }} -f $CONFIG -f $USERCONFIG -c -q -L {{ peer_name }}
 
 ExecReload={{ haproxy_cmd }} -c -f $CONFIG -f $USERCONFIG -L {{ peer_name }}
 ExecReload=/bin/kill -USR2 $MAINPID
