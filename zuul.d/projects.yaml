@@ -50,8 +50,7 @@
             voting: false
             branches: ^(?!stable/ocata).*$
         - octavia-grenade:
-            branches: ^(?!stable/(ocata|queens)).*$
-            voting: false
+            branches: ^(?!stable/(ocata|pike|queens)).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -92,6 +91,18 @@
         - neutron-lbaasv2-dsvm-api
         - neutron-lbaasv2-dsvm-py3x-api:
             branches: ^(?!stable/ocata).*$
+        - octavia-grenade:
+            branches: ^(?!stable/(ocata|pike|queens)).*$
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^octavia/tests/unit/.*$
+              - ^releasenotes/.*$
+              - ^setup.cfg$
+              - ^tools/.*$
+              - ^(test-|)requirements.txt$
+              - ^tox.ini$
     experimental:
       queue: octavia
       jobs:
