@@ -44,7 +44,11 @@ def spare_amphora_check():
     spare_amp = house_keeping.SpareAmphora()
     while not spare_amp_thread_event.is_set():
         LOG.debug("Initiating spare amphora check...")
-        spare_amp.spare_check()
+        try:
+            spare_amp.spare_check()
+        except Exception as e:
+            LOG.debug('spare_amphora caught the following exception and '
+                      'is restarting: {}'.format(e))
         spare_amp_thread_event.wait(interval)
 
 
@@ -61,8 +65,12 @@ def db_cleanup():
     db_cleanup = house_keeping.DatabaseCleanup()
     while not db_cleanup_thread_event.is_set():
         LOG.debug("Initiating the cleanup of old resources...")
-        db_cleanup.delete_old_amphorae()
-        db_cleanup.cleanup_load_balancers()
+        try:
+            db_cleanup.delete_old_amphorae()
+            db_cleanup.cleanup_load_balancers()
+        except Exception as e:
+            LOG.debug('db_cleanup caught the following exception and '
+                      'is restarting: {}'.format(e))
         db_cleanup_thread_event.wait(interval)
 
 
@@ -74,7 +82,11 @@ def cert_rotation():
     cert_rotate = house_keeping.CertRotation()
     while not cert_rotate_thread_event.is_set():
         LOG.debug("Initiating certification rotation ...")
-        cert_rotate.rotate()
+        try:
+            cert_rotate.rotate()
+        except Exception as e:
+            LOG.debug('cert_rotation caught the following exception and '
+                      'is restarting: {}'.format(e))
         cert_rotate_thread_event.wait(interval)
 
 
