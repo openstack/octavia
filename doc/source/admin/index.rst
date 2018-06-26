@@ -30,6 +30,7 @@ Operator Reference
 
    ../contributor/guides/dev-quick-start.rst
    guides/operator-maintenance.rst
+   guides/upgrade.rst
    ../configuration/configref.rst
    ../configuration/policy.rst
    Anchor.rst
