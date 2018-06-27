@@ -186,7 +186,8 @@ class PoolsController(base.BaseController):
                     lock_session,
                     data_models.Pool,
                     pool.project_id):
-                raise exceptions.QuotaException
+                raise exceptions.QuotaException(
+                    resource=data_models.Pool._name())
 
             listener_repo = self.repositories.listener
             pool_dict = db_prepare.create_pool(
@@ -225,7 +226,8 @@ class PoolsController(base.BaseController):
         if hm and self.repositories.check_quota_met(
                 session, lock_session, data_models.HealthMonitor,
                 db_pool.project_id):
-            raise exceptions.QuotaException
+            raise exceptions.QuotaException(
+                resource=data_models.HealthMonitor._name())
 
         # Now possibly create a healthmonitor
         new_hm = None
@@ -239,7 +241,8 @@ class PoolsController(base.BaseController):
         if members and self.repositories.check_quota_met(
                 session, lock_session, data_models.Member,
                 db_pool.project_id, count=len(members)):
-            raise exceptions.QuotaException
+            raise exceptions.QuotaException(
+                resource=data_models.Member._name())
 
         # Now create members
         new_members = []

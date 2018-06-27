@@ -112,7 +112,9 @@ class HealthMonitorController(base.BaseController):
                 data_models.HealthMonitor,
                 health_monitor.project_id):
             lock_session.rollback()
-            raise exceptions.QuotaException
+            raise exceptions.QuotaException(
+                resource=data_models.HealthMonitor._name()
+            )
 
         try:
             hm_dict = db_prepare.create_health_monitor(

@@ -174,7 +174,8 @@ class ListenersController(base.BaseController):
                 data_models.Listener,
                 listener.project_id):
             lock_session.rollback()
-            raise exceptions.QuotaException
+            raise exceptions.QuotaException(
+                resource=data_models.Listener._name())
 
         try:
             self._secure_data(listener)

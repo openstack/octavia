@@ -111,7 +111,9 @@ class MembersController(base.BaseController):
                 data_models.Member,
                 member.project_id):
             lock_session.rollback()
-            raise exceptions.QuotaException
+            raise exceptions.QuotaException(
+                resource=data_models.Member._name()
+            )
 
         try:
             member_dict = db_prepare.create_member(member.to_dict(

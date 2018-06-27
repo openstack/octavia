@@ -234,7 +234,8 @@ class ListenersController(base.BaseController):
                     lock_session,
                     data_models.Listener,
                     listener.project_id):
-                raise exceptions.QuotaException
+                raise exceptions.QuotaException(
+                    resource=data_models.Listener._name())
 
             listener_dict = db_prepare.create_listener(
                 listener.to_dict(render_unsets=True), None)

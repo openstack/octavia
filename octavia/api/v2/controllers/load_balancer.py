@@ -264,7 +264,8 @@ class LoadBalancersController(base.BaseController):
                     lock_session,
                     data_models.LoadBalancer,
                     load_balancer.project_id):
-                raise exceptions.QuotaException
+                raise exceptions.QuotaException(
+                    resource=data_models.LoadBalancer._name())
 
             db_lb, db_pools, db_lists = None, None, None
 
@@ -386,7 +387,7 @@ class LoadBalancersController(base.BaseController):
         if pools and self.repositories.check_quota_met(
                 session, lock_session, data_models.Pool, db_lb.project_id,
                 count=len(pools)):
-            raise exceptions.QuotaException
+            raise exceptions.QuotaException(resource=data_models.Pool._name())
 
         # Now create all of the pools ahead of the listeners.
         new_pools = []
@@ -412,7 +413,8 @@ class LoadBalancersController(base.BaseController):
         if listeners and self.repositories.check_quota_met(
                 session, lock_session, data_models.Listener, db_lb.project_id,
                 count=len(listeners)):
-            raise exceptions.QuotaException
+            raise exceptions.QuotaException(
+                resource=data_models.Listener._name())
 
         # Now create all of the listeners
         new_lists = []

@@ -177,7 +177,8 @@ class HealthMonitorController(base.BaseController):
                     lock_session,
                     data_models.HealthMonitor,
                     health_monitor.project_id):
-                raise exceptions.QuotaException
+                raise exceptions.QuotaException(
+                    resource=data_models.HealthMonitor._name())
 
             hm_dict = db_prepare.create_health_monitor(
                 health_monitor.to_dict(render_unsets=True))

@@ -186,7 +186,8 @@ class MemberController(base.BaseController):
                     lock_session,
                     data_models.Member,
                     member.project_id):
-                raise exceptions.QuotaException
+                raise exceptions.QuotaException(
+                    resource=data_models.Member._name())
 
             member_dict = db_prepare.create_member(member.to_dict(
                 render_unsets=True), self.pool_id, bool(pool.health_monitor))
@@ -306,7 +307,8 @@ class MembersController(MemberController):
             if member_count_diff > 0 and self.repositories.check_quota_met(
                     context.session, lock_session, data_models.Member,
                     db_pool.project_id, count=member_count_diff):
-                raise exceptions.QuotaException
+                raise exceptions.QuotaException(
+                    resource=data_models.Member._name())
 
             old_member_uniques = {
                 (m.ip_address, m.protocol_port): m.id for m in old_members}
