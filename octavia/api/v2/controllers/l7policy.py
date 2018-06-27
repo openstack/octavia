@@ -145,7 +145,8 @@ class L7PolicyController(base.BaseController):
                     lock_session,
                     data_models.L7Policy,
                     l7policy.project_id):
-                raise exceptions.QuotaException
+                raise exceptions.QuotaException(
+                    resource=data_models.L7Policy._name())
 
             l7policy_dict = db_prepare.create_l7policy(
                 l7policy.to_dict(render_unsets=True),

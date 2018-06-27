@@ -543,7 +543,8 @@ class Repositories(object):
                                     lock_session,
                                     data_models.LoadBalancer,
                                     lb_dict['project_id']):
-                raise exceptions.QuotaException
+                raise exceptions.QuotaException(
+                    resource=data_models.LoadBalancer._name())
             lb_dm = self.create_load_balancer_and_vip(
                 lock_session, lb_dict, vip_dict)
             for listener_dict in listener_dicts:
@@ -552,7 +553,8 @@ class Repositories(object):
                                         lock_session,
                                         data_models.Listener,
                                         lb_dict['project_id']):
-                    raise exceptions.QuotaException
+                    raise exceptions.QuotaException(
+                        resource=data_models.Listener._name())
                 pool_dict = listener_dict.pop('default_pool', None)
                 l7policies_dict = listener_dict.pop('l7policies', None)
                 sni_containers = listener_dict.pop('sni_containers', [])
@@ -562,7 +564,8 @@ class Repositories(object):
                                             lock_session,
                                             data_models.Pool,
                                             lb_dict['project_id']):
-                        raise exceptions.QuotaException
+                        raise exceptions.QuotaException(
+                            resource=data_models.Pool._name())
                     hm_dict = pool_dict.pop('health_monitor', None)
                     member_dicts = pool_dict.pop('members', [])
                     sp_dict = pool_dict.pop('session_persistence', None)
@@ -579,7 +582,8 @@ class Repositories(object):
                                                 lock_session,
                                                 data_models.HealthMonitor,
                                                 lb_dict['project_id']):
-                            raise exceptions.QuotaException
+                            raise exceptions.QuotaException(
+                                resource=data_models.HealthMonitor._name())
                         hm_dict['id'] = pool_dm.id
                         hm_dict['pool_id'] = pool_dm.id
                         self.health_monitor.create(lock_session, **hm_dict)
@@ -589,7 +593,8 @@ class Repositories(object):
                                                 lock_session,
                                                 data_models.Member,
                                                 lb_dict['project_id']):
-                            raise exceptions.QuotaException
+                            raise exceptions.QuotaException(
+                                resource=data_models.Member._name())
                         r_member_dict['pool_id'] = pool_dm.id
                         self.member.create(lock_session, **r_member_dict)
                     listener_dict['default_pool_id'] = pool_dm.id
@@ -605,7 +610,8 @@ class Repositories(object):
                                                     lock_session,
                                                     data_models.Pool,
                                                     lb_dict['project_id']):
-                                raise exceptions.QuotaException
+                                raise exceptions.QuotaException(
+                                    resource=data_models.Pool._name())
                             r_pool_dict = policy_dict.pop(
                                 'redirect_pool')
                             r_hm_dict = r_pool_dict.pop('health_monitor',
@@ -628,7 +634,9 @@ class Repositories(object):
                                         lock_session,
                                         data_models.HealthMonitor,
                                         lb_dict['project_id']):
-                                    raise exceptions.QuotaException
+                                    res = data_models.HealthMonitor
+                                    raise exceptions.QuotaException(
+                                        resource=res._name())
                                 r_hm_dict['id'] = r_pool_dm.id
                                 r_hm_dict['pool_id'] = r_pool_dm.id
                                 self.health_monitor.create(lock_session,
@@ -640,7 +648,8 @@ class Repositories(object):
                                         lock_session,
                                         data_models.Member,
                                         lb_dict['project_id']):
-                                    raise exceptions.QuotaException
+                                    raise exceptions.QuotaException(
+                                        resource=data_models.Member._name())
                                 r_member_dict['pool_id'] = r_pool_dm.id
                                 self.member.create(lock_session,
                                                    **r_member_dict)

@@ -281,7 +281,7 @@ class InvalidAmphoraOperatingSystem(OctaviaException):
 
 
 class QuotaException(APIException):
-    msg = _('Quota has been met.')
+    msg = _('Quota has been met for resources: %(resource)s')
     code = 403
 
 
