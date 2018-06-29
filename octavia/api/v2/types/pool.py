@@ -41,8 +41,10 @@ class SessionPersistencePUT(types.BaseType):
 
 class BasePoolType(types.BaseType):
     _type_to_model_map = {'admin_state_up': 'enabled',
-                          'healthmonitor': 'health_monitor'}
-    _child_map = {}
+                          'healthmonitor': 'health_monitor',
+                          'healthmonitor_id': 'health_monitor.id'}
+
+    _child_map = {'health_monitor': {'id': 'healthmonitor_id'}}
 
 
 class PoolResponse(BasePoolType):

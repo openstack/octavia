@@ -1057,7 +1057,8 @@ class TestLoadBalancer(base.BaseAPITest):
         lb1 = self.create_load_balancer(
             uuidutils.generate_uuid(),
             name='lb1',
-            project_id=self.project_id).get(self.root_tag)
+            project_id=self.project_id,
+            vip_address='10.0.0.1').get(self.root_tag)
         self.create_load_balancer(
             uuidutils.generate_uuid(),
             name='lb2',
@@ -1067,7 +1068,7 @@ class TestLoadBalancer(base.BaseAPITest):
             name='lb3',
             project_id=self.project_id).get(self.root_tag)
         lbs = self.get(self.LBS_PATH, params={
-            'id': lb1['id']}).json
+            'id': lb1['id'], 'vip_address': lb1['vip_address']}).json
         self.assertEqual(1, len(lbs['loadbalancers']))
         self.assertEqual(lb1['id'],
                          lbs['loadbalancers'][0]['id'])
