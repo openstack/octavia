@@ -32,33 +32,33 @@ class TestOSUtils(base.TestCase):
 
         self.base_os_util = osutils.BaseOS('unknown')
 
-        with mock.patch('platform.linux_distribution',
-                        return_value=['Ubuntu', 'Foo', 'Bar']):
+        with mock.patch('distro.id',
+                        return_value='ubuntu'):
             self.ubuntu_os_util = osutils.BaseOS.get_os_util()
 
-        with mock.patch('platform.linux_distribution',
-                        return_value=['centos', 'Foo', 'Bar']):
+        with mock.patch('distro.id',
+                        return_value='centos'):
             self.rh_os_util = osutils.BaseOS.get_os_util()
 
     def test_get_os_util(self):
-        with mock.patch('platform.linux_distribution',
-                        return_value=['Ubuntu', 'Foo', 'Bar']):
+        with mock.patch('distro.id',
+                        return_value='ubuntu'):
             returned_cls = osutils.BaseOS.get_os_util()
             self.assertIsInstance(returned_cls, osutils.Ubuntu)
-        with mock.patch('platform.linux_distribution',
-                        return_value=['fedora', 'Foo', 'Bar']):
+        with mock.patch('distro.id',
+                        return_value='fedora'):
             returned_cls = osutils.BaseOS.get_os_util()
             self.assertIsInstance(returned_cls, osutils.RH)
-        with mock.patch('platform.linux_distribution',
-                        return_value=['redhat', 'Foo', 'Bar']):
+        with mock.patch('distro.id',
+                        return_value='rhel'):
             returned_cls = osutils.BaseOS.get_os_util()
             self.assertIsInstance(returned_cls, osutils.RH)
-        with mock.patch('platform.linux_distribution',
-                        return_value=['centos', 'Foo', 'Bar']):
+        with mock.patch('distro.id',
+                        return_value='centos'):
             returned_cls = osutils.BaseOS.get_os_util()
             self.assertIsInstance(returned_cls, osutils.RH)
-        with mock.patch('platform.linux_distribution',
-                        return_value=['FakeOS', 'Foo', 'Bar']):
+        with mock.patch('distro.id',
+                        return_value='FakeOS'):
             self.assertRaises(
                 octavia_exceptions.InvalidAmphoraOperatingSystem,
                 osutils.BaseOS.get_os_util)

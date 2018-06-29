@@ -14,11 +14,11 @@
 
 import ipaddress
 import os
-import platform
 import shutil
 import stat
 import subprocess
 
+import distro
 import jinja2
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -45,7 +45,7 @@ class BaseOS(object):
 
     @classmethod
     def get_os_util(cls):
-        os_name = platform.linux_distribution(full_distribution_name=False)[0]
+        os_name = distro.id()
         for subclass in BaseOS.__subclasses__():
             if subclass.is_os_name(os_name):
                 return subclass(os_name)
@@ -219,7 +219,7 @@ class Ubuntu(BaseOS):
 
     @classmethod
     def is_os_name(cls, os_name):
-        return os_name in ['Ubuntu']
+        return os_name in ['ubuntu']
 
     def cmd_get_version_of_installed_package(self, package_name):
         return "dpkg --status {name}".format(name=package_name)
@@ -303,7 +303,7 @@ class RH(BaseOS):
 
     @classmethod
     def is_os_name(cls, os_name):
-        return os_name in ['fedora', 'redhat', 'centos']
+        return os_name in ['fedora', 'rhel', 'centos']
 
     def cmd_get_version_of_installed_package(self, package_name):
         return "rpm -qi {name}".format(name=package_name)
