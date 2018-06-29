@@ -29,7 +29,7 @@ export DEVSTACK_LOCAL_CONFIG+=$'\n'"LIBS_FROM_GIT+=,diskimage-builder"$'\n'
 # resolve the KVM failures as logged here:
 # https://bugzilla.kernel.org/show_bug.cgi?id=192521
 # However, this may be resolved at OVH before the kernel bug is resolved.
-if $(egrep --quiet '(vmx|svm)' /proc/cpuinfo) && [[ ( ! $(hostname) =~ "ovh" || ! $(hostname) =~ "limestone" ) ]]; then
+if egrep --quiet '(vmx|svm)' /proc/cpuinfo; then
     export DEVSTACK_GATE_LIBVIRT_TYPE=kvm
 fi
 
