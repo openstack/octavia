@@ -14,6 +14,7 @@
 #
 
 import datetime
+import signal
 import sys
 import threading
 import time
@@ -78,6 +79,11 @@ def cert_rotation():
         cert_rotate_thread_event.wait(interval)
 
 
+def _mutate_config(*args, **kwargs):
+    LOG.info("Housekeeping recieved HUP signal, mutating config.")
+    CONF.mutate_config_files()
+
+
 def main():
     service.prepare_service(sys.argv)
 
@@ -100,6 +106,8 @@ def main():
     cert_rotate_thread = threading.Thread(target=cert_rotation)
     cert_rotate_thread.daemon = True
     cert_rotate_thread.start()
+
+    signal.signal(signal.SIGHUP, _mutate_config)
 
     # Try-Exception block should be at the end to gracefully exit threads
     try:
