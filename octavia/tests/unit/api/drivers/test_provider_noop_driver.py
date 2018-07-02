@@ -80,6 +80,7 @@ class TestNoopProviderDriver(base.TestCase):
             healthmonitor=self.ref_healthmonitor,
             lb_algorithm='A_Fast_One',
             loadbalancer_id=self.loadbalancer_id,
+            listener_id=self.listener_id,
             members=[self.ref_member],
             name='Osborn',
             pool_id=self.pool_id,
