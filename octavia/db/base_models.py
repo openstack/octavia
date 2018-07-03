@@ -113,8 +113,11 @@ class OctaviaBase(models.ModelBase):
                 filters['enabled'])
         for attr, name_map in model.__v2_wsme__._child_map.items():
             for k, v in name_map.items():
-                if v in filters:
-                    child_map[attr] = {k: filters.pop(v)}
+                if attr in filters and k in filters[attr]:
+                    child_map.setdefault(attr, {}).update(
+                        {k: filters[attr].pop(k)})
+            filters.pop(attr, None)
+
         for k, v in model.__v2_wsme__._type_to_model_map.items():
             if k in filters:
                 translated_filters[v] = filters.pop(k)

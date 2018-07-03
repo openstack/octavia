@@ -31,7 +31,8 @@ class BaseLoadBalancerType(types.BaseType):
         'ip_address': 'vip_address',
         'subnet_id': 'vip_subnet_id',
         'port_id': 'vip_port_id',
-        'network_id': 'vip_network_id'}}
+        'network_id': 'vip_network_id',
+        'qos_policy_id': 'vip_qos_policy_id'}}
 
 
 class LoadBalancerResponse(BaseLoadBalancerType):
