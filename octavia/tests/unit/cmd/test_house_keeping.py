@@ -188,3 +188,9 @@ class TestHouseKeepingCMD(base.TestCase):
         spare_amp_thread_mock.join.assert_called_once_with()
         db_cleanup_thread_mock.join.assert_called_once_with()
         cert_rotate_thread_mock.join.assert_called_once_with()
+
+    @mock.patch('oslo_config.cfg.CONF.mutate_config_files')
+    def test_mutate_config(self, mock_mutate):
+        house_keeping._mutate_config()
+
+        mock_mutate.assert_called_once()

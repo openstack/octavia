@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    You can now update the running configuration of the Octavia control
+    plane processes by sending the parent process a "HUP" signal.
+    Note: The configuration item must support mutation.

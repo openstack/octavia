@@ -93,3 +93,13 @@ class TestHealthManagerCMD(base.TestCase):
         mock_health_proc.join.assert_called_once_with()
         mock_kill.assert_called_once_with(mock_health_proc.pid,
                                           signal.SIGINT)
+
+    @mock.patch('os.kill')
+    @mock.patch('oslo_config.cfg.CONF.mutate_config_files')
+    def test_handle_mutate_config(self, mock_mutate, mock_kill):
+        health_manager._handle_mutate_config(1, 2)
+
+        mock_mutate.assert_called_once()
+
+        calls = [mock.call(1, signal.SIGHUP), mock.call(2, signal.SIGHUP)]
+        mock_kill.assert_has_calls(calls)

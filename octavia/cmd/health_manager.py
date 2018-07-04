@@ -13,6 +13,7 @@
 # under the License.
 #
 
+from functools import partial
 import multiprocessing
 import os
 import signal
@@ -34,8 +35,13 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
+def _mutate_config(*args, **kwargs):
+    CONF.mutate_config_files()
+
+
 def hm_listener(exit_event):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+    signal.signal(signal.SIGHUP, _mutate_config)
     udp_getter = heartbeat_udp.UDPStatusGetter()
     while not exit_event.is_set():
         try:
@@ -50,6 +56,7 @@ def hm_listener(exit_event):
 
 def hm_health_check(exit_event):
     hm = health_manager.HealthManager(exit_event)
+    signal.signal(signal.SIGHUP, _mutate_config)
 
     @periodics.periodic(CONF.health_manager.health_check_interval,
                         run_immediately=True)
@@ -67,6 +74,13 @@ def hm_health_check(exit_event):
     LOG.debug("Pausing before starting health check")
     exit_event.wait(CONF.health_manager.heartbeat_timeout)
     health_check.start()
+
+
+def _handle_mutate_config(listener_proc_pid, check_proc_pid, *args, **kwargs):
+    LOG.info("Health Manager recieved HUP signal, mutating config.")
+    _mutate_config()
+    os.kill(listener_proc_pid, signal.SIGHUP)
+    os.kill(check_proc_pid, signal.SIGHUP)
 
 
 def main():
@@ -99,6 +113,8 @@ def main():
         hm_listener_proc.join()
 
     signal.signal(signal.SIGTERM, process_cleanup)
+    signal.signal(signal.SIGHUP, partial(
+        _handle_mutate_config, hm_listener_proc.pid, hm_health_check_proc.pid))
 
     try:
         for process in processes:
