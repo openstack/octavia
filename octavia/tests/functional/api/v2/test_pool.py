@@ -483,6 +483,10 @@ class TestPool(base.BaseAPITest):
             constants.LB_ALGORITHM_ROUND_ROBIN,
             name='pool1').get(self.root_tag)
         self.set_lb_status(lb_id=self.lb_id)
+        hm = self.create_health_monitor(po1['id'],
+                                        constants.HEALTH_MONITOR_HTTP,
+                                        1, 1, 1, 1).get('healthmonitor')
+        self.set_lb_status(lb_id=self.lb_id)
         self.create_pool(
             self.lb_id,
             constants.PROTOCOL_HTTP,
@@ -497,7 +501,7 @@ class TestPool(base.BaseAPITest):
         self.set_lb_status(lb_id=self.lb_id)
 
         pools = self.get(self.POOLS_PATH, params={
-            'id': po1['id']}).json
+            'id': po1['id'], 'healthmonitor_id': hm['id']}).json
         self.assertEqual(1, len(pools['pools']))
         self.assertEqual(po1['id'],
                          pools['pools'][0]['id'])
