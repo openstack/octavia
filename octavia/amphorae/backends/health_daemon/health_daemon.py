@@ -27,9 +27,10 @@ from octavia.amphorae.backends.health_daemon import health_sender
 from octavia.amphorae.backends.utils import haproxy_query
 
 if six.PY2:
-    import Queue as queue
+    import Queue as queue  # pylint: disable=wrong-import-order
 else:
-    import queue
+    import queue  # pylint: disable=wrong-import-order
+
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -91,10 +92,10 @@ def run_sender(cmd_queue):
 
         try:
             cmd = cmd_queue.get_nowait()
-            if cmd is 'reload':
+            if cmd == 'reload':
                 LOG.info('Reloading configuration')
                 CONF.reload_config_files()
-            elif cmd is 'shutdown':
+            elif cmd == 'shutdown':
                 LOG.info('Health Manager Sender shutting down.')
                 break
         except queue.Empty:

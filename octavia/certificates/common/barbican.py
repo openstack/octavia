@@ -40,6 +40,7 @@ class BarbicanCert(cert.Cert):
         if self._cert_container.certificate:
             return encodeutils.to_utf8(
                 self._cert_container.certificate.payload)
+        return None
 
     def get_intermediates(self):
         if self._cert_container.intermediates:
@@ -47,16 +48,19 @@ class BarbicanCert(cert.Cert):
                 self._cert_container.intermediates.payload)
             return [imd for imd in cert_parser.get_intermediates_pems(
                 intermediates)]
+        return None
 
     def get_private_key(self):
         if self._cert_container.private_key:
             return encodeutils.to_utf8(
                 self._cert_container.private_key.payload)
+        return None
 
     def get_private_key_passphrase(self):
         if self._cert_container.private_key_passphrase:
             return encodeutils.to_utf8(
                 self._cert_container.private_key_passphrase.payload)
+        return None
 
 
 @six.add_metaclass(abc.ABCMeta)

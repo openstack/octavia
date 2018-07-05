@@ -18,11 +18,11 @@ import re
 import socket
 import subprocess
 
-import netifaces
 import pyroute2
 import six
 import webob
 
+import netifaces
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants as consts

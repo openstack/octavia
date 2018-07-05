@@ -93,8 +93,9 @@ class QuotasController(base.BaseController):
     @pecan.expose()
     def _lookup(self, project_id, *remainder):
         """Overridden pecan _lookup method for routing default endpoint."""
-        if project_id and len(remainder) and remainder[0] == 'default':
+        if project_id and remainder and remainder[0] == 'default':
             return QuotasDefaultController(project_id), ''
+        return None
 
 
 class QuotasDefaultController(base.BaseController):

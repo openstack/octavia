@@ -94,6 +94,7 @@ class Port(data_models.BaseDataModel):
         for fixed_ip in self.fixed_ips:
             if fixed_ip.ip_address == fixed_ip_address:
                 return fixed_ip.subnet_id
+        return None
 
 
 class FixedIP(data_models.BaseDataModel):

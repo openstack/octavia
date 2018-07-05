@@ -11,8 +11,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from octavia.common import constants
 from oslo_policy import policy
+
+from octavia.common import constants
 
 rules = [
     policy.DocumentedRuleDefault(

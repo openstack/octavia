@@ -95,7 +95,7 @@ class BaseOS(object):
             text = template_vip.render(
                 interface=primary_interface,
                 vip=vip,
-                vip_ipv6=ip.version is 6,
+                vip_ipv6=ip.version == 6,
                 prefix=utils.netmask_to_prefix(netmask),
                 broadcast=broadcast,
                 netmask=netmask,
@@ -103,7 +103,7 @@ class BaseOS(object):
                 network=utils.ip_netmask_to_cidr(vip, netmask),
                 mtu=mtu,
                 vrrp_ip=vrrp_ip,
-                vrrp_ipv6=vrrp_version is 6,
+                vrrp_ipv6=vrrp_version == 6,
                 host_routes=render_host_routes,
             )
             text_file.write(text)
@@ -150,7 +150,7 @@ class BaseOS(object):
                         cidr if isinstance(
                             cidr, six.text_type) else six.u(cidr))
                     broadcast = network.broadcast_address.exploded
-                    netmask = (network.prefixlen if ip.version is 6
+                    netmask = (network.prefixlen if ip.version == 6
                                else network.netmask.exploded)
                     host_routes = self.get_host_routes(fixed_ip)
 
@@ -158,7 +158,7 @@ class BaseOS(object):
                     return webob.Response(
                         json=dict(message="Invalid network IP"), status=400)
                 new_text = template_port.render(interface=netns_ip_interface,
-                                                ipv6=ip.version is 6,
+                                                ipv6=ip.version == 6,
                                                 ip_address=ip.exploded,
                                                 broadcast=broadcast,
                                                 netmask=netmask,

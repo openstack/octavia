@@ -271,7 +271,7 @@ class LoadBalancersController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
 
         possible_remainder = ('listeners', 'pools', 'delete_cascade', 'stats')
-        if lb_id and len(remainder) and (remainder[0] in possible_remainder):
+        if lb_id and remainder and (remainder[0] in possible_remainder):
             controller = remainder[0]
             remainder = remainder[1:]
             db_lb = self.repositories.load_balancer.get(context.session,
@@ -291,6 +291,7 @@ class LoadBalancersController(base.BaseController):
             elif controller == 'stats':
                 return lb_stats.LoadBalancerStatisticsController(
                     loadbalancer_id=db_lb.id), remainder
+        return None
 
 
 class LBCascadeDeleteController(LoadBalancersController):

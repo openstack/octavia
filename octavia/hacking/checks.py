@@ -112,6 +112,7 @@ def no_author_tags(physical_line):
             if pos < 0:
                 pos = physical_line.find('author')
             return pos, "O322: Don't use author tags"
+    return None
 
 
 def assert_equal_true_or_false(logical_line):

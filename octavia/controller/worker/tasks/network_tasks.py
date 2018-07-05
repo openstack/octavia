@@ -144,7 +144,7 @@ class PlugNetworks(BaseNetworkTask):
 
         if not delta:
             LOG.debug("No network deltas for amphora id: %s", amphora.id)
-            return None
+            return
 
         # add nics
         for nic in delta.add_nics:
@@ -179,7 +179,7 @@ class UnPlugNetworks(BaseNetworkTask):
         LOG.debug("Unplug network for amphora")
         if not delta:
             LOG.debug("No network deltas for amphora id: %s", amphora.id)
-            return None
+            return
 
         for nic in delta.delete_nics:
             try:

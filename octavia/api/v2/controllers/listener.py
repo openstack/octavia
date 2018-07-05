@@ -377,8 +377,9 @@ class ListenersController(base.BaseController):
         Currently it checks if this was a stats request and routes
         the request to the StatsController.
         """
-        if id and len(remainder) and remainder[0] == 'stats':
+        if id and remainder and remainder[0] == 'stats':
             return StatisticsController(listener_id=id), remainder[1:]
+        return None
 
 
 class StatisticsController(base.BaseController, stats.StatsMixin):

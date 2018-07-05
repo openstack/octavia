@@ -79,11 +79,12 @@ class AmphoraController(base.BaseController):
         Currently it checks if this was a failover request and routes
         the request to the FailoverController.
         """
-        if amphora_id and len(remainder):
+        if amphora_id and remainder:
             controller = remainder[0]
             remainder = remainder[1:]
             if controller == 'failover':
                 return FailoverController(amp_id=amphora_id), remainder
+        return None
 
 
 class FailoverController(base.BaseController):

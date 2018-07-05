@@ -298,7 +298,7 @@ class L7PolicyController(base.BaseController):
         which controller, if any, should control be passed.
         """
         context = pecan.request.context.get('octavia_context')
-        if l7policy_id and len(remainder) and remainder[0] == 'rules':
+        if l7policy_id and remainder and remainder[0] == 'rules':
             remainder = remainder[1:]
             db_l7policy = self.repositories.l7policy.get(
                 context.session, id=l7policy_id)
@@ -308,3 +308,4 @@ class L7PolicyController(base.BaseController):
                     resource='L7Policy', id=l7policy_id)
             return l7rule.L7RuleController(
                 l7policy_id=db_l7policy.id), remainder
+        return None

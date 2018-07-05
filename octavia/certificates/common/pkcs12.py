@@ -43,6 +43,7 @@ class PKCS12Cert(cert.Cert):
                 for ic in self.intermediates
             ]
             return int_data
+        return None
 
     def get_private_key(self):
         return self.private_key.to_cryptography_key().private_bytes(

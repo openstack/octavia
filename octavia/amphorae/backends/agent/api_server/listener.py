@@ -480,8 +480,7 @@ class Listener(object):
                     m = re.search('frontend {}'.format(listener_id), cfg)
                     if m:
                         return consts.ACTIVE
-                    else:
-                        return consts.OFFLINE
+                    return consts.OFFLINE
             else:  # pid file but no process...
                 return consts.ERROR
         else:
@@ -539,8 +538,8 @@ class Listener(object):
         if action == consts.AMP_ACTION_STOP:
             listener_ids.remove(listener_id)
         args = []
-        for listener_id in listener_ids:
-            args.append(util.haproxy_sock_path(listener_id))
+        for lid in listener_ids:
+            args.append(util.haproxy_sock_path(lid))
 
         if not os.path.exists(util.keepalived_dir()):
             os.makedirs(util.keepalived_dir())
@@ -555,7 +554,4 @@ class Listener(object):
             if os.path.exists(
                     os.path.join('/proc', util.get_haproxy_pid(listener_id))):
                 return consts.ACTIVE
-            else:  # pid file but no process...
-                return consts.OFFLINE
-        else:
-            return consts.OFFLINE
+        return consts.OFFLINE

@@ -114,7 +114,7 @@ class BaseRepository(object):
         model = model.first()
 
         if not model:
-            return
+            return None
 
         return model.to_data_model()
 
@@ -246,7 +246,7 @@ class Repositories(object):
                     self.session_persistence.create(session, **sp_dict)
             # If only the session_persistence is being updated, this will be
             # empty
-            if len(pool_dict.keys()) > 0:
+            if pool_dict:
                 self.pool.update(session, pool_id, **pool_dict)
         return self.pool.get(session, id=pool_id)
 
@@ -355,8 +355,7 @@ class Repositories(object):
                 if lb_count <= lb_quota or lb_quota == consts.QUOTA_UNLIMITED:
                     quotas.in_use_load_balancer = lb_count
                     return False
-                else:
-                    return True
+                return True
             elif _class == data_models.Listener:
                 # Decide which quota to use
                 if quotas.listener is None:
@@ -377,8 +376,7 @@ class Repositories(object):
                         listener_quota == consts.QUOTA_UNLIMITED):
                     quotas.in_use_listener = listener_count
                     return False
-                else:
-                    return True
+                return True
             elif _class == data_models.Pool:
                 # Decide which quota to use
                 if quotas.pool is None:
@@ -399,8 +397,7 @@ class Repositories(object):
                         pool_quota == consts.QUOTA_UNLIMITED):
                     quotas.in_use_pool = pool_count
                     return False
-                else:
-                    return True
+                return True
             elif _class == data_models.HealthMonitor:
                 # Decide which quota to use
                 if quotas.health_monitor is None:
@@ -421,8 +418,7 @@ class Repositories(object):
                         hm_quota == consts.QUOTA_UNLIMITED):
                     quotas.in_use_health_monitor = hm_count
                     return False
-                else:
-                    return True
+                return True
             elif _class == data_models.Member:
                 # Decide which quota to use
                 if quotas.member is None:
@@ -443,8 +439,7 @@ class Repositories(object):
                         member_quota == consts.QUOTA_UNLIMITED):
                     quotas.in_use_member = member_count
                     return False
-                else:
-                    return True
+                return True
         except db_exception.DBDeadlock:
             LOG.warning('Quota project lock timed out for project: %(proj)s',
                         {'proj': project_id})
@@ -742,9 +737,8 @@ class LoadBalancerRepository(BaseRepository):
             # If a load balancer was never updated use its creation timestamp
             last_update = lb.updated_at or lb.created_at
             return last_update < timestamp
-        else:
-            # Load balancer was just deleted.
-            return True
+        # Load balancer was just deleted.
+        return True
 
 
 class VipRepository(BaseRepository):
@@ -814,8 +808,7 @@ class ListenerRepository(BaseRepository):
                 max_peer_port = listener.peer_port
         if max_peer_port == 0:
             return consts.HAPROXY_BASE_PEER_PORT
-        else:
-            return max_peer_port + 1
+        return max_peer_port + 1
 
     def _pool_check(self, session, pool_id, listener_id=None,
                     lb_id=None):
@@ -965,6 +958,7 @@ class AmphoraRepository(BaseRepository):
             ).first()
             if db_lb:
                 return db_lb.to_data_model()
+            return None
 
     def get_all_deleted_expiring_amphora(self, session, exp_age=None):
 

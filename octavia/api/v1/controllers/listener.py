@@ -251,9 +251,14 @@ class ListenersController(base.BaseController):
         which controller, if any, should control be passed.
         """
         context = pecan.request.context.get('octavia_context')
-        if listener_id and len(remainder) and (remainder[0] == 'pools' or
-                                               remainder[0] == 'l7policies' or
-                                               remainder[0] == 'stats'):
+        is_children = (
+            listener_id and remainder and (
+                remainder[0] == 'pools' or (
+                    remainder[0] == 'l7policies' or remainder[0] == 'stats'
+                )
+            )
+        )
+        if is_children:
             controller = remainder[0]
             remainder = remainder[1:]
             db_listener = self.repositories.listener.get(
@@ -273,3 +278,4 @@ class ListenersController(base.BaseController):
             elif controller == 'stats':
                 return listener_statistics.ListenerStatisticsController(
                     listener_id=db_listener.id), remainder
+        return None

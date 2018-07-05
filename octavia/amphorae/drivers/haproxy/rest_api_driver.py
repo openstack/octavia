@@ -324,6 +324,7 @@ class AmphoraAPIClient(object):
             'listeners/{listener_id}'.format(listener_id=listener_id))
         if exc.check_exception(r):
             return r.json()
+        return None
 
     def _action(self, action, amp, listener_id):
         r = self.put(amp, 'listeners/{listener_id}/{action}'.format(
@@ -348,6 +349,7 @@ class AmphoraAPIClient(object):
                          listener_id=listener_id, filename=pem_filename))
         if exc.check_exception(r):
             return r.json().get("md5sum")
+        return None
 
     def delete_listener(self, amp, listener_id):
         r = self.delete(
@@ -359,16 +361,19 @@ class AmphoraAPIClient(object):
         r = self.get(amp, "info")
         if exc.check_exception(r):
             return r.json()
+        return None
 
     def get_details(self, amp):
         r = self.get(amp, "details")
         if exc.check_exception(r):
             return r.json()
+        return None
 
     def get_all_listeners(self, amp):
         r = self.get(amp, "listeners")
         if exc.check_exception(r):
             return r.json()
+        return None
 
     def delete_cert_pem(self, amp, listener_id, pem_filename):
         r = self.delete(
@@ -400,3 +405,4 @@ class AmphoraAPIClient(object):
         r = self.get(amp, 'interface/{ip_addr}'.format(ip_addr=ip_addr))
         if exc.check_exception(r):
             return r.json()
+        return None

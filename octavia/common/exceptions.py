@@ -38,7 +38,7 @@ class OctaviaException(Exception):
 
     def __init__(self, *args, **kwargs):
         try:
-            if len(args) > 0:
+            if args:
                 self.message = args[0]
                 self.orig_msg = kwargs.get('orig_msg')
                 self.orig_code = kwargs.get('orig_code')

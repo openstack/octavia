@@ -200,7 +200,7 @@ class PoolsController(base.BaseController):
         """Deletes a pool from a load balancer."""
         context = pecan.request.context.get('octavia_context')
         db_pool = self._get_db_pool(context.session, id)
-        if len(db_pool.l7policies) > 0:
+        if db_pool.l7policies:
             raise exceptions.PoolInUseByL7Policy(
                 id=db_pool.id, l7policy_id=db_pool.l7policies[0].id)
         self._test_lb_and_listener_statuses(context.session, pool=db_pool)
@@ -228,8 +228,12 @@ class PoolsController(base.BaseController):
         which controller, if any, should control be passed.
         """
         context = pecan.request.context.get('octavia_context')
-        if pool_id and len(remainder) and (remainder[0] == 'members' or
-                                           remainder[0] == 'healthmonitor'):
+        is_children = (
+            pool_id and remainder and (
+                remainder[0] == 'members' or remainder[0] == 'healthmonitor'
+            )
+        )
+        if is_children:
             controller = remainder[0]
             remainder = remainder[1:]
             db_pool = self.repositories.pool.get(context.session, id=pool_id)
@@ -247,3 +251,4 @@ class PoolsController(base.BaseController):
                     load_balancer_id=self.load_balancer_id,
                     pool_id=db_pool.id,
                     listener_id=self.listener_id), remainder
+        return None

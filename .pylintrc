@@ -51,7 +51,11 @@ disable=
  too-many-locals,
  too-many-public-methods,
  too-many-return-statements,
- too-many-statements
+ too-many-statements,
+ multiple-statements,
+ duplicate-except,
+ keyword-arg-before-vararg,
+ deprecated-method
 
 [BASIC]
 # Variable names can be 1 to 31 characters long, with lowercase and underscores
@@ -80,8 +84,6 @@ max-line-length=79
 additional-builtins=
 
 [CLASSES]
-# List of interface methods to ignore, separated by a comma.
-ignore-iface-methods=
 
 [IMPORTS]
 # Deprecated modules which should not be used, separated by a comma
@@ -94,4 +96,3 @@ ignored-modules=six.moves,_MovedItems
 [REPORTS]
 # Tells whether to display a full report or only the messages
 reports=no
-
