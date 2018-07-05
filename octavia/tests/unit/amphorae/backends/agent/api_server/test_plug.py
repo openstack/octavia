@@ -37,8 +37,8 @@ class TestPlug(base.TestCase):
     def setUp(self):
         super(TestPlug, self).setUp()
         self.mock_netifaces = mock.patch.object(plug, "netifaces").start()
-        self.mock_platform = mock.patch("platform.linux_distribution").start()
-        self.mock_platform.return_value = ("Ubuntu",)
+        self.mock_platform = mock.patch("distro.id").start()
+        self.mock_platform.return_value = "ubuntu"
         self.osutil = osutils.BaseOS.get_os_util()
         self.test_plug = plug.Plug(self.osutil)
         self.addCleanup(self.mock_netifaces.stop)
@@ -57,8 +57,7 @@ class TestPlug(base.TestCase):
         self.assertEqual(FAKE_INTERFACE, interface)
 
     def test__interface_by_mac_case_insensitive_rh(self):
-        with mock.patch('platform.linux_distribution',
-                        return_value=['centos', 'Foo']):
+        with mock.patch('distro.id', return_value='centos'):
             osutil = osutils.BaseOS.get_os_util()
             self.test_plug = plug.Plug(osutil)
             interface = self.test_plug._interface_by_mac(
@@ -160,8 +159,8 @@ class TestPlug(base.TestCase):
 class TestPlugNetwork(base.TestCase):
     def setUp(self):
         super(TestPlugNetwork, self).setUp()
-        self.mock_platform = mock.patch("platform.linux_distribution").start()
-        self.mock_platform.return_value = ("Ubuntu",)
+        self.mock_platform = mock.patch("distro.id").start()
+        self.mock_platform.return_value = "ubuntu"
         self.osutil = osutils.BaseOS.get_os_util()
         self.test_plug = plug.Plug(self.osutil)
 

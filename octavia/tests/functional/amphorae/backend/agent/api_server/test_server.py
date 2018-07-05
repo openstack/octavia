@@ -45,13 +45,13 @@ class TestServerTestCase(base.TestCase):
 
     def setUp(self):
         super(TestServerTestCase, self).setUp()
-        with mock.patch('platform.linux_distribution',
-                        return_value=['Ubuntu', 'Foo', 'Bar']):
+        with mock.patch('distro.id',
+                        return_value='ubuntu'):
             self.ubuntu_test_server = server.Server()
             self.ubuntu_app = self.ubuntu_test_server.app.test_client()
 
-        with mock.patch('platform.linux_distribution',
-                        return_value=['centos', 'Foo', 'Bar']):
+        with mock.patch('distro.id',
+                        return_value='centos'):
             self.centos_test_server = server.Server()
             self.centos_app = self.centos_test_server.app.test_client()
 

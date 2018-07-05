@@ -54,8 +54,7 @@ disable=
  too-many-statements,
  multiple-statements,
  duplicate-except,
- keyword-arg-before-vararg,
- deprecated-method
+ keyword-arg-before-vararg
 
 [BASIC]
 # Variable names can be 1 to 31 characters long, with lowercase and underscores
