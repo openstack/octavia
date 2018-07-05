@@ -2432,7 +2432,22 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         res = self.get(self.LB_PATH.format(lb_id=lb_id + "/status"))
         return res.json.get('statuses').get('loadbalancer')
 
+    # Test the "statuses" alias for "status".
+    # This is required for backward compatibility with neutron-lbaas
     def test_statuses(self):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+
+        statuses = self.get(self.LB_PATH.format(lb_id=lb['id'] + "/statuses"))
+        response = statuses.json.get('statuses').get('loadbalancer')
+        self.assertEqual(lb['name'], response['name'])
+        self.assertEqual(lb['id'], response['id'])
+        self.assertEqual(lb['operating_status'],
+                         response['operating_status'])
+        self.assertEqual(lb['provisioning_status'],
+                         response['provisioning_status'])
+
+    def test_status(self):
         lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get('loadbalancer')
 
