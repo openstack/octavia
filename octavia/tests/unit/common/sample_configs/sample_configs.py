@@ -235,7 +235,7 @@ RET_LISTENER = {
     'protocol': 'HTTP',
     'protocol_mode': 'http',
     'default_pool': RET_POOL_1,
-    'connection_limit': 98,
+    'connection_limit': constants.HAPROXY_MAX_MAXCONN,
     'amphorae': [sample_amphora_tuple()],
     'peer_port': 1024,
     'topology': 'SINGLE',
@@ -250,7 +250,7 @@ RET_LISTENER_L7 = {
     'protocol': 'HTTP',
     'protocol_mode': 'http',
     'default_pool': RET_POOL_1,
-    'connection_limit': 98,
+    'connection_limit': constants.HAPROXY_MAX_MAXCONN,
     'amphorae': [sample_amphora_tuple()],
     'peer_port': 1024,
     'topology': 'SINGLE',
@@ -266,7 +266,7 @@ RET_LISTENER_TLS = {
     'protocol': 'TERMINATED_HTTPS',
     'protocol_mode': 'http',
     'default_pool': RET_POOL_1,
-    'connection_limit': 98,
+    'connection_limit': constants.HAPROXY_MAX_MAXCONN,
     'tls_certificate_id': 'cont_id_1',
     'default_tls_path': '/etc/ssl/sample_loadbalancer_id_1/fakeCN.pem',
     'default_tls_container': RET_DEF_TLS_CONT,
@@ -281,7 +281,7 @@ RET_LISTENER_TLS_SNI = {
     'protocol': 'http',
     'protocol': 'TERMINATED_HTTPS',
     'default_pool': RET_POOL_1,
-    'connection_limit': 98,
+    'connection_limit': constants.HAPROXY_MAX_MAXCONN,
     'tls_certificate_id': 'cont_id_1',
     'default_tls_path': '/etc/ssl/sample_loadbalancer_id_1/fakeCN.pem',
     'default_tls_container': RET_DEF_TLS_CONT,
@@ -312,21 +312,21 @@ RET_LB = {
     'listener': RET_LISTENER,
     'topology': 'SINGLE',
     'enabled': True,
-    'global_connection_limit': 98}
+    'global_connection_limit': constants.HAPROXY_MAX_MAXCONN}
 
 RET_LB_TLS = {
     'name': 'test-lb',
     'vip_address': '10.0.0.2',
     'listener': RET_LISTENER_TLS,
     'enabled': True,
-    'global_connection_limit': 98}
+    'global_connection_limit': constants.HAPROXY_MAX_MAXCONN}
 
 RET_LB_TLS_SNI = {
     'name': 'test-lb',
     'vip_address': '10.0.0.2',
     'listener': RET_LISTENER_TLS_SNI,
     'enabled': True,
-    'global_connection_limit': 98}
+    'global_connection_limit': constants.HAPROXY_MAX_MAXCONN}
 
 RET_LB_L7 = {
     'host_amphora': RET_AMPHORA,
@@ -335,7 +335,7 @@ RET_LB_L7 = {
     'listener': RET_LISTENER_L7,
     'topology': 'SINGLE',
     'enabled': True,
-    'global_connection_limit': 98}
+    'global_connection_limit': constants.HAPROXY_MAX_MAXCONN}
 
 
 def sample_loadbalancer_tuple(proto=None, monitor=True, persistence=True,
@@ -406,7 +406,7 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
                           tls=False, sni=False, peer_port=None, topology=None,
                           l7=False, enabled=True, insert_headers=None,
                           be_proto=None, monitor_ip_port=False,
-                          monitor_proto=None):
+                          monitor_proto=None, connection_limit=-1):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
@@ -460,7 +460,7 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
             persistence_type=persistence_type,
             persistence_cookie=persistence_cookie,
             monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto),
-        connection_limit=98,
+        connection_limit=connection_limit,
         tls_certificate_id='cont_id_1' if tls else '',
         sni_container_ids=['cont_id_2', 'cont_id_3'] if sni else [],
         default_tls_container=sample_tls_container_tuple(
@@ -700,10 +700,11 @@ def sample_base_expected_config(frontend=None, backend=None,
     if frontend is None:
         frontend = ("frontend sample_listener_id_1\n"
                     "    option httplog\n"
-                    "    maxconn 98\n"
+                    "    maxconn {maxconn}\n"
                     "    bind 10.0.0.2:80\n"
                     "    mode http\n"
-                    "    default_backend sample_pool_id_1\n\n")
+                    "    default_backend sample_pool_id_1\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
     if backend is None:
         backend = ("backend sample_pool_id_1\n"
                    "    mode http\n"
@@ -712,15 +713,17 @@ def sample_base_expected_config(frontend=None, backend=None,
                    "    timeout check 31\n"
                    "    option httpchk GET /index.html\n"
                    "    http-check expect rstatus 418\n"
-                   "    fullconn 98\n"
+                   "    fullconn {maxconn}\n"
                    "    server sample_member_id_1 10.0.0.99:82 weight 13 "
                    "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
                    "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-                   "check inter 30s fall 3 rise 2 cookie sample_member_id_2\n")
+                   "check inter 30s fall 3 rise 2 cookie sample_member_id_2\n"
+                   "\n").format(maxconn=constants.HAPROXY_MAX_MAXCONN)
     if peers is None:
         peers = "\n\n"
     if global_opts is None:
-        global_opts = "    maxconn 98\n\n"
+        global_opts = "    maxconn {maxconn}\n\n".format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
     return ("# Configuration for test-lb\n"
             "global\n"
             "    daemon\n"

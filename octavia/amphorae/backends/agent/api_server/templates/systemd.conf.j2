@@ -17,6 +17,7 @@ ExecReload=/usr/sbin/haproxy -c -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cf
 ExecReload=/bin/kill -USR2 $MAINPID
 KillMode=mixed
 Restart=always
+LimitNOFILE=2097152
 
 [Install]
 WantedBy=multi-user.target

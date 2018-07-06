@@ -372,6 +372,11 @@ NO_CHECK = 'no check'
 # NO_CHECK = no health monitor is enabled
 HAPROXY_MEMBER_STATUSES = (UP, DOWN, DRAIN, MAINT, NO_CHECK)
 
+# Current maximum number of conccurent connections in HAProxy.
+# This is limited by the systemd "LimitNOFILE" and
+# the sysctl fs.file-max fs.nr_open settings in the image
+HAPROXY_MAX_MAXCONN = 1000000
+
 # Quota Constants
 QUOTA_UNLIMITED = -1
 MIN_QUOTA = QUOTA_UNLIMITED

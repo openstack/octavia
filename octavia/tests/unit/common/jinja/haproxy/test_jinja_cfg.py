@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from octavia.common import constants
 from octavia.common.jinja.haproxy import jinja_cfg
 from octavia.tests.unit import base
 from octavia.tests.unit.common.sample_configs import sample_configs
@@ -32,14 +33,15 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_tls(self):
         fe = ("frontend sample_listener_id_1\n"
               "    option httplog\n"
-              "    maxconn 98\n"
-              "    redirect scheme https if !{ ssl_fc }\n"
+              "    maxconn {maxconn}\n"
+              "    redirect scheme https if !{{ ssl_fc }}\n"
               "    bind 10.0.0.2:443 "
               "ssl crt /var/lib/octavia/certs/"
               "sample_listener_id_1/tls_container_id.pem "
               "crt /var/lib/octavia/certs/sample_listener_id_1\n"
               "    mode http\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -47,13 +49,14 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 cookie "
-              "sample_member_id_2\n\n")
+              "sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         tls_tupe = sample_configs.sample_tls_container_tuple(
             id='tls_container_id',
             certificate='imaCert1', private_key='imaPrivateKey1',
@@ -71,13 +74,14 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_tls_no_sni(self):
         fe = ("frontend sample_listener_id_1\n"
               "    option httplog\n"
-              "    maxconn 98\n"
-              "    redirect scheme https if !{ ssl_fc }\n"
+              "    maxconn {maxconn}\n"
+              "    redirect scheme https if !{{ ssl_fc }}\n"
               "    bind 10.0.0.2:443 "
               "ssl crt /var/lib/octavia/certs/"
               "sample_listener_id_1/tls_container_id.pem\n"
               "    mode http\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -85,13 +89,14 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2\n\n")
+              "cookie sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
@@ -114,13 +119,14 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2\n\n")
+              "cookie sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple())
@@ -136,7 +142,7 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "addr 192.168.1.1 port 9000 "
@@ -144,7 +150,8 @@ class TestHaproxyCfg(base.TestCase):
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "addr 192.168.1.1 port 9000 "
-              "cookie sample_member_id_2\n\n")
+              "cookie sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(monitor_ip_port=True))
@@ -155,10 +162,11 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_https_real_monitor(self):
         fe = ("frontend sample_listener_id_1\n"
               "    option tcplog\n"
-              "    maxconn 98\n"
+              "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
@@ -166,13 +174,14 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check check-ssl verify none inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check check-ssl verify none inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2\n\n")
+              "cookie sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='HTTPS'))
@@ -182,23 +191,25 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_https_hello_monitor(self):
         fe = ("frontend sample_listener_id_1\n"
               "    option tcplog\n"
-              "    maxconn 98\n"
+              "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
               "    option ssl-hello-chk\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2\n\n")
+              "cookie sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
@@ -211,11 +222,12 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-              "cookie sample_member_id_2\n\n")
+              "cookie sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='HTTP', monitor=False))
@@ -230,14 +242,16 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option external-check\n"
               "    external-check command /var/lib/octavia/ping-wrapper.sh\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2\n\n")
-        go = "    maxconn 98\n    external-check\n\n"
+              "cookie sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
+        go = "    maxconn {maxconn}\n    external-check\n\n".format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='HTTP',
@@ -248,19 +262,21 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_no_monitor_https(self):
         fe = ("frontend sample_listener_id_1\n"
               "    option tcplog\n"
-              "    maxconn 98\n"
+              "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-              "cookie sample_member_id_2\n\n")
+              "cookie sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='HTTPS', monitor=False))
@@ -270,16 +286,18 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_no_persistence_https(self):
         fe = ("frontend sample_listener_id_1\n"
               "    option tcplog\n"
-              "    maxconn 98\n"
+              "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13\n"
-              "    server sample_member_id_2 10.0.0.98:82 weight 13\n\n")
+              "    server sample_member_id_2 10.0.0.98:82 "
+              "weight 13\n\n").format(maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='HTTPS', monitor=False,
@@ -291,9 +309,10 @@ class TestHaproxyCfg(base.TestCase):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13\n"
-              "    server sample_member_id_2 10.0.0.98:82 weight 13\n\n")
+              "    server sample_member_id_2 10.0.0.98:82 "
+              "weight 13\n\n").format(maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='HTTP', monitor=False,
@@ -310,11 +329,12 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2\n"
               "    server sample_member_id_2 10.0.0.98:82 "
-              "weight 13 check inter 30s fall 3 rise 2\n\n")
+              "weight 13 check inter 30s fall 3 rise 2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
@@ -333,11 +353,12 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2\n"
               "    server sample_member_id_2 10.0.0.98:82 "
-              "weight 13 check inter 30s fall 3 rise 2\n\n")
+              "weight 13 check inter 30s fall 3 rise 2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
@@ -347,10 +368,58 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs.sample_base_expected_config(backend=be),
             rendered_obj)
 
+    def test_render_template_unlimited_connections(self):
+        fe = ("frontend sample_listener_id_1\n"
+              "    option tcplog\n"
+              "    maxconn {maxconn}\n"
+              "    bind 10.0.0.2:443\n"
+              "    mode tcp\n"
+              "    default_backend sample_pool_id_1\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
+        be = ("backend sample_pool_id_1\n"
+              "    mode tcp\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    fullconn {maxconn}\n"
+              "    server sample_member_id_1 10.0.0.99:82 weight 13 "
+              "cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 weight 13 "
+              "cookie sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
+            sample_configs.sample_listener_tuple(proto='HTTPS', monitor=False))
+        self.assertEqual(sample_configs.sample_base_expected_config(
+            frontend=fe, backend=be), rendered_obj)
+
+    def test_render_template_limited_connections(self):
+        fe = ("frontend sample_listener_id_1\n"
+              "    option tcplog\n"
+              "    maxconn 2014\n"
+              "    bind 10.0.0.2:443\n"
+              "    mode tcp\n"
+              "    default_backend sample_pool_id_1\n\n")
+        be = ("backend sample_pool_id_1\n"
+              "    mode tcp\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    fullconn 2014\n"
+              "    server sample_member_id_1 10.0.0.99:82 weight 13 "
+              "cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 weight 13 "
+              "cookie sample_member_id_2\n\n")
+        g_opts = "    maxconn 2014\n\n"
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
+            sample_configs.sample_listener_tuple(proto='HTTPS', monitor=False,
+                                                 connection_limit=2014))
+        self.assertEqual(sample_configs.sample_base_expected_config(
+            frontend=fe, backend=be, global_opts=g_opts), rendered_obj)
+
     def test_render_template_l7policies(self):
         fe = ("frontend sample_listener_id_1\n"
               "    option httplog\n"
-              "    maxconn 98\n"
+              "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:80\n"
               "    mode http\n"
               "        acl sample_l7rule_id_1 path -m beg /api\n"
@@ -366,7 +435,8 @@ class TestHaproxyCfg(base.TestCase):
               ".example.com\n"
               "    http-request deny if sample_l7rule_id_4 "
               "sample_l7rule_id_5\n"
-              "    default_backend sample_pool_id_1\n\n")
+              "    default_backend sample_pool_id_1\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -374,7 +444,7 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 check "
               "inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 check "
@@ -387,9 +457,10 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /healthmon.html\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_3 10.0.0.97:82 weight 13 check "
-              "inter 30s fall 3 rise 2 cookie sample_member_id_3\n\n")
+              "inter 30s fall 3 rise 2 cookie sample_member_id_3\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(l7=True))
@@ -405,13 +476,14 @@ class TestHaproxyCfg(base.TestCase):
               "    option httpchk GET /index.html\n"
               "    http-check expect rstatus 418\n"
               "    option forwardfor\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2\n\n")
+              "cookie sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
@@ -430,13 +502,14 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    option forwardfor\n"
               "    http-request set-header X-Forwarded-Port %[dst_port]\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2\n\n")
+              "cookie sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
@@ -452,13 +525,14 @@ class TestHaproxyCfg(base.TestCase):
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
-              "    fullconn 98\n"
+              "    fullconn {maxconn}\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
               "cookie sample_member_id_1 send-proxy\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2 send-proxy\n\n")
+              "cookie sample_member_id_2 send-proxy\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(

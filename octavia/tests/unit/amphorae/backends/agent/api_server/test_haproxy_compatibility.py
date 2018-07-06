@@ -15,6 +15,7 @@
 import mock
 
 from octavia.amphorae.backends.agent.api_server import haproxy_compatibility
+from octavia.common import constants
 import octavia.tests.unit.base as base
 from octavia.tests.unit.common.sample_configs import sample_configs
 
@@ -32,7 +33,7 @@ class HAProxyCompatTestCase(base.TestCase):
             "    log /dev/log local1 notice\n"
             "    stats socket /var/lib/octavia/sample_listener_id_1.sock"
             " mode 0666 level user\n"
-            "    maxconn 98\n\n"
+            "    maxconn {maxconn}\n\n"
             "defaults\n"
             "    log global\n"
             "    retries 3\n"
@@ -42,10 +43,11 @@ class HAProxyCompatTestCase(base.TestCase):
             "    timeout server 50000\n\n\n\n"
             "frontend sample_listener_id_1\n"
             "    option httplog\n"
-            "    maxconn 98\n"
+            "    maxconn {maxconn}\n"
             "    bind 10.0.0.2:80\n"
             "    mode http\n"
-            "    default_backend sample_pool_id_1\n\n")
+            "    default_backend sample_pool_id_1\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
         self.backend_without_external = (
             "backend sample_pool_id_1\n"
             "    mode http\n"
@@ -54,11 +56,12 @@ class HAProxyCompatTestCase(base.TestCase):
             "    timeout check 31\n"
             "    option httpchk GET /index.html\n"
             "    http-check expect rstatus 418\n"
-            "    fullconn 98\n"
+            "    fullconn {maxconn}\n"
             "    server sample_member_id_1 10.0.0.99:82 weight 13 "
             "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
             "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-            "check inter 30s fall 3 rise 2 cookie sample_member_id_2\n")
+            "check inter 30s fall 3 rise 2 cookie sample_member_id_2"
+            "\n").format(maxconn=constants.HAPROXY_MAX_MAXCONN)
         self.backend_with_external = (
             "backend sample_pool_id_1\n"
             "    mode http\n"
@@ -67,13 +70,14 @@ class HAProxyCompatTestCase(base.TestCase):
             "    timeout check 31\n"
             "    option httpchk GET /index.html\n"
             "    http-check expect rstatus 418\n"
-            "    fullconn 98\n"
+            "    fullconn {maxconn}\n"
             "    option external-check\n"
             "    external-check command /var/lib/octavia/ping-wrapper.sh\n"
             "    server sample_member_id_1 10.0.0.99:82 weight 13 "
             "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
             "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-            "check inter 30s fall 3 rise 2 cookie sample_member_id_2\n")
+            "check inter 30s fall 3 rise 2 cookie sample_member_id_2"
+            "\n").format(maxconn=constants.HAPROXY_MAX_MAXCONN)
 
     @mock.patch('subprocess.check_output')
     def test_get_haproxy_versions(self, mock_process):
