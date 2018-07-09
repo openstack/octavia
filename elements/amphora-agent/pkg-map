@@ -1,0 +1,8 @@
+{
+  "family": {
+    "redhat": {
+      "ubuntu-core-launcher": "",
+      "snapd": ""
+    }
+  }
+}
