@@ -47,8 +47,10 @@ official OpenStack LBaaS API.
 
 This spec is based on two existing specs from neutron:
 
-http://specs.openstack.org/openstack/neutron-specs/specs/liberty/neutron-flavor-framework.html
-http://specs.openstack.org/openstack/neutron-specs/specs/mitaka/neutron-flavor-framework-templates.html
+`Service Flavor Framework
+<http://specs.openstack.org/openstack/neutron-specs/specs/liberty/neutron-flavor-framework.html>`__
+`Flavor framework - Templates and meta-data
+<http://specs.openstack.org/openstack/neutron-specs/specs/mitaka/neutron-flavor-framework-templates.html>`__
 
 However, this is a spec for the first and basic flavors support.
 Following capabilities are not part of this spec:
