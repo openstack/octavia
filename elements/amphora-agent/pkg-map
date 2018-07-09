@@ -1,7 +1,9 @@
 {
   "family": {
     "redhat": {
-      "amphora-agent": "openstack-octavia-amphora-agent"
+      "amphora-agent": "openstack-octavia-amphora-agent",
+      "ubuntu-core-launcher": "",
+      "snapd": ""
     }
   },
   "default": {
