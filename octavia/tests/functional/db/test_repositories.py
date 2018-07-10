@@ -135,7 +135,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                'port_id': uuidutils.generate_uuid(),
                'subnet_id': uuidutils.generate_uuid(),
                'network_id': uuidutils.generate_uuid(),
-               'qos_policy_id': None}
+               'qos_policy_id': None, 'octavia_owned': True}
         lb_dm = self.repos.create_load_balancer_and_vip(self.session, lb, vip)
         lb_dm_dict = lb_dm.to_dict()
         del lb_dm_dict['vip']

@@ -389,6 +389,7 @@ class Vip(base_models.BASE):
                                      backref=orm.backref("vip", uselist=False,
                                                          cascade="delete"))
     qos_policy_id = sa.Column(sa.String(36), nullable=True)
+    octavia_owned = sa.Column(sa.Boolean(), nullable=True)
 
 
 class Listener(base_models.BASE, base_models.IdMixin,

@@ -289,6 +289,7 @@ class LoadBalancersController(base.BaseController):
                 lock_session, lb_dict, vip_dict)
 
             # See if the provider driver wants to create the VIP port
+            octavia_owned = False
             try:
                 provider_vip_dict = driver_utils.vip_dict_to_provider_dict(
                     vip_dict)
@@ -302,13 +303,15 @@ class LoadBalancersController(base.BaseController):
                 vip = self._create_vip_port_if_not_exist(db_lb)
                 LOG.info('Created VIP port %s for provider %s.',
                          vip.port_id, driver.name)
+                # If a port_id wasn't passed in and we made it this far
+                # we created the VIP
+                if 'port_id' not in vip_dict or not vip_dict['port_id']:
+                    octavia_owned = True
 
             self.repositories.vip.update(
-                lock_session, db_lb.id,
-                ip_address=vip.ip_address,
-                port_id=vip.port_id,
-                network_id=vip.network_id,
-                subnet_id=vip.subnet_id)
+                lock_session, db_lb.id, ip_address=vip.ip_address,
+                port_id=vip.port_id, network_id=vip.network_id,
+                subnet_id=vip.subnet_id, octavia_owned=octavia_owned)
 
             if listeners or pools:
                 db_pools, db_lists = self._graph_create(
