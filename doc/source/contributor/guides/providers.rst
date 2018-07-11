@@ -445,19 +445,25 @@ contains the following:
 As of the writing of this specification the Supported HTTP Header Insertions
 are:
 
-+-------------------+------+------------------------------------------------+
-| Key               | Type | Description                                    |
-+===================+======+================================================+
-| X-Forwarded-For   | bool | When True a X-Forwarded-For header is inserted |
-|                   |      | into the request to the backend member that    |
-|                   |      | specifies the client IP address.               |
-+-------------------+------+------------------------------------------------+
-| X-Forwarded-Port  | int  | A X-Forwarded-Port header is inserted into the |
-|                   |      | request to the backend member that specifies   |
-|                   |      | the integer provided. Typically this is used to|
-|                   |      | indicate the port the client connected to on   |
-|                   |      | the load balancer.                             |
-+-------------------+------+------------------------------------------------+
++-------------------+--------+------------------------------------------------+
+| Key               | Type   | Description                                    |
++===================+========+================================================+
+| X-Forwarded-For   | bool   | When True a X-Forwarded-For header is inserted |
+|                   |        | into the request to the backend member that    |
+|                   |        | specifies the client IP address.               |
++-------------------+--------+------------------------------------------------+
+| X-Forwarded-Port  | int    | A X-Forwarded-Port header is inserted into the |
+|                   |        | request to the backend member that specifies   |
+|                   |        | the integer provided. Typically this is used to|
+|                   |        | indicate the port the client connected to on   |
+|                   |        | the load balancer.                             |
++-------------------+--------+------------------------------------------------+
+| X-Forwarded-Proto | bool   | A X-Forwarded-Proto header is inserted into    |
+|                   |        | the end of request to the backend member.      |
+|                   |        | HTTP for the HTTP listener protocol type,      |
+|                   |        | HTTPS for the TERMINATED_HTTPS listener        |
+|                   |        | protocol type.                                 |
++-------------------+--------+------------------------------------------------+
 
 **Creating a Fully Populated Listener**
 

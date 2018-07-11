@@ -257,6 +257,15 @@ backend {{ pool.id }}
     http-request set-header X-Forwarded-Port %[dst_port]
         {% endif %}
     {% endif %}
+    {% if listener.insert_headers.get('X-Forwarded-Proto',
+                                          'False').lower() == 'true' %}
+        {% if listener.protocol.lower() == constants.PROTOCOL_HTTP.lower() %}
+    http-request set-header X-Forwarded-Proto http
+        {% elif listener.protocol.lower() ==
+                               constants.PROTOCOL_TERMINATED_HTTPS.lower() %}
+    http-request set-header X-Forwarded-Proto https
+        {% endif %}
+    {% endif %}
     {% if listener.connection_limit is defined %}
     fullconn {{ listener.connection_limit }}
     {% endif %}

@@ -422,7 +422,8 @@ AMPHORA_NAMESPACE = 'amphora-haproxy'
 
 # List of HTTP headers which are supported for insertion
 SUPPORTED_HTTP_HEADERS = ['X-Forwarded-For',
-                          'X-Forwarded-Port']
+                          'X-Forwarded-Port',
+                          'X-Forwarded-Proto']
 
 FLOW_DOC_TITLES = {'AmphoraFlows': 'Amphora Flows',
                    'LoadBalancerFlows': 'Load Balancer Flows',
