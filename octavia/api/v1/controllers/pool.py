@@ -145,7 +145,8 @@ class PoolsController(base.BaseController):
                 data_models.Pool,
                 pool.project_id):
             lock_session.rollback()
-            raise exceptions.QuotaException
+            raise exceptions.QuotaException(
+                resource=data_models.Pool._name())
 
         try:
             pool_dict = db_prepare.create_pool(

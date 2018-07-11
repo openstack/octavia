@@ -184,7 +184,8 @@ class LoadBalancersController(base.BaseController):
                     data_models.LoadBalancer,
                     load_balancer.project_id):
                 lock_session.rollback()
-                raise exceptions.QuotaException
+                raise exceptions.QuotaException(
+                    resource=data_models.LoadBalancer._name())
 
         try:
             lb_dict = db_prepare.create_load_balancer(load_balancer.to_dict(
