@@ -490,12 +490,12 @@ Example:
 Upon executing the above, log files should indicate that an amphora is deployed
 to house the load balancer, and that this load balancer is further modified to
 include a listener. The amphora should be visible to the octavia or admin
-tenant using the ``nova list`` command, and the listener should respond on the
-load balancer's IP on port 80 (with an error 503 in this case, since no pool or
-members have been defined yet—but this is usually enough to see that the
-Octavia load balancing system is working). For more information on configuring
-load balancing services as a tenant, please see the end-user quick-start guide
-and cookbook.
+tenant using the ``openstack server list`` command, and the listener should
+respond on the load balancer's IP on port 80 (with an error 503 in this case,
+since no pool or members have been defined yet—but this is usually enough to
+see that the Octavia load balancing system is working). For more information
+on configuring load balancing services as a tenant, please see the end-user
+quick-start guide and cookbook.
 
 
 Troubleshooting Tips
