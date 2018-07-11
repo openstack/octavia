@@ -63,8 +63,10 @@ class UDPStatusGetter(object):
         self.sock = None
         self.update(self.key, self.ip, self.port)
 
-        self.executor = futures.ProcessPoolExecutor(
-            max_workers=cfg.CONF.health_manager.status_update_threads)
+        self.health_executor = futures.ProcessPoolExecutor(
+            max_workers=CONF.health_manager.health_update_threads)
+        self.stats_executor = futures.ProcessPoolExecutor(
+            max_workers=CONF.health_manager.stats_update_threads)
         self.repo = repositories.Repositories().amphorahealth
 
     def update(self, key, ip, port):
@@ -209,5 +211,5 @@ class UDPStatusGetter(object):
                         'heartbeat packet. Ignoring this packet. '
                         'Exception: %s', e)
         else:
-            self.executor.submit(update_health, obj, srcaddr)
-            self.executor.submit(update_stats, obj, srcaddr)
+            self.health_executor.submit(update_health, obj, srcaddr)
+            self.stats_executor.submit(update_stats, obj, srcaddr)
