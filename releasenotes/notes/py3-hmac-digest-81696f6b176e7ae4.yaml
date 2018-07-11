@@ -1,0 +1,11 @@
+---
+upgrade:
+  - |
+    The fix for the hmac.compare_digest on python3 requires you to upgrade
+    your health managers before updating the amphora image. The health
+    manager is compatible with older amphora images, but older controllers
+    will reject the health heartbeats from images with this fix.
+fixes:
+  - |
+    Fixes an issue with hmac.compare_digest on python3 that could cause
+    health manager "calculated hmac not equal to msg hmac" errors.
