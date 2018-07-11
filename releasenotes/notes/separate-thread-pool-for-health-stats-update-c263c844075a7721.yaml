@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    Add new parameters to specify the number of threads for updating amphora
+    health and stats.
+deprecations:
+  - |
+    `status_update_threads` config option for healthmanager is deprecated
+    because it is replaced as `health_update_threads` and
+    `stats_update_threads`.

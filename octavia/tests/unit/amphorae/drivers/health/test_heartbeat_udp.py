@@ -155,18 +155,22 @@ class TestHeartbeatUDP(base.TestCase):
         mock_socket.return_value = socket_mock
         mock_getaddrinfo.return_value = [range(1, 6)]
         mock_dorecv = mock.Mock()
-        mock_executor = mock.Mock()
+        mock_health_executor = mock.Mock()
+        mock_stats_executor = mock.Mock()
 
         getter = heartbeat_udp.UDPStatusGetter()
         getter.dorecv = mock_dorecv
         mock_dorecv.side_effect = [(dict(id=FAKE_ID), 2)]
-        getter.executor = mock_executor
+        getter.health_executor = mock_health_executor
+        getter.stats_executor = mock_stats_executor
 
         getter.check()
-        getter.executor.shutdown()
-        mock_executor.submit.assert_has_calls(
-            [mock.call(heartbeat_udp.update_health, {'id': 1}, 2),
-             mock.call(heartbeat_udp.update_stats, {'id': 1}, 2)])
+        getter.health_executor.shutdown()
+        getter.stats_executor.shutdown()
+        mock_health_executor.submit.assert_has_calls(
+            [mock.call(heartbeat_udp.update_health, {'id': 1}, 2)])
+        mock_stats_executor.submit.assert_has_calls(
+            [mock.call(heartbeat_udp.update_stats, {'id': 1}, 2)])
 
     @mock.patch('socket.getaddrinfo')
     @mock.patch('socket.socket')
