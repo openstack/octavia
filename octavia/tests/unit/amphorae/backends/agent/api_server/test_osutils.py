@@ -155,8 +155,10 @@ class TestOSUtils(base.TestCase):
 
     def test_cmd_get_version_of_installed_package(self):
         package_name = 'foo'
-        ubuntu_cmd = "dpkg --status {name}".format(name=package_name)
-        rh_cmd = "rpm -qi {name}".format(name=package_name)
+        ubuntu_cmd = "dpkg-query -W -f=${{Version}} {name}".format(
+            name=package_name)
+        rh_cmd = "rpm -q --queryformat %{{VERSION}} {name}".format(
+            name=package_name)
 
         returned_ubuntu_cmd = (
             self.ubuntu_os_util.cmd_get_version_of_installed_package(
