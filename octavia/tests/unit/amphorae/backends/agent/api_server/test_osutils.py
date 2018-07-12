@@ -37,8 +37,12 @@ class TestOSUtils(base.TestCase):
             self.ubuntu_os_util = osutils.BaseOS.get_os_util()
 
         with mock.patch('distro.id',
-                        return_value='centos'):
+                        return_value='rhel'):
             self.rh_os_util = osutils.BaseOS.get_os_util()
+
+        with mock.patch('distro.id',
+                        return_value='centos'):
+            self.centos_os_util = osutils.BaseOS.get_os_util()
 
     def test_get_os_util(self):
         with mock.patch('distro.id',
@@ -56,7 +60,7 @@ class TestOSUtils(base.TestCase):
         with mock.patch('distro.id',
                         return_value='centos'):
             returned_cls = osutils.BaseOS.get_os_util()
-            self.assertIsInstance(returned_cls, osutils.RH)
+            self.assertIsInstance(returned_cls, osutils.CentOS)
         with mock.patch('distro.id',
                         return_value='FakeOS'):
             self.assertRaises(
@@ -168,6 +172,15 @@ class TestOSUtils(base.TestCase):
         returned_rh_cmd = (self.rh_os_util.
                            cmd_get_version_of_installed_package(package_name))
         self.assertEqual(rh_cmd, returned_rh_cmd)
+
+    def test_cmd_get_version_of_installed_package_mapped(self):
+        package_name = 'haproxy'
+        centos_cmd = "rpm -q --queryformat %{VERSION} haproxy18"
+
+        returned_centos_cmd = (
+            self.centos_os_util.cmd_get_version_of_installed_package(
+                package_name))
+        self.assertEqual(centos_cmd, returned_centos_cmd)
 
     def test_has_ifup_all(self):
         self.assertTrue(self.base_os_util.has_ifup_all())
