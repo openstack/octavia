@@ -379,16 +379,7 @@ class TestServerTestCase(base.TestCase):
     def _test_info(self, distro, mock_subbprocess, mock_hostname):
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         mock_hostname.side_effect = ['test-host']
-        mock_subbprocess.side_effect = [
-            b"""Package: haproxy
-            Status: install ok installed
-            Priority: optional
-            Section: net
-            Installed-Size: 803
-            Maintainer: Ubuntu Developers
-            Architecture: amd64
-            Version: 9.9.99-9
-            """]
+        mock_subbprocess.side_effect = ['9.9.99-9']
 
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.get('/' + api_server.VERSION + '/info')
@@ -2437,16 +2428,7 @@ class TestServerTestCase(base.TestCase):
 
         mock_hostname.side_effect = ['test-host']
 
-        mock_subbprocess.side_effect = [
-            b"""Package: haproxy
-            Status: install ok installed
-            Priority: optional
-            Section: net
-            Installed-Size: 803
-            Maintainer: Ubuntu Developers
-            Architecture: amd64
-            Version: 9.9.99-9
-            """]
+        mock_subbprocess.side_effect = ['9.9.99-9']
 
         MemTotal = random.randrange(0, 1000)
         MemFree = random.randrange(0, 1000)
