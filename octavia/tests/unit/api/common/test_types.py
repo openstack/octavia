@@ -20,11 +20,13 @@ from octavia.tests.unit import base
 class TestTypeRename(types.BaseType):
     _type_to_model_map = {'renamed': 'original',
                           'child_one': 'child.one',
-                          'child_two': 'child.two'}
+                          'child_two': 'child.two',
+                          'admin_state_up': 'enabled'}
     id = wtypes.wsattr(wtypes.StringType())
     renamed = wtypes.wsattr(wtypes.StringType())
     child_one = wtypes.wsattr(wtypes.StringType())
     child_two = wtypes.wsattr(wtypes.StringType())
+    admin_state_up = wtypes.wsattr(bool)
 
 
 class TestTypeRenameSubset(types.BaseType):
@@ -49,10 +51,11 @@ class ChildTestModel(data_models.BaseDataModel):
 
 class TestModel(data_models.BaseDataModel):
 
-    def __init__(self, id=None, original=None, child=None):
+    def __init__(self, id=None, original=None, child=None, enabled=None):
         self.id = id
         self.original = original
         self.child = child
+        self.enabled = enabled
 
     def to_dict(self):
         result = super(TestModel, self).to_dict()
@@ -110,6 +113,14 @@ class TestTypeDataModelRenames(base.TestCase):
         type_dict = TestTypeTenantProject(tenant_id='1234').to_dict()
         self.assertEqual('1234', type_dict['project_id'])
         self.assertNotIn('tenant_id', type_dict)
+
+    def test_type_to_dict_when_admin_state_up_is_null(self):
+        rtype = TestTypeRename(id='1234', renamed='turtles',
+                               child_one='baby_turtle_one',
+                               child_two='baby_turtle_two',
+                               admin_state_up=None)
+        rtype_dict = rtype.to_dict()
+        self.assertFalse(rtype_dict['enabled'])
 
 
 class TestToDictModel(data_models.BaseDataModel):
