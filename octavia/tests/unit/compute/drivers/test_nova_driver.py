@@ -101,7 +101,8 @@ class TestNovaClient(base.TestCase):
             compute_id=uuidutils.generate_uuid(),
             status='ACTIVE',
             lb_network_ip='10.0.0.1',
-            image_id=uuidutils.generate_uuid()
+            image_id=uuidutils.generate_uuid(),
+            compute_flavor=uuidutils.generate_uuid()
         )
 
         self.nova_response = mock.Mock()
@@ -110,6 +111,7 @@ class TestNovaClient(base.TestCase):
         self.nova_response.fault = 'FAKE_FAULT'
         setattr(self.nova_response, 'OS-EXT-AZ:availability_zone', None)
         self.nova_response.image = {'id': self.amphora.image_id}
+        self.nova_response.flavor = {'id': self.amphora.compute_flavor}
 
         self.interface_list = mock.MagicMock()
         self.interface_list.net_id = '1'

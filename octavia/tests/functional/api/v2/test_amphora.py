@@ -56,6 +56,7 @@ class TestAmphora(base.BaseAPITest):
             'created_at': datetime.datetime.now(),
             'updated_at': datetime.datetime.now(),
             'image_id': uuidutils.generate_uuid(),
+            'compute_flavor': uuidutils.generate_uuid(),
         }
         self.amp = self.amphora_repo.create(self.session, **self.amp_args)
         self.amp_id = self.amp.id

@@ -19,7 +19,8 @@
             "cached_zone": "zone1",
             "created_at": "2017-05-10T18:14:44",
             "updated_at": "2017-05-10T23:08:12",
-            "image_id": "c1c2ad6f-1c1e-4744-8d1a-d0ef36289e74"
+            "image_id": "c1c2ad6f-1c1e-4744-8d1a-d0ef36289e74",
+            "compute_flavor": "5446a14a-abec-4455-bc0e-a34e5ff001a3"
         },
         {
             "id": "89c186a3-cb16-497b-b099-c4bd40316642",
@@ -40,7 +41,8 @@
             "cached_zone": "zone2",
             "created_at": "2017-06-11T19:15:45",
             "updated_at": "2017-06-11T24:09:13",
-            "image_id": "1014292d-cbaa-4ad6-b38b-2e138389f87f"
+            "image_id": "1014292d-cbaa-4ad6-b38b-2e138389f87f",
+            "compute_flavor": "5446a14a-abec-4455-bc0e-a34e5ff001a3"
         }
     ]
 }

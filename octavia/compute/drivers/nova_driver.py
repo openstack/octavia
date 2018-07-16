@@ -247,7 +247,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
             status=nova_response.status,
             lb_network_ip=lb_network_ip,
             cached_zone=availability_zone,
-            image_id=nova_response.image.get("id")
+            image_id=nova_response.image.get("id"),
+            compute_flavor=nova_response.flavor.get("id")
         )
         return response, fault
 

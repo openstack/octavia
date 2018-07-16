@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Amphora API now can return the field `compute_flavor` which is the ID of
+    the compute instance flavor used to boot the amphora.

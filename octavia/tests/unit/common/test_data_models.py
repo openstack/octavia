@@ -40,6 +40,7 @@ class TestDataModels(base.TestCase):
         self.AMP_ID = uuidutils.generate_uuid()
         self.COMPUTE_ID = uuidutils.generate_uuid()
         self.IMAGE_ID = uuidutils.generate_uuid()
+        self.COMPUTE_FLAVOR = uuidutils.generate_uuid()
 
         self.LB_obj = data_models.LoadBalancer(
             id=self.LB_ID,
@@ -113,7 +114,8 @@ class TestDataModels(base.TestCase):
             cached_zone=None,
             created_at=self.CREATED_AT,
             updated_at=self.UPDATED_AT,
-            image_id=self.IMAGE_ID
+            image_id=self.IMAGE_ID,
+            compute_flavor=self.COMPUTE_FLAVOR
         )
 
         super(TestDataModels, self).setUp()
@@ -373,6 +375,7 @@ class TestDataModels(base.TestCase):
         new_created_at = self.CREATED_AT + datetime.timedelta(minutes=5)
         new_updated_at = self.UPDATED_AT + datetime.timedelta(minutes=10)
         new_image_id = uuidutils.generate_uuid()
+        new_compute_flavor = uuidutils.generate_uuid()
 
         update_dict = {
             'id': new_id,
@@ -381,7 +384,8 @@ class TestDataModels(base.TestCase):
             'vrrp_priority': new_vrrp_priority,
             'created_at': new_created_at,
             'updated_at': new_updated_at,
-            'image_id': new_image_id
+            'image_id': new_image_id,
+            'compute_flavor': new_compute_flavor
         }
 
         test_Amp_obj = copy.deepcopy(self.AMP_obj)
@@ -406,7 +410,8 @@ class TestDataModels(base.TestCase):
             cached_zone=None,
             created_at=new_created_at,
             updated_at=new_updated_at,
-            image_id=new_image_id
+            image_id=new_image_id,
+            compute_flavor=new_compute_flavor
         )
 
         test_Amp_obj.update(update_dict)

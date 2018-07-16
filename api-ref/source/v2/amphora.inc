@@ -70,6 +70,7 @@ Response Parameters
    - created_at: created_at
    - updated_at: updated_at
    - image_id: image-id
+   - compute_flavor: compute-flavor
 
 Response Example
 ----------------
@@ -144,6 +145,7 @@ Response Parameters
    - created_at: created_at
    - updated_at: updated_at
    - image_id: image-id
+   - compute_flavor: compute-flavor
 
 Response Example
 ----------------

@@ -221,6 +221,13 @@ cert-expiration:
   in: body
   required: true
   type: string
+compute-flavor:
+  description: |
+    The ID of the compute flavor used for the amphora.
+  in: body
+  min_version: 2.3
+  required: true
+  type: string
 compute-id:
   description: |
     The ID of the amphora resource in the compute system.

@@ -51,6 +51,7 @@ VRRP_ID = random.randrange(255)
 VRRP_PRIORITY = random.randrange(100)
 CACHED_ZONE = 'zone1'
 IMAGE_ID = uuidutils.generate_uuid()
+COMPUTE_FLAVOR = uuidutils.generate_uuid()
 
 _amphora_mock = mock.MagicMock()
 _amphora_mock.id = AMP_ID
@@ -122,6 +123,7 @@ _compute_mock = mock.MagicMock()
 _compute_mock.lb_network_ip = LB_NET_IP
 _compute_mock.cached_zone = CACHED_ZONE
 _compute_mock.image_id = IMAGE_ID
+_compute_mock.compute_flavor = COMPUTE_FLAVOR
 
 
 @mock.patch('octavia.db.repositories.AmphoraRepository.delete')
@@ -887,7 +889,8 @@ class TestDatabaseTasks(base.TestCase):
             AMP_ID,
             lb_network_ip=LB_NET_IP,
             cached_zone=CACHED_ZONE,
-            image_id=IMAGE_ID)
+            image_id=IMAGE_ID,
+            compute_flavor=COMPUTE_FLAVOR)
 
         repo.AmphoraRepository.get.assert_called_once_with(
             'TEST',
