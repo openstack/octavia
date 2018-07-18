@@ -727,7 +727,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             lb = self._lb_repo.get(db_apis.get_session(),
                                    id=load_balancer_id)
 
-            amps = lb.amphorae
+            # Exclude amphora already deleted
+            amps = [a for a in lb.amphorae if a.status != constants.DELETED]
             for amp in amps:
                 # failover amphora in backup role
                 # Note: this amp may not currently be the backup
