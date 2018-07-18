@@ -289,10 +289,23 @@ class TestMember(base.BaseAPITest):
         members = self.get(self.members_path, params={
             'fields': ['id', 'address']}).json
         for member in members['members']:
-            self.assertIn(u'id', member.keys())
-            self.assertIn(u'address', member.keys())
-            self.assertNotIn(u'name', member.keys())
-            self.assertNotIn(u'monitor_address', member.keys())
+            self.assertIn(u'id', member)
+            self.assertIn(u'address', member)
+            self.assertNotIn(u'name', member)
+            self.assertNotIn(u'monitor_address', member)
+
+    def test_get_one_fields_filter(self):
+        member1 = self.create_member(
+            self.pool_id, '192.0.2.1', 80, name='member1').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        member = self.get(
+            self.member_path.format(member_id=member1.get('id')),
+            params={'fields': ['id', 'address']}).json.get(self.root_tag)
+        self.assertIn(u'id', member)
+        self.assertIn(u'address', member)
+        self.assertNotIn(u'name', member)
+        self.assertNotIn(u'monitor_address', member)
 
     def test_get_all_filter(self):
         mem1 = self.create_member(self.pool_id,

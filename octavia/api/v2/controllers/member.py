@@ -42,8 +42,9 @@ class MemberController(base.BaseController):
         self.pool_id = pool_id
         self.handler = self.handler.member
 
-    @wsme_pecan.wsexpose(member_types.MemberRootResponse, wtypes.text)
-    def get(self, id):
+    @wsme_pecan.wsexpose(member_types.MemberRootResponse, wtypes.text,
+                         [wtypes.text], ignore_extra_args=True)
+    def get(self, id, fields=None):
         """Gets a single pool member's details."""
         context = pecan.request.context.get('octavia_context')
         db_member = self._get_db_member(context.session, id)
@@ -51,8 +52,10 @@ class MemberController(base.BaseController):
         self._auth_validate_action(context, db_member.project_id,
                                    constants.RBAC_GET_ONE)
 
-        result = self._convert_db_to_type(db_member,
-                                          member_types.MemberResponse)
+        result = self._convert_db_to_type(
+            db_member, member_types.MemberResponse)
+        if fields is not None:
+            result = self._filter_fields([result], fields)[0]
         return member_types.MemberRootResponse(member=result)
 
     @wsme_pecan.wsexpose(member_types.MembersRootResponse, [wtypes.text],

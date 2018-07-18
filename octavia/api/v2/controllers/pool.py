@@ -46,8 +46,9 @@ class PoolsController(base.BaseController):
         super(PoolsController, self).__init__()
         self.handler = self.handler.pool
 
-    @wsme_pecan.wsexpose(pool_types.PoolRootResponse, wtypes.text)
-    def get(self, id):
+    @wsme_pecan.wsexpose(pool_types.PoolRootResponse, wtypes.text,
+                         [wtypes.text], ignore_extra_args=True)
+    def get(self, id, fields=None):
         """Gets a pool's details."""
         context = pecan.request.context.get('octavia_context')
         db_pool = self._get_db_pool(context.session, id)
@@ -56,6 +57,8 @@ class PoolsController(base.BaseController):
                                    constants.RBAC_GET_ONE)
 
         result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
+        if fields is not None:
+            result = self._filter_fields([result], fields)[0]
         return pool_types.PoolRootResponse(pool=result)
 
     @wsme_pecan.wsexpose(pool_types.PoolsRootResponse, wtypes.text,

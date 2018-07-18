@@ -311,9 +311,23 @@ class TestL7Rule(base.BaseAPITest):
         l7rus = self.get(self.l7rules_path, params={
             'fields': ['id', 'compare_type']}).json
         for l7ru in l7rus['rules']:
-            self.assertIn(u'id', l7ru.keys())
-            self.assertIn(u'compare_type', l7ru.keys())
-            self.assertNotIn(u'project_id', l7ru.keys())
+            self.assertIn(u'id', l7ru)
+            self.assertIn(u'compare_type', l7ru)
+            self.assertNotIn(u'project_id', l7ru)
+
+    def test_get_one_fields_filter(self):
+        l7r1 = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        l7ru = self.get(
+            self.l7rule_path.format(l7rule_id=l7r1.get('id')),
+            params={'fields': ['id', 'compare_type']}).json.get(self.root_tag)
+        self.assertIn(u'id', l7ru)
+        self.assertIn(u'compare_type', l7ru)
+        self.assertNotIn(u'project_id', l7ru)
 
     def test_get_all_filter(self):
         ru1 = self.create_l7rule(
