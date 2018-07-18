@@ -11,7 +11,7 @@ Requires={{ amphora_netns }}.service
 # Force context as we start haproxy under "ip netns exec"
 SELinuxContext=system_u:system_r:haproxy_t:s0
 EnvironmentFile=-/etc/default/haproxy
-ExecStartPre=/usr/sbin/haproxy -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }} -c -q
+ExecStartPre=/usr/sbin/haproxy -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }} -c -q -L {{ peer_name }}
 ExecStart=/sbin/ip netns exec {{ amphora_nsname }} /usr/sbin/haproxy-systemd-wrapper -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }} -p {{ haproxy_pid }} -L {{ peer_name }} $EXTRAOPTS
 ExecReload=/usr/sbin/haproxy -c -f {{ haproxy_cfg }} -f {{ haproxy_user_group_cfg }} -L {{ peer_name }}
 ExecReload=/bin/kill -USR2 $MAINPID
