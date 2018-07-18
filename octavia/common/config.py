@@ -231,6 +231,8 @@ haproxy_amphora_opts = [
                default='/var/lib/octavia/certs',
                help=_('Base directory for cert storage.')),
     cfg.StrOpt('haproxy_template', help=_('Custom haproxy template.')),
+    cfg.BoolOpt('connection_logging', default=True,
+                help=_('Set this to False to disable connection logging.')),
     cfg.IntOpt('connection_max_retries',
                default=300,
                help=_('Retry threshold for connecting to amphorae.')),

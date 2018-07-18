@@ -1,0 +1,18 @@
+---
+features:
+  - |
+    The new option `[haproxy_amphora]/connection_logging` will disable logging
+    of connection data if set to False which can improve performance of the
+    load balancer and might aid compliance.
+security:
+  - |
+    Disabling connection logging might make it more difficult to audit
+    systems for unauthorized access, from which IPs it originated, and
+    which assets were compromised.
+other:
+  - |
+    As part of GDPR compliance, connection logs might be considered
+    personal data and might need to follow specific data retention policies.
+    Disabling connection logging might aid in making Octavia compliant by
+    preventing the output of such data. As always, consult with an expert
+    on compliance prior to making changes.

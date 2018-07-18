@@ -53,10 +53,12 @@ class HaproxyAmphoraLoadBalancerDriver(
             name=CONF.certificates.cert_manager,
             invoke_on_load=True,
         ).driver
+
         self.jinja = jinja_cfg.JinjaTemplater(
             base_amp_path=CONF.haproxy_amphora.base_path,
             base_crt_dir=CONF.haproxy_amphora.base_cert_dir,
-            haproxy_template=CONF.haproxy_amphora.haproxy_template)
+            haproxy_template=CONF.haproxy_amphora.haproxy_template,
+            connection_logging=CONF.haproxy_amphora.connection_logging)
 
     def update(self, listener, vip):
         LOG.debug("Amphora %s haproxy, updating listener %s, vip %s",

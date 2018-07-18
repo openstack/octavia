@@ -35,7 +35,11 @@ global
     {% endfor %}
 
 defaults
+    {% if connection_logging %}
     log global
+    {% else %}
+    no log
+    {% endif %}
     retries 3
     option redispatch
 

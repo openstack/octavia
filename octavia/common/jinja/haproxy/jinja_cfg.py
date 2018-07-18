@@ -58,7 +58,8 @@ class JinjaTemplater(object):
                  base_crt_dir=None,
                  haproxy_template=None,
                  log_http=None,
-                 log_server=None):
+                 log_server=None,
+                 connection_logging=True):
         """HaProxy configuration generation
 
         :param base_amp_path: Base path for amphora data
@@ -66,6 +67,7 @@ class JinjaTemplater(object):
         :param haproxy_template: Absolute path to Jinja template
         :param log_http: Haproxy HTTP logging path
         :param log_server: Haproxy Server logging path
+        :param connection_logging: enable logging connections in haproxy
         """
 
         self.base_amp_path = base_amp_path or BASE_PATH
@@ -73,6 +75,7 @@ class JinjaTemplater(object):
         self.haproxy_template = haproxy_template or HAPROXY_TEMPLATE
         self.log_http = log_http
         self.log_server = log_server
+        self.connection_logging = connection_logging
 
     def build_config(self, host_amphora, listener, tls_cert,
                      socket_path=None,
@@ -130,7 +133,8 @@ class JinjaTemplater(object):
              'user_group': user_group,
              'stats_sock': socket_path,
              'log_http': self.log_http,
-             'log_server': self.log_server},
+             'log_server': self.log_server,
+             'connection_logging': self.connection_logging},
             constants=constants)
 
     def _transform_loadbalancer(self, host_amphora, loadbalancer, listener,

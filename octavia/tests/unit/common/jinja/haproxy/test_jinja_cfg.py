@@ -753,3 +753,20 @@ class TestHaproxyCfg(base.TestCase):
         exp_codes = '201-200, 205'
         self.assertEqual(
             self.jinja_cfg._expand_expected_codes(exp_codes), set(['205']))
+
+    def test_render_template_no_log(self):
+        j_cfg = jinja_cfg.JinjaTemplater(
+            base_amp_path='/var/lib/octavia',
+            base_crt_dir='/var/lib/octavia/certs',
+            connection_logging=False)
+        defaults = ("defaults\n"
+                    "    no log\n"
+                    "    retries 3\n"
+                    "    option redispatch\n\n")
+        rendered_obj = j_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
+            sample_configs.sample_listener_tuple()
+        )
+        self.assertEqual(
+            sample_configs.sample_base_expected_config(defaults=defaults),
+            rendered_obj)
