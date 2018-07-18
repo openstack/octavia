@@ -1022,7 +1022,7 @@ class TestPool(base.BaseAPITest):
             pool_prov_status=constants.ERROR)
 
     def test_create_with_session_persistence(self):
-        sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+        sp = {"type": constants.SESSION_PERSISTENCE_APP_COOKIE,
               "cookie_name": "test_cookie_name"}
         optionals = {"listener_id": self.listener_id,
                      "session_persistence": sp}
@@ -1043,7 +1043,7 @@ class TestPool(base.BaseAPITest):
             pool_id=api_pool.get('id'))).json.get(self.root_tag)
         sess_p = response.get('session_persistence')
         self.assertIsNotNone(sess_p)
-        self.assertEqual(constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+        self.assertEqual(constants.SESSION_PERSISTENCE_APP_COOKIE,
                          sess_p.get('type'))
         self.assertEqual('test_cookie_name', sess_p.get('cookie_name'))
         self.assert_correct_status(
@@ -1061,8 +1061,51 @@ class TestPool(base.BaseAPITest):
             'session_persistence': sp}
         self.post(self.POOLS_PATH, self._build_body(lb_pool), status=400)
 
-    def test_add_session_persistence(self):
+    def test_create_with_bad_SP_type_HTTP_cookie(self):
         sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+              "cookie_name": "test_cookie_name"}
+        lb_pool = {
+            'loadbalancer_id': self.lb_id,
+            'listener_id': self.listener_id,
+            'protocol': constants.PROTOCOL_HTTP,
+            'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+            'session_persistence': sp}
+        self.post(self.POOLS_PATH, self._build_body(lb_pool), status=400)
+
+    def test_create_with_bad_SP_type_IP_cookie(self):
+        sp = {"type": constants.SESSION_PERSISTENCE_SOURCE_IP,
+              "cookie_name": "test_cookie_name"}
+        lb_pool = {
+            'loadbalancer_id': self.lb_id,
+            'listener_id': self.listener_id,
+            'protocol': constants.PROTOCOL_HTTP,
+            'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+            'session_persistence': sp}
+        self.post(self.POOLS_PATH, self._build_body(lb_pool), status=400)
+
+    def test_create_with_bad_SP_cookie_name(self):
+        sp = {"type": constants.SESSION_PERSISTENCE_APP_COOKIE,
+              "cookie_name": "b@d_cookie_name"}
+        lb_pool = {
+            'loadbalancer_id': self.lb_id,
+            'listener_id': self.listener_id,
+            'protocol': constants.PROTOCOL_HTTP,
+            'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+            'session_persistence': sp}
+        self.post(self.POOLS_PATH, self._build_body(lb_pool), status=400)
+
+    def test_create_with_missing_cookie_name(self):
+        sp = {"type": constants.SESSION_PERSISTENCE_APP_COOKIE}
+        lb_pool = {
+            'loadbalancer_id': self.lb_id,
+            'listener_id': self.listener_id,
+            'protocol': constants.PROTOCOL_HTTP,
+            'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+            'session_persistence': sp}
+        self.post(self.POOLS_PATH, self._build_body(lb_pool), status=400)
+
+    def test_add_session_persistence(self):
+        sp = {"type": constants.SESSION_PERSISTENCE_APP_COOKIE,
               "cookie_name": "test_cookie_name"}
         api_pool = self.create_pool(
             self.lb_id,
@@ -1084,7 +1127,7 @@ class TestPool(base.BaseAPITest):
             pool_prov_status=constants.PENDING_UPDATE)
 
     def test_update_session_persistence(self):
-        sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+        sp = {"type": constants.SESSION_PERSISTENCE_APP_COOKIE,
               "cookie_name": "test_cookie_name"}
         optionals = {"listener_id": self.listener_id,
                      "session_persistence": sp}
@@ -1113,7 +1156,7 @@ class TestPool(base.BaseAPITest):
             pool_prov_status=constants.PENDING_UPDATE)
 
     def test_update_preserve_session_persistence(self):
-        sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+        sp = {"type": constants.SESSION_PERSISTENCE_APP_COOKIE,
               "cookie_name": "test_cookie_name"}
         optionals = {"listener_id": self.listener_id,
                      "name": "name", "session_persistence": sp}
@@ -1137,7 +1180,7 @@ class TestPool(base.BaseAPITest):
             pool_prov_status=constants.PENDING_UPDATE)
 
     def test_update_bad_session_persistence(self):
-        sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+        sp = {"type": constants.SESSION_PERSISTENCE_APP_COOKIE,
               "cookie_name": "test_cookie_name"}
         optionals = {"listener_id": self.listener_id,
                      "session_persistence": sp}
@@ -1155,8 +1198,83 @@ class TestPool(base.BaseAPITest):
         self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
                  self._build_body(new_pool), status=400)
 
+    def test_update_with_bad_SP_type_HTTP_cookie(self):
+        sp = {"type": constants.SESSION_PERSISTENCE_SOURCE_IP}
+        optionals = {"listener_id": self.listener_id,
+                     "session_persistence": sp}
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            **optionals).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        sess_p = response.get('session_persistence')
+        sess_p['type'] = constants.SESSION_PERSISTENCE_HTTP_COOKIE
+        sess_p['cookie_name'] = 'test_cookie_name'
+        new_pool = {'session_persistence': sess_p}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool), status=400)
+
+    def test_update_with_bad_SP_type_IP_cookie(self):
+        sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE}
+        optionals = {"listener_id": self.listener_id,
+                     "session_persistence": sp}
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            **optionals).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        sess_p = response.get('session_persistence')
+        sess_p['type'] = constants.SESSION_PERSISTENCE_SOURCE_IP
+        sess_p['cookie_name'] = 'test_cookie_name'
+        new_pool = {'session_persistence': sess_p}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool), status=400)
+
+    def test_update_with_bad_SP_cookie_name(self):
+        sp = {"type": constants.SESSION_PERSISTENCE_SOURCE_IP}
+        optionals = {"listener_id": self.listener_id,
+                     "session_persistence": sp}
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            **optionals).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        sess_p = response.get('session_persistence')
+        sess_p['type'] = constants.SESSION_PERSISTENCE_APP_COOKIE
+        sess_p['cookie_name'] = 'b@d_cookie_name'
+        new_pool = {'session_persistence': sess_p}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool), status=400)
+
+    def test_update_with_missing_SP_cookie_name(self):
+        sp = {"type": constants.SESSION_PERSISTENCE_SOURCE_IP}
+        optionals = {"listener_id": self.listener_id,
+                     "session_persistence": sp}
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            **optionals).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        sess_p = response.get('session_persistence')
+        sess_p['type'] = constants.SESSION_PERSISTENCE_APP_COOKIE
+        new_pool = {'session_persistence': sess_p}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool), status=400)
+
     def test_delete_with_session_persistence(self):
-        sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+        sp = {"type": constants.SESSION_PERSISTENCE_APP_COOKIE,
               "cookie_name": "test_cookie_name"}
         optionals = {"listener_id": self.listener_id,
                      "session_persistence": sp}
@@ -1175,7 +1293,7 @@ class TestPool(base.BaseAPITest):
             pool_prov_status=constants.PENDING_DELETE)
 
     def test_delete_session_persistence(self):
-        sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE,
+        sp = {"type": constants.SESSION_PERSISTENCE_APP_COOKIE,
               "cookie_name": "test_cookie_name"}
         optionals = {"listener_id": self.listener_id,
                      "session_persistence": sp}
