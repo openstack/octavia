@@ -181,5 +181,5 @@ For a cookbook of common L7 usage examples, please see the :doc:`l7-cookbook`
 Useful links
 ============
 * `Octavia API Reference <https://developer.openstack.org/api-ref/load-balancer/>`_
-* https://github.com/openstack/neutron-specs/blob/master/specs/mitaka/lbaas-l7-rules.rst
-* http://cbonte.github.io/haproxy-dconv/1.6/configuration.html#7
+* `LBaaS Layer 7 rules <https://github.com/openstack/neutron-specs/blob/master/specs/mitaka/lbaas-l7-rules.rst>`_
+* `Using ACLs and fetching samples <http://cbonte.github.io/haproxy-dconv/1.6/configuration.html#7>`_
