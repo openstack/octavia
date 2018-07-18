@@ -23,7 +23,7 @@ class HAProxyCompatTestCase(base.TestCase):
     def setUp(self):
         super(HAProxyCompatTestCase, self).setUp()
         self.old_haproxy_global = (
-            "# Configuration for test-lb\n"
+            "# Configuration for loadbalancer sample_loadbalancer_id_1\n"
             "global\n"
             "    daemon\n"
             "    user nobody\n"

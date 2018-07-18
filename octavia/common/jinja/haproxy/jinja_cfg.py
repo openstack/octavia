@@ -145,7 +145,7 @@ class JinjaTemplater(object):
         """
         t_listener = self._transform_listener(listener, tls_cert)
         ret_value = {
-            'name': loadbalancer.name,
+            'id': loadbalancer.id,
             'vip_address': loadbalancer.vip.ip_address,
             'listener': t_listener,
             'topology': loadbalancer.topology,
