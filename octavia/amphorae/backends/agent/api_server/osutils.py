@@ -223,7 +223,7 @@ class Ubuntu(BaseOS):
         return os_name in ['ubuntu']
 
     def cmd_get_version_of_installed_package(self, package_name):
-        return "dpkg --status {name}".format(name=package_name)
+        return "dpkg-query -W -f=${{Version}} {name}".format(name=package_name)
 
     def get_network_interface_file(self, interface):
         if CONF.amphora_agent.agent_server_network_file:
@@ -307,7 +307,8 @@ class RH(BaseOS):
         return os_name in ['fedora', 'rhel', 'centos']
 
     def cmd_get_version_of_installed_package(self, package_name):
-        return "rpm -qi {name}".format(name=package_name)
+        return "rpm -q --queryformat %{{VERSION}} {name}".format(
+            name=package_name)
 
     def get_network_interface_file(self, interface):
         if CONF.amphora_agent.agent_server_network_file:
