@@ -40,16 +40,29 @@ j2_env = jinja2.Environment(autoescape=True, loader=jinja2.FileSystemLoader(
 
 class BaseOS(object):
 
+    PACKAGE_NAME_MAP = {}
+
     def __init__(self, os_name):
         self.os_name = os_name
 
     @classmethod
+    def _get_subclasses(cls):
+        for subclass in cls.__subclasses__():
+            for sc in subclass._get_subclasses():
+                yield sc
+            yield subclass
+
+    @classmethod
     def get_os_util(cls):
         os_name = distro.id()
-        for subclass in BaseOS.__subclasses__():
+        for subclass in cls._get_subclasses():
             if subclass.is_os_name(os_name):
                 return subclass(os_name)
         raise octavia_exceptions.InvalidAmphoraOperatingSystem(os_name=os_name)
+
+    @classmethod
+    def _map_package_name(cls, package_name):
+        return cls.PACKAGE_NAME_MAP.get(package_name, package_name)
 
     def get_network_interface_file(self, interface):
         if CONF.amphora_agent.agent_server_network_file:
@@ -223,7 +236,8 @@ class Ubuntu(BaseOS):
         return os_name in ['ubuntu']
 
     def cmd_get_version_of_installed_package(self, package_name):
-        return "dpkg-query -W -f=${{Version}} {name}".format(name=package_name)
+        name = self._map_package_name(package_name)
+        return "dpkg-query -W -f=${{Version}} {name}".format(name=name)
 
     def get_network_interface_file(self, interface):
         if CONF.amphora_agent.agent_server_network_file:
@@ -304,11 +318,11 @@ class RH(BaseOS):
 
     @classmethod
     def is_os_name(cls, os_name):
-        return os_name in ['fedora', 'rhel', 'centos']
+        return os_name in ['fedora', 'rhel']
 
     def cmd_get_version_of_installed_package(self, package_name):
-        return "rpm -q --queryformat %{{VERSION}} {name}".format(
-            name=package_name)
+        name = self._map_package_name(package_name)
+        return "rpm -q --queryformat %{{VERSION}} {name}".format(name=name)
 
     def get_network_interface_file(self, interface):
         if CONF.amphora_agent.agent_server_network_file:
@@ -458,3 +472,12 @@ class RH(BaseOS):
 
     def has_ifup_all(self):
         return False
+
+
+class CentOS(RH):
+
+    PACKAGE_NAME_MAP = {'haproxy': 'haproxy18'}
+
+    @classmethod
+    def is_os_name(cls, os_name):
+        return os_name in ['centos']
