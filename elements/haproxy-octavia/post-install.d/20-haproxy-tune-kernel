@@ -12,11 +12,12 @@ sysctl-write-value net.ipv4.tcp_tw_reuse 1
 sysctl-write-value net.core.somaxconn 65534
 sysctl-write-value net.ipv4.tcp_synack_retries 3
 sysctl-write-value net.core.netdev_max_backlog 100000
-sysctl-write-value fs.file-max 1048576
+# This should allow HAProxy maxconn to be 1,000,000
+sysctl-write-value fs.file-max 2097152
+sysctl-write-value fs.nr_open 2097152
 
 # It's ok for these to fail if conntrack module isn't loaded
-sysctl-write-value net.netfilter.nf_conntrack_max 131072 || true
-sysctl-write-value net.ipv4.netfilter.ip_conntrack_max 1524288 || true
+sysctl-write-value net.netfilter.nf_conntrack_buckets 125000 || true
 sysctl-write-value net.ipv4.netfilter.ip_conntrack_tcp_timeout_time_wait 5 || true
 sysctl-write-value net.ipv4.netfilter.ip_conntrack_tcp_timeout_fin_wait 5 || true
 
