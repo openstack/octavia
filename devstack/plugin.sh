@@ -260,6 +260,9 @@ function octavia_configure {
     iniuncomment $OCTAVIA_CONF controller_worker amp_active_retries
     iniuncomment $OCTAVIA_CONF controller_worker amp_active_wait_sec
     iniuncomment $OCTAVIA_CONF controller_worker workers
+    iniuncomment $OCTAVIA_CONF controller_worker loadbalancer_topology
+
+    iniset $OCTAVIA_CONF controller_worker loadbalancer_topology ${OCTAVIA_LB_TOPOLOGY}
 
     # devstack optimizations for tempest runs
     iniset $OCTAVIA_CONF haproxy_amphora connection_max_retries 1500
