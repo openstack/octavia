@@ -270,7 +270,10 @@ class MemberController(base.BaseController):
 
             LOG.info("Sending delete Member %s to provider %s", id,
                      driver.name)
-            driver_utils.call_provider(driver.name, driver.member_delete, id)
+            provider_member = (
+                driver_utils.db_member_to_provider_member(db_member))
+            driver_utils.call_provider(driver.name, driver.member_delete,
+                                       provider_member)
 
 
 class MembersController(MemberController):

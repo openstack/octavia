@@ -330,7 +330,10 @@ class PoolsController(base.BaseController):
                 provisioning_status=constants.PENDING_DELETE)
 
             LOG.info("Sending delete Pool %s to provider %s", id, driver.name)
-            driver_utils.call_provider(driver.name, driver.pool_delete, id)
+            provider_pool = (
+                driver_utils.db_pool_to_provider_pool(db_pool))
+            driver_utils.call_provider(driver.name, driver.pool_delete,
+                                       provider_pool)
 
     @pecan.expose()
     def _lookup(self, pool_id, *remainder):

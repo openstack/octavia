@@ -369,7 +369,10 @@ class ListenersController(base.BaseController):
 
             LOG.info("Sending delete Listener %s to provider %s", id,
                      driver.name)
-            driver_utils.call_provider(driver.name, driver.listener_delete, id)
+            provider_listener = (
+                driver_utils.db_listener_to_provider_listener(db_listener))
+            driver_utils.call_provider(driver.name, driver.listener_delete,
+                                       provider_listener)
 
     @pecan.expose()
     def _lookup(self, id, *remainder):

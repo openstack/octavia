@@ -55,7 +55,8 @@ class NoopManager(object):
         self.driverconfig[loadbalancer.loadbalancer_id] = (
             loadbalancer, 'loadbalancer_create')
 
-    def loadbalancer_delete(self, loadbalancer_id, cascade=False):
+    def loadbalancer_delete(self, loadbalancer, cascade=False):
+        loadbalancer_id = loadbalancer.loadbalancer_id
         LOG.debug('Provider %s no-op, loadbalancer_delete loadbalancer %s',
                   self.__class__.__name__, loadbalancer_id)
 
@@ -83,7 +84,8 @@ class NoopManager(object):
 
         self.driverconfig[listener.listener_id] = (listener, 'listener_create')
 
-    def listener_delete(self, listener_id):
+    def listener_delete(self, listener):
+        listener_id = listener.listener_id
         LOG.debug('Provider %s no-op, listener_delete listener %s',
                   self.__class__.__name__, listener_id)
 
@@ -102,7 +104,8 @@ class NoopManager(object):
 
         self.driverconfig[pool.pool_id] = (pool, 'pool_create')
 
-    def pool_delete(self, pool_id):
+    def pool_delete(self, pool):
+        pool_id = pool.pool_id
         LOG.debug('Provider %s no-op, pool_delete pool %s',
                   self.__class__.__name__, pool_id)
 
@@ -121,7 +124,8 @@ class NoopManager(object):
 
         self.driverconfig[member.member_id] = (member, 'member_create')
 
-    def member_delete(self, member_id):
+    def member_delete(self, member):
+        member_id = member.member_id
         LOG.debug('Provider %s no-op, member_delete member %s',
                   self.__class__.__name__, member_id)
 
@@ -149,7 +153,8 @@ class NoopManager(object):
         self.driverconfig[healthmonitor.healthmonitor_id] = (
             healthmonitor, 'health_monitor_create')
 
-    def health_monitor_delete(self, healthmonitor_id):
+    def health_monitor_delete(self, healthmonitor):
+        healthmonitor_id = healthmonitor.healthmonitor_id
         LOG.debug('Provider %s no-op, health_monitor_delete healthmonitor %s',
                   self.__class__.__name__, healthmonitor_id)
 
@@ -170,7 +175,8 @@ class NoopManager(object):
 
         self.driverconfig[l7policy.l7policy_id] = (l7policy, 'l7policy_create')
 
-    def l7policy_delete(self, l7policy_id):
+    def l7policy_delete(self, l7policy):
+        l7policy_id = l7policy.l7policy_id
         LOG.debug('Provider %s no-op, l7policy_delete l7policy %s',
                   self.__class__.__name__, l7policy_id)
 
@@ -189,7 +195,8 @@ class NoopManager(object):
 
         self.driverconfig[l7rule.l7rule_id] = (l7rule, 'l7rule_create')
 
-    def l7rule_delete(self, l7rule_id):
+    def l7rule_delete(self, l7rule):
+        l7rule_id = l7rule.l7rule_id
         LOG.debug('Provider %s no-op, l7rule_delete l7rule %s',
                   self.__class__.__name__, l7rule_id)
 
@@ -230,8 +237,8 @@ class NoopProviderDriver(driver_base.ProviderDriver):
     def loadbalancer_create(self, loadbalancer):
         self.driver.loadbalancer_create(loadbalancer)
 
-    def loadbalancer_delete(self, loadbalancer_id, cascade=False):
-        self.driver.loadbalancer_delete(loadbalancer_id, cascade)
+    def loadbalancer_delete(self, loadbalancer, cascade=False):
+        self.driver.loadbalancer_delete(loadbalancer, cascade)
 
     def loadbalancer_failover(self, loadbalancer_id):
         self.driver.loadbalancer_failover(loadbalancer_id)
@@ -243,8 +250,8 @@ class NoopProviderDriver(driver_base.ProviderDriver):
     def listener_create(self, listener):
         self.driver.listener_create(listener)
 
-    def listener_delete(self, listener_id):
-        self.driver.listener_delete(listener_id)
+    def listener_delete(self, listener):
+        self.driver.listener_delete(listener)
 
     def listener_update(self, listener):
         self.driver.listener_update(listener)
@@ -253,8 +260,8 @@ class NoopProviderDriver(driver_base.ProviderDriver):
     def pool_create(self, pool):
         self.driver.pool_create(pool)
 
-    def pool_delete(self, pool_id):
-        self.driver.pool_delete(pool_id)
+    def pool_delete(self, pool):
+        self.driver.pool_delete(pool)
 
     def pool_update(self, pool):
         self.driver.pool_update(pool)
@@ -263,8 +270,8 @@ class NoopProviderDriver(driver_base.ProviderDriver):
     def member_create(self, member):
         self.driver.member_create(member)
 
-    def member_delete(self, member_id):
-        self.driver.member_delete(member_id)
+    def member_delete(self, member):
+        self.driver.member_delete(member)
 
     def member_update(self, member):
         self.driver.member_update(member)
@@ -276,8 +283,8 @@ class NoopProviderDriver(driver_base.ProviderDriver):
     def health_monitor_create(self, healthmonitor):
         self.driver.health_monitor_create(healthmonitor)
 
-    def health_monitor_delete(self, healthmonitor_id):
-        self.driver.health_monitor_delete(healthmonitor_id)
+    def health_monitor_delete(self, healthmonitor):
+        self.driver.health_monitor_delete(healthmonitor)
 
     def health_monitor_update(self, healthmonitor):
         self.driver.health_monitor_update(healthmonitor)
@@ -286,8 +293,8 @@ class NoopProviderDriver(driver_base.ProviderDriver):
     def l7policy_create(self, l7policy):
         self.driver.l7policy_create(l7policy)
 
-    def l7policy_delete(self, l7policy_id):
-        self.driver.l7policy_delete(l7policy_id)
+    def l7policy_delete(self, l7policy):
+        self.driver.l7policy_delete(l7policy)
 
     def l7policy_update(self, l7policy):
         self.driver.l7policy_update(l7policy)
@@ -296,8 +303,8 @@ class NoopProviderDriver(driver_base.ProviderDriver):
     def l7rule_create(self, l7rule):
         self.driver.l7rule_create(l7rule)
 
-    def l7rule_delete(self, l7rule_id):
-        self.driver.l7rule_delete(l7rule_id)
+    def l7rule_delete(self, l7rule):
+        self.driver.l7rule_delete(l7rule)
 
     def l7rule_update(self, l7rule):
         self.driver.l7rule_update(l7rule)

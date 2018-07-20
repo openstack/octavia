@@ -287,4 +287,7 @@ class L7RuleController(base.BaseController):
 
             LOG.info("Sending delete L7 Rule %s to provider %s", id,
                      driver.name)
-            driver_utils.call_provider(driver.name, driver.l7rule_delete, id)
+            provider_l7rule = (
+                driver_utils.db_l7rule_to_provider_l7rule(db_l7rule))
+            driver_utils.call_provider(driver.name, driver.l7rule_delete,
+                                       provider_l7rule)

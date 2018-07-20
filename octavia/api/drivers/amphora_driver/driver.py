@@ -63,7 +63,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.LOAD_BALANCER_ID: loadbalancer.loadbalancer_id}
         self.client.cast({}, 'create_load_balancer', **payload)
 
-    def loadbalancer_delete(self, loadbalancer_id, cascade=False):
+    def loadbalancer_delete(self, loadbalancer, cascade=False):
+        loadbalancer_id = loadbalancer.loadbalancer_id
         payload = {consts.LOAD_BALANCER_ID: loadbalancer_id,
                    'cascade': cascade}
         self.client.cast({}, 'delete_load_balancer', **payload)
@@ -88,7 +89,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.LISTENER_ID: listener.listener_id}
         self.client.cast({}, 'create_listener', **payload)
 
-    def listener_delete(self, listener_id):
+    def listener_delete(self, listener):
+        listener_id = listener.listener_id
         payload = {consts.LISTENER_ID: listener_id}
         self.client.cast({}, 'delete_listener', **payload)
 
@@ -107,7 +109,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.POOL_ID: pool.pool_id}
         self.client.cast({}, 'create_pool', **payload)
 
-    def pool_delete(self, pool_id):
+    def pool_delete(self, pool):
+        pool_id = pool.pool_id
         payload = {consts.POOL_ID: pool_id}
         self.client.cast({}, 'delete_pool', **payload)
 
@@ -126,7 +129,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.MEMBER_ID: member.member_id}
         self.client.cast({}, 'create_member', **payload)
 
-    def member_delete(self, member_id):
+    def member_delete(self, member):
+        member_id = member.member_id
         payload = {consts.MEMBER_ID: member_id}
         self.client.cast({}, 'delete_member', **payload)
 
@@ -182,7 +186,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.HEALTH_MONITOR_ID: healthmonitor.healthmonitor_id}
         self.client.cast({}, 'create_health_monitor', **payload)
 
-    def health_monitor_delete(self, healthmonitor_id):
+    def health_monitor_delete(self, healthmonitor):
+        healthmonitor_id = healthmonitor.healthmonitor_id
         payload = {consts.HEALTH_MONITOR_ID: healthmonitor_id}
         self.client.cast({}, 'delete_health_monitor', **payload)
 
@@ -207,7 +212,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.L7POLICY_ID: l7policy.l7policy_id}
         self.client.cast({}, 'create_l7policy', **payload)
 
-    def l7policy_delete(self, l7policy_id):
+    def l7policy_delete(self, l7policy):
+        l7policy_id = l7policy.l7policy_id
         payload = {consts.L7POLICY_ID: l7policy_id}
         self.client.cast({}, 'delete_l7policy', **payload)
 
@@ -226,7 +232,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.L7RULE_ID: l7rule.l7rule_id}
         self.client.cast({}, 'create_l7rule', **payload)
 
-    def l7rule_delete(self, l7rule_id):
+    def l7rule_delete(self, l7rule):
+        l7rule_id = l7rule.l7rule_id
         payload = {consts.L7RULE_ID: l7rule_id}
         self.client.cast({}, 'delete_l7rule', **payload)
 
