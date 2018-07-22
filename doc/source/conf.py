@@ -27,8 +27,10 @@ sys.path.insert(0, os.path.abspath('.'))
 from tools import create_flow_docs
 
 # Generate our flow diagrams
-create_flow_docs.generate(
-    'tools/flow-list.txt', 'doc/source/contributor/devref/flow_diagrams')
+# TODO(johnsom) Re-enable flow diagrams when networkx supports individual
+#               extras. See https://github.com/networkx/networkx/pull/3080
+# create_flow_docs.generate(
+#    'tools/flow-list.txt', 'doc/source/contributor/devref/flow_diagrams')
 
 # Generate entity relationship diagram
 desc = sadisplay.describe(
