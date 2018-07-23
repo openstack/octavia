@@ -68,6 +68,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     AMPHORAE_PATH = '/octavia/amphorae'
     AMPHORA_PATH = AMPHORAE_PATH + '/{amphora_id}'
     AMPHORA_FAILOVER_PATH = AMPHORA_PATH + '/failover'
+    AMPHORA_STATS_PATH = AMPHORA_PATH + '/stats'
 
     PROVIDERS_PATH = '/lbaas/providers'
 

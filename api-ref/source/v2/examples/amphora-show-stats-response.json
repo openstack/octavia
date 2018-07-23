@@ -1,0 +1,24 @@
+{
+    "amphora_stats": [
+        {
+            "active_connections": 48629,
+            "bytes_in": 65671420,
+            "bytes_out": 774771186,
+            "id": "63d8349e-c4d7-4156-bc94-29260607b04f",
+            "listener_id": "bbe44114-cda2-4fe0-b192-d9e24ce661db",
+            "loadbalancer_id": "65b5a7c3-1437-4909-84cf-cec9f7e371ea",
+            "request_errors": 0,
+            "total_connections": 26189172
+        },
+        {
+            "active_connections": 0,
+            "bytes_in": 5,
+            "bytes_out": 100,
+            "id": "63d8349e-c4d7-4156-bc94-29260607b04f",
+            "listener_id": "af45a658-4eeb-4ce9-8b7e-16b0e5676f87",
+            "loadbalancer_id": "65b5a7c3-1437-4909-84cf-cec9f7e371ea",
+            "request_errors": 0,
+            "total_connections": 1
+        }
+    ]
+}

@@ -79,7 +79,7 @@ Response Example
    :language: javascript
 
 Show Amphora details
-===========================
+====================
 
 .. rest_method:: GET /v2/octavia/amphorae/{amphora_id}
 
@@ -151,6 +151,68 @@ Response Example
 ----------------
 
 .. literalinclude:: examples/amphora-show-response.json
+   :language: javascript
+
+Show Amphora Statistics
+=======================
+
+.. rest_method:: GET /v2/octavia/amphorae/{amphora_id}/stats
+
+Show the statistics for an amphora.
+
+If you are not an administrative user, the service returns the HTTP
+``Forbidden (403)`` response code.
+
+Use the ``fields`` query parameter to control which fields are
+returned in the response body.
+
+**New in version 2.3**
+
+.. rest_status_code:: success ../http-status.yaml
+
+   - 200
+
+.. rest_status_code:: error ../http-status.yaml
+
+   - 400
+   - 401
+   - 403
+   - 404
+   - 500
+
+Request
+-------
+
+.. rest_parameters:: ../parameters.yaml
+
+   - amphora_id: path-amphora-id
+   - fields: fields
+
+Curl Example
+------------
+
+.. literalinclude:: examples/amphora-show-stats-curl
+   :language: bash
+
+Response Parameters
+-------------------
+
+.. rest_parameters:: ../parameters.yaml
+
+   - active_connections: active_connections
+   - amphora_stats: amphora-stats
+   - bytes_in: bytes_in
+   - bytes_out: bytes_out
+   - id: amphora-id
+   - listener_id: listener-id
+   - loadbalancer_id: loadbalancer-id
+   - request_errors: request_errors
+   - total_connections: total_connections
+
+Response Example
+----------------
+
+.. literalinclude:: examples/amphora-show-stats-response.json
    :language: javascript
 
 Failover Amphora

@@ -29,6 +29,7 @@ class TestAmphora(base.BaseAPITest):
     root_tag = 'amphora'
     root_tag_list = 'amphorae'
     root_tag_links = 'amphorae_links'
+    root_tag_stats = 'amphora_stats'
 
     def setUp(self):
         super(TestAmphora, self).setUp()
@@ -61,6 +62,34 @@ class TestAmphora(base.BaseAPITest):
         self.amp = self.amphora_repo.create(self.session, **self.amp_args)
         self.amp_id = self.amp.id
         self.amp_args['id'] = self.amp_id
+        self.listener1_id = uuidutils.generate_uuid()
+        self.create_listener_stats_dynamic(self.listener1_id, self.amp_id,
+                                           bytes_in=1, bytes_out=2,
+                                           active_connections=3,
+                                           total_connections=4,
+                                           request_errors=5)
+        self.listener2_id = uuidutils.generate_uuid()
+        self.create_listener_stats_dynamic(self.listener2_id, self.amp_id,
+                                           bytes_in=6, bytes_out=7,
+                                           active_connections=8,
+                                           total_connections=9,
+                                           request_errors=10)
+        self.listener1_amp_stats = {'active_connections': 3,
+                                    'bytes_in': 1, 'bytes_out': 2,
+                                    'id': self.amp_id,
+                                    'listener_id': self.listener1_id,
+                                    'loadbalancer_id': self.lb_id,
+                                    'request_errors': 5,
+                                    'total_connections': 4}
+        self.listener2_amp_stats = {'active_connections': 8,
+                                    'bytes_in': 6, 'bytes_out': 7,
+                                    'id': self.amp_id,
+                                    'listener_id': self.listener2_id,
+                                    'loadbalancer_id': self.lb_id,
+                                    'request_errors': 10,
+                                    'total_connections': 9}
+        self.ref_amp_stats = [self.listener1_amp_stats,
+                              self.listener2_amp_stats]
 
     def _create_additional_amp(self):
         amp_args = {
@@ -398,3 +427,77 @@ class TestAmphora(base.BaseAPITest):
         response = self.get(self.AMPHORAE_PATH).json.get(self.root_tag_list)
         self.assertIsInstance(response, list)
         self.assertEqual(0, len(response))
+
+    def test_get_stats_authorized(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': True,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                response = self.get(self.AMPHORA_STATS_PATH.format(
+                    amphora_id=self.amp_id)).json.get(self.root_tag_stats)
+        # Reset api auth setting
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.assertEqual(self.ref_amp_stats, response)
+
+    def test_get_stats_not_authorized(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            response = self.get(self.AMPHORA_STATS_PATH.format(
+                amphora_id=self.amp_id), status=403)
+        # Reset api auth setting
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
+
+    def test_get_stats_bad_amp_id(self):
+        self.get(self.AMPHORA_STATS_PATH.format(
+            amphora_id='bogus_id'), status=404)
+
+    def test_get_stats_no_listeners(self):
+        self.lb2 = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.lb2_id = self.lb2.get('id')
+        self.set_lb_status(self.lb2_id)
+        self.amp2_args = {
+            'load_balancer_id': self.lb2_id,
+            'compute_id': uuidutils.generate_uuid(),
+            'lb_network_ip': '192.168.1.20',
+            'vrrp_ip': '192.168.1.5',
+            'ha_ip': '192.168.1.100',
+            'vrrp_port_id': uuidutils.generate_uuid(),
+            'ha_port_id': uuidutils.generate_uuid(),
+            'cert_expiration': datetime.datetime.now(),
+            'cert_busy': False,
+            'role': constants.ROLE_STANDALONE,
+            'status': constants.AMPHORA_ALLOCATED,
+            'vrrp_interface': 'eth1',
+            'vrrp_id': 1,
+            'vrrp_priority': 100,
+            'cached_zone': None,
+            'created_at': datetime.datetime.now(),
+            'updated_at': datetime.datetime.now(),
+            'image_id': uuidutils.generate_uuid(),
+        }
+        self.amp2 = self.amphora_repo.create(self.session, **self.amp2_args)
+        self.amp2_id = self.amp2.id
+        self.get(self.AMPHORA_STATS_PATH.format(
+            amphora_id=self.amp2_id), status=404)

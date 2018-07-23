@@ -24,6 +24,7 @@ from wsmeext import pecan as wsme_pecan
 from octavia.api.v2.controllers import base
 from octavia.api.v2.types import amphora as amp_types
 from octavia.common import constants
+from octavia.common import exceptions
 
 
 CONF = cfg.CONF
@@ -84,6 +85,8 @@ class AmphoraController(base.BaseController):
             remainder = remainder[1:]
             if controller == 'failover':
                 return FailoverController(amp_id=amphora_id), remainder
+            if controller == 'stats':
+                return AmphoraStatsController(amp_id=amphora_id), remainder
         return None
 
 
@@ -131,3 +134,30 @@ class FailoverController(base.BaseController):
                 self.repositories.load_balancer.update(
                     context.session, db_amp.load_balancer.id,
                     provisioning_status=constants.ERROR)
+
+
+class AmphoraStatsController(base.BaseController):
+    RBAC_TYPE = constants.RBAC_AMPHORA
+
+    def __init__(self, amp_id):
+        super(AmphoraStatsController, self).__init__()
+        self.amp_id = amp_id
+
+    @wsme_pecan.wsexpose(amp_types.StatisticsRootResponse, wtypes.text,
+                         status_code=200)
+    def get(self):
+        context = pecan.request.context.get('octavia_context')
+
+        self._auth_validate_action(context, context.project_id,
+                                   constants.RBAC_GET_STATS)
+
+        stats = self.repositories.get_amphora_stats(context.session,
+                                                    self.amp_id)
+        if stats == []:
+            raise exceptions.NotFound(resource='Amphora stats for',
+                                      id=self.amp_id)
+
+        wsme_stats = []
+        for stat in stats:
+            wsme_stats.append(amp_types.AmphoraStatisticsResponse(**stat))
+        return amp_types.StatisticsRootResponse(amphora_stats=wsme_stats)
