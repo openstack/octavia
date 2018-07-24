@@ -19,11 +19,13 @@ from oslo_middleware import request_id
 import pecan
 
 from octavia.api import config as app_config
+from octavia.api.drivers import driver_factory
 from octavia.common import constants
 from octavia.common import keystone
 from octavia.common import service as octavia_service
 
 LOG = logging.getLogger(__name__)
+CONF = cfg.CONF
 
 
 def get_pecan_config():
@@ -32,10 +34,18 @@ def get_pecan_config():
     return pecan.configuration.conf_from_file(filename)
 
 
+def _init_drivers():
+    """Initialize provider drivers."""
+    for provider in CONF.api_settings.enabled_provider_drivers:
+        driver_factory.get_driver(provider)
+
+
 def setup_app(pecan_config=None, debug=False, argv=None):
     """Creates and returns a pecan wsgi app."""
     octavia_service.prepare_service(argv)
     cfg.CONF.log_opt_values(LOG, logging.DEBUG)
+
+    _init_drivers()
 
     if not pecan_config:
         pecan_config = get_pecan_config()
