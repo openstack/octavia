@@ -21,14 +21,14 @@ rules = [
                                     action=constants.RBAC_GET_ALL),
         constants.RULE_API_READ,
         "List Members of a Pool",
-        [{'method': 'GET', 'path': '/v2.0/lbaas/pools/{pool_id}/members'}]
+        [{'method': 'GET', 'path': '/v2/lbaas/pools/{pool_id}/members'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
                                     action=constants.RBAC_POST),
         constants.RULE_API_WRITE,
         "Create a Member",
-        [{'method': 'POST', 'path': '/v2.0/lbaas/pools/{pool_id}/members'}]
+        [{'method': 'POST', 'path': '/v2/lbaas/pools/{pool_id}/members'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
@@ -36,7 +36,7 @@ rules = [
         constants.RULE_API_READ,
         "Show Member details",
         [{'method': 'GET',
-          'path': '/v2.0/lbaas/pools/{pool_id}/members/{member_id}'}]
+          'path': '/v2/lbaas/pools/{pool_id}/members/{member_id}'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
@@ -44,7 +44,7 @@ rules = [
         constants.RULE_API_WRITE,
         "Update a Member",
         [{'method': 'PUT',
-          'path': '/v2.0/lbaas/pools/{pool_id}/members/{member_id}'}]
+          'path': '/v2/lbaas/pools/{pool_id}/members/{member_id}'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
@@ -52,7 +52,7 @@ rules = [
         constants.RULE_API_WRITE,
         "Remove a Member",
         [{'method': 'DELETE',
-          'path': '/v2.0/lbaas/pools/{pool_id}/members/{member_id}'}]
+          'path': '/v2/lbaas/pools/{pool_id}/members/{member_id}'}]
     ),
 ]
 

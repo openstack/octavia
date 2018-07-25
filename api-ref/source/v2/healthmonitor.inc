@@ -3,7 +3,7 @@
 List Health Monitors
 ====================
 
-.. rest_method:: GET /v2.0/lbaas/healthmonitors
+.. rest_method:: GET /v2/lbaas/healthmonitors
 
 Lists all health monitors for the project.
 
@@ -72,7 +72,7 @@ Response Example
 Create Health Monitor
 =====================
 
-.. rest_method:: POST /v2.0/lbaas/healthmonitors
+.. rest_method:: POST /v2/lbaas/healthmonitors
 
 Creates a health monitor on a pool.
 
@@ -88,7 +88,7 @@ In the response, the health monitor :ref:`provisioning status<prov_status>` is
 ``ACTIVE``, ``PENDING_CREATE``, or ``ERROR``.
 
 If the status is ``PENDING_CREATE``, issue GET
-``/v2.0/lbaas/healthmonitors/{healthmonitor_id}`` to view the progress of
+``/v2/lbaas/healthmonitors/{healthmonitor_id}`` to view the progress of
 the provisioning operation. When the health monitor status changes
 to ``ACTIVE``, the health monitor is successfully provisioned and
 is ready for further configuration.
@@ -209,7 +209,7 @@ Response Example
 Show Health Monitor details
 ===========================
 
-.. rest_method:: GET /v2.0/lbaas/healthmonitors/{healthmonitor_id}
+.. rest_method:: GET /v2/lbaas/healthmonitors/{healthmonitor_id}
 
 Shows the details of a health monitor.
 
@@ -276,7 +276,7 @@ Response Example
 Update a Health Monitor
 =======================
 
-.. rest_method:: PUT /v2.0/lbaas/healthmonitors/{healthmonitor_id}
+.. rest_method:: PUT /v2/lbaas/healthmonitors/{healthmonitor_id}
 
 Update an existing health monitor.
 
@@ -361,7 +361,7 @@ Response Example
 Remove a Health Monitor
 =======================
 
-.. rest_method:: DELETE /v2.0/lbaas/healthmonitors/{healthmonitor_id}
+.. rest_method:: DELETE /v2/lbaas/healthmonitors/{healthmonitor_id}
 
 Removes a health monitor and its associated configuration from the project.
 

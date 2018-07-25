@@ -3,7 +3,7 @@
 List Quota
 ==========
 
-.. rest_method:: GET /v2.0/lbaas/quotas
+.. rest_method:: GET /v2/lbaas/quotas
 
 Lists all quotas for the project.
 
@@ -66,7 +66,7 @@ Response Example
 Show Quota Defaults
 ===================
 
-.. rest_method:: GET /v2.0/lbaas/quotas/defaults
+.. rest_method:: GET /v2/lbaas/quotas/defaults
 
 Show the quota defaults configured for the deployment.
 
@@ -113,7 +113,7 @@ Response Example
 Show Project Quota
 ==================
 
-.. rest_method:: GET /v2.0/lbaas/quotas/{project_id}
+.. rest_method:: GET /v2/lbaas/quotas/{project_id}
 
 Show the quota for the project.
 
@@ -170,7 +170,7 @@ Response Example
 Update a Quota
 ==============
 
-.. rest_method:: PUT /v2.0/lbaas/quotas/{project_id}
+.. rest_method:: PUT /v2/lbaas/quotas/{project_id}
 
 Updates a quota for a project.
 
@@ -244,7 +244,7 @@ Response Example
 Reset a Quota
 =============
 
-.. rest_method:: DELETE /v2.0/lbaas/quotas/{project_id}
+.. rest_method:: DELETE /v2/lbaas/quotas/{project_id}
 
 Resets a project quota to use the deployment default quota.
 

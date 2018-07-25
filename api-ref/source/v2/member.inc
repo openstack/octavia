@@ -3,7 +3,7 @@
 List Members
 ============
 
-.. rest_method:: GET /v2.0/lbaas/pools/{pool_id}/members
+.. rest_method:: GET /v2/lbaas/pools/{pool_id}/members
 
 Lists all members for the project.
 
@@ -71,7 +71,7 @@ Response Example
 Create Member
 =============
 
-.. rest_method:: POST /v2.0/lbaas/pools/{pool_id}/members
+.. rest_method:: POST /v2/lbaas/pools/{pool_id}/members
 
 This operation provisions a member and adds it to a pool by using
 the configuration that you define in the request object. After the
@@ -82,7 +82,7 @@ In the response, the member :ref:`provisioning status<prov_status>` is
 ``ACTIVE``, ``PENDING_CREATE``, or ``ERROR``.
 
 If the status is ``PENDING_CREATE``, issue GET
-``/v2.0/lbaas/pools/{pool_id}/members/{member_id}`` to view the progress of
+``/v2/lbaas/pools/{pool_id}/members/{member_id}`` to view the progress of
 the provisioning operation. When the member status changes
 to ``ACTIVE``, the member is successfully provisioned and
 is ready for further configuration.
@@ -200,7 +200,7 @@ Response Example
 Show Member details
 ===================
 
-.. rest_method:: GET /v2.0/lbaas/pools/{pool_id}/members/{member-id}
+.. rest_method:: GET /v2/lbaas/pools/{pool_id}/members/{member-id}
 
 Shows the details of a pool member.
 
@@ -266,7 +266,7 @@ Response Example
 Update a Member
 ===============
 
-.. rest_method:: PUT /v2.0/lbaas/pools/{pool_id}/members/{member_id}
+.. rest_method:: PUT /v2/lbaas/pools/{pool_id}/members/{member_id}
 
 Update an existing member.
 
@@ -351,7 +351,7 @@ Response Example
 Batch Update Members
 ====================
 
-.. rest_method:: PUT /v2.0/lbaas/pools/{pool_id}/members
+.. rest_method:: PUT /v2/lbaas/pools/{pool_id}/members
 
 Set the state of members for a pool in one API call. This may include
 creating new members, deleting old members, and updating existing members.
@@ -423,7 +423,7 @@ There is no body content for the response of a successful PUT request.
 Remove a Member
 ===============
 
-.. rest_method:: DELETE /v2.0/lbaas/pools/{pool_id}/members/{member_id}
+.. rest_method:: DELETE /v2/lbaas/pools/{pool_id}/members/{member_id}
 
 Removes a member and its associated configuration from the pool.
 

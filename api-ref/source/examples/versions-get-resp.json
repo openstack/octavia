@@ -1,14 +1,27 @@
 {
-    "versions": [
-        {
-            "id": "v2.0",
-            "status": "CURRENT",
-            "updated": "2017-02-17T00:00:00Z"
-        },
-        {
-            "id": "v1",
-            "status": "DEPRECATED",
-            "updated": "2014-12-11T00:00:00Z"
-        }
-    ]
+  "versions": [{
+    "status": "DEPRECATED",
+    "updated": "2014-12-11T00:00:00Z",
+    "id": "v1",
+    "links": [{
+      "href": "http://10.21.21.53/load-balancer/v1",
+      "rel": "self"
+    }]
+  }, {
+    "status": "SUPPORTED",
+    "updated": "2016-12-11T00:00:00Z",
+    "id": "v2.0",
+    "links": [{
+      "href": "http://10.21.21.53/load-balancer/v2",
+      "rel": "self"
+    }]
+  }, {
+    "status": "CURRENT",
+    "updated": "2018-04-20T00:00:00Z",
+    "id": "v2.1",
+    "links": [{
+      "href": "http://10.21.21.53/load-balancer/v2",
+      "rel": "self"
+    }]
+  }]
 }

@@ -1,5 +1,5 @@
-Octavia API v1 (SUPPORTED)
-==========================
+Octavia API v1 (DEPRECATED)
+===========================
 
 Authentication
 --------------

@@ -3,7 +3,7 @@
 List Amphora
 ============
 
-.. rest_method:: GET /v2.0/octavia/amphorae
+.. rest_method:: GET /v2/octavia/amphorae
 
 Lists all amphora for the project.
 
@@ -80,7 +80,7 @@ Response Example
 Show Amphora details
 ===========================
 
-.. rest_method:: GET /v2.0/octavia/amphorae/{amphora_id}
+.. rest_method:: GET /v2/octavia/amphorae/{amphora_id}
 
 Shows the details of an amphora.
 
@@ -154,7 +154,7 @@ Response Example
 Failover Amphora
 ================
 
-.. rest_method:: PUT /v2.0/octavia/amphorae/{amphora_id}/failover
+.. rest_method:: PUT /v2/octavia/amphorae/{amphora_id}/failover
 
 Force an amphora to failover.
 

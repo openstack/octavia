@@ -3,7 +3,7 @@
 List Pools
 ==========
 
-.. rest_method:: GET /v2.0/lbaas/pools
+.. rest_method:: GET /v2/lbaas/pools
 
 Lists all pools for the project.
 
@@ -71,7 +71,7 @@ Response Example
 Create Pool
 ===========
 
-.. rest_method:: POST /v2.0/lbaas/pools
+.. rest_method:: POST /v2/lbaas/pools
 
 Creates a pool for a load balancer.
 
@@ -87,7 +87,7 @@ In the response, the pool :ref:`provisioning status<prov_status>` is
 ``ACTIVE``, ``PENDING_CREATE``, or ``ERROR``.
 
 If the status is ``PENDING_CREATE``, issue GET
-``/v2.0/lbaas/pools/{pool_id}`` to view the progress of
+``/v2/lbaas/pools/{pool_id}`` to view the progress of
 the provisioning operation. When the pool status changes
 to ``ACTIVE``, the pool is successfully provisioned and
 is ready for further configuration.
@@ -252,7 +252,7 @@ Response Example
 Show Pool details
 =================
 
-.. rest_method:: GET /v2.0/lbaas/pools/{pool_id}
+.. rest_method:: GET /v2/lbaas/pools/{pool_id}
 
 Shows the details of a pool.
 
@@ -318,7 +318,7 @@ Response Example
 Update a Pool
 =============
 
-.. rest_method:: PUT /v2.0/lbaas/pools/{pool_id}
+.. rest_method:: PUT /v2/lbaas/pools/{pool_id}
 
 Update an existing pool.
 
@@ -398,7 +398,7 @@ Response Example
 Remove a Pool
 =============
 
-.. rest_method:: DELETE /v2.0/lbaas/pools/{pool_id}
+.. rest_method:: DELETE /v2/lbaas/pools/{pool_id}
 
 Removes a pool and its associated configuration from the load balancer.
 

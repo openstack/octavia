@@ -21,21 +21,21 @@ rules = [
                                     action=constants.RBAC_GET_ALL),
         constants.RULE_API_READ,
         "List Pools",
-        [{'method': 'GET', 'path': '/v2.0/lbaas/pools'}]
+        [{'method': 'GET', 'path': '/v2/lbaas/pools'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_POOL,
                                     action=constants.RBAC_GET_ALL_GLOBAL),
         constants.RULE_API_READ_GLOBAL,
         "List Pools including resources owned by others",
-        [{'method': 'GET', 'path': '/v2.0/lbaas/pools'}]
+        [{'method': 'GET', 'path': '/v2/lbaas/pools'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_POOL,
                                     action=constants.RBAC_POST),
         constants.RULE_API_WRITE,
         "Create a Pool",
-        [{'method': 'POST', 'path': '/v2.0/lbaas/pools'}]
+        [{'method': 'POST', 'path': '/v2/lbaas/pools'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_POOL,
@@ -43,7 +43,7 @@ rules = [
         constants.RULE_API_READ,
         "Show Pool details",
         [{'method': 'GET',
-          'path': '/v2.0/lbaas/pools/{pool_id}'}]
+          'path': '/v2/lbaas/pools/{pool_id}'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_POOL,
@@ -51,7 +51,7 @@ rules = [
         constants.RULE_API_WRITE,
         "Update a Pool",
         [{'method': 'PUT',
-          'path': '/v2.0/lbaas/pools/{pool_id}'}]
+          'path': '/v2/lbaas/pools/{pool_id}'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_POOL,
@@ -59,7 +59,7 @@ rules = [
         constants.RULE_API_WRITE,
         "Remove a Pool",
         [{'method': 'DELETE',
-          'path': '/v2.0/lbaas/pools/{pool_id}'}]
+          'path': '/v2/lbaas/pools/{pool_id}'}]
     ),
 ]
 

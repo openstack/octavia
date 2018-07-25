@@ -22,7 +22,7 @@ rules = [
         constants.RULE_API_READ,
         "List L7 Rules",
         [{'method': 'GET',
-          'path': '/v2.0/lbaas/l7policies/{l7policy_id}/rules'}]
+          'path': '/v2/lbaas/l7policies/{l7policy_id}/rules'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7RULE,
@@ -30,7 +30,7 @@ rules = [
         constants.RULE_API_WRITE,
         "Create a L7 Rule",
         [{'method': 'POST',
-          'path': '/v2.0/lbaas/l7policies/{l7policy_id}/rules'}]
+          'path': '/v2/lbaas/l7policies/{l7policy_id}/rules'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7RULE,
@@ -38,7 +38,7 @@ rules = [
         constants.RULE_API_READ,
         "Show L7 Rule details",
         [{'method': 'GET',
-          'path': '/v2.0/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}'}]
+          'path': '/v2/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7RULE,
@@ -46,7 +46,7 @@ rules = [
         constants.RULE_API_WRITE,
         "Update a L7 Rule",
         [{'method': 'PUT',
-          'path': '/v2.0/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}'}]
+          'path': '/v2/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7RULE,
@@ -54,7 +54,7 @@ rules = [
         constants.RULE_API_WRITE,
         "Remove a L7 Rule",
         [{'method': 'DELETE',
-          'path': '/v2.0/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}'}]
+          'path': '/v2/lbaas/l7policies/{l7policy_id}/rules/{l7rule_id}'}]
     ),
 ]
 

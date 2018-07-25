@@ -644,6 +644,12 @@ lb-network-ip:
   in: body
   required: true
   type: string
+links:
+  description: |
+    A list of relative links. Includes the self link for the API.
+  in: body
+  required: true
+  type: array
 listener:
   description: |
     A listener object.

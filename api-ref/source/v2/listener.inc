@@ -3,7 +3,7 @@
 List Listeners
 ==============
 
-.. rest_method:: GET /v2.0/lbaas/listeners
+.. rest_method:: GET /v2/lbaas/listeners
 
 Lists all listeners for the project.
 
@@ -78,7 +78,7 @@ Response Example
 Create Listener
 ===============
 
-.. rest_method:: POST /v2.0/lbaas/listeners
+.. rest_method:: POST /v2/lbaas/listeners
 
 Creates a listener for a load balancer.
 
@@ -95,7 +95,7 @@ In the response, the listener :ref:`provisioning status<prov_status>` is
 ``ACTIVE``, ``PENDING_CREATE``, or ``ERROR``.
 
 If the status is ``PENDING_CREATE``, issue GET
-``/v2.0/lbaas/listeners/{listener_id}`` to view the progress of
+``/v2/lbaas/listeners/{listener_id}`` to view the progress of
 the provisioning operation. When the listener status changes
 to ``ACTIVE``, the listener is successfully provisioned and
 is ready for further configuration.
@@ -233,7 +233,7 @@ Response Example
 Show Listener details
 =====================
 
-.. rest_method:: GET /v2.0/lbaas/listeners/{listener_id}
+.. rest_method:: GET /v2/lbaas/listeners/{listener_id}
 
 Shows the details of a listener.
 
@@ -306,7 +306,7 @@ Response Example
 Update a Listener
 =================
 
-.. rest_method:: PUT /v2.0/lbaas/listeners/{listener_id}
+.. rest_method:: PUT /v2/lbaas/listeners/{listener_id}
 
 Update an existing listener.
 
@@ -400,7 +400,7 @@ Response Example
 Remove a Listener
 =================
 
-.. rest_method:: DELETE /v2.0/lbaas/listeners/{listener_id}
+.. rest_method:: DELETE /v2/lbaas/listeners/{listener_id}
 
 Removes a listener and its associated configuration from the project.
 
@@ -441,7 +441,7 @@ There is no body content for the response of a successful DELETE request.
 Get Listener statistics
 =======================
 
-.. rest_method:: GET /v2.0/lbaas/listeners/{listener_id}/stats
+.. rest_method:: GET /v2/lbaas/listeners/{listener_id}/stats
 
 Shows the current statistics for a listener.
 

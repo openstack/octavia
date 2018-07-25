@@ -46,15 +46,32 @@ class TestRootController(base_db_test.OctaviaDBTestBase):
         versions = self._get_versions_with_config(
             api_v1_enabled=True, api_v2_enabled=True)
         version_ids = tuple(v.get('id') for v in versions)
-        self.assertEqual(2, len(version_ids))
+        self.assertEqual(3, len(version_ids))
         self.assertIn('v1', version_ids)
+        self.assertIn('v2.0', version_ids)
         self.assertIn('v2.1', version_ids)
+
+        # Each version should have a 'self' 'href' to the API version URL
+        # [{u'rel': u'self', u'href': u'http://localhost/v2'}]
+        # Validate that the URL exists in the response
+        for version in versions:
+            url_version = None
+            if version['id'].startswith('v2.'):
+                url_version = 'v2'
+            else:
+                url_version = version['id']
+            version_url = 'http://localhost/{}'.format(url_version)
+            links = version['links']
+            # Note, there may be other links present, this test is for 'self'
+            version_link = [link for link in links if link['rel'] == 'self']
+            self.assertEqual(version_url, version_link[0]['href'])
 
     def test_api_v1_disabled(self):
         versions = self._get_versions_with_config(
             api_v1_enabled=False, api_v2_enabled=True)
-        self.assertEqual(1, len(versions))
-        self.assertEqual('v2.1', versions[0].get('id'))
+        self.assertEqual(2, len(versions))
+        self.assertEqual('v2.0', versions[0].get('id'))
+        self.assertEqual('v2.1', versions[1].get('id'))
 
     def test_api_v2_disabled(self):
         versions = self._get_versions_with_config(

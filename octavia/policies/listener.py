@@ -21,21 +21,21 @@ rules = [
                                     action=constants.RBAC_GET_ALL),
         constants.RULE_API_READ,
         "List Listeners",
-        [{'method': 'GET', 'path': '/v2.0/lbaas/listeners'}]
+        [{'method': 'GET', 'path': '/v2/lbaas/listeners'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LISTENER,
                                     action=constants.RBAC_GET_ALL_GLOBAL),
         constants.RULE_API_READ_GLOBAL,
         "List Listeners including resources owned by others",
-        [{'method': 'GET', 'path': '/v2.0/lbaas/listeners'}]
+        [{'method': 'GET', 'path': '/v2/lbaas/listeners'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LISTENER,
                                     action=constants.RBAC_POST),
         constants.RULE_API_WRITE,
         "Create a Listener",
-        [{'method': 'POST', 'path': '/v2.0/lbaas/listeners'}]
+        [{'method': 'POST', 'path': '/v2/lbaas/listeners'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LISTENER,
@@ -43,7 +43,7 @@ rules = [
         constants.RULE_API_READ,
         "Show Listener details",
         [{'method': 'GET',
-          'path': '/v2.0/lbaas/listeners/{listener_id}'}]
+          'path': '/v2/lbaas/listeners/{listener_id}'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LISTENER,
@@ -51,7 +51,7 @@ rules = [
         constants.RULE_API_WRITE,
         "Update a Listener",
         [{'method': 'PUT',
-          'path': '/v2.0/lbaas/listeners/{listener_id}'}]
+          'path': '/v2/lbaas/listeners/{listener_id}'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LISTENER,
@@ -59,7 +59,7 @@ rules = [
         constants.RULE_API_WRITE,
         "Remove a Listener",
         [{'method': 'DELETE',
-          'path': '/v2.0/lbaas/listeners/{listener_id}'}]
+          'path': '/v2/lbaas/listeners/{listener_id}'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_LISTENER,
@@ -67,7 +67,7 @@ rules = [
         constants.RULE_API_READ,
         "Show Listener statistics",
         [{'method': 'GET',
-          'path': '/v2.0/lbaas/listeners/{listener_id}/stats'}]
+          'path': '/v2/lbaas/listeners/{listener_id}/stats'}]
     ),
 ]
 
