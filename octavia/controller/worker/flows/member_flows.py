@@ -104,10 +104,6 @@ class MemberFlows(object):
                       constants.POOL]))
         update_member_flow.add(database_tasks.MarkMemberPendingUpdateInDB(
             requires=constants.MEMBER))
-        update_member_flow.add(model_tasks.
-                               UpdateAttributes(
-                                   rebind={constants.OBJECT: constants.MEMBER},
-                                   requires=[constants.UPDATE_DICT]))
         update_member_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_member_flow.add(database_tasks.UpdateMemberInDB(
@@ -179,15 +175,6 @@ class MemberFlows(object):
                     flow=constants.MEMBER_TO_ERROR_ON_REVERT_FLOW)))
         for m, um in updated_members:
             um.pop('id', None)
-            unordered_members_flow.add(
-                model_tasks.UpdateAttributes(
-                    inject={constants.OBJECT: m, constants.UPDATE_DICT: um},
-                    name='{flow}-{id}'.format(
-                        id=m.id, flow=constants.UPDATE_ATTRIBUTES_FLOW)))
-            unordered_members_flow.add(database_tasks.UpdateMemberInDB(
-                inject={constants.MEMBER: m, constants.UPDATE_DICT: um},
-                name='{flow}-{id}'.format(
-                    id=m.id, flow=constants.UPDATE_MEMBER_INDB)))
             unordered_members_active_flow.add(
                 database_tasks.MarkMemberActiveInDB(
                     inject={constants.MEMBER: m},

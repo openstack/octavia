@@ -28,7 +28,6 @@ from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.controller.worker.tasks import compute_tasks
 from octavia.controller.worker.tasks import database_tasks
 from octavia.controller.worker.tasks import lifecycle_tasks
-from octavia.controller.worker.tasks import model_tasks
 from octavia.controller.worker.tasks import network_tasks
 
 CONF = cfg.CONF
@@ -337,11 +336,6 @@ class LoadBalancerFlows(object):
         update_LB_flow = linear_flow.Flow(constants.UPDATE_LOADBALANCER_FLOW)
         update_LB_flow.add(lifecycle_tasks.LoadBalancerToErrorOnRevertTask(
             requires=constants.LOADBALANCER))
-        update_LB_flow.add(model_tasks.
-                           UpdateAttributes(
-                               rebind={constants.OBJECT:
-                                       constants.LOADBALANCER},
-                               requires=[constants.UPDATE_DICT]))
         update_LB_flow.add(network_tasks.ApplyQos(
             requires=(constants.LOADBALANCER, constants.UPDATE_DICT)))
         update_LB_flow.add(amphora_driver_tasks.ListenersUpdate(

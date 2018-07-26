@@ -181,6 +181,9 @@ class PoolsController(base.BaseController):
         db_pool = self._get_db_pool(context.session, id)
         self._test_lb_and_listener_statuses(context.session, pool=db_pool)
 
+        self.repositories.pool.update(
+            context.session, id, provisioning_status=constants.PENDING_UPDATE)
+
         try:
             LOG.info("Sending Update of Pool %s to handler", id)
             self.handler.update(db_pool, pool)

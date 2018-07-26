@@ -91,10 +91,6 @@ class HealthMonitorFlows(object):
                       constants.LOADBALANCER]))
         update_hm_flow.add(database_tasks.MarkHealthMonitorPendingUpdateInDB(
             requires=constants.HEALTH_MON))
-        update_hm_flow.add(model_tasks.
-                           UpdateAttributes(
-                               rebind={constants.OBJECT: constants.HEALTH_MON},
-                               requires=[constants.UPDATE_DICT]))
         update_hm_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_hm_flow.add(database_tasks.UpdateHealthMonInDB(

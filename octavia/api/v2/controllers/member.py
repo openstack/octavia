@@ -356,9 +356,11 @@ class MembersController(MemberController):
                 provider_members.append(provider_member)
             # Update old members
             for m in updated_members:
+                m.provisioning_status = constants.PENDING_UPDATE
+                db_member_dict = m.to_dict(render_unsets=False)
+                db_member_dict.pop('id')
                 self.repositories.member.update(
-                    lock_session, m.id,
-                    provisioning_status=constants.PENDING_UPDATE)
+                    lock_session, m.id, **db_member_dict)
                 provider_members.append(
                     driver_utils.db_member_to_provider_member(m))
             # Delete old members

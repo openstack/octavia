@@ -115,10 +115,6 @@ class PoolFlows(object):
                       constants.LOADBALANCER]))
         update_pool_flow.add(database_tasks.MarkPoolPendingUpdateInDB(
             requires=constants.POOL))
-        update_pool_flow.add(model_tasks.
-                             UpdateAttributes(
-                                 rebind={constants.OBJECT: constants.POOL},
-                                 requires=[constants.UPDATE_DICT]))
         update_pool_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_pool_flow.add(database_tasks.UpdatePoolInDB(

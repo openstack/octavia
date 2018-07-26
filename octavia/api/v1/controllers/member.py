@@ -158,6 +158,9 @@ class MembersController(base.BaseController):
         db_member = self._get_db_member(context.session, id)
         self._test_lb_and_listener_statuses(context.session, member=db_member)
 
+        self.repositories.member.update(
+            context.session, id, provisioning_status=constants.PENDING_UPDATE)
+
         try:
             LOG.info("Sending Update of Member %s to handler", id)
             self.handler.update(db_member, member)
