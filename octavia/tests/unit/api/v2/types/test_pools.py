@@ -50,6 +50,7 @@ class TestPoolPOST(base.BaseTypesTest):
     def test_pool(self):
         body = {
             "loadbalancer_id": uuidutils.generate_uuid(),
+            "listener_id": uuidutils.generate_uuid(),
             "protocol": constants.PROTOCOL_HTTP,
             "lb_algorithm": constants.LB_ALGORITHM_ROUND_ROBIN}
         pool = wsme_json.fromjson(self._type, body)

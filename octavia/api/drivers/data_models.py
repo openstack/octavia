@@ -161,7 +161,8 @@ class Pool(BaseDataModel):
     def __init__(self, admin_state_up=Unset, description=Unset,
                  healthmonitor=Unset, lb_algorithm=Unset,
                  loadbalancer_id=Unset, members=Unset, name=Unset,
-                 pool_id=Unset, protocol=Unset, session_persistence=Unset):
+                 pool_id=Unset, listener_id=Unset, protocol=Unset,
+                 session_persistence=Unset):
 
         self.admin_state_up = admin_state_up
         self.description = description
@@ -171,6 +172,7 @@ class Pool(BaseDataModel):
         self.members = members
         self.name = name
         self.pool_id = pool_id
+        self.listener_id = listener_id
         self.protocol = protocol
         self.session_persistence = session_persistence
 

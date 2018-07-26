@@ -238,6 +238,9 @@ def db_pool_to_provider_pool(db_pool):
     if db_pool.members:
         provider_members = db_members_to_provider_members(db_pool.members)
         new_pool_dict['members'] = provider_members
+    db_listeners = db_pool.listeners
+    if db_listeners:
+        new_pool_dict['listener_id'] = db_listeners[0].id
     return driver_dm.Pool.from_dict(new_pool_dict)
 
 
