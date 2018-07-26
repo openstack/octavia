@@ -192,7 +192,8 @@ class HaproxyAmphoraLoadBalancerDriver(
 
     def _upload_cert(self, amp, listener_id, pem, md5, name):
         try:
-            if self.client.get_cert_md5sum(amp, listener_id, name) == md5:
+            if self.client.get_cert_md5sum(
+                    amp, listener_id, name, ignore=(404,)) == md5:
                 return
         except exc.NotFound:
             pass
@@ -345,11 +346,11 @@ class AmphoraAPIClient(object):
         r = self.put(amp, 'certificate', data=pem_file)
         return exc.check_exception(r)
 
-    def get_cert_md5sum(self, amp, listener_id, pem_filename):
+    def get_cert_md5sum(self, amp, listener_id, pem_filename, ignore=tuple()):
         r = self.get(amp,
                      'listeners/{listener_id}/certificates/{filename}'.format(
                          listener_id=listener_id, filename=pem_filename))
-        if exc.check_exception(r):
+        if exc.check_exception(r, ignore):
             return r.json().get("md5sum")
         return None
 

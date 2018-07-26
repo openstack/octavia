@@ -28,6 +28,7 @@ class KeystoneSession(object):
 
     def __init__(self, section=constants.SERVICE_AUTH):
         self._session = None
+        self._auth = None
 
         self.section = section
         ks_loading.register_auth_conf_options(cfg.CONF, self.section)
@@ -39,12 +40,19 @@ class KeystoneSession(object):
         :return: a Keystone Session object
         """
         if not self._session:
-            self._auth = ks_loading.load_auth_from_conf_options(
-                cfg.CONF, self.section)
             self._session = ks_loading.load_session_from_conf_options(
-                cfg.CONF, self.section, auth=self._auth)
+                cfg.CONF, self.section, auth=self.get_auth())
 
         return self._session
+
+    def get_auth(self):
+        if not self._auth:
+            self._auth = ks_loading.load_auth_from_conf_options(
+                cfg.CONF, self.section)
+        return self._auth
+
+    def get_service_user_id(self):
+        return self.get_auth().get_user_id(self.get_session())
 
 
 class SkippingAuthProtocol(auth_token.AuthProtocol):

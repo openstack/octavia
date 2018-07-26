@@ -73,3 +73,19 @@ class BarbicanAuth(object):
         :return: a Barbican Client object
         :raises Exception: if the client cannot be created
         """
+
+    @abc.abstractmethod
+    def ensure_secret_access(self, context, ref):
+        """Do whatever steps are necessary to ensure future access to a secret.
+
+        :param context: pecan context object
+        :param ref: Reference to a Barbican object
+        """
+
+    @abc.abstractmethod
+    def revoke_secret_access(self, context, ref):
+        """Revoke access of Octavia keystone user to a secret.
+
+        :param context: pecan context object
+        :param ref: Reference to a Barbican object
+        """

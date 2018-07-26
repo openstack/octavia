@@ -143,3 +143,11 @@ class BarbicanCertManager(cert_mgr.CertManager):
             # If the delete failed, it was probably because it isn't legacy
             # (this will be fixed once Secrets have Consumer registration).
             pass
+
+    def set_acls(self, context, cert_ref):
+        LOG.debug('Setting project ACL for certificate secret...')
+        self.auth.ensure_secret_access(context, cert_ref)
+
+    def unset_acls(self, context, cert_ref):
+        LOG.debug('Unsetting project ACL for certificate secret...')
+        self.auth.revoke_secret_access(context, cert_ref)

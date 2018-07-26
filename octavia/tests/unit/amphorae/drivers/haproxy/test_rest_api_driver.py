@@ -108,11 +108,12 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         # this is called 3 times
         gcm_calls = [
             mock.call(self.amp, self.sl.id,
-                      self.sl.default_tls_container.id + '.pem'),
+                      self.sl.default_tls_container.id + '.pem',
+                      ignore=(404,)),
             mock.call(self.amp, self.sl.id,
-                      sconts[0].id + '.pem'),
+                      sconts[0].id + '.pem', ignore=(404,)),
             mock.call(self.amp, self.sl.id,
-                      sconts[1].id + '.pem')
+                      sconts[1].id + '.pem', ignore=(404,))
         ]
         self.driver.client.get_cert_md5sum.assert_has_calls(gcm_calls,
                                                             any_order=True)

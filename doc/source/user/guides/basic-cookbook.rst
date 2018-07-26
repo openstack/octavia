@@ -398,7 +398,6 @@ balancer features, like Layer 7 features and header manipulation.
 
     openssl pkcs12 -export -inkey server.key -in server.crt -certfile ca-chain.crt -passout pass: -out server.p12
     openstack secret store --name='tls_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server.p12)"
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_secret1 / {print $2}')
     openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
     openstack loadbalancer show lb1
@@ -456,8 +455,6 @@ listener using Server Name Indication (SNI) technology.
     openssl pkcs12 -export -inkey server2.key -in server2.crt -certfile ca-chain2.crt -passout pass: -out server2.p12
     openstack secret store --name='tls_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server.p12)"
     openstack secret store --name='tls_secret2' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server2.p12)"
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_secret1 / {print $2}')
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_secret2 / {print $2}')
     openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
     openstack loadbalancer show lb1
@@ -521,7 +518,6 @@ HTTP just get redirected to the HTTPS listener), then please see `the example
 
     openssl pkcs12 -export -inkey server.key -in server.crt -certfile ca-chain.crt -passout pass: -out server.p12
     openstack secret store --name='tls_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server.p12)"
-    openstack acl user add -u admin_id $(openstack secret list | awk '/ tls_secret1 / {print $2}')
     openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
     # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
     openstack loadbalancer show lb1

@@ -160,3 +160,11 @@ class LocalCertManager(cert_mgr.CertManager):
         except IOError as ioe:
             LOG.error("Failed to delete certificate %s", cert_ref)
             raise exceptions.CertificateStorageException(message=ioe.message)
+
+    def set_acls(self, context, cert_ref):
+        # There is no security on this store, because it's really dumb
+        pass
+
+    def unset_acls(self, context, cert_ref):
+        # There is no security on this store, because it's really dumb
+        pass

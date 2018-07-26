@@ -148,3 +148,14 @@ class TestBarbicanManager(base.TestCase):
             url=self.secret_ref,
             name='Octavia'
         )
+
+    def test_set_acls(self):
+        self.cert_manager.set_acls(
+            context=self.context,
+            cert_ref=self.secret_ref
+        )
+
+        # our mock_bc should have one call to ensure_secret_access
+        self.cert_manager.auth.ensure_secret_access.assert_called_once_with(
+            self.context, self.secret_ref
+        )

@@ -61,3 +61,13 @@ class CastellanCertManager(cert_mgr.CertManager):
         # Delete is not a great name for this -- we don't delete anything
         # in reality, we just do cleanup here. For castellan, none is required
         pass
+
+    def set_acls(self, context, cert_ref):
+        # We don't manage ACL based access for things retrieved via Castellan
+        # because we assume we have elevated access to the secret store.
+        pass
+
+    def unset_acls(self, context, cert_ref):
+        # We don't manage ACL based access for things retrieved via Castellan
+        # because we assume we have elevated access to the secret store.
+        pass
