@@ -35,7 +35,7 @@ CONF = cfg.CONF
 
 class BaseRepositoryTest(base.OctaviaDBTestBase):
 
-    FAKE_IP = "10.0.0.1"
+    FAKE_IP = "192.0.2.1"
     FAKE_UUID_1 = uuidutils.generate_uuid()
     FAKE_UUID_2 = uuidutils.generate_uuid()
     FAKE_UUID_3 = uuidutils.generate_uuid()
@@ -131,7 +131,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
               'server_group_id': uuidutils.generate_uuid(),
               'project_id': uuidutils.generate_uuid(),
               'id': uuidutils.generate_uuid()}
-        vip = {'ip_address': '10.0.0.1',
+        vip = {'ip_address': '192.0.2.1',
                'port_id': uuidutils.generate_uuid(),
                'subnet_id': uuidutils.generate_uuid(),
                'network_id': uuidutils.generate_uuid(),
@@ -394,7 +394,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                     'operating_status': constants.ONLINE,
                     'id': uuidutils.generate_uuid()}
         l7policy['listener_id'] = listener.get('id')
-        vip = {'ip_address': '10.0.0.1', 'port_id': uuidutils.generate_uuid(),
+        vip = {'ip_address': '192.0.2.1', 'port_id': uuidutils.generate_uuid(),
                'subnet_id': uuidutils.generate_uuid()}
         lb = {'name': 'lb1', 'description': 'desc1', 'enabled': True,
               'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
@@ -419,7 +419,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         test below: `test_create_load_balancer_tree_quotas`.
         """
         project_id = uuidutils.generate_uuid()
-        vip = {'ip_address': '10.0.0.1', 'port_id': uuidutils.generate_uuid(),
+        vip = {'ip_address': '192.0.2.1', 'port_id': uuidutils.generate_uuid(),
                'subnet_id': uuidutils.generate_uuid()}
         lb = {'name': 'lb1', 'description': 'desc1', 'enabled': True,
               'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
@@ -539,7 +539,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                      'operating_status': constants.ONLINE,
                      'id': uuidutils.generate_uuid()}
         l7policy['listener_id'] = listener.get('id')
-        vip = {'ip_address': '10.0.0.1', 'port_id': uuidutils.generate_uuid(),
+        vip = {'ip_address': '192.0.2.1', 'port_id': uuidutils.generate_uuid(),
                'subnet_id': uuidutils.generate_uuid()}
         lb = {'name': 'lb1', 'description': 'desc1', 'enabled': True,
               'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
@@ -1885,7 +1885,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
         member = self.member_repo.create(self.session, id=self.FAKE_UUID_3,
                                          project_id=self.FAKE_UUID_2,
                                          pool_id=pool.id,
-                                         ip_address="10.0.0.1",
+                                         ip_address="192.0.2.1",
                                          protocol_port=80, enabled=True,
                                          provisioning_status=constants.ACTIVE,
                                          operating_status=constants.ONLINE,
@@ -1939,7 +1939,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
         member = self.member_repo.create(self.session, id=self.FAKE_UUID_3,
                                          project_id=self.FAKE_UUID_2,
                                          pool_id=pool.id,
-                                         ip_address="10.0.0.1",
+                                         ip_address="192.0.2.1",
                                          protocol_port=80,
                                          provisioning_status=constants.ACTIVE,
                                          operating_status=constants.ONLINE,
@@ -1989,16 +1989,16 @@ class MemberRepositoryTest(BaseRepositoryTest):
 
     def test_get(self):
         member = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
-                                    self.pool.id, "10.0.0.1")
+                                    self.pool.id, "192.0.2.1")
         new_member = self.member_repo.get(self.session, id=member.id)
         self.assertIsInstance(new_member, models.Member)
         self.assertEqual(member, new_member)
 
     def test_get_all(self):
         member_one = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
-                                        self.pool.id, "10.0.0.1")
+                                        self.pool.id, "192.0.2.1")
         member_two = self.create_member(self.FAKE_UUID_3, self.FAKE_UUID_2,
-                                        self.pool.id, "10.0.0.2")
+                                        self.pool.id, "192.0.2.2")
         member_list, _ = self.member_repo.get_all(self.session,
                                                   project_id=self.FAKE_UUID_2)
         self.assertIsInstance(member_list, list)
@@ -2008,20 +2008,20 @@ class MemberRepositoryTest(BaseRepositoryTest):
 
     def test_create(self):
         member = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
-                                    self.pool.id, ip_address="10.0.0.1")
+                                    self.pool.id, ip_address="192.0.2.1")
         new_member = self.member_repo.get(self.session, id=member.id)
         self.assertEqual(self.FAKE_UUID_1, new_member.id)
         self.assertEqual(self.FAKE_UUID_2, new_member.project_id)
         self.assertEqual(self.pool.id, new_member.pool_id)
-        self.assertEqual("10.0.0.1", new_member.ip_address)
+        self.assertEqual("192.0.2.1", new_member.ip_address)
         self.assertEqual(80, new_member.protocol_port)
         self.assertEqual(constants.ONLINE, new_member.operating_status)
         self.assertTrue(new_member.enabled)
 
     def test_update(self):
-        ip_address_change = "10.0.0.2"
+        ip_address_change = "192.0.2.2"
         member = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
-                                    self.pool.id, "10.0.0.1")
+                                    self.pool.id, "192.0.2.1")
         self.member_repo.update(self.session, id=member.id,
                                 ip_address=ip_address_change)
         new_member = self.member_repo.get(self.session, id=member.id)
@@ -2029,7 +2029,7 @@ class MemberRepositoryTest(BaseRepositoryTest):
 
     def test_delete(self):
         member = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
-                                    self.pool.id, "10.0.0.1")
+                                    self.pool.id, "192.0.2.1")
         self.member_repo.delete(self.session, id=member.id)
         self.assertIsNone(self.member_repo.get(self.session, id=member.id))
         new_pool = self.pool_repo.get(self.session, id=self.pool.id)
@@ -2038,9 +2038,9 @@ class MemberRepositoryTest(BaseRepositoryTest):
 
     def test_update_pool_members(self):
         member1 = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
-                                     self.pool.id, "10.0.0.1")
+                                     self.pool.id, "192.0.2.1")
         member2 = self.create_member(self.FAKE_UUID_3, self.FAKE_UUID_2,
-                                     self.pool.id, "10.0.0.2")
+                                     self.pool.id, "192.0.2.2")
         self.member_repo.update_pool_members(
             self.session,
             pool_id=self.pool.id,
@@ -2481,6 +2481,13 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
+        self.pool2 = self.pool_repo.create(
+            self.session, id=self.FAKE_UUID_2, project_id=self.FAKE_UUID_2,
+            name="pool2_test", description="pool2_description",
+            protocol=constants.PROTOCOL_HTTP,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, enabled=True)
 
     def create_health_monitor(self, hm_id, pool_id):
         health_monitor = self.hm_repo.create(
@@ -2626,7 +2633,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
     def test_delete_with_vip(self):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
         vip = self.vip_repo.create(self.session, load_balancer_id=lb.id,
-                                   ip_address="10.0.0.1")
+                                   ip_address="192.0.2.1")
         new_lb = self.lb_repo.get(self.session, id=lb.id)
         self.assertIsNotNone(new_lb)
         self.assertIsNotNone(new_lb.vip)
@@ -2689,7 +2696,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
                                            lb_network_ip=self.FAKE_IP,
                                            status=constants.ACTIVE)
         vip = self.vip_repo.create(self.session, load_balancer_id=lb.id,
-                                   ip_address="10.0.0.1")
+                                   ip_address="192.0.2.1")
         listener = self.listener_repo.create(
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="listener_name", description="listener_description",
@@ -2851,7 +2858,7 @@ class VipRepositoryTest(BaseRepositoryTest):
 
     def create_vip(self, lb_id):
         vip = self.vip_repo.create(self.session, load_balancer_id=lb_id,
-                                   ip_address="10.0.0.1")
+                                   ip_address="192.0.2.1")
         return vip
 
     def test_get(self):
@@ -2864,10 +2871,10 @@ class VipRepositoryTest(BaseRepositoryTest):
     def test_create(self):
         vip = self.create_vip(self.lb.id)
         self.assertEqual(self.lb.id, vip.load_balancer_id)
-        self.assertEqual("10.0.0.1", vip.ip_address)
+        self.assertEqual("192.0.2.1", vip.ip_address)
 
     def test_update(self):
-        address_change = "10.0.0.2"
+        address_change = "192.0.2.2"
         vip = self.create_vip(self.lb.id)
         self.vip_repo.update(self.session, vip.load_balancer_id,
                              ip_address=address_change)
