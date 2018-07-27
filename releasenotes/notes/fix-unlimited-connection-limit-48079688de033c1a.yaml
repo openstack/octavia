@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixes a bug where unspecified or unlimited listener connection limit
+    settings would lead to a 2000 connection limit when using the
+    amphora/octavia driver. This was the compiled in connection limit
+    in some HAproxy packages.

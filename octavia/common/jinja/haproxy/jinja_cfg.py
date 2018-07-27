@@ -166,6 +166,9 @@ class JinjaTemplater(object):
         # the global value trivial.
         if listener.connection_limit and listener.connection_limit > -1:
             ret_value['global_connection_limit'] = listener.connection_limit
+        else:
+            ret_value['global_connection_limit'] = (
+                constants.HAPROXY_MAX_MAXCONN)
         return ret_value
 
     def _transform_amphora(self, amphora):
@@ -204,6 +207,8 @@ class JinjaTemplater(object):
         }
         if listener.connection_limit and listener.connection_limit > -1:
             ret_value['connection_limit'] = listener.connection_limit
+        else:
+            ret_value['connection_limit'] = constants.HAPROXY_MAX_MAXCONN
         if listener.tls_certificate_id:
             ret_value['default_tls_path'] = '%s.pem' % (
                 os.path.join(self.base_crt_dir,
