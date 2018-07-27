@@ -828,15 +828,14 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         # if we run with anti-affinity we need to set the server group
         # as well
-        if CONF.nova.enable_anti_affinity:
-            lb = self._amphora_repo.get_lb_for_amphora(
-                db_apis.get_session(), amp.id)
-            if lb:
-                stored_params[constants.SERVER_GROUP_ID] = lb.server_group_id
+        lb = self._amphora_repo.get_lb_for_amphora(
+            db_apis.get_session(), amp.id)
+        if CONF.nova.enable_anti_affinity and lb:
+            stored_params[constants.SERVER_GROUP_ID] = lb.server_group_id
 
         failover_amphora_tf = self._taskflow_load(
             self._amphora_flows.get_failover_flow(
-                role=amp.role, load_balancer_id=amp.load_balancer_id),
+                role=amp.role, load_balancer=lb),
             store=stored_params)
 
         with tf_logging.DynamicLoggingListener(

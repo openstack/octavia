@@ -240,6 +240,13 @@ haproxy_amphora_opts = [
                default=5,
                help=_('Retry timeout between connection attempts in '
                       'seconds.')),
+    cfg.IntOpt('active_connection_max_retries',
+               default=15,
+               help=_('Retry threshold for connecting to active amphorae.')),
+    cfg.IntOpt('active_connection_rety_interval',
+               default=2,
+               help=_('Retry timeout between connection attempts in '
+                      'seconds for active amphora.')),
     cfg.IntOpt('build_rate_limit',
                default=-1,
                help=_('Number of amphorae that could be built per controller'

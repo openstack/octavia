@@ -24,6 +24,7 @@ import six
 from octavia.amphorae.driver_exceptions import exceptions as driver_except
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy import rest_api_driver as driver
+from octavia.common import constants
 from octavia.db import models
 from octavia.network import data_models as network_models
 from octavia.tests.unit import base
@@ -46,6 +47,9 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
 
     def setUp(self):
         super(TestHaproxyAmphoraLoadBalancerDriverTest, self).setUp()
+
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group="haproxy_amphora", user_group="everyone")
 
         DEST1 = '198.51.100.0/24'
         DEST2 = '203.0.113.0/24'
@@ -83,6 +87,50 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                             'vrrp_ip': self.amp.vrrp_ip,
                             'mtu': FAKE_MTU,
                             'host_routes': host_routes_data}
+
+        self.timeout_dict = {constants.REQ_CONN_TIMEOUT: 1,
+                             constants.REQ_READ_TIMEOUT: 2,
+                             constants.CONN_MAX_RETRIES: 3,
+                             constants.CONN_RETRY_INTERVAL: 4}
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_amphora_listeners(self, mock_load_cert):
+        mock_amphora = mock.MagicMock()
+        mock_amphora.id = uuidutils.generate_uuid()
+        mock_listener = mock.MagicMock()
+        mock_listener.id = uuidutils.generate_uuid()
+        mock_load_cert.return_value = {'tls_cert': None, 'sni_certs': []}
+        self.driver.jinja.build_config.return_value = 'the_config'
+
+        self.driver.update_amphora_listeners(None, 1, [],
+                                             self.timeout_dict)
+        mock_load_cert.assert_not_called()
+        self.driver.jinja.build_config.assert_not_called()
+        self.driver.client.upload_config.assert_not_called()
+        self.driver.client.reload_listener.assert_not_called()
+
+        self.driver.update_amphora_listeners([mock_listener], 0,
+                                             [mock_amphora], self.timeout_dict)
+        self.driver.jinja.build_config.assert_called_once_with(
+            host_amphora=mock_amphora, listener=mock_listener,
+            tls_cert=None, user_group="everyone")
+        self.driver.client.upload_config.assert_called_once_with(
+            mock_amphora, mock_listener.id, 'the_config',
+            timeout_dict=self.timeout_dict)
+        self.driver.client.reload_listener(mock_amphora, mock_listener.id,
+                                           timeout_dict=self.timeout_dict)
+
+        mock_load_cert.reset_mock()
+        self.driver.jinja.build_config.reset_mock()
+        self.driver.client.upload_config.reset_mock()
+        self.driver.client.reload_listener.reset_mock()
+        mock_amphora.status = constants.DELETED
+        self.driver.update_amphora_listeners([mock_listener], 0,
+                                             [mock_amphora], self.timeout_dict)
+        mock_load_cert.assert_not_called()
+        self.driver.jinja.build_config.assert_not_called()
+        self.driver.client.upload_config.assert_not_called()
+        self.driver.client.reload_listener.assert_not_called()
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.get_host_names')
@@ -158,10 +206,28 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             self.amp, self.sl.id)
 
     def test_start(self):
+        amp1 = mock.MagicMock()
+        amp2 = mock.MagicMock()
+        amp2.status = constants.DELETED
+        listener = mock.MagicMock()
+        listener.id = uuidutils.generate_uuid()
+        listener.load_balancer.amphorae = [amp1, amp2]
         # Execute driver method
-        self.driver.start(self.sl, self.sv)
+        self.driver.start(listener, self.sv)
+        self.driver.client.start_listener.assert_called_once_with(
+            amp1, listener.id)
+
+    def test_start_with_amphora(self):
+        # Execute driver method
+        amp = mock.MagicMock()
+        self.driver.start(self.sl, self.sv, self.amp)
         self.driver.client.start_listener.assert_called_once_with(
             self.amp, self.sl.id)
+
+        self.driver.client.start_listener.reset_mock()
+        amp.status = constants.DELETED
+        self.driver.start(self.sl, self.sv, amp)
+        self.driver.client.start_listener.assert_not_called()
 
     def test_delete(self):
         # Execute driver method
@@ -170,13 +236,19 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             self.amp, self.sl.id)
 
     def test_get_info(self):
-        pass
+        self.driver.client.get_info.return_value = 'FAKE_INFO'
+        result = self.driver.get_info(self.amp)
+        self.assertEqual('FAKE_INFO', result)
 
     def test_get_diagnostics(self):
-        pass
+        # TODO(johnsom) Implement once this exists on the amphora agent.
+        result = self.driver.get_diagnostics(self.amp)
+        self.assertIsNone(result)
 
     def test_finalize_amphora(self):
-        pass
+        # TODO(johnsom) Implement once this exists on the amphora agent.
+        result = self.driver.finalize_amphora(self.amp)
+        self.assertIsNone(result)
 
     def test_post_vip_plug(self):
         amphorae_network_config = mock.MagicMock()
@@ -250,7 +322,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
     def test_get_vrrp_interface(self):
         self.driver.get_vrrp_interface(self.amp)
         self.driver.client.get_interface.assert_called_once_with(
-            self.amp, self.amp.vrrp_ip)
+            self.amp, self.amp.vrrp_ip, timeout_dict=None)
 
 
 class TestAmphoraAPIClientTest(base.TestCase):
@@ -271,6 +343,10 @@ class TestAmphoraAPIClientTest(base.TestCase):
                             'vrrp_ip': self.amp.vrrp_ip}
         patcher = mock.patch('time.sleep').start()
         self.addCleanup(patcher.stop)
+        self.timeout_dict = {constants.REQ_CONN_TIMEOUT: 1,
+                             constants.REQ_READ_TIMEOUT: 2,
+                             constants.CONN_MAX_RETRIES: 3,
+                             constants.CONN_RETRY_INTERVAL: 4}
 
     def test_base_url(self):
         url = self.driver._base_url(FAKE_IP)
@@ -284,8 +360,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.time.sleep')
     def test_request(self, mock_sleep, mock_get):
         self.assertRaises(driver_except.TimeOutException,
-                          self.driver.request,
-                          'get', self.amp, 'unavailableURL')
+                          self.driver.request, 'get', self.amp,
+                          'unavailableURL', self.timeout_dict)
 
     @requests_mock.mock()
     def test_get_info(self, m):

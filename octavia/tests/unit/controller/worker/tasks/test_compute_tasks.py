@@ -339,7 +339,7 @@ class TestComputeTasks(base.TestCase):
 
         mock_driver.get_amphora.return_value = _amphora_mock, None
 
-        computewait = compute_tasks.ComputeWait()
+        computewait = compute_tasks.ComputeActiveWait()
         computewait.execute(COMPUTE_ID, AMPHORA_ID)
 
         mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID)
@@ -366,7 +366,7 @@ class TestComputeTasks(base.TestCase):
 
         mock_driver.get_amphora.return_value = _amphora_mock, None
 
-        computewait = compute_tasks.ComputeWait()
+        computewait = compute_tasks.ComputeActiveWait()
         computewait.execute(COMPUTE_ID, AMPHORA_ID)
 
         mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID)
@@ -391,7 +391,7 @@ class TestComputeTasks(base.TestCase):
 
         mock_driver.get_amphora.return_value = _amphora_mock, None
 
-        computewait = compute_tasks.ComputeWait()
+        computewait = compute_tasks.ComputeActiveWait()
         computewait.execute(COMPUTE_ID, AMPHORA_ID)
 
         mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID)

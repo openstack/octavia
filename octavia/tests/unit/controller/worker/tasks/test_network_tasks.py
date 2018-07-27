@@ -17,6 +17,7 @@ import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
+from taskflow.types import failure
 
 from octavia.common import constants
 from octavia.common import data_models as o_data_models
@@ -296,6 +297,69 @@ class TestNetworkTasks(base.TestCase):
         self.assertEqual([port_mock], ports)
 
     def test_handle_network_delta(self, mock_get_net_driver):
+        mock_net_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_net_driver
+
+        nic1 = mock.MagicMock()
+        nic1.network_id = uuidutils.generate_uuid()
+        nic2 = mock.MagicMock()
+        nic2.network_id = uuidutils.generate_uuid()
+        interface1 = mock.MagicMock()
+        interface1.port_id = uuidutils.generate_uuid()
+        port1 = mock.MagicMock()
+        port1.network_id = uuidutils.generate_uuid()
+        fixed_ip = mock.MagicMock()
+        fixed_ip.subnet_id = uuidutils.generate_uuid()
+        port1.fixed_ips = [fixed_ip]
+        subnet = mock.MagicMock()
+        network = mock.MagicMock()
+
+        delta = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                  compute_id=self.amphora_mock.compute_id,
+                                  add_nics=[nic1],
+                                  delete_nics=[nic2, nic2, nic2])
+
+        mock_net_driver.plug_network.return_value = interface1
+        mock_net_driver.get_port.return_value = port1
+        mock_net_driver.get_network.return_value = network
+        mock_net_driver.get_subnet.return_value = subnet
+
+        mock_net_driver.unplug_network.side_effect = [
+            None, net_base.NetworkNotFound, Exception]
+
+        handle_net_delta_obj = network_tasks.HandleNetworkDelta()
+        result = handle_net_delta_obj.execute(self.amphora_mock, delta)
+
+        mock_net_driver.plug_network.assert_called_once_with(
+            self.amphora_mock.compute_id, nic1.network_id)
+        mock_net_driver.get_port.assert_called_once_with(interface1.port_id)
+        mock_net_driver.get_network.assert_called_once_with(port1.network_id)
+        mock_net_driver.get_subnet.assert_called_once_with(fixed_ip.subnet_id)
+
+        self.assertEqual({self.amphora_mock.id: [port1]}, result)
+
+        mock_net_driver.unplug_network.assert_called_with(
+            self.amphora_mock.compute_id, nic2.network_id)
+
+        # Revert
+        delta2 = data_models.Delta(amphora_id=self.amphora_mock.id,
+                                   compute_id=self.amphora_mock.compute_id,
+                                   add_nics=[nic1, nic1],
+                                   delete_nics=[nic2, nic2, nic2])
+
+        mock_net_driver.unplug_network.reset_mock()
+        handle_net_delta_obj.revert(
+            failure.Failure.from_exception(Exception('boom')), None, None)
+        mock_net_driver.unplug_network.assert_not_called()
+
+        mock_net_driver.unplug_network.reset_mock()
+        handle_net_delta_obj.revert(None, None, None)
+        mock_net_driver.unplug_network.assert_not_called()
+
+        mock_net_driver.unplug_network.reset_mock()
+        handle_net_delta_obj.revert(None, None, delta2)
+
+    def test_handle_network_deltas(self, mock_get_net_driver):
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
 

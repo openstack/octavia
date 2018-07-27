@@ -1525,6 +1525,25 @@ class GetAmphoraDetails(BaseDatabaseTask):
                                    vrrp_priority=amphora.vrrp_priority)
 
 
+class GetAmphoraeFromLoadbalancer(BaseDatabaseTask):
+    """Task to pull the listeners from a loadbalancer."""
+
+    def execute(self, loadbalancer):
+        """Pull the amphorae from a loadbalancer.
+
+        :param loadbalancer: Load balancer which listeners are required
+        :returns: A list of Listener objects
+        """
+        amphorae = []
+        for amp in loadbalancer.amphorae:
+            a = self.amphora_repo.get(db_apis.get_session(), id=amp.id,
+                                      show_deleted=False)
+            if a is None:
+                continue
+            amphorae.append(a)
+        return amphorae
+
+
 class GetListenersFromLoadbalancer(BaseDatabaseTask):
     """Task to pull the listeners from a loadbalancer."""
 
@@ -1537,6 +1556,7 @@ class GetListenersFromLoadbalancer(BaseDatabaseTask):
         listeners = []
         for listener in loadbalancer.listeners:
             l = self.listener_repo.get(db_apis.get_session(), id=listener.id)
+            l.load_balancer = loadbalancer
             listeners.append(l)
         return listeners
 

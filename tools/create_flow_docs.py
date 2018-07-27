@@ -53,9 +53,12 @@ def generate(flow_list, output_directory):
             get_flow_method = getattr(current_instance, current_tuple[2])
             if (current_tuple[1] == 'AmphoraFlows' and
                     current_tuple[2] == 'get_failover_flow'):
+                amp1 = dmh.generate_amphora()
+                amp2 = dmh.generate_amphora()
+                lb = dmh.generate_load_balancer(amphorae=[amp1, amp2])
                 current_engine = engines.load(
                     get_flow_method(role=constants.ROLE_STANDALONE,
-                                    load_balancer_id=None))
+                                    load_balancer=lb))
             elif (current_tuple[1] == 'LoadBalancerFlows' and
                   current_tuple[2] == 'get_create_load_balancer_flow'):
                 current_engine = engines.load(
