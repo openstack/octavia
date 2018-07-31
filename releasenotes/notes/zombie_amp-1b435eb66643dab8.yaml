@@ -1,0 +1,12 @@
+---
+fixes:
+  - |
+    This will automatically nova delete zombie amphora when they
+    are detected by Octavia. Zombie amphorae are amphorae which
+    report health messages but appear DELETED in Octavia's
+    database.
+other:
+  - |
+    Processing zombie amphora is already expensive and this adds
+    another step which could increase the load on Octavia Health
+    Manager, especially during Nova API slowness.
