@@ -64,20 +64,6 @@
     post-run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario-multinode/post.yaml
 
 - job:
-    name: octavia-v1-dsvm-scenario-kvm-centos.7
-    parent: octavia-legacy-dsvm-base
-    run: playbooks/legacy/octavia-v1-dsvm-scenario-kvm-centos.7/run.yaml
-    post-run: playbooks/legacy/octavia-v1-dsvm-scenario-kvm-centos.7/post.yaml
-
-- job:
-    name: octavia-v1-dsvm-scenario-lxd
-    parent: octavia-legacy-dsvm-base
-    run: playbooks/legacy/octavia-v1-dsvm-scenario-lxd/run.yaml
-    post-run: playbooks/legacy/octavia-v1-dsvm-scenario-lxd/post.yaml
-    required-projects:
-      - openstack/nova-lxd
-
-- job:
     name: publish-openstack-octavia-amphora-image
     parent: publish-openstack-artifacts
     run: playbooks/image-build/run.yaml
