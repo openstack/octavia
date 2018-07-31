@@ -920,6 +920,17 @@ class TestUpdateHealthDb(base.TestCase):
                         self.session_mock, member_id,
                         operating_status=constants.ONLINE)
 
+    @mock.patch('stevedore.driver.DriverManager.driver')
+    def test_update_health_zombie(self, mock_driver):
+        health = {"id": self.FAKE_UUID_1, "listeners": {}}
+
+        self.amphora_repo.get_lb_for_amphora.return_value = None
+        amp_mock = mock.MagicMock()
+        self.amphora_repo.get.return_value = amp_mock
+        self.hm.update_health(health, '192.0.2.1')
+        mock_driver.delete.assert_called_once_with(
+            amp_mock.compute_id)
+
     def test_update_health_no_status_change(self):
         health = {
             "id": self.FAKE_UUID_1,
