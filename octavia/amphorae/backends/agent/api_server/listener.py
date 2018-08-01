@@ -43,7 +43,7 @@ CONF = cfg.CONF
 UPSTART_CONF = 'upstart.conf.j2'
 SYSVINIT_CONF = 'sysvinit.conf.j2'
 SYSTEMD_CONF = 'systemd.conf.j2'
-AMPHORA_NETNS = 'amphora-netns'
+consts.AMP_NETNS_SVC_PREFIX = 'amphora-netns'
 
 JINJA_ENV = jinja2.Environment(
     autoescape=True,
@@ -161,8 +161,10 @@ class Listener(object):
 
             if init_system == consts.INIT_SYSTEMD:
                 template = SYSTEMD_TEMPLATE
-                init_enable_cmd = "systemctl enable haproxy-{list}".format(
-                                  list=listener_id)
+                # Render and install the network namespace systemd service
+                util.install_netns_systemd_service()
+                util.run_systemctl_command(
+                    consts.ENABLE, consts.AMP_NETNS_SVC_PREFIX + '.service')
             elif init_system == consts.INIT_UPSTART:
                 template = UPSTART_TEMPLATE
             elif init_system == consts.INIT_SYSVINIT:
@@ -187,20 +189,6 @@ class Listener(object):
             mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
                     stat.S_IROTH | stat.S_IXOTH)
 
-        if init_system == consts.INIT_SYSTEMD:
-            # TODO(bcafarel): implement this for other init systems
-            # netns handling depends on a separate unit file
-            netns_path = os.path.join(consts.SYSTEMD_DIR,
-                                      AMPHORA_NETNS + '.service')
-            if not os.path.exists(netns_path):
-                with os.fdopen(os.open(netns_path, flags, mode),
-                               'w') as text_file:
-                    text = JINJA_ENV.get_template(
-                        AMPHORA_NETNS + '.systemd.j2').render(
-                            amphora_nsname=consts.AMPHORA_NAMESPACE,
-                            HasIFUPAll=self._osutils.has_ifup_all())
-                    text_file.write(text)
-
         hap_major, hap_minor = haproxy_compatibility.get_haproxy_versions()
         if not os.path.exists(init_path):
             with os.fdopen(os.open(init_path, flags, mode), 'w') as text_file:
@@ -214,7 +202,7 @@ class Listener(object):
                     respawn_count=util.CONF.haproxy_amphora.respawn_count,
                     respawn_interval=(util.CONF.haproxy_amphora.
                                       respawn_interval),
-                    amphora_netns=AMPHORA_NETNS,
+                    amphora_netns=consts.AMP_NETNS_SVC_PREFIX,
                     amphora_nsname=consts.AMPHORA_NAMESPACE,
                     HasIFUPAll=self._osutils.has_ifup_all(),
                     haproxy_major_version=hap_major,
@@ -223,7 +211,10 @@ class Listener(object):
                 text_file.write(text)
 
         # Make sure the new service is enabled on boot
-        if init_system != consts.INIT_UPSTART:
+        if init_system == consts.INIT_SYSTEMD:
+            util.run_systemctl_command(
+                consts.ENABLE, "haproxy-{list}".format(list=listener_id))
+        elif init_system == consts.INIT_SYSVINIT:
             try:
                 subprocess.check_output(init_enable_cmd.split(),
                                         stderr=subprocess.STDOUT)
@@ -336,14 +327,15 @@ class Listener(object):
         init_path = util.init_path(listener_id, init_system)
 
         if init_system == consts.INIT_SYSTEMD:
-            init_disable_cmd = "systemctl disable haproxy-{list}".format(
-                               list=listener_id)
+            util.run_systemctl_command(
+                consts.DISABLE, "haproxy-{list}".format(
+                    list=listener_id))
         elif init_system == consts.INIT_SYSVINIT:
             init_disable_cmd = "insserv -r {file}".format(file=init_path)
         elif init_system != consts.INIT_UPSTART:
             raise util.UnknownInitError()
 
-        if init_system != consts.INIT_UPSTART:
+        if init_system == consts.INIT_SYSVINIT:
             try:
                 subprocess.check_output(init_disable_cmd.split(),
                                         stderr=subprocess.STDOUT)

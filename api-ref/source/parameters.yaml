@@ -411,7 +411,7 @@ healthmonitor-timeout-optional:
 healthmonitor-type:
   description: |
     The type of health monitor.  One of ``HTTP``, ``HTTPS``, ``PING``, ``TCP``,
-    or ``TLS-HELLO``.
+    ``TLS-HELLO``, or ``UDP-CONNECT``.
   in: body
   required: true
   type: string
@@ -838,15 +838,15 @@ project_id-optional-deprecated:
   type: string
 protocol:
   description: |
-    The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``TCP``, or
-    ``TERMINATED_HTTPS``.
+    The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``TCP``,
+    ``TERMINATED_HTTPS``, or ``UDP``.
   in: body
   required: true
   type: integer
 protocol-pools:
   description: |
-    The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``PROXY``, or
-    ``TCP``.
+    The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``PROXY``,
+    ``TCP``, or ``UDP``.
   in: body
   required: true
   type: string
@@ -995,10 +995,26 @@ session_persistence_cookie:
   in: body
   required: false
   type: string
+session_persistence_granularity:
+  description: |
+    The netmask used to determine UDP session persistence. Currently only
+    valid for UDP pools with session persistence of SOURCE_IP. Default netmask
+    is 255.255.255.255, meaning per client full IP.
+  in: body
+  required: false
+  type: string
+session_persistence_timeout:
+  description: |
+    The timeout, in seconds, after which a UDP flow may be rescheduled to a
+    different member. Currently only applies to UDP pools with session
+    persistence of SOURCE_IP. Default is 360.
+  in: body
+  required: false
+  type: integer
 session_persistence_type:
   description: |
     Session persistence type for the pool.  One of ``APP_COOKIE``,
-    ``HTTP_COOKIE``, ``SOURCE_IP``.
+    ``HTTP_COOKIE``, or ``SOURCE_IP``.
   in: body
   required: true
   type: string

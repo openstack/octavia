@@ -115,7 +115,7 @@ At a minimum, you must specify these health monitor attributes:
   times out.
 
 - ``type`` The type of health monitor. One of ``HTTP``, ``HTTPS``, ``PING``,
-  ``TCP``, or ``TLS-HELLO``.
+  ``TCP``, ``TLS-HELLO``, or ``UDP-CONNECT``.
 
 Some attributes receive default values if you omit them from the request:
 

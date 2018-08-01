@@ -36,12 +36,15 @@ class TestLvsCfg(base.TestCase):
         self.assertEqual('keepalivedlvs.cfg.j2', template.name)
 
     def test_render_template_udp_source_ip(self):
-        exp = ("# Configuration for Listener sample_listener_id_1\n\n"
+        exp = ("# Configuration for Loadbalancer sample_loadbalancer_id_1\n"
+               "# Configuration for Listener sample_listener_id_1\n\n"
                "net_namespace amphora-haproxy\n\n"
                "virtual_server 10.0.0.2 80 {\n"
                "    lb_algo rr\n"
                "    lb_kind NAT\n"
-               "    protocol udp\n"
+               "    protocol UDP\n"
+               "    persistence_timeout 33\n"
+               "    persistence_granularity 255.255.0.0\n"
                "    delay_loop 30\n"
                "    delay_before_retry 31\n"
                "    retry 3\n\n\n"
@@ -52,15 +55,12 @@ class TestLvsCfg(base.TestCase):
                "        weight 13\n"
                "        inhibit_on_failure\n"
                "        uthreshold 98\n"
-               "        persistence_timeout 33\n"
-               "        persistence_granularity 255.255.0.0\n"
                "        delay_before_retry 31\n"
                "        retry 3\n"
                "        MISC_CHECK {\n"
                "            misc_path \"/var/lib/octavia/lvs/check/"
                "udp_check.sh 10.0.0.99 82\"\n"
                "            misc_timeout 30\n"
-               "            misc_dynamic\n"
                "        }\n"
                "    }\n\n"
                "    # Configuration for Member sample_member_id_2\n"
@@ -68,15 +68,12 @@ class TestLvsCfg(base.TestCase):
                "        weight 13\n"
                "        inhibit_on_failure\n"
                "        uthreshold 98\n"
-               "        persistence_timeout 33\n"
-               "        persistence_granularity 255.255.0.0\n"
                "        delay_before_retry 31\n"
                "        retry 3\n"
                "        MISC_CHECK {\n"
                "            misc_path \"/var/lib/octavia/lvs/check/"
                "udp_check.sh 10.0.0.98 82\"\n"
                "            misc_timeout 30\n"
-               "            misc_dynamic\n"
                "        }\n"
                "    }\n\n"
                "}\n\n")
@@ -91,13 +88,13 @@ class TestLvsCfg(base.TestCase):
         self.assertEqual(exp, rendered_obj)
 
     def test_render_template_udp_one_packet(self):
-        exp = ("# Configuration for Listener sample_listener_id_1\n\n"
+        exp = ("# Configuration for Loadbalancer sample_loadbalancer_id_1\n"
+               "# Configuration for Listener sample_listener_id_1\n\n"
                "net_namespace amphora-haproxy\n\n"
                "virtual_server 10.0.0.2 80 {\n"
                "    lb_algo rr\n"
-               "    ops\n"
                "    lb_kind NAT\n"
-               "    protocol udp\n"
+               "    protocol UDP\n"
                "    delay_loop 30\n"
                "    delay_before_retry 31\n"
                "    retry 3\n\n\n"
@@ -114,7 +111,6 @@ class TestLvsCfg(base.TestCase):
                "            misc_path \"/var/lib/octavia/lvs/check/"
                "udp_check.sh 10.0.0.99 82\"\n"
                "            misc_timeout 30\n"
-               "            misc_dynamic\n"
                "        }\n"
                "    }\n\n"
                "    # Configuration for Member sample_member_id_2\n"
@@ -128,7 +124,6 @@ class TestLvsCfg(base.TestCase):
                "            misc_path \"/var/lib/octavia/lvs/check/"
                "udp_check.sh 10.0.0.98 82\"\n"
                "            misc_timeout 30\n"
-               "            misc_dynamic\n"
                "        }\n"
                "    }\n\n"
                "}\n\n")
@@ -142,13 +137,13 @@ class TestLvsCfg(base.TestCase):
         self.assertEqual(exp, rendered_obj)
 
     def test_render_template_udp_with_health_monitor(self):
-        exp = ("# Configuration for Listener sample_listener_id_1\n\n"
+        exp = ("# Configuration for Loadbalancer sample_loadbalancer_id_1\n"
+               "# Configuration for Listener sample_listener_id_1\n\n"
                "net_namespace amphora-haproxy\n\n"
                "virtual_server 10.0.0.2 80 {\n"
                "    lb_algo rr\n"
-               "    ops\n"
                "    lb_kind NAT\n"
-               "    protocol udp\n"
+               "    protocol UDP\n"
                "    delay_loop 30\n"
                "    delay_before_retry 31\n"
                "    retry 3\n\n\n"
@@ -165,7 +160,6 @@ class TestLvsCfg(base.TestCase):
                "            misc_path \"/var/lib/octavia/lvs/check/"
                "udp_check.sh 10.0.0.99 82\"\n"
                "            misc_timeout 30\n"
-               "            misc_dynamic\n"
                "        }\n"
                "    }\n\n"
                "    # Configuration for Member sample_member_id_2\n"
@@ -179,7 +173,6 @@ class TestLvsCfg(base.TestCase):
                "            misc_path \"/var/lib/octavia/lvs/check/"
                "udp_check.sh 10.0.0.98 82\"\n"
                "            misc_timeout 30\n"
-               "            misc_dynamic\n"
                "        }\n"
                "    }\n\n"
                "}\n\n")
@@ -193,7 +186,8 @@ class TestLvsCfg(base.TestCase):
         self.assertEqual(exp, rendered_obj)
 
     def test_render_template_udp_no_other_resources(self):
-        exp = ("# Configuration for Listener sample_listener_id_1\n\n"
+        exp = ("# Configuration for Loadbalancer sample_loadbalancer_id_1\n"
+               "# Configuration for Listener sample_listener_id_1\n\n"
                "net_namespace amphora-haproxy\n\n\n")
 
         rendered_obj = self.udp_jinja_cfg.render_loadbalancer_obj(

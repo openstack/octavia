@@ -57,9 +57,6 @@ class TestServerTestCase(base.TestCase):
 
         self.conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))
         self.conf.config(group="haproxy_amphora", base_path='/var/lib/octavia')
-        mock.patch('octavia.amphorae.backends.agent.api_server.server.'
-                   'check_and_return_request_listener_protocol',
-                   return_value='TCP').start()
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
@@ -401,26 +398,38 @@ class TestServerTestCase(base.TestCase):
             json.loads(rv.data.decode('utf-8')))
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_listener_protocol', return_value='TCP')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
-    def test_delete_ubuntu_listener_systemd(self, mock_init_system):
+    def test_delete_ubuntu_listener_systemd(self, mock_init_system,
+                                            mock_get_proto):
         self._test_delete_listener(consts.INIT_SYSTEMD, consts.UBUNTU,
                                    mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_listener_protocol', return_value='TCP')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
-    def test_delete_centos_listener_systemd(self, mock_init_system):
+    def test_delete_centos_listener_systemd(self, mock_init_system,
+                                            mock_get_proto):
         self._test_delete_listener(consts.INIT_SYSTEMD, consts.CENTOS,
                                    mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_listener_protocol', return_value='TCP')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSVINIT)
-    def test_delete_ubuntu_listener_sysvinit(self, mock_init_system):
+    def test_delete_ubuntu_listener_sysvinit(self, mock_init_system,
+                                             mock_get_proto):
         self._test_delete_listener(consts.INIT_SYSVINIT, consts.UBUNTU,
                                    mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_listener_protocol', return_value='TCP')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_UPSTART)
-    def test_delete_ubuntu_listener_upstart(self, mock_init_system):
+    def test_delete_ubuntu_listener_upstart(self, mock_init_system,
+                                            mock_get_proto):
         self._test_delete_listener(consts.INIT_UPSTART, consts.UBUNTU,
                                    mock_init_system)
 
@@ -725,6 +734,8 @@ class TestServerTestCase(base.TestCase):
     def test_centos_get_listener(self):
         self._test_get_listener(consts.CENTOS)
 
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_listener_protocol', return_value='TCP')
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
                 '_check_listener_status')
     @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
@@ -732,7 +743,7 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('octavia.amphorae.backends.utils.haproxy_query.HAProxyQuery')
     @mock.patch('os.path.exists')
     def _test_get_listener(self, distro, mock_exists, mock_query, mock_parse,
-                           mock_status):
+                           mock_status, mock_get_proto):
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         # Listener not found
         mock_exists.side_effect = [False]

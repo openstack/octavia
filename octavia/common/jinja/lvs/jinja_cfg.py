@@ -100,6 +100,7 @@ class LvsJinjaTemplater(object):
         """
         t_listener = self._transform_listener(listener)
         ret_value = {
+            'id': loadbalancer.id,
             'vip_address': loadbalancer.vip.ip_address,
             'listener': t_listener,
             'enabled': loadbalancer.enabled

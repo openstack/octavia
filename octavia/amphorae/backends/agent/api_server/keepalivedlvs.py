@@ -96,17 +96,19 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
 
         if init_system == consts.INIT_SYSTEMD:
             template = SYSTEMD_TEMPLATE
-            init_enable_cmd = ("systemctl enable "
-                               "octavia-keepalivedlvs-%s"
-                               % str(listener_id))
+
+            # Render and install the network namespace systemd service
+            util.install_netns_systemd_service()
+            util.run_systemctl_command(
+                consts.ENABLE, consts.AMP_NETNS_SVC_PREFIX)
         elif init_system == consts.INIT_UPSTART:
             template = UPSTART_TEMPLATE
         elif init_system == consts.INIT_SYSVINIT:
             template = SYSVINIT_TEMPLATE
-            init_enable_cmd = "insserv {file}".format(file=file_path)
         else:
             raise util.UnknownInitError()
 
+        # Render and install the keepalivedlvs init script
         if init_system == consts.INIT_SYSTEMD:
             # mode 00644
             mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
@@ -124,12 +126,17 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
                     check_pid=check_pid,
                     keepalived_cmd=consts.KEEPALIVED_CMD,
                     keepalived_cfg=util.keepalived_lvs_cfg_path(listener_id),
-                    amphora_nsname=consts.AMPHORA_NAMESPACE
+                    amphora_nsname=consts.AMPHORA_NAMESPACE,
+                    amphora_netns=consts.AMP_NETNS_SVC_PREFIX
                 )
                 text_file.write(text)
 
-        # Make sure the new service is enabled on boot
-        if init_system != consts.INIT_UPSTART:
+        # Make sure the keepalivedlvs service is enabled on boot
+        if init_system == consts.INIT_SYSTEMD:
+            util.run_systemctl_command(
+                consts.ENABLE, "octavia-keepalivedlvs-%s" % str(listener_id))
+        elif init_system == consts.INIT_SYSVINIT:
+            init_enable_cmd = "insserv {file}".format(file=file_path)
             try:
                 subprocess.check_output(init_enable_cmd.split(),
                                         stderr=subprocess.STDOUT)
@@ -232,9 +239,7 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
     def get_all_udp_listeners_status(self):
         """Gets the status of all UDP listeners
 
-        This method will not consult the stats socket
-        so a listener might show as ACTIVE but still be
-        in ERROR
+        Gets the status of all UDP listeners on the amphora.
         """
         listeners = list()
 
@@ -243,7 +248,7 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
             listeners.append({
                 'status': status,
                 'uuid': udp_listener,
-                'type': 'lvs',
+                'type': 'UDP',
             })
         return listeners
 
@@ -265,14 +270,14 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
             stats = dict(
                 status=status,
                 uuid=listener_id,
-                type=''
+                type='UDP'
             )
             return webob.Response(json=stats)
 
         stats = dict(
             status=status,
             uuid=listener_id,
-            type='lvs'
+            type='UDP'
         )
 
         try:
@@ -280,7 +285,8 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
                 listener_id)
         except subprocess.CalledProcessError as e:
             return webob.Response(json=dict(
-                message="Error get kernel lvs status for udp listener",
+                message="Error getting kernel lvs status for udp listener "
+                        "{}".format(listener_id),
                 details=e.output), status=500)
         stats['pools'] = [pool]
         return webob.Response(json=stats)
@@ -321,15 +327,14 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
         init_path = util.keepalived_lvs_init_path(init_system, listener_id)
 
         if init_system == consts.INIT_SYSTEMD:
-            init_disable_cmd = (
-                "systemctl disable octavia-keepalivedlvs-"
-                "{list}".format(list=listener_id))
+            util.run_systemctl_command(
+                consts.DISABLE, "octavia-keepalivedlvs-%s" % str(listener_id))
         elif init_system == consts.INIT_SYSVINIT:
             init_disable_cmd = "insserv -r {file}".format(file=init_path)
         elif init_system != consts.INIT_UPSTART:
             raise util.UnknownInitError()
 
-        if init_system != consts.INIT_UPSTART:
+        if init_system == consts.INIT_SYSVINIT:
             try:
                 subprocess.check_output(init_disable_cmd.split(),
                                         stderr=subprocess.STDOUT)

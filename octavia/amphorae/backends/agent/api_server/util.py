@@ -15,13 +15,18 @@
 
 import os
 import re
+import stat
 import subprocess
 
+import jinja2
 from oslo_config import cfg
+from oslo_log import log as logging
 
+from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.common import constants as consts
 
 CONF = cfg.CONF
+LOG = logging.getLogger(__name__)
 
 
 class UnknownInitError(Exception):
@@ -88,10 +93,6 @@ def keepalived_lvs_cfg_path(listener_id):
                         str(listener_id))
 
 
-def keepalived_lvs_iptables_dir():
-    return os.path.join(CONF.haproxy_amphora.base_path, 'lvs/iptables/')
-
-
 def haproxy_dir(listener_id):
     return os.path.join(CONF.haproxy_amphora.base_path, listener_id)
 
@@ -110,7 +111,7 @@ def get_haproxy_pid(listener_id):
 
 
 def get_keepalivedlvs_pid(listener_id):
-    pid_file, _, _ = keepalived_lvs_pids_path(listener_id)
+    pid_file = keepalived_lvs_pids_path(listener_id)[0]
     with open(pid_file, 'r') as f:
         return f.readline().rstrip()
 
@@ -195,7 +196,7 @@ def get_udp_listeners():
 
 
 def is_udp_listener_running(listener_id):
-    pid_file, _, _ = keepalived_lvs_pids_path(listener_id)
+    pid_file = keepalived_lvs_pids_path(listener_id)[0]
     return os.path.exists(pid_file) and os.path.exists(
         os.path.join('/proc', get_keepalivedlvs_pid(listener_id)))
 
@@ -215,3 +216,56 @@ def get_os_init_system():
                         return consts.INIT_UPSTART
                     return consts.INIT_SYSVINIT
     return consts.INIT_UNKOWN
+
+
+def install_netns_systemd_service():
+    os_utils = osutils.BaseOS.get_os_util()
+
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    # mode 00644
+    mode = (stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+
+    # TODO(bcafarel): implement this for other init systems
+    # netns handling depends on a separate unit file
+    netns_path = os.path.join(consts.SYSTEMD_DIR,
+                              consts.AMP_NETNS_SVC_PREFIX + '.service')
+
+    jinja_env = jinja2.Environment(
+        autoescape=True, loader=jinja2.FileSystemLoader(os.path.dirname(
+            os.path.realpath(__file__)
+        ) + consts.AGENT_API_TEMPLATES))
+
+    if not os.path.exists(netns_path):
+        with os.fdopen(os.open(netns_path, flags, mode), 'w') as text_file:
+            text = jinja_env.get_template(
+                consts.AMP_NETNS_SVC_PREFIX + '.systemd.j2').render(
+                    amphora_nsname=consts.AMPHORA_NAMESPACE,
+                    HasIFUPAll=os_utils.has_ifup_all())
+            text_file.write(text)
+
+
+def run_systemctl_command(command, service):
+    cmd = "systemctl {cmd} {srvc}".format(cmd=command, srvc=service)
+    try:
+        subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        LOG.error("Failed to %(cmd)s %(srvc)s service: "
+                  "%(err)s %(out)s", {'cmd': command, 'srvc': service,
+                                      'err': e, 'out': e.output})
+
+
+def get_listener_protocol(listener_id):
+    """Returns the L4 protocol for a listener.
+
+    If the listener is a TCP based listener (haproxy) return TCP.
+    If the listener is a UDP based listener (lvs) return UDP.
+    If the listener is not identifiable, return None.
+
+    :param listener_id: The ID of the listener to identify.
+    :returns: TCP, UDP, or None
+    """
+    if os.path.exists(config_path(listener_id)):
+        return consts.PROTOCOL_TCP
+    elif os.path.exists(keepalived_lvs_cfg_path(listener_id)):
+        return consts.PROTOCOL_UDP
+    return None

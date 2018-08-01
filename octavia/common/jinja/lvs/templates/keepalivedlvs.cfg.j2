@@ -17,7 +17,7 @@
 {% from 'macros.j2' import virtualserver_macro %}
 {% set udp_listener_id = loadbalancer.listener.id %}
 {% block global_definitions %}
-net_namespace amphora-haproxy
+net_namespace {{ constants.AMPHORA_NAMESPACE }}
 {% endblock global_definitions %}
 {% block proxies %}
     {% if loadbalancer.enabled and loadbalancer.listener.enabled %}

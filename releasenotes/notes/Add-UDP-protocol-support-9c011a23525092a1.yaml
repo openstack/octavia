@@ -1,0 +1,20 @@
+---
+features:
+  - Added UDP protocol support to listeners and pools.
+  - Adds a health monitor type of UDP-CONNECT that does a basic UDP port
+    connect.
+issues:
+  - You cannot mix IPv4 UDP listeners with IPv6 members at this time. This is
+    being tracked with this story
+    https://storyboard.openstack.org/#!/story/2003329
+  - CentOS based amphora images do not yet support UDP load balancing.
+upgrade:
+  - |
+    UDP protocol support requires an update to the amphora image to support
+    UDP protocol statistics reporting and UDP-CONNECT health monitoring.
+other:
+  - |
+    Health monitors of type UDP-CONNECT may not work correctly if ICMP
+    unreachable is not enabled on the member server or is blocked by a security
+    rule. A member server may be marked as operating status ONLINE when it is
+    actually down.

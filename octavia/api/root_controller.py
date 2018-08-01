@@ -73,6 +73,8 @@ class RootController(rest.RestController):
         if CONF.api_settings.api_v2_enabled:
             self._add_a_version(versions, 'v2.0', 'v2', 'SUPPORTED',
                                 '2016-12-11T00:00:00Z', host_url)
-            self._add_a_version(versions, 'v2.1', 'v2', 'CURRENT',
+            self._add_a_version(versions, 'v2.1', 'v2', 'SUPPORTED',
                                 '2018-04-20T00:00:00Z', host_url)
+            self._add_a_version(versions, 'v2.2', 'v2', 'CURRENT',
+                                '2018-07-31T00:00:00Z', host_url)
         return {'versions': versions}

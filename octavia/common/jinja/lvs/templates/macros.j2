@@ -26,7 +26,6 @@ misc_path "{{ health_monitor.check_script_path }} {{ member.address }} {{ member
 MISC_CHECK {
             {{ misc_path_macro(member, health_monitor) }}
             misc_timeout {{ pool.health_monitor.delay }}
-            misc_dynamic
         }
 {%- endmacro -%}
 
@@ -51,10 +50,6 @@ MISC_CHECK {
         inhibit_on_failure
         {% if listener.connection_limit %}
         uthreshold {{ listener.connection_limit }}
-        {% endif %}
-        {% if pool.session_persistence and pool.session_persistence.type == constants.SESSION_PERSISTENCE_SOURCE_IP %}
-        persistence_timeout {{ pool.session_persistence.persistence_timeout }}
-        persistence_granularity {{ pool.session_persistence.persistence_granularity }}
         {% endif %}
 {{- health_monitor_rs_macro(constants, pool, member) }}
     }
@@ -84,11 +79,22 @@ MISC_CHECK {
 {% if need_render|length > 0 %}
 virtual_server {{ lb_vip_address }} {{ listener.protocol_port }} {
     {{ lb_algo_macro(default_pool) }}
-    {% if not default_pool.session_persistence %}
-    ops
-    {% endif %}
     lb_kind NAT
-    protocol {{ listener.protocol_mode }}
+    protocol {{ listener.protocol_mode.upper() }}
+    {% if default_pool.session_persistence and default_pool.session_persistence.type == constants.SESSION_PERSISTENCE_SOURCE_IP %}
+      {# set our defined defaults as I saw this not be consistent #}
+      {# in testing #}
+      {% if default_pool.session_persistence.persistence_timeout %}
+    persistence_timeout {{ default_pool.session_persistence.persistence_timeout }}
+      {% else %}
+    persistence_timeout 360
+      {% endif %}
+      {% if default_pool.session_persistence.persistence_granularity %}
+    persistence_granularity {{ default_pool.session_persistence.persistence_granularity }}
+      {% else %}
+    persistence_granularity 255.255.255.255
+      {% endif %}
+   {% endif %}
 {{ health_monitor_vs_macro(default_pool) }}
 
 {% if default_pool.protocol.lower() == "udp" %}

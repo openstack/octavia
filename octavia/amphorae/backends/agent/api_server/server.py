@@ -26,6 +26,7 @@ from octavia.amphorae.backends.agent.api_server import listener
 from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.agent.api_server import plug
 from octavia.amphorae.backends.agent.api_server import udp_listener_base
+from octavia.amphorae.backends.agent.api_server import util
 
 PATH_PREFIX = '/' + api_server.VERSION
 
@@ -41,17 +42,6 @@ def make_json_error(ex):
 def register_app_error_handler(app):
     for code in six.iterkeys(exceptions.default_exceptions):
         app.register_error_handler(code, make_json_error)
-
-
-def check_and_return_request_listener_protocol(request):
-    try:
-        protocol_dict = request.get_json()
-        assert type(protocol_dict) is dict
-        assert 'protocol' in protocol_dict
-    except Exception:
-        raise exceptions.BadRequest(
-            description='Invalid protocol information for Listener')
-    return protocol_dict['protocol']
 
 
 class Server(object):
@@ -146,16 +136,14 @@ class Server(object):
         return self._udp_listener.get_udp_listener_config(listener_id)
 
     def start_stop_listener(self, listener_id, action):
-        protocol = check_and_return_request_listener_protocol(
-            flask.request)
+        protocol = util.get_listener_protocol(listener_id)
         if protocol == 'UDP':
             return self._udp_listener.manage_udp_listener(
                 listener_id, action)
         return self._listener.start_stop_listener(listener_id, action)
 
     def delete_listener(self, listener_id):
-        protocol = check_and_return_request_listener_protocol(
-            flask.request)
+        protocol = util.get_listener_protocol(listener_id)
         if protocol == 'UDP':
             return self._udp_listener.delete_udp_listener(listener_id)
         return self._listener.delete_listener(listener_id)
@@ -174,8 +162,7 @@ class Server(object):
             other_listeners=udp_listeners)
 
     def get_listener_status(self, listener_id):
-        protocol = check_and_return_request_listener_protocol(
-            flask.request)
+        protocol = util.get_listener_protocol(listener_id)
         if protocol == 'UDP':
             return self._udp_listener.get_udp_listener_status(listener_id)
         return self._listener.get_listener_status(listener_id)

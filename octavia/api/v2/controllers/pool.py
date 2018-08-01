@@ -130,20 +130,17 @@ class PoolsController(base.BaseController):
     def _is_only_specified_in_request(self, request, **kwargs):
         request_attrs = []
         check_attrs = kwargs['check_exist_attrs']
-        excaped_attrs = ['from_data_model',
+        escaped_attrs = ['from_data_model',
                          'translate_dict_keys_to_data_model', 'to_dict']
 
         for attr in dir(request):
-            if attr.startswith('_') or attr in excaped_attrs:
+            if attr.startswith('_') or attr in escaped_attrs:
                 continue
             else:
                 request_attrs.append(attr)
 
         for req_attr in request_attrs:
-            if (getattr(
-                    request, req_attr) and req_attr not in check_attrs) or (
-                        not getattr(
-                            request, req_attr) and req_attr in check_attrs):
+            if (getattr(request, req_attr) and req_attr not in check_attrs):
                 return False
         return True
 

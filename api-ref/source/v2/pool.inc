@@ -95,7 +95,7 @@ is ready for further configuration.
 At a minimum, you must specify these pool attributes:
 
 - ``protocol`` The protocol for which this pool and its members
-  listen. A valid value is ``HTTP``, ``HTTPS``, ``PROXY``, or ``TCP``.
+  listen. A valid value is ``HTTP``, ``HTTPS``, ``PROXY``, ``TCP``, or ``UDP``.
 
 - ``lb_algorithm`` The load-balancer algorithm, such as
   ``ROUND_ROBIN``, ``LEAST_CONNECTIONS``, and ``SOURCE_IP``, that
@@ -202,6 +202,8 @@ Pool Session Persistence Object
 
    - type: session_persistence_type
    - cookie_name: session_persistence_cookie
+   - persistence_timeout: session_persistence_timeout
+   - persistence_granularity: session_persistence_granularity
 
 Pool Session Persistence Object Example
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

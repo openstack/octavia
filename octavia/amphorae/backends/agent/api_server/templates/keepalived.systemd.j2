@@ -1,7 +1,8 @@
 [Unit]
 Description=Keepalive Daemon (LVS and VRRP)
-After=network-online.target
+After=network-online.target {{ amphora_netns }}.service
 Wants=network-online.target
+Requires={{ amphora_netns }}.service
 
 [Service]
 # Force context as we start keepalived under "ip netns exec"

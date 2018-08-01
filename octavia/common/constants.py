@@ -32,7 +32,6 @@ HEALTH_MONITOR_HTTP = 'HTTP'
 HEALTH_MONITOR_HTTPS = 'HTTPS'
 HEALTH_MONITOR_TLS_HELLO = 'TLS-HELLO'
 HEALTH_MONITOR_UDP_CONNECT = 'UDP-CONNECT'
-UDP_CONNECT_SCRIPT_MIN_INTERVAL = 3
 SUPPORTED_HEALTH_MONITOR_TYPES = (HEALTH_MONITOR_HTTP, HEALTH_MONITOR_HTTPS,
                                   HEALTH_MONITOR_PING, HEALTH_MONITOR_TCP,
                                   HEALTH_MONITOR_TLS_HELLO,
@@ -547,3 +546,10 @@ OCTAVIA = 'octavia'
 # FLAVORS
 # TODO(johnsom) When flavors are implemented, this should be removed.
 SUPPORTED_FLAVORS = ()
+
+# systemctl commands
+DISABLE = 'disable'
+ENABLE = 'enable'
+
+# systemd amphora netns service prefix
+AMP_NETNS_SVC_PREFIX = 'amphora-netns'

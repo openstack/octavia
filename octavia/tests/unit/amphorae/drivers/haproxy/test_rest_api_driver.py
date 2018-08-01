@@ -43,7 +43,6 @@ FAKE_MAC_ADDRESS = '123'
 FAKE_MTU = 1450
 FAKE_MEMBER_IP_PORT_NAME_1 = "10.0.0.10:1003"
 FAKE_MEMBER_IP_PORT_NAME_2 = "10.0.0.11:1004"
-FAKE_PROTOCOL = 'test-protocol'
 
 
 class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
@@ -202,7 +201,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             self.amp, self.sl.id, 'fake_config')
         # start should be called once
         self.driver.client.reload_listener.assert_called_once_with(
-            self.amp, self.sl.id, self.sl.protocol)
+            self.amp, self.sl.id)
 
     def test_udp_update(self):
         self.driver.udp_jinja.build_config.side_effect = ['fake_udp_config']
@@ -216,7 +215,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
 
         # start should be called once
         self.driver.client.reload_listener.assert_called_once_with(
-            self.amp, self.sl_udp.id, self.sl_udp.protocol)
+            self.amp, self.sl_udp.id)
 
     def test_upload_cert_amp(self):
         self.driver.upload_cert_amp(self.amp, six.b('test'))
@@ -228,14 +227,14 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         # Execute driver method
         self.driver.stop(self.sl, self.sv)
         self.driver.client.stop_listener.assert_called_once_with(
-            self.amp, self.sl.id, self.sl.protocol)
+            self.amp, self.sl.id)
 
     def test_udp_stop(self):
         self.driver.client.stop_listener.__name__ = 'stop_listener'
         # Execute driver method - UDP case
         self.driver.stop(self.sl_udp, self.sv)
         self.driver.client.stop_listener.assert_called_once_with(
-            self.amp, self.sl_udp.id, self.sl_udp.protocol)
+            self.amp, self.sl_udp.id)
 
     def test_start(self):
         amp1 = mock.MagicMock()
@@ -249,7 +248,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         # Execute driver method
         self.driver.start(listener, self.sv)
         self.driver.client.start_listener.assert_called_once_with(
-            amp1, listener.id, 'listener_protocol')
+            amp1, listener.id)
 
     def test_start_with_amphora(self):
         # Execute driver method
@@ -257,7 +256,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.client.start_listener.__name__ = 'start_listener'
         self.driver.start(self.sl, self.sv, self.amp)
         self.driver.client.start_listener.assert_called_once_with(
-            self.amp, self.sl.id, self.sl.protocol)
+            self.amp, self.sl.id)
 
         self.driver.client.start_listener.reset_mock()
         amp.status = constants.DELETED
@@ -269,21 +268,21 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         # Execute driver method
         self.driver.start(self.sl_udp, self.sv)
         self.driver.client.start_listener.assert_called_once_with(
-            self.amp, self.sl_udp.id, self.sl_udp.protocol)
+            self.amp, self.sl_udp.id)
 
     def test_delete(self):
         self.driver.client.delete_listener.__name__ = 'delete_listener'
         # Execute driver method
         self.driver.delete(self.sl, self.sv)
         self.driver.client.delete_listener.assert_called_once_with(
-            self.amp, self.sl.id, self.sl.protocol)
+            self.amp, self.sl.id)
 
     def test_udp_delete(self):
         self.driver.client.delete_listener.__name__ = 'delete_listener'
         # Execute driver method
         self.driver.delete(self.sl_udp, self.sv)
         self.driver.client.delete_listener.assert_called_once_with(
-            self.amp, self.sl_udp.id, self.sl_udp.protocol)
+            self.amp, self.sl_udp.id)
 
     def test_get_info(self):
         self.driver.client.get_info.return_value = 'FAKE_INFO'
@@ -532,8 +531,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
         m.get("{base}/listeners/{listener_id}".format(
             base=self.base_url, listener_id=FAKE_UUID_1),
             json=listener)
-        status = self.driver.get_listener_status(self.amp, FAKE_UUID_1,
-                                                 protocol='TCP')
+        status = self.driver.get_listener_status(self.amp, FAKE_UUID_1)
         self.assertEqual(listener, status)
 
     @requests_mock.mock()
@@ -553,8 +551,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
         m.get("{base}/listeners/{listener_id}".format(
             base=self.base_url, listener_id=FAKE_UUID_1),
             json=udp_listener)
-        status = self.driver.get_listener_status(self.amp, FAKE_UUID_1,
-                                                 protocol='UDP')
+        status = self.driver.get_listener_status(self.amp, FAKE_UUID_1)
         self.assertEqual(udp_listener, status)
 
     @requests_mock.mock()
@@ -598,7 +595,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_start_listener(self, m):
         m.put("{base}/listeners/{listener_id}/start".format(
             base=self.base_url, listener_id=FAKE_UUID_1))
-        self.driver.start_listener(self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+        self.driver.start_listener(self.amp, FAKE_UUID_1)
         self.assertTrue(m.called)
 
     @requests_mock.mock()
@@ -608,7 +605,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
             status_code=404,
             headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.start_listener,
-                          self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+                          self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_start_listener_unauthorized(self, m):
@@ -616,7 +613,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
             base=self.base_url, listener_id=FAKE_UUID_1),
             status_code=401)
         self.assertRaises(exc.Unauthorized, self.driver.start_listener,
-                          self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+                          self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_start_listener_server_error(self, m):
@@ -624,7 +621,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
             base=self.base_url, listener_id=FAKE_UUID_1),
             status_code=500)
         self.assertRaises(exc.InternalServerError, self.driver.start_listener,
-                          self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+                          self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_start_listener_service_unavailable(self, m):
@@ -632,13 +629,13 @@ class TestAmphoraAPIClientTest(base.TestCase):
             base=self.base_url, listener_id=FAKE_UUID_1),
             status_code=503)
         self.assertRaises(exc.ServiceUnavailable, self.driver.start_listener,
-                          self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+                          self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_stop_listener(self, m):
         m.put("{base}/listeners/{listener_id}/stop".format(
             base=self.base_url, listener_id=FAKE_UUID_1))
-        self.driver.stop_listener(self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+        self.driver.stop_listener(self.amp, FAKE_UUID_1)
         self.assertTrue(m.called)
 
     @requests_mock.mock()
@@ -648,7 +645,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
             status_code=404,
             headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.stop_listener,
-                          self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+                          self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_stop_listener_unauthorized(self, m):
@@ -656,7 +653,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
             base=self.base_url, listener_id=FAKE_UUID_1),
             status_code=401)
         self.assertRaises(exc.Unauthorized, self.driver.stop_listener,
-                          self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+                          self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_stop_listener_server_error(self, m):
@@ -664,7 +661,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
             base=self.base_url, listener_id=FAKE_UUID_1),
             status_code=500)
         self.assertRaises(exc.InternalServerError, self.driver.stop_listener,
-                          self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+                          self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_stop_listener_service_unavailable(self, m):
@@ -672,13 +669,13 @@ class TestAmphoraAPIClientTest(base.TestCase):
             base=self.base_url, listener_id=FAKE_UUID_1),
             status_code=503)
         self.assertRaises(exc.ServiceUnavailable, self.driver.stop_listener,
-                          self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+                          self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_delete_listener(self, m):
         m.delete("{base}/listeners/{listener_id}".format(
             base=self.base_url, listener_id=FAKE_UUID_1), json={})
-        self.driver.delete_listener(self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+        self.driver.delete_listener(self.amp, FAKE_UUID_1)
         self.assertTrue(m.called)
 
     @requests_mock.mock()
@@ -687,7 +684,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
             base=self.base_url, listener_id=FAKE_UUID_1),
             status_code=404,
             headers={'content-type': 'application/json'})
-        self.driver.delete_listener(self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+        self.driver.delete_listener(self.amp, FAKE_UUID_1)
         self.assertTrue(m.called)
 
     @requests_mock.mock()
@@ -696,7 +693,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
             base=self.base_url, listener_id=FAKE_UUID_1),
             status_code=401)
         self.assertRaises(exc.Unauthorized, self.driver.delete_listener,
-                          self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+                          self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_delete_listener_server_error(self, m):
@@ -704,7 +701,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
             base=self.base_url, listener_id=FAKE_UUID_1),
             status_code=500)
         self.assertRaises(exc.InternalServerError, self.driver.delete_listener,
-                          self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+                          self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_delete_listener_service_unavailable(self, m):
@@ -712,7 +709,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
             base=self.base_url, listener_id=FAKE_UUID_1),
             status_code=503)
         self.assertRaises(exc.ServiceUnavailable, self.driver.delete_listener,
-                          self.amp, FAKE_UUID_1, FAKE_PROTOCOL)
+                          self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_upload_cert_pem(self, m):
