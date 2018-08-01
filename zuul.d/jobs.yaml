@@ -52,8 +52,8 @@
     post-run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario/post.yaml
 
 - job:
-    name: octavia-v1-dsvm-scenario-ubuntu.bionic
-    parent: octavia-v1-dsvm-scenario
+    name: octavia-v2-dsvm-scenario-ubuntu.bionic
+    parent: octavia-v2-dsvm-scenario
     vars:
       devstack_localrc:
         OCTAVIA_AMP_BASE_OS: ubuntu
