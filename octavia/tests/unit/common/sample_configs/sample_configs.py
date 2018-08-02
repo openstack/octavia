@@ -15,9 +15,12 @@
 
 import collections
 
+from oslo_config import cfg
 
 from octavia.common import constants
 from octavia.tests.unit.common.sample_configs import sample_certs
+
+CONF = cfg.CONF
 
 
 def sample_amphora_tuple():
@@ -336,6 +339,84 @@ RET_LB_L7 = {
     'enabled': True,
     'global_connection_limit': constants.HAPROXY_MAX_MAXCONN}
 
+UDP_SOURCE_IP_BODY = {
+    'type': constants.SESSION_PERSISTENCE_SOURCE_IP,
+    'persistence_timeout': 33,
+    'persistence_granularity': '255.0.0.0'
+}
+
+RET_UDP_HEALTH_MONITOR = {
+    'id': 'sample_monitor_id_1',
+    'type': constants.HEALTH_MONITOR_UDP_CONNECT,
+    'delay': 30,
+    'timeout': 31,
+    'enabled': True,
+    'fall_threshold': 3,
+    'check_script_path': (CONF.haproxy_amphora.base_path +
+                          '/lvs/check/udp_check.sh')
+}
+
+UDP_HEALTH_MONITOR_NO_SCRIPT = {
+    'id': 'sample_monitor_id_1',
+    'check_script_path': None,
+    'delay': 30,
+    'enabled': True,
+    'fall_threshold': 3,
+    'timeout': 31,
+    'type': 'UDP'
+}
+
+RET_UDP_MEMBER = {
+    'id': 'member_id_1',
+    'address': '192.0.2.10',
+    'protocol_port': 82,
+    'weight': 13,
+    'enabled': True
+}
+
+UDP_MEMBER_1 = {
+    'id': 'sample_member_id_1',
+    'address': '10.0.0.99',
+    'enabled': True,
+    'protocol_port': 82,
+    'weight': 13
+}
+
+UDP_MEMBER_2 = {
+    'id': 'sample_member_id_2',
+    'address': '10.0.0.98',
+    'enabled': True,
+    'protocol_port': 82,
+    'weight': 13
+}
+
+RET_UDP_POOL = {
+    'id': 'sample_pool_id_1',
+    'enabled': True,
+    'health_monitor': UDP_HEALTH_MONITOR_NO_SCRIPT,
+    'lb_algorithm': 'rr',
+    'members': [UDP_MEMBER_1, UDP_MEMBER_2],
+    'protocol': 'udp',
+    'session_persistence': UDP_SOURCE_IP_BODY
+}
+
+RET_UDP_LISTENER = {
+    'connection_limit': 98,
+    'default_pool': {
+        'id': 'sample_pool_id_1',
+        'enabled': True,
+        'health_monitor': RET_UDP_HEALTH_MONITOR,
+        'lb_algorithm': 'rr',
+        'members': [UDP_MEMBER_1, UDP_MEMBER_2],
+        'protocol': 'udp',
+        'session_persistence': UDP_SOURCE_IP_BODY
+    },
+    'enabled': True,
+    'id': 'sample_listener_id_1',
+    'protocol_mode': 'udp',
+    'protocol_port': '80'
+}
+
 
 def sample_loadbalancer_tuple(proto=None, monitor=True, persistence=True,
                               persistence_type=None, tls=False, sni=False,
@@ -400,8 +481,10 @@ def sample_vip_tuple():
     return vip(ip_address='10.0.0.2')
 
 
-def sample_listener_tuple(proto=None, monitor=True, persistence=True,
-                          persistence_type=None, persistence_cookie=None,
+def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
+                          persistence=True, persistence_type=None,
+                          persistence_cookie=None, persistence_timeout=None,
+                          persistence_granularity=None,
                           tls=False, sni=False, peer_port=None, topology=None,
                           l7=False, enabled=True, insert_headers=None,
                           be_proto=None, monitor_ip_port=False,
@@ -466,7 +549,10 @@ def sample_listener_tuple(proto=None, monitor=True, persistence=True,
             proto=be_proto, monitor=monitor, persistence=persistence,
             persistence_type=persistence_type,
             persistence_cookie=persistence_cookie,
-            monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto),
+            persistence_timeout=persistence_timeout,
+            persistence_granularity=persistence_granularity,
+            monitor_ip_port=monitor_ip_port,
+            monitor_proto=monitor_proto) if alloc_default_pool else '',
         connection_limit=connection_limit,
         tls_certificate_id='cont_id_1' if tls else '',
         sni_container_ids=['cont_id_2', 'cont_id_3'] if sni else [],
@@ -527,6 +613,7 @@ def sample_tls_container_tuple(id='cont_id_1', certificate=None,
 
 def sample_pool_tuple(proto=None, monitor=True, persistence=True,
                       persistence_type=None, persistence_cookie=None,
+                      persistence_timeout=None, persistence_granularity=None,
                       sample_pool=1, monitor_ip_port=False,
                       monitor_proto=None, backup_member=False,
                       disabled_member=False):
@@ -535,9 +622,15 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
     in_pool = collections.namedtuple(
         'pool', 'id, protocol, lb_algorithm, members, health_monitor,'
                 'session_persistence, enabled, operating_status')
-    persis = sample_session_persistence_tuple(
-        persistence_type=persistence_type,
-        persistence_cookie=persistence_cookie) if persistence is True else None
+    if (proto == constants.PROTOCOL_UDP and
+            persistence_type == constants.SESSION_PERSISTENCE_SOURCE_IP):
+        kwargs = {'persistence_type': persistence_type,
+                  'persistence_timeout': persistence_timeout,
+                  'persistence_granularity': persistence_granularity}
+    else:
+        kwargs = {'persistence_type': persistence_type,
+                  'persistence_cookie': persistence_cookie}
+    persis = sample_session_persistence_tuple(**kwargs)
     mon = None
     if sample_pool == 1:
         id = 'sample_pool_id_1'
@@ -561,7 +654,7 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
         lb_algorithm='ROUND_ROBIN',
         members=members,
         health_monitor=mon,
-        session_persistence=persis,
+        session_persistence=persis if persistence is True else None,
         enabled=True,
         operating_status='ACTIVE')
 
@@ -590,19 +683,26 @@ def sample_member_tuple(id, ip, enabled=True, operating_status='ACTIVE',
 
 
 def sample_session_persistence_tuple(persistence_type=None,
-                                     persistence_cookie=None):
+                                     persistence_cookie=None,
+                                     persistence_timeout=None,
+                                     persistence_granularity=None):
     spersistence = collections.namedtuple('SessionPersistence',
-                                          'type, cookie_name')
+                                          'type, cookie_name, '
+                                          'persistence_timeout, '
+                                          'persistence_granularity')
     pt = 'HTTP_COOKIE' if persistence_type is None else persistence_type
     return spersistence(type=pt,
-                        cookie_name=persistence_cookie)
+                        cookie_name=persistence_cookie,
+                        persistence_timeout=persistence_timeout,
+                        persistence_granularity=persistence_granularity)
 
 
 def sample_health_monitor_tuple(proto='HTTP', sample_hm=1):
     proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
     monitor = collections.namedtuple(
         'monitor', 'id, type, delay, timeout, fall_threshold, rise_threshold,'
-                   'http_method, url_path, expected_codes, enabled')
+                   'http_method, url_path, expected_codes, enabled, '
+                   'check_script_path')
 
     if sample_hm == 1:
         id = 'sample_monitor_id_1'
@@ -610,10 +710,24 @@ def sample_health_monitor_tuple(proto='HTTP', sample_hm=1):
     elif sample_hm == 2:
         id = 'sample_monitor_id_2'
         url_path = '/healthmon.html'
-    return monitor(id=id, type=proto, delay=30,
-                   timeout=31, fall_threshold=3, rise_threshold=2,
-                   http_method='GET', url_path=url_path,
-                   expected_codes='418', enabled=True)
+    kwargs = {
+        'id': id,
+        'type': proto,
+        'delay': 30,
+        'timeout': 31,
+        'fall_threshold': 3,
+        'rise_threshold': 2,
+        'http_method': 'GET',
+        'url_path': url_path,
+        'expected_codes': '418',
+        'enabled': True
+    }
+    if proto == constants.HEALTH_MONITOR_UDP_CONNECT:
+        kwargs['check_script_path'] = (CONF.haproxy_amphora.base_path +
+                                       'lvs/check/' + 'udp_check.sh')
+    else:
+        kwargs['check_script_path'] = None
+    return monitor(**kwargs)
 
 
 def sample_l7policy_tuple(id,
