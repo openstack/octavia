@@ -47,7 +47,6 @@ MISC_CHECK {
     # Configuration for Member {{ member.id }}
     real_server {{ member.address }} {{ member.protocol_port }} {
         weight {{ member.weight }}
-        inhibit_on_failure
         {% if listener.connection_limit %}
         uthreshold {{ listener.connection_limit }}
         {% endif %}
