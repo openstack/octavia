@@ -37,8 +37,6 @@
             voting: false
         - octavia-v1-dsvm-scenario-kvm-centos.7:
             voting: false
-        - octavia-v2-dsvm-scenario-ubuntu.bionic:
-            voting: false
         - octavia-v2-dsvm-noop-api:
             voting: false
         - octavia-v2-dsvm-noop-py35-api:
