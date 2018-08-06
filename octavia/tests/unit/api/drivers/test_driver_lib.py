@@ -70,7 +70,28 @@ class TestDriverLib(base.TestCase):
                                          "total_connections": 100}]
         self.listener_stats_dict = {"listeners": listener_stats_list}
 
-    def test_process_status_update(self):
+    @mock.patch('octavia.common.utils.get_network_driver')
+    def test_check_for_lb_vip_deallocate(self, mock_get_driver):
+        mock_repo = mock.MagicMock()
+        mock_lb = mock.MagicMock()
+
+        # Test VIP not owned by Octavia
+        mock_lb.vip.octavia_owned = False
+        mock_repo.get.return_value = mock_lb
+        self.driver_lib._check_for_lb_vip_deallocate(mock_repo, 4)
+        mock_get_driver.assert_not_called()
+
+        # Test VIP is owned by Octavia
+        mock_lb.vip.octavia_owned = True
+        mock_repo.get.return_value = mock_lb
+        mock_net_driver = mock.MagicMock()
+        mock_get_driver.return_value = mock_net_driver
+        self.driver_lib._check_for_lb_vip_deallocate(mock_repo, 4)
+        mock_net_driver.deallocate_vip.assert_called_once_with(mock_lb.vip)
+
+    @mock.patch('octavia.api.drivers.driver_lib.DriverLibrary.'
+                '_check_for_lb_vip_deallocate')
+    def test_process_status_update(self, mock_deallocate):
         mock_repo = mock.MagicMock()
         list_dict = {"id": 2, constants.PROVISIONING_STATUS: constants.ACTIVE,
                      constants.OPERATING_STATUS: constants.ONLINE}
@@ -128,6 +149,12 @@ class TestDriverLib(base.TestCase):
             mock_repo, 'FakeName', list_deleted_dict, delete_record=True)
         mock_repo.delete.assert_called_once_with(self.mock_session, id=2)
         mock_repo.update.assert_not_called()
+
+        # Test with LB Delete
+        mock_repo.reset_mock()
+        self.driver_lib._process_status_update(
+            mock_repo, constants.LOADBALANCERS, list_deleted_dict)
+        mock_deallocate.assert_called_once_with(mock_repo, 2)
 
         # Test with an exception
         mock_repo.reset_mock()

@@ -14,6 +14,7 @@
 
 from octavia.api.drivers import exceptions as driver_exceptions
 from octavia.common import constants as consts
+from octavia.common import utils
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
 
@@ -33,6 +34,16 @@ class DriverLibrary(object):
         self.db_session = db_apis.get_session()
         super(DriverLibrary, self).__init__(**kwargs)
 
+    def _check_for_lb_vip_deallocate(self, repo, lb_id):
+        lb = repo.get(self.db_session, id=lb_id)
+        if lb.vip.octavia_owned:
+            vip = lb.vip
+            # We need a backreference
+            vip.load_balancer = lb
+            # Only lookup the network driver if we have a VIP to deallocate
+            network_driver = utils.get_network_driver()
+            network_driver.deallocate_vip(vip)
+
     def _process_status_update(self, repo, object_name, record,
                                delete_record=False):
         # Zero it out so that if the ID is missing from a record we do not
@@ -43,11 +54,13 @@ class DriverLibrary(object):
             record_kwargs = {}
             prov_status = record.get(consts.PROVISIONING_STATUS, None)
             if prov_status:
-                if prov_status == consts.DELETED and delete_record:
+                if (prov_status == consts.DELETED and
+                        object_name == consts.LOADBALANCERS):
+                    self._check_for_lb_vip_deallocate(repo, record_id)
+                elif prov_status == consts.DELETED and delete_record:
                     repo.delete(self.db_session, id=record_id)
                     return
-                else:
-                    record_kwargs[consts.PROVISIONING_STATUS] = prov_status
+                record_kwargs[consts.PROVISIONING_STATUS] = prov_status
             op_status = record.get(consts.OPERATING_STATUS, None)
             if op_status:
                 record_kwargs[consts.OPERATING_STATUS] = op_status
