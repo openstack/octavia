@@ -588,8 +588,9 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           tls=False, sni=False, peer_port=None, topology=None,
                           l7=False, enabled=True, insert_headers=None,
                           be_proto=None, monitor_ip_port=False,
-                          monitor_proto=None, backup_member=False,
-                          disabled_member=False, connection_limit=-1,
+                          monitor_proto=None, monitor_expected_codes=None,
+                          backup_member=False, disabled_member=False,
+                          connection_limit=-1,
                           timeout_client_data=50000,
                           timeout_member_connect=5000,
                           timeout_member_data=50000,
@@ -686,6 +687,7 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
             persistence_granularity=persistence_granularity,
             monitor_ip_port=monitor_ip_port,
             monitor_proto=monitor_proto,
+            monitor_expected_codes=monitor_expected_codes,
             pool_cert=pool_cert,
             pool_ca_cert=pool_ca_cert,
             pool_crl=pool_crl,
@@ -769,6 +771,7 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
                       persistence_cookie=None, persistence_timeout=None,
                       persistence_granularity=None, sample_pool=1,
                       monitor_ip_port=False, monitor_proto=None,
+                      monitor_expected_codes=None,
                       backup_member=False, disabled_member=False,
                       has_http_reuse=True, pool_cert=False, pool_ca_cert=False,
                       pool_crl=False, tls_enabled=False,
@@ -806,7 +809,9 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
                                        enabled=not disabled_member)]
         if monitor is True:
             mon = sample_health_monitor_tuple(
-                proto=monitor_proto, host_http_check=hm_host_http_check)
+                proto=monitor_proto,
+                host_http_check=hm_host_http_check,
+                expected_codes=monitor_expected_codes)
     elif sample_pool == 2:
         id = 'sample_pool_id_2'
         members = [sample_member_tuple('sample_member_id_3', '10.0.0.97',
@@ -814,7 +819,8 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
         if monitor is True:
             mon = sample_health_monitor_tuple(
                 proto=monitor_proto, sample_hm=2,
-                host_http_check=hm_host_http_check)
+                host_http_check=hm_host_http_check,
+                expected_codes=monitor_expected_codes)
     return in_pool(
         id=id,
         protocol=proto,
@@ -872,7 +878,7 @@ def sample_session_persistence_tuple(persistence_type=None,
 
 
 def sample_health_monitor_tuple(proto='HTTP', sample_hm=1,
-                                host_http_check=False,
+                                host_http_check=False, expected_codes=None,
                                 provisioning_status=constants.ACTIVE):
     proto = 'HTTP' if proto == 'TERMINATED_HTTPS' else proto
     monitor = collections.namedtuple(
@@ -904,6 +910,8 @@ def sample_health_monitor_tuple(proto='HTTP', sample_hm=1,
         kwargs.update({'http_version': 1.1, 'domain_name': 'testlab.com'})
     else:
         kwargs.update({'http_version': 1.0, 'domain_name': None})
+    if expected_codes:
+        kwargs.update({'expected_codes': expected_codes})
     if proto == constants.HEALTH_MONITOR_UDP_CONNECT:
         kwargs['check_script_path'] = (CONF.haproxy_amphora.base_path +
                                        'lvs/check/' + 'udp_check.sh')

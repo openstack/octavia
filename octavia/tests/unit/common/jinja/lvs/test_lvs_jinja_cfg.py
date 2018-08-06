@@ -297,3 +297,107 @@ class TestLvsCfg(base.TestCase):
         ret = self.udp_jinja_cfg._transform_listener(in_listener)
         sample_configs_combined.RET_UDP_LISTENER.pop('connection_limit')
         self.assertEqual(sample_configs_combined.RET_UDP_LISTENER, ret)
+
+    def test_render_template_udp_listener_with_http_health_monitor(self):
+        exp = ("# Configuration for Loadbalancer sample_loadbalancer_id_1\n"
+               "# Configuration for Listener sample_listener_id_1\n\n"
+               "net_namespace amphora-haproxy\n\n"
+               "virtual_server 10.0.0.2 80 {\n"
+               "    lb_algo rr\n"
+               "    lb_kind NAT\n"
+               "    protocol UDP\n"
+               "    delay_loop 30\n"
+               "    delay_before_retry 30\n"
+               "    retry 3\n\n\n"
+               "    # Configuration for Pool sample_pool_id_1\n"
+               "    # Configuration for HealthMonitor sample_monitor_id_1\n"
+               "    # Configuration for Member sample_member_id_1\n"
+               "    real_server 10.0.0.99 82 {\n"
+               "        weight 13\n"
+               "        uthreshold 98\n"
+               "        HTTP_GET {\n"
+               "            url {\n"
+               "              path /index.html\n"
+               "              status_code 200\n"
+               "            }\n"
+               "            url {\n"
+               "              path /index.html\n"
+               "              status_code 201\n"
+               "            }\n"
+               "            connect_ip 10.0.0.99\n"
+               "            connect_port 82\n"
+               "            connect_timeout 31\n"
+               "        }\n"
+               "    }\n\n"
+               "    # Configuration for Member sample_member_id_2\n"
+               "    real_server 10.0.0.98 82 {\n"
+               "        weight 13\n"
+               "        uthreshold 98\n"
+               "        HTTP_GET {\n"
+               "            url {\n"
+               "              path /index.html\n"
+               "              status_code 200\n"
+               "            }\n"
+               "            url {\n"
+               "              path /index.html\n"
+               "              status_code 201\n"
+               "            }\n"
+               "            connect_ip 10.0.0.98\n"
+               "            connect_port 82\n"
+               "            connect_timeout 31\n"
+               "        }\n"
+               "    }\n\n"
+               "}\n\n")
+
+        listener = sample_configs_combined.sample_listener_tuple(
+            proto=constants.PROTOCOL_UDP,
+            monitor_proto=constants.HEALTH_MONITOR_HTTP,
+            connection_limit=98,
+            persistence=False,
+            monitor_expected_codes='200-201')
+
+        rendered_obj = self.udp_jinja_cfg.render_loadbalancer_obj(listener)
+        self.assertEqual(exp, rendered_obj)
+
+    def test_render_template_udp_listener_with_tcp_health_monitor(self):
+        exp = ("# Configuration for Loadbalancer sample_loadbalancer_id_1\n"
+               "# Configuration for Listener sample_listener_id_1\n\n"
+               "net_namespace amphora-haproxy\n\n"
+               "virtual_server 10.0.0.2 80 {\n"
+               "    lb_algo rr\n"
+               "    lb_kind NAT\n"
+               "    protocol UDP\n"
+               "    delay_loop 30\n"
+               "    delay_before_retry 30\n"
+               "    retry 3\n\n\n"
+               "    # Configuration for Pool sample_pool_id_1\n"
+               "    # Configuration for HealthMonitor sample_monitor_id_1\n"
+               "    # Configuration for Member sample_member_id_1\n"
+               "    real_server 10.0.0.99 82 {\n"
+               "        weight 13\n"
+               "        uthreshold 98\n"
+               "        TCP_CHECK {\n"
+               "            connect_ip 10.0.0.99\n"
+               "            connect_port 82\n"
+               "            connect_timeout 31\n"
+               "        }\n"
+               "    }\n\n"
+               "    # Configuration for Member sample_member_id_2\n"
+               "    real_server 10.0.0.98 82 {\n"
+               "        weight 13\n"
+               "        uthreshold 98\n"
+               "        TCP_CHECK {\n"
+               "            connect_ip 10.0.0.98\n"
+               "            connect_port 82\n"
+               "            connect_timeout 31\n"
+               "        }\n"
+               "    }\n\n"
+               "}\n\n")
+        listener = sample_configs_combined.sample_listener_tuple(
+            proto=constants.PROTOCOL_UDP,
+            monitor_proto=constants.HEALTH_MONITOR_TCP,
+            connection_limit=98,
+            persistence=False)
+
+        rendered_obj = self.udp_jinja_cfg.render_loadbalancer_obj(listener)
+        self.assertEqual(exp, rendered_obj)

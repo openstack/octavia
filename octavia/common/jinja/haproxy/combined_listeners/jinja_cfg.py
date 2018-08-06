@@ -398,7 +398,7 @@ class JinjaTemplater(object):
         """
         codes = None
         if monitor.expected_codes:
-            codes = '|'.join(self._expand_expected_codes(
+            codes = '|'.join(octavia_utils.expand_expected_codes(
                 monitor.expected_codes))
         return {
             'id': monitor.id,
@@ -479,25 +479,3 @@ class JinjaTemplater(object):
         # Spaces next
         value = re.sub(' ', '\\ ', value)
         return value
-
-    @staticmethod
-    def _expand_expected_codes(codes):
-        """Expand the expected code string in set of codes.
-
-        200-204 -> 200, 201, 202, 204
-        200, 203 -> 200, 203
-        """
-
-        retval = set()
-        for code in codes.replace(',', ' ').split(' '):
-            code = code.strip()
-
-            if not code:
-                continue
-            if '-' in code:
-                low, hi = code.split('-')[:2]
-                retval.update(
-                    str(i) for i in range(int(low), int(hi) + 1))
-            else:
-                retval.add(code)
-        return sorted(retval)

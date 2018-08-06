@@ -60,3 +60,32 @@ class TestConfig(base.TestCase):
                          utils.ip_netmask_to_cidr('10.0.0.1', '255.255.240.0'))
         self.assertEqual('10.0.0.0/30', utils.ip_netmask_to_cidr(
             '10.0.0.1', '255.255.255.252'))
+
+    def test_expand_expected_codes(self):
+        exp_codes = ''
+        self.assertEqual(utils.expand_expected_codes(exp_codes),
+                         set())
+        exp_codes = '200'
+        self.assertEqual(utils.expand_expected_codes(exp_codes),
+                         {'200'})
+        exp_codes = '200, 201'
+        self.assertEqual(utils.expand_expected_codes(exp_codes),
+                         {'200', '201'})
+        exp_codes = '200, 201,202'
+        self.assertEqual(utils.expand_expected_codes(exp_codes),
+                         {'200', '201', '202'})
+        exp_codes = '200-202'
+        self.assertEqual(utils.expand_expected_codes(exp_codes),
+                         {'200', '201', '202'})
+        exp_codes = '200-202, 205'
+        self.assertEqual(utils.expand_expected_codes(exp_codes),
+                         {'200', '201', '202', '205'})
+        exp_codes = '200, 201-203'
+        self.assertEqual(utils.expand_expected_codes(exp_codes),
+                         {'200', '201', '202', '203'})
+        exp_codes = '200, 201-203, 205'
+        self.assertEqual(utils.expand_expected_codes(exp_codes),
+                         {'200', '201', '202', '203', '205'})
+        exp_codes = '201-200, 205'
+        self.assertEqual(utils.expand_expected_codes(exp_codes),
+                         {'205'})

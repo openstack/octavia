@@ -29,11 +29,41 @@ MISC_CHECK {
         }
 {%- endmacro -%}
 
+{%- macro http_url_macro(health_monitor, health_monitor_status_code) %}
+url {
+              path {{ health_monitor.url_path }}
+              status_code {{ health_monitor_status_code }}
+            }
+{% endmacro -%}
+
+{%- macro http_get_macro(pool, member, health_monitor) -%}
+HTTP_GET {
+            {% for status_code in health_monitor.expected_codes %}
+            {{ http_url_macro(health_monitor, status_code) -}}
+            {% endfor %}
+            connect_ip {{ member.monitor_address|default(member.address, true) }}
+            connect_port {{ member.monitor_port|default(member.protocol_port, true) }}
+            connect_timeout {{ health_monitor.timeout }}
+        }
+{%- endmacro -%}
+
+{%- macro tcp_check_macro(pool, member, health_monitor) -%}
+TCP_CHECK {
+            connect_ip {{ member.monitor_address|default(member.address, true) }}
+            connect_port {{ member.monitor_port|default(member.protocol_port, true) }}
+            connect_timeout {{ health_monitor.timeout }}
+        }
+{%- endmacro -%}
+
 {% macro health_monitor_rs_macro(constants, pool, member) %}
         {% if pool.health_monitor and pool.health_monitor.enabled %}
-        {% if pool.health_monitor.type == constants.HEALTH_MONITOR_UDP_CONNECT %}
+            {% if pool.health_monitor.type == constants.HEALTH_MONITOR_UDP_CONNECT %}
         {{ misc_check_macro(pool, member, pool.health_monitor) -}}
-        {% endif %}
+            {% elif pool.health_monitor.type == constants.HEALTH_MONITOR_HTTP and pool.health_monitor.http_method == constants.HEALTH_MONITOR_HTTP_METHOD_GET %}
+        {{ http_get_macro(pool, member, pool.health_monitor) -}}
+            {% elif pool.health_monitor.type == constants.HEALTH_MONITOR_TCP %}
+        {{ tcp_check_macro(pool, member, pool.health_monitor) -}}
+            {% endif %}
         {% endif %}
 {% endmacro %}
 
@@ -54,10 +84,8 @@ MISC_CHECK {
 
 {% macro health_monitor_vs_macro(default_pool) %}
 {% if default_pool and default_pool.health_monitor and default_pool.health_monitor.enabled %}
-    {% if default_pool.health_monitor.delay %}
     delay_loop {{ default_pool.health_monitor.delay }}
     delay_before_retry {{ default_pool.health_monitor.delay }}
-    {% endif %}
     {% if default_pool.health_monitor.fall_threshold %}
     retry {{ default_pool.health_monitor.fall_threshold }}
     {% endif %}

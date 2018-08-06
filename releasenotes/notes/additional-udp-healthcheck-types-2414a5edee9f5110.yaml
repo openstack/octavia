@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Two new types of healthmonitoring are now valid for UDP listeners. Both
+    ``HTTP`` and ``TCP`` check types can now be used.
