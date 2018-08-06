@@ -1,0 +1,10 @@
+---
+upgrade:
+  - |
+    To resolve the IPv6 VIP issues on active/standby load balancers you
+    need to build a new amphora image.
+fixes:
+  - |
+    Fixes issues using IPv6 VIP addresses with load balancers configured for
+    active/standby topology. This fix requires a new amphora image to be
+    built.

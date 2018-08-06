@@ -23,6 +23,7 @@ sysctl-write-value net.ipv4.netfilter.ip_conntrack_tcp_timeout_fin_wait 5 || tru
 
 sysctl-write-value net.ipv4.tcp_fin_timeout 5
 sysctl-write-value net.ipv4.ip_nonlocal_bind 1
+sysctl-write-value net.ipv6.ip_nonlocal_bind 1
 sysctl-write-value net.ipv4.tcp_rmem "16384 65536 524288"
 sysctl-write-value net.ipv4.tcp_wmem "16384 349520 699040"
 sysctl-write-value net.ipv4.ip_local_port_range "1025 65534"
