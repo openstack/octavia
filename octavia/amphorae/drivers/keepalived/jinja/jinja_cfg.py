@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import ipaddress
 import os
 
 import jinja2
@@ -53,11 +54,12 @@ class KeepalivedJinjaTemplater(object):
                 lstrip_blocks=True)
         return self._jinja_env.get_template(os.path.basename(template_file))
 
-    def build_keepalived_config(self, loadbalancer, amphora):
+    def build_keepalived_config(self, loadbalancer, amphora, vip_cidr):
         """Renders the loadblanacer keepalived configuration for Active/Standby
 
         :param loadbalancer: A lodabalancer object
         :param amp: An amphora object
+        :param vip_cidr: The VIP subnet cidr
         """
         # Note on keepalived configuration: The current base configuration
         # enforced Master election whenever a high priority VRRP instance
@@ -67,6 +69,22 @@ class KeepalivedJinjaTemplater(object):
         # several backend services. To disable the fallback behavior, we need
         #  to add the "nopreempt" flag in the backup instance section.
         peers_ips = []
+
+        # Validate the VIP address and see if it is IPv6
+        vip = loadbalancer.vip.ip_address
+        vip_addr = ipaddress.ip_address(
+            vip if isinstance(vip, six.text_type) else six.u(vip))
+        vip_ipv6 = True if vip_addr.version == 6 else False
+
+        # Normalize and validate the VIP subnet CIDR
+        vip_network_cidr = None
+        vip_cidr = (vip_cidr if isinstance(vip_cidr, six.text_type) else
+                    six.u(vip_cidr))
+        if vip_ipv6:
+            vip_network_cidr = ipaddress.IPv6Network(vip_cidr).with_prefixlen
+        else:
+            vip_network_cidr = ipaddress.IPv4Network(vip_cidr).with_prefixlen
+
         for amp in six.moves.filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
@@ -86,12 +104,14 @@ class KeepalivedJinjaTemplater(object):
              'vrrp_auth_pass': loadbalancer.vrrp_group.vrrp_auth_pass,
              'amp_vrrp_ip': amphora.vrrp_ip,
              'peers_vrrp_ips': peers_ips,
-             'vip_ip_address': loadbalancer.vip.ip_address,
+             'vip_ip_address': vip,
              'advert_int': loadbalancer.vrrp_group.advert_int,
              'check_script_path': util.keepalived_check_script_path(),
              'vrrp_check_interval':
                  CONF.keepalived_vrrp.vrrp_check_interval,
              'vrrp_fail_count': CONF.keepalived_vrrp.vrrp_fail_count,
              'vrrp_success_count':
-                 CONF.keepalived_vrrp.vrrp_success_count},
+                 CONF.keepalived_vrrp.vrrp_success_count,
+             'vip_network_cidr': vip_network_cidr,
+             'vip_ipv6': vip_ipv6},
             constants=constants)

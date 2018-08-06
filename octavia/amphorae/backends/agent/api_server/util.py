@@ -14,13 +14,18 @@
 
 
 import os
+import stat
 import subprocess
 
+import jinja2
 from oslo_config import cfg
+from oslo_log import log as logging
 
+from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.common import constants as consts
 
 CONF = cfg.CONF
+LOG = logging.getLogger(__name__)
 
 
 class UnknownInitError(Exception):
@@ -141,3 +146,39 @@ def get_os_init_system():
                     else:
                         return consts.INIT_SYSVINIT
     return consts.INIT_UNKOWN
+
+
+def install_netns_systemd_service():
+    os_utils = osutils.BaseOS.get_os_util()
+
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    # mode 00644
+    mode = (stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+
+    # TODO(bcafarel): implement this for other init systems
+    # netns handling depends on a separate unit file
+    netns_path = os.path.join(consts.SYSTEMD_DIR,
+                              consts.AMP_NETNS_SVC_PREFIX + '.service')
+
+    jinja_env = jinja2.Environment(
+        autoescape=True, loader=jinja2.FileSystemLoader(os.path.dirname(
+            os.path.realpath(__file__)
+        ) + consts.AGENT_API_TEMPLATES))
+
+    if not os.path.exists(netns_path):
+        with os.fdopen(os.open(netns_path, flags, mode), 'w') as text_file:
+            text = jinja_env.get_template(
+                consts.AMP_NETNS_SVC_PREFIX + '.systemd.j2').render(
+                    amphora_nsname=consts.AMPHORA_NAMESPACE,
+                    HasIFUPAll=os_utils.has_ifup_all())
+            text_file.write(text)
+
+
+def run_systemctl_command(command, service):
+    cmd = "systemctl {cmd} {srvc}".format(cmd=command, srvc=service)
+    try:
+        subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        LOG.error("Failed to %(cmd)s %(srvc)s service: "
+                  "%(err)s %(out)s", {'cmd': command, 'srvc': service,
+                                      'err': e, 'out': e.output})

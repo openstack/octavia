@@ -26,6 +26,7 @@ vrrp_instance {{ vrrp_group_name }} {
   virtual_router_id {{ amp_vrrp_id }}
   priority {{ amp_priority }}
   nopreempt
+  accept
   garp_master_refresh {{ vrrp_garp_refresh }}
   garp_master_refresh_repeat {{ vrrp_garp_refresh_repeat }}
   advert_int {{ advert_int }}
@@ -44,8 +45,16 @@ vrrp_instance {{ vrrp_group_name }} {
   virtual_ipaddress {
     {{ vip_ip_address }}
   }
+
+  virtual_routes {
+    {{ vip_network_cidr }} dev {{ amp_intf }} src {{ vip_ip_address }} scope link table 1
+  }
+
+  virtual_rules {
+    from {{ vip_ip_address }}/{{ '128' if vip_ipv6 else '32' }} table 1 priority 100
+  }
+
   track_script {
     check_script
   }
 }
-

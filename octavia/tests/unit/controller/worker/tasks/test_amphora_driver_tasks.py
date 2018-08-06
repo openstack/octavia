@@ -564,10 +564,12 @@ class TestAmphoraDriverTasks(base.TestCase):
                                  mock_listener_repo_get,
                                  mock_listener_repo_update,
                                  mock_amphora_repo_update):
+        amphorae_network_config = mock.MagicMock()
         amphora_vrrp_update_obj = (
             amphora_driver_tasks.AmphoraVRRPUpdate())
-        amphora_vrrp_update_obj.execute(_LB_mock)
-        mock_driver.update_vrrp_conf.assert_called_once_with(_LB_mock)
+        amphora_vrrp_update_obj.execute(_LB_mock, amphorae_network_config)
+        mock_driver.update_vrrp_conf.assert_called_once_with(
+            _LB_mock, amphorae_network_config)
 
     def test_amphora_vrrp_stop(self,
                                mock_driver,

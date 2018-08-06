@@ -79,7 +79,9 @@ class AgentJinjaTestCase(base.TestCase):
                            'agent_server_network_dir = '
                            '/etc/network/interfaces.d/\n'
                            'agent_request_read_timeout = 120\n'
-                           'amphora_id = ' + AMP_ID)
+                           'amphora_id = ' + AMP_ID + '\n\n'
+                           '[controller_worker]\n'
+                           'loadbalancer_topology = SINGLE')
         agent_cfg = ajc.build_agent_config(AMP_ID)
         self.assertEqual(expected_config, agent_cfg)
 
@@ -114,6 +116,8 @@ class AgentJinjaTestCase(base.TestCase):
                            'agent_server_network_file = '
                            '/etc/network/interfaces\n'
                            'agent_request_read_timeout = 120\n'
-                           'amphora_id = ' + AMP_ID)
+                           'amphora_id = ' + AMP_ID + '\n\n'
+                           '[controller_worker]\n'
+                           'loadbalancer_topology = SINGLE')
         agent_cfg = ajc.build_agent_config(AMP_ID)
         self.assertEqual(expected_config, agent_cfg)

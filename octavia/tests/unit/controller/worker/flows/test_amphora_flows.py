@@ -355,7 +355,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.LOADBALANCER, vrrp_subflow.requires)
 
         self.assertEqual(1, len(vrrp_subflow.provides))
-        self.assertEqual(1, len(vrrp_subflow.requires))
+        self.assertEqual(2, len(vrrp_subflow.requires))
 
     def test_get_post_map_lb_subflow(self, mock_get_net_driver):
 

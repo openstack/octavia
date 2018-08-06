@@ -13,6 +13,8 @@
 # under the License.
 #
 
+import copy
+
 import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
@@ -73,6 +75,7 @@ class TestVRRPRestDriver(base.TestCase):
                          "  virtual_router_id 1\n"
                          "  priority 100\n"
                          "  nopreempt\n"
+                         "  accept\n"
                          "  garp_master_refresh 5\n"
                          "  garp_master_refresh_repeat 2\n"
                          "  advert_int 10\n"
@@ -88,12 +91,76 @@ class TestVRRPRestDriver(base.TestCase):
                          "\n"
                          "  virtual_ipaddress {\n"
                          "    10.1.0.5\n"
-                         "  }\n"
+                         "  }\n\n"
+                         "  virtual_routes {\n"
+                         "    10.1.0.0/24 dev eth1 src 10.1.0.5 scope link "
+                         "table 1\n"
+                         "  }\n\n"
+                         "  virtual_rules {\n"
+                         "    from 10.1.0.5/32 table 1 priority 100\n"
+                         "  }\n\n"
                          "  track_script {\n"
                          "    check_script\n"
                          "  }\n"
-                         "}\n")
+                         "}")
+
+        self.amphora1v6 = copy.deepcopy(self.amphora1)
+        self.amphora1v6.vrrp_ip = '2001:db8::10'
+        self.amphora2v6 = copy.deepcopy(self.amphora2)
+        self.amphora2v6.vrrp_ip = '2001:db8::11'
+        self.lbv6 = copy.deepcopy(self.lb)
+        self.lbv6.amphorae = [self.amphora1v6, self.amphora2v6]
+        self.lbv6.vip.ip_address = '2001:db8::15'
+
+        self.ref_v6_conf = ("vrrp_script check_script {\n"
+                            "  script /tmp/test/vrrp/check_script.sh\n"
+                            "  interval 5\n"
+                            "  fall 2\n"
+                            "  rise 2\n"
+                            "}\n"
+                            "\n"
+                            "vrrp_instance TESTGROUP {\n"
+                            "  state MASTER\n"
+                            "  interface eth1\n"
+                            "  virtual_router_id 1\n"
+                            "  priority 100\n"
+                            "  nopreempt\n"
+                            "  accept\n"
+                            "  garp_master_refresh 5\n"
+                            "  garp_master_refresh_repeat 2\n"
+                            "  advert_int 10\n"
+                            "  authentication {\n"
+                            "    auth_type PASS\n"
+                            "    auth_pass TESTPASSWORD\n"
+                            "  }\n"
+                            "\n"
+                            "  unicast_src_ip 2001:db8::10\n"
+                            "  unicast_peer {\n"
+                            "    2001:db8::11\n"
+                            "  }\n"
+                            "\n"
+                            "  virtual_ipaddress {\n"
+                            "    2001:db8::15\n"
+                            "  }\n\n"
+                            "  virtual_routes {\n"
+                            "    2001:db8::/64 dev eth1 src "
+                            "2001:db8::15 scope link table 1\n"
+                            "  }\n\n"
+                            "  virtual_rules {\n"
+                            "    from 2001:db8::15/128 table 1 "
+                            "priority 100\n"
+                            "  }\n\n"
+                            "  track_script {\n"
+                            "    check_script\n"
+                            "  }\n"
+                            "}")
 
     def test_build_keepalived_config(self):
-        config = self.templater.build_keepalived_config(self.lb, self.amphora1)
+        config = self.templater.build_keepalived_config(
+            self.lb, self.amphora1, '10.1.0.0/24')
         self.assertEqual(self.ref_conf, config)
+
+    def test_build_keepalived_ipv6_config(self):
+        config = self.templater.build_keepalived_config(
+            self.lbv6, self.amphora1v6, '2001:db8::/64')
+        self.assertEqual(self.ref_v6_conf, config)
