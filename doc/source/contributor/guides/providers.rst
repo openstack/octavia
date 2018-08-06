@@ -1654,6 +1654,12 @@ and instead will callback to Octavia using a new API.
   access. See `Stable Provider Driver Interface`_ for a list of acceptable
   APIs for provider driver use.
 
+.. warning::
+
+  This library is interim and will be removed when the driver support endpoint
+  is made available. At which point drivers will not import any code from
+  Octavia.
+
 Update Provisioning and Operating Status API
 --------------------------------------------
 
