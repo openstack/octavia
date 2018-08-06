@@ -19,7 +19,6 @@ import socket
 import stat
 import subprocess
 
-import jinja2
 from oslo_config import cfg
 from oslo_log import log as logging
 import pyroute2
@@ -37,11 +36,6 @@ ETH_X_VIP_CONF = 'plug_vip_ethX.conf.j2'
 ETH_X_PORT_CONF = 'plug_port_ethX.conf.j2'
 
 LOG = logging.getLogger(__name__)
-
-j2_env = jinja2.Environment(autoescape=True, loader=jinja2.FileSystemLoader(
-    os.path.dirname(os.path.realpath(__file__)) + consts.AGENT_API_TEMPLATES))
-template_port = j2_env.get_template(ETH_X_PORT_CONF)
-template_vip = j2_env.get_template(ETH_X_VIP_CONF)
 
 
 class Plug(object):
@@ -153,6 +147,10 @@ class Plug(object):
             ipr.link('set', index=idx, net_ns_fd=consts.AMPHORA_NAMESPACE,
                      IFLA_IFNAME=primary_interface)
 
+        # In an ha amphora, keepalived should bring the VIP interface up
+        if (CONF.controller_worker.loadbalancer_topology ==
+                consts.TOPOLOGY_ACTIVE_STANDBY):
+            secondary_interface = None
         # bring interfaces up
         self._osutils.bring_interfaces_up(
             ip, primary_interface, secondary_interface)
