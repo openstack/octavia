@@ -78,20 +78,17 @@ class JinjaTemplater(object):
         self.connection_logging = connection_logging
 
     def build_config(self, host_amphora, listener, tls_cert,
-                     socket_path=None,
-                     user_group='nogroup'):
+                     socket_path=None):
         """Convert a logical configuration to the HAProxy version
 
         :param host_amphora: The Amphora this configuration is hosted on
         :param listener: The listener configuration
         :param tls_cert: The TLS certificates for the listener
         :param socket_path: The socket path for Haproxy process
-        :param user_group: The user group
         :return: Rendered configuration
         """
         return self.render_loadbalancer_obj(host_amphora, listener,
                                             tls_cert=tls_cert,
-                                            user_group=user_group,
                                             socket_path=socket_path)
 
     def _get_template(self):
@@ -110,7 +107,6 @@ class JinjaTemplater(object):
 
     def render_loadbalancer_obj(self, host_amphora, listener,
                                 tls_cert=None,
-                                user_group='nogroup',
                                 socket_path=None):
         """Renders a templated configuration from a load balancer object
 
@@ -118,7 +114,6 @@ class JinjaTemplater(object):
         :param listener: The listener configuration
         :param tls_cert: The TLS certificates for the listener
         :param socket_path: The socket path for Haproxy process
-        :param user_group: The user group
         :return: Rendered configuration
         """
         loadbalancer = self._transform_loadbalancer(
@@ -130,7 +125,6 @@ class JinjaTemplater(object):
             socket_path = '%s/%s.sock' % (self.base_amp_path, listener.id)
         return self._get_template().render(
             {'loadbalancer': loadbalancer,
-             'user_group': user_group,
              'stats_sock': socket_path,
              'log_http': self.log_http,
              'log_server': self.log_server,

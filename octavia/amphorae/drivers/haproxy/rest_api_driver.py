@@ -102,8 +102,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                 config = self.jinja.build_config(
                     host_amphora=amp,
                     listener=listener,
-                    tls_cert=certs['tls_cert'],
-                    user_group=CONF.haproxy_amphora.user_group)
+                    tls_cert=certs['tls_cert'])
                 self.client.upload_config(amp, listener.id, config,
                                           timeout_dict=timeout_dict)
                 self.client.reload_listener(amp, listener.id,
@@ -140,8 +139,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                     config = self.jinja.build_config(
                         host_amphora=amp,
                         listener=listener,
-                        tls_cert=certs['tls_cert'],
-                        user_group=CONF.haproxy_amphora.user_group)
+                        tls_cert=certs['tls_cert'])
                     self.client.upload_config(amp, listener.id, config)
                     self.client.reload_listener(amp, listener.id)
 
