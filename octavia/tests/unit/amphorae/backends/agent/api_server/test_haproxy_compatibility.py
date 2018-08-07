@@ -28,7 +28,6 @@ class HAProxyCompatTestCase(base.TestCase):
             "global\n"
             "    daemon\n"
             "    user nobody\n"
-            "    group nogroup\n"
             "    log /dev/log local0\n"
             "    log /dev/log local1 notice\n"
             "    stats socket /var/lib/octavia/sample_listener_id_1.sock"

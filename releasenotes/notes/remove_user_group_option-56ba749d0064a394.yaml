@@ -1,0 +1,5 @@
+---
+deprecations:
+  - |
+    Finally completely the remove user_group option, as it was deprecated in
+    Pike.

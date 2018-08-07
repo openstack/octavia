@@ -50,9 +50,6 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
     def setUp(self):
         super(TestHaproxyAmphoraLoadBalancerDriverTest, self).setUp()
 
-        conf = oslo_fixture.Config(cfg.CONF)
-        conf.config(group="haproxy_amphora", user_group="everyone")
-
         DEST1 = '198.51.100.0/24'
         DEST2 = '203.0.113.0/24'
         NEXTHOP = '192.0.2.1'
@@ -120,9 +117,6 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
 
         self.driver.update_amphora_listeners([mock_listener], 0,
                                              [mock_amphora], self.timeout_dict)
-        self.driver.jinja.build_config.assert_called_once_with(
-            host_amphora=mock_amphora, listener=mock_listener,
-            tls_cert=None, user_group="everyone")
         self.driver.client.upload_config.assert_called_once_with(
             mock_amphora, mock_listener.id, 'the_config',
             timeout_dict=self.timeout_dict)
