@@ -7,7 +7,6 @@ issues:
   - You cannot mix IPv4 UDP listeners with IPv6 members at this time. This is
     being tracked with this story
     https://storyboard.openstack.org/#!/story/2003329
-  - CentOS based amphora images do not yet support UDP load balancing.
 upgrade:
   - |
     UDP protocol support requires an update to the amphora image to support

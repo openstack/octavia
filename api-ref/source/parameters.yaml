@@ -842,7 +842,7 @@ protocol:
     ``TERMINATED_HTTPS``, or ``UDP``.
   in: body
   required: true
-  type: integer
+  type: string
 protocol-pools:
   description: |
     The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``PROXY``,
