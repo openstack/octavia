@@ -36,6 +36,10 @@ class QuotaBase(base.BaseType):
     # Misspelled version, deprecated in Rocky
     health_monitor = wtypes.wsattr(wtypes.IntegerType(
         minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    l7policy = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    l7rule = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
 
     def to_dict(self, render_unsets=False):
         quota_dict = super(QuotaBase, self).to_dict(render_unsets)
@@ -70,6 +74,8 @@ class QuotaAllBase(base.BaseType):
     healthmonitor = wtypes.wsattr(wtypes.IntegerType())
     # Misspelled version, deprecated in Rocky, remove in T
     health_monitor = wtypes.wsattr(wtypes.IntegerType())
+    l7policy = wtypes.wsattr(wtypes.IntegerType())
+    l7rule = wtypes.wsattr(wtypes.IntegerType())
 
     _type_to_model_map = {'loadbalancer': 'load_balancer',
                           'healthmonitor': 'health_monitor'}

@@ -51,6 +51,8 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - healthmonitor: quota-health_monitor
+   - l7policy: quota-l7policy
+   - l7rule: quota-l7rule
    - listener: quota-listener
    - loadbalancer: quota-load_balancer
    - member: quota-member
@@ -99,6 +101,8 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - healthmonitor: quota-health_monitor
+   - l7policy: quota-l7policy
+   - l7rule: quota-l7rule
    - listener: quota-listener
    - loadbalancer: quota-load_balancer
    - member: quota-member
@@ -156,6 +160,8 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - healthmonitor: quota-health_monitor
+   - l7policy: quota-l7policy
+   - l7rule: quota-l7rule
    - listener: quota-listener
    - loadbalancer: quota-load_balancer
    - member: quota-member
@@ -206,6 +212,8 @@ Request
 .. rest_parameters:: ../parameters.yaml
 
    - healthmonitor: quota-health_monitor-optional
+   - l7policy: quota-l7policy-optional
+   - l7rule: quota-l7rule-optional
    - listener: quota-listener-optional
    - loadbalancer: quota-load_balancer-optional
    - member: quota-member-optional
@@ -230,6 +238,8 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - healthmonitor: quota-health_monitor
+   - l7policy: quota-l7policy
+   - l7rule: quota-l7rule
    - listener: quota-listener
    - loadbalancer: quota-load_balancer
    - member: quota-member

@@ -6,7 +6,9 @@
             "healthmonitor": -1,
             "listener": null,
             "project_id": "e3cd678b11784734bc366148aa37580e",
-            "pool": null
+            "pool": null,
+            "l7policy": 3,
+            "l7rule": null
         }
     ]
 }

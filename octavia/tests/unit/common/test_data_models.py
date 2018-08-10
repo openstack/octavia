@@ -118,6 +118,24 @@ class TestDataModels(base.TestCase):
             compute_flavor=self.COMPUTE_FLAVOR
         )
 
+        self.QUOTA_obj = data_models.Quotas(
+            project_id=self.PROJECT_ID,
+            load_balancer=None,
+            listener=None,
+            pool=None,
+            health_monitor=None,
+            member=None,
+            l7policy=None,
+            l7rule=None,
+            in_use_health_monitor=None,
+            in_use_listener=None,
+            in_use_load_balancer=None,
+            in_use_member=None,
+            in_use_pool=None,
+            in_use_l7policy=None,
+            in_use_l7rule=None
+        )
+
         super(TestDataModels, self).setUp()
 
     def test_LoadBalancer_update(self):
@@ -417,3 +435,47 @@ class TestDataModels(base.TestCase):
         test_Amp_obj.update(update_dict)
 
         self.assertEqual(reference_Amp_obj, test_Amp_obj)
+
+    def test_Quota_update(self):
+
+        new_loadbalancer_quota = 10
+        new_listener_quota = 11
+        new_pool_quota = 12
+        new_healthmonitor_quota = 13
+        new_member_quota = 14
+        new_l7policy_quota = 15
+        new_l7rule_quota = 16
+
+        update_dict = {
+            'load_balancer': new_loadbalancer_quota,
+            'listener': new_listener_quota,
+            'pool': new_pool_quota,
+            'health_monitor': new_healthmonitor_quota,
+            'member': new_member_quota,
+            'l7policy': new_l7policy_quota,
+            'l7rule': new_l7rule_quota
+        }
+
+        test_Quota_obj = copy.deepcopy(self.QUOTA_obj)
+
+        reference_Quota_obj = data_models.Quotas(
+            project_id=self.PROJECT_ID,
+            load_balancer=new_loadbalancer_quota,
+            listener=new_listener_quota,
+            pool=new_pool_quota,
+            health_monitor=new_healthmonitor_quota,
+            member=new_member_quota,
+            l7policy=new_l7policy_quota,
+            l7rule=new_l7rule_quota,
+            in_use_health_monitor=None,
+            in_use_listener=None,
+            in_use_load_balancer=None,
+            in_use_member=None,
+            in_use_pool=None,
+            in_use_l7policy=None,
+            in_use_l7rule=None
+        )
+
+        test_Quota_obj.update(update_dict)
+
+        self.assertEqual(reference_Quota_obj, test_Quota_obj)

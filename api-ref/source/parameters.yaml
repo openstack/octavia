@@ -1286,6 +1286,34 @@ quota-health_monitor-optional:
   in: body
   required: false
   type: integer
+quota-l7policy:
+  description: |
+    The configured l7policy quota limit. A setting of ``null`` means it is
+    using the deployment default quota.  A setting of ``-1`` means unlimited.
+  in: body
+  required: true
+  type: integer
+quota-l7policy-optional:
+  description: |
+    The configured l7policy quota limit. A setting of ``null`` means it is
+    using the deployment default quota.  A setting of ``-1`` means unlimited.
+  in: body
+  required: false
+  type: integer
+quota-l7rule:
+  description: |
+    The configured l7rule quota limit. A setting of ``null`` means it is
+    using the deployment default quota.  A setting of ``-1`` means unlimited.
+  in: body
+  required: true
+  type: integer
+quota-l7rule-optional:
+  description: |
+    The configured l7rule quota limit. A setting of ``null`` means it is
+    using the deployment default quota.  A setting of ``-1`` means unlimited.
+  in: body
+  required: false
+  type: integer
 quota-listener:
   description: |
     The configured listener quota limit. A setting of ``null`` means it is

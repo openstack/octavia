@@ -146,6 +146,14 @@ class L7RuleController(base.BaseController):
 
         lock_session = db_api.get_session(autocommit=False)
         try:
+            if self.repositories.check_quota_met(
+                    context.session,
+                    lock_session,
+                    data_models.L7Rule,
+                    l7rule.project_id):
+                raise exceptions.QuotaException(
+                    resource=data_models.L7Rule._name())
+
             l7rule_dict = db_prepare.create_l7rule(
                 l7rule.to_dict(render_unsets=True), self.l7policy_id)
 

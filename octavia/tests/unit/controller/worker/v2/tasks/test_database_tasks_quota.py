@@ -53,6 +53,9 @@ class TestDatabaseTasksQuota(base.TestCase):
             mock_session = mock.MagicMock()
             mock_get_session_local.return_value = mock_session
 
+            if data_model == data_models.L7Policy:
+                test_object.l7rules = []
+
             if data_model == data_models.Pool:
                 task.execute(test_object, self.zero_pool_child_count)
             else:
@@ -338,3 +341,92 @@ class TestDatabaseTasksQuota(base.TestCase):
         result = task.execute(pool_hm_2_mem.id)
 
         self.assertEqual({'HM': 1, 'member': 2}, result)
+
+    def test_decrement_l7policy_quota(self):
+        task = database_tasks.DecrementL7policyQuota()
+        data_model = data_models.L7Policy
+        self._test_decrement_quota(task, data_model)
+
+    @mock.patch('octavia.db.repositories.Repositories.decrement_quota')
+    @mock.patch('octavia.db.repositories.Repositories.check_quota_met')
+    def test_decrement_l7policy_quota_with_children(self,
+                                                    mock_check_quota_met,
+                                                    mock_decrement_quota):
+        project_id = uuidutils.generate_uuid()
+        test_l7rule1 = mock.MagicMock()
+        test_l7rule1.project_id = project_id
+        test_l7rule2 = mock.MagicMock()
+        test_l7rule2.project_id = project_id
+        test_object = mock.MagicMock()
+        test_object.project_id = project_id
+        test_object.l7rules = [test_l7rule1, test_l7rule2]
+        task = database_tasks.DecrementL7policyQuota()
+        mock_session = mock.MagicMock()
+
+        with mock.patch('octavia.db.api.'
+                        'get_session') as mock_get_session_local:
+            mock_get_session_local.return_value = mock_session
+
+            task.execute(test_object)
+
+            calls = [mock.call(mock_session, data_models.L7Policy, project_id),
+                     mock.call(mock_session, data_models.L7Rule, project_id,
+                               quantity=2)]
+
+            mock_decrement_quota.assert_has_calls(calls)
+
+            mock_session.commit.assert_called_once_with()
+
+        # revert
+        mock_session.reset_mock()
+        with mock.patch('octavia.db.api.'
+                        'get_session') as mock_get_session_local:
+            mock_lock_session = mock.MagicMock()
+            mock_get_session_local.side_effect = [mock_session,
+                                                  mock_lock_session,
+                                                  mock_lock_session,
+                                                  mock_lock_session]
+
+            task.revert(test_object, None)
+
+            calls = [mock.call(mock_session, mock_lock_session,
+                               data_models.L7Policy, project_id),
+                     mock.call(mock_session, mock_lock_session,
+                               data_models.L7Rule, project_id),
+                     mock.call(mock_session, mock_lock_session,
+                               data_models.L7Rule, project_id)]
+
+            mock_check_quota_met.assert_has_calls(calls)
+
+            self.assertEqual(3, mock_lock_session.commit.call_count)
+
+        # revert with l7rule quota exception
+        mock_session.reset_mock()
+        mock_check_quota_met.side_effect = [None, None,
+                                            Exception('fail')]
+        with mock.patch('octavia.db.api.'
+                        'get_session') as mock_get_session_local:
+            mock_lock_session = mock.MagicMock()
+            mock_get_session_local.side_effect = [mock_session,
+                                                  mock_lock_session,
+                                                  mock_lock_session,
+                                                  mock_lock_session]
+
+            task.revert(test_object, None)
+
+            calls = [mock.call(mock_session, mock_lock_session,
+                               data_models.L7Policy, project_id),
+                     mock.call(mock_session, mock_lock_session,
+                               data_models.L7Rule, project_id),
+                     mock.call(mock_session, mock_lock_session,
+                               data_models.L7Rule, project_id)]
+
+            mock_check_quota_met.assert_has_calls(calls)
+
+            self.assertEqual(2, mock_lock_session.commit.call_count)
+            self.assertEqual(1, mock_lock_session.rollback.call_count)
+
+    def test_decrement_l7rule_quota(self):
+        task = database_tasks.DecrementL7ruleQuota()
+        data_model = data_models.L7Rule
+        self._test_decrement_quota(task, data_model)

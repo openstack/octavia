@@ -184,7 +184,9 @@ class BaseController(pecan_rest.RestController):
             listener=CONF.quotas.default_listener_quota,
             pool=CONF.quotas.default_pool_quota,
             health_monitor=CONF.quotas.default_health_monitor_quota,
-            member=CONF.quotas.default_member_quota)
+            member=CONF.quotas.default_member_quota,
+            l7policy=CONF.quotas.default_l7policy_quota,
+            l7rule=CONF.quotas.default_l7rule_quota)
         return quotas
 
     def _get_db_quotas(self, session, project_id):
@@ -213,6 +215,10 @@ class BaseController(pecan_rest.RestController):
                                             default_health_monitor_quota)
             if db_quotas.member is None:
                 db_quotas.member = CONF.quotas.default_member_quota
+            if db_quotas.l7policy is None:
+                db_quotas.l7policy = CONF.quotas.default_l7policy_quota
+            if db_quotas.l7rule is None:
+                db_quotas.l7rule = CONF.quotas.default_l7rule_quota
         return db_quotas
 
     def _auth_get_all(self, context, project_id):

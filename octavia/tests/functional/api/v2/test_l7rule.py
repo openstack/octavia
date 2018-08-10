@@ -19,6 +19,7 @@ from oslo_utils import uuidutils
 
 from octavia.common import constants
 import octavia.common.context
+from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import repositories
 from octavia.tests.functional.api.v2 import base
@@ -828,6 +829,15 @@ class TestL7Rule(base.BaseAPITest):
 
     def test_create_bad_cases_with_ssl_rule_types(self):
         self._test_bad_cases_with_ssl_rule_types()
+
+    def test_create_over_quota(self):
+        self.start_quota_mock(data_models.L7Rule)
+        l7rule = {'compare_type': 'REGEX',
+                  'invert': False,
+                  'type': 'PATH',
+                  'value': '/images*',
+                  'admin_state_up': True}
+        self.post(self.l7rules_path, self._build_body(l7rule), status=403)
 
     def test_update(self):
         api_l7rule = self.create_l7rule(

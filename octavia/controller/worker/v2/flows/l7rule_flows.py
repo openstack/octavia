@@ -64,6 +64,8 @@ class L7RuleFlows(object):
             requires=constants.LOADBALANCER_ID))
         delete_l7rule_flow.add(database_tasks.DeleteL7RuleInDB(
             requires=constants.L7RULE))
+        delete_l7rule_flow.add(database_tasks.DecrementL7ruleQuota(
+            requires=constants.L7RULE))
         delete_l7rule_flow.add(database_tasks.MarkL7PolicyActiveInDB(
             requires=constants.L7POLICY))
         delete_l7rule_flow.add(database_tasks.MarkLBAndListenersActiveInDB(

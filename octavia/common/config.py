@@ -721,6 +721,12 @@ quota_opts = [
     cfg.IntOpt('default_health_monitor_quota',
                default=constants.QUOTA_UNLIMITED,
                help=_('Default per project health monitor quota.')),
+    cfg.IntOpt('default_l7policy_quota',
+               default=constants.QUOTA_UNLIMITED,
+               help=_('Default per project l7policy quota.')),
+    cfg.IntOpt('default_l7rule_quota',
+               default=constants.QUOTA_UNLIMITED,
+               help=_('Default per project l7rule quota.')),
 ]
 
 audit_opts = [
