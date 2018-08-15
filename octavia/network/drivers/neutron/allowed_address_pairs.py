@@ -33,6 +33,7 @@ from octavia.network.drivers.neutron import utils
 
 LOG = logging.getLogger(__name__)
 AAP_EXT_ALIAS = 'allowed-address-pairs'
+PROJECT_ID_ALIAS = 'project-id'
 VIP_SECURITY_GRP_PREFIX = 'lb-'
 OCTAVIA_OWNER = 'Octavia'
 
@@ -396,13 +397,20 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             fixed_ip['subnet_id'] = load_balancer.vip.subnet_id
         if load_balancer.vip.ip_address:
             fixed_ip['ip_address'] = load_balancer.vip.ip_address
+
+        # Make sure we are backward compatible with older neutron
+        if self._check_extension_enabled(PROJECT_ID_ALIAS):
+            project_id_key = 'project_id'
+        else:
+            project_id_key = 'tenant_id'
+
         # It can be assumed that network_id exists
         port = {'port': {'name': 'octavia-lb-' + load_balancer.id,
                          'network_id': load_balancer.vip.network_id,
                          'admin_state_up': False,
                          'device_id': 'lb-{0}'.format(load_balancer.id),
                          'device_owner': OCTAVIA_OWNER,
-                         'project_id': load_balancer.project_id}}
+                         project_id_key: load_balancer.project_id}}
 
         if fixed_ip:
             port['port']['fixed_ips'] = [fixed_ip]
