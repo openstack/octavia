@@ -19,11 +19,13 @@ Defined here so these can also be used at deeper levels than the API.
 """
 
 
+import ipaddress
 import re
 
 import netaddr
 from oslo_config import cfg
 import rfc3986
+import six
 
 from octavia.common import constants
 from octavia.common import exceptions
@@ -320,3 +322,11 @@ def check_session_persistence(SP_dict):
     except Exception:
         raise exceptions.ValidationException(detail=_(
             'Invalid session_persistence provided.'))
+
+
+def ip_not_reserved(ip_address):
+    ip_address = (
+        ipaddress.ip_address(six.text_type(ip_address)).exploded.upper())
+    if ip_address in CONF.networking.reserved_ips:
+        raise exceptions.InvalidOption(value=ip_address,
+                                       option='member address')
