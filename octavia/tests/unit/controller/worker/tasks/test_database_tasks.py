@@ -1735,6 +1735,59 @@ class TestDatabaseTasks(base.TestCase):
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST', AMP_ID, role=None, vrrp_priority=None)
 
+    @mock.patch('octavia.db.repositories.AmphoraRepository.get')
+    def test_get_amphorae_from_loadbalancer(self,
+                                            mock_amphora_get,
+                                            mock_generate_uuid,
+                                            mock_LOG,
+                                            mock_get_session,
+                                            mock_loadbalancer_repo_update,
+                                            mock_listener_repo_update,
+                                            mock_amphora_repo_update,
+                                            mock_amphora_repo_delete):
+        amp1 = mock.MagicMock()
+        amp1.id = uuidutils.generate_uuid()
+        amp2 = mock.MagicMock()
+        amp2.id = uuidutils.generate_uuid()
+        lb = mock.MagicMock()
+        lb.amphorae = [amp1, amp2]
+
+        mock_amphora_get.side_effect = [_amphora_mock, None]
+
+        get_amps_from_lb_obj = database_tasks.GetAmphoraeFromLoadbalancer()
+        result = get_amps_from_lb_obj.execute(lb)
+        self.assertEqual([_amphora_mock], result)
+
+    @mock.patch('octavia.db.repositories.ListenerRepository.get')
+    def test_get_listeners_from_loadbalancer(self,
+                                             mock_listener_get,
+                                             mock_generate_uuid,
+                                             mock_LOG,
+                                             mock_get_session,
+                                             mock_loadbalancer_repo_update,
+                                             mock_listener_repo_update,
+                                             mock_amphora_repo_update,
+                                             mock_amphora_repo_delete):
+        mock_listener_get.return_value = _listener_mock
+        _loadbalancer_mock.listeners = [_listener_mock]
+        get_list_from_lb_obj = database_tasks.GetListenersFromLoadbalancer()
+        result = get_list_from_lb_obj.execute(_loadbalancer_mock)
+        mock_listener_get.assert_called_once_with('TEST', id=_listener_mock.id)
+        self.assertEqual([_listener_mock], result)
+
+    def test_get_vip_from_loadbalancer(self,
+                                       mock_generate_uuid,
+                                       mock_LOG,
+                                       mock_get_session,
+                                       mock_loadbalancer_repo_update,
+                                       mock_listener_repo_update,
+                                       mock_amphora_repo_update,
+                                       mock_amphora_repo_delete):
+        _loadbalancer_mock.vip = _vip_mock
+        get_vip_from_lb_obj = database_tasks.GetVipFromLoadbalancer()
+        result = get_vip_from_lb_obj.execute(_loadbalancer_mock)
+        self.assertEqual(_vip_mock, result)
+
     @mock.patch('octavia.db.repositories.VRRPGroupRepository.create')
     def test_create_vrrp_group_for_lb(self,
                                       mock_vrrp_group_create,

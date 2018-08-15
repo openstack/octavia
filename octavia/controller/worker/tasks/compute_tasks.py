@@ -176,7 +176,7 @@ class ComputeDelete(BaseComputeTask):
             raise
 
 
-class ComputeWait(BaseComputeTask):
+class ComputeActiveWait(BaseComputeTask):
     """Wait for the compute driver to mark the amphora active."""
 
     def execute(self, compute_id, amphora_id):
