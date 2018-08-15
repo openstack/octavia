@@ -459,7 +459,9 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertRaises(network_base.AllocateVIPException,
                           self.driver.allocate_vip, fake_lb)
 
-    def test_allocate_vip_when_no_port_provided(self):
+    @mock.patch('octavia.network.drivers.neutron.base.BaseNeutronDriver.'
+                '_check_extension_enabled', return_value=True)
+    def test_allocate_vip_when_no_port_provided(self, mock_check_ext):
         port_create_dict = copy.deepcopy(t_constants.MOCK_NEUTRON_PORT)
         port_create_dict['port']['device_owner'] = (
             allowed_address_pairs.OCTAVIA_OWNER)
@@ -484,6 +486,43 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
                 'admin_state_up': False,
                 'project_id': 'test-project',
+                'fixed_ips': [{'subnet_id': t_constants.MOCK_SUBNET_ID}]
+            }
+        }
+        create_port.assert_called_once_with(exp_create_port_call)
+        self.assertIsInstance(vip, data_models.Vip)
+        self.assertEqual(t_constants.MOCK_IP_ADDRESS, vip.ip_address)
+        self.assertEqual(t_constants.MOCK_SUBNET_ID, vip.subnet_id)
+        self.assertEqual(t_constants.MOCK_PORT_ID, vip.port_id)
+        self.assertEqual(fake_lb.id, vip.load_balancer_id)
+
+    @mock.patch('octavia.network.drivers.neutron.base.BaseNeutronDriver.'
+                '_check_extension_enabled', return_value=False)
+    def test_allocate_vip_when_no_port_provided_tenant(self, mock_check_ext):
+        port_create_dict = copy.deepcopy(t_constants.MOCK_NEUTRON_PORT)
+        port_create_dict['port']['device_owner'] = (
+            allowed_address_pairs.OCTAVIA_OWNER)
+        port_create_dict['port']['device_id'] = 'lb-1'
+        create_port = self.driver.neutron_client.create_port
+        create_port.return_value = port_create_dict
+        show_subnet = self.driver.neutron_client.show_subnet
+        show_subnet.return_value = {'subnet': {
+            'id': t_constants.MOCK_SUBNET_ID,
+            'network_id': t_constants.MOCK_NETWORK_ID
+        }}
+        fake_lb_vip = data_models.Vip(subnet_id=t_constants.MOCK_SUBNET_ID,
+                                      network_id=t_constants.MOCK_NETWORK_ID)
+        fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip,
+                                           project_id='test-project')
+        vip = self.driver.allocate_vip(fake_lb)
+        exp_create_port_call = {
+            'port': {
+                'name': 'octavia-lb-1',
+                'network_id': t_constants.MOCK_NETWORK_ID,
+                'device_id': 'lb-1',
+                'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+                'admin_state_up': False,
+                'tenant_id': 'test-project',
                 'fixed_ips': [{'subnet_id': t_constants.MOCK_SUBNET_ID}]
             }
         }
