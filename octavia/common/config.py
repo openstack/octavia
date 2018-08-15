@@ -165,6 +165,12 @@ networking_opts = [
                 help=_('List of network_ids that are valid for VIP '
                        'creation. If this field is empty, no validation '
                        'is performed.')),
+    cfg.ListOpt('reserved_ips',
+                default=['169.254.169.254'],
+                item_type=cfg.types.IPAddress(),
+                help=_('List of IP addresses reserved from being used for '
+                       'member addresses. IPv6 addresses should be in '
+                       'expanded, uppercase form.')),
 ]
 
 healthmanager_opts = [

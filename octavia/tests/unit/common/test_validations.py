@@ -414,3 +414,31 @@ class TestValidations(base.TestCase):
             self.assertRaises(exceptions.ValidationException,
                               validate.check_session_persistence,
                               valid_cookie_name_dict)
+
+    def test_ip_not_reserved(self):
+        self.conf.config(group="networking", reserved_ips=['198.51.100.4'])
+
+        # Test good address
+        validate.ip_not_reserved('203.0.113.5')
+
+        # Test IPv4 reserved address
+        self.assertRaises(exceptions.InvalidOption,
+                          validate.ip_not_reserved,
+                          '198.51.100.4')
+
+        self.conf.config(
+            group="networking",
+            reserved_ips=['2001:0DB8:0000:0000:0000:0000:0000:0005'])
+
+        # Test good IPv6 address
+        validate.ip_not_reserved('2001:0DB8::9')
+
+        # Test reserved IPv6 expanded
+        self.assertRaises(exceptions.InvalidOption,
+                          validate.ip_not_reserved,
+                          '2001:0DB8:0000:0000:0000:0000:0000:0005')
+
+        # Test reserved IPv6 short hand notation
+        self.assertRaises(exceptions.InvalidOption,
+                          validate.ip_not_reserved,
+                          '2001:0DB8::5')
