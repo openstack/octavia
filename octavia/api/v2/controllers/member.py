@@ -135,6 +135,9 @@ class MemberController(base.BaseController):
         """Creates a pool member on a pool."""
         member = member_.member
         context = pecan.request.context.get('octavia_context')
+
+        validate.ip_not_reserved(member.address)
+
         # Validate member subnet
         if member.subnet_id and not validate.subnet_exists(member.subnet_id):
             raise exceptions.NotFound(resource='Subnet',

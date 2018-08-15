@@ -1,0 +1,6 @@
+---
+security:
+  - |
+    Adds a configuration option, "reserved_ips" that allows the operator to
+    block addresses from being used in load balancer members. The default
+    setting blocks the nova metadata service address.
