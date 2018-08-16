@@ -361,7 +361,10 @@ def load_certificates_data(cert_mngr, listener, context=None):
 
 def _map_cert_tls_container(cert):
     return data_models.TLSContainer(
-        id=hashlib.sha1(cert.get_certificate()).hexdigest(),
+        # TODO(rm_work): applying nosec here because this is not intended to be
+        # secure, it's just a way to get a consistent ID. Changing this would
+        # break backwards compatibility with existing loadbalancers.
+        id=hashlib.sha1(cert.get_certificate()).hexdigest(),  # nosec
         primary_cn=get_primary_cn(cert),
         private_key=prepare_private_key(
             cert.get_private_key(),
