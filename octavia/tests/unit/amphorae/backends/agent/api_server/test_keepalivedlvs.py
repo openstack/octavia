@@ -61,6 +61,7 @@ class KeepalivedLvsTestCase(base.TestCase):
                                                      m_check_output, mget_pid,
                                                      m_init_sys):
         m_exist.return_value = True
+        mget_pid.return_value = '0'
         self.assertRaises(
             util.UnknownInitError, self.test_keepalivedlvs.delete_udp_listener,
             self.FAKE_ID)
