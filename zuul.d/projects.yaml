@@ -3,7 +3,8 @@
 - project:
     check:
       jobs:
-        - neutron-lbaasv2-dsvm-api
+        - neutron-lbaasv2-dsvm-api:
+            voting: false
         - neutron-lbaasv2-dsvm-py3x-api:
             branches: ^(?!stable/ocata).*$
         - neutron-lbaasv2-dsvm-scenario:
@@ -88,7 +89,6 @@
         - octavia-v1-dsvm-py3x-scenario-multinode:
             branches: ^(?!stable/ocata).*$
             voting: false
-        - neutron-lbaasv2-dsvm-api
         - neutron-lbaasv2-dsvm-py3x-api:
             branches: ^(?!stable/ocata).*$
         - octavia-grenade:
