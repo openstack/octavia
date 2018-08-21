@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add listener and pool protocol validation. The pool and listener can't be
+    combined arbitrarily. We need some constraints on the protocol side.
