@@ -24,7 +24,6 @@ haproxy_cmd = {{ haproxy_cmd }}
 respawn_count = {{ respawn_count }}
 respawn_interval = {{ respawn_interval }}
 use_upstart = {{ use_upstart }}
-user_group = {{ user_group }}
 
 [health_manager]
 controller_ip_port_list = {{ controller_list|join(', ') }}
