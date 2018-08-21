@@ -569,3 +569,55 @@ provisioning status once the asynchronus operation completes.
 
 An entity in ``ERROR`` has failed provisioning. The entity may be deleted and
 recreated.
+
+
+.. _valid_protocol:
+
+Protocol Combinations
+=====================
+
+The listener and pool can be associated through the listener's
+``default_pool_id`` or l7policy's ``redirect_pool_id``. Both listener and pool
+must set the protocol parameter. But the association between the listener and
+the pool isn't arbitrarily and has some constraints at the protocol aspect.
+
+Valid protocol combinations
+---------------------------
+
+.. |1| unicode:: U+2002 .. nut (&ensp;)
+.. |2| unicode:: U+2003 .. mutton (&emsp;)
+.. |listener| replace:: |2| |2| Listener
+.. |1Y| replace:: |1| Y
+.. |1N| replace:: |1| N
+.. |2Y| replace:: |2| Y
+.. |2N| replace:: |2| N
+.. |8Y| replace:: |2| |2| |2| |2| Y
+.. |8N| replace:: |2| |2| |2| |2| N
+
++-------------+-------+--------+------+-------------------+------+
+|| |listener| || HTTP || HTTPS || TCP || TERMINATED_HTTPS || UDP |
+|| Pool       ||      ||       ||     ||                  ||     |
++=============+=======+========+======+===================+======+
+| HTTP        | |2Y|  | |2N|   | |1Y| | |8Y|              | |1N| |
++-------------+-------+--------+------+-------------------+------+
+| HTTPS       | |2N|  | |2Y|   | |1Y| | |8N|              | |1N| |
++-------------+-------+--------+------+-------------------+------+
+| PROXY       | |2Y|  | |2Y|   | |1Y| | |8Y|              | |1N| |
++-------------+-------+--------+------+-------------------+------+
+| TCP         | |2N|  | |2Y|   | |1Y| | |8N|              | |1N| |
++-------------+-------+--------+------+-------------------+------+
+| UDP         | |2N|  | |2N|   | |1N| | |8N|              | |1Y| |
++-------------+-------+--------+------+-------------------+------+
+
+"Y" means the combination is valid and "N" means invalid.
+
+The HTTPS protocol is HTTPS pass-through. For most providers, this is treated
+as a TCP protocol. Some advanced providers may support HTTPS session
+persistence features by using the session ID. The Amphora provider treats
+HTTPS as a TCP flow, but currently does not support HTTPS session persistence
+using the session ID.
+
+The pool protocol of PROXY will use the listener protocol as the pool protocol
+but will wrap that protocol in the proxy protocol. In the case of listener
+protocol TERMINATED_HTTPS, a pool protocol of PROXY will be HTTP wrapped in the
+proxy protocol.
