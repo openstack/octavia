@@ -121,13 +121,14 @@ class ListenersController(base.BaseController):
                 raise exceptions.ImmutableObject(resource=db_lb._name(),
                                                  id=lb_id)
 
-    def _validate_pool(self, session, lb_id, pool_id):
+    def _validate_pool(self, session, lb_id, pool_id, listener_protocol):
         """Validate pool given exists on same load balancer as listener."""
         db_pool = self.repositories.pool.get(
             session, load_balancer_id=lb_id, id=pool_id)
         if not db_pool:
             raise exceptions.NotFound(
                 resource=data_models.Pool._name(), id=pool_id)
+        self._validate_protocol(listener_protocol, db_pool.protocol)
 
     def _reset_lb_status(self, session, lb_id):
         # Setting LB back to active because this should be a recoverable error
@@ -246,7 +247,8 @@ class ListenersController(base.BaseController):
 
             if listener_dict['default_pool_id']:
                 self._validate_pool(context.session, load_balancer_id,
-                                    listener_dict['default_pool_id'])
+                                    listener_dict['default_pool_id'],
+                                    listener.protocol)
 
             self._test_lb_and_listener_statuses(
                 lock_session, lb_id=load_balancer_id)
@@ -268,7 +270,8 @@ class ListenersController(base.BaseController):
         l7policies = listener_dict.pop('l7policies', l7policies)
         if listener_dict.get('default_pool_id'):
             self._validate_pool(lock_session, load_balancer_id,
-                                listener_dict['default_pool_id'])
+                                listener_dict['default_pool_id'],
+                                listener_dict['protocol'])
         db_listener = self._validate_create_listener(
             lock_session, listener_dict)
 
@@ -326,7 +329,7 @@ class ListenersController(base.BaseController):
 
         if listener.default_pool_id:
             self._validate_pool(context.session, load_balancer_id,
-                                listener.default_pool_id)
+                                listener.default_pool_id, db_listener.protocol)
         self._test_lb_and_listener_statuses(context.session, load_balancer_id,
                                             id=id)
 

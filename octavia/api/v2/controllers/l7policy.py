@@ -144,16 +144,17 @@ class L7PolicyController(base.BaseController):
         """Creates a l7policy on a listener."""
         l7policy = l7policy_.l7policy
         context = pecan.request.context.get('octavia_context')
-        # Make sure any pool specified by redirect_pool_id exists
-        if l7policy.redirect_pool_id:
-            self._get_db_pool(
-                context.session, l7policy.redirect_pool_id)
         # Verify the parent listener exists
         listener_id = l7policy.listener_id
         listener = self._get_db_listener(
             context.session, listener_id)
         load_balancer_id = listener.load_balancer_id
         l7policy.project_id = listener.project_id
+        # Make sure any pool specified by redirect_pool_id exists
+        if l7policy.redirect_pool_id:
+            db_pool = self._get_db_pool(
+                context.session, l7policy.redirect_pool_id)
+            self._validate_protocol(listener.protocol, db_pool.protocol)
 
         self._auth_validate_action(context, l7policy.project_id,
                                    constants.RBAC_POST)
@@ -216,11 +217,15 @@ class L7PolicyController(base.BaseController):
                 l7policy_dict[attr] = l7policy_dict.pop(val)
         sanitized_l7policy = l7policy_types.L7PolicyPUT(**l7policy_dict)
         context = pecan.request.context.get('octavia_context')
+
+        db_l7policy = self._get_db_l7policy(context.session, id)
+        listener = self._get_db_listener(
+            context.session, db_l7policy.listener_id)
         # Make sure any specified redirect_pool_id exists
         if l7policy_dict.get('redirect_pool_id'):
-            self._get_db_pool(
+            db_pool = self._get_db_pool(
                 context.session, l7policy_dict['redirect_pool_id'])
-        db_l7policy = self._get_db_l7policy(context.session, id)
+            self._validate_protocol(listener.protocol, db_pool.protocol)
         load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
             db_l7policy)
 

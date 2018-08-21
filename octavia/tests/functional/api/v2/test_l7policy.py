@@ -21,6 +21,7 @@ from oslo_utils import uuidutils
 from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
+from octavia.tests.common import constants as c_const
 from octavia.tests.functional.api.v2 import base
 
 
@@ -1029,3 +1030,118 @@ class TestL7Policy(base.BaseAPITest):
         self.delete(self.L7POLICY_PATH.format(
                     l7policy_id=l7policy.get('id')),
                     status=204)
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_listener_pool_protocol_map_post(self, mock_cert_data):
+        cert = data_models.TLSContainer(certificate='cert')
+        mock_cert_data.return_value = {'sni_certs': [cert]}
+        valid_map = constants.VALID_LISTENER_POOL_PROTOCOL_MAP
+        port = 1
+        l7policy = {'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL}
+        for listener_proto in valid_map:
+            for pool_proto in valid_map[listener_proto]:
+                port = port + 1
+                opts = {}
+                if listener_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                    opts['sni_container_refs'] = [uuidutils.generate_uuid()]
+                listener = self.create_listener(
+                    listener_proto, port, self.lb_id, **opts).get('listener')
+                self.set_object_status(self.lb_repo, self.lb_id)
+                pool = self.create_pool(
+                    self.lb_id, pool_proto,
+                    constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+
+                l7policy['listener_id'] = listener.get('id')
+                l7policy['redirect_pool_id'] = pool.get('id')
+                self.set_object_status(self.lb_repo, self.lb_id)
+                self.post(self.L7POLICIES_PATH,
+                          self._build_body(l7policy), status=201)
+                self.set_object_status(self.lb_repo, self.lb_id)
+
+        invalid_map = c_const.INVALID_LISTENER_POOL_PROTOCOL_MAP
+        port = 100
+        for listener_proto in invalid_map:
+            opts = {}
+            if listener_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                opts['sni_container_refs'] = [uuidutils.generate_uuid()]
+            listener = self.create_listener(
+                listener_proto, port, self.lb_id, **opts).get('listener')
+            self.set_object_status(self.lb_repo, self.lb_id)
+            port = port + 1
+            for pool_proto in invalid_map[listener_proto]:
+                pool = self.create_pool(
+                    self.lb_id, pool_proto,
+                    constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+                self.set_object_status(self.lb_repo, self.lb_id)
+
+                l7policy['listener_id'] = listener.get('id')
+                l7policy['redirect_pool_id'] = pool.get('id')
+                expect_error_msg = ("Validation failure: The pool protocol "
+                                    "'%s' is invalid while the listener "
+                                    "protocol is '%s'.") % (pool_proto,
+                                                            listener_proto)
+                res = self.post(self.L7POLICIES_PATH,
+                                self._build_body(l7policy), status=400)
+                self.assertEqual(expect_error_msg, res.json['faultstring'])
+                self.assert_correct_status(lb_id=self.lb_id)
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_listener_pool_protocol_map_put(self, mock_cert_data):
+        cert = data_models.TLSContainer(certificate='cert')
+        mock_cert_data.return_value = {'sni_certs': [cert]}
+        valid_map = constants.VALID_LISTENER_POOL_PROTOCOL_MAP
+        port = 1
+        new_l7policy = {'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL}
+        for listener_proto in valid_map:
+            for pool_proto in valid_map[listener_proto]:
+                port = port + 1
+                opts = {}
+                if listener_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                    opts['sni_container_refs'] = [uuidutils.generate_uuid()]
+                listener = self.create_listener(
+                    listener_proto, port, self.lb_id, **opts).get('listener')
+                self.set_object_status(self.lb_repo, self.lb_id)
+                pool = self.create_pool(
+                    self.lb_id, pool_proto,
+                    constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+                self.set_object_status(self.lb_repo, self.lb_id)
+                l7policy = self.create_l7policy(
+                    listener.get('id'),
+                    constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
+                self.set_object_status(self.lb_repo, self.lb_id)
+                new_l7policy['redirect_pool_id'] = pool.get('id')
+
+                self.put(
+                    self.L7POLICY_PATH.format(l7policy_id=l7policy.get('id')),
+                    self._build_body(new_l7policy), status=200)
+                self.set_object_status(self.lb_repo, self.lb_id)
+
+        invalid_map = c_const.INVALID_LISTENER_POOL_PROTOCOL_MAP
+        port = 100
+        for listener_proto in invalid_map:
+            opts = {}
+            if listener_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                opts['sni_container_refs'] = [uuidutils.generate_uuid()]
+            listener = self.create_listener(
+                listener_proto, port, self.lb_id, **opts).get('listener')
+            self.set_object_status(self.lb_repo, self.lb_id)
+            port = port + 1
+            for pool_proto in invalid_map[listener_proto]:
+                pool = self.create_pool(
+                    self.lb_id, pool_proto,
+                    constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+                self.set_object_status(self.lb_repo, self.lb_id)
+                l7policy = self.create_l7policy(
+                    listener.get('id'),
+                    constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
+                self.set_object_status(self.lb_repo, self.lb_id)
+                new_l7policy['redirect_pool_id'] = pool.get('id')
+                expect_error_msg = ("Validation failure: The pool protocol "
+                                    "'%s' is invalid while the listener "
+                                    "protocol is '%s'.") % (pool_proto,
+                                                            listener_proto)
+                res = self.put(self.L7POLICY_PATH.format(
+                    l7policy_id=l7policy.get('id')),
+                    self._build_body(new_l7policy), status=400)
+                self.assertEqual(expect_error_msg, res.json['faultstring'])
+                self.assert_correct_status(lb_id=self.lb_id)

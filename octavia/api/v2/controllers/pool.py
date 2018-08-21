@@ -165,6 +165,7 @@ class PoolsController(base.BaseController):
         elif pool.listener_id:
             listener = self.repositories.listener.get(
                 context.session, id=pool.listener_id)
+            self._validate_protocol(listener.protocol, pool.protocol)
             pool.project_id = listener.project_id
             pool.loadbalancer_id = listener.load_balancer_id
         else:

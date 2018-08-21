@@ -304,6 +304,9 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         response = self.put(path, body, status=202)
         return response.json
 
+    # NOTE: This method should be used cautiously. On load balancers with a
+    # significant amount of children resources, it will update the status for
+    # each and every resource and thus taking a lot of DB time.
     def _set_lb_and_children_statuses(self, lb_id, prov_status, op_status,
                                       autodetect=True):
         self.set_object_status(self.lb_repo, lb_id,
@@ -373,6 +376,9 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                                        provisioning_status=hm_prov,
                                        operating_status=op_status)
 
+    # NOTE: This method should be used cautiously. On load balancers with a
+    # significant amount of children resources, it will update the status for
+    # each and every resource and thus taking a lot of DB time.
     def set_lb_status(self, lb_id, status=None):
         explicit_status = True if status is not None else False
         if not explicit_status:

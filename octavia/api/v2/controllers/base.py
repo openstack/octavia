@@ -23,6 +23,7 @@ from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import policy
 from octavia.db import repositories
+from octavia.i18n import _
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -196,3 +197,15 @@ class BaseController(rest.RestController):
         attrs = [attr for attr in dir(obj) if not callable(
             getattr(obj, attr)) and not attr.startswith("_")]
         return attrs
+
+    @staticmethod
+    def _validate_protocol(listener_protocol, pool_protocol):
+        proto_map = constants.VALID_LISTENER_POOL_PROTOCOL_MAP
+        for valid_pool_proto in proto_map[listener_protocol]:
+            if pool_protocol == valid_pool_proto:
+                return
+        detail = _("The pool protocol '%(pool_protocol)s' is invalid while "
+                   "the listener protocol is '%(listener_protocol)s'.") % {
+                       "pool_protocol": pool_protocol,
+                       "listener_protocol": listener_protocol}
+        raise exceptions.ValidationException(detail=detail)
