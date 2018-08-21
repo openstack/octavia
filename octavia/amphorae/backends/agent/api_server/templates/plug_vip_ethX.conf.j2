@@ -28,8 +28,14 @@ gateway {{ gateway }}
 mtu {{ mtu }}
 {%- endif %}
 {%- for hr in host_routes %}
+{%- if ((hr.network.version == 4 and hr.network.prefixlen == 32) or
+        (hr.network.version == 6 and hr.network.prefixlen == 128)) %}
+up route add -host {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
+down route del -host {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
+{%- else %}
 up route add -net {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
 down route del -net {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
+{%- endif %}
 {%- endfor %}
 {%- else %}
 
