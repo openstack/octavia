@@ -116,11 +116,7 @@ class ListenersController(base.BaseController):
         if not db_pool:
             raise exceptions.NotFound(
                 resource=data_models.Pool._name(), id=pool_id)
-        if (db_pool.protocol == constants.PROTOCOL_UDP and
-                db_pool.protocol != listener_protocol):
-            msg = _("Listeners of type %s can only have pools of "
-                    "type UDP.") % constants.PROTOCOL_UDP
-            raise exceptions.ValidationException(detail=msg)
+        self._validate_protocol(listener_protocol, db_pool.protocol)
 
     def _has_tls_container_refs(self, listener_dict):
         return (listener_dict.get('tls_certificate_id') or

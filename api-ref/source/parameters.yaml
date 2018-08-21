@@ -391,13 +391,15 @@ crl_container_ref-optional:
   type: string
 default_pool_id:
   description: |
-    The ID of the pool used by the listener if no L7 policies match.
+    The ID of the pool used by the listener if no L7 policies match. The pool
+    has some restrictions. See :ref:`valid_protocol`.
   in: body
   required: true
   type: uuid
 default_pool_id-optional:
   description: |
-    The ID of the pool used by the listener if no L7 policies match.
+    The ID of the pool used by the listener if no L7 policies match. The pool
+    has some restrictions. See :ref:`valid_protocol`.
   in: body
   required: false
   type: uuid
@@ -779,14 +781,16 @@ l7policy-redirect-http-code-optional:
 l7policy-redirect-pool_id:
   description: |
     Requests matching this policy will be redirected to the pool with this ID.
-    Only valid if ``action`` is ``REDIRECT_TO_POOL``.
+    Only valid if ``action`` is ``REDIRECT_TO_POOL``. The pool has some
+    restrictions, See :ref:`valid_protocol`.
   in: body
   required: true
   type: uuid
 l7policy-redirect-pool_id-optional:
   description: |
     Requests matching this policy will be redirected to the pool with this ID.
-    Only valid if ``action`` is ``REDIRECT_TO_POOL``.
+    Only valid if ``action`` is ``REDIRECT_TO_POOL``. The pool has some
+    restrictions, See :ref:`valid_protocol`.
   in: body
   required: false
   type: uuid
@@ -948,7 +952,8 @@ listener-id:
 listener-id-pool-optional:
   description: |
     The ID of the listener for the pool. Either ``listener_id`` or
-    ``loadbalancer_id`` must be specified.
+    ``loadbalancer_id`` must be specified. The listener has some restrictions,
+    See :ref:`valid_protocol`.
   in: body
   required: false
   type: uuid
