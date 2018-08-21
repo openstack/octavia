@@ -1536,9 +1536,9 @@ class GetAmphoraeFromLoadbalancer(BaseDatabaseTask):
         """
         amphorae = []
         for amp in loadbalancer.amphorae:
-            a = self.amphora_repo.get(db_apis.get_session(), id=amp.id,
-                                      show_deleted=False)
-            if a is None:
+            a = self.amphora_repo.get(db_apis.get_session(), id=amp.id)
+
+            if a is None or a.status == constants.DELETED:
                 continue
             amphorae.append(a)
         return amphorae
