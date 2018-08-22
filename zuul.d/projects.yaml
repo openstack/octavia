@@ -16,6 +16,7 @@
             voting: false
         - neutron-lbaasv2-dsvm-py3x-scenario:
             voting: false
+        - openstack-tox-cover
         - octavia-tox-functional:
             irrelevant-files:
               - ^.*\.rst$
@@ -36,12 +37,14 @@
         - octavia-v1-dsvm-py3x-scenario-multinode
         - octavia-v1-dsvm-scenario-kvm-centos.7:
             voting: false
-        - octavia-v1-dsvm-scenario-lxd:
-            voting: false
-        - openstack-tox-cover
+        - octavia-v2-dsvm-noop-api
+        - octavia-v2-dsvm-noop-py35-api
+        - octavia-v2-dsvm-scenario
+        - octavia-v2-dsvm-py35-scenario
     gate:
       queue: octavia
       jobs:
+        - openstack-tox-cover
         - octavia-tox-functional:
             irrelevant-files:
               - ^.*\.rst$
@@ -56,10 +59,13 @@
               - ^doc/.*$
               - ^etc/.*$
               - ^releasenotes/.*$
+        - neutron-lbaasv2-dsvm-api
+        - neutron-lbaasv2-dsvm-py3x-api
         - octavia-v1-dsvm-scenario
         - octavia-v1-dsvm-py3x-scenario
         - octavia-v1-dsvm-scenario-multinode
         - octavia-v1-dsvm-py3x-scenario-multinode
-        - neutron-lbaasv2-dsvm-api
-        - neutron-lbaasv2-dsvm-py3x-api
-        - openstack-tox-cover
+        - octavia-v2-dsvm-noop-api
+        - octavia-v2-dsvm-noop-py35-api
+        - octavia-v2-dsvm-scenario
+        - octavia-v2-dsvm-py35-scenario
