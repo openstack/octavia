@@ -37,7 +37,9 @@ class NoopManager(object):
         super(NoopManager, self).__init__()
         self.amphoraconfig = {}
 
-    def update_amphora_listeners(self, listeners, amphora_id, timeout_dict):
+    def update_amphora_listeners(self, listeners, amphora_index,
+                                 amphorae, timeout_dict):
+        amphora_id = amphorae[amphora_index].id
         for listener in listeners:
             LOG.debug("Amphora noop driver update_amphora_listeners, "
                       "listener %s, amphora %s, timeouts %s", listener.id,
@@ -114,10 +116,11 @@ class NoopAmphoraLoadBalancerDriver(
         super(NoopAmphoraLoadBalancerDriver, self).__init__()
         self.driver = NoopManager()
 
-    def update_amphora_listeners(self, listeners, amphora_id, timeout_dict):
+    def update_amphora_listeners(self, listeners, amphora_index,
+                                 amphorae, timeout_dict):
 
-        self.driver.update_amphora_listeners(listeners, amphora_id,
-                                             timeout_dict)
+        self.driver.update_amphora_listeners(listeners, amphora_index,
+                                             amphorae, timeout_dict)
 
     def update(self, listener, vip):
 

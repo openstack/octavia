@@ -68,8 +68,10 @@ class HaproxyAmphoraLoadBalancerDriver(
 
         :param listeners: List of listeners to update.
         :type listener: list
-        :param amphora_id: The ID of the amphora to update
-        :type amphora_id: string
+        :param amphora_index: The index of the amphora to update
+        :type amphora_index: integer
+        :param amphorae: List of amphorae
+        :type amphorae: list
         :param timeout_dict: Dictionary of timeout values for calls to the
                              amphora. May contain: req_conn_timeout,
                              req_read_timeout, conn_max_retries,
