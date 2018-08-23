@@ -1,6 +1,13 @@
 # Note: Some official OpenStack wide jobs are still defined in the
 #       project-config repository
 - project:
+    templates:
+      - check-requirements
+      - periodic-stable-jobs-neutron
+      - openstack-python-jobs
+      - openstack-python35-jobs
+      - publish-openstack-docs-pti
+      - release-notes-jobs
     check:
       jobs:
         - neutron-lbaasv2-dsvm-api
@@ -37,6 +44,7 @@
         - octavia-v1-dsvm-scenario-lxd:
             voting: false
             branches: ^(?!stable/ocata).*$
+        - openstack-tox-cover
     gate:
       queue: octavia
       jobs:
@@ -64,3 +72,4 @@
         - neutron-lbaasv2-dsvm-api
         - neutron-lbaasv2-dsvm-py3x-api:
             branches: ^(?!stable/ocata).*$
+        - openstack-tox-cover
