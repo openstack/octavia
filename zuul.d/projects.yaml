@@ -1,6 +1,13 @@
 # Note: Some official OpenStack wide jobs are still defined in the
 #       project-config repository
 - project:
+    templates:
+      - check-requirements
+      - periodic-stable-jobs-neutron
+      - openstack-python-jobs
+      - openstack-python35-jobs
+      - publish-openstack-docs-pti
+      - release-notes-jobs
     check:
       jobs:
         - neutron-lbaasv2-dsvm-api
@@ -43,6 +50,7 @@
               - ^releasenotes/.*$
               - ^tempest/hacking/.*$
               - ^tempest/tests/.*$
+        - openstack-tox-cover
     gate:
       queue: octavia
       jobs:
@@ -66,3 +74,4 @@
               - ^tempest/hacking/.*$
               - ^tempest/tests/.*$
         - neutron-lbaasv2-dsvm-api
+        - openstack-tox-cover
