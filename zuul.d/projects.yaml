@@ -7,7 +7,7 @@
       - openstack-python-jobs
       - openstack-python35-jobs
       - publish-openstack-docs-pti
-      - release-notes-jobs
+      - release-notes-jobs-python3
     check:
       jobs:
         - neutron-lbaasv2-dsvm-api
