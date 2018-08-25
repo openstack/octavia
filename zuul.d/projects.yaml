@@ -1,6 +1,13 @@
 # Note: Some official OpenStack wide jobs are still defined in the
 #       project-config repository
 - project:
+    templates:
+      - check-requirements
+      - periodic-stable-jobs-neutron
+      - openstack-python-jobs
+      - openstack-python35-jobs
+      - publish-openstack-docs-pti
+      - release-notes-jobs
     check:
       jobs:
         - neutron-lbaasv2-dsvm-api:
@@ -60,6 +67,7 @@
               - ^tools/.*$
               - ^(test-|)requirements.txt$
               - ^tox.ini$
+        - openstack-tox-cover
     gate:
       queue: octavia
       jobs:
@@ -101,6 +109,7 @@
               - ^tools/.*$
               - ^(test-|)requirements.txt$
               - ^tox.ini$
+        - openstack-tox-cover
     experimental:
       queue: octavia
       jobs:
