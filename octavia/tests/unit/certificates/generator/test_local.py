@@ -99,6 +99,51 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
         self.assertFalse(cert.extensions.get_extension_for_class(
             x509.BasicConstraints).value.ca)
 
+    def test_sign_cert_passphrase_none(self):
+        # Attempt sign a cert
+        ca_private_key = self.ca_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        signed_cert = self.cert_generator.sign_cert(
+            csr=self.certificate_signing_request,
+            validity=2 * 365 * 24 * 60 * 60,
+            ca_cert=self.ca_certificate,
+            ca_key=ca_private_key,
+            ca_key_pass=None,
+            ca_digest=self.signing_digest
+        )
+
+        self.assertIn("-----BEGIN CERTIFICATE-----",
+                      signed_cert.decode('ascii'))
+
+        # Load the cert for specific tests
+        cert = x509.load_pem_x509_certificate(
+            data=signed_cert, backend=backends.default_backend())
+
+        # Make sure expiry time is accurate
+        should_expire = (datetime.datetime.utcnow() +
+                         datetime.timedelta(seconds=2 * 365 * 24 * 60 * 60))
+        diff = should_expire - cert.not_valid_after
+        self.assertTrue(diff < datetime.timedelta(seconds=10))
+
+        # Make sure this is a version 3 X509.
+        self.assertEqual('v3', cert.version.name)
+
+        # Make sure this cert is marked as Server and Client Cert via the
+        # extended Key Usage extension
+        self.assertIn(x509.oid.ExtendedKeyUsageOID.SERVER_AUTH,
+                      cert.extensions.get_extension_for_class(
+                          x509.ExtendedKeyUsage).value._usages)
+        self.assertIn(x509.oid.ExtendedKeyUsageOID.CLIENT_AUTH,
+                      cert.extensions.get_extension_for_class(
+                          x509.ExtendedKeyUsage).value._usages)
+
+        # Make sure this cert can't sign other certs
+        self.assertFalse(cert.extensions.get_extension_for_class(
+            x509.BasicConstraints).value.ca)
+
     def test_sign_cert_invalid_algorithm(self):
         self.assertRaises(
             crypto_exceptions.UnsupportedAlgorithm,
