@@ -106,7 +106,8 @@ class LocalCertGenerator(cert_gen.CertGenerator):
                 ca_key = f.read()
         if not ca_key_pass:
             ca_key_pass = CONF.certificates.ca_private_key_passphrase
-            ca_key_pass = ca_key_pass.encode('utf-8')
+            if ca_key_pass is not None:
+                ca_key_pass = ca_key_pass.encode('utf-8')
 
         try:
             lo_cert = x509.load_pem_x509_certificate(
