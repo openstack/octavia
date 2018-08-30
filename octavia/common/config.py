@@ -315,7 +315,7 @@ controller_worker_opts = [
                default=1, min=1,
                help='Number of workers for the controller-worker service.'),
     cfg.IntOpt('amp_active_retries',
-               default=10,
+               default=30,
                help=_('Retry attempts to wait for Amphora to become active')),
     cfg.IntOpt('amp_active_wait_sec',
                default=10,

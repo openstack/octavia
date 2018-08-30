@@ -41,6 +41,9 @@ defaults
     {% endif %}
     retries 3
     option redispatch
+    option splice-request
+    option splice-response
+    option http-keep-alive
 
 {% block peers %}{% endblock peers %}
 
