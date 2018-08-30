@@ -315,6 +315,7 @@ def get_udp_listeners_stats():
         listener_id for listener_id in udp_listener_ids
         if util.is_udp_listener_running(listener_id)]
     ipport_mapping = dict()
+    listener_stats_res = dict()
     for check_listener_id in need_check_listener_ids:
         # resource_ipport_mapping = {'Listener': {'id': listener-id,
         #                                         'ipport': ipport},
@@ -326,6 +327,20 @@ def get_udp_listeners_stats():
         #                            'HealthMonitor': {'id': healthmonitor-id}}
         (resource_ipport_mapping,
          ns_name) = get_udp_listener_resource_ipports_nsname(check_listener_id)
+
+        # Since we found the keepalived running, acknowledge the listener
+        # in the heartbeat. If this listener has a pool and members,
+        # the stats will be updated later in the code flow.
+        listener_stats_res.update({
+            check_listener_id: {
+                'stats': {
+                    'bout': 0,
+                    'bin': 0,
+                    'scur': 0,
+                    'stot': 0,
+                    'ereq': 0},
+                'status': constants.OPEN}})
+
         # If we can not read the lvs configuration from file, that means
         # the pool of this listener may own zero enabled member, but the
         # keepalived process is running. So we need to skip it.
@@ -336,7 +351,7 @@ def get_udp_listeners_stats():
     # So here, if we can not get any ipport_mapping,
     # we do nothing, just return
     if not ipport_mapping:
-        return None
+        return listener_stats_res
 
     # contains bout, bin, scur, stot, ereq, status
     # bout(OutBytes), bin(InBytes), stot(Conns) from cmd ipvsadm -Ln --stats
@@ -346,7 +361,6 @@ def get_udp_listeners_stats():
     scur_res = get_ipvsadm_info(constants.AMPHORA_NAMESPACE)
     stats_res = get_ipvsadm_info(constants.AMPHORA_NAMESPACE,
                                  is_stats_cmd=True)
-    listener_stats_res = dict()
     for listener_id, ipport in ipport_mapping.items():
         listener_ipport = ipport['Listener']['ipport']
         # This would be in Error, wait for the next loop to sync for the

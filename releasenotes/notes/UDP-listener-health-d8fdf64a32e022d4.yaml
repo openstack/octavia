@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    To enable UDP listener monitoring when no pool is attached, the amphora
+    image needs to be updated and load balancers with UDP listeners need
+    to be failed over to the new image.
