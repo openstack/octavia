@@ -390,4 +390,4 @@ class LvsQueryTestCase(base.TestCase):
         # Then this function will return nothing.
         mock_is_running.return_value = False
         res = lvs_query.get_udp_listeners_stats()
-        self.assertIsNone(res)
+        self.assertEqual({}, res)

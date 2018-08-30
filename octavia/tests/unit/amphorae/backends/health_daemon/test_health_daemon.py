@@ -128,7 +128,8 @@ SAMPLE_STATS_MSG = {
             'status': 'OPEN'}
     },
     'id': None,
-    'seq': 0
+    'seq': 0,
+    'ver': health_daemon.MSG_VER
 }
 
 
@@ -152,7 +153,7 @@ class TestHealthDaemon(base.TestCase):
                           LISTENER_ID1 + '.sock',
                           LISTENER_ID2: BASE_PATH + '/' +
                           LISTENER_ID2 + '.sock'}
-        self.assertEqual(files, expected_files)
+        self.assertEqual(expected_files, files)
 
     @mock.patch('os.kill')
     @mock.patch('os.path.isfile')
@@ -311,7 +312,7 @@ class TestHealthDaemon(base.TestCase):
 
         msg = health_daemon.build_stats_message()
 
-        self.assertEqual(msg, SAMPLE_STATS_MSG)
+        self.assertEqual(SAMPLE_STATS_MSG, msg)
 
         mock_get_stats.assert_any_call('TEST')
         mock_get_stats.assert_any_call('TEST2')
@@ -352,7 +353,7 @@ class TestHealthDaemon(base.TestCase):
 
         msg = health_daemon.build_stats_message()
 
-        self.assertEqual(msg['listeners'][LISTENER_ID1]['pools'], {})
+        self.assertEqual({}, msg['listeners'][LISTENER_ID1]['pools'])
 
     @mock.patch("octavia.amphorae.backends.utils.keepalivedlvs_query."
                 "get_udp_listener_pool_status")
@@ -408,8 +409,10 @@ class TestHealthDaemon(base.TestCase):
                               'rx': 6387472, 'tx': 7490}},
                 udp_listener_id3: {
                     'status': constants.DOWN,
+                    'pools': {},
                     'stats': {'conns': 0, 'totconns': 0, 'ereq': 0,
-                              'rx': 0, 'tx': 0}}}, 'id': None, 'seq': mock.ANY}
+                              'rx': 0, 'tx': 0}}}, 'id': None,
+                    'seq': mock.ANY, 'ver': health_daemon.MSG_VER}
         msg = health_daemon.build_stats_message()
         self.assertEqual(expected, msg)
 
