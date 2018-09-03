@@ -2319,6 +2319,33 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         self.assertIn('L7Rule: Invalid characters',
                       response.json.get('faultstring'))
 
+    def test_with_member_invalid_address(self):
+        # 169.254.169.254 is the default invalid member address
+        create_member = {
+            'address': '169.254.169.254',
+            'protocol_port': 80,
+        }
+        create_pool, _ = self._get_pool_bodies(
+            create_members=[create_member],
+            protocol=constants.PROTOCOL_TCP
+        )
+        create_listener, _ = self._get_listener_bodies(
+            create_default_pool_name="pool1",
+        )
+        create_lb, _ = self._get_lb_bodies(
+            [create_listener],
+            [],
+            create_pools=[create_pool]
+        )
+
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body, expect_errors=True)
+
+        self.assertEqual(400, response.status_code)
+        expect_error_msg = ("169.254.169.254 is not a valid option for member "
+                            "address")
+        self.assertEqual(expect_error_msg, response.json['faultstring'])
+
     def _test_with_one_of_everything_helper(self):
         create_member, expected_member = self._get_member_bodies()
         create_hm, expected_hm = self._get_hm_bodies()
