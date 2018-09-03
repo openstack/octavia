@@ -298,6 +298,8 @@ class PoolsController(base.BaseController):
         # Now create members
         new_members = []
         for m in members:
+            validate.ip_not_reserved(m["ip_address"])
+
             m['project_id'] = db_pool.project_id
             new_members.append(
                 member.MembersController(db_pool.id)._graph_create(
