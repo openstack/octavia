@@ -4,6 +4,7 @@
     templates:
       - check-requirements
       - periodic-stable-jobs-neutron
+      - openstack-lower-constraints-jobs
       - openstack-python-jobs
       - openstack-python35-jobs
       - publish-openstack-docs-pti
@@ -12,14 +13,11 @@
       jobs:
         - neutron-lbaasv2-dsvm-api:
             voting: false
-        - neutron-lbaasv2-dsvm-py3x-api:
-            branches: ^(?!stable/ocata).*$
+        - neutron-lbaasv2-dsvm-py3x-api
         - neutron-lbaasv2-dsvm-scenario:
             voting: false
         - neutron-lbaasv2-dsvm-py3x-scenario:
-            branches: ^(?!stable/ocata).*$
             voting: false
-        - openstack-tox-lower-constraints
         - openstack-tox-functional:
             irrelevant-files:
               - ^.*\.rst$
@@ -28,7 +26,6 @@
               - ^etc/.*$
               - ^releasenotes/.*$
         - openstack-tox-functional-py35:
-            branches: ^(?!stable/ocata).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -36,12 +33,10 @@
               - ^etc/.*$
               - ^releasenotes/.*$
         - octavia-v1-dsvm-scenario
-        - octavia-v1-dsvm-py3x-scenario:
-            branches: ^(?!stable/ocata).*$
+        - octavia-v1-dsvm-py3x-scenario
         - octavia-v1-dsvm-scenario-multinode:
             voting: false
         - octavia-v1-dsvm-py3x-scenario-multinode:
-            branches: ^(?!stable/ocata).*$
             voting: false
         - octavia-v1-dsvm-scenario-kvm-centos.7:
             voting: false
@@ -49,14 +44,11 @@
             voting: false
         - octavia-v2-dsvm-noop-py35-api:
             voting: false
-            branches: ^(?!stable/ocata).*$
         - octavia-v2-dsvm-scenario:
             voting: false
         - octavia-v2-dsvm-py35-scenario:
             voting: false
-            branches: ^(?!stable/ocata).*$
         - octavia-grenade:
-            branches: ^(?!stable/(ocata|pike|queens)).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -71,7 +63,6 @@
     gate:
       queue: octavia
       jobs:
-        - openstack-tox-lower-constraints
         - openstack-tox-functional:
             irrelevant-files:
               - ^.*\.rst$
@@ -80,7 +71,6 @@
               - ^etc/.*$
               - ^releasenotes/.*$
         - openstack-tox-functional-py35:
-            branches: ^(?!stable/ocata).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -88,17 +78,13 @@
               - ^etc/.*$
               - ^releasenotes/.*$
         - octavia-v1-dsvm-scenario
-        - octavia-v1-dsvm-py3x-scenario:
-            branches: ^(?!stable/ocata).*$
+        - octavia-v1-dsvm-py3x-scenario
         - octavia-v1-dsvm-scenario-multinode:
             voting: false
         - octavia-v1-dsvm-py3x-scenario-multinode:
-            branches: ^(?!stable/ocata).*$
             voting: false
-        - neutron-lbaasv2-dsvm-py3x-api:
-            branches: ^(?!stable/ocata).*$
+        - neutron-lbaasv2-dsvm-py3x-api
         - octavia-grenade:
-            branches: ^(?!stable/(ocata|pike|queens)).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -111,14 +97,5 @@
               - ^tox.ini$
         - openstack-tox-cover
     experimental:
-      queue: octavia
       jobs:
-        - octavia-v1-dsvm-scenario-lxd:
-            branches: ^(?!stable/ocata).*$
-    periodic:
-      jobs:
-        - publish-openstack-octavia-amphora-image-ubuntu:
-            branches: ^(?!stable/.*).*$
-        - publish-openstack-octavia-amphora-image-centos:
-            branches: ^(?!stable/.*).*$
-
+        - octavia-v1-dsvm-scenario-lxd
