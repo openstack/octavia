@@ -11,12 +11,10 @@
     check:
       jobs:
         - neutron-lbaasv2-dsvm-api
-        - neutron-lbaasv2-dsvm-py3x-api:
-            branches: ^(?!stable/ocata).*$
+        - neutron-lbaasv2-dsvm-py3x-api
         - neutron-lbaasv2-dsvm-scenario:
             voting: false
         - neutron-lbaasv2-dsvm-py3x-scenario:
-            branches: ^(?!stable/ocata).*$
             voting: false
         - octavia-tox-functional:
             irrelevant-files:
@@ -26,7 +24,6 @@
               - ^etc/.*$
               - ^releasenotes/.*$
         - octavia-tox-functional-py35:
-            branches: ^(?!stable/ocata).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -34,16 +31,13 @@
               - ^etc/.*$
               - ^releasenotes/.*$
         - octavia-v1-dsvm-scenario
-        - octavia-v1-dsvm-py3x-scenario:
-            branches: ^(?!stable/ocata).*$
+        - octavia-v1-dsvm-py3x-scenario
         - octavia-v1-dsvm-scenario-multinode
-        - octavia-v1-dsvm-py3x-scenario-multinode:
-            branches: ^(?!stable/ocata).*$
+        - octavia-v1-dsvm-py3x-scenario-multinode
         - octavia-v1-dsvm-scenario-kvm-centos.7:
             voting: false
         - octavia-v1-dsvm-scenario-lxd:
             voting: false
-            branches: ^(?!stable/ocata).*$
         - openstack-tox-cover
     gate:
       queue: octavia
@@ -56,7 +50,6 @@
               - ^etc/.*$
               - ^releasenotes/.*$
         - octavia-tox-functional-py35:
-            branches: ^(?!stable/ocata).*$
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -64,12 +57,9 @@
               - ^etc/.*$
               - ^releasenotes/.*$
         - octavia-v1-dsvm-scenario
-        - octavia-v1-dsvm-py3x-scenario:
-            branches: ^(?!stable/ocata).*$
+        - octavia-v1-dsvm-py3x-scenario
         - octavia-v1-dsvm-scenario-multinode
-        - octavia-v1-dsvm-py3x-scenario-multinode:
-            branches: ^(?!stable/ocata).*$
+        - octavia-v1-dsvm-py3x-scenario-multinode
         - neutron-lbaasv2-dsvm-api
-        - neutron-lbaasv2-dsvm-py3x-api:
-            branches: ^(?!stable/ocata).*$
+        - neutron-lbaasv2-dsvm-py3x-api
         - openstack-tox-cover
