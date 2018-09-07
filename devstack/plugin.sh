@@ -204,7 +204,8 @@ function octavia_configure {
     setup_logging $OCTAVIA_CONF
 
     # Change bind host
-    iniset $OCTAVIA_CONF DEFAULT bind_host $SERVICE_HOST
+    iniset $OCTAVIA_CONF api_settings bind_host $SERVICE_HOST
+    iniset $OCTAVIA_CONF api_settings api_handler queue_producer
 
     iniset $OCTAVIA_CONF database connection "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia"
 
@@ -233,8 +234,6 @@ function octavia_configure {
 
     iniset $OCTAVIA_CONF house_keeping amphora_expiry_age ${OCTAVIA_AMP_EXPIRY_AGE}
     iniset $OCTAVIA_CONF house_keeping load_balancer_expiry_age ${OCTAVIA_LB_EXPIRY_AGE}
-
-    iniset $OCTAVIA_CONF DEFAULT api_handler queue_producer
 
     iniset $OCTAVIA_CONF DEFAULT transport_url $(get_transport_url)
 
@@ -328,13 +327,13 @@ function octavia_configure {
     if [ $OCTAVIA_NODE == 'main' ]; then
         configure_octavia_api_haproxy
         # make sure octavia is reachable from haproxy
-        iniset $OCTAVIA_CONF DEFAULT bind_port ${OCTAVIA_HA_PORT}
-        iniset $OCTAVIA_CONF DEFAULT bind_host 0.0.0.0
+        iniset $OCTAVIA_CONF api_settings bind_port ${OCTAVIA_HA_PORT}
+        iniset $OCTAVIA_CONF api_settings bind_host 0.0.0.0
     fi
     if [ $OCTAVIA_NODE != 'main' ] && [ $OCTAVIA_NODE != 'standalone' ] ; then
         # make sure octavia is reachable from haproxy from main node
-        iniset $OCTAVIA_CONF DEFAULT bind_port ${OCTAVIA_HA_PORT}
-        iniset $OCTAVIA_CONF DEFAULT bind_host 0.0.0.0
+        iniset $OCTAVIA_CONF api_settings bind_port ${OCTAVIA_HA_PORT}
+        iniset $OCTAVIA_CONF api_settings bind_host 0.0.0.0
     fi
 }
 

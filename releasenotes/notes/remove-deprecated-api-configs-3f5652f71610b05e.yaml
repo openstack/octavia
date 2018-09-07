@@ -1,0 +1,23 @@
+---
+upgrade:
+  - |
+    The following configuration settings have reached the end of their
+    deprecation period and are now removed from the [default] section of
+    the configuration. These will only be available in the [api_settings]
+    section going forward.
+
+    * [DEFAULT] bind_host
+    * [DEFAULT] bind_port
+    * [DEFAULT] auth_strategy
+    * [DEFAULT] api_handler
+deprecations:
+  - |
+    The following configuration settings have reached the end of their
+    deprecation period and are now removed from the [default] section of
+    the configuration. These will only be available in the [api_settings]
+    section going forward.
+
+    * [DEFAULT] bind_host
+    * [DEFAULT] bind_port
+    * [DEFAULT] auth_strategy
+    * [DEFAULT] api_handler
