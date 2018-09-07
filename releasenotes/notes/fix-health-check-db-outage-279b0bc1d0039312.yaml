@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed an issue when Octavia cannot reach the database (all database
+    instances are down) bringing down all running loadbalancers. The Health
+    Manager is more resilient to DB outages now.
