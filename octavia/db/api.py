@@ -13,11 +13,16 @@
 #    under the License.
 
 import contextlib
+import time
+
+from sqlalchemy.sql.expression import select
 
 from oslo_config import cfg
 from oslo_db.sqlalchemy import session as db_session
+from oslo_log import log as logging
 from oslo_utils import excutils
 
+LOG = logging.getLogger(__name__)
 _FACADE = None
 
 
@@ -50,3 +55,19 @@ def get_lock_session():
     except Exception:
         with excutils.save_and_reraise_exception():
             lock_session.rollback()
+
+
+def wait_for_connection(exit_event):
+    """Helper method to wait for DB connection"""
+    down = True
+    while down and not exit_event.is_set():
+        try:
+            LOG.debug('Trying to re-establish connection to database.')
+            get_engine().scalar(select([1]))
+            down = False
+            LOG.debug('Connection to database re-established.')
+        except Exception:
+            retry_interval = cfg.CONF.database.retry_interval
+            LOG.exception('Connection to database failed. Retrying in %s '
+                          'seconds.', retry_interval)
+            time.sleep(retry_interval)
