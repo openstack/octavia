@@ -506,12 +506,12 @@ class TestMember(base.BaseAPITest):
 
             provider_dict = driver_utils.member_dict_to_provider_dict(rm)
             # Adjust for API response
+            provider_dict['pool_id'] = self.pool_id
             if rm['provisioning_status'] == 'PENDING_UPDATE':
                 del provider_dict['name']
                 del provider_dict['subnet_id']
                 provider_updates.append(driver_dm.Member(**provider_dict))
             elif rm['provisioning_status'] == 'PENDING_CREATE':
-                provider_dict['pool_id'] = self.pool_id
                 provider_dict['name'] = None
                 provider_creates.append(driver_dm.Member(**provider_dict))
         # Order matters here
@@ -623,6 +623,7 @@ class TestMember(base.BaseAPITest):
 
             provider_dict = driver_utils.member_dict_to_provider_dict(rm)
             # Adjust for API response
+            provider_dict['pool_id'] = self.pool_id
             del provider_dict['name']
             del provider_dict['subnet_id']
             provider_members.append(driver_dm.Member(**provider_dict))
