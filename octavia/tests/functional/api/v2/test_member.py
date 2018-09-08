@@ -520,6 +520,19 @@ class TestMember(base.BaseAPITest):
             handler_args[1])
         self.assertEqual(0, len(handler_args[2]))
 
+    def test_create_batch_members_with_invalid_address(self):
+        # 169.254.169.254 is the default invalid member address
+        member5 = {'address': '169.254.169.254',
+                   'protocol_port': 80}
+
+        req_dict = [member5]
+        body = {self.root_tag_list: req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=self.pool_id)
+
+        response = self.put(path, body, status=400).json
+        err_msg = ("169.254.169.254 is not a valid option for member address")
+        self.assertEqual(err_msg, response.get('faultstring'))
+
     def test_update_batch_members(self):
         member1 = {'address': '10.0.0.1', 'protocol_port': 80}
         member2 = {'address': '10.0.0.2', 'protocol_port': 80}

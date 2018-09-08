@@ -318,6 +318,7 @@ class MembersController(MemberController):
             updated_members = []
             for m in members:
                 if (m.address, m.protocol_port) not in old_member_uniques:
+                    validate.ip_not_reserved(m.address)
                     new_members.append(m)
                 else:
                     m.id = old_member_uniques[(m.address, m.protocol_port)]
