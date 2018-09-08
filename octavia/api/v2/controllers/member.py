@@ -364,6 +364,8 @@ class MembersController(MemberController):
                 db_member_dict.pop('id')
                 self.repositories.member.update(
                     lock_session, m.id, **db_member_dict)
+
+                m.pool_id = self.pool_id
                 provider_members.append(
                     driver_utils.db_member_to_provider_member(m))
             # Delete old members
