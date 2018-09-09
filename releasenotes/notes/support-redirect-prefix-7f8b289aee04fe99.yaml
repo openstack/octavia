@@ -1,0 +1,3 @@
+---
+features:
+  - Support REDIRECT_PREFIX action for L7Policy

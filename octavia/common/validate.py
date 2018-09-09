@@ -194,29 +194,43 @@ def sanitize_l7policy_api_args(l7policy, create=False):
                 raise exceptions.InvalidL7PolicyArgs(
                     msg='redirect_pool_id or redirect_pool must not be None')
             l7policy.update({'redirect_url': None})
+        elif l7policy['action'] == constants.L7POLICY_ACTION_REDIRECT_PREFIX:
+            if not l7policy.get('redirect_prefix'):
+                raise exceptions.InvalidL7PolicyArgs(
+                    msg='redirect_prefix must not be None')
         else:
             raise exceptions.InvalidL7PolicyAction(
                 action=l7policy['action'])
-    if ((l7policy.get('redirect_pool_id') or
-            l7policy.get('redirect_pool')) and l7policy.get('redirect_url')):
+    if ((l7policy.get('redirect_pool_id') or l7policy.get('redirect_pool')) and
+            (l7policy.get('redirect_url') or l7policy.get('redirect_prefix'))):
         raise exceptions.InvalidL7PolicyArgs(
-            msg='Cannot specify redirect_pool_id and redirect_url '
-                'at the same time')
+            msg='Cannot specify redirect_pool_id and redirect_url or '
+                'redirect_prefix at the same time')
     if l7policy.get('redirect_pool_id'):
         l7policy.update({
             'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL})
         l7policy.update({'redirect_url': None})
         l7policy.pop('redirect_pool', None)
+        l7policy.update({'redirect_prefix': None})
     if l7policy.get('redirect_pool'):
         l7policy.update({
             'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL})
         l7policy.update({'redirect_url': None})
         l7policy.pop('redirect_pool_id', None)
+        l7policy.update({'redirect_prefix': None})
     if l7policy.get('redirect_url'):
         url(l7policy['redirect_url'])
         l7policy.update({
             'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL})
         l7policy.update({'redirect_pool_id': None})
+        l7policy.update({'redirect_prefix': None})
+        l7policy.pop('redirect_pool', None)
+    if l7policy.get('redirect_prefix'):
+        url(l7policy['redirect_prefix'])
+        l7policy.update({
+            'action': constants.L7POLICY_ACTION_REDIRECT_PREFIX})
+        l7policy.update({'redirect_pool_id': None})
+        l7policy.update({'redirect_url': None})
         l7policy.pop('redirect_pool', None)
 
     # If we are creating, we need an action at this point

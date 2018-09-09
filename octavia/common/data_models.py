@@ -592,7 +592,7 @@ class L7Policy(BaseDataModel):
                  position=None, listener=None, redirect_pool=None,
                  enabled=None, l7rules=None, provisioning_status=None,
                  operating_status=None, project_id=None, created_at=None,
-                 updated_at=None):
+                 updated_at=None, redirect_prefix=None):
         self.id = id
         self.name = name
         self.description = description
@@ -610,6 +610,7 @@ class L7Policy(BaseDataModel):
         self.project_id = project_id
         self.created_at = created_at
         self.updated_at = updated_at
+        self.redirect_prefix = redirect_prefix
 
     def _conditionally_remove_pool_links(self, pool):
         """Removes links to the given pool from parent objects.

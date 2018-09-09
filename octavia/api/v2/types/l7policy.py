@@ -38,6 +38,7 @@ class L7PolicyResponse(BaseL7PolicyType):
     listener_id = wtypes.wsattr(wtypes.UuidType())
     redirect_pool_id = wtypes.wsattr(wtypes.UuidType())
     redirect_url = wtypes.wsattr(wtypes.StringType())
+    redirect_prefix = wtypes.wsattr(wtypes.StringType())
     position = wtypes.wsattr(wtypes.IntegerType())
     rules = wtypes.wsattr([types.IdOnlyType])
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
@@ -86,6 +87,7 @@ class L7PolicyPOST(BaseL7PolicyType):
         mandatory=True)
     redirect_pool_id = wtypes.wsattr(wtypes.UuidType())
     redirect_url = wtypes.wsattr(types.URLType())
+    redirect_prefix = wtypes.wsattr(types.URLType())
     position = wtypes.wsattr(wtypes.IntegerType(
         minimum=constants.MIN_POLICY_POSITION,
         maximum=constants.MAX_POLICY_POSITION),
@@ -107,6 +109,7 @@ class L7PolicyPUT(BaseL7PolicyType):
         wtypes.Enum(str, *constants.SUPPORTED_L7POLICY_ACTIONS))
     redirect_pool_id = wtypes.wsattr(wtypes.UuidType())
     redirect_url = wtypes.wsattr(types.URLType())
+    redirect_prefix = wtypes.wsattr(types.URLType())
     position = wtypes.wsattr(wtypes.IntegerType(
         minimum=constants.MIN_POLICY_POSITION,
         maximum=constants.MAX_POLICY_POSITION))
@@ -126,6 +129,7 @@ class L7PolicySingleCreate(BaseL7PolicyType):
         mandatory=True)
     redirect_pool = wtypes.wsattr(pool.PoolSingleCreate)
     redirect_url = wtypes.wsattr(types.URLType())
+    redirect_prefix = wtypes.wsattr(types.URLType())
     position = wtypes.wsattr(wtypes.IntegerType(
         minimum=constants.MIN_POLICY_POSITION,
         maximum=constants.MAX_POLICY_POSITION),

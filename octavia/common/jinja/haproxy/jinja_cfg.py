@@ -308,6 +308,7 @@ class JinjaTemplater(object):
             'id': l7policy.id,
             'action': l7policy.action,
             'redirect_url': l7policy.redirect_url,
+            'redirect_prefix': l7policy.redirect_prefix,
             'enabled': l7policy.enabled
         }
         if l7policy.redirect_pool:

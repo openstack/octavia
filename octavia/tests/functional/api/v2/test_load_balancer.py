@@ -2256,6 +2256,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'name': '',
             'description': '',
             'redirect_url': None,
+            'redirect_prefix': None,
             'rules': [],
             'project_id': self._project_id,
             'provisioning_status': constants.PENDING_CREATE,

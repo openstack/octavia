@@ -623,6 +623,12 @@ class TestHaproxyCfg(base.TestCase):
               ".example.com\n"
               "    http-request deny if sample_l7rule_id_4 "
               "sample_l7rule_id_5\n"
+              "        acl sample_l7rule_id_2 req.hdr(Some-header) -m sub "
+              "This\\ string\\\\\\ with\\ stuff\n"
+              "        acl sample_l7rule_id_3 req.cook(some-cookie) -m reg "
+              "this.*|that\n"
+              "    redirect prefix https://example.com if "
+              "!sample_l7rule_id_2 sample_l7rule_id_3\n"
               "    default_backend sample_pool_id_1\n"
               "    timeout client 50000\n\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)

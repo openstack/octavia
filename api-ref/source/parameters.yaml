@@ -523,6 +523,20 @@ l7policy-redirect-pool_id-optional:
   in: body
   required: false
   type: uuid
+l7policy-redirect-prefix:
+  description: |
+    Requests matching this policy will be redirected to this Prefix URL.
+    Only valid if ``action`` is ``REDIRECT_PREFIX``.
+  in: body
+  required: true
+  type: string
+l7policy-redirect-prefix-optional:
+  description: |
+    Requests matching this policy will be redirected to this Prefix URL.
+    Only valid if ``action`` is ``REDIRECT_PREFIX``.
+  in: body
+  required: false
+  type: string
 l7policy-redirect-url:
   description: |
     Requests matching this policy will be redirected to this URL.
