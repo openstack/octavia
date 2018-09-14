@@ -581,6 +581,19 @@ class TestMember(base.BaseAPITest):
             err_msg = 'Subnet ' + subnet_id + ' not found.'
             self.assertEqual(response.get('faultstring'), err_msg)
 
+    def test_create_batch_members_with_invalid_address(self):
+        # 169.254.169.254 is the default invalid member address
+        member5 = {'address': '169.254.169.254',
+                   'protocol_port': 80}
+
+        req_dict = [member5]
+        body = {self.root_tag_list: req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=self.pool_id)
+
+        response = self.put(path, body, status=400).json
+        err_msg = ("169.254.169.254 is not a valid option for member address")
+        self.assertEqual(err_msg, response.get('faultstring'))
+
     @mock.patch('octavia.api.drivers.driver_factory.get_driver')
     @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_update_batch_members(self, mock_provider, mock_get_driver):
