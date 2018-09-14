@@ -19,7 +19,9 @@
 
 echo "Examining the Amphora image.  This will take some time."
 
-if [ "$1" ]; then
+if [ "$1" -a -f "$1" ]; then
+    AMP_IMAGE_LOCATION=$1
+elif [ "$1" ]; then
     AMP_IMAGE_LOCATION=$1/amphora-x64-haproxy.qcow2
 else
     AMP_IMAGE_LOCATION=amphora-x64-haproxy.qcow2
