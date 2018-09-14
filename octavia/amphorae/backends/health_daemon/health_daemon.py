@@ -37,6 +37,14 @@ else:
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 SEQ = 0
+# MSG_VER is an incrementing integer heartbeat message format version
+# this allows for backward compatibility when the amphora-agent is older
+# than the controller version and the message format has backwards
+# incompatible changes.
+#
+# ver 1 - Adds UDP listener status when no pool or members are present
+#
+MSG_VER = 1
 
 
 def list_sock_stat_files(hadir=None):
@@ -115,7 +123,8 @@ def get_stats(stat_sock_file):
 def build_stats_message():
     global SEQ
     msg = {'id': CONF.amphora_agent.amphora_id,
-           'seq': SEQ, "listeners": {}}
+           'seq': SEQ, "listeners": {},
+           'ver': MSG_VER}
     SEQ += 1
     stat_sock_files = list_sock_stat_files()
     for listener_id, stat_sock_file in stat_sock_files.items():
@@ -163,6 +172,7 @@ def build_stats_message():
                     'totconns': listener_stats['stats']['stot'],
                     'ereq': listener_stats['stats']['ereq']
                 }
+                udp_listener_dict['pools'] = {}
                 if pool_status:
                     udp_listener_dict['pools'] = {
                         pool_status['lvs']['uuid']: {
