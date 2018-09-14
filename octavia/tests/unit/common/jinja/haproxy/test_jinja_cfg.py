@@ -45,6 +45,7 @@ class TestHaproxyCfg(base.TestCase):
             maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
@@ -89,6 +90,7 @@ class TestHaproxyCfg(base.TestCase):
             maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
@@ -122,6 +124,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_http(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
@@ -148,6 +151,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_member_backup(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
@@ -185,6 +189,7 @@ class TestHaproxyCfg(base.TestCase):
             maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
@@ -221,6 +226,7 @@ class TestHaproxyCfg(base.TestCase):
             maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
@@ -249,6 +255,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_member_monitor_addr_port(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
@@ -343,6 +350,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_no_monitor_http(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    fullconn {maxconn}\n"
@@ -363,6 +371,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_disabled_member(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    fullconn {maxconn}\n"
@@ -384,6 +393,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_ping_monitor_http(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
@@ -466,6 +476,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_no_persistence_http(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    fullconn {maxconn}\n"
               "    option allbackups\n"
@@ -484,6 +495,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_sourceip_persistence(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    stick-table type ip size 10k\n"
               "    stick on src\n"
@@ -510,6 +522,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_appcookie_persistence(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    stick-table type string len 64 size 10k\n"
               "    stick store-response res.cook(JSESSIONID)\n"
@@ -615,6 +628,7 @@ class TestHaproxyCfg(base.TestCase):
             maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
@@ -631,6 +645,7 @@ class TestHaproxyCfg(base.TestCase):
               "\n"
               "backend sample_pool_id_2\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
@@ -652,6 +667,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_http_xff(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
@@ -680,6 +696,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_http_xff_xfport(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
@@ -710,6 +727,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_pool_proxy_protocol(self):
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
+              "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
@@ -852,7 +870,10 @@ class TestHaproxyCfg(base.TestCase):
         defaults = ("defaults\n"
                     "    no log\n"
                     "    retries 3\n"
-                    "    option redispatch\n\n")
+                    "    option redispatch\n"
+                    "    option splice-request\n"
+                    "    option splice-response\n"
+                    "    option http-keep-alive\n\n")
         rendered_obj = j_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple()

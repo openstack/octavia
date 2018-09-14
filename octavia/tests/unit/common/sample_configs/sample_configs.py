@@ -839,6 +839,7 @@ def sample_base_expected_config(frontend=None, backend=None,
     if backend is None:
         backend = ("backend sample_pool_id_1\n"
                    "    mode http\n"
+                   "    http-reuse safe\n"
                    "    balance roundrobin\n"
                    "    cookie SRV insert indirect nocache\n"
                    "    timeout check 31s\n"
@@ -863,7 +864,10 @@ def sample_base_expected_config(frontend=None, backend=None,
         defaults = ("defaults\n"
                     "    log global\n"
                     "    retries 3\n"
-                    "    option redispatch\n\n")
+                    "    option redispatch\n"
+                    "    option splice-request\n"
+                    "    option splice-response\n"
+                    "    option http-keep-alive\n\n")
     return ("# Configuration for loadbalancer sample_loadbalancer_id_1\n"
             "global\n"
             "    daemon\n"
