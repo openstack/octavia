@@ -68,11 +68,3 @@
     parent: octavia-legacy-dsvm-base
     run: playbooks/legacy/octavia-v1-dsvm-scenario-kvm-centos.7/run.yaml
     post-run: playbooks/legacy/octavia-v1-dsvm-scenario-kvm-centos.7/post.yaml
-
-- job:
-    name: octavia-v1-dsvm-scenario-lxd
-    parent: octavia-legacy-dsvm-base
-    run: playbooks/legacy/octavia-v1-dsvm-scenario-lxd/run.yaml
-    post-run: playbooks/legacy/octavia-v1-dsvm-scenario-lxd/post.yaml
-    required-projects:
-      - openstack/nova-lxd
