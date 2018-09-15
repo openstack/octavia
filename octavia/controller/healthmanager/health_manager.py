@@ -15,6 +15,7 @@
 
 from concurrent import futures
 import functools
+import time
 
 from oslo_config import cfg
 from oslo_db import exception as db_exc
@@ -84,9 +85,10 @@ class HealthManager(object):
         }
         futs = []
         while not self.dead.is_set():
-            lock_session = db_api.get_session(autocommit=False)
-            amp = None
+            amp_health = None
             try:
+                lock_session = db_api.get_session(autocommit=False)
+                amp = None
                 amp_health = self.amp_health_repo.get_stale_amphora(
                     lock_session)
                 if amp_health:
@@ -109,6 +111,17 @@ class HealthManager(object):
                 LOG.debug('Database is requesting a retry. Skipping.')
                 lock_session.rollback()
                 amp_health = None
+            except db_exc.DBConnectionError:
+                db_api.wait_for_connection(self.dead)
+                lock_session.rollback()
+                amp_health = None
+                if not self.dead.is_set():
+                    # amphora heartbeat timestamps should also be outdated
+                    # while DB is unavailable and soon after DB comes back
+                    # online. Sleeping off the full "heartbeat_timeout"
+                    # interval to give the amps a chance to check in before
+                    # we start failovers.
+                    time.sleep(CONF.health_manager.heartbeat_timeout)
             except Exception:
                 with excutils.save_and_reraise_exception():
                     lock_session.rollback()
