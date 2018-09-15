@@ -43,13 +43,14 @@ class TestHealthManager(base.TestCase):
     def setUp(self):
         super(TestHealthManager, self).setUp()
 
+    @mock.patch('octavia.db.api.wait_for_connection')
     @mock.patch('octavia.controller.worker.controller_worker.'
                 'ControllerWorker.failover_amphora')
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.'
                 'get_stale_amphora')
     @mock.patch('octavia.db.api.get_session')
     def test_health_check_stale_amphora(self, session_mock, get_stale_amp_mock,
-                                        failover_mock):
+                                        failover_mock, db_wait_mock):
         amphora_health = mock.MagicMock()
         amphora_health.amphora_id = AMPHORA_ID
 
@@ -68,14 +69,19 @@ class TestHealthManager(base.TestCase):
         get_stale_amp_mock.side_effect = [
             db_exc.DBDeadlock,
             db_exc.RetryRequest(Exception('retry_test')),
+            db_exc.DBConnectionError,
             TestException('test')]
         # Test that a DBDeadlock does not raise an exception
         self.assertIsNone(hm.health_check())
         # Test that a RetryRequest does not raise an exception
         self.assertIsNone(hm.health_check())
+        # Test that a DBConnectionError does not raise an exception
+        self.assertIsNone(hm.health_check())
+        # ... and that it waits for DB reconnection
+        db_wait_mock.assert_called_once()
         # Other exceptions should raise
         self.assertRaises(TestException, hm.health_check)
-        self.assertEqual(3, mock_session.rollback.call_count)
+        self.assertEqual(4, mock_session.rollback.call_count)
 
     @mock.patch('octavia.controller.worker.controller_worker.'
                 'ControllerWorker.failover_amphora')
