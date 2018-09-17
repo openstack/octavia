@@ -133,9 +133,7 @@ class SessionPersistence(base_models.BASE):
     persistence_timeout = sa.Column(sa.Integer(), nullable=True)
     persistence_granularity = sa.Column(sa.String(64), nullable=True)
     pool = orm.relationship("Pool", uselist=False,
-                            backref=orm.backref("session_persistence",
-                                                uselist=False,
-                                                cascade="delete"))
+                            back_populates="session_persistence")
 
 
 class ListenerStatistics(base_models.BASE):
@@ -206,9 +204,7 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
                       name="fk_member_operating_status_name"),
         nullable=False)
     enabled = sa.Column(sa.Boolean(), nullable=False)
-    pool = orm.relationship("Pool", backref=orm.backref("members",
-                                                        uselist=True,
-                                                        cascade="delete"))
+    pool = orm.relationship("Pool", back_populates="members")
 
 
 class HealthMonitor(base_models.BASE, base_models.IdMixin,
@@ -244,9 +240,8 @@ class HealthMonitor(base_models.BASE, base_models.IdMixin,
     expected_codes = sa.Column(sa.String(64), nullable=True)
     enabled = sa.Column(sa.Boolean, nullable=False)
     pool = orm.relationship("Pool", uselist=False,
-                            backref=orm.backref("health_monitor",
-                                                uselist=False,
-                                                cascade="delete"))
+                            back_populates="health_monitor")
+
     provisioning_status = sa.Column(
         sa.String(16),
         sa.ForeignKey("provisioning_status.name",
@@ -292,10 +287,19 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         sa.String(36),
         sa.ForeignKey("load_balancer.id", name="fk_pool_load_balancer_id"),
         nullable=True)
+    health_monitor = orm.relationship("HealthMonitor", uselist=False,
+                                      cascade="delete", back_populates="pool")
     load_balancer = orm.relationship("LoadBalancer", uselist=False,
-                                     backref=orm.backref("pools",
-                                                         uselist=True,
-                                                         cascade="delete"))
+                                     back_populates="pools")
+    members = orm.relationship("Member", uselist=True, cascade="delete",
+                               back_populates="pool")
+    session_persistence = orm.relationship(
+        "SessionPersistence", uselist=False, cascade="delete",
+        back_populates="pool")
+    _default_listeners = orm.relationship("Listener", uselist=True,
+                                          back_populates="default_pool")
+    l7policies = orm.relationship("L7Policy", uselist=True,
+                                  back_populates="redirect_pool")
 
     # This property should be a unique list of any listeners that reference
     # this pool as its default_pool and any listeners referenced by enabled
@@ -342,10 +346,15 @@ class LoadBalancer(base_models.BASE, base_models.IdMixin,
         nullable=True)
     enabled = sa.Column(sa.Boolean, nullable=False)
     amphorae = orm.relationship("Amphora", uselist=True,
-                                backref=orm.backref("load_balancer",
-                                                    uselist=False))
+                                back_populates="load_balancer")
     server_group_id = sa.Column(sa.String(36), nullable=True)
     provider = sa.Column(sa.String(64), nullable=True)
+    vip = orm.relationship('Vip', cascade='delete', uselist=False,
+                           backref=orm.backref('load_balancer', uselist=False))
+    pools = orm.relationship('Pool', cascade='delete', uselist=True,
+                             back_populates="load_balancer")
+    listeners = orm.relationship('Listener', cascade='delete', uselist=True,
+                                 back_populates='load_balancer')
 
 
 class VRRPGroup(base_models.BASE):
@@ -387,9 +396,6 @@ class Vip(base_models.BASE):
     port_id = sa.Column(sa.String(36), nullable=True)
     subnet_id = sa.Column(sa.String(36), nullable=True)
     network_id = sa.Column(sa.String(36), nullable=True)
-    load_balancer = orm.relationship("LoadBalancer", uselist=False,
-                                     backref=orm.backref("vip", uselist=False,
-                                                         cascade="delete"))
     qos_policy_id = sa.Column(sa.String(36), nullable=True)
     octavia_owned = sa.Column(sa.Boolean(), nullable=True)
 
@@ -437,12 +443,17 @@ class Listener(base_models.BASE, base_models.IdMixin,
         nullable=False)
     enabled = sa.Column(sa.Boolean(), nullable=False)
     load_balancer = orm.relationship("LoadBalancer", uselist=False,
-                                     backref=orm.backref("listeners",
-                                                         uselist=True,
-                                                         cascade="delete"))
+                                     back_populates="listeners")
     default_pool = orm.relationship("Pool", uselist=False,
-                                    backref=orm.backref("_default_listeners",
-                                                        uselist=True))
+                                    back_populates="_default_listeners")
+    sni_containers = orm.relationship(
+        'SNI', cascade='delete', uselist=True,
+        backref=orm.backref('listener', uselist=False))
+
+    l7policies = orm.relationship(
+        'L7Policy', uselist=True, order_by='L7Policy.position',
+        collection_class=orderinglist.ordering_list('position', count_from=1),
+        cascade='delete', back_populates='listener')
 
     peer_port = sa.Column(sa.Integer(), nullable=True)
     insert_headers = sa.Column(sa.PickleType())
@@ -487,10 +498,6 @@ class SNI(base_models.BASE):
         nullable=False)
     tls_container_id = sa.Column(sa.String(128), nullable=False)
     position = sa.Column(sa.Integer(), nullable=True)
-    listener = orm.relationship("Listener", uselist=False,
-                                backref=orm.backref("sni_containers",
-                                                    uselist=True,
-                                                    cascade="delete"))
 
 
 class Amphora(base_models.BASE, base_models.IdMixin, models.TimestampMixin):
@@ -528,6 +535,8 @@ class Amphora(base_models.BASE, base_models.IdMixin, models.TimestampMixin):
     vrrp_priority = sa.Column(sa.Integer(), nullable=True)
     cached_zone = sa.Column(sa.String(255), nullable=True)
     image_id = sa.Column(sa.String(36), nullable=True)
+    load_balancer = orm.relationship("LoadBalancer", uselist=False,
+                                     back_populates='amphorae')
 
 
 class AmphoraHealth(base_models.BASE):
@@ -572,9 +581,7 @@ class L7Rule(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
     invert = sa.Column(sa.Boolean(), default=False, nullable=False)
     enabled = sa.Column(sa.Boolean(), nullable=False)
     l7policy = orm.relationship("L7Policy", uselist=False,
-                                backref=orm.backref("l7rules",
-                                                    uselist=True,
-                                                    cascade="delete"))
+                                back_populates="l7rules")
     provisioning_status = sa.Column(
         sa.String(16),
         sa.ForeignKey("provisioning_status.name",
@@ -616,18 +623,12 @@ class L7Policy(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         nullable=True)
     position = sa.Column(sa.Integer, nullable=False)
     enabled = sa.Column(sa.Boolean(), nullable=False)
-    listener = orm.relationship(
-        "Listener", uselist=False,
-        backref=orm.backref(
-            "l7policies",
-            uselist=True,
-            order_by="L7Policy.position",
-            collection_class=orderinglist.ordering_list('position',
-                                                        count_from=1),
-            cascade="delete"))
+    listener = orm.relationship("Listener", uselist=False,
+                                back_populates="l7policies")
     redirect_pool = orm.relationship("Pool", uselist=False,
-                                     backref=orm.backref("l7policies",
-                                                         uselist=True))
+                                     back_populates="l7policies")
+    l7rules = orm.relationship("L7Rule", uselist=True, cascade="delete",
+                               back_populates="l7policy")
     provisioning_status = sa.Column(
         sa.String(16),
         sa.ForeignKey("provisioning_status.name",

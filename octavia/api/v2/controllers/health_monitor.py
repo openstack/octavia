@@ -69,7 +69,7 @@ class HealthMonitorController(base.BaseController):
 
         query_filter = self._auth_get_all(context, project_id)
 
-        db_hm, links = self.repositories.health_monitor.get_all(
+        db_hm, links = self.repositories.health_monitor.get_all_API_list(
             context.session, show_deleted=False,
             pagination_helper=pcontext.get(consts.PAGINATION_HELPER),
             **query_filter)

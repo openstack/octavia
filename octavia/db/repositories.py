@@ -27,6 +27,8 @@ from oslo_log import log as logging
 from oslo_utils import excutils
 from oslo_utils import uuidutils
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import noload
+from sqlalchemy.orm import subqueryload
 
 from octavia.common import constants as consts
 from octavia.common import data_models
@@ -118,19 +120,21 @@ class BaseRepository(object):
 
         return model.to_data_model()
 
-    def get_all(self, session, pagination_helper=None, **filters):
+    def get_all(self, session, pagination_helper=None,
+                query_options=None, **filters):
 
         """Retrieves a list of entities from the database.
 
         :param session: A Sql Alchemy database session.
         :param pagination_helper: Helper to apply pagination and sorting.
+        :param query_options: Optional query options to apply.
         :param filters: Filters to decide which entities should be retrieved.
         :returns: [octavia.common.data_model]
         """
         deleted = filters.pop('show_deleted', True)
         query = session.query(self.model_class).filter_by(**filters)
-        # Only make one trip to the database
-        query = query.options(joinedload('*'))
+        if query_options:
+            query = query.options(query_options)
 
         if not deleted:
             if hasattr(self.model_class, 'status'):
@@ -666,6 +670,32 @@ class Repositories(object):
 class LoadBalancerRepository(BaseRepository):
     model_class = models.LoadBalancer
 
+    def get_all_API_list(self, session, pagination_helper=None, **filters):
+        """Get a list of load balancers for the API list call.
+
+        This get_all returns a data set that is only one level deep
+        in the data graph. This is an optimized query for the API load
+        balancer list method.
+
+        :param session: A Sql Alchemy database session.
+        :param pagination_helper: Helper to apply pagination and sorting.
+        :param filters: Filters to decide which entities should be retrieved.
+        :returns: [octavia.common.data_model]
+        """
+
+        # sub-query load the tables we need
+        # no-load (blank) the tables we don't need
+        query_options = (
+            subqueryload(models.LoadBalancer.vip),
+            subqueryload(models.LoadBalancer.amphorae),
+            subqueryload(models.LoadBalancer.pools),
+            subqueryload(models.LoadBalancer.listeners),
+            noload('*'))
+
+        return super(LoadBalancerRepository, self).get_all(
+            session, pagination_helper=pagination_helper,
+            query_options=query_options, **filters)
+
     def test_and_set_provisioning_status(self, session, id, status,
                                          raise_exception=False):
         """Tests and sets a load balancer and provisioning status.
@@ -763,6 +793,29 @@ class VipRepository(BaseRepository):
 class HealthMonitorRepository(BaseRepository):
     model_class = models.HealthMonitor
 
+    def get_all_API_list(self, session, pagination_helper=None, **filters):
+        """Get a list of health monitors for the API list call.
+
+        This get_all returns a data set that is only one level deep
+        in the data graph. This is an optimized query for the API health
+        monitor list method.
+
+        :param session: A Sql Alchemy database session.
+        :param pagination_helper: Helper to apply pagination and sorting.
+        :param filters: Filters to decide which entities should be retrieved.
+        :returns: [octavia.common.data_model]
+        """
+
+        # sub-query load the tables we need
+        # no-load (blank) the tables we don't need
+        query_options = (
+            subqueryload(models.HealthMonitor.pool),
+            noload('*'))
+
+        return super(HealthMonitorRepository, self).get_all(
+            session, pagination_helper=pagination_helper,
+            query_options=query_options, **filters)
+
 
 class SessionPersistenceRepository(BaseRepository):
     model_class = models.SessionPersistence
@@ -782,9 +835,64 @@ class SessionPersistenceRepository(BaseRepository):
 class PoolRepository(BaseRepository):
     model_class = models.Pool
 
+    def get_all_API_list(self, session, pagination_helper=None, **filters):
+        """Get a list of pools for the API list call.
+
+        This get_all returns a data set that is only one level deep
+        in the data graph. This is an optimized query for the API pool
+        list method.
+
+        :param session: A Sql Alchemy database session.
+        :param pagination_helper: Helper to apply pagination and sorting.
+        :param filters: Filters to decide which entities should be retrieved.
+        :returns: [octavia.common.data_model]
+        """
+
+        # sub-query load the tables we need
+        # no-load (blank) the tables we don't need
+        query_options = (
+            subqueryload(models.Pool._default_listeners),
+            subqueryload(models.Pool.health_monitor),
+            subqueryload(models.Pool.l7policies),
+            (subqueryload(models.Pool.l7policies).
+             subqueryload(models.L7Policy.l7rules)),
+            (subqueryload(models.Pool.l7policies).
+             subqueryload(models.L7Policy.listener)),
+            subqueryload(models.Pool.load_balancer),
+            subqueryload(models.Pool.members),
+            subqueryload(models.Pool.session_persistence),
+            noload('*'))
+
+        return super(PoolRepository, self).get_all(
+            session, pagination_helper=pagination_helper,
+            query_options=query_options, **filters)
+
 
 class MemberRepository(BaseRepository):
     model_class = models.Member
+
+    def get_all_API_list(self, session, pagination_helper=None, **filters):
+        """Get a list of members for the API list call.
+
+        This get_all returns a data set that is only one level deep
+        in the data graph. This is an optimized query for the API member
+        list method.
+
+        :param session: A Sql Alchemy database session.
+        :param pagination_helper: Helper to apply pagination and sorting.
+        :param filters: Filters to decide which entities should be retrieved.
+        :returns: [octavia.common.data_model]
+        """
+
+        # sub-query load the tables we need
+        # no-load (blank) the tables we don't need
+        query_options = (
+            subqueryload(models.Member.pool),
+            noload('*'))
+
+        return super(MemberRepository, self).get_all(
+            session, pagination_helper=pagination_helper,
+            query_options=query_options, **filters)
 
     def delete_members(self, session, member_ids):
         """Batch deletes members from a pool."""
@@ -805,6 +913,31 @@ class MemberRepository(BaseRepository):
 
 class ListenerRepository(BaseRepository):
     model_class = models.Listener
+
+    def get_all_API_list(self, session, pagination_helper=None, **filters):
+        """Get a list of listeners for the API list call.
+
+        This get_all returns a data set that is only one level deep
+        in the data graph. This is an optimized query for the API listener
+        list method.
+
+        :param session: A Sql Alchemy database session.
+        :param pagination_helper: Helper to apply pagination and sorting.
+        :param filters: Filters to decide which entities should be retrieved.
+        :returns: [octavia.common.data_model]
+        """
+
+        # sub-query load the tables we need
+        # no-load (blank) the tables we don't need
+        query_options = (
+            subqueryload(models.Listener.l7policies),
+            subqueryload(models.Listener.load_balancer),
+            subqueryload(models.Listener.sni_containers),
+            noload('*'))
+
+        return super(ListenerRepository, self).get_all(
+            session, pagination_helper=pagination_helper,
+            query_options=query_options, **filters)
 
     def _find_next_peer_port(self, session, lb_id):
         """Finds the next available peer port on the load balancer."""
@@ -902,6 +1035,29 @@ class ListenerStatisticsRepository(BaseRepository):
 
 class AmphoraRepository(BaseRepository):
     model_class = models.Amphora
+
+    def get_all_API_list(self, session, pagination_helper=None, **filters):
+        """Get a list of amphorae for the API list call.
+
+        This get_all returns a data set that is only one level deep
+        in the data graph. This is an optimized query for the API amphora
+        list method.
+
+        :param session: A Sql Alchemy database session.
+        :param pagination_helper: Helper to apply pagination and sorting.
+        :param filters: Filters to decide which entities should be retrieved.
+        :returns: [octavia.common.data_model]
+        """
+
+        # sub-query load the tables we need
+        # no-load (blank) the tables we don't need
+        query_options = (
+            subqueryload(models.Amphora.load_balancer),
+            noload('*'))
+
+        return super(AmphoraRepository, self).get_all(
+            session, pagination_helper=pagination_helper,
+            query_options=query_options, **filters)
 
     def associate(self, session, load_balancer_id, amphora_id):
         """Associates an amphora with a load balancer.
@@ -1209,6 +1365,29 @@ class VRRPGroupRepository(BaseRepository):
 class L7RuleRepository(BaseRepository):
     model_class = models.L7Rule
 
+    def get_all_API_list(self, session, pagination_helper=None, **filters):
+        """Get a list of L7 Rules for the API list call.
+
+        This get_all returns a data set that is only one level deep
+        in the data graph. This is an optimized query for the API L7 Rule
+        list method.
+
+        :param session: A Sql Alchemy database session.
+        :param pagination_helper: Helper to apply pagination and sorting.
+        :param filters: Filters to decide which entities should be retrieved.
+        :returns: [octavia.common.data_model]
+        """
+
+        # sub-query load the tables we need
+        # no-load (blank) the tables we don't need
+        query_options = (
+            subqueryload(models.L7Rule.l7policy),
+            noload('*'))
+
+        return super(L7RuleRepository, self).get_all(
+            session, pagination_helper=pagination_helper,
+            query_options=query_options, **filters)
+
     def update(self, session, id, **model_kwargs):
         with session.begin(subtransactions=True):
             l7rule_db = session.query(self.model_class).filter_by(
@@ -1274,6 +1453,31 @@ class L7PolicyRepository(BaseRepository):
         deleted = filters.pop('show_deleted', True)
         query = session.query(self.model_class).filter_by(
             **filters)
+
+        if not deleted:
+            query = query.filter(
+                self.model_class.provisioning_status != consts.DELETED)
+
+        if pagination_helper:
+            model_list, links = pagination_helper.apply(
+                query, self.model_class)
+        else:
+            links = None
+            model_list = query.order_by(self.model_class.position).all()
+
+        data_model_list = [model.to_data_model() for model in model_list]
+        return data_model_list, links
+
+    def get_all_API_list(self, session, pagination_helper=None, **filters):
+        deleted = filters.pop('show_deleted', True)
+        query = session.query(self.model_class).filter_by(
+            **filters)
+
+        query = query.options(
+            subqueryload(models.L7Policy.l7rules),
+            subqueryload(models.L7Policy.listener),
+            subqueryload(models.L7Policy.redirect_pool),
+            noload('*'))
 
         if not deleted:
             query = query.filter(

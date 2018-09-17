@@ -82,10 +82,11 @@ class LoadBalancersController(base.BaseController):
 
         query_filter = self._auth_get_all(context, project_id)
 
-        load_balancers, links = self.repositories.load_balancer.get_all(
-            context.session, show_deleted=False,
-            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
-            **query_filter)
+        load_balancers, links = (
+            self.repositories.load_balancer.get_all_API_list(
+                context.session, show_deleted=False,
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+                **query_filter))
         result = self._convert_db_to_type(
             load_balancers, [lb_types.LoadBalancerResponse])
         if fields is not None:

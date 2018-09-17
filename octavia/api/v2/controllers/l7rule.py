@@ -72,7 +72,7 @@ class L7RuleController(base.BaseController):
         self._auth_validate_action(context, l7policy.project_id,
                                    constants.RBAC_GET_ALL)
 
-        db_l7rules, links = self.repositories.l7rule.get_all(
+        db_l7rules, links = self.repositories.l7rule.get_all_API_list(
             context.session, show_deleted=False, l7policy_id=self.l7policy_id,
             pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
         result = self._convert_db_to_type(
