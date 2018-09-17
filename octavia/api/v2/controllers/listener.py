@@ -88,7 +88,7 @@ class ListenersController(base.BaseController):
 
         query_filter = self._auth_get_all(context, project_id)
 
-        db_listeners, links = self.repositories.listener.get_all(
+        db_listeners, links = self.repositories.listener.get_all_API_list(
             context.session, show_deleted=False,
             pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
             **query_filter)

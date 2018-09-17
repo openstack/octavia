@@ -63,7 +63,7 @@ class AmphoraController(base.BaseController):
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
 
-        db_amp, links = self.repositories.amphora.get_all(
+        db_amp, links = self.repositories.amphora.get_all_API_list(
             context.session, show_deleted=False,
             pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
         result = self._convert_db_to_type(
