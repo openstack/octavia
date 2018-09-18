@@ -182,51 +182,29 @@ If you didn't configure image tags and instead configured an image id, you
 will need to update the Octavia configuration file with the new id and restart
 the Octavia services (except octavia-api).
 
-Generating a List of Amphorae to Rotate
----------------------------------------
+Generating a List of Load Balancers to Rotate
+---------------------------------------------
 
-The easiest way to generate a list is to use nova to list all the amphorae:
+The easiest way to generate a list, is to just list the IDs of all
+load balancers:
 
  .. code-block:: bash
 
-        openstack server list --name amphora* --all -c ID -c Status -c Networks
+        openstack loadbalancer list -c id -f value
 
-Take note of the amphorae IDs and IPs on the management network.
+Take note of the IDs.
 
-If you are using an ACTIVE-STANDBY topology it might be beneficial to rotate
-first the BACKUP amphora before the ACTIVE one. In this case you will need
-to use the Octavia database to query for that:
+Rotate a Load Balancer
+----------------------
 
-    .. code-block:: bash
-
-        mysql octavia -e 'select id, compute_id, lb_network_ip, role from amphora where status="ALLOCATED" or status="READY";'
-
-Take note of the compute ids, the role (ACTIVE, BACKUP), and the ip on the
-management network. You can also find this IP either via
-``openstack server show <id>`` or
-``openstack server list --all -c ID -c Status -c Networks | grep <id>``.
-
-Rotate an Amphora
------------------
-
-The idea is to force Octavia to start up a new amphora because Octavia thinks
-this one has failed. The most graceful way to do this is to shut down the port
-on the management network.
-
-Use the ip on the management newtork to find the port-id:
+Octavia has an API call to initiate the failover of a load balancer:
 
     .. code-block:: bash
 
-        openstack port list | grep <ip on mgmt net>
+        openstack loadbalancer failover <loadbalancer id>
 
-Take note of the port-id and initiate a failover by shutting down this port:
-
-     .. code-block:: bash
-
-        openstack port update --admin-state-up False <port-id>
-
-You can observe the failover by querying nova ``openstack server list --all |
-grep <id>`` until the server isn't found any longer.
+You can observe the failover by querying octavia ``openstack load balancer
+show  <loadbalancer id>`` until the load balancer goes ``ACTIVE`` again.
 
 .. _best_practice:
 
@@ -424,3 +402,18 @@ deleted as part of the failover and will not touch them again.
     amphora API response (it is not currently possible to filter amphora by
     compute_id). If there are any matches where the amphora status is not
     'DELETED', the amphora is still considered to be in use.
+
+Evacuating a Specific Amohora from a Host
+-----------------------------------------
+
+In some cases an amphora needs to be evacuated either because the host is being
+shutdown for maintenance or as part of a failover. Octavia has a rich amphora
+API to do that.
+
+First use the amphora API to find the specific amphora. Then, if not already
+performed, disable scheduling to this host in nova. Lastly, initiate a failover
+of the specific amphora with the failover command on the amphora API.
+
+Alternatively, a live migration might also work if it happens quick enough for
+Octavia not to notice a stale amphora (the default configuration is 60s).
+
