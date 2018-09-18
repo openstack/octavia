@@ -103,8 +103,10 @@ class TestServerTestCase(base.TestCase):
 
         # happy case upstart file exists
         with mock.patch('os.open') as mock_open, mock.patch.object(
-                os, 'fdopen', m) as mock_fdopen:
+                os, 'fdopen', m) as mock_fdopen, mock.patch(
+                'distro.id') as mock_distro_id:
             mock_open.return_value = 123
+            mock_distro_id.return_value = distro
             if distro == consts.UBUNTU:
                 rv = self.ubuntu_app.put('/' + api_server.VERSION +
                                          '/listeners/amp_123/123/haproxy',
@@ -143,7 +145,9 @@ class TestServerTestCase(base.TestCase):
         # exception writing
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         m.side_effect = IOError()  # open crashes
-        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
+        with mock.patch('os.open'), mock.patch.object(
+                os, 'fdopen', m), mock.patch('distro.id') as mock_distro_id:
+            mock_distro_id.return_value = distro
             if distro == consts.UBUNTU:
                 rv = self.ubuntu_app.put('/' + api_server.VERSION +
                                          '/listeners/amp_123/123/haproxy',
@@ -168,8 +172,10 @@ class TestServerTestCase(base.TestCase):
         m = self.useFixture(test_utils.OpenFixture(init_path)).mock_open
         # happy case upstart file exists
         with mock.patch('os.open') as mock_open, mock.patch.object(
-                os, 'fdopen', m) as mock_fdopen:
+                os, 'fdopen', m) as mock_fdopen, mock.patch(
+                'distro.id') as mock_distro_id:
             mock_open.return_value = 123
+            mock_distro_id.return_value = distro
 
             if distro == consts.UBUNTU:
                 rv = self.ubuntu_app.put('/' + api_server.VERSION +
@@ -199,8 +205,10 @@ class TestServerTestCase(base.TestCase):
         mock_subprocess.side_effect = [subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR)]
         with mock.patch('os.open') as mock_open, mock.patch.object(
-                os, 'fdopen', m) as mock_fdopen:
+                os, 'fdopen', m) as mock_fdopen, mock.patch(
+                'distro.id') as mock_distro_id:
             mock_open.return_value = 123
+            mock_distro_id.return_value = distro
             if distro == consts.UBUNTU:
                 rv = self.ubuntu_app.put('/' + api_server.VERSION +
                                          '/listeners/amp_123/123/haproxy',
@@ -232,8 +240,10 @@ class TestServerTestCase(base.TestCase):
         # unhappy path with bogus init system
         mock_init_system.return_value = 'bogus'
         with mock.patch('os.open') as mock_open, mock.patch.object(
-                os, 'fdopen', m) as mock_fdopen:
+                os, 'fdopen', m) as mock_fdopen, mock.patch(
+                'distro.id') as mock_distro_id:
             mock_open.return_value = 123
+            mock_distro_id.return_value = distro
             if distro == consts.UBUNTU:
                 rv = self.ubuntu_app.put('/' + api_server.VERSION +
                                          '/listeners/amp_123/123/haproxy',
