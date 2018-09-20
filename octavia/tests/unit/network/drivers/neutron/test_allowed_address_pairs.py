@@ -61,7 +61,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         super(TestAllowedAddressPairsDriver, self).setUp()
         with mock.patch('octavia.common.clients.neutron_client.Client',
                         autospec=True) as neutron_client:
-            with mock.patch('octavia.common.clients.nova_client.Client',
+            with mock.patch('stevedore.driver.DriverManager.driver',
                             autospec=True):
                 client = neutron_client(clients.NEUTRON_VERSION)
                 client.list_extensions.return_value = {
@@ -317,8 +317,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         ]
         list_security_groups.side_effect = lsc_side_effect
 
-        interface_attach = self.driver.nova_client.servers.interface_attach
-        interface_attach.side_effect = nova_exceptions.NotFound(404, "Network")
+        network_attach = self.driver.compute.attach_network_or_port
+        network_attach.side_effect = nova_exceptions.NotFound(404, "Network")
         self.assertRaises(network_base.PlugVIPException,
                           self.driver.plug_vip, lb, lb.vip)
 
@@ -339,8 +339,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             }
         ]
         list_security_groups.side_effect = lsc_side_effect
-        interface_attach = self.driver.nova_client.servers.interface_attach
-        interface_attach.return_value = t_constants.MOCK_NOVA_INTERFACE
+        network_attach = self.driver.compute.attach_network_or_port
+        network_attach.return_value = t_constants.MOCK_NOVA_INTERFACE
 
         update_port = self.driver.neutron_client.update_port
         update_port.side_effect = neutron_exceptions.PortNotFoundClient
@@ -360,9 +360,9 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         port1 = t_constants.MOCK_MANAGEMENT_PORT1['port']
         port2 = t_constants.MOCK_MANAGEMENT_PORT2['port']
         list_ports.side_effect = [{'ports': [port1]}, {'ports': [port2]}]
-        interface_attach = self.driver.nova_client.servers.interface_attach
-        interface_attach.side_effect = [t_constants.MOCK_VRRP_INTERFACE1,
-                                        t_constants.MOCK_VRRP_INTERFACE2]
+        network_attach = self.driver.compute.attach_network_or_port
+        network_attach.side_effect = [t_constants.MOCK_VRRP_INTERFACE1,
+                                      t_constants.MOCK_VRRP_INTERFACE2]
         list_security_groups = self.driver.neutron_client.list_security_groups
         list_security_groups.return_value = {
             'security_groups': [
@@ -408,7 +408,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self._set_safely(t_constants.MOCK_MANAGEMENT_FIXED_IPS2[0],
                          'ip_address', lb.amphorae[1].lb_network_ip)
         list_ports.side_effect = [{'ports': [port1]}, {'ports': [port2]}]
-        interface_attach = self.driver.nova_client.servers.interface_attach
+        network_attach = self.driver.compute.attach_network_or_port
         self._set_safely(t_constants.MOCK_VRRP_INTERFACE1,
                          'net_id', t_constants.MOCK_MANAGEMENT_NET_ID)
         self._set_safely(t_constants.MOCK_VRRP_FIXED_IPS1[0],
@@ -417,8 +417,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                          'net_id', t_constants.MOCK_MANAGEMENT_NET_ID)
         self._set_safely(t_constants.MOCK_VRRP_FIXED_IPS2[0],
                          'subnet_id', t_constants.MOCK_MANAGEMENT_SUBNET_ID)
-        interface_attach.side_effect = [t_constants.MOCK_VRRP_INTERFACE1,
-                                        t_constants.MOCK_VRRP_INTERFACE2]
+        network_attach.side_effect = [t_constants.MOCK_VRRP_INTERFACE1,
+                                      t_constants.MOCK_VRRP_INTERFACE2]
         list_security_groups = self.driver.neutron_client.list_security_groups
         list_security_groups.return_value = {
             'security_groups': [
@@ -595,8 +595,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
 
     def test_plug_network_when_compute_instance_cant_be_found(self):
         net_id = t_constants.MOCK_NOVA_INTERFACE.net_id
-        interface_attach = self.driver.nova_client.servers.interface_attach
-        interface_attach.side_effect = nova_exceptions.NotFound(
+        network_attach = self.driver.compute.attach_network_or_port
+        network_attach.side_effect = nova_exceptions.NotFound(
             404, message='Instance not found')
         self.assertRaises(network_base.AmphoraNotFound,
                           self.driver.plug_network,
@@ -604,8 +604,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
 
     def test_plug_network_when_network_cant_be_found(self):
         net_id = t_constants.MOCK_NOVA_INTERFACE.net_id
-        interface_attach = self.driver.nova_client.servers.interface_attach
-        interface_attach.side_effect = nova_exceptions.NotFound(
+        network_attach = self.driver.compute.attach_network_or_port
+        network_attach.side_effect = nova_exceptions.NotFound(
             404, message='Network not found')
         self.assertRaises(network_base.NetworkException,
                           self.driver.plug_network,
@@ -613,16 +613,16 @@ class TestAllowedAddressPairsDriver(base.TestCase):
 
     def test_plug_network_when_interface_attach_fails(self):
         net_id = t_constants.MOCK_NOVA_INTERFACE.net_id
-        interface_attach = self.driver.nova_client.servers.interface_attach
-        interface_attach.side_effect = TypeError
+        network_attach = self.driver.compute.attach_network_or_port
+        network_attach.side_effect = TypeError
         self.assertRaises(network_base.PlugNetworkException,
                           self.driver.plug_network,
                           t_constants.MOCK_COMPUTE_ID, net_id)
 
     def test_plug_network(self):
         net_id = t_constants.MOCK_NOVA_INTERFACE.net_id
-        interface_attach = self.driver.nova_client.servers.interface_attach
-        interface_attach.return_value = t_constants.MOCK_NOVA_INTERFACE
+        network_attach = self.driver.compute.attach_network_or_port
+        network_attach.return_value = t_constants.MOCK_NOVA_INTERFACE
         oct_interface = self.driver.plug_network(
             t_constants.MOCK_COMPUTE_ID, net_id)
         exp_ips = [fixed_ip.get('ip_address')
@@ -650,19 +650,6 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                           self.driver.unplug_network,
                           t_constants.MOCK_COMPUTE_ID, net_id)
 
-    def test_unplug_network_when_interface_detach_fails(self):
-        list_ports = self.driver.neutron_client.list_ports
-        port1 = t_constants.MOCK_NEUTRON_PORT['port']
-        port2 = {
-            'id': '4', 'network_id': '3', 'fixed_ips':
-            [{'ip_address': '10.0.0.2'}]
-        }
-        list_ports.return_value = {'ports': [port1, port2]}
-        interface_detach = self.driver.nova_client.servers.interface_detach
-        interface_detach.side_effect = Exception
-        self.driver.unplug_network(t_constants.MOCK_COMPUTE_ID,
-                                   port2.get('network_id'))
-
     def test_unplug_network(self):
         list_ports = self.driver.neutron_client.list_ports
         port1 = t_constants.MOCK_NEUTRON_PORT['port']
@@ -671,11 +658,11 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             [{'ip_address': '10.0.0.2'}]
         }
         list_ports.return_value = {'ports': [port1, port2]}
-        interface_detach = self.driver.nova_client.servers.interface_detach
+        port_detach = self.driver.compute.detach_port
         self.driver.unplug_network(t_constants.MOCK_COMPUTE_ID,
                                    port2.get('network_id'))
-        interface_detach.assert_called_once_with(
-            server=t_constants.MOCK_COMPUTE_ID, port_id=port2.get('id'))
+        port_detach.assert_called_once_with(
+            compute_id=t_constants.MOCK_COMPUTE_ID, port_id=port2.get('id'))
 
     def test_update_vip(self):
         listeners = [data_models.Listener(protocol_port=80, peer_port=1024,
@@ -907,7 +894,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
     def test_plug_port(self):
         port = mock.MagicMock()
         port.id = self.PORT_ID
-        interface_attach = self.driver.nova_client.servers.interface_attach
+        network_attach = self.driver.compute.attach_network_or_port
+        network_attach.return_value = t_constants.MOCK_NOVA_INTERFACE
         amphora = data_models.Amphora(
             id=self.AMPHORA_ID, load_balancer_id=self.LB_ID,
             compute_id=self.COMPUTE_ID, status=self.ACTIVE,
@@ -915,25 +903,25 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             ha_ip=self.HA_IP)
 
         self.driver.plug_port(amphora, port)
-        interface_attach.assert_called_once_with(server=amphora.compute_id,
-                                                 net_id=None,
-                                                 fixed_ip=None,
-                                                 port_id=self.PORT_ID)
+        network_attach.assert_called_once_with(compute_id=amphora.compute_id,
+                                               network_id=None,
+                                               ip_address=None,
+                                               port_id=self.PORT_ID)
 
         # NotFound cases
-        interface_attach.side_effect = nova_exceptions.NotFound(
+        network_attach.side_effect = nova_exceptions.NotFound(
             1, message='Instance')
         self.assertRaises(network_base.AmphoraNotFound,
                           self.driver.plug_port,
                           amphora,
                           port)
-        interface_attach.side_effect = nova_exceptions.NotFound(
+        network_attach.side_effect = nova_exceptions.NotFound(
             1, message='Network')
         self.assertRaises(network_base.NetworkNotFound,
                           self.driver.plug_port,
                           amphora,
                           port)
-        interface_attach.side_effect = nova_exceptions.NotFound(
+        network_attach.side_effect = nova_exceptions.NotFound(
             1, message='bogus')
         self.assertRaises(network_base.PlugNetworkException,
                           self.driver.plug_port,
@@ -941,11 +929,11 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                           port)
 
         # Already plugged case should not raise an exception
-        interface_attach.side_effect = nova_exceptions.Conflict(1)
+        network_attach.side_effect = nova_exceptions.Conflict(1)
         self.driver.plug_port(amphora, port)
 
         # Unknown error case
-        interface_attach.side_effect = TypeError
+        network_attach.side_effect = TypeError
         self.assertRaises(network_base.PlugNetworkException,
                           self.driver.plug_port,
                           amphora,

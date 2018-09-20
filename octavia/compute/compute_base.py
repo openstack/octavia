@@ -96,3 +96,28 @@ class ComputeBase(object):
         :param server_group_id: the uuid of a server group
         """
         pass
+
+    @abc.abstractmethod
+    def attach_network_or_port(self, compute_id, network_id=None,
+                               ip_address=None, port_id=None):
+        """Connects an existing amphora to an existing network.
+
+        :param compute_id: id of an amphora in the compute service
+        :param network_id: id of a network
+        :param ip_address: ip address to attempt to be assigned to interface
+        :param port_id: id of the neutron port
+        :return: nova interface
+        :raises: Exception
+        """
+        pass
+
+    @abc.abstractmethod
+    def detach_port(self, compute_id, port_id):
+        """Disconnects an existing amphora from an existing port.
+
+        :param compute_id: id of an amphora in the compute service
+        :param port_id: id of the port
+        :return: None
+        :raises: Exception
+        """
+        pass

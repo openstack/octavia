@@ -46,6 +46,9 @@ class TestNoopComputeDriver(base.TestCase):
         self.server_group_name = 'my_server_group'
         self.server_group_id = self.FAKE_UUID_6
         self.port_ids = ['port-id-1']
+        self.port_id = 88
+        self.network_id = uuidutils.generate_uuid()
+        self.ip_address = "192.0.2.2"
 
     def test_build(self):
         self.driver.build(self.name, self.amphora_flavor,
@@ -101,3 +104,19 @@ class TestNoopComputeDriver(base.TestCase):
         self.assertEqual((self.server_group_id, 'delete'),
                          self.driver.driver.computeconfig[
                              self.server_group_id])
+
+    def test_attach_network_or_port(self):
+        self.driver.attach_network_or_port(self.amphora_id, self.network_id,
+                                           self.ip_address, self.port_id)
+        self.assertEqual((self.amphora_id, self.network_id, self.ip_address,
+                          self.port_id, 'attach_network_or_port'),
+                         self.driver.driver.computeconfig[(
+                             self.amphora_id, self.network_id,
+                             self.ip_address, self.port_id)])
+
+    def test_detach_port(self):
+        self.driver.detach_port(self.amphora_id, self.port_id)
+        self.assertEqual((self.amphora_id, self.port_id,
+                          'detach_port'),
+                         self.driver.driver.computeconfig[(
+                             self.amphora_id, self.port_id)])
