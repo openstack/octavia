@@ -75,7 +75,7 @@ Common to multinode and single node
 1) Determine the loadbalancer IP:
 
     source openrc admin admin
-    neutron lbaas-loadbalancer-show lb1 | grep vip_address
+    openstack loadbalancer show lb1 -f value -c vip_address
 
 2) make HTTP requests to test your load balancer:
 
