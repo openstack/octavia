@@ -122,23 +122,6 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(1, len(lb_flow.provides))
         self.assertEqual(4, len(lb_flow.requires))
 
-    def test_get_new_LB_networking_subflow(self, mock_get_net_driver):
-
-        lb_flow = self.LBFlow.get_new_LB_networking_subflow()
-
-        self.assertIsInstance(lb_flow, flow.Flow)
-
-        self.assertIn(constants.VIP, lb_flow.provides)
-        self.assertIn(constants.AMPS_DATA, lb_flow.provides)
-        self.assertIn(constants.LOADBALANCER, lb_flow.provides)
-
-        self.assertIn(constants.UPDATE_DICT, lb_flow.requires)
-        self.assertIn(constants.LOADBALANCER, lb_flow.requires)
-        self.assertIn(constants.LOADBALANCER_ID, lb_flow.requires)
-
-        self.assertEqual(4, len(lb_flow.provides))
-        self.assertEqual(3, len(lb_flow.requires))
-
     def test_get_update_load_balancer_flow(self, mock_get_net_driver):
 
         lb_flow = self.LBFlow.get_update_load_balancer_flow()
@@ -160,7 +143,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.UPDATE_DICT, amp_flow.requires)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
 
-        self.assertEqual(4, len(amp_flow.provides))
+        self.assertEqual(1, len(amp_flow.provides))
         self.assertEqual(2, len(amp_flow.requires))
 
         # Test Active/Standby path
@@ -173,8 +156,8 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.UPDATE_DICT, amp_flow.requires)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
 
-        self.assertEqual(4, len(amp_flow.provides))
-        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(1, len(amp_flow.provides))
+        self.assertEqual(3, len(amp_flow.requires))
 
         # Test mark_active=False
         amp_flow = self.LBFlow.get_post_lb_amp_association_flow(
@@ -186,8 +169,8 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.UPDATE_DICT, amp_flow.requires)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
 
-        self.assertEqual(4, len(amp_flow.provides))
-        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(1, len(amp_flow.provides))
+        self.assertEqual(3, len(amp_flow.requires))
 
     def test_get_create_load_balancer_flows_single_listeners(
             self, mock_get_net_driver):
@@ -209,12 +192,12 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.DELTAS, create_flow.provides)
         self.assertIn(constants.ADDED_PORTS, create_flow.provides)
         self.assertIn(constants.VIP, create_flow.provides)
-        self.assertIn(constants.AMPS_DATA, create_flow.provides)
+        self.assertIn(constants.AMP_DATA, create_flow.provides)
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
                       create_flow.provides)
 
         self.assertEqual(4, len(create_flow.requires))
-        self.assertEqual(12, len(create_flow.provides),
+        self.assertEqual(13, len(create_flow.provides),
                          create_flow.provides)
 
     def test_get_create_load_balancer_flows_active_standby_listeners(
@@ -237,10 +220,10 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.DELTAS, create_flow.provides)
         self.assertIn(constants.ADDED_PORTS, create_flow.provides)
         self.assertIn(constants.VIP, create_flow.provides)
-        self.assertIn(constants.AMPS_DATA, create_flow.provides)
+        self.assertIn(constants.AMP_DATA, create_flow.provides)
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
                       create_flow.provides)
 
         self.assertEqual(4, len(create_flow.requires))
-        self.assertEqual(12, len(create_flow.provides),
+        self.assertEqual(13, len(create_flow.provides),
                          create_flow.provides)

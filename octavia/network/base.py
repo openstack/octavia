@@ -318,3 +318,33 @@ class AbstractNetworkDriver(object):
         :raises PortNotFound: Port was not found by neutron.
         """
         pass
+
+    @abc.abstractmethod
+    def update_vip_sg(self, load_balancer, vip):
+        """Updates the security group for a VIP
+
+        :param load_balancer: Load Balancer to rpepare the VIP for
+        :param vip: The VIP to plug
+        """
+        pass
+
+    @abc.abstractmethod
+    def plug_aap_port(self, load_balancer, vip, amphora, subnet):
+        """Plugs the AAP port to the amp
+
+        :param load_balancer: Load Balancer to prepare the VIP for
+        :param vip: The VIP to plug
+        :param amphora: The amphora to plug the VIP into
+        :param subnet: The subnet to plug the aap into
+        """
+        pass
+
+    @abc.abstractmethod
+    def unplug_aap_port(self, vip, amphora, subnet):
+        """Unplugs the AAP port to the amp
+
+        :param vip: The VIP to plug
+        :param amphora: The amphora to plug the VIP into
+        :param subnet: The subnet to plug the aap into
+        """
+        pass

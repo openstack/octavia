@@ -483,8 +483,28 @@ class TestDatabaseTasks(base.TestCase):
                                      mock_amphora_repo_update,
                                      mock_amphora_repo_delete):
 
-        update_amp_vip_data = database_tasks.UpdateAmphoraVIPData()
+        update_amp_vip_data = database_tasks.UpdateAmphoraeVIPData()
         update_amp_vip_data.execute(_amphorae)
+
+        mock_amphora_repo_update.assert_called_once_with(
+            'TEST',
+            AMP_ID,
+            vrrp_ip=VRRP_IP,
+            ha_ip=HA_IP,
+            vrrp_port_id=VRRP_PORT_ID,
+            ha_port_id=HA_PORT_ID,
+            vrrp_id=1)
+
+    def test_update_amphora_vip_data2(self,
+                                      mock_generate_uuid,
+                                      mock_LOG,
+                                      mock_get_session,
+                                      mock_loadbalancer_repo_update,
+                                      mock_listener_repo_update,
+                                      mock_amphora_repo_update,
+                                      mock_amphora_repo_delete):
+        update_amp_vip_data2 = database_tasks.UpdateAmphoraVIPData()
+        update_amp_vip_data2.execute(_amphorae[0])
 
         mock_amphora_repo_update.assert_called_once_with(
             'TEST',

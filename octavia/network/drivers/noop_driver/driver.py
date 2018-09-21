@@ -57,20 +57,40 @@ class NoopManager(object):
         LOG.debug("Network %s no-op, plug_vip loadbalancer %s, vip %s",
                   self.__class__.__name__,
                   loadbalancer.id, vip.ip_address)
+        self.update_vip_sg(loadbalancer, vip)
+        amps = []
+        for amphora in loadbalancer.amphorae:
+            amps.append(self.plug_aap_port(loadbalancer, vip, amphora, None))
         self.networkconfigconfig[(loadbalancer.id,
                                   vip.ip_address)] = (loadbalancer, vip,
                                                       'plug_vip')
-        amps = []
-        for amphora in loadbalancer.amphorae:
-            amps.append(data_models.Amphora(
-                id=amphora.id,
-                compute_id=amphora.compute_id,
-                vrrp_ip='198.51.100.1',
-                ha_ip='198.51.100.1',
-                vrrp_port_id=uuidutils.generate_uuid(),
-                ha_port_id=uuidutils.generate_uuid()
-            ))
         return amps
+
+    def update_vip_sg(self, load_balancer, vip):
+        LOG.debug("Network %s no-op, update_vip_sg loadbalancer %s, vip %s",
+                  self.__class__.__name__,
+                  load_balancer.id, vip.ip_address)
+        self.networkconfigconfig[(load_balancer.id,
+                                  vip.ip_address)] = (load_balancer, vip,
+                                                      'update_vip_sg')
+
+    def plug_aap_port(self, load_balancer, vip, amphora, subnet):
+        LOG.debug("Network %s no-op, plug_aap_port loadbalancer %s, vip %s,"
+                  " amphora %s, subnet %s",
+                  self.__class__.__name__,
+                  load_balancer.id, vip.ip_address, amphora, subnet)
+        self.networkconfigconfig[(amphora.id,
+                                  vip.ip_address)] = (
+            load_balancer, vip, amphora, subnet,
+            'plug_aap_port')
+        return data_models.Amphora(
+            id=amphora.id,
+            compute_id=amphora.compute_id,
+            vrrp_ip='198.51.100.1',
+            ha_ip='198.51.100.1',
+            vrrp_port_id=uuidutils.generate_uuid(),
+            ha_port_id=uuidutils.generate_uuid()
+        )
 
     def unplug_vip(self, loadbalancer, vip):
         LOG.debug("Network %s no-op, unplug_vip loadbalancer %s, vip %s",
@@ -79,6 +99,15 @@ class NoopManager(object):
         self.networkconfigconfig[(loadbalancer.id,
                                   vip.ip_address)] = (loadbalancer, vip,
                                                       'unplug_vip')
+
+    def unplug_aap_port(self, vip, amphora, subnet):
+        LOG.debug("Network %s no-op, unplug_aap_port vip %s amp: %s "
+                  "subnet: %s",
+                  self.__class__.__name__,
+                  vip.ip_address, amphora.id, subnet.id)
+        self.networkconfigconfig[(amphora.id,
+                                  vip.ip_address)] = (vip, amphora, subnet,
+                                                      'unplug_aap_port')
 
     def plug_network(self, compute_id, network_id, ip_address=None):
         LOG.debug("Network %s no-op, plug_network compute_id %s, network_id "
@@ -289,3 +318,12 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def apply_qos_on_port(self, qos_id, port_id):
         self.driver.apply_qos_on_port(qos_id, port_id)
+
+    def update_vip_sg(self, load_balancer, vip):
+        self.driver.update_vip_sg(load_balancer, vip)
+
+    def plug_aap_port(self, load_balancer, vip, amphora, subnet):
+        return self.driver.plug_aap_port(load_balancer, vip, amphora, subnet)
+
+    def unplug_aap_port(self, vip, amphora, subnet):
+        self.driver.unplug_aap_port(vip, amphora, subnet)

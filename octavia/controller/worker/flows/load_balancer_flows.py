@@ -55,6 +55,24 @@ class LoadBalancerFlows(object):
         lb_create_flow.add(lifecycle_tasks.LoadBalancerIDToErrorOnRevertTask(
             requires=constants.LOADBALANCER_ID))
 
+        # allocate VIP
+        lb_create_flow.add(database_tasks.ReloadLoadBalancer(
+            name=constants.RELOAD_LB_BEFOR_ALLOCATE_VIP,
+            requires=constants.LOADBALANCER_ID,
+            provides=constants.LOADBALANCER
+        ))
+        lb_create_flow.add(network_tasks.AllocateVIP(
+            requires=constants.LOADBALANCER,
+            provides=constants.VIP))
+        lb_create_flow.add(database_tasks.UpdateVIPAfterAllocation(
+            requires=(constants.LOADBALANCER_ID, constants.VIP),
+            provides=constants.LOADBALANCER))
+        lb_create_flow.add(network_tasks.UpdateVIPSecurityGroup(
+            requires=constants.LOADBALANCER))
+        lb_create_flow.add(network_tasks.GetSubnetFromVIP(
+            requires=constants.LOADBALANCER,
+            provides=constants.SUBNET))
+
         if topology == constants.TOPOLOGY_ACTIVE_STANDBY:
             lb_create_flow.add(*self._create_active_standby_topology())
         elif topology == constants.TOPOLOGY_SINGLE:
@@ -107,7 +125,8 @@ class LoadBalancerFlows(object):
         f_name = constants.CREATE_LOADBALANCER_FLOW
         amps_flow = unordered_flow.Flow(f_name)
         master_amp_sf = self.amp_flows.get_amphora_for_lb_subflow(
-            prefix=constants.ROLE_MASTER, role=constants.ROLE_MASTER)
+            prefix=constants.ROLE_MASTER, role=constants.ROLE_MASTER
+        )
 
         backup_amp_sf = self.amp_flows.get_amphora_for_lb_subflow(
             prefix=constants.ROLE_BACKUP, role=constants.ROLE_BACKUP)
@@ -171,9 +190,6 @@ class LoadBalancerFlows(object):
                 name=sf_name + '-' + constants.RELOAD_LB_AFTER_AMP_ASSOC,
                 requires=constants.LOADBALANCER_ID,
                 provides=constants.LOADBALANCER))
-
-        new_LB_net_subflow = self.get_new_LB_networking_subflow()
-        post_create_LB_flow.add(new_LB_net_subflow)
 
         if topology == constants.TOPOLOGY_ACTIVE_STANDBY:
             vrrp_subflow = self.amp_flows.get_vrrp_subflow(prefix)
@@ -313,7 +329,7 @@ class LoadBalancerFlows(object):
         new_LB_net_subflow.add(network_tasks.ApplyQos(
             requires=(constants.LOADBALANCER, constants.AMPS_DATA,
                       constants.UPDATE_DICT)))
-        new_LB_net_subflow.add(database_tasks.UpdateAmphoraVIPData(
+        new_LB_net_subflow.add(database_tasks.UpdateAmphoraeVIPData(
             requires=constants.AMPS_DATA))
         new_LB_net_subflow.add(database_tasks.ReloadLoadBalancer(
             name=constants.RELOAD_LB_AFTER_PLUG_VIP,
