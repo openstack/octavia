@@ -226,6 +226,13 @@ class Repositories(object):
             if listener_id:
                 self.listener.update(session, listener_id,
                                      default_pool_id=pool_dict['id'])
+
+        # Immediate refresh, as we have found that sqlalchemy will sometimes
+        # cache the above query and the pool object may miss the listener_id
+        # information
+        if listener_id:
+            pool = session.query(models.Pool).filter_by(id=db_pool.id).first()
+            session.refresh(pool)
         return self.pool.get(session, id=db_pool.id)
 
     def update_pool_and_sp(self, session, pool_id, pool_dict):
