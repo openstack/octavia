@@ -178,6 +178,7 @@ backup:
     Is the member a backup? Backup members only receive traffic when all
     non-backup members are down.
   in: body
+  min_version: 2.1
   required: true
   type: boolean
 backup-optional:
@@ -185,6 +186,7 @@ backup-optional:
     Is the member a backup? Backup members only receive traffic when all
     non-backup members are down.
   in: body
+  min_version: 2.1
   required: false
   type: boolean
 bytes_in:
@@ -441,6 +443,7 @@ image-id:
   description: |
     The ID of the glance image used for the amphora.
   in: body
+  min_version: 2.1
   required: true
   type: uuid
 insert_headers:
@@ -1001,6 +1004,7 @@ session_persistence_granularity:
     valid for UDP pools with session persistence of SOURCE_IP. Default netmask
     is 255.255.255.255, meaning per client full IP.
   in: body
+  min_version: 2.2
   required: false
   type: string
 session_persistence_timeout:
@@ -1009,6 +1013,7 @@ session_persistence_timeout:
     different member. Currently only applies to UDP pools with session
     persistence of SOURCE_IP. Default is 360.
   in: body
+  min_version: 2.2
   required: false
   type: integer
 session_persistence_type:
@@ -1067,36 +1072,42 @@ timeout_client_data:
   description: |
     Frontend client inactivity timeout in milliseconds. Default: 50000.
   in: body
+  min_version: 2.1
   required: true
   type: integer
 timeout_client_data-optional:
   description: |
     Frontend client inactivity timeout in milliseconds. Default: 50000.
   in: body
+  min_version: 2.1
   required: false
   type: integer
 timeout_member_connect:
   description: |
     Backend member connection timeout in milliseconds. Default: 5000.
   in: body
+  min_version: 2.1
   required: true
   type: integer
 timeout_member_connect-optional:
   description: |
     Backend member connection timeout in milliseconds. Default: 5000.
   in: body
+  min_version: 2.1
   required: false
   type: integer
 timeout_member_data:
   description: |
     Backend member inactivity timeout in milliseconds. Default: 50000.
   in: body
+  min_version: 2.1
   required: true
   type: integer
 timeout_member_data-optional:
   description: |
     Backend member inactivity timeout in milliseconds. Default: 50000.
   in: body
+  min_version: 2.1
   required: false
   type: integer
 timeout_tcp_inspect:
@@ -1104,6 +1115,7 @@ timeout_tcp_inspect:
     Time, in milliseconds, to wait for additional TCP packets for content
     inspection. Default: 0.
   in: body
+  min_version: 2.1
   required: true
   type: integer
 timeout_tcp_inspect-optional:
@@ -1111,6 +1123,7 @@ timeout_tcp_inspect-optional:
     Time, in milliseconds, to wait for additional TCP packets for content
     inspection. Default: 0.
   in: body
+  min_version: 2.1
   required: false
   type: integer
 total_connections:
