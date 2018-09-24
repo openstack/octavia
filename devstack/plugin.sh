@@ -49,6 +49,11 @@ function build_octavia_worker_image {
     # set up diskimage-builder if we need to
     install_diskimage_builder
 
+    # Pull in DIB local elements if they are defined in devstack
+    if [ -n "$DIB_LOCAL_ELEMENTS" ]; then
+        export DIB_LOCAL_ELEMENTS=$DIB_LOCAL_ELEMENTS
+    fi
+
     # pull the agent code from the current code zuul has a reference to
     if [ -n "$DIB_REPOLOCATION_pip_and_virtualenv" ]; then
         export DIB_REPOLOCATION_pip_and_virtualenv=$DIB_REPOLOCATION_pip_and_virtualenv
