@@ -680,6 +680,22 @@ class TestHealthMonitor(base.BaseAPITest):
         self.assertEqual('/', api_hm.get('url_path'))
         self.assertEqual('200', api_hm.get('expected_codes'))
 
+    def test_create_https_full(self):
+        api_hm = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_HTTPS,
+            1, 1, 1, 1, admin_state_up=False, expected_codes='200',
+            http_method='GET', name='Test HM', url_path='/').get(self.root_tag)
+        self.assertEqual(constants.HEALTH_MONITOR_HTTPS, api_hm.get('type'))
+        self.assertEqual(1, api_hm.get('delay'))
+        self.assertEqual(1, api_hm.get('timeout'))
+        self.assertEqual(1, api_hm.get('max_retries_down'))
+        self.assertEqual(1, api_hm.get('max_retries'))
+        self.assertFalse(api_hm.get('admin_state_up'))
+        self.assertEqual('Test HM', api_hm.get('name'))
+        self.assertEqual('GET', api_hm.get('http_method'))
+        self.assertEqual('/', api_hm.get('url_path'))
+        self.assertEqual('200', api_hm.get('expected_codes'))
+
     def test_create_udp_case(self):
         api_hm = self.create_health_monitor(
             self.udp_pool_with_listener_id,
