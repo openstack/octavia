@@ -46,14 +46,6 @@
         - octavia-v2-dsvm-scenario-centos-7
         - octavia-v2-dsvm-scenario-ubuntu-bionic:
             voting: false
-        - octavia-v2-dsvm-noop-api:
-            voting: false
-        - octavia-v2-dsvm-noop-py35-api:
-            voting: false
-        - octavia-v2-dsvm-scenario:
-            voting: false
-        - octavia-v2-dsvm-py35-scenario:
-            voting: false
         - octavia-grenade:
             irrelevant-files:
               - ^.*\.rst$
