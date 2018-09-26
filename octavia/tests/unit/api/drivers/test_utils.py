@@ -133,10 +133,19 @@ class TestUtils(base.TestCase):
         self.assertEqual(ref_prov_lb_dict, provider_lb_dict)
 
     def test_db_loadbalancer_to_provider_loadbalancer(self):
-        test_db_lb = data_models.LoadBalancer(id=1)
+        vip = data_models.Vip(ip_address=self.sample_data.ip_address,
+                              network_id=self.sample_data.network_id,
+                              port_id=self.sample_data.port_id,
+                              subnet_id=self.sample_data.subnet_id)
+        test_db_lb = data_models.LoadBalancer(id=1, vip=vip)
         provider_lb = utils.db_loadbalancer_to_provider_loadbalancer(
             test_db_lb)
-        ref_provider_lb = driver_dm.LoadBalancer(loadbalancer_id=1)
+        ref_provider_lb = driver_dm.LoadBalancer(
+            loadbalancer_id=1,
+            vip_address=self.sample_data.ip_address,
+            vip_network_id=self.sample_data.network_id,
+            vip_port_id=self.sample_data.port_id,
+            vip_subnet_id=self.sample_data.subnet_id)
         self.assertEqual(ref_provider_lb.to_dict(render_unsets=True),
                          provider_lb.to_dict(render_unsets=True))
 
