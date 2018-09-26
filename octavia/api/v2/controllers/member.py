@@ -73,7 +73,7 @@ class MemberController(base.BaseController):
         self._auth_validate_action(context, pool.project_id,
                                    constants.RBAC_GET_ALL)
 
-        db_members, links = self.repositories.member.get_all(
+        db_members, links = self.repositories.member.get_all_API_list(
             context.session, show_deleted=False,
             pool_id=self.pool_id,
             pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
