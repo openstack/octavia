@@ -1,0 +1,6 @@
+---
+issues:
+  - |
+    Octavia Queens release was released with insufficient lower constraints for
+    Jinja2 and pyOpenSSL requirements. Please make sure your environment can
+    install Jinja2>=2.10 and pyOpenSSL>=17.1.0.

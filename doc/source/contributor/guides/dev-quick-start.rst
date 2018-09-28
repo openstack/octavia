@@ -20,6 +20,11 @@ This document is intended for developers and operators. For an end-user guide,
 please see the end-user quick-start guide and cookbook in this documentation
 repository.
 
+.. warning::
+    Octavia Queens release was released with insufficient lower constraints for
+    Jinja2 and pyOpenSSL requirements. Please make sure your environment can
+    install Jinja2>=2.10 and pyOpenSSL>=17.1.0 before continuing.
+
 
 Running Octavia in devstack
 ===========================
