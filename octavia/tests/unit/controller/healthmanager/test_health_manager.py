@@ -17,6 +17,7 @@ import threading
 import mock
 
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_db import exception as db_exc
 from oslo_utils import uuidutils
 
@@ -51,6 +52,8 @@ class TestHealthManager(base.TestCase):
     @mock.patch('octavia.db.api.get_session')
     def test_health_check_stale_amphora(self, session_mock, get_stale_amp_mock,
                                         failover_mock, db_wait_mock):
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group="health_manager", heartbeat_timeout=5)
         amphora_health = mock.MagicMock()
         amphora_health.amphora_id = AMPHORA_ID
 

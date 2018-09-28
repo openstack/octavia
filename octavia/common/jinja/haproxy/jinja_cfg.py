@@ -78,7 +78,7 @@ class JinjaTemplater(object):
         self.connection_logging = connection_logging
 
     def build_config(self, host_amphora, listener, tls_cert,
-                     socket_path=None):
+                     haproxy_versions, socket_path=None):
         """Convert a logical configuration to the HAProxy version
 
         :param host_amphora: The Amphora this configuration is hosted on
@@ -87,9 +87,19 @@ class JinjaTemplater(object):
         :param socket_path: The socket path for Haproxy process
         :return: Rendered configuration
         """
-        return self.render_loadbalancer_obj(host_amphora, listener,
-                                            tls_cert=tls_cert,
-                                            socket_path=socket_path)
+
+        # Check for any backward compatibility items we need to check
+        # This is done here for upgrade scenarios where one amp in a
+        # pair might be running an older amphora version.
+
+        feature_compatibility = {}
+        # Is it newer than haproxy 1.5?
+        if not (int(haproxy_versions[0]) < 2 and int(haproxy_versions[1]) < 6):
+            feature_compatibility[constants.HTTP_REUSE] = True
+
+        return self.render_loadbalancer_obj(
+            host_amphora, listener, tls_cert=tls_cert, socket_path=socket_path,
+            feature_compatibility=feature_compatibility)
 
     def _get_template(self):
         """Returns the specified Jinja configuration template."""
@@ -106,8 +116,8 @@ class JinjaTemplater(object):
         return JINJA_ENV.get_template(os.path.basename(self.haproxy_template))
 
     def render_loadbalancer_obj(self, host_amphora, listener,
-                                tls_cert=None,
-                                socket_path=None):
+                                tls_cert=None, socket_path=None,
+                                feature_compatibility=None):
         """Renders a templated configuration from a load balancer object
 
         :param host_amphora: The Amphora this configuration is hosted on
@@ -116,11 +126,13 @@ class JinjaTemplater(object):
         :param socket_path: The socket path for Haproxy process
         :return: Rendered configuration
         """
+        feature_compatibility = feature_compatibility or {}
         loadbalancer = self._transform_loadbalancer(
             host_amphora,
             listener.load_balancer,
             listener,
-            tls_cert)
+            tls_cert,
+            feature_compatibility)
         if not socket_path:
             socket_path = '%s/%s.sock' % (self.base_amp_path, listener.id)
         return self._get_template().render(
@@ -132,19 +144,21 @@ class JinjaTemplater(object):
             constants=constants)
 
     def _transform_loadbalancer(self, host_amphora, loadbalancer, listener,
-                                tls_cert):
+                                tls_cert, feature_compatibility):
         """Transforms a load balancer into an object that will
 
            be processed by the templating system
         """
-        t_listener = self._transform_listener(listener, tls_cert)
+        t_listener = self._transform_listener(
+            listener, tls_cert, feature_compatibility)
         ret_value = {
             'id': loadbalancer.id,
             'vip_address': loadbalancer.vip.ip_address,
             'listener': t_listener,
             'topology': loadbalancer.topology,
             'enabled': loadbalancer.enabled,
-            'host_amphora': self._transform_amphora(host_amphora)
+            'host_amphora': self._transform_amphora(
+                host_amphora, feature_compatibility)
         }
         # NOTE(sbalukoff): Global connection limit should be a sum of all
         # listeners' connection limits. Since Octavia presently supports
@@ -157,7 +171,7 @@ class JinjaTemplater(object):
                 constants.HAPROXY_MAX_MAXCONN)
         return ret_value
 
-    def _transform_amphora(self, amphora):
+    def _transform_amphora(self, amphora, feature_compatibility):
         """Transform an amphora into an object that will
 
            be processed by the templating system.
@@ -175,7 +189,7 @@ class JinjaTemplater(object):
             'vrrp_priority': amphora.vrrp_priority
         }
 
-    def _transform_listener(self, listener, tls_cert):
+    def _transform_listener(self, listener, tls_cert, feature_compatibility):
         """Transforms a listener into an object that will
 
             be processed by the templating system
@@ -213,14 +227,16 @@ class JinjaTemplater(object):
             ret_value['crt_dir'] = os.path.join(self.base_crt_dir, listener.id)
         if listener.default_pool:
             ret_value['default_pool'] = self._transform_pool(
-                listener.default_pool)
-        pools = [self._transform_pool(x) for x in listener.pools]
+                listener.default_pool, feature_compatibility)
+        pools = [self._transform_pool(x, feature_compatibility)
+                 for x in listener.pools]
         ret_value['pools'] = pools
-        l7policies = [self._transform_l7policy(x) for x in listener.l7policies]
+        l7policies = [self._transform_l7policy(x, feature_compatibility)
+                      for x in listener.l7policies]
         ret_value['l7policies'] = l7policies
         return ret_value
 
-    def _transform_pool(self, pool):
+    def _transform_pool(self, pool, feature_compatibility):
         """Transforms a pool into an object that will
 
             be processed by the templating system
@@ -234,21 +250,24 @@ class JinjaTemplater(object):
             'session_persistence': '',
             'enabled': pool.enabled,
             'operating_status': pool.operating_status,
-            'stick_size': CONF.haproxy_amphora.haproxy_stick_size
+            'stick_size': CONF.haproxy_amphora.haproxy_stick_size,
+            constants.HTTP_REUSE: feature_compatibility.get(
+                constants.HTTP_REUSE, False)
         }
-        members = [self._transform_member(x) for x in pool.members]
+        members = [self._transform_member(x, feature_compatibility)
+                   for x in pool.members]
         ret_value['members'] = members
         if pool.health_monitor:
             ret_value['health_monitor'] = self._transform_health_monitor(
-                pool.health_monitor)
+                pool.health_monitor, feature_compatibility)
         if pool.session_persistence:
             ret_value[
                 'session_persistence'] = self._transform_session_persistence(
-                pool.session_persistence)
+                pool.session_persistence, feature_compatibility)
         return ret_value
 
     @staticmethod
-    def _transform_session_persistence(persistence):
+    def _transform_session_persistence(persistence, feature_compatibility):
         """Transforms session persistence into an object that will
 
             be processed by the templating system
@@ -259,7 +278,7 @@ class JinjaTemplater(object):
         }
 
     @staticmethod
-    def _transform_member(member):
+    def _transform_member(member, feature_compatibility):
         """Transforms a member into an object that will
 
             be processed by the templating system
@@ -277,7 +296,7 @@ class JinjaTemplater(object):
             'backup': member.backup
         }
 
-    def _transform_health_monitor(self, monitor):
+    def _transform_health_monitor(self, monitor, feature_compatibility):
         """Transforms a health monitor into an object that will
 
             be processed by the templating system
@@ -299,7 +318,7 @@ class JinjaTemplater(object):
             'enabled': monitor.enabled,
         }
 
-    def _transform_l7policy(self, l7policy):
+    def _transform_l7policy(self, l7policy, feature_compatibility):
         """Transforms an L7 policy into an object that will
 
             be processed by the templating system
@@ -312,15 +331,15 @@ class JinjaTemplater(object):
         }
         if l7policy.redirect_pool:
             ret_value['redirect_pool'] = self._transform_pool(
-                l7policy.redirect_pool)
+                l7policy.redirect_pool, feature_compatibility)
         else:
             ret_value['redirect_pool'] = None
-        l7rules = [self._transform_l7rule(x) for x in l7policy.l7rules
-                   if x.enabled]
+        l7rules = [self._transform_l7rule(x, feature_compatibility)
+                   for x in l7policy.l7rules if x.enabled]
         ret_value['l7rules'] = l7rules
         return ret_value
 
-    def _transform_l7rule(self, l7rule):
+    def _transform_l7rule(self, l7rule, feature_compatibility):
         """Transforms an L7 rule into an object that will
 
             be processed by the templating system

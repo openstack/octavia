@@ -203,7 +203,8 @@ backend {{ pool.id }}
     {% else %}
     mode {{ pool.protocol }}
     {% endif %}
-    {% if (pool.protocol.lower() == constants.PROTOCOL_HTTP.lower() or
+    {% if pool.get(constants.HTTP_REUSE, False) and (
+          pool.protocol.lower() == constants.PROTOCOL_HTTP.lower() or
           (pool.protocol.lower() == constants.PROTOCOL_PROXY.lower() and
            listener.protocol_mode.lower() ==
                constants.PROTOCOL_HTTP.lower()))%}

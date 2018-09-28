@@ -62,6 +62,18 @@ class HaproxyAmphoraLoadBalancerDriver(
             connection_logging=CONF.haproxy_amphora.connection_logging)
         self.udp_jinja = jinja_udp_cfg.LvsJinjaTemplater()
 
+    def _get_haproxy_versions(self, amphora):
+        """Get major and minor version number from haproxy
+
+        Example: ['1', '6']
+
+        :returns version_list: A list with the major and minor numbers
+        """
+
+        version_string = self.client.get_info(amphora)['haproxy_version']
+
+        return version_string.split('.')[:2]
+
     def update_amphora_listeners(self, listeners, amphora_index,
                                  amphorae, timeout_dict=None):
         """Update the amphora with a new configuration.
@@ -87,6 +99,9 @@ class HaproxyAmphoraLoadBalancerDriver(
         amp = amphorae[amphora_index]
         if amp is None or amp.status == consts.DELETED:
             return
+
+        haproxy_versions = self._get_haproxy_versions(amp)
+
         # TODO(johnsom) remove when we don't have a process per listener
         for listener in listeners:
             LOG.debug("%s updating listener %s on amphora %s",
@@ -102,9 +117,9 @@ class HaproxyAmphoraLoadBalancerDriver(
                 certs = self._process_tls_certificates(listener)
                 # Generate HaProxy configuration from listener object
                 config = self.jinja.build_config(
-                    host_amphora=amp,
-                    listener=listener,
-                    tls_cert=certs['tls_cert'])
+                    host_amphora=amp, listener=listener,
+                    tls_cert=certs['tls_cert'],
+                    haproxy_versions=haproxy_versions)
                 self.client.upload_config(amp, listener.id, config,
                                           timeout_dict=timeout_dict)
                 self.client.reload_listener(amp, listener.id,
@@ -137,11 +152,14 @@ class HaproxyAmphoraLoadBalancerDriver(
 
             for amp in listener.load_balancer.amphorae:
                 if amp.status != consts.DELETED:
+
+                    haproxy_versions = self._get_haproxy_versions(amp)
+
                     # Generate HaProxy configuration from listener object
                     config = self.jinja.build_config(
-                        host_amphora=amp,
-                        listener=listener,
-                        tls_cert=certs['tls_cert'])
+                        host_amphora=amp, listener=listener,
+                        tls_cert=certs['tls_cert'],
+                        haproxy_versions=haproxy_versions)
                     self.client.upload_config(amp, listener.id, config)
                     self.client.reload_listener(amp, listener.id)
 

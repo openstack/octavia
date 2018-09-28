@@ -113,7 +113,8 @@ RET_POOL_1 = {
     'session_persistence': RET_PERSISTENCE,
     'enabled': True,
     'operating_status': 'ACTIVE',
-    'stick_size': '10k'}
+    'stick_size': '10k',
+    constants.HTTP_REUSE: False}
 
 RET_POOL_2 = {
     'id': 'sample_pool_id_2',
@@ -124,7 +125,8 @@ RET_POOL_2 = {
     'session_persistence': RET_PERSISTENCE,
     'enabled': True,
     'operating_status': 'ACTIVE',
-    'stick_size': '10k'}
+    'stick_size': '10k',
+    constants.HTTP_REUSE: False}
 
 RET_DEF_TLS_CONT = {'id': 'cont_id_1', 'allencompassingpem': 'imapem',
                     'primary_cn': 'FakeCn'}
@@ -616,12 +618,13 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
                       persistence_timeout=None, persistence_granularity=None,
                       sample_pool=1, monitor_ip_port=False,
                       monitor_proto=None, backup_member=False,
-                      disabled_member=False):
+                      disabled_member=False, has_http_reuse=True):
     proto = 'HTTP' if proto is None else proto
     monitor_proto = proto if monitor_proto is None else monitor_proto
     in_pool = collections.namedtuple(
-        'pool', 'id, protocol, lb_algorithm, members, health_monitor,'
-                'session_persistence, enabled, operating_status')
+        'pool', 'id, protocol, lb_algorithm, members, health_monitor, '
+                'session_persistence, enabled, operating_status, ' +
+                constants.HTTP_REUSE)
     if (proto == constants.PROTOCOL_UDP and
             persistence_type == constants.SESSION_PERSISTENCE_SOURCE_IP):
         kwargs = {'persistence_type': persistence_type,
@@ -656,7 +659,7 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
         health_monitor=mon,
         session_persistence=persis if persistence is True else None,
         enabled=True,
-        operating_status='ACTIVE')
+        operating_status='ACTIVE', has_http_reuse=has_http_reuse)
 
 
 def sample_member_tuple(id, ip, enabled=True, operating_status='ACTIVE',
@@ -839,7 +842,6 @@ def sample_base_expected_config(frontend=None, backend=None,
     if backend is None:
         backend = ("backend sample_pool_id_1\n"
                    "    mode http\n"
-                   "    http-reuse safe\n"
                    "    balance roundrobin\n"
                    "    cookie SRV insert indirect nocache\n"
                    "    timeout check 31s\n"

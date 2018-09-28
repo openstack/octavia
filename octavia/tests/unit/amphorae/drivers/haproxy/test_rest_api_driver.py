@@ -367,6 +367,14 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.client.get_interface.assert_called_once_with(
             self.amp, self.amp.vrrp_ip, timeout_dict=None)
 
+    def test_get_haproxy_versions(self):
+        ref_versions = ['1', '6']
+        self.driver.client.get_info.return_value = {
+            'haproxy_version': u'1.6.3-1ubuntu0.1'}
+        result = self.driver._get_haproxy_versions(self.amp)
+        self.driver.client.get_info.assert_called_once_with(self.amp)
+        self.assertEqual(ref_versions, result)
+
 
 class TestAmphoraAPIClientTest(base.TestCase):
 

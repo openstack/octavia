@@ -329,7 +329,6 @@ AMP_LISTENER_UPDATE = 'octavia-amp-listeners-update'
 GENERATE_SERVER_PEM_TASK = 'GenerateServerPEMTask'
 
 # Batch Member Update constants
-MEMBERS = 'members'
 UNORDERED_MEMBER_UPDATES_FLOW = 'octavia-unordered-member-updates-flow'
 UNORDERED_MEMBER_ACTIVE_FLOW = 'octavia-unordered-member-active-flow'
 UPDATE_ATTRIBUTES_FLOW = 'octavia-update-attributes-flow'
@@ -553,3 +552,6 @@ ENABLE = 'enable'
 
 # systemd amphora netns service prefix
 AMP_NETNS_SVC_PREFIX = 'amphora-netns'
+
+# Amphora Feature Compatibility
+HTTP_REUSE = 'has_http_reuse'
