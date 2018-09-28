@@ -20,7 +20,8 @@
             "project_id": "e3cd678b11784734bc366148aa37580e",
             "id": "8a1412f0-4c32-4257-8b07-af4770b604fd",
             "operating_status": "ONLINE",
-            "name": "redirect-example.com"
+            "name": "redirect-example.com",
+            "tags": ["test_tag"]
         }
     ]
 }

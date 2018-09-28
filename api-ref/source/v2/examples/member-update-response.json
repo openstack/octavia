@@ -14,6 +14,7 @@
         "address": "192.0.2.16",
         "protocol_port": 80,
         "id": "957a1ace-1bd2-449b-8455-820b6e4b63f3",
-        "operating_status": "NO_MONITOR"
+        "operating_status": "NO_MONITOR",
+        "tags": ["updated_tag"]
     }
 }

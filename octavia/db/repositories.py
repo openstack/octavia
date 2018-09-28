@@ -92,6 +92,10 @@ class BaseRepository(object):
         :returns: octavia.common.data_model
         """
         with session.begin(subtransactions=True):
+            tags = model_kwargs.pop('tags', None)
+            if tags:
+                resource = session.query(self.model_class).get(id)
+                resource.tags = tags
             session.query(self.model_class).filter_by(
                 id=id).update(model_kwargs)
 
@@ -697,6 +701,7 @@ class LoadBalancerRepository(BaseRepository):
             subqueryload(models.LoadBalancer.amphorae),
             subqueryload(models.LoadBalancer.pools),
             subqueryload(models.LoadBalancer.listeners),
+            subqueryload(models.LoadBalancer._tags),
             noload('*'))
 
         return super(LoadBalancerRepository, self).get_all(
@@ -817,6 +822,7 @@ class HealthMonitorRepository(BaseRepository):
         # no-load (blank) the tables we don't need
         query_options = (
             subqueryload(models.HealthMonitor.pool),
+            subqueryload(models.HealthMonitor._tags),
             noload('*'))
 
         return super(HealthMonitorRepository, self).get_all(
@@ -868,6 +874,7 @@ class PoolRepository(BaseRepository):
             subqueryload(models.Pool.load_balancer),
             subqueryload(models.Pool.members),
             subqueryload(models.Pool.session_persistence),
+            subqueryload(models.Pool._tags),
             noload('*'))
 
         return super(PoolRepository, self).get_all(
@@ -895,6 +902,7 @@ class MemberRepository(BaseRepository):
         # no-load (blank) the tables we don't need
         query_options = (
             subqueryload(models.Member.pool),
+            subqueryload(models.Member._tags),
             noload('*'))
 
         return super(MemberRepository, self).get_all(
@@ -940,6 +948,7 @@ class ListenerRepository(BaseRepository):
             subqueryload(models.Listener.l7policies),
             subqueryload(models.Listener.load_balancer),
             subqueryload(models.Listener.sni_containers),
+            subqueryload(models.Listener._tags),
             noload('*'))
 
         return super(ListenerRepository, self).get_all(
@@ -986,6 +995,10 @@ class ListenerRepository(BaseRepository):
 
     def update(self, session, id, **model_kwargs):
         with session.begin(subtransactions=True):
+            tags = model_kwargs.pop('tags', None)
+            if tags:
+                resource = session.query(self.model_class).get(id)
+                resource.tags = tags
             listener_db = session.query(self.model_class).filter_by(
                 id=id).first()
             # Verify any newly specified default_pool_id exists
@@ -1461,6 +1474,7 @@ class L7RuleRepository(BaseRepository):
         # no-load (blank) the tables we don't need
         query_options = (
             subqueryload(models.L7Rule.l7policy),
+            subqueryload(models.L7Rule._tags),
             noload('*'))
 
         return super(L7RuleRepository, self).get_all(
@@ -1556,6 +1570,7 @@ class L7PolicyRepository(BaseRepository):
             subqueryload(models.L7Policy.l7rules),
             subqueryload(models.L7Policy.listener),
             subqueryload(models.L7Policy.redirect_pool),
+            subqueryload(models.L7Policy._tags),
             noload('*'))
 
         if not deleted:

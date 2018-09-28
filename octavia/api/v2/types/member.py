@@ -41,6 +41,7 @@ class MemberResponse(BaseMemberType):
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
     monitor_address = wtypes.wsattr(types.IPAddressType())
     monitor_port = wtypes.wsattr(wtypes.IntegerType())
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -82,6 +83,7 @@ class MemberPOST(BaseMemberType):
         minimum=constants.MIN_PORT_NUMBER, maximum=constants.MAX_PORT_NUMBER),
         default=None)
     monitor_address = wtypes.wsattr(types.IPAddressType(), default=None)
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class MemberRootPOST(types.BaseType):
@@ -98,6 +100,7 @@ class MemberPUT(BaseMemberType):
     monitor_port = wtypes.wsattr(wtypes.IntegerType(
         minimum=constants.MIN_PORT_NUMBER, maximum=constants.MAX_PORT_NUMBER))
     monitor_address = wtypes.wsattr(types.IPAddressType())
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class MemberRootPUT(types.BaseType):
@@ -123,6 +126,7 @@ class MemberSingleCreate(BaseMemberType):
     monitor_port = wtypes.wsattr(wtypes.IntegerType(
         minimum=constants.MIN_PORT_NUMBER, maximum=constants.MAX_PORT_NUMBER))
     monitor_address = wtypes.wsattr(types.IPAddressType())
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class MemberStatusResponse(BaseMemberType):

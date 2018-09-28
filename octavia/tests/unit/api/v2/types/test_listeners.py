@@ -61,6 +61,22 @@ class TestListener(object):
                          "loadbalancer_id": uuidutils.generate_uuid()})
         self.assertRaises(ValueError, wsme_json.fromjson, self._type, body)
 
+    def test_invalid_tags(self):
+        body = {"tags": "invalid_tag"}
+        if self._type is lis_type.ListenerPOST:
+            body.update({"protocol": constants.PROTOCOL_HTTP,
+                         "protocol_port": 80,
+                         "loadbalancer_id": uuidutils.generate_uuid()})
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+        body = {"tags": [1, 2]}
+        if self._type is lis_type.ListenerPOST:
+            body.update({"protocol": constants.PROTOCOL_HTTP,
+                         "protocol_port": 80,
+                         "loadbalancer_id": uuidutils.generate_uuid()})
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
 
 class TestListenerPOST(base.BaseTypesTest, TestListener):
 
@@ -70,7 +86,8 @@ class TestListenerPOST(base.BaseTypesTest, TestListener):
         body = {"name": "test", "description": "test", "connection_limit": 10,
                 "protocol": constants.PROTOCOL_HTTP, "protocol_port": 80,
                 "default_pool_id": uuidutils.generate_uuid(),
-                "loadbalancer_id": uuidutils.generate_uuid()}
+                "loadbalancer_id": uuidutils.generate_uuid(),
+                "tags": ['test_tag']}
         listener = wsme_json.fromjson(self._type, body)
         self.assertTrue(listener.admin_state_up)
 
@@ -132,6 +149,7 @@ class TestListenerPUT(base.BaseTypesTest, TestListener):
                 "sni_container_refs": [uuidutils.generate_uuid(),
                                        uuidutils.generate_uuid()],
                 "default_pool_id": uuidutils.generate_uuid(),
-                "insert_headers": {"a": "1", "b": "2"}}
+                "insert_headers": {"a": "1", "b": "2"},
+                "tags": ['test_tag']}
         listener = wsme_json.fromjson(self._type, body)
         self.assertEqual(wsme_types.Unset, listener.admin_state_up)

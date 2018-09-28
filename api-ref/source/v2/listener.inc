@@ -63,6 +63,7 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
+   - tags: tags
    - timeout_client_data: timeout_client_data
    - timeout_member_connect: timeout_member_connect
    - timeout_member_data: timeout_member_data
@@ -149,6 +150,7 @@ Request
    - protocol: protocol
    - protocol_port: protocol_port
    - sni_container_refs: sni_container_refs-optional
+   - tags: tags-optional
    - timeout_client_data: timeout_client_data-optional
    - timeout_member_connect: timeout_member_connect-optional
    - timeout_member_data: timeout_member_data-optional
@@ -219,6 +221,7 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
+   - tags: tags
    - timeout_client_data: timeout_client_data
    - timeout_member_connect: timeout_member_connect
    - timeout_member_data: timeout_member_data
@@ -292,6 +295,7 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
+   - tags: tags
    - timeout_client_data: timeout_client_data
    - timeout_member_connect: timeout_member_connect
    - timeout_member_data: timeout_member_data
@@ -346,6 +350,7 @@ Request
    - listener_id: path-listener-id
    - name: name-optional
    - sni_container_refs: sni_container_refs-optional
+   - tags: tags-optional
    - timeout_client_data: timeout_client_data-optional
    - timeout_member_connect: timeout_member_connect-optional
    - timeout_member_data: timeout_member_data-optional
@@ -386,6 +391,7 @@ Response Parameters
    - protocol_port: protocol_port
    - provisioning_status: provisioning_status
    - sni_container_refs: sni_container_refs
+   - tags: tags
    - timeout_client_data: timeout_client_data
    - timeout_member_connect: timeout_member_connect
    - timeout_member_data: timeout_member_data

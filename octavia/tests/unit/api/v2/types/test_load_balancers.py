@@ -27,7 +27,8 @@ class TestLoadBalancer(object):
 
     def test_load_balancer(self):
         body = {"name": "test_name", "description": "test_description",
-                "vip_subnet_id": uuidutils.generate_uuid()}
+                "vip_subnet_id": uuidutils.generate_uuid(),
+                "tags": ['test']}
         lb = wsme_json.fromjson(self._type, body)
         self.assertTrue(lb.admin_state_up)
 
@@ -58,6 +59,14 @@ class TestLoadBalancer(object):
 
     def test_invalid_qos_policy_id(self):
         body = {"vip_qos_policy_id": "invalid_uuid"}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_invalid_tags(self):
+        body = {"tags": "invalid_tag"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+        body = {"tags": [1, 2]}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
@@ -100,6 +109,7 @@ class TestLoadBalancerPUT(base.BaseTypesTest, TestLoadBalancer):
     _type = lb_type.LoadBalancerPUT
 
     def test_load_balancer(self):
-        body = {"name": "test_name", "description": "test_description"}
+        body = {"name": "test_name", "description": "test_description",
+                "tags": ['test_tag']}
         lb = wsme_json.fromjson(self._type, body)
         self.assertEqual(wsme_types.Unset, lb.admin_state_up)

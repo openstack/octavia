@@ -26,6 +26,7 @@
         "project_id": "e3cd678b11784734bc366148aa37580e",
         "id": "4029d267-3983-4224-a3d0-afb3fe16a2cd",
         "operating_status": "ONLINE",
-        "name": "super-least-conn-pool"
+        "name": "super-least-conn-pool",
+        "tags": ["updated_tag"]
     }
 }

@@ -75,6 +75,7 @@ class PoolResponse(BasePoolType):
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
     healthmonitor_id = wtypes.wsattr(wtypes.UuidType())
     members = wtypes.wsattr([types.IdOnlyType])
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -145,6 +146,7 @@ class PoolPOST(BasePoolType):
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     healthmonitor = wtypes.wsattr(health_monitor.HealthMonitorSingleCreate)
     members = wtypes.wsattr([member.MemberSingleCreate])
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class PoolRootPOST(types.BaseType):
@@ -159,6 +161,7 @@ class PoolPUT(BasePoolType):
     lb_algorithm = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_LB_ALGORITHMS))
     session_persistence = wtypes.wsattr(SessionPersistencePUT)
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class PoolRootPut(types.BaseType):
@@ -176,6 +179,7 @@ class PoolSingleCreate(BasePoolType):
     session_persistence = wtypes.wsattr(SessionPersistencePOST)
     healthmonitor = wtypes.wsattr(health_monitor.HealthMonitorSingleCreate)
     members = wtypes.wsattr([member.MemberSingleCreate])
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class PoolStatusResponse(BasePoolType):

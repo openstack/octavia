@@ -59,6 +59,7 @@ Response Parameters
    - protocol_port: protocol_port-member
    - provisioning_status: provisioning_status
    - subnet_id: subnet_id
+   - tags: tags
    - updated_at: updated_at
    - weight: weight
 
@@ -156,6 +157,7 @@ Request
    - project_id: project_id-optional-deprecated
    - protocol_port: protocol_port
    - subnet_id: subnet_id-optional
+   - tags: tags-optional
    - weight: weight-optional
 
 Request Example
@@ -188,6 +190,7 @@ Response Parameters
    - protocol_port: protocol_port-member
    - provisioning_status: provisioning_status
    - subnet_id: subnet_id
+   - tags: tags
    - updated_at: updated_at
    - weight: weight
 
@@ -254,6 +257,7 @@ Response Parameters
    - protocol_port: protocol_port-member
    - provisioning_status: provisioning_status
    - subnet_id: subnet_id
+   - tags: tags
    - updated_at: updated_at
    - weight: weight
 
@@ -307,6 +311,7 @@ Request
    - monitor_port: monitor_port-optional
    - name: name-optional
    - pool_id: path-pool-id
+   - tags: tags-optional
    - weight: weight-optional
 
 Request Example
@@ -339,6 +344,7 @@ Response Parameters
    - protocol_port: protocol_port-member
    - provisioning_status: provisioning_status
    - subnet_id: subnet_id
+   - tags: tags
    - updated_at: updated_at
    - weight: weight
 
@@ -401,6 +407,7 @@ Request
    - project_id: project_id-optional-deprecated
    - protocol_port: protocol_port
    - subnet_id: subnet_id-optional
+   - tags: tags-optional
    - weight: weight-optional
 
 Request Example

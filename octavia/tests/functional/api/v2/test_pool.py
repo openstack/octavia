@@ -66,7 +66,7 @@ class TestPool(base.BaseAPITest):
             self.lb_id,
             constants.PROTOCOL_HTTP,
             constants.LB_ALGORITHM_ROUND_ROBIN,
-            listener_id=self.listener_id).get(self.root_tag)
+            listener_id=self.listener_id, tags=['test_tag']).get(self.root_tag)
         # Set status to ACTIVE/ONLINE because set_lb_status did it in the db
         api_pool['provisioning_status'] = constants.ACTIVE
         api_pool['operating_status'] = constants.ONLINE
@@ -158,12 +158,13 @@ class TestPool(base.BaseAPITest):
             self.lb_id,
             constants.PROTOCOL_HTTP,
             constants.LB_ALGORITHM_ROUND_ROBIN,
-            listener_id=self.listener_id).get(self.root_tag)
+            listener_id=self.listener_id, tags=['test_tag']).get(self.root_tag)
         self.set_lb_status(lb_id=self.lb_id)
         pools = self.get(self.POOLS_PATH).json.get(self.root_tag_list)
         self.assertIsInstance(pools, list)
         self.assertEqual(1, len(pools))
         self.assertEqual(api_pool.get('id'), pools[0].get('id'))
+        self.assertEqual(['test_tag'], pools[0]['tags'])
 
     def test_get_all_hides_deleted(self):
         api_pool = self.create_pool(
@@ -556,7 +557,8 @@ class TestPool(base.BaseAPITest):
             self.lb_id,
             constants.PROTOCOL_HTTP,
             constants.LB_ALGORITHM_ROUND_ROBIN,
-            listener_id=self.listener_id).get(self.root_tag)
+            listener_id=self.listener_id,
+            tags=['test_tag']).get(self.root_tag)
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=api_pool.get('id'),
@@ -568,6 +570,7 @@ class TestPool(base.BaseAPITest):
         self.assertEqual(constants.PROTOCOL_HTTP, api_pool.get('protocol'))
         self.assertEqual(constants.LB_ALGORITHM_ROUND_ROBIN,
                          api_pool.get('lb_algorithm'))
+        self.assertEqual(['test_tag'], api_pool['tags'])
         self.assertIsNotNone(api_pool.get('created_at'))
         self.assertIsNone(api_pool.get('updated_at'))
         self.assert_correct_status(
@@ -900,9 +903,9 @@ class TestPool(base.BaseAPITest):
             self.lb_id,
             constants.PROTOCOL_HTTP,
             constants.LB_ALGORITHM_ROUND_ROBIN,
-            listener_id=self.listener_id).get(self.root_tag)
+            listener_id=self.listener_id, tags=['old_tag']).get(self.root_tag)
         self.set_lb_status(lb_id=self.lb_id)
-        new_pool = {'name': 'new_name'}
+        new_pool = {'name': 'new_name', 'tags': ['new_tag']}
         self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
                  self._build_body(new_pool))
         self.assert_correct_status(
@@ -915,6 +918,7 @@ class TestPool(base.BaseAPITest):
         response = self.get(self.POOL_PATH.format(
             pool_id=api_pool.get('id'))).json.get(self.root_tag)
         self.assertEqual('new_name', response.get('name'))
+        self.assertEqual(['new_tag'], response['tags'])
         self.assertIsNotNone(response.get('created_at'))
         self.assertIsNotNone(response.get('updated_at'))
         self.assert_correct_status(

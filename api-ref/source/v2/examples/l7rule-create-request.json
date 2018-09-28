@@ -4,6 +4,7 @@
         "invert": false,
         "type": "PATH",
         "value": "/images*",
-        "admin_state_up": true
+        "admin_state_up": true,
+        "tags": ["test_tag"]
     }
 }

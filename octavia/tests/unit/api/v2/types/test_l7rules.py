@@ -28,7 +28,7 @@ class TestL7RulePOST(base.BaseTypesTest):
     def test_l7rule(self):
         body = {"type": constants.L7RULE_TYPE_PATH,
                 "compare_type": constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
-                "value": "/api"}
+                "value": "/api", "tags": ['test_tag']}
         l7rule = wsme_json.fromjson(self._type, body)
         self.assertEqual(wsme_types.Unset, l7rule.key)
         self.assertFalse(l7rule.invert)
@@ -97,6 +97,20 @@ class TestL7RulePOST(base.BaseTypesTest):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
+    def test_invalid_tags(self):
+        body = {"type": constants.L7RULE_TYPE_PATH,
+                "compare_type": constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+                "value": "/api",
+                "tags": "invalid_tag"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+        body = {"type": constants.L7RULE_TYPE_PATH,
+                "compare_type": constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+                "value": "/api",
+                "tags": [1, 2]}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
 
 class TestL7RulePUT(base.BaseTypesTest):
 
@@ -105,7 +119,7 @@ class TestL7RulePUT(base.BaseTypesTest):
     def test_l7rule(self):
         body = {"type": constants.L7RULE_TYPE_PATH,
                 "compare_type": constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
-                "value": "/api"}
+                "value": "/api", "tags": ['test_tag']}
         l7rule = wsme_json.fromjson(self._type, body)
         self.assertEqual(wsme_types.Unset, l7rule.key)
         self.assertFalse(l7rule.invert)
@@ -137,5 +151,13 @@ class TestL7RulePUT(base.BaseTypesTest):
 
     def test_invalid_key(self):
         body = {"key": 123}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_invalid_tags(self):
+        body = {"tags": "invalid_tag"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+        body = {"tags": [1, 2]}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)

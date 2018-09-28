@@ -58,6 +58,7 @@ Response Parameters
    - project_id: project_id
    - provider: provider
    - provisioning_status: provisioning_status
+   - tags: tags
    - updated_at: updated_at
    - vip_address: vip_address
    - vip_network_id: vip_network_id
@@ -168,6 +169,7 @@ Request
    - name: name-optional
    - project_id: project_id-optional
    - provider: provider-optional
+   - tags: tags-optional
    - vip_address: vip_address-optional
    - vip_network_id: vip_network_id-optional
    - vip_port_id: vip_port_id-optional
@@ -204,6 +206,7 @@ Response Parameters
    - project_id: project_id
    - provider: provider
    - provisioning_status: provisioning_status
+   - tags: tags
    - updated_at: updated_at
    - vip_address: vip_address
    - vip_network_id: vip_network_id
@@ -296,6 +299,7 @@ Response Parameters
    - project_id: project_id
    - provider: provider
    - provisioning_status: provisioning_status
+   - tags: tags
    - updated_at: updated_at
    - vip_address: vip_address
    - vip_network_id: vip_network_id
@@ -348,6 +352,7 @@ Request
    - loadbalancer: loadbalancer
    - loadbalancer_id: path-loadbalancer-id
    - name: name-optional
+   - tags: tags-optional
    - vip_qos_policy_id: vip_qos_policy_id-optional
 
 Request Example
@@ -380,6 +385,7 @@ Response Parameters
    - project_id: project_id
    - provider: provider
    - provisioning_status: provisioning_status
+   - tags: tags
    - updated_at: updated_at
    - vip_address: vip_address
    - vip_network_id: vip_network_id

@@ -27,7 +27,7 @@ class TestMemberPOST(base.BaseTypesTest):
 
     def test_member(self):
         body = {"name": "member1", "address": "10.0.0.1",
-                "protocol_port": 80}
+                "protocol_port": 80, "tags": ['test_tag']}
         member = wsme_json.fromjson(self._type, body)
         self.assertTrue(member.admin_state_up)
         self.assertEqual(1, member.weight)
@@ -69,6 +69,15 @@ class TestMemberPOST(base.BaseTypesTest):
                 "weight": "test"}
         self.assertRaises(ValueError, wsme_json.fromjson, self._type, body)
 
+    def test_invalid_tags(self):
+        body = {"address": "10.0.0.1", "protocol_port": 443,
+                "tags": "invalid_tag"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+        body = {"address": "10.0.0.1", "protocol_port": 443, "tags": [1, 2]}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
     def test_min_weight(self):
         body = {"address": "10.0.0.1", "protocol_port": 443,
                 "weight": constants.MIN_WEIGHT - 1}
@@ -101,7 +110,7 @@ class TestMemberPUT(base.BaseTypesTest):
     _type = member_type.MemberPUT
 
     def test_member(self):
-        body = {"name": "new_name"}
+        body = {"name": "new_name", "tags": ['new_tag']}
         member = wsme_json.fromjson(self._type, body)
         self.assertEqual(wsme_types.Unset, member.weight)
         self.assertEqual(wsme_types.Unset, member.admin_state_up)
@@ -123,6 +132,14 @@ class TestMemberPUT(base.BaseTypesTest):
     def test_invalid_weight(self):
         body = {"weight": "test"}
         self.assertRaises(ValueError, wsme_json.fromjson, self._type, body)
+
+    def test_invalid_tags(self):
+        body = {"tags": "invalid_tag"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+        body = {"tags": [1, 2]}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
 
     def test_min_weight(self):
         body = {"weight": constants.MIN_WEIGHT - 1}

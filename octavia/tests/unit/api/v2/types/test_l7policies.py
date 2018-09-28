@@ -32,7 +32,8 @@ class TestL7PolicyPOST(base.BaseTypesTest):
 
     def test_l7policy(self):
         body = {"listener_id": self.listener_id,
-                "action": constants.L7POLICY_ACTION_REJECT}
+                "action": constants.L7POLICY_ACTION_REJECT,
+                "tags": ['test_tag']}
         l7policy = wsme_json.fromjson(self._type, body)
         self.assertEqual(self.listener_id, l7policy.listener_id)
         self.assertEqual(constants.MAX_POLICY_POSITION, l7policy.position)
@@ -71,6 +72,18 @@ class TestL7PolicyPOST(base.BaseTypesTest):
                 "action": constants.L7POLICY_ACTION_REJECT,
                 "position": "notvalid"}
         self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_invalid_tags(self):
+        body = {"listener_id": self.listener_id,
+                "action": constants.L7POLICY_ACTION_REJECT,
+                "tags": "invalid_tag"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+        body = {"listener_id": self.listener_id,
+                "action": constants.L7POLICY_ACTION_REJECT,
+                "tags": [1, 2]}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
     def test_l7policy_min_position(self):
@@ -118,7 +131,8 @@ class TestL7PolicyPUT(base.BaseTypesTest):
 
     def test_l7policy(self):
         body = {"action": constants.L7POLICY_ACTION_REJECT,
-                "position": constants.MIN_POLICY_POSITION}
+                "position": constants.MIN_POLICY_POSITION,
+                "tags": ['test_tag']}
         l7policy = wsme_json.fromjson(self._type, body)
         self.assertEqual(constants.MIN_POLICY_POSITION, l7policy.position)
         self.assertEqual(wsme_types.Unset, l7policy.redirect_url)
@@ -146,5 +160,13 @@ class TestL7PolicyPUT(base.BaseTypesTest):
 
     def test_invalid_action(self):
         body = {"action": "test"}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_invalid_tags(self):
+        body = {"tags": "invalid_tag"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+        body = {"tags": [1, 2]}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)

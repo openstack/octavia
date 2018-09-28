@@ -51,7 +51,7 @@ class TestL7Rule(base.BaseAPITest):
         l7rule = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,
             constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
-            '/api').get(self.root_tag)
+            '/api', tags=['test_tag']).get(self.root_tag)
         response = self.get(self.l7rule_path.format(
             l7rule_id=l7rule.get('id'))).json.get(self.root_tag)
         self.assertEqual(l7rule, response)
@@ -128,20 +128,23 @@ class TestL7Rule(base.BaseAPITest):
         api_l7r_a = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,
             constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
-            '/api').get(self.root_tag)
+            '/api', tags=['test_tag1']).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         api_l7r_b = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_COOKIE,
             constants.L7RULE_COMPARE_TYPE_CONTAINS, 'some-value',
-            key='some-cookie').get(self.root_tag)
+            key='some-cookie', tags=['test_tag2']).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         rules = self.get(self.l7rules_path).json.get(self.root_tag_list)
         self.assertIsInstance(rules, list)
         self.assertEqual(2, len(rules))
-        rule_id_types = [(r.get('id'), r.get('type')) for r in rules]
-        self.assertIn((api_l7r_a.get('id'), api_l7r_a.get('type')),
+        rule_id_types = [(r.get('id'), r.get('type'),
+                          r['tags']) for r in rules]
+        self.assertIn((api_l7r_a.get('id'), api_l7r_a.get('type'),
+                       api_l7r_a['tags']),
                       rule_id_types)
-        self.assertIn((api_l7r_b.get('id'), api_l7r_b.get('type')),
+        self.assertIn((api_l7r_b.get('id'), api_l7r_b.get('type'),
+                       api_l7r_b['tags']),
                       rule_id_types)
 
     def test_get_all_authorized(self):
@@ -594,13 +597,14 @@ class TestL7Rule(base.BaseAPITest):
         api_l7rule = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,
             constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
-            '/api').get(self.root_tag)
+            '/api', tags=['old_tag']).get(self.root_tag)
         self.set_lb_status(self.lb_id)
-        new_l7rule = {'value': '/images'}
+        new_l7rule = {'value': '/images', 'tags': ['new_tag']}
         response = self.put(self.l7rule_path.format(
             l7rule_id=api_l7rule.get('id')),
             self._build_body(new_l7rule)).json.get(self.root_tag)
         self.assertEqual('/images', response.get('value'))
+        self.assertEqual(['new_tag'], response['tags'])
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
             l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),

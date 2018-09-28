@@ -12,6 +12,7 @@
             "project_id": "e3cd678b11784734bc366148aa37580e",
             "type": "PATH",
             "id": "16621dbb-a736-4888-a57a-3ecd53df784c",
-            "operating_status": "OFFLINE"
+            "operating_status": "OFFLINE",
+            "tags": ["test_tag"]
         }
 }

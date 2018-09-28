@@ -43,6 +43,7 @@ class L7PolicyResponse(BaseL7PolicyType):
     rules = wtypes.wsattr([types.IdOnlyType])
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -94,6 +95,7 @@ class L7PolicyPOST(BaseL7PolicyType):
         default=constants.MAX_POLICY_POSITION)
     listener_id = wtypes.wsattr(wtypes.UuidType(), mandatory=True)
     rules = wtypes.wsattr([l7rule.L7RuleSingleCreate])
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class L7PolicyRootPOST(types.BaseType):
@@ -113,6 +115,7 @@ class L7PolicyPUT(BaseL7PolicyType):
     position = wtypes.wsattr(wtypes.IntegerType(
         minimum=constants.MIN_POLICY_POSITION,
         maximum=constants.MAX_POLICY_POSITION))
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class L7PolicyRootPUT(types.BaseType):
@@ -135,3 +138,4 @@ class L7PolicySingleCreate(BaseL7PolicyType):
         maximum=constants.MAX_POLICY_POSITION),
         default=constants.MAX_POLICY_POSITION)
     rules = wtypes.wsattr([l7rule.L7RuleSingleCreate])
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))

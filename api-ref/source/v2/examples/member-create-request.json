@@ -7,6 +7,7 @@
         "address": "192.0.2.16",
         "protocol_port": "80",
         "monitor_port": 8080,
-        "backup": false
+        "backup": false,
+        "tags": ["test_tag"]
     }
 }

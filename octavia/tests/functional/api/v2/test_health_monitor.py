@@ -81,7 +81,7 @@ class TestHealthMonitor(base.BaseAPITest):
     def test_get(self):
         api_hm = self.create_health_monitor(
             self.pool_id, constants.HEALTH_MONITOR_HTTP,
-            1, 1, 1, 1).get(self.root_tag)
+            1, 1, 1, 1, tags=['test_tag']).get(self.root_tag)
         # Set status to ACTIVE/ONLINE because set_lb_status did it in the db
         api_hm['provisioning_status'] = constants.ACTIVE
         api_hm['operating_status'] = constants.ONLINE
@@ -168,12 +168,13 @@ class TestHealthMonitor(base.BaseAPITest):
     def test_get_all(self):
         api_hm = self.create_health_monitor(
             self.pool_id, constants.HEALTH_MONITOR_HTTP,
-            1, 1, 1, 1).get(self.root_tag)
+            1, 1, 1, 1, tags=['test_tag']).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         hms = self.get(self.HMS_PATH).json.get(self.root_tag_list)
         self.assertIsInstance(hms, list)
         self.assertEqual(1, len(hms))
         self.assertEqual(api_hm.get('id'), hms[0].get('id'))
+        self.assertEqual(api_hm['tags'], hms[0]['tags'])
 
     def test_get_all_not_authorized(self):
         self.create_health_monitor(
@@ -1112,9 +1113,10 @@ class TestHealthMonitor(base.BaseAPITest):
     def test_update(self):
         api_hm = self.create_health_monitor(
             self.pool_with_listener_id,
-            constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1).get(self.root_tag)
+            constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1,
+            tags=['old_tag']).get(self.root_tag)
         self.set_lb_status(self.lb_id)
-        new_hm = {'max_retries': 2}
+        new_hm = {'max_retries': 2, 'tags': ['new_tag']}
         self.put(
             self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
             self._build_body(new_hm))
@@ -1128,6 +1130,7 @@ class TestHealthMonitor(base.BaseAPITest):
         response = self.get(self.HM_PATH.format(
             healthmonitor_id=api_hm.get('id'))).json.get(self.root_tag)
         self.assertEqual(2, response[constants.MAX_RETRIES])
+        self.assertEqual(['new_tag'], response['tags'])
 
     def test_update_HTTPS(self):
         api_hm = self.create_health_monitor(

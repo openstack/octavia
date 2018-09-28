@@ -151,4 +151,35 @@ class NameMixin(object):
     name = sa.Column(sa.String(255), nullable=True)
 
 
+class TagMixin(object):
+    """Tags mixin to add to classes which need tags.
+
+    The class must realize the specified db relationship as well.
+    """
+
+    @property
+    def tags(self):
+        if self._tags:
+            return [each_tag.tag for each_tag in self._tags]
+        return []
+
+    @tags.setter
+    def tags(self, values):
+        new_tags = []
+        if values:
+            for tag in values:
+                tag_ref = Tags()
+                tag_ref.resource_id = self.id
+                tag_ref.tag = tag
+                new_tags.append(tag_ref)
+        self._tags = new_tags
+
+
 BASE = declarative.declarative_base(cls=OctaviaBase)
+
+
+class Tags(BASE):
+    __tablename__ = "tags"
+
+    resource_id = sa.Column(sa.String(36), primary_key=True)
+    tag = sa.Column(sa.String(255), primary_key=True, index=True)

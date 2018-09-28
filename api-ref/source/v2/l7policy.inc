@@ -60,6 +60,7 @@ Response Parameters
    - redirect_prefix: l7policy-redirect-prefix
    - redirect_url: l7policy-redirect-url
    - rules: l7policy-rule-ids
+   - tags: tags
    - updated_at: updated_at
 
 Response Example
@@ -142,6 +143,7 @@ Request
    - redirect_pool_id: l7policy-redirect-pool_id-optional
    - redirect_prefix: l7policy-redirect-prefix-optional
    - redirect_url: l7policy-redirect-url-optional
+   - tags: tags-optional
 
 Request Example
 ----------------
@@ -175,6 +177,7 @@ Response Parameters
    - redirect_prefix: l7policy-redirect-prefix
    - redirect_url: l7policy-redirect-url
    - rules: l7policy-rule-ids
+   - tags: tags
    - updated_at: updated_at
 
 Response Example
@@ -241,6 +244,7 @@ Response Parameters
    - redirect_prefix: l7policy-redirect-prefix
    - redirect_url: l7policy-redirect-url
    - rules: l7policy-rule-ids
+   - tags: tags
    - updated_at: updated_at
 
 
@@ -296,6 +300,7 @@ Request
    - redirect_pool_id: l7policy-redirect-pool_id-optional
    - redirect_prefix: l7policy-redirect-prefix-optional
    - redirect_url: l7policy-redirect-url-optional
+   - tags: tags-optional
 
 Request Example
 ---------------
@@ -329,6 +334,7 @@ Response Parameters
    - redirect_prefix: l7policy-redirect-prefix
    - redirect_url: l7policy-redirect-url
    - rules: l7policy-rule-ids
+   - tags: tags
    - updated_at: updated_at
 
 Response Example

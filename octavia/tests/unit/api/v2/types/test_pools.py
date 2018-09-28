@@ -52,7 +52,8 @@ class TestPoolPOST(base.BaseTypesTest):
             "loadbalancer_id": uuidutils.generate_uuid(),
             "listener_id": uuidutils.generate_uuid(),
             "protocol": constants.PROTOCOL_HTTP,
-            "lb_algorithm": constants.LB_ALGORITHM_ROUND_ROBIN}
+            "lb_algorithm": constants.LB_ALGORITHM_ROUND_ROBIN,
+            "tags": ['test_tag']}
         pool = wsme_json.fromjson(self._type, body)
         self.assertTrue(pool.admin_state_up)
 
@@ -132,13 +133,25 @@ class TestPoolPOST(base.BaseTypesTest):
         pool = wsme_json.fromjson(self._type, body)
         self.assertEqual(pool.project_id, body['project_id'])
 
+    def test_invalid_tags(self):
+        body = {"protocol": constants.PROTOCOL_HTTP,
+                "lb_algorithm": constants.LB_ALGORITHM_ROUND_ROBIN,
+                "tags": "invalid_tag"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+        body = {"protocol": constants.PROTOCOL_HTTP,
+                "lb_algorithm": constants.LB_ALGORITHM_ROUND_ROBIN,
+                "tags": [1, 2]}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
 
 class TestPoolPUT(base.BaseTypesTest):
 
     _type = pool_type.PoolPUT
 
     def test_pool(self):
-        body = {"name": "test_name"}
+        body = {"name": "test_name", "tags": ['new_tag']}
         pool = wsme_json.fromjson(self._type, body)
         self.assertEqual(wsme_types.Unset, pool.admin_state_up)
 
@@ -164,6 +177,14 @@ class TestPoolPUT(base.BaseTypesTest):
 
     def test_invalid_lb_algorithm(self):
         body = {"lb_algorithm": "source_ip"}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_invalid_tags(self):
+        body = {"tags": "invalid_tag"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+        body = {"tags": [1, 2]}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 

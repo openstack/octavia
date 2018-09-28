@@ -60,6 +60,7 @@ Response Parameters
    - protocol: protocol-pools
    - provisioning_status: provisioning_status
    - session_persistence: session_persistence
+   - tags: tags
    - updated_at: updated_at
 
 Response Example
@@ -167,6 +168,7 @@ Request
    - project_id: project_id-optional-deprecated
    - protocol: protocol-pools
    - session_persistence: session_persistence-optional
+   - tags: tags-optional
 
 .. _session_persistence:
 
@@ -243,6 +245,7 @@ Response Parameters
    - protocol: protocol-pools
    - provisioning_status: provisioning_status
    - session_persistence: session_persistence
+   - tags: tags
    - updated_at: updated_at
 
 Response Example
@@ -309,6 +312,7 @@ Response Parameters
    - protocol: protocol-pools
    - provisioning_status: provisioning_status
    - session_persistence: session_persistence
+   - tags: tags
    - updated_at: updated_at
 
 Response Example
@@ -356,6 +360,7 @@ Request
    - name: name-optional
    - pool_id: path-pool-id
    - session_persistence: session_persistence-optional
+   - tags: tags-optional
 
 Request Example
 ---------------
@@ -389,6 +394,7 @@ Response Parameters
    - protocol: protocol-pools
    - provisioning_status: provisioning_status
    - session_persistence: session_persistence
+   - tags: tags
    - updated_at: updated_at
 
 Response Example

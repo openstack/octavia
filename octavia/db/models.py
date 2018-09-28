@@ -169,7 +169,8 @@ class ListenerStatistics(base_models.BASE):
 
 
 class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
-             models.TimestampMixin, base_models.NameMixin):
+             models.TimestampMixin, base_models.NameMixin,
+             base_models.TagMixin):
 
     __data_model__ = data_models.Member
 
@@ -206,10 +207,18 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
     enabled = sa.Column(sa.Boolean(), nullable=False)
     pool = orm.relationship("Pool", back_populates="members")
 
+    _tags = orm.relationship(
+        'Tags',
+        single_parent=True,
+        lazy='subquery',
+        cascade='all,delete-orphan',
+        primaryjoin='and_(foreign(Tags.resource_id)==Member.id)'
+    )
+
 
 class HealthMonitor(base_models.BASE, base_models.IdMixin,
                     base_models.ProjectMixin, models.TimestampMixin,
-                    base_models.NameMixin):
+                    base_models.NameMixin, base_models.TagMixin):
 
     __data_model__ = data_models.HealthMonitor
 
@@ -252,10 +261,17 @@ class HealthMonitor(base_models.BASE, base_models.IdMixin,
         sa.ForeignKey("operating_status.name",
                       name="fk_health_monitor_operating_status_name"),
         nullable=False)
+    _tags = orm.relationship(
+        'Tags',
+        single_parent=True,
+        lazy='subquery',
+        cascade='all,delete-orphan',
+        primaryjoin='and_(foreign(Tags.resource_id)==HealthMonitor.id)'
+    )
 
 
 class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
-           models.TimestampMixin, base_models.NameMixin):
+           models.TimestampMixin, base_models.NameMixin, base_models.TagMixin):
 
     __data_model__ = data_models.Pool
 
@@ -300,6 +316,13 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
                                           back_populates="default_pool")
     l7policies = orm.relationship("L7Policy", uselist=True,
                                   back_populates="redirect_pool")
+    _tags = orm.relationship(
+        'Tags',
+        single_parent=True,
+        lazy='subquery',
+        cascade='all,delete-orphan',
+        primaryjoin='and_(foreign(Tags.resource_id)==Pool.id)'
+    )
 
     # This property should be a unique list of any listeners that reference
     # this pool as its default_pool and any listeners referenced by enabled
@@ -321,7 +344,7 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
 
 class LoadBalancer(base_models.BASE, base_models.IdMixin,
                    base_models.ProjectMixin, models.TimestampMixin,
-                   base_models.NameMixin):
+                   base_models.NameMixin, base_models.TagMixin):
 
     __data_model__ = data_models.LoadBalancer
 
@@ -355,6 +378,13 @@ class LoadBalancer(base_models.BASE, base_models.IdMixin,
                              back_populates="load_balancer")
     listeners = orm.relationship('Listener', cascade='delete', uselist=True,
                                  back_populates='load_balancer')
+    _tags = orm.relationship(
+        'Tags',
+        single_parent=True,
+        lazy='subquery',
+        cascade='all,delete-orphan',
+        primaryjoin='and_(foreign(Tags.resource_id)==LoadBalancer.id)'
+    )
 
 
 class VRRPGroup(base_models.BASE):
@@ -402,7 +432,7 @@ class Vip(base_models.BASE):
 
 class Listener(base_models.BASE, base_models.IdMixin,
                base_models.ProjectMixin, models.TimestampMixin,
-               base_models.NameMixin):
+               base_models.NameMixin, base_models.TagMixin):
 
     __data_model__ = data_models.Listener
 
@@ -461,6 +491,14 @@ class Listener(base_models.BASE, base_models.IdMixin,
     timeout_member_connect = sa.Column(sa.Integer, nullable=True)
     timeout_member_data = sa.Column(sa.Integer, nullable=True)
     timeout_tcp_inspect = sa.Column(sa.Integer, nullable=True)
+
+    _tags = orm.relationship(
+        'Tags',
+        single_parent=True,
+        lazy='subquery',
+        cascade='all,delete-orphan',
+        primaryjoin='and_(foreign(Tags.resource_id)==Listener.id)'
+    )
 
     # This property should be a unique list of the default_pool and anything
     # referenced by enabled L7Policies with at least one rule that also
@@ -552,7 +590,7 @@ class AmphoraHealth(base_models.BASE):
 
 
 class L7Rule(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
-             models.TimestampMixin):
+             models.TimestampMixin, base_models.TagMixin):
 
     __data_model__ = data_models.L7Rule
 
@@ -592,10 +630,18 @@ class L7Rule(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         sa.ForeignKey("operating_status.name",
                       name="fk_l7rule_operating_status_name"),
         nullable=False)
+    _tags = orm.relationship(
+        'Tags',
+        single_parent=True,
+        lazy='subquery',
+        cascade='all,delete-orphan',
+        primaryjoin='and_(foreign(Tags.resource_id)==L7Rule.id)'
+    )
 
 
 class L7Policy(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
-               models.TimestampMixin, base_models.NameMixin):
+               models.TimestampMixin, base_models.NameMixin,
+               base_models.TagMixin):
 
     __data_model__ = data_models.L7Policy
 
@@ -642,6 +688,13 @@ class L7Policy(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         sa.ForeignKey("operating_status.name",
                       name="fk_l7policy_operating_status_name"),
         nullable=False)
+    _tags = orm.relationship(
+        'Tags',
+        single_parent=True,
+        lazy='subquery',
+        cascade='all,delete-orphan',
+        primaryjoin='and_(foreign(Tags.resource_id)==L7Policy.id)'
+    )
 
 
 class Quotas(base_models.BASE):
