@@ -1187,6 +1187,78 @@ class AmphoraRepository(BaseRepository):
 
         return amp.to_data_model()
 
+    def get_lb_for_health_update(self, session, amphora_id):
+        """This method is for the health manager status update process.
+
+        This is a time sensitive query that occurs often.
+        It is an explicit query as the ORM produces a poorly
+        optimized query.
+
+        Use extreme caution making any changes to this query
+        as it can impact the scalability of the health manager.
+        All changes should be analyzed using SQL "EXPLAIN" to
+        make sure only indexes are being used.
+        Changes should also be evaluated using the stressHM tool.
+
+        Note: The returned object is flat and not a graph representation
+              of the load balancer as it is not needed. This is on
+              purpose to optimize the processing time. This is not in
+              the normal data model objects.
+
+        :param session: A Sql Alchemy database session.
+        :param amphora_id: The amphora ID to lookup the load balancer for.
+        :returns: A dictionary containing the required load balancer details.
+        """
+        rows = session.execute(
+            "SELECT load_balancer.id, load_balancer.enabled, "
+            "load_balancer.provisioning_status AS lb_prov_status, "
+            "load_balancer.operating_status AS lb_op_status, "
+            "listener.id AS list_id, "
+            "listener.operating_status AS list_op_status, "
+            "pool.id AS pool_id, "
+            "pool.operating_status AS pool_op_status, "
+            "member.id AS member_id, "
+            "member.operating_status AS mem_op_status from "
+            "amphora JOIN load_balancer ON "
+            "amphora.load_balancer_id = load_balancer.id LEFT JOIN "
+            "listener ON load_balancer.id = listener.load_balancer_id "
+            "LEFT JOIN pool ON load_balancer.id = pool.load_balancer_id "
+            "LEFT JOIN member ON pool.id = member.pool_id WHERE "
+            "amphora.id = :amp_id AND amphora.status != :deleted AND "
+            "load_balancer.provisioning_status != :deleted;",
+            {'amp_id': amphora_id, 'deleted': consts.DELETED}).fetchall()
+
+        lb = {}
+        listeners = {}
+        pools = {}
+        for row in rows:
+            if not lb:
+                lb['id'] = row['id']
+                lb['enabled'] = row['enabled'] == 1
+                lb['provisioning_status'] = row['lb_prov_status']
+                lb['operating_status'] = row['lb_op_status']
+            if row['list_id'] and row['list_id'] not in listeners:
+                listener = {'operating_status': row['list_op_status']}
+                listeners[row['list_id']] = listener
+            if row['pool_id']:
+                if row['pool_id'] in pools and row['member_id']:
+                    member = {'operating_status': row['mem_op_status']}
+                    pools[row['pool_id']]['members'][row['member_id']] = member
+                else:
+                    pool = {'operating_status': row['pool_op_status'],
+                            'members': {}}
+                    if row['member_id']:
+                        member = {'operating_status': row['mem_op_status']}
+                        pool['members'][row['member_id']] = member
+                    pools[row['pool_id']] = pool
+
+        if listeners:
+            lb['listeners'] = listeners
+        if pools:
+            lb['pools'] = pools
+
+        return lb
+
 
 class AmphoraBuildReqRepository(BaseRepository):
     model_class = models.AmphoraBuildRequest

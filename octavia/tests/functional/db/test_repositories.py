@@ -40,6 +40,9 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
     FAKE_UUID_2 = uuidutils.generate_uuid()
     FAKE_UUID_3 = uuidutils.generate_uuid()
     FAKE_UUID_4 = uuidutils.generate_uuid()
+    FAKE_UUID_5 = uuidutils.generate_uuid()
+    FAKE_UUID_6 = uuidutils.generate_uuid()
+    FAKE_UUID_7 = uuidutils.generate_uuid()
     FAKE_EXP_AGE = 10
 
     def setUp(self):
@@ -3109,6 +3112,81 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
 
         self.assertEqual(cert_expired_amphora.cert_expiration, expiration)
         self.assertEqual(cert_expired_amphora.id, amphora2.id)
+
+    def test_get_lb_for_health_update(self):
+        amphora1 = self.create_amphora(self.FAKE_UUID_1)
+        amphora2 = self.create_amphora(self.FAKE_UUID_3)
+        self.amphora_repo.associate(self.session, self.lb.id, amphora1.id)
+        self.amphora_repo.associate(self.session, self.lb.id, amphora2.id)
+
+        lb_ref = {'enabled': True, 'id': self.lb.id,
+                  'operating_status': constants.ONLINE,
+                  'provisioning_status': constants.ACTIVE}
+
+        # Test with just a load balancer
+        lb = self.amphora_repo.get_lb_for_health_update(self.session,
+                                                        self.FAKE_UUID_1)
+        self.assertEqual(lb_ref, lb)
+
+        pool = self.pool_repo.create(
+            self.session, id=self.FAKE_UUID_4, project_id=self.FAKE_UUID_2,
+            name="pool_test", description="pool_description",
+            protocol=constants.PROTOCOL_HTTP, load_balancer_id=self.lb.id,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, enabled=True)
+
+        pool_ref = {pool.id: {'members': {},
+                    'operating_status': constants.ONLINE}}
+        lb_ref['pools'] = pool_ref
+
+        # Test with an LB and a pool
+        lb = self.amphora_repo.get_lb_for_health_update(self.session,
+                                                        self.FAKE_UUID_1)
+        self.assertEqual(lb_ref, lb)
+
+        listener = self.listener_repo.create(
+            self.session, id=self.FAKE_UUID_5, project_id=self.FAKE_UUID_2,
+            name="listener_name", description="listener_description",
+            protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            connection_limit=1, operating_status=constants.ONLINE,
+            load_balancer_id=self.lb.id, provisioning_status=constants.ACTIVE,
+            enabled=True, peer_port=1025, default_pool_id=pool.id)
+
+        listener_ref = {listener.id: {'operating_status': constants.ONLINE}}
+        lb_ref['listeners'] = listener_ref
+
+        # Test with an LB, pool, and listener (no members)
+        lb = self.amphora_repo.get_lb_for_health_update(self.session,
+                                                        self.FAKE_UUID_1)
+        self.assertEqual(lb_ref, lb)
+
+        member1 = self.member_repo.create(self.session, id=self.FAKE_UUID_6,
+                                          project_id=self.FAKE_UUID_2,
+                                          pool_id=pool.id,
+                                          ip_address="192.0.2.1",
+                                          protocol_port=80, enabled=True,
+                                          provisioning_status=constants.ACTIVE,
+                                          operating_status=constants.ONLINE,
+                                          backup=False)
+
+        member2 = self.member_repo.create(self.session, id=self.FAKE_UUID_7,
+                                          project_id=self.FAKE_UUID_2,
+                                          pool_id=pool.id,
+                                          ip_address="192.0.2.21",
+                                          protocol_port=80, enabled=True,
+                                          provisioning_status=constants.ACTIVE,
+                                          operating_status=constants.OFFLINE,
+                                          backup=False)
+
+        member_ref = {member1.id: {'operating_status': constants.ONLINE},
+                      member2.id: {'operating_status': constants.OFFLINE}}
+        lb_ref['pools'][pool.id]['members'] = member_ref
+
+        # Test with an LB, pool, listener, and members
+        lb = self.amphora_repo.get_lb_for_health_update(self.session,
+                                                        self.FAKE_UUID_1)
+        self.assertEqual(lb_ref, lb)
 
 
 class AmphoraHealthRepositoryTest(BaseRepositoryTest):
