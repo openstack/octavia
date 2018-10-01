@@ -183,9 +183,20 @@ healthmanager_opts = [
     cfg.IntOpt('failover_threads',
                default=10,
                help=_('Number of threads performing amphora failovers.')),
+    # TODO(tatsuma) Remove in or after "T" release
     cfg.IntOpt('status_update_threads',
                default=None,
-               help=_('Number of processes for amphora status update.')),
+               help=_('Number of processes for amphora status update.'),
+               deprecated_for_removal=True,
+               deprecated_reason=_('This option is replaced as '
+                                   'health_update_threads and '
+                                   'stats_update_threads')),
+    cfg.IntOpt('health_update_threads',
+               default=None,
+               help=_('Number of processes for amphora health update.')),
+    cfg.IntOpt('stats_update_threads',
+               default=None,
+               help=_('Number of processes for amphora stats update.')),
     cfg.StrOpt('heartbeat_key',
                help=_('key used to validate amphora sending'
                       'the message'), secret=True),
@@ -659,3 +670,11 @@ def handle_deprecation_compatibility():
     if cfg.CONF.api_handler is not None:
         cfg.CONF.set_default('api_handler', cfg.CONF.api_handler,
                              group='api_settings')
+    # TODO(tatsuma) Remove in or after "T" release
+    if cfg.CONF.health_manager.status_update_threads is not None:
+        cfg.CONF.set_default('health_update_threads',
+                             cfg.CONF.health_manager.status_update_threads,
+                             group='health_manager')
+        cfg.CONF.set_default('stats_update_threads',
+                             cfg.CONF.health_manager.status_update_threads,
+                             group='health_manager')
