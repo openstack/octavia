@@ -150,6 +150,8 @@ class TestBarbicanManager(base.TestCase):
         )
 
     def test_set_acls(self):
+        # if used pkcs12 certificate containers.get raises exception
+        self.bc.containers.get.side_effect = Exception("container not found")
         self.cert_manager.set_acls(
             context=self.context,
             cert_ref=self.secret_ref
@@ -157,5 +159,18 @@ class TestBarbicanManager(base.TestCase):
 
         # our mock_bc should have one call to ensure_secret_access
         self.cert_manager.auth.ensure_secret_access.assert_called_once_with(
+            self.context, self.secret_ref
+        )
+
+    def test_unset_acls(self):
+        # if used pkcs12 certificate containers.get raises exception
+        self.bc.containers.get.side_effect = Exception("container not found")
+        self.cert_manager.unset_acls(
+            context=self.context,
+            cert_ref=self.secret_ref
+        )
+
+        # our mock_bc should have one call to revoke_secret_access
+        self.cert_manager.auth.revoke_secret_access.assert_called_once_with(
             self.context, self.secret_ref
         )
