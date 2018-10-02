@@ -57,6 +57,7 @@ Response Parameters
    - project_id: project_id
    - provisioning_status: provisioning_status
    - redirect_pool_id: l7policy-redirect-pool_id
+   - redirect_prefix: l7policy-redirect-prefix
    - redirect_url: l7policy-redirect-url
    - rules: l7policy-rule-ids
    - updated_at: updated_at
@@ -139,6 +140,7 @@ Request
    - position: l7policy-position-optional
    - project_id: project_id-optional
    - redirect_pool_id: l7policy-redirect-pool_id-optional
+   - redirect_prefix: l7policy-redirect-prefix-optional
    - redirect_url: l7policy-redirect-url-optional
 
 Request Example
@@ -170,6 +172,7 @@ Response Parameters
    - project_id: project_id
    - provisioning_status: provisioning_status
    - redirect_pool_id: l7policy-redirect-pool_id
+   - redirect_prefix: l7policy-redirect-prefix
    - redirect_url: l7policy-redirect-url
    - rules: l7policy-rule-ids
    - updated_at: updated_at
@@ -235,6 +238,7 @@ Response Parameters
    - project_id: project_id
    - provisioning_status: provisioning_status
    - redirect_pool_id: l7policy-redirect-pool_id
+   - redirect_prefix: l7policy-redirect-prefix
    - redirect_url: l7policy-redirect-url
    - rules: l7policy-rule-ids
    - updated_at: updated_at
@@ -290,6 +294,7 @@ Request
    - name: name-optional
    - position: l7policy-position-optional
    - redirect_pool_id: l7policy-redirect-pool_id-optional
+   - redirect_prefix: l7policy-redirect-prefix-optional
    - redirect_url: l7policy-redirect-url-optional
 
 Request Example
@@ -321,6 +326,7 @@ Response Parameters
    - project_id: project_id
    - provisioning_status: provisioning_status
    - redirect_pool_id: l7policy-redirect-pool_id
+   - redirect_prefix: l7policy-redirect-prefix
    - redirect_url: l7policy-redirect-url
    - rules: l7policy-rule-ids
    - updated_at: updated_at

@@ -60,7 +60,7 @@ Redirect *http://www.example.com/* to *https://www.example.com/*
 .. code-block:: bash
 
     openstack loadbalancer listener create --name http_listener --protocol HTTP --protocol-port 80 lb1
-    openstack loadbalancer l7policy create --action REDIRECT_TO_URL --redirect-url https://www.example.com/ --name policy1 http_listener
+    openstack loadbalancer l7policy create --action REDIRECT_PREFIX --redirect-prefix https://www.example.com/ --name policy1 http_listener
     openstack loadbalancer l7rule create --compare-type STARTS_WITH --type PATH --value / policy1
 
 

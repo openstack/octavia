@@ -301,6 +301,7 @@ class SampleDriverDataModels(object):
                                     'action': 'go',
                                     'redirect_pool_id': self.pool1_id,
                                     'redirect_url': '/index.html',
+                                    'redirect_prefix': 'https://example.com/',
                                     'position': 1,
                                     'listener': None,
                                     'redirect_pool': None,
@@ -323,16 +324,19 @@ class SampleDriverDataModels(object):
 
         self.db_l7policies = [self.db_l7policy1, self.db_l7policy2]
 
-        self.provider_l7policy1_dict = {'action': 'go',
-                                        'admin_state_up': True,
-                                        'description': 'L7policy 1',
-                                        'l7policy_id': self.l7policy1_id,
-                                        'listener_id': self.listener1_id,
-                                        'name': 'l7policy_1',
-                                        'position': 1,
-                                        'redirect_pool_id': self.pool1_id,
-                                        'redirect_url': '/index.html',
-                                        'rules': self.provider_l7rules_dicts}
+        self.provider_l7policy1_dict = {
+            'action': 'go',
+            'admin_state_up': True,
+            'description': 'L7policy 1',
+            'l7policy_id': self.l7policy1_id,
+            'listener_id': self.listener1_id,
+            'name': 'l7policy_1',
+            'position': 1,
+            'redirect_pool_id': self.pool1_id,
+            'redirect_url': '/index.html',
+            'redirect_prefix': 'https://example.com/',
+            'rules': self.provider_l7rules_dicts
+        }
 
         self.provider_l7policy2_dict = copy.deepcopy(
             self.provider_l7policy1_dict)

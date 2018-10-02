@@ -684,6 +684,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'name': None,
             'description': None,
             'redirect_url': None,
+            'redirect_prefix': None,
             'l7rules': []
         }
         expected_l7policy.update(create_l7policy)

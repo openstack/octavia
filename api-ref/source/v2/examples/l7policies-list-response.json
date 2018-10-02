@@ -13,6 +13,7 @@
             "provisioning_status": "ACTIVE",
             "updated_at": "2017-06-24T23:30:05",
             "redirect_pool_id": null,
+            "redirect_prefix": null,
             "redirect_url": "http://www.example.com",
             "action": "REDIRECT_TO_URL",
             "position": 1,
