@@ -114,7 +114,8 @@ class HealthMonitorController(base.BaseController):
             raise exceptions.InvalidOption(value='None',
                                            option=consts.MAX_RETRIES)
 
-        if hm_dict[consts.TYPE] != consts.HEALTH_MONITOR_HTTP:
+        if hm_dict[consts.TYPE] not in (consts.HEALTH_MONITOR_HTTP,
+                                        consts.HEALTH_MONITOR_HTTPS):
             if hm_dict.get(consts.HTTP_METHOD, None):
                 raise exceptions.InvalidOption(
                     value=consts.HTTP_METHOD, option='health monitors of '
