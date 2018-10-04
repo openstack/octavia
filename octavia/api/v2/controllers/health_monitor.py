@@ -257,7 +257,8 @@ class HealthMonitorController(base.BaseController):
         return db_hm
 
     def _validate_update_hm(self, db_hm, health_monitor):
-        if db_hm.type != consts.HEALTH_MONITOR_HTTP:
+        if db_hm.type not in (consts.HEALTH_MONITOR_HTTP,
+                              consts.HEALTH_MONITOR_HTTPS):
             if health_monitor.http_method != wtypes.Unset:
                 raise exceptions.InvalidOption(
                     value=consts.HTTP_METHOD, option='health monitors of '

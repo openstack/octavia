@@ -1129,6 +1129,29 @@ class TestHealthMonitor(base.BaseAPITest):
             healthmonitor_id=api_hm.get('id'))).json.get(self.root_tag)
         self.assertEqual(2, response[constants.MAX_RETRIES])
 
+    def test_update_HTTPS(self):
+        api_hm = self.create_health_monitor(
+            self.pool_with_listener_id,
+            constants.HEALTH_MONITOR_HTTPS, 1, 1, 1, 1,
+            admin_state_up=False, expected_codes='200',
+            http_method='GET', name='Test HM', url_path='/').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.assertEqual('/', api_hm[constants.URL_PATH])
+        new_hm = {constants.URL_PATH: '/health'}
+        self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_with_listener_id, hm_id=api_hm.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_UPDATE)
+        response = self.get(self.HM_PATH.format(
+            healthmonitor_id=api_hm.get('id'))).json.get(self.root_tag)
+        self.assertEqual('/health', response[constants.URL_PATH])
+
     def test_update_TCP(self):
         api_hm = self.create_health_monitor(
             self.pool_with_listener_id,
