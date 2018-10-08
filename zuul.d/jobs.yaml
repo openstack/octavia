@@ -90,6 +90,15 @@
         amphora_os_release: 7
 
 - job:
+    name: publish-openstack-octavia-amphora-image-fedora
+    parent: publish-openstack-octavia-amphora-image
+    description: |
+      Publish Fedora-based amphora image to tarballs.o.o.
+    vars:
+        amphora_os: fedora
+        amphora_image_size: 3
+
+- job:
     name: octavia-grenade
     parent: octavia-legacy-dsvm-base
     run: playbooks/legacy/grenade-devstack-octavia/run.yaml

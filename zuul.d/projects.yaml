@@ -100,3 +100,5 @@
             branches: ^(?!stable/.*).*$
         - publish-openstack-octavia-amphora-image-centos:
             branches: ^(?!stable/.*).*$
+        - publish-openstack-octavia-amphora-image-fedora:
+            branches: ^(?!stable/.*).*$
