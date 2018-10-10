@@ -204,15 +204,17 @@ class JinjaTemplater(object):
             'topology': listener.load_balancer.topology,
             'amphorae': listener.load_balancer.amphorae,
             'enabled': listener.enabled,
-            'timeout_client_data': (listener.timeout_client_data or
-                                    constants.DEFAULT_TIMEOUT_CLIENT_DATA),
-            'timeout_member_connect': (listener.timeout_member_connect or
-                                       constants.DEFAULT_TIMEOUT_MEMBER_CONNECT
-                                       ),
-            'timeout_member_data': (listener.timeout_member_data or
-                                    constants.DEFAULT_TIMEOUT_MEMBER_DATA),
+            'timeout_client_data': (
+                listener.timeout_client_data or
+                CONF.haproxy_amphora.timeout_client_data),
+            'timeout_member_connect': (
+                listener.timeout_member_connect or
+                CONF.haproxy_amphora.timeout_member_connect),
+            'timeout_member_data': (
+                listener.timeout_member_data or
+                CONF.haproxy_amphora.timeout_member_data),
             'timeout_tcp_inspect': (listener.timeout_tcp_inspect or
-                                    constants.DEFAULT_TIMEOUT_TCP_INSPECT),
+                                    CONF.haproxy_amphora.timeout_tcp_inspect),
         }
         if listener.connection_limit and listener.connection_limit > -1:
             ret_value['connection_limit'] = listener.connection_limit
