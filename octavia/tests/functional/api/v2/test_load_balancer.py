@@ -2349,16 +2349,16 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         expected_lb['pools'] = create_pools or []
         return create_lb, expected_lb
 
-    def _get_listener_bodies(self, name='listener1', protocol_port=80,
-                             create_default_pool_name=None,
-                             create_default_pool_id=None,
-                             create_l7policies=None,
-                             expected_l7policies=None,
-                             create_sni_containers=None,
-                             expected_sni_containers=None,
-                             create_client_ca_tls_container=None,
-                             expected_client_ca_tls_container=None,
-                             create_protocol=constants.PROTOCOL_HTTP):
+    def _get_listener_bodies(
+            self, name='listener1', protocol_port=80,
+            create_default_pool_name=None, create_default_pool_id=None,
+            create_l7policies=None, expected_l7policies=None,
+            create_sni_containers=None, expected_sni_containers=None,
+            create_client_ca_tls_container=None,
+            expected_client_ca_tls_container=None,
+            create_protocol=constants.PROTOCOL_HTTP,
+            create_client_authentication=None,
+            expected_client_authentication=constants.CLIENT_AUTH_NONE):
         create_listener = {
             'name': name,
             'protocol_port': protocol_port,
@@ -2379,7 +2379,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'timeout_member_data': constants.DEFAULT_TIMEOUT_MEMBER_DATA,
             'timeout_tcp_inspect': constants.DEFAULT_TIMEOUT_TCP_INSPECT,
             'tags': [],
-            'client_ca_tls_container_ref': None
+            'client_ca_tls_container_ref': None,
+            'client_authentication': constants.CLIENT_AUTH_NONE
         }
         if create_sni_containers:
             create_listener['sni_container_refs'] = create_sni_containers
@@ -2398,6 +2399,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         if create_client_ca_tls_container:
             create_listener['client_ca_tls_container_ref'] = (
                 create_client_ca_tls_container)
+        if create_client_authentication:
+            create_listener['client_authentication'] = (
+                create_client_authentication)
         if expected_sni_containers:
             expected_listener['sni_container_refs'] = expected_sni_containers
         if expected_l7policies:
@@ -2407,6 +2411,11 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         if expected_client_ca_tls_container:
             expected_listener['client_ca_tls_container_ref'] = (
                 expected_client_ca_tls_container)
+            expected_listener['client_authentication'] = (
+                constants.CLIENT_AUTH_NONE)
+        if expected_client_authentication:
+            expected_listener[
+                'client_authentication'] = expected_client_authentication
         return create_listener, expected_listener
 
     def _get_pool_bodies(self, name='pool1', create_members=None,
@@ -2670,6 +2679,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         mock_x509_cert.return_value = cert_mock
         create_client_ca_tls_container = uuidutils.generate_uuid()
         expected_client_ca_tls_container = create_client_ca_tls_container
+        create_client_authentication = constants.CLIENT_AUTH_MANDATORY
+        expected_client_authentication = constants.CLIENT_AUTH_MANDATORY
         create_sni_containers, expected_sni_containers = (
             self._get_sni_container_bodies())
         create_listener, expected_listener = self._get_listener_bodies(
@@ -2677,7 +2688,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             create_sni_containers=create_sni_containers,
             expected_sni_containers=expected_sni_containers,
             create_client_ca_tls_container=create_client_ca_tls_container,
-            expected_client_ca_tls_container=expected_client_ca_tls_container)
+            expected_client_ca_tls_container=expected_client_ca_tls_container,
+            create_client_authentication=create_client_authentication,
+            expected_client_authentication=expected_client_authentication)
         create_lb, expected_lb = self._get_lb_bodies(
             create_listeners=[create_listener],
             expected_listeners=[expected_listener])

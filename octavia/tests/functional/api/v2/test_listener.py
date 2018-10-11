@@ -957,6 +957,46 @@ class TestListener(base.BaseAPITest):
         listener_api = self.test_create(**optionals)
         self.assertEqual(optionals['client_ca_tls_container_ref'],
                          listener_api.get('client_ca_tls_container_ref'))
+        self.assertEqual(constants.CLIENT_AUTH_NONE,
+                         listener_api.get('client_authentication'))
+
+    def test_create_with_ca_cert_and_option(self):
+        self.cert_manager_mock().get_secret.return_value = (
+            sample_certs.X509_CA_CERT)
+        optionals = {
+            'client_ca_tls_container_ref': uuidutils.generate_uuid(),
+            'client_authentication': constants.CLIENT_AUTH_MANDATORY
+        }
+        listener_api = self.test_create(**optionals)
+        self.assertEqual(optionals['client_ca_tls_container_ref'],
+                         listener_api.get('client_ca_tls_container_ref'))
+        self.assertEqual(optionals['client_authentication'],
+                         listener_api.get('client_authentication'))
+
+    def test_create_with_ca_cert_negative_cases(self):
+        # create just with option, no client_ca_tls_container_ref specified.
+        optionals = {
+            'client_authentication': constants.CLIENT_AUTH_MANDATORY
+        }
+        sni1 = uuidutils.generate_uuid()
+        sni2 = uuidutils.generate_uuid()
+        lb_listener = {
+            'name': 'listener1', 'default_pool_id': None,
+            'description': 'desc1',
+            'admin_state_up': False,
+            'protocol': constants.PROTOCOL_TERMINATED_HTTPS,
+            'protocol_port': 80,
+            'default_tls_container_ref': uuidutils.generate_uuid(),
+            'sni_container_refs': [sni1, sni2],
+            'project_id': self.project_id,
+            'loadbalancer_id': self.lb_id}
+        lb_listener.update(optionals)
+        body = self._build_body(lb_listener)
+        response = self.post(self.LISTENERS_PATH, body, status=400).json
+        self.assertEqual(
+            "Validation failure: Client authentication setting %s "
+            "requires a client CA container reference." %
+            constants.CLIENT_AUTH_MANDATORY, response['faultstring'])
 
     def test_create_with_bad_ca_cert_ref(self):
         sni1 = uuidutils.generate_uuid()
@@ -1163,6 +1203,70 @@ class TestListener(base.BaseAPITest):
         self.assertNotEqual(ori_listener['client_ca_tls_container_ref'],
                             optionals['client_ca_tls_container_ref'])
 
+    def test_update_with_only_client_auth_option(self):
+        optionals = {
+            'client_authentication': constants.CLIENT_AUTH_OPTIONAL
+        }
+        ori_listener, update_listener = self.test_update(**optionals)
+        self.assertEqual(optionals['client_authentication'],
+                         update_listener.get('client_authentication'))
+        self.assertNotEqual(ori_listener['client_authentication'],
+                            optionals['client_authentication'])
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_from_nonexist_ca_cert_to_new_ca_cert(self, mock_cert_data):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
+        self.cert_manager_mock().get_secret.return_value = (
+            sample_certs.X509_CA_CERT)
+        tls_uuid = uuidutils.generate_uuid()
+        listener = self.create_listener(
+            constants.PROTOCOL_TERMINATED_HTTPS, 80, self.lb_id,
+            name='listener1', description='desc1',
+            admin_state_up=False, connection_limit=10,
+            default_tls_container_ref=tls_uuid,
+            default_pool_id=None).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        ca_tls_uuid = uuidutils.generate_uuid()
+        new_listener = {
+            'client_ca_tls_container_ref': ca_tls_uuid}
+        body = self._build_body(new_listener)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['id'])
+        api_listener = self.put(listener_path, body).json.get(self.root_tag)
+        update_expect = {'provisioning_status': constants.PENDING_UPDATE,
+                         'operating_status': constants.ONLINE}
+        update_expect.update(new_listener)
+        listener.update(update_expect)
+        self.assertEqual(ca_tls_uuid,
+                         api_listener['client_ca_tls_container_ref'])
+        self.assertEqual(constants.CLIENT_AUTH_NONE,
+                         api_listener['client_authentication'])
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_ca_cert_negative_cases(self, mock_cert_data):
+        # update a listener, no ca cert exist
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
+        tls_uuid = uuidutils.generate_uuid()
+        listener = self.create_listener(
+            constants.PROTOCOL_TERMINATED_HTTPS, 80, self.lb_id,
+            name='listener1', description='desc1',
+            admin_state_up=False, connection_limit=10,
+            default_tls_container_ref=tls_uuid,
+            default_pool_id=None).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        lb_listener = {
+            'client_authentication': constants.CLIENT_AUTH_OPTIONAL}
+        body = self._build_body(lb_listener)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['id'])
+        response = self.put(listener_path, body, status=400).json
+        self.assertEqual(
+            "Validation failure: Client authentication setting %s "
+            "requires a client CA container reference." %
+            constants.CLIENT_AUTH_OPTIONAL, response['faultstring'])
+
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_update_unset_ca_cert(self, mock_cert_data):
         cert1 = data_models.TLSContainer(certificate='cert 1')
@@ -1185,6 +1289,7 @@ class TestListener(base.BaseAPITest):
             listener_id=listener['id'])
         api_listener = self.put(listener_path, body).json.get(self.root_tag)
         self.assertIsNone(api_listener.get('client_ca_tls_container_ref'))
+        self.assertIsNone(api_listener.get('client_auth_option'))
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_update_with_bad_ca_cert(self, mock_cert_data):

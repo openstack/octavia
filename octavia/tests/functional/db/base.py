@@ -79,6 +79,8 @@ class OctaviaDBTestBase(test_base.DbTestCase):
                                 models.L7RuleCompareType)
         self._seed_lookup_table(session, constants.SUPPORTED_L7POLICY_ACTIONS,
                                 models.L7PolicyAction)
+        self._seed_lookup_table(session, constants.SUPPORTED_CLIENT_AUTH_MODES,
+                                models.ClientAuthenticationMode)
 
     def _seed_lookup_table(self, session, name_list, model_cls):
         for name in name_list:

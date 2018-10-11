@@ -230,6 +230,15 @@ class ListenersController(base.BaseController):
                 "be provided for %s protocol listeners.") %
                 constants.PROTOCOL_TERMINATED_HTTPS)
 
+        # Make sure we have a client CA cert if they enable client auth
+        if (listener_dict.get('client_authentication') !=
+            constants.CLIENT_AUTH_NONE and not
+                listener_dict.get('client_ca_tls_certificate_id')):
+            raise exceptions.ValidationException(detail=_(
+                "Client authentication setting %s requires a client CA "
+                "container reference.") %
+                listener_dict.get('client_authentication'))
+
         try:
             sni_containers = listener_dict.pop('sni_containers', [])
             tls_refs = [sni['tls_container_id'] for sni in sni_containers]
@@ -382,7 +391,16 @@ class ListenersController(base.BaseController):
                 "%s protocol listeners.") %
                 constants.PROTOCOL_TERMINATED_HTTPS)
 
-        # Make sure the refs are valid
+        # Make sure we have a client CA cert if they enable client auth
+        if ((listener.client_authentication != wtypes.Unset and
+             listener.client_authentication != constants.CLIENT_AUTH_NONE)
+            and not (db_listener.client_ca_tls_certificate_id or
+                     listener.client_ca_tls_container_ref)):
+            raise exceptions.ValidationException(detail=_(
+                "Client authentication setting %s requires a client CA "
+                "container reference.") %
+                listener.client_authentication)
+
         sni_containers = listener.sni_container_refs or []
         tls_refs = [sni for sni in sni_containers]
         if listener.default_tls_container_ref:

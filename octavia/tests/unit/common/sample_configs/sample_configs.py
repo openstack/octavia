@@ -528,7 +528,7 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                     'l7policies, enabled, insert_headers, timeout_client_data,'
                     'timeout_member_connect, timeout_member_data, '
                     'timeout_tcp_inspect, client_ca_tls_certificate_id,'
-                    'client_ca_tls_certificate')
+                    'client_ca_tls_certificate, client_authentication')
     if l7:
         pools = [
             sample_pool_tuple(
@@ -611,7 +611,10 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
         client_ca_tls_certificate=sample_tls_container_tuple(
             id='cont_id_ca', certificate=sample_certs.X509_CA_CERT,
             primary_cn=sample_certs.X509_CA_CERT_CN
-        ) if client_ca_cert else ''
+        ) if client_ca_cert else '',
+        client_authentication=(
+            constants.CLIENT_AUTH_MANDATORY if client_ca_cert else
+            constants.CLIENT_AUTH_NONE)
     )
 
 

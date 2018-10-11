@@ -580,3 +580,11 @@ FLAVOR_DATA = 'flavor_data'
 # Flavor metadata
 LOADBALANCER_TOPOLOGY = 'loadbalancer_topology'
 COMPUTE_FLAVOR = 'compute_flavor'
+
+# TODO(johnsom) move to octavia_lib
+# client certification authorization option
+CLIENT_AUTH_NONE = 'NONE'
+CLIENT_AUTH_OPTIONAL = 'OPTIONAL'
+CLIENT_AUTH_MANDATORY = 'MANDATORY'
+SUPPORTED_CLIENT_AUTH_MODES = [CLIENT_AUTH_NONE, CLIENT_AUTH_OPTIONAL,
+                               CLIENT_AUTH_MANDATORY]
