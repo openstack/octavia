@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    The Octavia API now supports Cloud Auditing Data Federation (CADF)
+    auditing.

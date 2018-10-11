@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import keystonemiddleware.audit as audit_middleware
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_middleware import cors
@@ -21,6 +22,7 @@ import pecan
 from octavia.api import config as app_config
 from octavia.api.drivers import driver_factory
 from octavia.common import constants
+from octavia.common import exceptions
 from octavia.common import keystone
 from octavia.common import service as octavia_service
 
@@ -63,6 +65,21 @@ def setup_app(pecan_config=None, debug=False, argv=None):
 def _wrap_app(app):
     """Wraps wsgi app with additional middlewares."""
     app = request_id.RequestId(app)
+
+    if CONF.audit.enabled:
+        try:
+            app = audit_middleware.AuditMiddleware(
+                app,
+                audit_map_file=CONF.audit.audit_map_file,
+                ignore_req_list=CONF.audit.ignore_req_list
+            )
+        except (EnvironmentError, OSError,
+                audit_middleware.PycadfAuditApiConfigError) as e:
+            raise exceptions.InputFileError(
+                file_name=CONF.audit.audit_map_file,
+                reason=e
+            )
+
     if cfg.CONF.api_settings.auth_strategy == constants.KEYSTONE:
         app = keystone.SkippingAuthProtocol(app, {})
 
