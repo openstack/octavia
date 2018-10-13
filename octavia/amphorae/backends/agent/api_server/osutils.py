@@ -117,7 +117,9 @@ class BaseOS(object):
                 interface=primary_interface,
                 vip=vip,
                 vip_ipv6=ip.version == 6,
-                prefix=utils.netmask_to_prefix(netmask),
+                # For ipv6 the netmask is already the prefix
+                prefix=(netmask if ip.version == 6
+                        else utils.netmask_to_prefix(netmask)),
                 broadcast=broadcast,
                 netmask=netmask,
                 gateway=gateway,
@@ -147,11 +149,12 @@ class BaseOS(object):
 
         with os.fdopen(os.open(interface_file_path, flags, mode),
                        'w') as text_file:
-            text = self._generate_network_file_text(netns_interface, fixed_ips,
-                                                    mtu, template_port)
+            text = self._generate_network_file_text(
+                netns_interface, fixed_ips, mtu, template_port)
             text_file.write(text)
 
-    def _generate_network_file_text(self, netns_interface, fixed_ips, mtu,
+    @classmethod
+    def _generate_network_file_text(cls, netns_interface, fixed_ips, mtu,
                                     template_port):
         text = ''
         if fixed_ips is None:
@@ -169,7 +172,7 @@ class BaseOS(object):
                     broadcast = network.broadcast_address.exploded
                     netmask = (network.prefixlen if ip.version == 6
                                else network.netmask.exploded)
-                    host_routes = self.get_host_routes(fixed_ip)
+                    host_routes = cls.get_host_routes(fixed_ip)
 
                 except ValueError:
                     return webob.Response(
@@ -184,7 +187,8 @@ class BaseOS(object):
                 text = '\n'.join([text, new_text])
         return text
 
-    def get_host_routes(self, fixed_ip):
+    @classmethod
+    def get_host_routes(cls, fixed_ip):
         host_routes = []
         for hr in fixed_ip.get('host_routes', []):
             network = ipaddress.ip_network(
@@ -194,7 +198,8 @@ class BaseOS(object):
             host_routes.append({'network': network, 'gw': hr['nexthop']})
         return host_routes
 
-    def _bring_if_up(self, interface, what):
+    @classmethod
+    def _bring_if_up(cls, interface, what):
         # Note, we are not using pyroute2 for this as it is not /etc/netns
         # aware.
         cmd = ("ip netns exec {ns} ifup {params}".format(
@@ -209,7 +214,8 @@ class BaseOS(object):
                     message='Error plugging {0}'.format(what),
                     details=e.output), status=500))
 
-    def _bring_if_down(self, interface):
+    @classmethod
+    def _bring_if_down(cls, interface):
         # Note, we are not using pyroute2 for this as it is not /etc/netns
         # aware.
         cmd = ("ip netns exec {ns} ifdown {params}".format(
@@ -220,13 +226,14 @@ class BaseOS(object):
             LOG.info('Ignoring failure to ifdown %s due to error: %s %s',
                      interface, e, e.output)
 
-    def bring_interfaces_up(self, ip, primary_interface, secondary_interface):
-        self._bring_if_down(primary_interface)
+    @classmethod
+    def bring_interfaces_up(cls, ip, primary_interface, secondary_interface):
+        cls._bring_if_down(primary_interface)
         if secondary_interface:
-            self._bring_if_down(secondary_interface)
-        self._bring_if_up(primary_interface, 'VIP')
+            cls._bring_if_down(secondary_interface)
+        cls._bring_if_up(primary_interface, 'VIP')
         if secondary_interface:
-            self._bring_if_up(secondary_interface, 'VIP')
+            cls._bring_if_up(secondary_interface, 'VIP')
 
     def has_ifup_all(self):
         return True
@@ -482,14 +489,15 @@ class RH(BaseOS):
                 host_routes, template_routes, None, None, None)
             self._write_ifup_ifdown_local_scripts_if_possible()
 
-    def bring_interfaces_up(self, ip, primary_interface, secondary_interface):
+    @classmethod
+    def bring_interfaces_up(cls, ip, primary_interface, secondary_interface):
         if ip.version == 4:
-            super(RH, self).bring_interfaces_up(
+            super(RH, cls).bring_interfaces_up(
                 ip, primary_interface, secondary_interface)
         else:
             # Secondary interface is not present in IPv6 configuration
-            self._bring_if_down(primary_interface)
-            self._bring_if_up(primary_interface, 'VIP')
+            cls._bring_if_down(primary_interface)
+            cls._bring_if_up(primary_interface, 'VIP')
 
     def has_ifup_all(self):
         return False
