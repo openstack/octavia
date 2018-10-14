@@ -181,6 +181,7 @@ Supported HTTP Header Insertions
 |                   |        | ``member``. HTTP for the HTTP listener         |
 |                   |        | protocol type, HTTPS for the TERMINATED_HTTPS  |
 |                   |        | listener protocol type.                        |
+|                   |        | **New in version 2.1**                         |
 +-------------------+--------+------------------------------------------------+
 
 Request Example
