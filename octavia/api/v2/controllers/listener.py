@@ -205,6 +205,27 @@ class ListenersController(base.BaseController):
         return (self._has_tls_container_refs(listener_dict) or
                 listener_dict.get('insert_headers'))
 
+    def _validate_insert_headers(self, insert_header_list, listener_protocol):
+        if list(set(insert_header_list) - (
+                set(constants.SUPPORTED_HTTP_HEADERS +
+                    constants.SUPPORTED_SSL_HEADERS))):
+            raise exceptions.InvalidOption(
+                value=insert_header_list,
+                option='insert_headers')
+        if not listener_protocol == constants.PROTOCOL_TERMINATED_HTTPS:
+            is_matched = len(
+                constants.SUPPORTED_SSL_HEADERS) > len(
+                list(set(constants.SUPPORTED_SSL_HEADERS) - set(
+                    insert_header_list)))
+            if is_matched:
+                headers = []
+                for header_name in insert_header_list:
+                    if header_name in constants.SUPPORTED_SSL_HEADERS:
+                        headers.append(header_name)
+                raise exceptions.InvalidOption(
+                    value=headers,
+                    option=('%s protocol listener.' % listener_protocol))
+
     def _validate_create_listener(self, lock_session, listener_dict):
         """Validate listener for wrong protocol or duplicate listeners
 
@@ -212,13 +233,9 @@ class ListenersController(base.BaseController):
         """
         listener_protocol = listener_dict.get('protocol')
 
-        if (listener_dict and
-            listener_dict.get('insert_headers') and
-            list(set(listener_dict['insert_headers'].keys()) -
-                 set(constants.SUPPORTED_HTTP_HEADERS))):
-            raise exceptions.InvalidOption(
-                value=listener_dict.get('insert_headers'),
-                option='insert_headers')
+        if listener_dict and listener_dict.get('insert_headers'):
+            self._validate_insert_headers(
+                listener_dict['insert_headers'].keys(), listener_protocol)
 
         # Check for UDP compatibility
         if (listener_protocol == constants.PROTOCOL_UDP and
@@ -440,6 +457,10 @@ class ListenersController(base.BaseController):
                 "Client authentication setting %s requires a client CA "
                 "container reference.") %
                 listener.client_authentication)
+
+        if listener.insert_headers:
+            self._validate_insert_headers(
+                list(listener.insert_headers.keys()), db_listener.protocol)
 
         sni_containers = listener.sni_container_refs or []
         tls_refs = [sni for sni in sni_containers]

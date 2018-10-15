@@ -466,6 +466,12 @@ SUPPORTED_HTTP_HEADERS = ['X-Forwarded-For',
                           'X-Forwarded-Port',
                           'X-Forwarded-Proto']
 
+# List of SSL headers for client certificate
+SUPPORTED_SSL_HEADERS = ['X-SSL-Client-Verify', 'X-SSL-Client-Has-Cert',
+                         'X-SSL-Client-DN', 'X-SSL-Client-CN',
+                         'X-SSL-Issuer', 'X-SSL-Client-SHA1',
+                         'X-SSL-Client-Not-Before', 'X-SSL-Client-Not-After']
+
 FLOW_DOC_TITLES = {'AmphoraFlows': 'Amphora Flows',
                    'LoadBalancerFlows': 'Load Balancer Flows',
                    'ListenerFlows': 'Listener Flows',

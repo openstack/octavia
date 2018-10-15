@@ -2031,7 +2031,11 @@ class TestListener(base.BaseAPITest):
         get_listener = self.get(listener_path).json['listener']
         self.assertEqual([], get_listener.get('sni_container_refs'))
 
-    def test_create_with_valid_insert_headers(self):
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_with_valid_insert_headers(self, mock_cert_data):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
         lb_listener = {'protocol': 'HTTP',
                        'protocol_port': 80,
                        'loadbalancer_id': self.lb_id,
@@ -2039,13 +2043,97 @@ class TestListener(base.BaseAPITest):
         body = self._build_body(lb_listener)
         self.post(self.LISTENERS_PATH, body, status=201)
 
+        # test client certificate http headers
+        self.set_lb_status(self.lb_id)
+        header = {}
+        for name in constants.SUPPORTED_SSL_HEADERS:
+            header[name] = 'true'
+        lb_listener = {'protocol': constants.PROTOCOL_TERMINATED_HTTPS,
+                       'protocol_port': 1801,
+                       'loadbalancer_id': self.lb_id,
+                       'insert_headers': header,
+                       'default_tls_container_ref': uuidutils.generate_uuid()}
+        body = self._build_body(lb_listener)
+        self.post(self.LISTENERS_PATH, body, status=201)
+
     def test_create_with_bad_insert_headers(self):
-        lb_listener = {'protocol': 'HTTP',
+        lb_listener = {'protocol': constants.PROTOCOL_HTTP,
                        'protocol_port': 80,
                        'loadbalancer_id': self.lb_id,
                        'insert_headers': {'X-Forwarded-Four': 'true'}}
         body = self._build_body(lb_listener)
         self.post(self.LISTENERS_PATH, body, status=400)
+
+        # test client certificate http headers
+        for name in constants.SUPPORTED_SSL_HEADERS:
+            header = {}
+            header[name] = 'true'
+            lb_listener['insert_headers'] = header
+            body = self._build_body(lb_listener)
+            listener = self.post(self.LISTENERS_PATH, body, status=400).json
+            self.assertIn('{0} is not a valid option for {1}'.format(
+                [name],
+                '%s protocol listener.' % constants.PROTOCOL_HTTP),
+                listener.get('faultstring'))
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_valid_insert_headers(self, mock_cert_data):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, self.lb_id)
+        self.set_lb_status(self.lb_id)
+        new_listener = self._build_body(
+            {'insert_headers': {'X-Forwarded-For': 'true'}})
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener'].get('id'))
+        update_listener = self.put(
+            listener_path, new_listener, status=200).json
+        self.assertNotEqual(
+            listener[self.root_tag]['insert_headers'],
+            update_listener[self.root_tag]['insert_headers'])
+
+        self.set_lb_status(self.lb_id)
+        # test client certificate http headers
+        cert1_id = uuidutils.generate_uuid()
+        listener = self.create_listener(
+            constants.PROTOCOL_TERMINATED_HTTPS, 443, self.lb_id,
+            default_tls_container_ref=cert1_id)
+        self.set_lb_status(self.lb_id)
+        header = {}
+        for name in constants.SUPPORTED_SSL_HEADERS:
+            header[name] = 'true'
+        new_listener[self.root_tag]['insert_headers'] = header
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener'].get('id'))
+        update_listener = self.put(
+            listener_path, new_listener, status=200).json
+        self.assertNotEqual(
+            listener[self.root_tag]['insert_headers'],
+            update_listener[self.root_tag]['insert_headers'])
+
+    def test_update_with_bad_insert_headers(self):
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, self.lb_id)
+        self.set_lb_status(self.lb_id)
+        new_listener = self._build_body(
+            {'insert_headers': {'X-Bad-Header': 'true'}})
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener'].get('id'))
+        update_listener = self.put(
+            listener_path, new_listener, status=400).json
+        self.assertIn('{0} is not a valid option for {1}'.format(
+            '[\'X-Bad-Header\']', 'insert_headers'),
+            update_listener.get('faultstring'))
+
+        # test client certificate http headers
+        header = {}
+        for name in constants.SUPPORTED_SSL_HEADERS:
+            header[name] = 'true'
+        new_listener[self.root_tag]['insert_headers'] = header
+        # as the order of output faultstring is not stable, so we just check
+        # the status.
+        self.put(listener_path, new_listener, status=400).json
 
     def _getStats(self, listener_id):
         res = self.get(self.LISTENER_PATH.format(

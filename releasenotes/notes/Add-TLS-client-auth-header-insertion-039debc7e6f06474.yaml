@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    When using TLS client authentication on TERMINATED_HTTPS listeners, you can now insert the
+    following headers for backend members\: 'X-SSL-Client-Verify', 'X-SSL-Client-Has-Cert',
+    'X-SSL-Client-DN', 'X-SSL-Client-CN', 'X-SSL-Issuer', 'X-SSL-Client-SHA1',
+    'X-SSL-Client-Not-Before', 'X-SSL-Client-Not-After'.
