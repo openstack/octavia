@@ -20,8 +20,8 @@ from novaclient import exceptions as nova_client_exceptions
 from oslo_config import cfg
 from oslo_log import log as logging
 import six
+from stevedore import driver as stevedore_driver
 
-from octavia.common import clients
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
@@ -45,14 +45,11 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
     def __init__(self):
         super(AllowedAddressPairsDriver, self).__init__()
         self._check_aap_loaded()
-        self.nova_client = clients.NovaAuth.get_nova_client(
-            endpoint=CONF.nova.endpoint,
-            region=CONF.nova.region_name,
-            endpoint_type=CONF.nova.endpoint_type,
-            service_name=CONF.nova.service_name,
-            insecure=CONF.nova.insecure,
-            cacert=CONF.nova.ca_certificates_file
-        )
+        self.compute = stevedore_driver.DriverManager(
+            namespace='octavia.compute.drivers',
+            name=CONF.controller_worker.compute_driver,
+            invoke_on_load=True
+        ).driver
 
     def _check_aap_loaded(self):
         if not self._check_extension_enabled(AAP_EXT_ALIAS):
@@ -481,9 +478,9 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
     def plug_network(self, compute_id, network_id, ip_address=None):
         try:
-            interface = self.nova_client.servers.interface_attach(
-                server=compute_id, net_id=network_id, fixed_ip=ip_address,
-                port_id=None)
+            interface = self.compute.attach_network_or_port(
+                compute_id=compute_id, network_id=network_id,
+                ip_address=ip_address)
         except nova_client_exceptions.NotFound as e:
             if 'Instance' in str(e):
                 raise base.AmphoraNotFound(str(e))
@@ -511,14 +508,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         unpluggers = self._get_interfaces_to_unplug(interfaces, network_id,
                                                     ip_address=ip_address)
         for index, unplugger in enumerate(unpluggers):
-            try:
-                self.nova_client.servers.interface_detach(
-                    server=compute_id, port_id=unplugger.port_id)
-            except Exception:
-                LOG.warning('Error unplugging port {port_id} from amphora '
-                            'with compute ID {compute_id}. '
-                            'Skipping.'.format(port_id=unplugger.port_id,
-                                               compute_id=compute_id))
+            self.compute.detach_port(
+                compute_id=compute_id, port_id=unplugger.port_id)
 
     def update_vip(self, load_balancer, for_delete=False):
         sec_grp = self._get_lb_security_group(load_balancer.id)
@@ -561,9 +552,9 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
     def plug_port(self, amphora, port):
         try:
-            interface = self.nova_client.servers.interface_attach(
-                server=amphora.compute_id, net_id=None,
-                fixed_ip=None, port_id=port.id)
+            interface = self.compute.attach_network_or_port(
+                compute_id=amphora.compute_id, network_id=None,
+                ip_address=None, port_id=port.id)
             plugged_interface = self._nova_interface_to_octavia_interface(
                 amphora.compute_id, interface)
         except nova_client_exceptions.NotFound as e:

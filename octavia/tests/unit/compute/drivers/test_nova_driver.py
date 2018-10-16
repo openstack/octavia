@@ -144,6 +144,10 @@ class TestNovaClient(base.TestCase):
         self.server_group_mock.policy = self.server_group_policy
         self.server_group_mock.id = self.server_group_id
 
+        self.port_id = uuidutils.generate_uuid()
+        self.compute_id = uuidutils.generate_uuid()
+        self.network_id = uuidutils.generate_uuid()
+
         super(TestNovaClient, self).setUp()
 
     def test_build(self):
@@ -342,3 +346,28 @@ class TestNovaClient(base.TestCase):
                           self.manager.delete_server_group,
                           self.server_group_id)
         self.manager.server_groups.delete.called_with(self.server_group_id)
+
+    def test_attach_network_or_port(self):
+        self.manager.attach_network_or_port(self.compute_id,
+                                            self.network_id)
+        self.manager.manager.interface_attach.assert_called_with(
+            server=self.compute_id, net_id=self.network_id, fixed_ip=None,
+            port_id=None)
+
+    def test_attach_network_or_port_exception(self):
+        self.manager.manager.interface_attach.side_effect = [
+            nova_exceptions.NotFound('test_exception')]
+        self.assertRaises(nova_exceptions.NotFound,
+                          self.manager.attach_network_or_port,
+                          self.compute_id, self.network_id)
+
+    def test_detach_network(self):
+        self.manager.detach_port(self.compute_id,
+                                 self.port_id)
+        self.manager.manager.interface_detach.assert_called_with(
+            server=self.compute_id, port_id=self.port_id)
+
+    def test_detach_network_with_exception(self):
+        self.manager.manager.interface_detach.side_effect = [Exception]
+        self.manager.detach_port(self.compute_id,
+                                 self.port_id)

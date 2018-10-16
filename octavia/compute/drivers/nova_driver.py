@@ -24,6 +24,7 @@ from octavia.common import constants
 from octavia.common import data_models as models
 from octavia.common import exceptions
 from octavia.compute import compute_base
+from octavia.i18n import _
 
 LOG = logging.getLogger(__name__)
 
@@ -282,3 +283,46 @@ class VirtualMachineManager(compute_base.ComputeBase):
         except Exception:
             LOG.exception("Error delete server group instance.")
             raise exceptions.ServerGroupObjectDeleteException()
+
+    def attach_network_or_port(self, compute_id, network_id, ip_address=None,
+                               port_id=None):
+        """Attaching a port or a network to an existing amphora
+
+        :param compute_id: id of an amphora in the compute service
+        :param network_id: id of a network
+        :param ip_address: ip address to attempt to be assigned to interface
+        :param port_id: id of the neutron port
+        :return: nova interface instance
+        :raises: Exception
+        """
+        try:
+            interface = self.manager.interface_attach(
+                server=compute_id, net_id=network_id, fixed_ip=ip_address,
+                port_id=port_id)
+        except Exception:
+            message = _('Error attaching network {network_id} with ip '
+                        '{ip_address} and port {port} to amphora '
+                        '(compute_id: {compute_id}) ').format(
+                            compute_id=compute_id,
+                            network_id=network_id,
+                            ip_address=ip_address,
+                            port=port_id)
+            LOG.error(message)
+            raise
+        return interface
+
+    def detach_port(self, compute_id, port_id):
+        """Detaches a port from an existing amphora.
+
+        :param compute_id: id of an amphora in the compute service
+        :param port_id: id of the port
+        :return: None
+        """
+        try:
+            self.manager.interface_detach(server=compute_id,
+                                          port_id=port_id)
+        except Exception:
+            LOG.error('Error detaching port {port_id} from amphora '
+                      'with compute ID {compute_id}. '
+                      'Skipping.'.format(port_id=port_id,
+                                         compute_id=compute_id))
