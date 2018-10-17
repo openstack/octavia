@@ -158,11 +158,6 @@ class BaseOS(object):
             text = template_port.render(interface=netns_interface)
         else:
             for index, fixed_ip in enumerate(fixed_ips, -1):
-                if index == -1:
-                    netns_ip_interface = netns_interface
-                else:
-                    netns_ip_interface = "{int}:{ip}".format(
-                        int=netns_interface, ip=index)
                 try:
                     ip_addr = fixed_ip['ip_address']
                     cidr = fixed_ip['subnet_cidr']
@@ -179,7 +174,7 @@ class BaseOS(object):
                 except ValueError:
                     return webob.Response(
                         json=dict(message="Invalid network IP"), status=400)
-                new_text = template_port.render(interface=netns_ip_interface,
+                new_text = template_port.render(interface=netns_interface,
                                                 ipv6=ip.version == 6,
                                                 ip_address=ip.exploded,
                                                 broadcast=broadcast,
