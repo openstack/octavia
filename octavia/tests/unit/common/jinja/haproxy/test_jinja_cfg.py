@@ -40,7 +40,8 @@ class TestHaproxyCfg(base.TestCase):
               "sample_listener_id_1/tls_container_id.pem "
               "crt /var/lib/octavia/certs/sample_listener_id_1 "
               "ca-file /var/lib/octavia/certs/sample_listener_id_1/"
-              "client_ca.pem verify required\n"
+              "client_ca.pem verify required crl-file /var/lib/octavia/"
+              "certs/sample_listener_id_1/SHA_ID.pem\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1\n"
               "    timeout client 50000\n\n").format(
@@ -71,8 +72,10 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(proto='TERMINATED_HTTPS',
                                                  tls=True, sni=True,
-                                                 client_ca_cert=True),
-            tls_tupe, client_ca_filename='client_ca.pem')
+                                                 client_ca_cert=True,
+                                                 client_crl_cert=True),
+            tls_tupe, client_ca_filename='client_ca.pem',
+            client_crl='SHA_ID.pem')
         self.assertEqual(
             sample_configs.sample_base_expected_config(
                 frontend=fe, backend=be),

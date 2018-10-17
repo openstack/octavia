@@ -83,7 +83,7 @@ class JinjaTemplater(object):
 
     def build_config(self, host_amphora, listener, tls_cert,
                      haproxy_versions, socket_path=None,
-                     client_ca_filename=None):
+                     client_ca_filename=None, client_crl=None):
         """Convert a logical configuration to the HAProxy version
 
         :param host_amphora: The Amphora this configuration is hosted on
@@ -105,7 +105,7 @@ class JinjaTemplater(object):
         return self.render_loadbalancer_obj(
             host_amphora, listener, tls_cert=tls_cert, socket_path=socket_path,
             feature_compatibility=feature_compatibility,
-            client_ca_filename=client_ca_filename)
+            client_ca_filename=client_ca_filename, client_crl=client_crl)
 
     def _get_template(self):
         """Returns the specified Jinja configuration template."""
@@ -124,7 +124,7 @@ class JinjaTemplater(object):
     def render_loadbalancer_obj(self, host_amphora, listener,
                                 tls_cert=None, socket_path=None,
                                 feature_compatibility=None,
-                                client_ca_filename=None):
+                                client_ca_filename=None, client_crl=None):
         """Renders a templated configuration from a load balancer object
 
         :param host_amphora: The Amphora this configuration is hosted on
@@ -141,7 +141,8 @@ class JinjaTemplater(object):
             listener,
             tls_cert,
             feature_compatibility,
-            client_ca_filename=client_ca_filename)
+            client_ca_filename=client_ca_filename,
+            client_crl=client_crl)
         if not socket_path:
             socket_path = '%s/%s.sock' % (self.base_amp_path, listener.id)
         return self._get_template().render(
@@ -154,14 +155,14 @@ class JinjaTemplater(object):
 
     def _transform_loadbalancer(self, host_amphora, loadbalancer, listener,
                                 tls_cert, feature_compatibility,
-                                client_ca_filename=None):
+                                client_ca_filename=None, client_crl=None):
         """Transforms a load balancer into an object that will
 
            be processed by the templating system
         """
         t_listener = self._transform_listener(
             listener, tls_cert, feature_compatibility,
-            client_ca_filename=client_ca_filename)
+            client_ca_filename=client_ca_filename, client_crl=client_crl)
         ret_value = {
             'id': loadbalancer.id,
             'vip_address': loadbalancer.vip.ip_address,
@@ -201,7 +202,7 @@ class JinjaTemplater(object):
         }
 
     def _transform_listener(self, listener, tls_cert, feature_compatibility,
-                            client_ca_filename=None):
+                            client_ca_filename=None, client_crl=None):
         """Transforms a listener into an object that will
 
             be processed by the templating system
@@ -245,6 +246,9 @@ class JinjaTemplater(object):
                              client_ca_filename))
             ret_value['client_auth'] = CLIENT_AUTH_MAP.get(
                 listener.client_authentication)
+        if listener.client_crl_container_id:
+            ret_value['client_crl_path'] = '%s' % (
+                os.path.join(self.base_crt_dir, listener.id, client_crl))
 
         if listener.default_pool:
             ret_value['default_pool'] = self._transform_pool(

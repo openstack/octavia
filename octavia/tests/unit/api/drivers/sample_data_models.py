@@ -38,6 +38,7 @@ class SampleDriverDataModels(object):
         self.sni_container_ref_1 = uuidutils.generate_uuid()
         self.sni_container_ref_2 = uuidutils.generate_uuid()
         self.client_ca_tls_certificate_ref = uuidutils.generate_uuid()
+        self.client_crl_container_ref = uuidutils.generate_uuid()
 
         self.pool1_id = uuidutils.generate_uuid()
         self.pool2_id = uuidutils.generate_uuid()
@@ -383,7 +384,8 @@ class SampleDriverDataModels(object):
             'timeout_member_data': 3000,
             'timeout_tcp_inspect': 4000,
             'client_ca_tls_certificate_id': self.client_ca_tls_certificate_ref,
-            'client_authentication': constants.CLIENT_AUTH_NONE
+            'client_authentication': constants.CLIENT_AUTH_NONE,
+            'client_crl_container_id': self.client_crl_container_ref
         }
 
         self.test_listener1_dict.update(self._common_test_dict)
@@ -397,6 +399,7 @@ class SampleDriverDataModels(object):
         del self.test_listener2_dict['l7policies']
         del self.test_listener2_dict['sni_containers']
         del self.test_listener2_dict['client_ca_tls_certificate_id']
+        del self.test_listener2_dict['client_crl_container_id']
 
         self.test_listeners = [self.test_listener1_dict,
                                self.test_listener2_dict]
@@ -416,6 +419,7 @@ class SampleDriverDataModels(object):
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
         ca_cert = 'ca cert'
+        crl_file_content = 'X509 CRL FILE'
 
         self.provider_listener1_dict = {
             'admin_state_up': True,
@@ -441,7 +445,9 @@ class SampleDriverDataModels(object):
             'timeout_tcp_inspect': 4000,
             'client_ca_tls_container_ref': self.client_ca_tls_certificate_ref,
             'client_ca_tls_container_data': ca_cert,
-            'client_authentication': constants.CLIENT_AUTH_NONE
+            'client_authentication': constants.CLIENT_AUTH_NONE,
+            'client_crl_container_ref': self.client_crl_container_ref,
+            'client_crl_container_data': crl_file_content
         }
 
         self.provider_listener2_dict = copy.deepcopy(
@@ -456,6 +462,8 @@ class SampleDriverDataModels(object):
         del self.provider_listener2_dict['client_ca_tls_container_data']
         self.provider_listener2_dict['client_authentication'] = (
             constants.CLIENT_AUTH_NONE)
+        self.provider_listener2_dict['client_crl_container_ref'] = None
+        del self.provider_listener2_dict['client_crl_container_data']
 
         self.provider_listener1 = driver_dm.Listener(
             **self.provider_listener1_dict)

@@ -505,6 +505,7 @@ class Listener(base_models.BASE, base_models.IdMixin,
         sa.ForeignKey("client_authentication_mode.name",
                       name="fk_listener_client_authentication_mode_name"),
         nullable=False, default=constants.CLIENT_AUTH_NONE)
+    client_crl_container_id = sa.Column(sa.String(255), nullable=True)
 
     _tags = orm.relationship(
         'Tags',

@@ -184,7 +184,9 @@ def listener_dict_to_provider_dict(listener_dict):
     if 'client_ca_tls_certificate_id' in new_listener_dict:
         new_listener_dict['client_ca_tls_container_ref'] = (
             new_listener_dict.pop('client_ca_tls_certificate_id'))
-
+    if 'client_crl_container_id' in new_listener_dict:
+        new_listener_dict['client_crl_container_ref'] = (
+            new_listener_dict.pop('client_crl_container_id'))
     listener_obj = data_models.Listener(**listener_dict)
     if (listener_obj.tls_certificate_id or listener_obj.sni_containers or
             listener_obj.client_ca_tls_certificate_id):
@@ -220,6 +222,10 @@ def listener_dict_to_provider_dict(listener_dict):
             cert = _get_secret_data(cert_manager, listener_obj,
                                     listener_obj.client_ca_tls_certificate_id)
             new_listener_dict['client_ca_tls_container_data'] = cert
+        if listener_obj.client_crl_container_id:
+            crl_file = _get_secret_data(cert_manager, listener_obj,
+                                        listener_obj.client_crl_container_id)
+            new_listener_dict['client_crl_container_data'] = crl_file
 
     # Remove the DB back references
     if 'load_balancer' in new_listener_dict:

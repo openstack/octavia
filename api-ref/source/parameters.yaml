@@ -282,6 +282,24 @@ client_ca_tls_container_ref-optional:
   min_version: 2.8
   required: false
   type: string
+client_crl_container_ref:
+  description: |
+    The URI of the `key manager service
+    <https://docs.openstack.org/castellan/latest/>`__ secret containing a
+    PEM format CA revocation list file for ``TERMINATED_TLS`` listeners.
+  in: body
+  min_version: 2.8
+  required: true
+  type: string
+client_crl_container_ref-optional:
+  description: |
+    The URI of the `key manager service
+    <https://docs.openstack.org/castellan/latest/>`__ secret containing a
+    PEM format CA revocation list file for ``TERMINATED_TLS`` listeners.
+  in: body
+  min_version: 2.8
+  required: false
+  type: string
 compute-flavor:
   description: |
     The ID of the compute flavor used for the amphora.

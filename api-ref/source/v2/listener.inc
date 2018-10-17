@@ -48,6 +48,7 @@ Response Parameters
    - admin_state_up: admin_state_up
    - client_authentication: client_authentication
    - client_ca_tls_container_ref: client_ca_tls_container_ref
+   - client_crl_container_ref: client_crl_container_ref
    - connection_limit: connection_limit
    - created_at: created_at
    - default_pool_id: default_pool_id
@@ -140,6 +141,7 @@ Request
    - admin_state_up: admin_state_up-default-optional
    - client_authentication: client_authentication-optional
    - client_ca_tls_container_ref: client_ca_tls_container_ref-optional
+   - client_crl_container_ref: client_crl_container_ref-optional
    - connection_limit: connection_limit-optional
    - default_pool: pool-optional
    - default_pool_id: default_pool_id-optional
@@ -210,6 +212,7 @@ Response Parameters
    - admin_state_up: admin_state_up
    - client_authentication: client_authentication
    - client_ca_tls_container_ref: client_ca_tls_container_ref
+   - client_crl_container_ref: client_crl_container_ref
    - connection_limit: connection_limit
    - created_at: created_at
    - default_pool_id: default_pool_id
@@ -286,6 +289,7 @@ Response Parameters
    - admin_state_up: admin_state_up
    - client_authentication: client_authentication
    - client_ca_tls_container_ref: client_ca_tls_container_ref
+   - client_crl_container_ref: client_crl_container_ref
    - connection_limit: connection_limit
    - created_at: created_at
    - default_pool_id: default_pool_id
@@ -352,6 +356,7 @@ Request
    - admin_state_up: admin_state_up-default-optional
    - client_authentication: client_authentication-optional
    - client_ca_tls_container_ref: client_ca_tls_container_ref-optional
+   - client_crl_container_ref: client_crl_container_ref-optional
    - connection_limit: connection_limit-optional
    - default_pool_id: default_pool_id-optional
    - default_tls_container_ref: default_tls_container_ref-optional
@@ -386,6 +391,7 @@ Response Parameters
    - admin_state_up: admin_state_up
    - client_authentication: client_authentication
    - client_ca_tls_container_ref: client_ca_tls_container_ref
+   - client_crl_container_ref: client_crl_container_ref
    - connection_limit: connection_limit
    - created_at: created_at
    - default_pool_id: default_pool_id

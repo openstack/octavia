@@ -373,6 +373,11 @@ contain the following:
 | client_ca_tls_container_ref  | string | The reference to the secrets        |
 |                              |        | container.                          |
 +------------------------------+--------+-------------------------------------+
+| client_crl_container_data    | string | A PEM encoded CRL file.             |
++------------------------------+--------+-------------------------------------+
+| client_crl_container_ref     | string | The reference to the secrets        |
+|                              |        | container.                          |
++------------------------------+--------+-------------------------------------+
 | connection_limit             | int    | The max number of connections       |
 |                              |        | permitted for this listener. Default|
 |                              |        | is -1, which is infinite            |

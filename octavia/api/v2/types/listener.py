@@ -28,7 +28,8 @@ class BaseListenerType(types.BaseType):
     _type_to_model_map = {
         'admin_state_up': 'enabled',
         'default_tls_container_ref': 'tls_certificate_id',
-        'client_ca_tls_container_ref': 'client_ca_tls_certificate_id'}
+        'client_ca_tls_container_ref': 'client_ca_tls_certificate_id',
+        'client_crl_container_ref': 'client_crl_container_id'}
     _child_map = {}
 
 
@@ -59,6 +60,7 @@ class ListenerResponse(BaseListenerType):
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
     client_ca_tls_container_ref = wtypes.StringType()
     client_authentication = wtypes.wsattr(wtypes.StringType())
+    client_crl_container_ref = wtypes.wsattr(wtypes.StringType())
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -142,6 +144,7 @@ class ListenerPOST(BaseListenerType):
     client_authentication = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_CLIENT_AUTH_MODES),
         default=constants.CLIENT_AUTH_NONE)
+    client_crl_container_ref = wtypes.StringType(max_length=255)
 
 
 class ListenerRootPOST(types.BaseType):
@@ -177,6 +180,7 @@ class ListenerPUT(BaseListenerType):
     client_ca_tls_container_ref = wtypes.StringType(max_length=255)
     client_authentication = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_CLIENT_AUTH_MODES))
+    client_crl_container_ref = wtypes.StringType(max_length=255)
 
 
 class ListenerRootPUT(types.BaseType):
@@ -224,6 +228,7 @@ class ListenerSingleCreate(BaseListenerType):
     client_authentication = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_CLIENT_AUTH_MODES),
         default=constants.CLIENT_AUTH_NONE)
+    client_crl_container_ref = wtypes.StringType(max_length=255)
 
 
 class ListenerStatusResponse(BaseListenerType):
