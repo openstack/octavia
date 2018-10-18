@@ -26,6 +26,7 @@ import netaddr
 from oslo_config import cfg
 import rfc3986
 import six
+from wsme import types as wtypes
 
 from octavia.common import constants
 from octavia.common import exceptions
@@ -161,9 +162,70 @@ def l7rule_data(l7rule):
             raise exceptions.InvalidL7Rule(msg='invalid comparison type '
                                            'for rule type')
 
+    elif l7rule.type in [constants.L7RULE_TYPE_SSL_CONN_HAS_CERT,
+                         constants.L7RULE_TYPE_SSL_VERIFY_RESULT,
+                         constants.L7RULE_TYPE_SSL_DN_FIELD]:
+        validate_l7rule_ssl_types(l7rule)
+
     else:
         raise exceptions.InvalidL7Rule(msg='invalid rule type')
     return True
+
+
+def validate_l7rule_ssl_types(l7rule):
+    if not l7rule.type or l7rule.type not in [
+       constants.L7RULE_TYPE_SSL_CONN_HAS_CERT,
+       constants.L7RULE_TYPE_SSL_VERIFY_RESULT,
+       constants.L7RULE_TYPE_SSL_DN_FIELD]:
+        return
+
+    rule_type = None if l7rule.type == wtypes.Unset else l7rule.type
+    req_key = None if l7rule.key == wtypes.Unset else l7rule.key
+    req_value = None if l7rule.value == wtypes.Unset else l7rule.value
+    compare_type = (None if l7rule.compare_type == wtypes.Unset else
+                    l7rule.compare_type)
+    msg = None
+    if rule_type == constants.L7RULE_TYPE_SSL_CONN_HAS_CERT:
+        # key and value are not allowed
+        if req_key:
+            # log error or raise
+            msg = 'L7rule type {0} does not use the "key" field.'.format(
+                rule_type)
+        elif req_value.lower() != 'true':
+            msg = 'L7rule value {0} is not a boolean True string.'.format(
+                req_value)
+        elif compare_type != constants.L7RULE_COMPARE_TYPE_EQUAL_TO:
+            msg = 'L7rule type {0} only supports the {1} compare type.'.format(
+                rule_type, constants.L7RULE_COMPARE_TYPE_EQUAL_TO)
+
+    if rule_type == constants.L7RULE_TYPE_SSL_VERIFY_RESULT:
+        if req_key:
+            # log or raise req_key not used
+            msg = 'L7rule type {0} does not use the "key" field.'.format(
+                rule_type)
+        elif not req_value.isdigit() or int(req_value) < 0:
+            # log or raise req_value must be int
+            msg = 'L7rule type {0} needs a int value, which is >= 0'.format(
+                rule_type)
+        elif compare_type != constants.L7RULE_COMPARE_TYPE_EQUAL_TO:
+            msg = 'L7rule type {0} only supports the {1} compare type.'.format(
+                rule_type, constants.L7RULE_COMPARE_TYPE_EQUAL_TO)
+
+    if rule_type == constants.L7RULE_TYPE_SSL_DN_FIELD:
+        dn_regex = re.compile(constants.DISTINGUISHED_NAME_FIELD_REGEX)
+        if compare_type == constants.L7RULE_COMPARE_TYPE_REGEX:
+            regex(l7rule.value)
+
+        if not req_key or not req_value:
+            # log or raise key and value must be specified.
+            msg = 'L7rule type {0} needs to specify a key and a value.'.format(
+                rule_type)
+        # log or raise the key must be splited by '-'
+        elif not dn_regex.match(req_key):
+            msg = ('Invalid L7rule distinguished name field.')
+
+    if msg:
+        raise exceptions.InvalidL7Rule(msg=msg)
 
 
 def sanitize_l7policy_api_args(l7policy, create=False):

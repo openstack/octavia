@@ -86,6 +86,15 @@ L7 rules have the following types:
   compares it against the value parameter in the rule.
 * ``COOKIE``: The rule looks for a cookie named by the key parameter and
   compares it against the value parameter in the rule.
+* ``SSL_CONN_HAS_CERT``: The rule will match if the client has presented a
+  certificate for TLS client authentication. This does not imply the
+  certificate is valid.
+* ``SSL_VERIFY_RESULT``: This rule will match the TLS client authentication
+  certificate validation result. A value of '0' means the certificate was
+  successfully validated. A value greater than '0' means the certificate
+  failed validation. This value follows the `openssl-verify result codes <https://github.com/openssl/openssl/blob/master/include/openssl/x509_vfy.h#L99>`_.
+* ``SSL_DN_FIELD``: The rule looks for a Distinguished Name feild defined in
+  the key parameter and compares it against the value parameter in the rule.
 
 Comparison types
 ________________
@@ -183,3 +192,4 @@ Useful links
 * `Octavia API Reference <https://developer.openstack.org/api-ref/load-balancer/>`_
 * `LBaaS Layer 7 rules <https://github.com/openstack/neutron-specs/blob/master/specs/mitaka/lbaas-l7-rules.rst>`_
 * `Using ACLs and fetching samples <http://cbonte.github.io/haproxy-dconv/1.6/configuration.html#7>`_
+* `OpenSSL openssl-verify command <https://www.openssl.org/docs/manmaster/man1/openssl-verify.html>`_

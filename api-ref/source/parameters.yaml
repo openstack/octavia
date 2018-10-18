@@ -770,14 +770,16 @@ l7rule-key-optional:
 l7rule-type:
   description: |
     The L7 rule type.  One of ``COOKIE``, ``FILE_TYPE``, ``HEADER``,
-    ``HOST_NAME``, or ``PATH``.
+    ``HOST_NAME``, ``PATH``, ``SSL_CONN_HAS_CERT``, ``SSL_VERIFY_RESULT``,
+    or ``SSL_DN_FIELD``.
   in: body
   required: true
   type: string
 l7rule-type-optional:
   description: |
     The L7 rule type.  One of ``COOKIE``, ``FILE_TYPE``, ``HEADER``,
-    ``HOST_NAME``, or ``PATH``.
+    ``HOST_NAME``, ``PATH``, ``SSL_CONN_HAS_CERT``, ``SSL_VERIFY_RESULT``,
+    or ``SSL_DN_FIELD``.
   in: body
   required: false
   type: string

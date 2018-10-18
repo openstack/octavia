@@ -682,6 +682,135 @@ class TestL7Rule(base.BaseAPITest):
         self.assertIn('Provider \'bad_driver\' reports error: broken',
                       response.json.get('faultstring'))
 
+    def test_create_with_ssl_rule_types(self):
+        test_mapping = {
+            constants.L7RULE_TYPE_SSL_CONN_HAS_CERT: {
+                'value': 'tRuE',
+                'compare_type': constants.L7RULE_COMPARE_TYPE_EQUAL_TO},
+            constants.L7RULE_TYPE_SSL_VERIFY_RESULT: {
+                'value': '0',
+                'compare_type': constants.L7RULE_COMPARE_TYPE_EQUAL_TO},
+            constants.L7RULE_TYPE_SSL_DN_FIELD: {
+                'key': 'st-1', 'value': 'ST-FIELD1-PREFIX',
+                'compare_type': constants.L7RULE_COMPARE_TYPE_STARTS_WITH}
+        }
+        for l7rule_type, test_body in test_mapping.items():
+            self.set_lb_status(self.lb_id)
+            test_body.update({'type': l7rule_type})
+            api_l7rule = self.create_l7rule(
+                self.l7policy_id, l7rule_type,
+                test_body['compare_type'], test_body['value'],
+                key=test_body.get('key')).get(self.root_tag)
+            self.assertEqual(l7rule_type, api_l7rule.get('type'))
+            self.assertEqual(test_body['compare_type'],
+                             api_l7rule.get('compare_type'))
+            self.assertEqual(test_body['value'], api_l7rule.get('value'))
+            if test_body.get('key'):
+                self.assertEqual(test_body['key'], api_l7rule.get('key'))
+            self.assertFalse(api_l7rule.get('invert'))
+            self.assert_correct_status(
+                lb_id=self.lb_id, listener_id=self.listener_id,
+                l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),
+                lb_prov_status=constants.PENDING_UPDATE,
+                listener_prov_status=constants.PENDING_UPDATE,
+                l7policy_prov_status=constants.PENDING_UPDATE,
+                l7rule_prov_status=constants.PENDING_CREATE,
+                l7rule_op_status=constants.OFFLINE)
+
+    def _test_bad_cases_with_ssl_rule_types(self, is_create=True,
+                                            rule_id=None):
+        if is_create:
+            req_func = self.post
+            first_req_arg = self.l7rules_path
+        else:
+            req_func = self.put
+            first_req_arg = self.l7rule_path.format(l7rule_id=rule_id)
+
+        # test bad cases of L7RULE_TYPE_SSL_CONN_HAS_CERT
+        l7rule = {'compare_type': constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+                  'invert': False,
+                  'type': constants.L7RULE_TYPE_SSL_CONN_HAS_CERT,
+                  'value': 'true',
+                  'admin_state_up': True,
+                  'key': 'no-need-key'}
+        response = req_func(first_req_arg, self._build_body(l7rule),
+                            status=400).json
+        self.assertIn('L7rule type {0} does not use the "key" field.'.format(
+            constants.L7RULE_TYPE_SSL_CONN_HAS_CERT),
+            response.get('faultstring'))
+
+        l7rule.pop('key')
+        l7rule['value'] = 'not-true-string'
+        response = req_func(first_req_arg, self._build_body(l7rule),
+                            status=400).json
+        self.assertIn(
+            'L7rule value {0} is not a boolean True string.'.format(
+                l7rule['value']), response.get('faultstring'))
+
+        l7rule['value'] = 'tRUe'
+        l7rule['compare_type'] = constants.L7RULE_COMPARE_TYPE_STARTS_WITH
+        response = req_func(first_req_arg, self._build_body(l7rule),
+                            status=400).json
+        self.assertIn(
+            'L7rule type {0} only supports the {1} compare type.'.format(
+                constants.L7RULE_TYPE_SSL_CONN_HAS_CERT,
+                constants.L7RULE_COMPARE_TYPE_EQUAL_TO),
+            response.get('faultstring'))
+
+        # test bad cases of L7RULE_TYPE_SSL_VERIFY_RES
+        l7rule = {'compare_type': constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+                  'invert': False,
+                  'type': constants.L7RULE_TYPE_SSL_VERIFY_RESULT,
+                  'value': 'true',
+                  'admin_state_up': True,
+                  'key': 'no-need-key'}
+        response = req_func(first_req_arg, self._build_body(l7rule),
+                            status=400).json
+        self.assertIn(
+            'L7rule type {0} does not use the "key" field.'.format(
+                l7rule['type']), response.get('faultstring'))
+
+        l7rule.pop('key')
+        response = req_func(first_req_arg, self._build_body(l7rule),
+                            status=400).json
+        self.assertIn(
+            'L7rule type {0} needs a int value, which is >= 0'.format(
+                l7rule['type']), response.get('faultstring'))
+
+        l7rule['value'] = '0'
+        l7rule['compare_type'] = constants.L7RULE_COMPARE_TYPE_STARTS_WITH
+        response = req_func(first_req_arg, self._build_body(l7rule),
+                            status=400).json
+        self.assertIn(
+            'L7rule type {0} only supports the {1} compare type.'.format(
+                l7rule['type'], constants.L7RULE_COMPARE_TYPE_EQUAL_TO),
+            response.get('faultstring'))
+
+        # test bad cases of L7RULE_TYPE_SSL_DN_FIELD
+        l7rule = {'compare_type': constants.L7RULE_COMPARE_TYPE_REGEX,
+                  'invert': False,
+                  'type': constants.L7RULE_TYPE_SSL_DN_FIELD,
+                  'value': 'bad regex\\',
+                  'admin_state_up': True}
+        # This case just test that fail to parse the regex from the value
+        req_func(first_req_arg, self._build_body(l7rule), status=400).json
+
+        l7rule['value'] = '^.test*$'
+        response = req_func(first_req_arg, self._build_body(l7rule),
+                            status=400).json
+        self.assertIn(
+            'L7rule type {0} needs to specify a key and a value.'.format(
+                l7rule['type']), response.get('faultstring'))
+
+        l7rule['key'] = 'NOT_SUPPORTED_DN_FIELD'
+        response = req_func(first_req_arg, self._build_body(l7rule),
+                            status=400).json
+        self.assertIn('Invalid L7rule distinguished name field.',
+                      response.get('faultstring'))
+
+    def test_create_bad_cases_with_ssl_rule_types(self):
+        self._test_bad_cases_with_ssl_rule_types()
+
     def test_update(self):
         api_l7rule = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,
@@ -810,6 +939,53 @@ class TestL7Rule(base.BaseAPITest):
             lb_id=self.lb_id, listener_id=self.listener_id,
             l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),
             l7rule_prov_status=constants.ACTIVE)
+
+    def test_update_with_ssl_rule_types(self):
+        test_mapping = {
+            constants.L7RULE_TYPE_SSL_CONN_HAS_CERT: {
+                'value': 'tRuE',
+                'compare_type': constants.L7RULE_COMPARE_TYPE_EQUAL_TO},
+            constants.L7RULE_TYPE_SSL_VERIFY_RESULT: {
+                'value': '0',
+                'compare_type': constants.L7RULE_COMPARE_TYPE_EQUAL_TO},
+            constants.L7RULE_TYPE_SSL_DN_FIELD: {
+                'key': 'st-1', 'value': 'ST-FIELD1-PREFIX',
+                'compare_type': constants.L7RULE_COMPARE_TYPE_STARTS_WITH}
+        }
+
+        for l7rule_type, test_body in test_mapping.items():
+            self.set_lb_status(self.lb_id)
+            api_l7rule = self.create_l7rule(
+                self.l7policy_id, constants.L7RULE_TYPE_PATH,
+                constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+                '/api').get(self.root_tag)
+            self.set_lb_status(self.lb_id)
+            test_body.update({'type': l7rule_type})
+            response = self.put(self.l7rule_path.format(
+                l7rule_id=api_l7rule.get('id')),
+                self._build_body(test_body)).json.get(self.root_tag)
+            self.assertEqual(l7rule_type, response.get('type'))
+            self.assertEqual(test_body['compare_type'],
+                             response.get('compare_type'))
+            self.assertEqual(test_body['value'], response.get('value'))
+            if test_body.get('key'):
+                self.assertEqual(test_body['key'], response.get('key'))
+            self.assertFalse(response.get('invert'))
+            self.assert_correct_status(
+                lb_id=self.lb_id, listener_id=self.listener_id,
+                l7policy_id=self.l7policy_id, l7rule_id=response.get('id'),
+                lb_prov_status=constants.PENDING_UPDATE,
+                listener_prov_status=constants.PENDING_UPDATE,
+                l7policy_prov_status=constants.PENDING_UPDATE,
+                l7rule_prov_status=constants.PENDING_UPDATE)
+
+    def test_update_bad_cases_with_ssl_rule_types(self):
+        api_l7rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self._test_bad_cases_with_ssl_rule_types(
+            is_create=False, rule_id=api_l7rule.get('id'))
 
     def test_delete(self):
         api_l7rule = self.create_l7rule(

@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Adds the ability to define L7 rules based on TLS client authentication
+    information. The new L7 rules are\: "L7RULE_TYPE_SSL_CONN_HAS_CERT",
+    "L7RULE_TYPE_VERIFY_RESULT", and "L7RULE_TYPE_DN_FIELD".
