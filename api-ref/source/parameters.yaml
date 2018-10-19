@@ -1273,19 +1273,3 @@ weight-optional:
   in: body
   required: false
   type: integer
-x_forwarded_for:
-  description: |
-    When ``true`` a ``X-Forwarded-For`` header is inserted into the request
-    to the backend ``member`` that specifies the client (source) IP address.
-    The default is ``false``.
-  in: body
-  required: false
-  type: boolean
-x_forwarded_port:
-  description: |
-    When ``true`` a ``X-Forwarded-Port`` header is inserted into the request
-    to the backend ``member`` that specifies the listener port the request
-    was received on. The default is ``false``.
-  in: body
-  required: false
-  type: boolean
