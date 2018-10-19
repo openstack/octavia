@@ -194,8 +194,8 @@ htmlhelp_basename = 'octaviadoc'
 
 # -- Options for LaTeX output -------------------------------------------------
 
-pdf_theme_path = openstackdocstheme.get_pdf_theme_path()
-openstack_logo = openstackdocstheme.get_openstack_logo_path()
+pdf_theme_path = openstackdocstheme.get_pdf_theme_path('openstackdocs')
+openstack_logo = openstackdocstheme.get_theme_logo_path('openstackdocs')
 
 latex_custom_template = r"""
 \newcommand{\openstacklogo}{%s}
