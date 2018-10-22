@@ -243,6 +243,6 @@ class TaskUtils(object):
             return self.loadbalancer_repo.get(db_apis.get_session(),
                                               id=loadbalancer_id)
         except Exception as e:
-            LOG.error("Failed to get loadbalancer &(loadbalancer)s "
+            LOG.error("Failed to get loadbalancer %(loadbalancer)s "
                       "due to: %(except)s",
                       {'loadbalancer': loadbalancer_id, 'except': e})
