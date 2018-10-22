@@ -107,7 +107,7 @@ Command syntax:
             [-e]
             [-f]
             [-h]
-            [-i **ubuntu-minimal** | fedora | centos | rhel ]
+            [-i **ubuntu-minimal** | fedora | centos-minimal | rhel ]
             [-k <kernel package name> ]
             [-l <log file> ]
             [-n]
@@ -207,7 +207,7 @@ For example to build a CentOS 7 amphora with Pike RPM packages:
 
     # Point to modified image and run script
     $ export DIB_LOCAL_IMAGE=/home/stack/CentOS-7-x86_64-GenericCloud.qcow2
-    $ ./diskimage-create.sh -p -i centos
+    $ ./diskimage-create.sh -p -i centos-minimal
 
 RHEL specific variables
 ------------------------
