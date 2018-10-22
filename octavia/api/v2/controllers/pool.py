@@ -98,17 +98,6 @@ class PoolsController(base.BaseController):
             raise exceptions.ImmutableObject(resource=_('Load Balancer'),
                                              id=lb_id)
 
-    def _reset_lb_and_listener_statuses(self, session, lb_id, listener_ids):
-        # Setting LB + listeners back to active because this should be a
-        # recoverable error
-        self.repositories.load_balancer.update(
-            session, lb_id,
-            provisioning_status=constants.ACTIVE)
-        for listener in listener_ids:
-            self.repositories.listener.update(
-                session, listener,
-                provisioning_status=constants.ACTIVE)
-
     def _validate_create_pool(self, lock_session, pool_dict, listener_id=None):
         """Validate creating pool on load balancer.
 

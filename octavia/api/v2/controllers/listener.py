@@ -127,12 +127,6 @@ class ListenersController(base.BaseController):
                     "type UDP.") % constants.PROTOCOL_UDP
             raise exceptions.ValidationException(detail=msg)
 
-    def _reset_lb_status(self, session, lb_id):
-        # Setting LB back to active because this should be a recoverable error
-        self.repositories.load_balancer.update(
-            session, lb_id,
-            provisioning_status=constants.ACTIVE)
-
     def _validate_tls_refs(self, tls_refs):
         context = pecan.request.context.get('octavia_context')
         bad_refs = []
