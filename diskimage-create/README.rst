@@ -70,6 +70,7 @@ Command syntax:
             [-c **~/.cache/image-create** | <cache directory> ]
             [-h]
             [-i **ubuntu** | fedora | centos | rhel ]
+            [-l <log file> ]
             [-n]
             [-o **amphora-x64-haproxy** | <filename> ]
             [-r <root password> ]
@@ -83,6 +84,7 @@ Command syntax:
         '-c' is the path to the cache directory (default: ~/.cache/image-create)
         '-h' display help message
         '-i' is the base OS (default: ubuntu)
+        '-l' is output logfile (default: none)
         '-n' disable sshd (default: enabled)
         '-o' is the output image file name
         '-p' install amphora-agent from distribution packages (default: disabled)"

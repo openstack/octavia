@@ -27,6 +27,7 @@ usage() {
     echo "            [-e]"
     echo "            [-h]"
     echo "            [-i **ubuntu-minimal** | fedora | centos | rhel ]"
+    echo "            [-l <log file> ]"
     echo "            [-n]"
     echo "            [-o **amphora-x64-haproxy** | <filename> ]"
     echo "            [-p]"
@@ -43,6 +44,7 @@ usage() {
     echo "        '-e' enable complete mandatory access control systems when available (default: permissive)"
     echo "        '-h' display this help message"
     echo "        '-i' is the base OS (default: ubuntu)"
+    echo "        '-l' is output logfile (default: none)"
     echo "        '-n' disable sshd (default: enabled)"
     echo "        '-o' is the output image file name"
     echo "        '-p' install amphora-agent from distribution packages (default: disabled)"
@@ -80,7 +82,9 @@ if [ -z $OCTAVIA_REPO_PATH ]; then
 fi
 dib_enable_tracing=
 
-while getopts "a:b:c:d:ehi:no:pt:r:s:vw:x" opt; do
+AMP_LOGFILE=""
+
+while getopts "a:b:c:d:ehi:l:no:pt:r:s:vw:x" opt; do
     case $opt in
         a)
             AMP_ARCH=$OPTARG
@@ -124,6 +128,9 @@ while getopts "a:b:c:d:ehi:no:pt:r:s:vw:x" opt; do
             if [ $AMP_BASEOS == "ubuntu" ]; then
                 AMP_BASEOS="ubuntu-minimal"
             fi
+        ;;
+        l)
+            AMP_LOGFILE="--logfile=$OPTARG"
         ;;
         n)
             AMP_DISABLE_SSHD=1
@@ -388,7 +395,7 @@ if [ -n "$dib_enable_tracing" ]; then
     dib_trace_arg="-x"
 fi
 
-disk-image-create $dib_trace_arg -a $AMP_ARCH -o $AMP_OUTPUTFILENAME -t $AMP_IMAGETYPE --image-size $AMP_IMAGESIZE --image-cache $AMP_CACHEDIR $AMP_element_sequence
+disk-image-create $AMP_LOGFILE $dib_trace_arg -a $AMP_ARCH -o $AMP_OUTPUTFILENAME -t $AMP_IMAGETYPE --image-size $AMP_IMAGESIZE --image-cache $AMP_CACHEDIR $AMP_element_sequence
 
 popd > /dev/null # out of $TEMP
 rm -rf $TEMP

@@ -1,4 +1,8 @@
 - hosts: primary
+  roles:
+    - role: stage-output
+      stage_dir: "{{ ansible_user_dir }}/workspace"
+
   tasks:
 
     - name: Copy files from {{ ansible_user_dir }}/workspace/ on node
