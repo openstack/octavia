@@ -1,0 +1,11 @@
+---
+features:
+  - |
+    Added new tool ``octavia-status upgrade check``.
+    This framework allows adding various checks which can be run before a
+    Octavia upgrade to ensure if the upgrade can be performed safely.
+upgrade:
+  - |
+    Operator can now use new CLI tool ``octavia-status upgrade check``
+    to check if Octavia deployment can be safely upgraded from
+    N-1 to N release.
