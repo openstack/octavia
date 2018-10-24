@@ -12,12 +12,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_config import cfg
 from wsme import types as wtypes
 
 from octavia.api.common import types
 from octavia.api.v2.types import l7policy
 from octavia.api.v2.types import pool
 from octavia.common import constants
+
+CONF = cfg.CONF
+CONF.import_group('haproxy_amphora', 'octavia.common.config')
 
 
 class BaseListenerType(types.BaseType):
@@ -116,19 +120,19 @@ class ListenerPOST(BaseListenerType):
     timeout_client_data = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
                            maximum=constants.MAX_TIMEOUT),
-        default=constants.DEFAULT_TIMEOUT_CLIENT_DATA)
+        default=CONF.haproxy_amphora.timeout_client_data)
     timeout_member_connect = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
                            maximum=constants.MAX_TIMEOUT),
-        default=constants.DEFAULT_TIMEOUT_MEMBER_CONNECT)
+        default=CONF.haproxy_amphora.timeout_member_connect)
     timeout_member_data = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
                            maximum=constants.MAX_TIMEOUT),
-        default=constants.DEFAULT_TIMEOUT_MEMBER_DATA)
+        default=CONF.haproxy_amphora.timeout_member_data)
     timeout_tcp_inspect = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
                            maximum=constants.MAX_TIMEOUT),
-        default=constants.DEFAULT_TIMEOUT_TCP_INSPECT)
+        default=CONF.haproxy_amphora.timeout_tcp_inspect)
 
 
 class ListenerRootPOST(types.BaseType):
@@ -189,19 +193,19 @@ class ListenerSingleCreate(BaseListenerType):
     timeout_client_data = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
                            maximum=constants.MAX_TIMEOUT),
-        default=constants.DEFAULT_TIMEOUT_CLIENT_DATA)
+        default=CONF.haproxy_amphora.timeout_client_data)
     timeout_member_connect = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
                            maximum=constants.MAX_TIMEOUT),
-        default=constants.DEFAULT_TIMEOUT_MEMBER_CONNECT)
+        default=CONF.haproxy_amphora.timeout_member_connect)
     timeout_member_data = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
                            maximum=constants.MAX_TIMEOUT),
-        default=constants.DEFAULT_TIMEOUT_MEMBER_DATA)
+        default=CONF.haproxy_amphora.timeout_member_data)
     timeout_tcp_inspect = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
                            maximum=constants.MAX_TIMEOUT),
-        default=constants.DEFAULT_TIMEOUT_TCP_INSPECT)
+        default=CONF.haproxy_amphora.timeout_tcp_inspect)
 
 
 class ListenerStatusResponse(BaseListenerType):

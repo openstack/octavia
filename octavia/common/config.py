@@ -284,6 +284,18 @@ haproxy_amphora_opts = [
     cfg.FloatOpt('rest_request_read_timeout', default=60,
                  help=_("The time in seconds to wait for a REST API "
                         "response.")),
+    cfg.IntOpt('timeout_client_data',
+               default=constants.DEFAULT_TIMEOUT_CLIENT_DATA,
+               help=_('Frontend client inactivity timeout.')),
+    cfg.IntOpt('timeout_member_connect',
+               default=constants.DEFAULT_TIMEOUT_MEMBER_CONNECT,
+               help=_('Backend member connection timeout.')),
+    cfg.IntOpt('timeout_member_data',
+               default=constants.DEFAULT_TIMEOUT_MEMBER_DATA,
+               help=_('Backend member inactivity timeout.')),
+    cfg.IntOpt('timeout_tcp_inspect',
+               default=constants.DEFAULT_TIMEOUT_TCP_INSPECT,
+               help=_('Time to wait for TCP packets for content inspection.')),
     # REST client
     cfg.StrOpt('client_cert', default='/etc/octavia/certs/client.pem',
                help=_("The client certificate to talk to the agent")),
