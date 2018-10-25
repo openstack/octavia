@@ -1320,6 +1320,26 @@ timeout_tcp_inspect-optional:
   min_version: 2.1
   required: false
   type: integer
+tls_container_ref:
+  description: |
+    The reference to the `key manager service
+    <https://docs.openstack.org/castellan/latest/>`__ secret containing a
+    PKCS12 format certificate/key bundle for ``tls_enabled`` pools for
+    TLS client authentication to the member servers.
+  in: body
+  min_version: 2.8
+  required: true
+  type: string
+tls_container_ref-optional:
+  description: |
+    The reference to the `key manager service
+    <https://docs.openstack.org/castellan/latest/>`__ secret containing a
+    PKCS12 format certificate/key bundle for ``tls_enabled`` pools for
+    TLS client authentication to the member servers.
+  in: body
+  min_version: 2.8
+  required: false
+  type: string
 total_connections:
   description: |
     The total connections handled.

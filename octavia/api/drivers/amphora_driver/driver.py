@@ -135,7 +135,9 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         if 'admin_state_up' in pool_dict:
             pool_dict['enabled'] = pool_dict.pop('admin_state_up')
         pool_id = pool_dict.pop('pool_id')
-
+        if 'tls_container_ref' in pool_dict:
+            pool_dict['tls_container_id'] = pool_dict.pop('tls_container_ref')
+        pool_dict.pop('tls_container_data', None)
         payload = {consts.POOL_ID: pool_id,
                    consts.POOL_UPDATES: pool_dict}
         self.client.cast({}, 'update_pool', **payload)

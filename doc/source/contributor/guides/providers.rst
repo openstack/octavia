@@ -676,6 +676,11 @@ contain the following:
 |                       |        | {'type': 'APP_COOKIE',                   |
 |                       |        | 'cookie_name': <cookie_name>}            |
 +-----------------------+--------+------------------------------------------+
+| tls_container_data    | dict   | A `TLS container`_ dict.                 |
++-----------------------+--------+------------------------------------------+
+| tls_container_ref     | string | The reference to the secrets             |
+|                       |        | container.                               |
++-----------------------+--------+------------------------------------------+
 
 Delete
 ^^^^^^
@@ -723,6 +728,11 @@ contain the following:
 |                       |        | OR                                       |
 |                       |        | {'type': 'APP_COOKIE',                   |
 |                       |        | 'cookie_name': <cookie_name>}            |
++-----------------------+--------+------------------------------------------+
+| tls_container_data    | dict   | A `TLS container`_ dict.                 |
++-----------------------+--------+------------------------------------------+
+| tls_container_ref     | string | The reference to the secrets             |
+|                       |        | container.                               |
 +-----------------------+--------+------------------------------------------+
 
 The pool will be in the ``PENDING_UPDATE`` provisioning_status when it is

@@ -27,6 +27,7 @@
         "id": "4029d267-3983-4224-a3d0-afb3fe16a2cd",
         "operating_status": "ONLINE",
         "name": "super-pool",
-        "tags": ["test_tag"]
+        "tags": ["test_tag"],
+        "tls_container_ref": "http://198.51.100.10:9311/v1/containers/4073846f-1d5e-42e1-a4cf-a7046419d0e6"
     }
 }

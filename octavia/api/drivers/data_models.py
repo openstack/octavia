@@ -170,7 +170,8 @@ class Pool(BaseDataModel):
                  healthmonitor=Unset, lb_algorithm=Unset,
                  loadbalancer_id=Unset, members=Unset, name=Unset,
                  pool_id=Unset, listener_id=Unset, protocol=Unset,
-                 session_persistence=Unset):
+                 session_persistence=Unset, tls_container_ref=Unset,
+                 tls_container_data=Unset):
 
         self.admin_state_up = admin_state_up
         self.description = description
@@ -183,6 +184,8 @@ class Pool(BaseDataModel):
         self.listener_id = listener_id
         self.protocol = protocol
         self.session_persistence = session_persistence
+        self.tls_container_ref = tls_container_ref
+        self.tls_container_data = tls_container_data
 
 
 class Member(BaseDataModel):

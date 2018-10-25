@@ -13,6 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
+import os
+
 from octavia.common import constants
 from octavia.common.jinja.haproxy import jinja_cfg
 from octavia.tests.unit import base
@@ -744,6 +747,39 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs.sample_base_expected_config(backend=be),
             rendered_obj)
 
+    def test_render_template_pool_cert(self):
+        cert_file_path = os.path.join(self.jinja_cfg.base_crt_dir,
+                                      'sample_listener_id_1', 'fake path')
+        be = ("backend sample_pool_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31s\n"
+              "    option httpchk GET /index.html\n"
+              "    http-check expect rstatus 418\n"
+              "    fullconn {maxconn}\n"
+              "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
+              "    server sample_member_id_1 10.0.0.99:82 weight 13 "
+              "check inter 30s fall 3 rise 2 cookie sample_member_id_1 "
+              "{opts}\n"
+              "    server sample_member_id_2 10.0.0.98:82 weight 13 "
+              "check inter 30s fall 3 rise 2 cookie sample_member_id_2 "
+              "{opts}\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN,
+            opts="%s %s %s %s" % ("ssl", "crt", cert_file_path, "verify none"))
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
+            sample_configs.sample_listener_tuple(pool_cert=True),
+            pool_tls_certs={
+                'sample_pool_id_1':
+                    {'client_cert': cert_file_path,
+                     'sni_certs': []}})
+        self.assertEqual(
+            sample_configs.sample_base_expected_config(backend=be),
+            rendered_obj)
+
     def test_transform_session_persistence(self):
         in_persistence = sample_configs.sample_session_persistence_tuple()
         ret = self.jinja_cfg._transform_session_persistence(in_persistence, {})
@@ -774,9 +810,18 @@ class TestHaproxyCfg(base.TestCase):
         in_pool = sample_configs.sample_pool_tuple(sample_pool=2)
         ret = self.jinja_cfg._transform_pool(
             in_pool, {constants.HTTP_REUSE: True})
-        import copy
         expected_config = copy.copy(sample_configs.RET_POOL_2)
         expected_config[constants.HTTP_REUSE] = True
+        self.assertEqual(expected_config, ret)
+
+    def test_transform_pool_cert(self):
+        in_pool = sample_configs.sample_pool_tuple(pool_cert=True)
+        cert_path = os.path.join(self.jinja_cfg.base_crt_dir,
+                                 'test_listener_id', 'pool_cert.pem')
+        ret = self.jinja_cfg._transform_pool(
+            in_pool, {}, pool_tls_certs={'client_cert': cert_path})
+        expected_config = copy.copy(sample_configs.RET_POOL_1)
+        expected_config['client_cert'] = cert_path
         self.assertEqual(expected_config, ret)
 
     def test_transform_listener(self):

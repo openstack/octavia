@@ -73,6 +73,8 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             persistence_timeout=33,
             persistence_granularity='255.255.0.0',
             monitor_proto=constants.HEALTH_MONITOR_UDP_CONNECT)
+        self.pool_has_cert = sample_configs.sample_pool_tuple(
+            pool_cert=True, full_store=True)
         self.amp = self.sl.load_balancer.amphorae[0]
         self.sv = sample_configs.sample_vip_tuple()
         self.lb = self.sl.load_balancer
@@ -152,11 +154,9 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         sconts = []
         for sni_container in self.sl.sni_containers:
             sconts.append(sni_container.tls_container)
-        mock_load_crt.return_value = {
-            'tls_cert': self.sl.default_tls_container,
-            'sni_certs': sconts,
-            'client_ca_cert': self.sl.client_ca_tls_certificate
-        }
+        mock_load_crt.side_effect = [{
+            'tls_cert': self.sl.default_tls_container, 'sni_certs': sconts},
+            {'tls_cert': None, 'sni_certs': []}]
         self.driver.client.get_cert_md5sum.side_effect = [
             exc.NotFound, 'Fake_MD5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
             'CA_CERT_MD5']
@@ -243,8 +243,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             sconts.append(sni_container.tls_container)
         mock_load_crt.return_value = {
             'tls_cert': self.sl.default_tls_container,
-            'sni_certs': sconts,
-            'client_ca_cert': None
+            'sni_certs': sconts
         }
         self.driver.client.get_cert_md5sum.side_effect = [
             exc.NotFound, 'Fake_MD5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']
@@ -298,12 +297,12 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         sample_listener = sample_configs.sample_listener_tuple(
             tls=True, sni=True, client_ca_cert=True)
         fake_context = 'fake context'
-        fake_secret = 'fake cert'
+        fake_secret = b'fake cert'
         mock_oslo.return_value = fake_context
         self.driver.cert_manager.get_secret.reset_mock()
         self.driver.cert_manager.get_secret.return_value = fake_secret
-        ref_md5 = hashlib.md5(fake_secret.encode('utf-8')).hexdigest()  # nosec
-        ref_id = hashlib.sha1(fake_secret.encode('utf-8')).hexdigest()  # nosec
+        ref_md5 = hashlib.md5(fake_secret).hexdigest()  # nosec
+        ref_id = hashlib.sha1(fake_secret).hexdigest()  # nosec
         ref_name = '{id}.pem'.format(id=ref_id)
 
         result = self.driver._process_secret(
@@ -317,6 +316,60 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             self.driver._upload_cert, sample_listener, None, fake_secret,
             ref_md5, ref_name)
         self.assertEqual(ref_name, result)
+
+    @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'
+                'HaproxyAmphoraLoadBalancerDriver._process_pool_certs')
+    def test__process_listener_pool_certs(self, mock_pool_cert):
+        sample_listener = sample_configs.sample_listener_tuple(l7=True)
+
+        ref_pool_cert_1 = {'client_cert': '/some/fake/cert-1.pem'}
+        ref_pool_cert_2 = {'client_cert': '/some/fake/cert-2.pem'}
+
+        mock_pool_cert.side_effect = [ref_pool_cert_1, ref_pool_cert_2]
+
+        ref_cert_dict = {'sample_pool_id_1': ref_pool_cert_1,
+                         'sample_pool_id_2': ref_pool_cert_2}
+
+        result = self.driver._process_listener_pool_certs(sample_listener)
+
+        pool_certs_calls = [
+            mock.call(sample_listener, sample_listener.default_pool),
+            mock.call(sample_listener, sample_listener.pools[1])
+        ]
+
+        mock_pool_cert.assert_has_calls(pool_certs_calls, any_order=True)
+
+        self.assertEqual(ref_cert_dict, result)
+
+    @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'
+                'HaproxyAmphoraLoadBalancerDriver._apply')
+    @mock.patch('octavia.common.tls_utils.cert_parser.build_pem')
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test__process_pool_certs(self, mock_load_certs, mock_build_pem,
+                                 mock_apply):
+        fake_cert_dir = '/fake/cert/dir'
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group="haproxy_amphora", base_cert_dir=fake_cert_dir)
+        sample_listener = sample_configs.sample_listener_tuple(pool_cert=True)
+        cert_data_mock = mock.MagicMock()
+        cert_data_mock.id = uuidutils.generate_uuid()
+        mock_load_certs.return_value = cert_data_mock
+        fake_pem = b'fake pem'
+        mock_build_pem.return_value = fake_pem
+        ref_md5 = hashlib.md5(fake_pem).hexdigest()  # nosec
+        ref_name = '{id}.pem'.format(id=cert_data_mock.id)
+        ref_path = '{cert_dir}/{list_id}/{name}'.format(
+            cert_dir=fake_cert_dir, list_id=sample_listener.id, name=ref_name)
+        ref_result = {'client_cert': ref_path}
+
+        result = self.driver._process_pool_certs(sample_listener,
+                                                 sample_listener.default_pool)
+
+        mock_build_pem.assert_called_once_with(cert_data_mock)
+        mock_apply.assert_called_once_with(
+            self.driver._upload_cert, sample_listener, None, fake_pem,
+            ref_md5, ref_name)
+        self.assertEqual(ref_result, result)
 
     def test_stop(self):
         self.driver.client.stop_listener.__name__ = 'stop_listener'
@@ -340,6 +393,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         listener.id = uuidutils.generate_uuid()
         listener.load_balancer.amphorae = [amp1, amp2]
         listener.protocol = 'listener_protocol'
+        del listener.listeners
         self.driver.client.start_listener.__name__ = 'start_listener'
         # Execute driver method
         self.driver.start(listener, self.sv)

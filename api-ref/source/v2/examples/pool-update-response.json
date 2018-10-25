@@ -27,6 +27,7 @@
         "id": "4029d267-3983-4224-a3d0-afb3fe16a2cd",
         "operating_status": "ONLINE",
         "name": "super-least-conn-pool",
-        "tags": ["updated_tag"]
+        "tags": ["updated_tag"],
+        "tls_container_ref": "http://198.51.100.10:9311/v1/containers/c1cd501d-3cf9-4873-a11b-a74bebcde929"
     }
 }

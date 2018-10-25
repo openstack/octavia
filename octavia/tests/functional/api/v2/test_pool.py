@@ -858,6 +858,43 @@ class TestPool(base.BaseAPITest):
             pool_prov_status=constants.PENDING_CREATE,
             pool_op_status=constants.OFFLINE)
 
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_with_tls_container_ref(self, mock_cert_data):
+        tls_container_ref = uuidutils.generate_uuid()
+        pool_cert = data_models.TLSContainer(certificate='pool cert')
+        mock_cert_data.return_value = {'tls_cert': pool_cert,
+                                       'sni_certs': [],
+                                       'client_ca_cert': None}
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            tls_container_ref=tls_container_ref).get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_CREATE,
+            pool_op_status=constants.OFFLINE)
+        self.set_lb_status(self.lb_id)
+        self.assertEqual(tls_container_ref, api_pool.get('tls_container_ref'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'))
+
+    def test_create_with_bad_tls_container_ref(self):
+        tls_container_ref = uuidutils.generate_uuid()
+        self.cert_manager_mock().get_cert.side_effect = [Exception(
+            "bad secret")]
+        api_pool = self.create_pool(
+            self.lb_id, constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            tls_container_ref=tls_container_ref, status=400)
+        self.assertIn(tls_container_ref, api_pool['faultstring'])
+
     def test_negative_create_udp_case(self):
         # Error create pool with udp protocol but non-udp-type
         sp = {"type": constants.SESSION_PERSISTENCE_HTTP_COOKIE,
@@ -1205,6 +1242,39 @@ class TestPool(base.BaseAPITest):
             self.assert_correct_status(
                 lb_id=self.udp_lb_id, listener_id=self.udp_listener_id)
 
+    @mock.patch(
+        'octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_tls_container_ref(self, mock_cert_data):
+        tls_container_ref = uuidutils.generate_uuid()
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        new_pool = {'tls_container_ref': tls_container_ref}
+        pool_cert = data_models.TLSContainer(certificate='pool cert')
+        mock_cert_data.return_value = {'tls_cert': pool_cert,
+                                       'sni_certs': [],
+                                       'client_ca_cert': None}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE)
+        self.set_lb_status(self.lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        self.assertEqual(tls_container_ref, response.get('tls_container_ref'))
+        self.assertIsNotNone(response.get('created_at'))
+        self.assertIsNotNone(response.get('updated_at'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=response.get('id'))
+
     def test_bad_update(self):
         api_pool = self.create_pool(
             self.lb_id,
@@ -1255,6 +1325,22 @@ class TestPool(base.BaseAPITest):
         self.assertEqual(expect_error_msg, res.json['faultstring'])
         self.assert_correct_status(
             lb_id=self.udp_lb_id, listener_id=self.udp_listener_id)
+
+    def test_update_with_bad_tls_container_ref(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        tls_container_ref = uuidutils.generate_uuid()
+        new_pool = {'tls_container_ref': tls_container_ref}
+
+        self.cert_manager_mock().get_cert.side_effect = [Exception(
+            "bad secret")]
+        resp = self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                        self._build_body(new_pool), status=400).json
+        self.assertIn(tls_container_ref, resp['faultstring'])
 
     def test_delete(self):
         api_pool = self.create_pool(
