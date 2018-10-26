@@ -29,6 +29,7 @@ Operator Reference
    :maxdepth: 1
 
    ../contributor/guides/dev-quick-start.rst
+   guides/certificates.rst
    guides/operator-maintenance.rst
    guides/upgrade.rst
    ../configuration/configref.rst
