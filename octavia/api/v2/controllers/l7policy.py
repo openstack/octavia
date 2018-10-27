@@ -93,16 +93,6 @@ class L7PolicyController(base.BaseController):
             raise exceptions.ImmutableObject(resource='Load Balancer',
                                              id=lb_id)
 
-    def _reset_lb_and_listener_statuses(self, session, lb_id, listener_id):
-        # Setting LB + listeners back to active because this should be a
-        # recoverable error
-        self.repositories.load_balancer.update(
-            session, lb_id,
-            provisioning_status=constants.ACTIVE)
-        self.repositories.listener.update(
-            session, listener_id,
-            provisioning_status=constants.ACTIVE)
-
     def _validate_create_l7policy(self, lock_session, l7policy_dict):
         try:
             return self.repositories.l7policy.create(lock_session,

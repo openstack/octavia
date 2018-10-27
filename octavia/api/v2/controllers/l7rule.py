@@ -103,22 +103,6 @@ class L7RuleController(base.BaseController):
         if count >= constants.MAX_L7RULES_PER_L7POLICY:
             raise exceptions.TooManyL7RulesOnL7Policy(id=self.l7policy_id)
 
-    def _reset_lb_listener_policy_statuses(self, session):
-        # Setting LB + listeners back to active because this should be a
-        # recoverable error
-        l7policy = self._get_db_l7policy(session, self.l7policy_id)
-        listener_id = l7policy.listener_id
-        load_balancer_id = l7policy.listener.load_balancer_id
-        self.repositories.load_balancer.update(
-            session, load_balancer_id,
-            provisioning_status=constants.ACTIVE)
-        self.repositories.listener.update(
-            session, listener_id,
-            provisioning_status=constants.ACTIVE)
-        self.repositories.l7policy.update(
-            session, self.l7policy_id,
-            provisioning_status=constants.ACTIVE)
-
     def _validate_create_l7rule(self, lock_session, l7rule_dict):
         try:
             return self.repositories.l7rule.create(lock_session, **l7rule_dict)
