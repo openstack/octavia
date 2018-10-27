@@ -1,4 +1,4 @@
-# Copyright 2018 Rackspace, US Inc.
+#    Copyright 2018 Rackspace, US Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -12,15 +12,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import warnings
-
-from debtcollector import moves
-
-from octavia_lib.api.drivers import driver_lib as lib_driver_lib
+from octavia import opts
+import octavia.tests.unit.base as base
 
 
-warnings.simplefilter('default', DeprecationWarning)
+class TestOpts(base.TestCase):
 
-DriverLibrary = moves.moved_class(
-    lib_driver_lib.DriverLibrary, 'DriverLibrary', __name__,
-    version='Stein', removal_version='U')
+    def setUp(self):
+        super(TestOpts, self).setUp()
+
+    def test_list_opts(self):
+        opts_list = opts.list_opts()[0]
+        self.assertIn('DEFAULT', opts_list)

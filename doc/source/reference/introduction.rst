@@ -83,10 +83,9 @@ It is also possible to use Octavia as a Neutron LBaaS plugin, in the same way
 as any other vendor. You can think of Octavia as an "open source vendor" for
 Neutron LBaaS.
 
-Soon, Octavia will support third-party vendor drivers just like Neutron LBaaS,
-and will then fully replace Neutron LBaaS as the load balancing solution for
-OpenStack. At that time, third-party vendor drivers that presently "plug in" to
-Neutron LBaaS will plug in to Octavia instead.
+Octavia supports third-party vendor drivers just like Neutron LBaaS,
+and fully replaces Neutron LBaaS as the load balancing solution for
+OpenStack.
 
 For further information on OpenStack Neutron LBaaS deprecation, please refer to
 https://wiki.openstack.org/wiki/Neutron/LBaaS/Deprecation.
@@ -119,7 +118,7 @@ A 10,000-foot overview of Octavia components
    :width: 660px
    :alt: Octavia Component Overview
 
-Octavia version 0.9 consists of the following major components:
+Octavia version 4.0 consists of the following major components:
 
 * **amphorae** - Amphorae are the individual virtual machines, containers, or
   bare metal servers that accomplish the delivery of load balancing services to
@@ -128,7 +127,7 @@ Octavia version 0.9 consists of the following major components:
   HAProxy.
 
 * **controller** - The Controller is  the "brains" of Octavia. It consists of
-  four sub-components, which are individual daemons. They can be run on
+  five sub-components, which are individual daemons. They can be run on
   separate back-end infrastructure if desired:
 
   * **API Controller** - As the name implies, this subcomponent runs Octavia's
@@ -146,6 +145,9 @@ Octavia version 0.9 consists of the following major components:
   * **Housekeeping Manager** - This subcomponent cleans up stale (deleted)
     database records, manages the spares pool, and manages amphora certificate
     rotation.
+
+  * **Driver Agent** - The driver agent receives status and statistics updates
+    from provider drivers.
 
 * **network** - Octavia cannot accomplish what it does without manipulating
   the network environment. Amphorae are spun up with a network interface on the

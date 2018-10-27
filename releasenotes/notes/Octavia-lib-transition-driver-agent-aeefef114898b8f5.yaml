@@ -1,0 +1,18 @@
+---
+features:
+  - |
+    The Stein release of Octavia introduces the octavia-lib python module.
+    This library enables provider drivers to integrate easier with the Octavia
+    API by providing a shared set of coding objects and interfaces.
+upgrade:
+  - |
+    The Stein release of Octavia adds the driver-agent controller process.
+    This process is deployed along with the Octavia API process and uses
+    unix domain sockets for communication between the provider drivers using
+    octavia-lib and the driver-agent.
+    When upgrading to Stein, operators should make sure that the
+    /var/run/octavia directry is available for the driver-agent with the
+    appropriate ownership and permissions for the driver-agent and API
+    processes to access it. The operator may need to make sure the driver-agent
+    process starts after installation. For example, a systemd service may need
+    to be created and enabled for it.
