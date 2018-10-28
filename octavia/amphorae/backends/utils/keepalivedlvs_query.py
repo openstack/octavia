@@ -10,11 +10,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import ipaddress
 import re
 import subprocess
 
-import netaddr
 from oslo_log import log as logging
+import six
 
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants
@@ -63,45 +64,16 @@ def get_listener_realserver_mapping(ns_name, listener_ip_port):
     #   'ActiveConn': 0,
     #   'InActConn': 0
     # }}
-    try:
-        listener_ip, listener_port = listener_ip_port.split(':')
-    except ValueError:
-        start = listener_ip_port.index('[') + 1
-        end = listener_ip_port.index(']')
-        listener_ip = listener_ip_port[start:end]
-        listener_port = listener_ip_port[end + 2:]
-    ip_obj = netaddr.IPAddress(listener_ip)
+    listener_ip, listener_port = listener_ip_port.rsplit(':', 1)
+    ip_obj = ipaddress.ip_address(six.text_type(listener_ip.strip('[]')))
     output = read_kernel_file(ns_name, KERNEL_LVS_PATH).split('\n')
-    ip_to_hex_format = ''
     if ip_obj.version == 4:
-        for int_str in listener_ip.split('.'):
-            if int(int_str) <= 15:
-                str_piece = '0' + hex(int(int_str))[2:].upper()
-            else:
-                str_piece = hex(int(int_str))[2:].upper()
-            ip_to_hex_format += str_piece
-    elif ip_obj.version == 6:
-        piece_list = []
-        for word in ip_obj.words:
-            str_len = len(hex(word)[2:])
-            if str_len < 4:
-                str_piece = '0' * (4 - str_len) + hex(word)[2:].lower()
-            else:
-                str_piece = hex(word)[2:].lower()
-            piece_list.append(str_piece)
-        ip_to_hex_format = ":".join(piece_list)
-        ip_to_hex_format = '\[' + ip_to_hex_format + '\]'
-    port_hex_format = hex(int(listener_port))[2:].upper()
-    if len(port_hex_format) < 4:
-        port_hex_format = ('0' * (4 - len(port_hex_format)) +
-                           port_hex_format)
+        ip_to_hex_format = "0%X" % ip_obj._ip
+    else:
+        ip_to_hex_format = '\[' + ip_obj.exploded + '\]'
+    port_hex_format = "%.4X" % int(listener_port)
     idex = ip_to_hex_format + ':' + port_hex_format
 
-    def _hit_identify(line):
-        m = re.match(r'^UDP\s+%s\s+\w+' % idex, line)
-        if m:
-            return True
-        return False
     actual_member_result = {}
     find_target_block = False
     result_keys = []
@@ -111,7 +83,8 @@ def get_listener_realserver_mapping(ns_name, listener_ip_port):
                                    LVS_KEY_REGEX.findall(line)[0].strip())
         elif line.startswith('UDP') and find_target_block:
             break
-        elif line.startswith('UDP') and _hit_identify(line):
+        elif line.startswith('UDP') and re.match(r'^UDP\s+%s\s+\w+' % idex,
+                                                 line):
             find_target_block = True
         elif find_target_block and line:
             rs_is_ipv4 = True
@@ -125,24 +98,15 @@ def get_listener_realserver_mapping(ns_name, listener_ip_port):
             all_values = all_values[0]
             ip_port = all_values[0]
             result_values = re.split(r"\s+", all_values[1].strip())
+            member_ip, member_port = ip_port.rsplit(':', 1)
+            port_string = str(int(member_port, 16))
             if rs_is_ipv4:
-                actual_member_ip_port = ip_port.split(':')
-                hex_ip_list = V4_HEX_IP_REGEX.findall(
-                    actual_member_ip_port[0])[0]
-                ip_string = ''
-                for hex_ip in hex_ip_list:
-                    ip_string = ip_string + str(int(hex_ip, 16)) + '.'
-                ip_string = ip_string[:-1]
-                port_string = str(int(actual_member_ip_port[1], 16))
+                ip_string = ipaddress.ip_address(int(member_ip, 16)).compressed
                 member_ip_port_string = ip_string + ':' + port_string
             else:
-                start = ip_port.index('[') + 1
-                end = ip_port.index(']')
-                ip_string = ip_port[start:end]
-                port_string = ip_port[end + 2:]
-                member_ip_port_string = '[' + str(
-                    netaddr.IPAddress(ip_string)) + ']:' + str(
-                    int(port_string, 16))
+                ip_string = ipaddress.ip_address(
+                    member_ip.strip('[]')).compressed
+                member_ip_port_string = '[' + ip_string + ']:' + port_string
             result_key_count = len(result_keys)
             for index in range(result_key_count):
                 if member_ip_port_string not in actual_member_result:
@@ -210,8 +174,8 @@ def get_udp_listener_resource_ipports_nsname(listener_id):
         if rs_ip_port_list:
             rs_ip_port_count = len(rs_ip_port_list)
             for index in range(rs_ip_port_count):
-                if netaddr.IPAddress(
-                        rs_ip_port_list[index][0]).version == 6:
+                if ipaddress.ip_address(
+                        six.text_type(rs_ip_port_list[index][0])).version == 6:
                     rs_ip_port_list[index] = (
                         '[' + rs_ip_port_list[index][0] + ']',
                         rs_ip_port_list[index][1])
@@ -219,7 +183,8 @@ def get_udp_listener_resource_ipports_nsname(listener_id):
                     rs_ip_port_list[index][0] + ':' +
                     rs_ip_port_list[index][1])
 
-        if netaddr.IPAddress(listener_ip_port[0]).version == 6:
+        if ipaddress.ip_address(
+                six.text_type(listener_ip_port[0])).version == 6:
             listener_ip_port = (
                 '[' + listener_ip_port[0] + ']', listener_ip_port[1])
         resource_ipport_mapping['Listener']['ipport'] = (
