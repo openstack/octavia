@@ -47,7 +47,7 @@ Usage
 =====
 This script and associated elements will build Amphora images.  Current support
 is with an Ubuntu base OS and HAProxy.  The script can use Fedora
-or CentOS as a base OS but these will not initially be tested or supported.
+as a base OS but these will not initially be tested or supported.
 As the project progresses and/or the diskimage-builder project adds support
 for additional base OS options they may become available for Amphora images.
 This does not mean that they are necessarily supported or tested.
@@ -68,19 +68,25 @@ Command syntax:
             [-a i386 | **amd64** | armhf ]
             [-b **haproxy** ]
             [-c **~/.cache/image-create** | <cache directory> ]
+            [-d **xenial**/**7** | trusty | <other release id> ]
+            [-e]
             [-h]
             [-i **ubuntu** | fedora | centos | rhel ]
             [-n]
             [-o **amphora-x64-haproxy** | <filename> ]
+            [-p]
             [-r <root password> ]
             [-s **2** | <size in GB> ]
             [-t **qcow2** | tar ]
             [-v]
             [-w <working directory> ]
+            [-x]
 
         '-a' is the architecture type for the image (default: amd64)
         '-b' is the backend type (default: haproxy)
         '-c' is the path to the cache directory (default: ~/.cache/image-create)
+        '-d' distribution release id (default on ubuntu: xenial)
+        '-e' enable complete mandatory access control systems when available (default: permissive)
         '-h' display help message
         '-i' is the base OS (default: ubuntu)
         '-n' disable sshd (default: enabled)
@@ -91,6 +97,7 @@ Command syntax:
         '-t' is the image type (default: qcow2)
         '-v' display the script version
         '-w' working directory for image building (default: .)
+        '-x' enable tracing for diskimage-builder
 
 
 Environment Variables

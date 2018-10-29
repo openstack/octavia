@@ -35,6 +35,7 @@ usage() {
     echo "            [-t **qcow2** | tar | vhd | raw ]"
     echo "            [-v]"
     echo "            [-w <working directory> ]"
+    echo "            [-x]"
     echo
     echo "        '-a' is the architecture type for the image (default: amd64)"
     echo "        '-b' is the backend type (default: haproxy)"
