@@ -17,6 +17,9 @@
       - ^doc/.*$
       - ^etc/.*$
       - ^releasenotes/.*$
+    vars:
+      zuul_copy_output:
+        '/var/log/dib-build': 'logs'
 
 - job:
     name: octavia-legacy-dsvm-base-multinode
@@ -38,6 +41,9 @@
       - ^etc/.*$
       - ^releasenotes/.*$
     nodeset: legacy-ubuntu-xenial-2-node
+    vars:
+      zuul_copy_output:
+        '/var/log/dib-build/': 'logs'
 
 - job:
     name: octavia-v1-dsvm-scenario

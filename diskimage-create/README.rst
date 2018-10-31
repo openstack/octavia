@@ -72,6 +72,7 @@ Command syntax:
             [-e]
             [-h]
             [-i **ubuntu** | fedora | centos | rhel ]
+            [-l <log file> ]
             [-n]
             [-o **amphora-x64-haproxy** | <filename> ]
             [-p]
@@ -89,6 +90,7 @@ Command syntax:
         '-e' enable complete mandatory access control systems when available (default: permissive)
         '-h' display help message
         '-i' is the base OS (default: ubuntu)
+        '-l' is output logfile (default: none)
         '-n' disable sshd (default: enabled)
         '-o' is the output image file name
         '-p' install amphora-agent from distribution packages (default: disabled)"
