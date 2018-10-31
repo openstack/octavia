@@ -295,7 +295,9 @@ class JinjaTemplater(object):
             'operating_status': pool.operating_status,
             'stick_size': CONF.haproxy_amphora.haproxy_stick_size,
             constants.HTTP_REUSE: feature_compatibility.get(
-                constants.HTTP_REUSE, False)
+                constants.HTTP_REUSE, False),
+            'ca_tls_path': '',
+            'crl_path': ''
         }
         members = [self._transform_member(x, feature_compatibility)
                    for x in pool.members]
@@ -310,6 +312,12 @@ class JinjaTemplater(object):
         if (pool.tls_certificate_id and pool_tls_certs and
                 pool_tls_certs.get('client_cert')):
             ret_value['client_cert'] = pool_tls_certs.get('client_cert')
+        if (pool.ca_tls_certificate_id and pool_tls_certs and
+                pool_tls_certs.get('ca_cert')):
+            ret_value['ca_cert'] = pool_tls_certs.get('ca_cert')
+        if (pool.crl_container_id and pool_tls_certs and
+                pool_tls_certs.get('crl')):
+            ret_value['crl'] = pool_tls_certs.get('crl')
 
         return ret_value
 

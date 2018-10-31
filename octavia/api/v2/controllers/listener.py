@@ -13,14 +13,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from cryptography.hazmat.backends import default_backend
-from cryptography import x509
 from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
 import pecan
-from stevedore import driver as stevedore_driver
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -48,11 +45,6 @@ class ListenersController(base.BaseController):
 
     def __init__(self):
         super(ListenersController, self).__init__()
-        self.cert_manager = stevedore_driver.DriverManager(
-            namespace='octavia.cert_manager',
-            name=CONF.certificates.cert_manager,
-            invoke_on_load=True,
-        ).driver
 
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -128,73 +120,6 @@ class ListenersController(base.BaseController):
             msg = _("Listeners of type %s can only have pools of "
                     "type UDP.") % constants.PROTOCOL_UDP
             raise exceptions.ValidationException(detail=msg)
-
-    def _validate_tls_refs(self, tls_refs):
-        context = pecan.request.context.get('octavia_context')
-        bad_refs = []
-        for ref in tls_refs:
-            try:
-                self.cert_manager.set_acls(context, ref)
-                self.cert_manager.get_cert(context, ref, check_only=True)
-            except Exception:
-                bad_refs.append(ref)
-
-        if bad_refs:
-            raise exceptions.CertificateRetrievalException(ref=bad_refs)
-
-    def _validate_client_ca_and_crl_refs(self, client_ca_ref, crl_ref):
-        context = pecan.request.context.get('octavia_context')
-        bad_refs = []
-        try:
-            self.cert_manager.set_acls(context, client_ca_ref)
-            ca_pem = self.cert_manager.get_secret(context, client_ca_ref)
-        except Exception:
-            bad_refs.append(client_ca_ref)
-
-        pem_crl = None
-        if crl_ref:
-            try:
-                self.cert_manager.set_acls(context, crl_ref)
-                pem_crl = self.cert_manager.get_secret(context, crl_ref)
-            except Exception:
-                bad_refs.append(crl_ref)
-        if bad_refs:
-            raise exceptions.CertificateRetrievalException(ref=bad_refs)
-
-        ca_cert = None
-        try:
-            # Test if it needs to be UTF-8 encoded
-            try:
-                ca_pem = ca_pem.encode('utf-8')
-            except AttributeError:
-                pass
-            ca_cert = x509.load_pem_x509_certificate(ca_pem, default_backend())
-        except Exception as e:
-            raise exceptions.ValidationException(detail=_(
-                "The client authentication CA certificate is invalid. "
-                "It must be a valid x509 PEM format certificate. "
-                "Error: %s") % str(e))
-
-        # Validate the CRL is for the client CA
-        if pem_crl:
-            ca_pub_key = ca_cert.public_key()
-            crl = None
-            # Test if it needs to be UTF-8 encoded
-            try:
-                pem_crl = pem_crl.encode('utf-8')
-            except AttributeError:
-                pass
-            try:
-                crl = x509.load_pem_x509_crl(pem_crl, default_backend())
-            except Exception as e:
-                raise exceptions.ValidationException(detail=_(
-                    "The client authentication certificate revocation list "
-                    "is invalid. It must be a valid x509 PEM format "
-                    "certificate revocation list. Error: %s") % str(e))
-            if not crl.is_signature_valid(ca_pub_key):
-                raise exceptions.ValidationException(detail=_(
-                    "The CRL specified is not valid for client certificate "
-                    "authority reference supplied."))
 
     def _has_tls_container_refs(self, listener_dict):
         return (listener_dict.get('tls_certificate_id') or

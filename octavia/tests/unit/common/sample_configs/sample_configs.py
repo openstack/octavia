@@ -119,7 +119,9 @@ RET_POOL_1 = {
     'enabled': True,
     'operating_status': 'ACTIVE',
     'stick_size': '10k',
-    constants.HTTP_REUSE: False}
+    constants.HTTP_REUSE: False,
+    'ca_tls_path': '',
+    'crl_path': ''}
 
 RET_POOL_2 = {
     'id': 'sample_pool_id_2',
@@ -131,7 +133,10 @@ RET_POOL_2 = {
     'enabled': True,
     'operating_status': 'ACTIVE',
     'stick_size': '10k',
-    constants.HTTP_REUSE: False}
+    constants.HTTP_REUSE: False,
+    'ca_tls_path': '',
+    'crl_path': ''}
+
 
 RET_DEF_TLS_CONT = {'id': 'cont_id_1', 'allencompassingpem': 'imapem',
                     'primary_cn': 'FakeCn'}
@@ -528,7 +533,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           timeout_member_data=50000,
                           timeout_tcp_inspect=0,
                           client_ca_cert=False, client_crl_cert=False,
-                          ssl_type_l7=False, pool_cert=False):
+                          ssl_type_l7=False, pool_cert=False,
+                          pool_ca_cert=False, pool_crl=False):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
@@ -553,13 +559,15 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                 persistence_type=persistence_type,
                 persistence_cookie=persistence_cookie,
                 monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto,
-                pool_cert=pool_cert),
+                pool_cert=pool_cert, pool_ca_cert=pool_ca_cert,
+                pool_crl=pool_crl),
             sample_pool_tuple(
                 proto=be_proto, monitor=monitor, persistence=persistence,
                 persistence_type=persistence_type,
                 persistence_cookie=persistence_cookie, sample_pool=2,
                 monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto,
-                pool_cert=pool_cert)]
+                pool_cert=pool_cert, pool_ca_cert=pool_ca_cert,
+                pool_crl=pool_crl)]
         l7policies = [
             sample_l7policy_tuple('sample_l7policy_id_1', sample_policy=1),
             sample_l7policy_tuple('sample_l7policy_id_2', sample_policy=2),
@@ -579,7 +587,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                 persistence_cookie=persistence_cookie,
                 monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto,
                 backup_member=backup_member, disabled_member=disabled_member,
-                pool_cert=pool_cert)]
+                pool_cert=pool_cert, pool_ca_cert=pool_ca_cert,
+                pool_crl=pool_crl)]
         l7policies = []
     return in_listener(
         id='sample_listener_id_1',
@@ -597,7 +606,10 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
             persistence_granularity=persistence_granularity,
             monitor_ip_port=monitor_ip_port,
             monitor_proto=monitor_proto,
-            pool_cert=pool_cert) if alloc_default_pool else '',
+            pool_cert=pool_cert,
+            pool_ca_cert=pool_ca_cert,
+            pool_crl=pool_crl
+        ) if alloc_default_pool else '',
         connection_limit=connection_limit,
         tls_certificate_id='cont_id_1' if tls else '',
         sni_container_ids=['cont_id_2', 'cont_id_3'] if sni else [],
@@ -671,14 +683,14 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
                       sample_pool=1, monitor_ip_port=False,
                       monitor_proto=None, backup_member=False,
                       disabled_member=False, has_http_reuse=True,
-                      pool_cert=False, full_store=False):
+                      pool_cert=False, pool_ca_cert=False, pool_crl=False):
     proto = 'HTTP' if proto is None else proto
     monitor_proto = proto if monitor_proto is None else monitor_proto
     in_pool = collections.namedtuple(
         'pool', 'id, protocol, lb_algorithm, members, health_monitor, '
                 'session_persistence, enabled, operating_status, '
-                'tls_certificate_id, tls_container, load_balancer, '
-                'listeners, ' + constants.HTTP_REUSE)
+                'tls_certificate_id, ca_tls_certificate_id, '
+                'crl_container_id, ' + constants.HTTP_REUSE)
     if (proto == constants.PROTOCOL_UDP and
             persistence_type == constants.SESSION_PERSISTENCE_SOURCE_IP):
         kwargs = {'persistence_type': persistence_type,
@@ -706,7 +718,6 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
         if monitor is True:
             mon = sample_health_monitor_tuple(proto=monitor_proto, sample_hm=2)
 
-    in_pool_listener = collections.namedtuple('listener', 'id',)
     return in_pool(
         id=id,
         protocol=proto,
@@ -717,13 +728,8 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
         enabled=True,
         operating_status='ACTIVE', has_http_reuse=has_http_reuse,
         tls_certificate_id='pool_cont_1' if pool_cert else None,
-        tls_container={'client_cert': 'fake path'} if pool_cert else '',
-        load_balancer=sample_listener_loadbalancer_tuple(
-            proto=proto,
-            topology=constants.TOPOLOGY_ACTIVE_STANDBY) if full_store else '',
-        listeners=[in_pool_listener(id='used_as_default_pool_listener_id'),
-                   in_pool_listener(id='used_as_redirect_pool_l7_listener_id')]
-        if full_store else [])
+        ca_tls_certificate_id='pool_ca_1' if pool_ca_cert else None,
+        crl_container_id='pool_crl' if pool_crl else None)
 
 
 def sample_member_tuple(id, ip, enabled=True, operating_status='ACTIVE',

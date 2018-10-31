@@ -226,6 +226,24 @@ bytes_out:
   in: body
   required: true
   type: integer
+ca_tls_container_ref:
+  description: |
+    The reference of the `key manager service
+    <https://docs.openstack.org/castellan/latest/>`__ secret containing a
+    PEM format CA certificate bundle for ``tls_enabled`` pools.
+  in: body
+  min_version: 2.8
+  required: true
+  type: string
+ca_tls_container_ref-optional:
+  description: |
+    The reference of the `key manager service
+    <https://docs.openstack.org/castellan/latest/>`__ secret containing a
+    PEM format CA certificate bundle for ``tls_enabled`` pools.
+  in: body
+  min_version: 2.8
+  required: false
+  type: string
 cached-zone:
   description: |
     The availability zone of a compute instance, cached at create time. This
@@ -332,6 +350,22 @@ created_at:
     The UTC date and timestamp when the resource was created.
   in: body
   required: true
+  type: string
+crl_container_ref:
+  description: |
+    The reference of the `key manager service
+    <https://docs.openstack.org/castellan/latest/>`__ secret containing a
+    PEM format CA revocation list file for ``tls_enabled`` pools.
+  in: body
+  required: true
+  type: string
+crl_container_ref-optional:
+  description: |
+    The reference of the `key manager service
+    <https://docs.openstack.org/castellan/latest/>`__ secret containing a
+    PEM format CA revocation list file for ``tls_enabled`` pools.
+  in: body
+  required: false
   type: string
 default_pool_id:
   description: |

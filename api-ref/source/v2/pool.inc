@@ -46,7 +46,9 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - ca_tls_container_ref: ca_tls_container_ref
    - created_at: created_at
+   - crl_container_ref: crl_container_ref
    - description: description
    - healthmonitor_id: healthmonitor-id
    - id: pool-id
@@ -161,6 +163,8 @@ Request
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up-default-optional
+   - ca_tls_container_ref: ca_tls_container_ref-optional
+   - crl_container_ref: crl_container_ref-optional
    - description: description-optional
    - lb_algorithm: lb-algorithm
    - listener_id: listener-id-pool-optional
@@ -233,7 +237,9 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - ca_tls_container_ref: ca_tls_container_ref
    - created_at: created_at
+   - crl_container_ref: crl_container_ref
    - description: description
    - healthmonitor_id: healthmonitor-id
    - id: pool-id
@@ -301,7 +307,9 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - ca_tls_container_ref: ca_tls_container_ref
    - created_at: created_at
+   - crl_container_ref: crl_container_ref
    - description: description
    - healthmonitor_id: healthmonitor-id
    - id: pool-id
@@ -359,6 +367,8 @@ Request
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up-default-optional
+   - ca_tls_container_ref: ca_tls_container_ref-optional
+   - crl_container_ref: crl_container_ref-optional
    - description: description-optional
    - lb_algorithm: lb-algorithm-optional
    - name: name-optional
@@ -385,7 +395,9 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - ca_tls_container_ref: ca_tls_container_ref
    - created_at: created_at
+   - crl_container_ref: crl_container_ref
    - description: description
    - healthmonitor_id: healthmonitor-id
    - id: pool-id

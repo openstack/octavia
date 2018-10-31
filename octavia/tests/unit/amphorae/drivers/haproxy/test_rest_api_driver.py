@@ -74,7 +74,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             persistence_granularity='255.255.0.0',
             monitor_proto=constants.HEALTH_MONITOR_UDP_CONNECT)
         self.pool_has_cert = sample_configs.sample_pool_tuple(
-            pool_cert=True, full_store=True)
+            pool_cert=True, pool_ca_cert=True, pool_crl=True)
         self.amp = self.sl.load_balancer.amphorae[0]
         self.sv = sample_configs.sample_vip_tuple()
         self.lb = self.sl.load_balancer
@@ -168,7 +168,6 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.update(self.sl, self.sv)
 
         # verify result
-        # this is called 5 times
         gcm_calls = [
             mock.call(self.amp, self.sl.id,
                       self.sl.default_tls_container.id + '.pem',
@@ -178,6 +177,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             mock.call(self.amp, self.sl.id,
                       sconts[1].id + '.pem', ignore=(404,)),
         ]
+
         self.driver.client.get_cert_md5sum.assert_has_calls(gcm_calls,
                                                             any_order=True)
 
@@ -200,9 +200,10 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             mock.call(self.amp, self.sl.id,
                       sconts[1].id + '.pem', fp3),
         ]
+
         self.driver.client.upload_cert_pem.assert_has_calls(ucp_calls,
                                                             any_order=True)
-        self.assertEqual(3, self.driver.client.upload_cert_pem.call_count)
+
         # upload only one config file
         self.driver.client.upload_config.assert_called_once_with(
             self.amp, self.sl.id, 'fake_config')
@@ -342,15 +343,18 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.assertEqual(ref_cert_dict, result)
 
     @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'
+                'HaproxyAmphoraLoadBalancerDriver._process_secret')
+    @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'
                 'HaproxyAmphoraLoadBalancerDriver._apply')
     @mock.patch('octavia.common.tls_utils.cert_parser.build_pem')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test__process_pool_certs(self, mock_load_certs, mock_build_pem,
-                                 mock_apply):
+                                 mock_apply, mock_secret):
         fake_cert_dir = '/fake/cert/dir'
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="haproxy_amphora", base_cert_dir=fake_cert_dir)
-        sample_listener = sample_configs.sample_listener_tuple(pool_cert=True)
+        sample_listener = sample_configs.sample_listener_tuple(
+            pool_cert=True, pool_ca_cert=True, pool_crl=True)
         cert_data_mock = mock.MagicMock()
         cert_data_mock.id = uuidutils.generate_uuid()
         mock_load_certs.return_value = cert_data_mock
@@ -360,15 +364,32 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         ref_name = '{id}.pem'.format(id=cert_data_mock.id)
         ref_path = '{cert_dir}/{list_id}/{name}'.format(
             cert_dir=fake_cert_dir, list_id=sample_listener.id, name=ref_name)
-        ref_result = {'client_cert': ref_path}
+        ref_ca_name = 'fake_ca.pem'
+        ref_ca_path = '{cert_dir}/{list_id}/{name}'.format(
+            cert_dir=fake_cert_dir, list_id=sample_listener.id,
+            name=ref_ca_name)
+        ref_crl_name = 'fake_crl.pem'
+        ref_crl_path = '{cert_dir}/{list_id}/{name}'.format(
+            cert_dir=fake_cert_dir, list_id=sample_listener.id,
+            name=ref_crl_name)
+        ref_result = {'client_cert': ref_path, 'ca_cert': ref_ca_path,
+                      'crl': ref_crl_path}
+        mock_secret.side_effect = [ref_ca_name, ref_crl_name]
 
         result = self.driver._process_pool_certs(sample_listener,
                                                  sample_listener.default_pool)
+
+        secret_calls = [
+            mock.call(sample_listener,
+                      sample_listener.default_pool.ca_tls_certificate_id),
+            mock.call(sample_listener,
+                      sample_listener.default_pool.crl_container_id)]
 
         mock_build_pem.assert_called_once_with(cert_data_mock)
         mock_apply.assert_called_once_with(
             self.driver._upload_cert, sample_listener, None, fake_pem,
             ref_md5, ref_name)
+        mock_secret.assert_has_calls(secret_calls)
         self.assertEqual(ref_result, result)
 
     def test_stop(self):

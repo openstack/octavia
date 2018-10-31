@@ -178,5 +178,4 @@ class BarbicanCertManager(cert_mgr.CertManager):
         except Exception as e:
             LOG.error("Failed to access secret for %s due to: %s.",
                       secret_ref, str(e))
-            raise exceptions.CertificateStorageException(
-                msg="Secret could not be accessed.")
+            raise exceptions.CertificateRetrievalException(ref=secret_ref)

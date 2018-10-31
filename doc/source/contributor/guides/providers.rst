@@ -648,6 +648,16 @@ contain the following:
 +=======================+========+==========================================+
 | admin_state_up        | bool   | Admin state: True if up, False if down.  |
 +-----------------------+--------+------------------------------------------+
+| ca_tls_container_data | string | A PEM encoded certificate.               |
++-----------------------+--------+------------------------------------------+
+| ca_tls_container_ref  | string | The reference to the secrets             |
+|                       |        | container.                               |
++-----------------------+--------+------------------------------------------+
+| crl_container_data    | string | A PEM encoded CRL file.                  |
++-----------------------+--------+------------------------------------------+
+| crl_container_ref     | string | The reference to the secrets             |
+|                       |        | container.                               |
++-----------------------+--------+------------------------------------------+
 | description           | string | A human-readable description for the     |
 |                       |        | pool.                                    |
 +-----------------------+--------+------------------------------------------+
@@ -711,6 +721,16 @@ contain the following:
 | Name                  | Type   | Description                              |
 +=======================+========+==========================================+
 | admin_state_up        | bool   | Admin state: True if up, False if down.  |
++-----------------------+--------+------------------------------------------+
+| ca_tls_container_data | string | A PEM encoded certificate.               |
++-----------------------+--------+------------------------------------------+
+| ca_tls_container_ref  | string | The reference to the secrets             |
+|                       |        | container.                               |
++-----------------------+--------+------------------------------------------+
+| crl_container_data    | string | A PEM encoded CRL file.                  |
++-----------------------+--------+------------------------------------------+
+| crl_container_ref     | string | The reference to the secrets             |
+|                       |        | container.                               |
 +-----------------------+--------+------------------------------------------+
 | description           | string | A human-readable description for the     |
 |                       |        | pool.                                    |

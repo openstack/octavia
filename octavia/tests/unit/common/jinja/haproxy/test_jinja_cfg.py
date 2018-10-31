@@ -768,14 +768,54 @@ class TestHaproxyCfg(base.TestCase):
               "check inter 30s fall 3 rise 2 cookie sample_member_id_2 "
               "{opts}\n\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN,
-            opts="%s %s %s %s" % ("ssl", "crt", cert_file_path, "verify none"))
+            opts="%s %s %s" % ("ssl", "crt", cert_file_path))
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(pool_cert=True),
             pool_tls_certs={
                 'sample_pool_id_1':
                     {'client_cert': cert_file_path,
-                     'sni_certs': []}})
+                     'ca_cert': None, 'crl': None}})
+        self.assertEqual(
+            sample_configs.sample_base_expected_config(backend=be),
+            rendered_obj)
+
+    def test_render_template_with_full_pool_cert(self):
+        pool_client_cert = '/foo/cert.pem'
+        pool_ca_cert = '/foo/ca.pem'
+        pool_crl = '/foo/crl.pem'
+        be = ("backend sample_pool_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31s\n"
+              "    option httpchk GET /index.html\n"
+              "    http-check expect rstatus 418\n"
+              "    fullconn {maxconn}\n"
+              "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
+              "    server sample_member_id_1 10.0.0.99:82 weight 13 "
+              "check inter 30s fall 3 rise 2 cookie sample_member_id_1 "
+              "{opts}\n"
+              "    server sample_member_id_2 10.0.0.98:82 weight 13 "
+              "check inter 30s fall 3 rise 2 cookie sample_member_id_2 "
+              "{opts}\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN,
+            opts="%s %s %s %s %s %s" % (
+                "ssl", "crt", pool_client_cert,
+                "ca-file %s" % pool_ca_cert,
+                "crl-file %s" % pool_crl,
+                "verify required"))
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_amphora_tuple(),
+            sample_configs.sample_listener_tuple(
+                pool_cert=True, pool_ca_cert=True, pool_crl=True),
+            pool_tls_certs={
+                'sample_pool_id_1':
+                    {'client_cert': pool_client_cert,
+                     'ca_cert': pool_ca_cert,
+                     'crl': pool_crl}})
         self.assertEqual(
             sample_configs.sample_base_expected_config(backend=be),
             rendered_obj)

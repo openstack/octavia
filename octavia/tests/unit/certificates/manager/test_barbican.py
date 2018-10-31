@@ -197,6 +197,6 @@ class TestBarbicanManager(base.TestCase):
         self.assertEqual(self.fake_secret, data)
 
         # Test with a failure
-        self.assertRaises(exceptions.CertificateStorageException,
+        self.assertRaises(exceptions.CertificateRetrievalException,
                           self.cert_manager.get_secret,
                           context=self.context, secret_ref=self.secret_ref)

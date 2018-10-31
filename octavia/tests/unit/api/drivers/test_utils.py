@@ -90,7 +90,11 @@ class TestUtils(base.TestCase):
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
-        mock_secret.side_effect = ['ca cert', 'X509 CRL FILE']
+        mock_secret.side_effect = ['X509 POOL CA CERT FILE',
+                                   'X509 POOL CRL FILE', 'ca cert',
+                                   'X509 CRL FILE', 'ca cert', 'X509 CRL FILE',
+                                   'X509 POOL CA CERT FILE',
+                                   'X509 CRL FILE']
         listener_certs = {'tls_cert': cert1, 'sni_certs': [cert2, cert3]}
         pool_cert = data_models.TLSContainer(certificate='pool cert')
         pool_certs = {'tls_cert': pool_cert, 'sni_certs': []}
@@ -166,7 +170,9 @@ class TestUtils(base.TestCase):
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_db_listeners_to_provider_listeners(self, mock_load_cert,
                                                 mock_secret):
-        mock_secret.side_effect = ['ca cert', 'X509 CRL FILE']
+        mock_secret.side_effect = ['ca cert', 'X509 CRL FILE',
+                                   'ca cert', 'X509 CRL FILE',
+                                   'ca cert', 'X509 CRL FILE']
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
@@ -180,7 +186,9 @@ class TestUtils(base.TestCase):
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_listener_dict_to_provider_dict(self, mock_load_cert, mock_secret):
-        mock_secret.side_effect = ['ca cert', 'X509 CRL FILE']
+        mock_secret.side_effect = ['ca cert', 'X509 CRL FILE',
+                                   'X509 POOL CA CERT FILE',
+                                   'X509 POOL CRL FILE']
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
@@ -195,6 +203,8 @@ class TestUtils(base.TestCase):
         # just contain the client_ca_tls_certificate_id for client certificate,
         # not any other related fields. So we need to delete them.
         expect_prov = copy.deepcopy(self.sample_data.provider_listener1_dict)
+        expect_pool_prov = copy.deepcopy(self.sample_data.provider_pool1_dict)
+        expect_prov['default_pool'] = expect_pool_prov
         provider_listener = utils.listener_dict_to_provider_dict(
             self.sample_data.test_listener1_dict)
         self.assertEqual(expect_prov, provider_listener)
@@ -216,47 +226,62 @@ class TestUtils(base.TestCase):
                           utils.listener_dict_to_provider_dict,
                           test_listener)
 
+    @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
-    def test_db_pool_to_provider_pool(self, mock_load_cert):
+    def test_db_pool_to_provider_pool(self, mock_load_cert, mock_secret):
         pool_cert = data_models.TLSContainer(certificate='pool cert')
         mock_load_cert.return_value = {'tls_cert': pool_cert,
                                        'sni_certs': None,
                                        'client_ca_cert': None}
+        mock_secret.side_effect = ['X509 POOL CA CERT FILE',
+                                   'X509 POOL CRL FILE']
         provider_pool = utils.db_pool_to_provider_pool(
             self.sample_data.db_pool1)
         self.assertEqual(self.sample_data.provider_pool1, provider_pool)
 
+    @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
-    def test_db_pool_to_provider_pool_partial(self, mock_load_cert):
+    def test_db_pool_to_provider_pool_partial(self, mock_load_cert,
+                                              mock_secret):
         pool_cert = data_models.TLSContainer(certificate='pool cert')
         mock_load_cert.return_value = {'tls_cert': pool_cert,
                                        'sni_certs': None,
                                        'client_ca_cert': None}
+        mock_secret.side_effect = ['X509 POOL CA CERT FILE',
+                                   'X509 POOL CRL FILE']
         test_db_pool = self.sample_data.db_pool1
         test_db_pool.members = [self.sample_data.db_member1]
         provider_pool = utils.db_pool_to_provider_pool(test_db_pool)
         self.assertEqual(self.sample_data.provider_pool1, provider_pool)
 
+    @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
-    def test_db_pools_to_provider_pools(self, mock_load_cert):
+    def test_db_pools_to_provider_pools(self, mock_load_cert, mock_secret):
         pool_cert = data_models.TLSContainer(certificate='pool cert')
         mock_load_cert.return_value = {'tls_cert': pool_cert,
                                        'sni_certs': None,
                                        'client_ca_cert': None}
+        mock_secret.side_effect = ['X509 POOL CA CERT FILE',
+                                   'X509 POOL CRL FILE']
         provider_pools = utils.db_pools_to_provider_pools(
             self.sample_data.test_db_pools)
         self.assertEqual(self.sample_data.provider_pools, provider_pools)
 
+    @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
-    def test_pool_dict_to_provider_dict(self, mock_load_cert):
+    def test_pool_dict_to_provider_dict(self, mock_load_cert, mock_secret):
         pool_cert = data_models.TLSContainer(certificate='pool cert')
         mock_load_cert.return_value = {'tls_cert': pool_cert,
                                        'sni_certs': None,
                                        'client_ca_cert': None}
+        mock_secret.side_effect = ['X509 POOL CA CERT FILE',
+                                   'X509 POOL CRL FILE']
+        expect_prov = copy.deepcopy(self.sample_data.provider_pool1_dict)
+        expect_prov.pop('crl_container_ref')
         provider_pool_dict = utils.pool_dict_to_provider_dict(
             self.sample_data.test_pool1_dict)
-        self.assertEqual(self.sample_data.provider_pool1_dict,
-                         provider_pool_dict)
+        provider_pool_dict.pop('crl_container_ref')
+        self.assertEqual(expect_prov, provider_pool_dict)
 
     def test_db_HM_to_provider_HM(self):
         provider_hm = utils.db_HM_to_provider_HM(self.sample_data.db_hm1)

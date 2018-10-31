@@ -194,7 +194,6 @@ class LocalCertManager(cert_mgr.CertManager):
                 secret_data = secret_file.read()
         except IOError:
             LOG.error("Failed to read secret for %s.", secret_ref)
-            raise exceptions.CertificateStorageException(
-                msg="secret could not be read.")
+            raise exceptions.CertificateRetrievalException(ref=secret_ref)
 
         return secret_data
