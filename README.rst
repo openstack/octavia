@@ -39,7 +39,7 @@ The project source code repository is located at
 https://git.openstack.org/cgit/openstack/octavia
 
 Project status, bugs, and requests for feature enhancements are tracked on
-https://launchpad.net/octavia
+https://storyboard.openstack.org/#!/project/openstack/octavia
 
 For more information on project direction and guiding principles for
 contributors, please see the CONSTITUTION.rst file in this directory, or
@@ -47,3 +47,12 @@ specifications in the specs/ sub-directory.
 
 The project roadmap is available at
 https://wiki.openstack.org/wiki/Octavia/Roadmap
+
+External Resources
+~~~~~~~~~~~~~~~~~~
+
+* Octavia Wiki: https://wiki.openstack.org/wiki/Octavia
+
+* For help on usage and hacking of Octavia, please send an email to
+  OpenStack-dev Mailing List <mailto:openstack-discuss@lists.openstack.org>
+  with **[Octavia]** tag.
