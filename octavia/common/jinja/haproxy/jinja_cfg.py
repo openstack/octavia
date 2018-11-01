@@ -297,7 +297,8 @@ class JinjaTemplater(object):
             constants.HTTP_REUSE: feature_compatibility.get(
                 constants.HTTP_REUSE, False),
             'ca_tls_path': '',
-            'crl_path': ''
+            'crl_path': '',
+            'tls_enabled': pool.tls_enabled
         }
         members = [self._transform_member(x, feature_compatibility)
                    for x in pool.members]

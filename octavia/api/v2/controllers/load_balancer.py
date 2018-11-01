@@ -432,8 +432,9 @@ class LoadBalancersController(base.BaseController):
                     detail='Pools must be named when creating a fully '
                            'populated loadbalancer.')
             # If a pool has more than a name, assume it's a full specification
-            # (but use >2 because it will also have "enabled" as default)
-            if default_pool and len(default_pool) > 2:
+            # (but use >3 because it will also have "enabled" and "tls_enabled"
+            # as default)
+            if default_pool and len(default_pool) > 3:
                 pools.append(default_pool)
                 l['default_pool'] = {'name': pool_name}
             # Otherwise, it's a reference and we record it and move on
@@ -450,8 +451,9 @@ class LoadBalancersController(base.BaseController):
                         detail='Pools must be named when creating a fully '
                                'populated loadbalancer.')
                 # If a pool has more than a name, assume it's a full spec
-                # (but use >2 because it will also have "enabled" as default)
-                if redirect_pool and len(redirect_pool) > 2:
+                # (but use >2 because it will also have "enabled" and
+                # "tls_enabled" as default)
+                if redirect_pool and len(redirect_pool) > 3:
                     pool_name = redirect_pool['name']
                     policy['redirect_pool'] = {'name': pool_name}
                     pools.append(redirect_pool)

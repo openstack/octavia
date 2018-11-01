@@ -768,10 +768,11 @@ class TestHaproxyCfg(base.TestCase):
               "check inter 30s fall 3 rise 2 cookie sample_member_id_2 "
               "{opts}\n\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN,
-            opts="%s %s %s" % ("ssl", "crt", cert_file_path))
+            opts="ssl crt %s verify none" % cert_file_path)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
-            sample_configs.sample_listener_tuple(pool_cert=True),
+            sample_configs.sample_listener_tuple(
+                pool_cert=True, tls_enabled=True),
             pool_tls_certs={
                 'sample_pool_id_1':
                     {'client_cert': cert_file_path,
@@ -810,7 +811,8 @@ class TestHaproxyCfg(base.TestCase):
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
-                pool_cert=True, pool_ca_cert=True, pool_crl=True),
+                pool_cert=True, pool_ca_cert=True, pool_crl=True,
+                tls_enabled=True),
             pool_tls_certs={
                 'sample_pool_id_1':
                     {'client_cert': pool_client_cert,

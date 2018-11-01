@@ -13,6 +13,7 @@
         "tags": ["test_tag"],
         "tls_container_ref": "http://198.51.100.10:9311/v1/containers/4073846f-1d5e-42e1-a4cf-a7046419d0e6",
         "ca_tls_container_ref": "http://198.51.100.10:9311/v1/containers/5f0d5540-fae6-4646-85d6-8a84883807fb",
-        "crl_container_ref": "http://198.51.100.10:9311/v1/containers/6faf0a01-6892-454c-aaac-650282820c0b"
+        "crl_container_ref": "http://198.51.100.10:9311/v1/containers/6faf0a01-6892-454c-aaac-650282820c0b",
+        "tls_enabled": true
     }
 }

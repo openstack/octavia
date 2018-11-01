@@ -87,7 +87,8 @@ class ModelTestMixin(object):
                   'lb_algorithm': constants.LB_ALGORITHM_LEAST_CONNECTIONS,
                   'provisioning_status': constants.ACTIVE,
                   'operating_status': constants.ONLINE,
-                  'enabled': True}
+                  'enabled': True,
+                  'tls_enabled': False}
         kwargs.update(overrides)
         return self._insert(session, models.Pool, kwargs)
 

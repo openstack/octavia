@@ -178,8 +178,11 @@ class TestAmphoraDriver(base.TestRpc):
         old_provider_pool = driver_dm.Pool(
             pool_id=self.sample_data.pool1_id)
         provider_pool = driver_dm.Pool(
-            pool_id=self.sample_data.pool1_id, name='Great pool')
-        pool_dict = {'name': 'Great pool'}
+            pool_id=self.sample_data.pool1_id, name='Great pool',
+            admin_state_up=True, tls_enabled=True)
+        pool_dict = {'name': 'Great pool',
+                     'enabled': True,
+                     'tls_enabled': True}
         self.amp_driver.pool_update(old_provider_pool, provider_pool)
         payload = {consts.POOL_ID: self.sample_data.pool1_id,
                    consts.POOL_UPDATES: pool_dict}

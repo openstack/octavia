@@ -859,6 +859,26 @@ class TestPool(base.BaseAPITest):
             pool_prov_status=constants.PENDING_CREATE,
             pool_op_status=constants.OFFLINE)
 
+    def test_create_with_tls_enabled_only(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            tls_enabled=True).get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_CREATE,
+            pool_op_status=constants.OFFLINE)
+        self.set_lb_status(self.lb_id)
+        self.assertTrue(api_pool.get('tls_enabled'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'))
+
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_create_with_tls_container_ref(self, mock_cert_data):
         tls_container_ref = uuidutils.generate_uuid()
@@ -1314,6 +1334,79 @@ class TestPool(base.BaseAPITest):
             self.assertEqual(expect_error_msg, res.json['faultstring'])
             self.assert_correct_status(
                 lb_id=self.udp_lb_id, listener_id=self.udp_listener_id)
+
+    def test_update_with_tls_enabled_only(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        self.assertFalse(api_pool['tls_enabled'])
+        new_pool = {'tls_enabled': True}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE)
+        self.set_lb_status(self.lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        self.assertTrue(response.get('tls_enabled'))
+        self.assertIsNotNone(response.get('created_at'))
+        self.assertIsNotNone(response.get('updated_at'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=response.get('id'))
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_tls_enabled_only_on_pool_certs_exist(
+            self, mock_cert_data):
+        tls_container_ref = uuidutils.generate_uuid()
+        ca_tls_container_ref = uuidutils.generate_uuid()
+        crl_container_ref = uuidutils.generate_uuid()
+        pool_cert = data_models.TLSContainer(certificate='pool cert')
+        mock_cert_data.return_value = {'tls_cert': pool_cert,
+                                       'sni_certs': [],
+                                       'client_ca_cert': None}
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL]
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            tls_container_ref=tls_container_ref,
+            ca_tls_container_ref=ca_tls_container_ref,
+            crl_container_ref=crl_container_ref).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        self.assertFalse(api_pool['tls_enabled'])
+
+        new_pool = {'tls_enabled': True}
+        self.cert_manager_mock().get_cert.reset_mock()
+        self.cert_manager_mock().get_secret.reset_mock()
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE)
+        self.set_lb_status(self.lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        self.assertTrue(response.get('tls_enabled'))
+        self.assertIsNotNone(response.get('created_at'))
+        self.assertIsNotNone(response.get('updated_at'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=response.get('id'))
 
     @mock.patch(
         'octavia.common.tls_utils.cert_parser.load_certificates_data')

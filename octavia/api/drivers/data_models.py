@@ -173,7 +173,7 @@ class Pool(BaseDataModel):
                  session_persistence=Unset, tls_container_ref=Unset,
                  tls_container_data=Unset, ca_tls_container_ref=Unset,
                  ca_tls_container_data=Unset, crl_container_ref=Unset,
-                 crl_container_data=Unset):
+                 crl_container_data=Unset, tls_enabled=Unset):
 
         self.admin_state_up = admin_state_up
         self.description = description
@@ -192,6 +192,7 @@ class Pool(BaseDataModel):
         self.ca_tls_container_data = ca_tls_container_data
         self.crl_container_ref = crl_container_ref
         self.crl_container_data = crl_container_data
+        self.tls_enabled = tls_enabled
 
 
 class Member(BaseDataModel):
