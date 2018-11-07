@@ -867,6 +867,12 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                     db_apis.get_session(), amp.load_balancer_id,
                     provisioning_status=constants.ACTIVE)
         except Exception as e:
+            try:
+                self._lb_repo.update(
+                    db_apis.get_session(), amp.load_balancer_id,
+                    provisioning_status=constants.ERROR)
+            except Exception:
+                LOG.error("Unable to revert LB status to ERROR.")
             with excutils.save_and_reraise_exception():
                 LOG.error("Failover exception: %s", e)
 
