@@ -1197,7 +1197,9 @@ class TestControllerWorker(base.TestCase):
 
     @mock.patch('octavia.controller.worker.controller_worker.ControllerWorker.'
                 '_perform_amphora_failover')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_failover_amp_flow_exception(self,
+                                         mock_update,
                                          mock_perform_amp_failover,
                                          mock_api_get_session,
                                          mock_dyn_log_listener,
@@ -1214,6 +1216,8 @@ class TestControllerWorker(base.TestCase):
         mock_perform_amp_failover.side_effect = TestException('boom')
         cw = controller_worker.ControllerWorker()
         self.assertRaises(TestException, cw.failover_amphora, AMP_ID)
+        mock_update.assert_called_with(_db_session, LB_ID,
+                                       provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.controller.worker.controller_worker.ControllerWorker.'
                 '_perform_amphora_failover')
