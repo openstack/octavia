@@ -20,6 +20,7 @@
         "timeout_member_connect": 5000,
         "timeout_member_data": 50000,
         "timeout_tcp_inspect": 0,
-        "tags": ["test_tag"]
+        "tags": ["test_tag"],
+        "client_ca_tls_container_ref": "http://198.51.100.10:9311/v1/containers/35649991-49f3-4625-81ce-2465fe8932e5"
     }
 }

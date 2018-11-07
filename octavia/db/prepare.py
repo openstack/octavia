@@ -90,10 +90,6 @@ def create_listener(listener_dict, lb_id):
     if 'tls_termination' in listener_dict:
         del listener_dict['tls_termination']
 
-    if 'default_tls_container_ref' in listener_dict:
-        listener_dict['tls_certificate_id'] = (
-            listener_dict.pop('default_tls_container_ref'))
-
     if 'sni_containers' in listener_dict:
         sni_container_ids = listener_dict.pop('sni_containers') or []
     elif 'sni_container_refs' in listener_dict:
@@ -104,6 +100,7 @@ def create_listener(listener_dict, lb_id):
                        'tls_container_id': sni_container_id}
                       for sni_container_id in sni_container_ids]
     listener_dict['sni_containers'] = sni_containers
+
     return listener_dict
 
 

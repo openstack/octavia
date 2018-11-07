@@ -511,7 +511,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           timeout_client_data=50000,
                           timeout_member_connect=5000,
                           timeout_member_data=50000,
-                          timeout_tcp_inspect=0):
+                          timeout_tcp_inspect=0,
+                          client_ca_cert=False):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
@@ -526,7 +527,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                     'sni_containers, load_balancer, peer_port, pools, '
                     'l7policies, enabled, insert_headers, timeout_client_data,'
                     'timeout_member_connect, timeout_member_data, '
-                    'timeout_tcp_inspect',)
+                    'timeout_tcp_inspect, client_ca_tls_certificate_id,'
+                    'client_ca_tls_certificate')
     if l7:
         pools = [
             sample_pool_tuple(
@@ -604,7 +606,12 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
         timeout_client_data=timeout_client_data,
         timeout_member_connect=timeout_member_connect,
         timeout_member_data=timeout_member_data,
-        timeout_tcp_inspect=timeout_tcp_inspect
+        timeout_tcp_inspect=timeout_tcp_inspect,
+        client_ca_tls_certificate_id='cont_id_ca' if client_ca_cert else '',
+        client_ca_tls_certificate=sample_tls_container_tuple(
+            id='cont_id_ca', certificate=sample_certs.X509_CA_CERT,
+            primary_cn=sample_certs.X509_CA_CERT_CN
+        ) if client_ca_cert else ''
     )
 
 

@@ -72,3 +72,11 @@ class CertManager(object):
         If the specified cert does not exist or the removal of ACLs fails for
         any reason, a CertificateStorageException should be raised.
         """
+
+    @abc.abstractmethod
+    def get_secret(self, context, secret_ref):
+        """Retrieves a secret payload by reference.
+
+        If the specified secret does not exist, a CertificateStorageException
+        should be raised.
+        """

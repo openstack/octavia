@@ -2355,11 +2355,14 @@ class TestLoadBalancerGraph(base.BaseAPITest):
                              create_l7policies=None,
                              expected_l7policies=None,
                              create_sni_containers=None,
-                             expected_sni_containers=None):
+                             expected_sni_containers=None,
+                             create_client_ca_tls_container=None,
+                             expected_client_ca_tls_container=None,
+                             create_protocol=constants.PROTOCOL_HTTP):
         create_listener = {
             'name': name,
             'protocol_port': protocol_port,
-            'protocol': constants.PROTOCOL_HTTP
+            'protocol': create_protocol
         }
         expected_listener = {
             'description': '',
@@ -2375,7 +2378,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'timeout_member_connect': constants.DEFAULT_TIMEOUT_MEMBER_CONNECT,
             'timeout_member_data': constants.DEFAULT_TIMEOUT_MEMBER_DATA,
             'timeout_tcp_inspect': constants.DEFAULT_TIMEOUT_TCP_INSPECT,
-            'tags': []
+            'tags': [],
+            'client_ca_tls_container_ref': None
         }
         if create_sni_containers:
             create_listener['sni_container_refs'] = create_sni_containers
@@ -2391,12 +2395,18 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         if create_l7policies:
             l7policies = create_l7policies
             create_listener['l7policies'] = l7policies
+        if create_client_ca_tls_container:
+            create_listener['client_ca_tls_container_ref'] = (
+                create_client_ca_tls_container)
         if expected_sni_containers:
             expected_listener['sni_container_refs'] = expected_sni_containers
         if expected_l7policies:
             expected_listener['l7policies'] = expected_l7policies
         else:
             expected_listener['l7policies'] = []
+        if expected_client_ca_tls_container:
+            expected_listener['client_ca_tls_container_ref'] = (
+                expected_client_ca_tls_container)
         return create_listener, expected_listener
 
     def _get_pool_bodies(self, name='pool1', create_members=None,
@@ -2633,8 +2643,41 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         create_sni_containers, expected_sni_containers = (
             self._get_sni_container_bodies())
         create_listener, expected_listener = self._get_listener_bodies(
+            create_protocol=constants.PROTOCOL_TERMINATED_HTTPS,
             create_sni_containers=create_sni_containers,
             expected_sni_containers=expected_sni_containers)
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_graphs_equal(expected_lb, api_lb)
+
+    @mock.patch('cryptography.hazmat.backends.default_backend')
+    @mock.patch('cryptography.x509.load_pem_x509_certificate')
+    @mock.patch('octavia.api.drivers.utils._get_secret_data')
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_with_full_listener_certs(self, mock_cert_data, mock_get_secret,
+                                      mock_x509_cert, mock_backend):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_cert_data.return_value = {'tls_cert': cert1,
+                                       'sni_certs': [cert2, cert3]}
+        mock_get_secret.side_effect = ['ca cert']
+        cert_mock = mock.MagicMock()
+        mock_x509_cert.return_value = cert_mock
+        create_client_ca_tls_container = uuidutils.generate_uuid()
+        expected_client_ca_tls_container = create_client_ca_tls_container
+        create_sni_containers, expected_sni_containers = (
+            self._get_sni_container_bodies())
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_protocol=constants.PROTOCOL_TERMINATED_HTTPS,
+            create_sni_containers=create_sni_containers,
+            expected_sni_containers=expected_sni_containers,
+            create_client_ca_tls_container=create_client_ca_tls_container,
+            expected_client_ca_tls_container=expected_client_ca_tls_container)
         create_lb, expected_lb = self._get_lb_bodies(
             create_listeners=[create_listener],
             expected_listeners=[expected_listener])
@@ -2824,6 +2867,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             expected_l7rules=expected_l7rules)
         create_listener, expected_listener = self._get_listener_bodies(
             create_default_pool_name=create_pool['name'],
+            create_protocol=constants.PROTOCOL_TERMINATED_HTTPS,
             create_l7policies=create_l7policies,
             expected_l7policies=expected_l7policies,
             create_sni_containers=create_sni_containers,
@@ -2924,7 +2968,6 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         self.start_quota_mock(data_models.HealthMonitor)
         self.post(self.LBS_PATH, body, status=403)
 
-    # TODO(johnsom) Fix this when there is a noop certificate manager
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_create_over_quota_sanity_check(self, mock_cert_data):
         cert1 = data_models.TLSContainer(certificate='cert 1')

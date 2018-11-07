@@ -133,7 +133,8 @@ class Listener(BaseDataModel):
                  protocol_port=Unset, sni_container_refs=Unset,
                  sni_container_data=Unset, timeout_client_data=Unset,
                  timeout_member_connect=Unset, timeout_member_data=Unset,
-                 timeout_tcp_inspect=Unset):
+                 timeout_tcp_inspect=Unset, client_ca_tls_container_ref=Unset,
+                 client_ca_tls_container_data=Unset):
 
         self.admin_state_up = admin_state_up
         self.connection_limit = connection_limit
@@ -155,6 +156,8 @@ class Listener(BaseDataModel):
         self.timeout_member_connect = timeout_member_connect
         self.timeout_member_data = timeout_member_data
         self.timeout_tcp_inspect = timeout_tcp_inspect
+        self.client_ca_tls_container_ref = client_ca_tls_container_ref
+        self.client_ca_tls_container_data = client_ca_tls_container_data
 
 
 class Pool(BaseDataModel):

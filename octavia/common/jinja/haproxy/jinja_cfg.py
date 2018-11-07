@@ -78,7 +78,8 @@ class JinjaTemplater(object):
         self.connection_logging = connection_logging
 
     def build_config(self, host_amphora, listener, tls_cert,
-                     haproxy_versions, socket_path=None):
+                     haproxy_versions, socket_path=None,
+                     client_ca_filename=None):
         """Convert a logical configuration to the HAProxy version
 
         :param host_amphora: The Amphora this configuration is hosted on
@@ -99,7 +100,8 @@ class JinjaTemplater(object):
 
         return self.render_loadbalancer_obj(
             host_amphora, listener, tls_cert=tls_cert, socket_path=socket_path,
-            feature_compatibility=feature_compatibility)
+            feature_compatibility=feature_compatibility,
+            client_ca_filename=client_ca_filename)
 
     def _get_template(self):
         """Returns the specified Jinja configuration template."""
@@ -117,12 +119,14 @@ class JinjaTemplater(object):
 
     def render_loadbalancer_obj(self, host_amphora, listener,
                                 tls_cert=None, socket_path=None,
-                                feature_compatibility=None):
+                                feature_compatibility=None,
+                                client_ca_filename=None):
         """Renders a templated configuration from a load balancer object
 
         :param host_amphora: The Amphora this configuration is hosted on
         :param listener: The listener configuration
         :param tls_cert: The TLS certificates for the listener
+        :param client_ca_filename: The CA certificate for client authorization
         :param socket_path: The socket path for Haproxy process
         :return: Rendered configuration
         """
@@ -132,7 +136,8 @@ class JinjaTemplater(object):
             listener.load_balancer,
             listener,
             tls_cert,
-            feature_compatibility)
+            feature_compatibility,
+            client_ca_filename=client_ca_filename)
         if not socket_path:
             socket_path = '%s/%s.sock' % (self.base_amp_path, listener.id)
         return self._get_template().render(
@@ -144,13 +149,15 @@ class JinjaTemplater(object):
             constants=constants)
 
     def _transform_loadbalancer(self, host_amphora, loadbalancer, listener,
-                                tls_cert, feature_compatibility):
+                                tls_cert, feature_compatibility,
+                                client_ca_filename=None):
         """Transforms a load balancer into an object that will
 
            be processed by the templating system
         """
         t_listener = self._transform_listener(
-            listener, tls_cert, feature_compatibility)
+            listener, tls_cert, feature_compatibility,
+            client_ca_filename=client_ca_filename)
         ret_value = {
             'id': loadbalancer.id,
             'vip_address': loadbalancer.vip.ip_address,
@@ -189,7 +196,8 @@ class JinjaTemplater(object):
             'vrrp_priority': amphora.vrrp_priority
         }
 
-    def _transform_listener(self, listener, tls_cert, feature_compatibility):
+    def _transform_listener(self, listener, tls_cert, feature_compatibility,
+                            client_ca_filename=None):
         """Transforms a listener into an object that will
 
             be processed by the templating system
@@ -227,6 +235,10 @@ class JinjaTemplater(object):
                              tls_cert.id))
         if listener.sni_containers:
             ret_value['crt_dir'] = os.path.join(self.base_crt_dir, listener.id)
+        if listener.client_ca_tls_certificate_id:
+            ret_value['client_ca_tls_path'] = '%s' % (
+                os.path.join(self.base_crt_dir, listener.id,
+                             client_ca_filename))
         if listener.default_pool:
             ret_value['default_pool'] = self._transform_pool(
                 listener.default_pool, feature_compatibility)

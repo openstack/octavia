@@ -298,3 +298,7 @@ class TestBarbicanManager(base.TestCase):
             mock.call(self.context, self.private_key_uuid),
             mock.call(self.context, self.private_key_passphrase_uuid)
         ], any_order=True)
+
+    def test_get_secret(self):
+        self.assertIsNone(self.cert_manager.get_secret('fake context',
+                                                       'fake secret ref'))

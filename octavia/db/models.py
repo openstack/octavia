@@ -463,7 +463,7 @@ class Listener(base_models.BASE, base_models.IdMixin,
         sa.String(36),
         sa.ForeignKey("load_balancer.id", name="fk_listener_load_balancer_id"),
         nullable=True)
-    tls_certificate_id = sa.Column(sa.String(36), nullable=True)
+    tls_certificate_id = sa.Column(sa.String(255), nullable=True)
     default_pool_id = sa.Column(
         sa.String(36),
         sa.ForeignKey("pool.id", name="fk_listener_pool_id"),
@@ -498,6 +498,7 @@ class Listener(base_models.BASE, base_models.IdMixin,
     timeout_member_connect = sa.Column(sa.Integer, nullable=True)
     timeout_member_data = sa.Column(sa.Integer, nullable=True)
     timeout_tcp_inspect = sa.Column(sa.Integer, nullable=True)
+    client_ca_tls_certificate_id = sa.Column(sa.String(255), nullable=True)
 
     _tags = orm.relationship(
         'Tags',

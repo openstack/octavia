@@ -18,9 +18,11 @@ import stat
 import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
+from oslo_utils import uuidutils
 
 import octavia.certificates.common.cert as cert
 import octavia.certificates.manager.local as local_cert_mgr
+from octavia.common import exceptions
 import octavia.tests.unit.base as base
 
 
@@ -133,3 +135,25 @@ class TestLocalManager(base.TestCase):
 
         # Delete the cert
         self._delete_cert(cert_id)
+
+    def test_get_secret(self):
+        fd_mock = mock.mock_open()
+        open_mock = mock.Mock()
+        secret_id = uuidutils.generate_uuid()
+        # Attempt to retrieve the secret
+        with mock.patch('os.open', open_mock), mock.patch.object(
+                os, 'fdopen', fd_mock):
+            local_cert_mgr.LocalCertManager.get_secret(None, secret_id)
+
+        # Verify the correct files were opened
+        flags = os.O_RDONLY
+        open_mock.assert_called_once_with('/tmp/{0}.pem'.format(secret_id),
+                                          flags)
+
+        # Test failure path
+        with mock.patch('os.open', open_mock), mock.patch.object(
+                os, 'fdopen', fd_mock) as mock_open:
+            mock_open.side_effect = IOError
+            self.assertRaises(exceptions.CertificateStorageException,
+                              local_cert_mgr.LocalCertManager.get_secret,
+                              None, secret_id)

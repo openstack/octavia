@@ -358,68 +358,73 @@ PEM format.
 As of the writing of this specification the create listener object may
 contain the following:
 
-+----------------------------+--------+-------------------------------------+
-| Name                       | Type   | Description                         |
-+============================+========+=====================================+
-| admin_state_up             | bool   | Admin state: True if up, False if   |
-|                            |        | down.                               |
-+----------------------------+--------+-------------------------------------+
-| connection_limit           | int    | The max number of connections       |
-|                            |        | permitted for this listener. Default|
-|                            |        | is -1, which is infinite            |
-|                            |        | connections.                        |
-+----------------------------+--------+-------------------------------------+
-| default_pool               | object | A `Pool object`_.                   |
-+----------------------------+--------+-------------------------------------+
-| default_pool_id            | string | The ID of the pool used by the      |
-|                            |        | listener if no L7 policies match.   |
-+----------------------------+--------+-------------------------------------+
-| default_tls_container_data | dict   | A `TLS container`_ dict.            |
-+----------------------------+--------+-------------------------------------+
-| default_tls_container_refs | string | The reference to the secrets        |
-|                            |        | container.                          |
-+----------------------------+--------+-------------------------------------+
-| description                | string | A human-readable description for the|
-|                            |        | listener.                           |
-+----------------------------+--------+-------------------------------------+
-| insert_headers             | dict   | A dictionary of optional headers to |
-|                            |        | insert into the request before it is|
-|                            |        | sent to the backend member. See     |
-|                            |        | `Supported HTTP Header Insertions`_.|
-|                            |        | Keys and values are specified as    |
-|                            |        | strings.                            |
-+----------------------------+--------+-------------------------------------+
-| l7policies                 | list   | A list of `L7policy objects`_.      |
-+----------------------------+--------+-------------------------------------+
-| listener_id                | string | ID of listener to create.           |
-+----------------------------+--------+-------------------------------------+
-| loadbalancer_id            | string | ID of load balancer.                |
-+----------------------------+--------+-------------------------------------+
-| name                       | string | Human-readable name of the listener.|
-+----------------------------+--------+-------------------------------------+
-| protocol                   | string | Protocol type: One of HTTP, HTTPS,  |
-|                            |        | TCP, or TERMINATED_HTTPS.           |
-+----------------------------+--------+-------------------------------------+
-| protocol_port              | int    | Protocol port number.               |
-+----------------------------+--------+-------------------------------------+
-| sni_container_data         | list   | A list of `TLS container`_ dict.    |
-+----------------------------+--------+-------------------------------------+
-| sni_container_refs         | list   | A list of references to the SNI     |
-|                            |        | secrets containers.                 |
-+----------------------------+--------+-------------------------------------+
-| timeout_client_data        | int    | Frontend client inactivity timeout  |
-|                            |        | in milliseconds.                    |
-+----------------------------+--------+-------------------------------------+
-| timeout_member_connect     | int    | Backend member connection timeout in|
-|                            |        | milliseconds.                       |
-+----------------------------+--------+-------------------------------------+
-| timeout_member_data        | int    | Backend member inactivity timeout in|
-|                            |        | milliseconds.                       |
-+----------------------------+--------+-------------------------------------+
-| timeout_tcp_inspect        | int    | Time, in milliseconds, to wait for  |
-|                            |        | additional TCP packets for content  |
-|                            |        | inspection.                         |
-+----------------------------+--------+-------------------------------------+
++------------------------------+--------+-------------------------------------+
+| Name                         | Type   | Description                         |
++==============================+========+=====================================+
+| admin_state_up               | bool   | Admin state: True if up, False if   |
+|                              |        | down.                               |
++------------------------------+--------+-------------------------------------+
+|client_ca_tls_container_data  | string | A PEM encoded certificate.          |
++------------------------------+--------+-------------------------------------+
+|client_ca_tls_container_ref   | string | The reference to the secrets        |
+|                              |        | container.                          |
++------------------------------+--------+-------------------------------------+
+| connection_limit             | int    | The max number of connections       |
+|                              |        | permitted for this listener. Default|
+|                              |        | is -1, which is infinite            |
+|                              |        | connections.                        |
++------------------------------+--------+-------------------------------------+
+| default_pool                 | object | A `Pool object`_.                   |
++------------------------------+--------+-------------------------------------+
+| default_pool_id              | string | The ID of the pool used by the      |
+|                              |        | listener if no L7 policies match.   |
++------------------------------+--------+-------------------------------------+
+| default_tls_container_data   | dict   | A `TLS container`_ dict.            |
++------------------------------+--------+-------------------------------------+
+| default_tls_container_refs   | string | The reference to the secrets        |
+|                              |        | container.                          |
++------------------------------+--------+-------------------------------------+
+| description                  | string | A human-readable description for the|
+|                              |        | listener.                           |
++------------------------------+--------+-------------------------------------+
+| insert_headers               | dict   | A dictionary of optional headers to |
+|                              |        | insert into the request before it is|
+|                              |        | sent to the backend member. See     |
+|                              |        | `Supported HTTP Header Insertions`_.|
+|                              |        | Keys and values are specified as    |
+|                              |        | strings.                            |
++------------------------------+--------+-------------------------------------+
+| l7policies                   | list   | A list of `L7policy objects`_.      |
++------------------------------+--------+-------------------------------------+
+| listener_id                  | string | ID of listener to create.           |
++------------------------------+--------+-------------------------------------+
+| loadbalancer_id              | string | ID of load balancer.                |
++------------------------------+--------+-------------------------------------+
+| name                         | string | Human-readable name of the listener.|
++------------------------------+--------+-------------------------------------+
+| protocol                     | string | Protocol type: One of HTTP, HTTPS,  |
+|                              |        | TCP, or TERMINATED_HTTPS.           |
++------------------------------+--------+-------------------------------------+
+| protocol_port                | int    | Protocol port number.               |
++------------------------------+--------+-------------------------------------+
+| sni_container_data           | list   | A list of `TLS container`_ dict.    |
++------------------------------+--------+-------------------------------------+
+| sni_container_refs           | list   | A list of references to the SNI     |
+|                              |        | secrets containers.                 |
++------------------------------+--------+-------------------------------------+
+| timeout_client_data          | int    | Frontend client inactivity timeout  |
+|                              |        | in milliseconds.                    |
++------------------------------+--------+-------------------------------------+
+| timeout_member_connect       | int    | Backend member connection timeout in|
+|                              |        | milliseconds.                       |
++------------------------------+--------+-------------------------------------+
+| timeout_member_data          | int    | Backend member inactivity timeout in|
+|                              |        | milliseconds.                       |
++------------------------------+--------+-------------------------------------+
+| timeout_tcp_inspect          | int    | Time, in milliseconds, to wait for  |
+|                              |        | additional TCP packets for content  |
+|                              |        | inspection.                         |
++------------------------------+--------+-------------------------------------+
 
 .. _TLS container:
 

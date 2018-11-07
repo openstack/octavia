@@ -226,3 +226,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
         if cert_container.intermediates:
             self.auth.revoke_secret_access(
                 context, cert_container.intermediates.secret_ref)
+
+    def get_secret(self, context, secret_ref):
+        # The legacy driver doesn't need get_secret
+        return None

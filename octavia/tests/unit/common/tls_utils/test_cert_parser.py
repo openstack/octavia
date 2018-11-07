@@ -142,8 +142,10 @@ class TestTLSParseUtils(base.TestCase):
             exceptions.UnreadableCert,
             cert_parser._get_x509_from_der_bytes, b'bad data')
 
-    def test_load_certificates(self):
-        listener = sample_configs.sample_listener_tuple(tls=True, sni=True)
+    @mock.patch('oslo_context.context.RequestContext')
+    def test_load_certificates(self, mock_oslo):
+        listener = sample_configs.sample_listener_tuple(tls=True, sni=True,
+                                                        client_ca_cert=True)
         client = mock.MagicMock()
         context = mock.Mock()
         context.project_id = '12345'
@@ -161,6 +163,19 @@ class TestTLSParseUtils(base.TestCase):
                     mock.call.get_cert(context, 'cont_id_3', check_only=True)
                 ]
                 client.assert_has_calls(calls_cert_mngr)
+
+        # Test asking for nothing
+        listener = sample_configs.sample_listener_tuple(tls=False, sni=False,
+                                                        client_ca_cert=False)
+        client = mock.MagicMock()
+        with mock.patch.object(cert_parser,
+                               '_map_cert_tls_container') as mock_map:
+            result = cert_parser.load_certificates_data(client, listener)
+
+            mock_map.assert_not_called()
+            ref_empty_dict = {'tls_cert': None, 'sni_certs': []}
+            self.assertEqual(ref_empty_dict, result)
+            mock_oslo.assert_called()
 
     @mock.patch('octavia.certificates.common.cert.Cert')
     def test_map_cert_tls_container(self, cert_mock):
