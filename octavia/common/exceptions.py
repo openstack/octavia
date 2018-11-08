@@ -229,7 +229,7 @@ class GlanceNoTaggedImages(OctaviaException):
 # normal part of operation while waiting for compute to go active
 # on the instance
 class ComputeWaitTimeoutException(OctaviaException):
-    message = _('Waiting for compute to go active timeout.')
+    message = _('Waiting for compute id %(id)s to go active timeout.')
 
 
 class InvalidTopology(OctaviaException):

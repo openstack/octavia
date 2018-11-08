@@ -191,7 +191,7 @@ class ComputeActiveWait(BaseComputeTask):
                 raise exceptions.ComputeBuildException(fault=fault)
             time.sleep(CONF.controller_worker.amp_active_wait_sec)
 
-        raise exceptions.ComputeWaitTimeoutException()
+        raise exceptions.ComputeWaitTimeoutException(id=compute_id)
 
 
 class NovaServerGroupCreate(BaseComputeTask):
