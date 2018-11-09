@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import errno
 import ipaddress
 import os
 import shutil
@@ -78,7 +79,13 @@ class BaseOS(object):
         # We need to setup the netns network directory so that the ifup
         # commands used here and in the startup scripts "sees" the right
         # interfaces and scripts.
-        os.makedirs('/etc/netns/' + consts.AMPHORA_NAMESPACE)
+        try:
+            os.makedirs('/etc/netns/' + consts.AMPHORA_NAMESPACE)
+        except OSError as e:
+            # Raise the error if it's not "File exists" otherwise pass
+            if e.errno != errno.EEXIST:
+                raise
+
         shutil.copytree(
             network_dir,
             '/etc/netns/{netns}/{net_dir}'.format(
