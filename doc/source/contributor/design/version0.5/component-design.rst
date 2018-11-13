@@ -22,7 +22,7 @@ services.
 
 USER API HANDLER
 ----------------
-This is the front-end that users (and user GUIs or what have you) talk to to
+This is the front-end that users (and user GUIs or what have you) talk to
 manipulate load balancing services.
 
 **Notes:**
