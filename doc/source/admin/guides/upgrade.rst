@@ -38,7 +38,7 @@ operators should observe:
   Compute, Networking, Image and Identify. On a staging environment, upgrade
   the Load Balancing service and verify it works as expected. For example, a
   good indicator would be the successful run of `Octavia Tempest tests
-  <http://git.openstack.org/cgit/openstack/octavia-tempest-plugin>`.
+  <https://git.openstack.org/cgit/openstack/octavia-tempest-plugin>`.
 
 Cold upgrade
 ============
