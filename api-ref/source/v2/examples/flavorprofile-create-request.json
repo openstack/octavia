@@ -1,0 +1,8 @@
+{
+    "flavorprofile":
+        {
+            "name": "amphora-act-stdby",
+            "provider_name": "amphora",
+            "flavor_data": "{\"loadbalancer_topology\": \"ACTIVE_STANDBY\"}"
+        }
+}

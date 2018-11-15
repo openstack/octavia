@@ -1,0 +1,7 @@
+{
+    "flavor": {
+        "name": "Basic",
+        "description": "A basic standalone Octavia load balancer.",
+        "enabled": false
+    }
+}

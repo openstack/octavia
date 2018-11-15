@@ -1,0 +1,8 @@
+{
+    "flavorprofile":
+        {
+            "name": "amphora-standalone",
+            "provider_name": "amphora",
+            "flavor_data": "{\"loadbalancer_topology\": \"SINGLE\"}"
+        }
+}
