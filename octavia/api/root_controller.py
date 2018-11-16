@@ -15,6 +15,7 @@
 import logging
 
 from oslo_config import cfg
+from pecan import request as pecan_request
 from pecan import rest
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
@@ -33,33 +34,49 @@ class RootController(rest.RestController):
 
     def __init__(self):
         super(RootController, self).__init__()
-        self._versions = []
-        v1_enabled = CONF.api_settings.api_v1_enabled
-        v2_enabled = CONF.api_settings.api_v2_enabled
-        if v1_enabled:
+        self.v1_enabled = CONF.api_settings.api_v1_enabled
+        self.v2_enabled = CONF.api_settings.api_v2_enabled
+        if self.v1_enabled:
             self.v1 = v1_controller.V1Controller()
-            self._versions.append(
-                {
-                    'status': 'SUPPORTED',
-                    'updated': '2014-12-11T00:00:00Z',
-                    'id': 'v1'
-                })
-        if v2_enabled:
+        if self.v2_enabled:
             setattr(self, 'v2.0', v2_controller.V2Controller())
-            self._versions.append(
-                {
-                    'status': 'CURRENT',
-                    'updated': '2017-06-22T00:00:00Z',
-                    'id': 'v2.0'
-                })
-        if not (v1_enabled or v2_enabled):
+        if not (self.v1_enabled or self.v2_enabled):
             LOG.warning("Both v1 and v2.0 API endpoints are disabled -- is "
                         "this intentional?")
-        elif v1_enabled and v2_enabled:
+        elif self.v1_enabled and self.v2_enabled:
             LOG.warning("Both v1 and v2.0 API endpoints are enabled -- it is "
                         "a security risk to expose the v1 endpoint publicly,"
                         "so please make sure access to it is secured.")
 
     @wsme_pecan.wsexpose(wtypes.text)
     def get(self):
-        return {'versions': self._versions}
+        host_url = pecan_request.path_url
+
+        if not host_url.endswith('/'):
+            host_url = '{}/'.format(host_url)
+
+        versions = []
+        if CONF.api_settings.api_v1_enabled:
+            versions.append(
+                {
+                    'status': 'SUPPORTED',
+                    'updated': '2014-12-11T00:00:00Z',
+                    'id': 'v1',
+                    'links': [{
+                        'href': host_url + 'v1',
+                        'rel': 'self'
+                    }]
+                })
+        if CONF.api_settings.api_v2_enabled:
+            versions.append(
+                {
+                    'status': 'CURRENT',
+                    'updated': '2017-06-22T00:00:00Z',
+                    'id': 'v2.0',
+                    'links': [{
+                        'href': host_url + 'v2.0',
+                        'rel': 'self'
+                    }]
+                })
+
+        return {'versions': versions}
