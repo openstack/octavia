@@ -25,6 +25,7 @@ oslo.messaging>=5.29.0 # Apache-2.0
 oslo.middleware>=3.31.0 # Apache-2.0
 oslo.policy>=1.30.0 # Apache-2.0
 oslo.reports>=1.18.0 # Apache-2.0
+oslo.upgradecheck>=0.1.0 # Apache-2.0
 oslo.utils>=3.33.0 # Apache-2.0
 pyasn1!=0.2.3,>=0.1.8 # BSD
 pyasn1-modules>=0.0.6 # BSD

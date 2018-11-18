@@ -50,6 +50,9 @@ of upgrading. In the case of the Load Balancing service, it means no downtime
 nor reconfiguration of service-managed resources (e.g. load balancers,
 listeners, pools and members).
 
+#. Run the :ref:`octavia-status upgrade check <octavia-status-checks>`
+   command to validate that Octavia is ready for upgrade.
+
 #. Gracefully stop all Octavia processes. We recommend in this order:
    Housekeeping, Health manager, API, Worker.
 
