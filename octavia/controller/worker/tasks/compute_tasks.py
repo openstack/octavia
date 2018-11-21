@@ -113,7 +113,7 @@ class ComputeCreate(BaseComputeTask):
         if isinstance(result, failure.Failure):
             return
         compute_id = result
-        LOG.warning("Reverting compute create for amphora with id"
+        LOG.warning("Reverting compute create for amphora with id "
                     "%(amp)s and compute id: %(comp)s",
                     {'amp': amphora_id, 'comp': compute_id})
         try:

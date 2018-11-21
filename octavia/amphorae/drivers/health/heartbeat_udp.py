@@ -207,7 +207,7 @@ class UDPStatusGetter(object):
             # Pass here as the packet was dropped and logged already
             pass
         except Exception as e:
-            LOG.warning('Health Manager experienced an exception processing a'
+            LOG.warning('Health Manager experienced an exception processing a '
                         'heartbeat packet. Ignoring this packet. '
                         'Exception: %s', e)
         else:
