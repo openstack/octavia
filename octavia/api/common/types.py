@@ -168,6 +168,12 @@ class BaseType(wtypes.Base):
             if (isinstance(self.project_id, wtypes.UnsetType) and
                     not isinstance(self.tenant_id, wtypes.UnsetType)):
                 self.project_id = self.tenant_id
+        if hasattr(self, 'admin_state_up') and getattr(
+                self, 'admin_state_up') is None:
+            # This situation will be hit during request with
+            # admin_state_up is null. If users specify this field to null,
+            # then we treat it as False
+            self.admin_state_up = bool(self.admin_state_up)
         wsme_dict = {}
         for attr in dir(self):
             if attr.startswith('_'):
