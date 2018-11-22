@@ -16,7 +16,7 @@ from wsme import exc
 from wsme.rest import json as wsme_json
 from wsme import types as wsme_types
 
-from octavia.api.v1.types import l7rule as l7rule_type
+from octavia.api.v2.types import l7rule as l7rule_type
 from octavia.common import constants
 from octavia.tests.unit.api.common import base
 
@@ -32,6 +32,7 @@ class TestL7RulePOST(base.BaseTypesTest):
         l7rule = wsme_json.fromjson(self._type, body)
         self.assertEqual(wsme_types.Unset, l7rule.key)
         self.assertFalse(l7rule.invert)
+        self.assertTrue(l7rule.admin_state_up)
 
     def test_type_mandatory(self):
         body = {"compare_type": constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
@@ -65,12 +66,35 @@ class TestL7RulePOST(base.BaseTypesTest):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
+    def test_invalid_value(self):
+        body = {"type": "notvalid",
+                "compare_type": constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+                "value": 123}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
     def test_invalid_invert(self):
         body = {"type": constants.L7RULE_TYPE_PATH,
                 "compare_type": constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
                 "value": "/api",
                 "invert": "notvalid"}
         self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_invalid_admin_state_up(self):
+        body = {"type": constants.L7RULE_TYPE_PATH,
+                "compare_type": constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+                "value": "/api",
+                "admin_state_up": "notvalid"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_invalid_key(self):
+        body = {"type": constants.L7RULE_TYPE_PATH,
+                "compare_type": constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+                "value": "/api",
+                "key": 123}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
 
@@ -87,23 +111,31 @@ class TestL7RulePUT(base.BaseTypesTest):
         self.assertFalse(l7rule.invert)
 
     def test_invalid_type(self):
-        body = {"type": "notvalid",
-                "compare_type": constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
-                "value": "/api"}
+        body = {"type": "notvalid"}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
     def test_invalid_compare_type(self):
-        body = {"type": constants.L7RULE_TYPE_PATH,
-                "compare_type": "notvalid",
-                "value": "/api"}
+        body = {"compare_type": "notvalid"}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_invalid_value(self):
+        body = {"value": 123}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
     def test_invalid_invert(self):
-        body = {"type": constants.L7RULE_TYPE_PATH,
-                "compare_type": constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
-                "value": "/api",
-                "invert": "notvalid"}
+        body = {"invert": "notvalid"}
         self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_invalid_admin_state_up(self):
+        body = {"admin_state_up": "notvalid"}
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_invalid_key(self):
+        body = {"key": 123}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
