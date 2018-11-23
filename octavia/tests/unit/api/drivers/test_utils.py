@@ -141,13 +141,6 @@ class TestUtils(base.TestCase):
                         'flavor_id': 'flavor_id',
                         'provider': 'noop_driver'}
         ref_listeners = copy.deepcopy(self.sample_data.provider_listeners)
-        # TODO(johnsom) Remove this once the listener ACLs patch merges
-        # https://review.opendev.org/#/c/659626/
-        for listener in ref_listeners:
-            try:
-                del listener.allowed_cidrs
-            except AttributeError:
-                pass
         ref_prov_lb_dict = {
             'vip_address': self.sample_data.ip_address,
             'admin_state_up': True,
@@ -220,13 +213,6 @@ class TestUtils(base.TestCase):
         provider_listeners = utils.db_listeners_to_provider_listeners(
             self.sample_data.test_db_listeners)
         ref_listeners = copy.deepcopy(self.sample_data.provider_listeners)
-        # TODO(johnsom) Remove this once the listener ACLs patch merges
-        # https://review.opendev.org/#/c/659626/
-        for listener in ref_listeners:
-            try:
-                del listener.allowed_cidrs
-            except AttributeError:
-                pass
         self.assertEqual(ref_listeners, provider_listeners)
 
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
@@ -253,9 +239,6 @@ class TestUtils(base.TestCase):
         expect_prov['default_pool'] = expect_pool_prov
         provider_listener = utils.listener_dict_to_provider_dict(
             self.sample_data.test_listener1_dict)
-        # TODO(johnsom) Remove this once the listener ACLs patch merges
-        # https://review.opendev.org/#/c/659626/
-        del expect_prov['allowed_cidrs']
         self.assertEqual(expect_prov, provider_listener)
 
     @mock.patch('octavia.api.drivers.utils._get_secret_data')

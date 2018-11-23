@@ -134,7 +134,8 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
 
     def _create_security_group_rule(self, sec_grp_id, protocol,
                                     direction='ingress', port_min=None,
-                                    port_max=None, ethertype='IPv6'):
+                                    port_max=None, ethertype='IPv6',
+                                    cidr=None):
         rule = {
             'security_group_rule': {
                 'security_group_id': sec_grp_id,
@@ -143,8 +144,10 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
                 'port_range_min': port_min,
                 'port_range_max': port_max,
                 'ethertype': ethertype,
+                'remote_ip_prefix': cidr,
             }
         }
+
         self.neutron_client.create_security_group_rule(rule)
 
     def apply_qos_on_port(self, qos_id, port_id):

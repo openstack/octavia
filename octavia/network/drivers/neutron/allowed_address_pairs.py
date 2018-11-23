@@ -133,42 +133,53 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
     def _update_security_group_rules(self, load_balancer, sec_grp_id):
         rules = self.neutron_client.list_security_group_rules(
             security_group_id=sec_grp_id)
-        updated_ports = [
-            (listener.protocol_port,
-             constants.PROTOCOL_TCP.lower()
-             if listener.protocol != constants.PROTOCOL_UDP else
-             constants.PROTOCOL_UDP.lower())
-            for listener in load_balancer.listeners
-            if listener.provisioning_status != constants.PENDING_DELETE and
-            listener.provisioning_status != constants.DELETED]
-        # As the peer port will hold the tcp connection for keepalived and
-        # haproxy session synchronization, so here the security group rule
-        # should be just related with tcp protocol only.
-        peer_ports = [
-            (listener.peer_port,
-             constants.PROTOCOL_TCP.lower())
-            for listener in load_balancer.listeners
-            if listener.provisioning_status != constants.PENDING_DELETE and
-            listener.provisioning_status != constants.DELETED]
-        updated_ports.extend(peer_ports)
+
+        updated_ports = []
+        for l in load_balancer.listeners:
+            if (l.provisioning_status in [constants.PENDING_DELETE,
+                                          constants.DELETED]):
+                continue
+
+            protocol = constants.PROTOCOL_TCP.lower()
+            if l.protocol == constants.PROTOCOL_UDP:
+                protocol = constants.PROTOCOL_UDP.lower()
+
+            if l.allowed_cidrs:
+                for ac in l.allowed_cidrs:
+                    port = (l.protocol_port, protocol, ac.cidr)
+                    updated_ports.append(port)
+            else:
+                port = (l.protocol_port, protocol, None)
+                updated_ports.append(port)
+
+            # As the peer port will hold the tcp connection for keepalived and
+            # haproxy session synchronization, so here the security group rule
+            # should be just related with tcp protocol only.
+            updated_ports.append(
+                (l.peer_port, constants.PROTOCOL_TCP.lower(), None))
+
         # Just going to use port_range_max for now because we can assume that
         # port_range_max and min will be the same since this driver is
         # responsible for creating these rules
-        old_ports = [(rule.get('port_range_max'), rule.get('protocol'))
-                     for rule in rules.get('security_group_rules', [])
-                     # Don't remove egress rules and don't
-                     # confuse other protocols with None ports
-                     # with the egress rules.  VRRP uses protocol
-                     # 51 and 112
-                     if rule.get('direction') != 'egress' and
-                     rule.get('protocol', '').lower() in ['tcp', 'udp']]
+        old_ports = []
+        for rule in rules.get('security_group_rules', []):
+            # Don't remove egress rules and don't confuse other protocols with
+            # None ports with the egress rules.  VRRP uses protocol 51 and 112
+            if (rule.get('direction') == 'egress' or
+                rule.get('protocol').upper() not in
+                    [constants.PROTOCOL_TCP, constants.PROTOCOL_UDP]):
+                continue
+            old_ports.append((rule.get('port_range_max'),
+                              rule.get('protocol').lower(),
+                              rule.get('remote_ip_prefix')))
+
         add_ports = set(updated_ports) - set(old_ports)
         del_ports = set(old_ports) - set(updated_ports)
         for rule in rules.get('security_group_rules', []):
             if (rule.get('protocol', '') and
                     rule.get('protocol', '').lower() in ['tcp', 'udp'] and
-                    (rule.get('port_range_max'),
-                     rule.get('protocol')) in del_ports):
+                    (rule.get('port_range_max'), rule.get('protocol'),
+                     rule.get('remote_ip_prefix')) in del_ports):
                 rule_id = rule.get('id')
                 try:
                     self.neutron_client.delete_security_group_rule(rule_id)
@@ -181,7 +192,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             self._create_security_group_rule(sec_grp_id, port_protocol[1],
                                              port_min=port_protocol[0],
                                              port_max=port_protocol[0],
-                                             ethertype=ethertype)
+                                             ethertype=ethertype,
+                                             cidr=port_protocol[2])
 
         # Currently we are using the VIP network for VRRP
         # so we need to open up the protocols for it

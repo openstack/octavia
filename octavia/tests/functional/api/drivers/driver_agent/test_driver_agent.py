@@ -228,7 +228,6 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         # Add our live certs in that differ from the fake certs in sample_data
         self.provider_listener_dict = copy.deepcopy(
             self.sample_data.provider_listener1_dict)
-        self.provider_listener_dict['allowed_cidrs'] = None
         self.provider_listener_dict[
             lib_consts.DEFAULT_TLS_CONTAINER_REF] = self.cert_ref
         self.provider_listener_dict[

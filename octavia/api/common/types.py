@@ -14,6 +14,7 @@
 
 import copy
 
+import netaddr
 import six
 from wsme import types as wtypes
 
@@ -41,6 +42,20 @@ class IPAddressType(wtypes.UserType):
             except ValueError:
                 error = 'Value should be IPv4 or IPv6 format'
                 raise ValueError(error)
+
+
+class CidrType(wtypes.UserType):
+    basetype = unicode
+    name = 'cidr'
+
+    @staticmethod
+    def validate(value):
+        """Validates whether value is an IPv4 or IPv6 CIDR."""
+        try:
+            return str(netaddr.IPNetwork(value).cidr)
+        except (ValueError, netaddr.core.AddrFormatError):
+            error = 'Value should be IPv4 or IPv6 CIDR format'
+            raise ValueError(error)
 
 
 class URLType(wtypes.UserType):

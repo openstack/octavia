@@ -542,6 +542,10 @@ class Listener(base_models.BASE, base_models.IdMixin,
                 _p_ids.append(p.id)
         return _pools
 
+    allowed_cidrs = orm.relationship(
+        'ListenerCidr', cascade='all,delete-orphan',
+        uselist=True, backref=orm.backref('listener', uselist=False))
+
 
 class SNI(base_models.BASE):
 
@@ -790,3 +794,19 @@ class SparesPool(base_models.BASE):
     __tablename__ = "spares_pool"
 
     updated_at = sa.Column(sa.DateTime, primary_key=True, nullable=True)
+
+
+class ListenerCidr(base_models.BASE):
+
+    __data_model__ = data_models.ListenerCidr
+
+    __tablename__ = "listener_cidr"
+    __table_args__ = (
+        sa.PrimaryKeyConstraint('listener_id', 'cidr'),
+    )
+
+    listener_id = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("listener.id", name="fk_listener_cidr_listener_id"),
+        nullable=False)
+    cidr = sa.Column(sa.String(64), nullable=False)

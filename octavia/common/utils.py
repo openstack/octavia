@@ -64,6 +64,12 @@ def is_ipv6(ip_address):
     return ip.version == 6
 
 
+def is_cidr_ipv6(cidr):
+    """Check if CIDR is IPv6 address with subnet prefix."""
+    ip = netaddr.IPNetwork(cidr)
+    return ip.version == 6
+
+
 def is_ipv6_lla(ip_address):
     """Check if ip address is IPv6 link local address."""
     ip = netaddr.IPAddress(ip_address)

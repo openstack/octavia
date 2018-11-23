@@ -193,6 +193,10 @@ class ModelTestMixin(object):
         kwargs.update(overrides)
         return self._insert(session, models.L7Rule, kwargs)
 
+    def create_listener_cidr(self, session, listener_id, cidr):
+        kwargs = {'listener_id': listener_id, 'cidr': cidr}
+        return self._insert(session, models.ListenerCidr, kwargs)
+
 
 class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
@@ -893,6 +897,8 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
             redirect_pool_id=self.pool.id)
         self.l7rule = self.create_l7rule(self.session,
                                          l7policy_id=self.l7policy.id)
+        self.listener_cidr = self.create_listener_cidr(
+            self.session, listener_id=self.listener.id, cidr='10.0.1.0/24')
 
     @staticmethod
     def _get_unique_key(obj):
@@ -907,6 +913,8 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
             return obj.__class__.__name__ + obj.pool_id
         elif obj.__class__.__name__ in ['ListenerStatistics']:
             return obj.__class__.__name__ + obj.listener_id + obj.amphora_id
+        elif obj.__class__.__name__ in ['ListenerCidr']:
+            return obj.__class__.__name__ + obj.listener_id + obj.cidr
         elif obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
             return obj.__class__.__name__ + obj.load_balancer_id
         elif obj.__class__.__name__ in ['AmphoraHealth']:
@@ -972,6 +980,8 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
                          self.l7policy.to_data_model()._get_unique_key())
         self.assertEqual(self._get_unique_key(self.l7rule),
                          self.l7rule.to_data_model()._get_unique_key())
+        self.assertEqual(self._get_unique_key(self.listener_cidr),
+                         self.listener_cidr.to_data_model()._get_unique_key())
 
     def test_graph_completeness(self):
         # Generate equivalent graphs starting arbitrarily from different

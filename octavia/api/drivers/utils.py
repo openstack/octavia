@@ -266,6 +266,14 @@ def listener_dict_to_provider_dict(listener_dict):
                                         listener_obj.client_crl_container_id)
             new_listener_dict['client_crl_container_data'] = crl_file
 
+    # Format the allowed_cidrs
+    if ('allowed_cidrs' in new_listener_dict and
+            new_listener_dict['allowed_cidrs'] and
+            'cidr' in new_listener_dict['allowed_cidrs'][0]):
+        cidrs_dict_list = new_listener_dict.pop('allowed_cidrs')
+        new_listener_dict['allowed_cidrs'] = [cidr_dict['cidr'] for
+                                              cidr_dict in cidrs_dict_list]
+
     # Remove the DB back references
     if 'load_balancer' in new_listener_dict:
         del new_listener_dict['load_balancer']

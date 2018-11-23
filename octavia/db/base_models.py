@@ -37,6 +37,8 @@ class OctaviaBase(models.ModelBase):
             return obj.__class__.__name__ + obj.pool_id
         if obj.__class__.__name__ in ['ListenerStatistics']:
             return obj.__class__.__name__ + obj.listener_id + obj.amphora_id
+        if obj.__class__.__name__ in ['ListenerCidr']:
+            return obj.__class__.__name__ + obj.listener_id + obj.cidr
         if obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
             return obj.__class__.__name__ + obj.load_balancer_id
         if obj.__class__.__name__ in ['AmphoraHealth']:

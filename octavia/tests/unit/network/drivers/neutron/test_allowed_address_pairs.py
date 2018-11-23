@@ -659,10 +659,15 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             compute_id=t_constants.MOCK_COMPUTE_ID, port_id=port2.get('id'))
 
     def test_update_vip(self):
+        lc_1 = data_models.ListenerCidr('l1', '10.0.101.0/24')
+        lc_2 = data_models.ListenerCidr('l2', '10.0.102.0/24')
+        lc_3 = data_models.ListenerCidr('l2', '10.0.103.0/24')
         listeners = [data_models.Listener(protocol_port=80, peer_port=1024,
-                                          protocol=constants.PROTOCOL_TCP),
+                                          protocol=constants.PROTOCOL_TCP,
+                                          allowed_cidrs=[lc_1]),
                      data_models.Listener(protocol_port=443, peer_port=1025,
-                                          protocol=constants.PROTOCOL_TCP),
+                                          protocol=constants.PROTOCOL_TCP,
+                                          allowed_cidrs=[lc_2, lc_3]),
                      data_models.Listener(protocol_port=50, peer_port=1026,
                                           protocol=constants.PROTOCOL_UDP)]
         vip = data_models.Vip(ip_address='10.0.0.2')
@@ -671,7 +676,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         list_sec_grps.return_value = {'security_groups': [{'id': 'secgrp-1'}]}
         fake_rules = {
             'security_group_rules': [
-                {'id': 'rule-80', 'port_range_max': 80, 'protocol': 'tcp'},
+                {'id': 'rule-80', 'port_range_max': 80, 'protocol': 'tcp',
+                 'remote_ip_prefix': '10.0.101.0/24'},
                 {'id': 'rule-22', 'port_range_max': 22, 'protocol': 'tcp'}
             ]
         }
@@ -688,7 +694,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 'protocol': 'tcp',
                 'port_range_min': 1024,
                 'port_range_max': 1024,
-                'ethertype': 'IPv4'
+                'ethertype': 'IPv4',
+                'remote_ip_prefix': None
             }
         }
         expected_create_rule_udp_peer = {
@@ -698,7 +705,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 'protocol': 'tcp',
                 'port_range_min': 1026,
                 'port_range_max': 1026,
-                'ethertype': 'IPv4'
+                'ethertype': 'IPv4',
+                'remote_ip_prefix': None
             }
         }
         expected_create_rule_2 = {
@@ -708,7 +716,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 'protocol': 'tcp',
                 'port_range_min': 1025,
                 'port_range_max': 1025,
-                'ethertype': 'IPv4'
+                'ethertype': 'IPv4',
+                'remote_ip_prefix': None
             }
         }
         expected_create_rule_3 = {
@@ -718,7 +727,19 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 'protocol': 'tcp',
                 'port_range_min': 443,
                 'port_range_max': 443,
-                'ethertype': 'IPv4'
+                'ethertype': 'IPv4',
+                'remote_ip_prefix': '10.0.102.0/24'
+            }
+        }
+        expected_create_rule_4 = {
+            'security_group_rule': {
+                'security_group_id': 'secgrp-1',
+                'direction': 'ingress',
+                'protocol': 'tcp',
+                'port_range_min': 443,
+                'port_range_max': 443,
+                'ethertype': 'IPv4',
+                'remote_ip_prefix': '10.0.103.0/24'
             }
         }
         expected_create_rule_udp = {
@@ -728,7 +749,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 'protocol': 'udp',
                 'port_range_min': 50,
                 'port_range_max': 50,
-                'ethertype': 'IPv4'
+                'ethertype': 'IPv4',
+                'remote_ip_prefix': None
             }
         }
 
@@ -736,6 +758,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                                       mock.call(expected_create_rule_udp_peer),
                                       mock.call(expected_create_rule_2),
                                       mock.call(expected_create_rule_3),
+                                      mock.call(expected_create_rule_4),
                                       mock.call(expected_create_rule_udp)],
                                      any_order=True)
 

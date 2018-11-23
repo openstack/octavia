@@ -82,6 +82,9 @@ class RootController(rest.RestController):
         self._add_a_version(versions, 'v2.10', 'v2', 'SUPPORTED',
                             '2019-03-05T00:00:00Z', host_url)
         # Additive batch member update
-        self._add_a_version(versions, 'v2.11', 'v2', 'CURRENT',
+        self._add_a_version(versions, 'v2.11', 'v2', 'SUPPORTED',
                             '2019-06-24T00:00:00Z', host_url)
+        # VIP ACL
+        self._add_a_version(versions, 'v2.12', 'v2', 'CURRENT',
+                            '2019-09-11T00:00:00Z', host_url)
         return {'versions': versions}

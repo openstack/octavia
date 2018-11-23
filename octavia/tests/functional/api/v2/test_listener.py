@@ -1136,6 +1136,101 @@ class TestListener(base.BaseAPITest):
                       "It must be a valid x509 PEM format certificate.",
                       response['faultstring'])
 
+    def _test_create_with_allowed_cidrs(self, allowed_cidrs):
+        listener = self.create_listener(constants.PROTOCOL_TCP,
+                                        80, self.lb_id,
+                                        allowed_cidrs=allowed_cidrs)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener']['id'])
+        get_listener = self.get(listener_path).json['listener']
+        self.assertEqual(allowed_cidrs, get_listener.get('allowed_cidrs'))
+
+    def test_create_with_allowed_cidrs_ipv4(self):
+        allowed_cidrs = ['10.0.1.0/24', '172.16.55.0/25']
+        self._test_create_with_allowed_cidrs(allowed_cidrs)
+
+    def test_create_with_allowed_cidrs_ipv6(self):
+        allowed_cidrs = ['2001:db8:a0b:12f0::/64', '2a02:8071:69e::/64']
+        with mock.patch('octavia.db.repositories.VipRepository.'
+                        'get') as repo_mock:
+            repo_mock.return_value.ip_address = "2001:db9:a1b:13f0::1"
+            self._test_create_with_allowed_cidrs(allowed_cidrs)
+
+    def test_create_with_bad_allowed_cidrs(self):
+        allowed_cidrs = [u'10.0.1.0/33', u'172.16.55.1.0/25']
+        lb_listener = {
+            'protocol': constants.PROTOCOL_TCP,
+            'protocol_port': 80,
+            'project_id': self.project_id,
+            'loadbalancer_id': self.lb_id,
+            'allowed_cidrs': allowed_cidrs}
+        body = self._build_body(lb_listener)
+        response = self.post(self.LISTENERS_PATH, body, status=400).json
+        self.assertIn("Invalid input for field/attribute allowed_cidrs. "
+                      "Value: '%s'. Value should be IPv4 or IPv6 CIDR format"
+                      % allowed_cidrs, response['faultstring'])
+
+    def test_create_with_incompatible_allowed_cidrs_ipv6(self):
+        lb_listener = {
+            'protocol': constants.PROTOCOL_TCP,
+            'protocol_port': 80,
+            'project_id': self.project_id,
+            'loadbalancer_id': self.lb_id,
+            'allowed_cidrs': ['2001:db8:a0b:12f0::/64']}
+        body = self._build_body(lb_listener)
+        response = self.post(self.LISTENERS_PATH, body, status=400).json
+        self.assertIn("Validation failure: CIDR 2001:db8:a0b:12f0::/64 IP "
+                      "version incompatible with VIP 198.0.2.5 IP version.",
+                      response['faultstring'])
+
+    def test_create_with_incompatible_allowed_cidrs_ipv4(self):
+        lb_listener = {
+            'protocol': constants.PROTOCOL_TCP,
+            'protocol_port': 80,
+            'project_id': self.project_id,
+            'loadbalancer_id': self.lb_id,
+            'allowed_cidrs': ['10.0.1.0/24']}
+        with mock.patch('octavia.db.repositories.VipRepository.'
+                        'get') as repo_mock:
+            repo_mock.return_value.ip_address = "2001:db9:a1b:13f0::1"
+            body = self._build_body(lb_listener)
+            response = self.post(self.LISTENERS_PATH, body, status=400).json
+            self.assertIn("Validation failure: CIDR 10.0.1.0/24 IP version "
+                          "incompatible with VIP 2001:db9:a1b:13f0::1 IP "
+                          "version.", response['faultstring'])
+
+    def test_create_with_duplicated_allowed_cidrs(self):
+        allowed_cidrs = ['10.0.1.0/24', '10.0.2.0/24', '10.0.2.0/24']
+        self.create_listener(constants.PROTOCOL_TCP, 80,
+                             self.lb_id, allowed_cidrs=allowed_cidrs)
+
+    def test_update_allowed_cidrs(self):
+        allowed_cidrs = ['10.0.1.0/24', '10.0.2.0/24']
+        new_cidrs = ['10.0.1.0/24', '10.0.3.0/24']
+        listener = self.create_listener(constants.PROTOCOL_TCP,
+                                        80, self.lb_id,
+                                        allowed_cidrs=allowed_cidrs)
+        self.set_lb_status(self.lb_id)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener']['id'])
+        lb_listener = {'allowed_cidrs': new_cidrs}
+        body = self._build_body(lb_listener)
+        response = self.put(listener_path, body).json.get(self.root_tag)
+        self.assertEqual(new_cidrs, response.get('allowed_cidrs'))
+
+    def test_update_unset_allowed_cidrs(self):
+        allowed_cidrs = ['10.0.1.0/24', '10.0.2.0/24']
+        listener = self.create_listener(constants.PROTOCOL_TCP,
+                                        80, self.lb_id,
+                                        allowed_cidrs=allowed_cidrs)
+        self.set_lb_status(self.lb_id)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener']['id'])
+        lb_listener = {'allowed_cidrs': None}
+        body = self._build_body(lb_listener)
+        api_listener = self.put(listener_path, body).json.get(self.root_tag)
+        self.assertIsNone(api_listener.get('allowed_cidrs'))
+
     @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_update_with_bad_provider(self, mock_provider):
         api_listener = self.create_listener(

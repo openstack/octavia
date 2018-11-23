@@ -214,6 +214,7 @@ class Repositories(object):
         self.pool = PoolRepository()
         self.member = MemberRepository()
         self.listener = ListenerRepository()
+        self.listener_cidr = ListenerCidrRepository()
         self.listener_stats = ListenerStatisticsRepository()
         self.amphora = AmphoraRepository()
         self.sni = SNIRepository()
@@ -889,6 +890,25 @@ class SessionPersistenceRepository(BaseRepository):
             pool_id=pool_id).first())
 
 
+class ListenerCidrRepository(BaseRepository):
+    model_class = models.ListenerCidr
+
+    def create(self, session, listener_id, allowed_cidrs):
+        if allowed_cidrs:
+            with session.begin(subtransactions=True):
+                for cidr in set(allowed_cidrs):
+                    cidr_dict = {'listener_id': listener_id, 'cidr': cidr}
+                    model = self.model_class(**cidr_dict)
+                    session.add(model)
+
+    def update(self, session, listener_id, allowed_cidrs):
+        """Updates allowed CIDRs in the database by listener_id."""
+        with session.begin(subtransactions=True):
+            session.query(self.model_class).filter_by(
+                listener_id=listener_id).delete()
+            self.create(session, listener_id, allowed_cidrs)
+
+
 class PoolRepository(BaseRepository):
     model_class = models.Pool
 
@@ -993,6 +1013,7 @@ class ListenerRepository(BaseRepository):
             subqueryload(models.Listener.load_balancer),
             subqueryload(models.Listener.sni_containers),
             subqueryload(models.Listener._tags),
+            subqueryload(models.Listener.allowed_cidrs),
             noload('*'))
 
         return super(ListenerRepository, self).get_all(
@@ -1054,11 +1075,25 @@ class ListenerRepository(BaseRepository):
                 sni = models.SNI(listener_id=id,
                                  tls_certificate_id=container_ref)
                 listener_db.sni_containers.append(sni)
+            if 'allowed_cidrs' in model_kwargs:
+                # allowed_cidrs is being updated. It is either being set or
+                # unset/cleared. We need to update in DB side.
+                allowed_cidrs = model_kwargs.pop('allowed_cidrs', []) or []
+                listener_db.allowed_cidrs = []
+                if allowed_cidrs:
+                    listener_db.allowed_cidrs = [
+                        models.ListenerCidr(listener_id=id, cidr=cidr)
+                        for cidr in allowed_cidrs]
             listener_db.update(model_kwargs)
 
     def create(self, session, **model_kwargs):
         """Creates a new Listener with some validation."""
         with session.begin(subtransactions=True):
+            listener_id = model_kwargs.get('id')
+            allowed_cidrs = set(model_kwargs.pop('allowed_cidrs', []) or [])
+            model_kwargs['allowed_cidrs'] = [
+                models.ListenerCidr(listener_id=listener_id, cidr=cidr)
+                for cidr in allowed_cidrs]
             model = self.model_class(**model_kwargs)
             if model.default_pool_id:
                 model.default_pool = self._pool_check(

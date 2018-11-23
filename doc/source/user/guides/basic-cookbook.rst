@@ -304,6 +304,43 @@ incoming or outgoing traffic.
     openstack loadbalancer member create --subnet-id <private_subnet_id> --address 192.0.2.11 --protocol-port 80 pool1
 
 
+Deploy a load balancer with access control list
+-----------------------------------------------
+This solution limits incoming traffic to a listener to a set of allowed
+source IP addresses. Any other incoming traffic will be rejected.
+
+
+**Scenario description**:
+
+* Back-end servers 192.0.2.10 and 192.0.2.11 on subnet *private-subnet* have
+  been configured with an custom application on TCP port 23456
+* Subnet *public-subnet* is a shared external subnet created by the cloud
+  operator which is reachable from the internet.
+* We want to configure a basic load balancer that is accessible from the
+  internet, which distributes requests to the back-end servers.
+* The application on TCP port 23456 is accessible to a limited source IP
+  addresses (192.0.2.0/24 and 198.51.100/24).
+
+**Solution**:
+
+1. Create load balancer *lb1* on subnet *public-subnet*.
+2. Create listener *listener1* with allowed CIDRs.
+3. Create pool *pool1* as *listener1*'s default pool.
+4. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
+
+**CLI commands**:
+
+::
+
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
+    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --name listener1 --protocol TCP --protocol-port 23456 --allowed-cidr 192.0.2.0/24 --allowed-cidr 198.51.100/24 lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol TCP
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+
+
 Deploy a non-terminated HTTPS load balancer
 -------------------------------------------
 A non-terminated HTTPS load balancer acts effectively like a generic TCP load

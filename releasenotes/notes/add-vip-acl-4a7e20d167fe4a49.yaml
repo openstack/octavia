@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Added support to VIP access control list. Users can now limit incoming
+    traffic to a set of allowed CIDRs.

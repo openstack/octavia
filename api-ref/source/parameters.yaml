@@ -155,6 +155,21 @@ admin_state_up-optional:
   in: body
   required: false
   type: boolean
+allowed_cidrs:
+  description: |
+    A list of IPv4, IPv6 or mix of both CIDRs.
+  in: body
+  min_version: 2.12
+  required: true
+  type: array
+allowed_cidrs-optional:
+  description: |
+    A list of IPv4, IPv6 or mix of both CIDRs. The default is all allowed.
+    When a list of CIDRs is provided, the default switches to deny all.
+  in: body
+  min_version: 2.12
+  required: false
+  type: array
 amphora-id:
   description: |
     The associated amphora ID.

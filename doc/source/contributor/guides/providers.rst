@@ -454,6 +454,8 @@ contain the following:
 |                              |        | additional TCP packets for content  |
 |                              |        | inspection.                         |
 +------------------------------+--------+-------------------------------------+
+| allowed_cidrs                | list   | List of IPv4 or IPv6 CIDRs.         |
++------------------------------+--------+-------------------------------------+
 
 .. _TLS container:
 
@@ -648,6 +650,8 @@ contain the following:
 | timeout_tcp_inspect        | int    | Time, in milliseconds, to wait for  |
 |                            |        | additional TCP packets for content  |
 |                            |        | inspection.                         |
++----------------------------+--------+-------------------------------------+
+| allowed_cidrs              | list  | List of IPv4 or IPv6 CIDRs.          |
 +----------------------------+--------+-------------------------------------+
 
 The listener will be in the ``PENDING_UPDATE`` provisioning_status when

@@ -108,6 +108,8 @@ class BaseDataModel(object):
             return obj.__class__.__name__ + obj.pool_id
         if obj.__class__.__name__ in ['ListenerStatistics']:
             return obj.__class__.__name__ + obj.listener_id + obj.amphora_id
+        if obj.__class__.__name__ in ['ListenerCidr']:
+            return obj.__class__.__name__ + obj.listener_id + obj.cidr
         if obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
             return obj.__class__.__name__ + obj.load_balancer_id
         if obj.__class__.__name__ in ['AmphoraHealth']:
@@ -384,7 +386,8 @@ class Listener(BaseDataModel):
                  timeout_client_data=None, timeout_member_connect=None,
                  timeout_member_data=None, timeout_tcp_inspect=None,
                  tags=None, client_ca_tls_certificate_id=None,
-                 client_authentication=None, client_crl_container_id=None):
+                 client_authentication=None, client_crl_container_id=None,
+                 allowed_cidrs=None):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -416,6 +419,7 @@ class Listener(BaseDataModel):
         self.client_ca_tls_certificate_id = client_ca_tls_certificate_id
         self.client_authentication = client_authentication
         self.client_crl_container_id = client_crl_container_id
+        self.allowed_cidrs = allowed_cidrs or []
 
     def update(self, update_dict):
         for key, value in update_dict.items():
@@ -775,3 +779,16 @@ class FlavorProfile(BaseDataModel):
         self.name = name
         self.provider_name = provider_name
         self.flavor_data = flavor_data
+
+
+class ListenerCidr(BaseDataModel):
+
+    def __init__(self, listener_id=None, cidr=None):
+        self.listener_id = listener_id
+        self.cidr = cidr
+
+    # SQLAlchemy kindly attaches the whole listener object so
+    # let's keep this simple by overriding the to_dict for this
+    # object. Otherwise we recurse down the "ghost" listener object.
+    def to_dict(self, **kwargs):
+        return {'cidr': self.cidr, 'listener_id': self.listener_id}

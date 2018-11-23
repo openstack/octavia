@@ -2374,7 +2374,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             create_client_authentication=None,
             expected_client_authentication=constants.CLIENT_AUTH_NONE,
             create_client_crl_container=None,
-            expected_client_crl_container=None):
+            expected_client_crl_container=None,
+            create_allowed_cidrs=None,
+            expected_allowed_cidrs=None):
         create_listener = {
             'name': name,
             'protocol_port': protocol_port,
@@ -2397,7 +2399,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'tags': [],
             'client_ca_tls_container_ref': None,
             'client_authentication': constants.CLIENT_AUTH_NONE,
-            'client_crl_container_ref': None
+            'client_crl_container_ref': None,
+            'allowed_cidrs': None
         }
         if create_sni_containers:
             create_listener['sni_container_refs'] = create_sni_containers
@@ -2422,6 +2425,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         if create_client_crl_container:
             create_listener['client_crl_container_ref'] = (
                 create_client_crl_container)
+        if create_allowed_cidrs:
+            create_listener['allowed_cidrs'] = create_allowed_cidrs
         if expected_sni_containers:
             expected_listener['sni_container_refs'] = expected_sni_containers
         if expected_l7policies:
@@ -2439,6 +2444,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         if expected_client_crl_container:
             expected_listener['client_crl_container_ref'] = (
                 expected_client_crl_container)
+        if expected_allowed_cidrs:
+            expected_listener['allowed_cidrs'] = expected_allowed_cidrs
+
         return create_listener, expected_listener
 
     def _get_pool_bodies(self, name='pool1', create_members=None,
@@ -2661,6 +2669,18 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             create_listeners=[create_listener],
             expected_listeners=[expected_listener],
             create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_graphs_equal(expected_lb, api_lb)
+
+    def test_with_one_listener_allowed_cidrs(self):
+        allowed_cidrs = ['10.0.1.0/24', '172.16.0.0/16']
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_allowed_cidrs=allowed_cidrs,
+            expected_allowed_cidrs=allowed_cidrs)
+        create_lb, expected_lb = self._get_lb_bodies([create_listener],
+                                                     [expected_listener])
         body = self._build_body(create_lb)
         response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)

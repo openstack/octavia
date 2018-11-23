@@ -61,6 +61,7 @@ class ListenerResponse(BaseListenerType):
     client_ca_tls_container_ref = wtypes.StringType()
     client_authentication = wtypes.wsattr(wtypes.StringType())
     client_crl_container_ref = wtypes.wsattr(wtypes.StringType())
+    allowed_cidrs = wtypes.wsattr([types.CidrType()])
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -69,6 +70,8 @@ class ListenerResponse(BaseListenerType):
 
         listener.sni_container_refs = [
             sni_c.tls_container_id for sni_c in data_model.sni_containers]
+        listener.allowed_cidrs = [
+            c.cidr for c in data_model.allowed_cidrs] or None
         if cls._full_response():
             del listener.loadbalancers
             l7policy_type = l7policy.L7PolicyFullResponse
@@ -146,6 +149,7 @@ class ListenerPOST(BaseListenerType):
         wtypes.Enum(str, *constants.SUPPORTED_CLIENT_AUTH_MODES),
         default=constants.CLIENT_AUTH_NONE)
     client_crl_container_ref = wtypes.StringType(max_length=255)
+    allowed_cidrs = wtypes.wsattr([types.CidrType()])
 
 
 class ListenerRootPOST(types.BaseType):
@@ -182,6 +186,7 @@ class ListenerPUT(BaseListenerType):
     client_authentication = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_CLIENT_AUTH_MODES))
     client_crl_container_ref = wtypes.StringType(max_length=255)
+    allowed_cidrs = wtypes.wsattr([types.CidrType()])
 
 
 class ListenerRootPUT(types.BaseType):
@@ -231,6 +236,7 @@ class ListenerSingleCreate(BaseListenerType):
         wtypes.Enum(str, *constants.SUPPORTED_CLIENT_AUTH_MODES),
         default=constants.CLIENT_AUTH_NONE)
     client_crl_container_ref = wtypes.StringType(max_length=255)
+    allowed_cidrs = wtypes.wsattr([types.CidrType()])
 
 
 class ListenerStatusResponse(BaseListenerType):

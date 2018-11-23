@@ -137,7 +137,8 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
             protocol=2,
             port_min=3,
             port_max=4,
-            ethertype=5)
+            ethertype=5,
+            cidr="10.0.0.0/24")
         expected_sec_grp_rule_dict = {
             'security_group_rule': {
                 'security_group_id': t_constants.MOCK_SECURITY_GROUP_ID,
@@ -145,7 +146,8 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                 'protocol': 2,
                 'port_range_min': 3,
                 'port_range_max': 4,
-                'ethertype': 5}}
+                'ethertype': 5,
+                'remote_ip_prefix': '10.0.0.0/24'}}
         self.driver.neutron_client.create_security_group_rule.assert_has_calls(
             [mock.call(expected_sec_grp_rule_dict)])
 

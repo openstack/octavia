@@ -46,6 +46,7 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - allowed_cidrs: allowed_cidrs
    - client_authentication: client_authentication
    - client_ca_tls_container_ref: client_ca_tls_container_ref
    - client_crl_container_ref: client_crl_container_ref
@@ -139,6 +140,7 @@ Request
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up-default-optional
+   - allowed_cidrs: allowed_cidrs-optional
    - client_authentication: client_authentication-optional
    - client_ca_tls_container_ref: client_ca_tls_container_ref-optional
    - client_crl_container_ref: client_crl_container_ref-optional
@@ -259,6 +261,7 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - allowed_cidrs: allowed_cidrs
    - client_authentication: client_authentication
    - client_ca_tls_container_ref: client_ca_tls_container_ref
    - client_crl_container_ref: client_crl_container_ref
@@ -336,6 +339,7 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - allowed_cidrs: allowed_cidrs
    - client_authentication: client_authentication
    - client_ca_tls_container_ref: client_ca_tls_container_ref
    - client_crl_container_ref: client_crl_container_ref
@@ -403,6 +407,7 @@ Request
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up-default-optional
+   - allowed_cidrs: allowed_cidrs-optional
    - client_authentication: client_authentication-optional
    - client_ca_tls_container_ref: client_ca_tls_container_ref-optional
    - client_crl_container_ref: client_crl_container_ref-optional
@@ -438,6 +443,7 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - allowed_cidrs: allowed_cidrs
    - client_authentication: client_authentication
    - client_ca_tls_container_ref: client_ca_tls_container_ref
    - client_crl_container_ref: client_crl_container_ref

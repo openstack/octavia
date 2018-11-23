@@ -38,6 +38,10 @@
         "tags": ["updated_tag"],
         "client_ca_tls_container_ref": null,
         "client_authentication": "NONE",
-        "client_crl_container_ref": null
+        "client_crl_container_ref": null,
+        "allowed_cidrs": [
+            "192.0.2.0/24",
+            "198.51.100.0/24"
+        ]
     }
 }

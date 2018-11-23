@@ -462,7 +462,8 @@ class SampleDriverDataModels(object):
             constants.CLIENT_CA_TLS_CERTIFICATE_ID:
                 self.client_ca_tls_certificate_ref,
             lib_consts.CLIENT_AUTHENTICATION: constants.CLIENT_AUTH_NONE,
-            constants.CLIENT_CRL_CONTAINER_ID: self.client_crl_container_ref
+            constants.CLIENT_CRL_CONTAINER_ID: self.client_crl_container_ref,
+            lib_consts.ALLOWED_CIDRS: ['192.0.2.0/24', '198.51.100.0/24']
         }
 
         self.test_listener1_dict.update(self._common_test_dict)
@@ -501,7 +502,7 @@ class SampleDriverDataModels(object):
 
         self.provider_listener1_dict = {
             lib_consts.ADMIN_STATE_UP: True,
-            lib_consts.ALLOWED_CIDRS: None,
+            lib_consts.ALLOWED_CIDRS: ['192.0.2.0/24', '198.51.100.0/24'],
             lib_consts.CONNECTION_LIMIT: 10000,
             lib_consts.DEFAULT_POOL: self.provider_pool1_dict,
             lib_consts.DEFAULT_POOL_ID: self.pool1_id,
