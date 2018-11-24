@@ -1,0 +1,4 @@
+---
+features:
+  - Support remote debugging with PyDev. Please refer to the Contributor
+    documentation section to find more details.
