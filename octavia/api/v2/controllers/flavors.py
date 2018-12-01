@@ -133,12 +133,10 @@ class FlavorsController(base.BaseController):
 
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_DELETE)
-
         try:
             self.repositories.flavor.delete(context.session, id=flavor_id)
         # Handle when load balancers still reference this flavor
         except odb_exceptions.DBReferenceError:
             raise exceptions.ObjectInUse(object='Flavor', id=flavor_id)
         except sa_exception.NoResultFound:
-            raise exceptions.NotFound(resource='Flavor',
-                                      id=flavor_id)
+            raise exceptions.NotFound(resource='Flavor', id=flavor_id)

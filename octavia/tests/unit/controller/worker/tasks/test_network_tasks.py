@@ -54,7 +54,7 @@ AMPS_DATA = [o_data_models.Amphora(id=t_constants.MOCK_AMP_ID1,
                                    vrrp_port_id=t_constants.MOCK_VRRP_PORT_ID2,
                                    vrrp_ip=t_constants.MOCK_VRRP_IP2)
              ]
-UPDATE_DICT = {constants.LOADBALANCER_TOPOLOGY: None}
+UPDATE_DICT = {constants.TOPOLOGY: None}
 
 
 class TestException(Exception):
@@ -502,8 +502,7 @@ class TestNetworkTasks(base.TestCase):
         mock_get_lb_db.return_value = LB
 
         # execute
-        UPDATE_DICT[
-            constants.LOADBALANCER_TOPOLOGY] = constants.TOPOLOGY_SINGLE
+        UPDATE_DICT[constants.TOPOLOGY] = constants.TOPOLOGY_SINGLE
         update_dict = UPDATE_DICT
         net.execute(LB, [AMPS_DATA[0]], update_dict)
         mock_driver.apply_qos_on_port.assert_called_once_with(
@@ -511,8 +510,7 @@ class TestNetworkTasks(base.TestCase):
         self.assertEqual(1, mock_driver.apply_qos_on_port.call_count)
         standby_topology = constants.TOPOLOGY_ACTIVE_STANDBY
         mock_driver.reset_mock()
-        update_dict[
-            constants.LOADBALANCER_TOPOLOGY] = standby_topology
+        update_dict[constants.TOPOLOGY] = standby_topology
         net.execute(LB, AMPS_DATA, update_dict)
         mock_driver.apply_qos_on_port.assert_called_with(
             t_constants.MOCK_QOS_POLICY_ID1, mock.ANY)
@@ -524,8 +522,7 @@ class TestNetworkTasks(base.TestCase):
         net.revert(None, LB, [AMPS_DATA[0]], update_dict)
         self.assertEqual(0, mock_driver.apply_qos_on_port.call_count)
         mock_driver.reset_mock()
-        update_dict[
-            constants.LOADBALANCER_TOPOLOGY] = standby_topology
+        update_dict[constants.TOPOLOGY] = standby_topology
         net.revert(None, LB, AMPS_DATA, update_dict)
         self.assertEqual(0, mock_driver.apply_qos_on_port.call_count)
 

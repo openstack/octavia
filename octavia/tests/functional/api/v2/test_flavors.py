@@ -539,3 +539,20 @@ class TestFlavors(base.BaseAPITest):
         response = self.get(self.FLAVOR_PATH.format(
             flavor_id=flavor.get('id'))).json.get(self.root_tag)
         self.assertEqual('name1', response.get('name'))
+
+    def test_delete_in_use(self):
+        flavor = self.create_flavor('name1', 'description', self.fp.get('id'),
+                                    True)
+        self.assertTrue(uuidutils.is_uuid_like(flavor.get('id')))
+        project_id = uuidutils.generate_uuid()
+        lb_id = uuidutils.generate_uuid()
+        self.create_load_balancer(lb_id, name='lb1',
+                                  project_id=project_id,
+                                  description='desc1',
+                                  flavor_id=flavor.get('id'),
+                                  admin_state_up=False)
+        self.delete(self.FLAVOR_PATH.format(flavor_id=flavor.get('id')),
+                    status=409)
+        response = self.get(self.FLAVOR_PATH.format(
+            flavor_id=flavor.get('id'))).json.get(self.root_tag)
+        self.assertEqual('name1', response.get('name'))

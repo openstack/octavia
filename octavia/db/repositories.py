@@ -24,6 +24,7 @@ from oslo_config import cfg
 from oslo_db import api as oslo_db_api
 from oslo_db import exception as db_exception
 from oslo_log import log as logging
+from oslo_serialization import jsonutils
 from oslo_utils import excutils
 from oslo_utils import uuidutils
 from sqlalchemy.orm import joinedload
@@ -51,7 +52,18 @@ class BaseRepository(object):
         :param filters: Filters to decide which entities should be retrieved.
         :returns: int
         """
-        return session.query(self.model_class).filter_by(**filters).count()
+        deleted = filters.pop('show_deleted', True)
+        model = session.query(self.model_class).filter_by(**filters)
+
+        if not deleted:
+            if hasattr(self.model_class, 'status'):
+                model = model.filter(
+                    self.model_class.status != consts.DELETED)
+            else:
+                model = model.filter(
+                    self.model_class.provisioning_status != consts.DELETED)
+
+        return model.count()
 
     def create(self, session, **model_kwargs):
         """Base create method for a database entity.
@@ -1774,6 +1786,25 @@ class QuotasRepository(BaseRepository):
 
 class FlavorRepository(BaseRepository):
     model_class = models.Flavor
+
+    def get_flavor_metadata_dict(self, session, flavor_id):
+        with session.begin(subtransactions=True):
+            flavor_metadata_json = (
+                session.query(models.FlavorProfile.flavor_data)
+                .filter(models.Flavor.id == flavor_id)
+                .filter(
+                    models.Flavor.flavor_profile_id == models.FlavorProfile.id)
+                .one()[0])
+            result_dict = ({} if flavor_metadata_json is None
+                           else jsonutils.loads(flavor_metadata_json))
+            return result_dict
+
+    def get_flavor_provider(self, session, flavor_id):
+        with session.begin(subtransactions=True):
+            return (session.query(models.FlavorProfile.provider_name)
+                    .filter(models.Flavor.id == flavor_id)
+                    .filter(models.Flavor.flavor_profile_id ==
+                            models.FlavorProfile.id).one()[0])
 
 
 class FlavorProfileRepository(BaseRepository):

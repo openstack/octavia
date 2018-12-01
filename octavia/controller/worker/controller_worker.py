@@ -341,10 +341,10 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                  constants.BUILD_TYPE_PRIORITY:
                  constants.LB_CREATE_NORMAL_PRIORITY}
 
-        topology = CONF.controller_worker.loadbalancer_topology
+        topology = lb.topology
 
         store[constants.UPDATE_DICT] = {
-            constants.LOADBALANCER_TOPOLOGY: topology
+            constants.TOPOLOGY: topology
         }
 
         create_lb_flow = self._lb_flows.get_create_load_balancer_flow(

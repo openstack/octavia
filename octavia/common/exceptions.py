@@ -377,3 +377,8 @@ class InputFileError(OctaviaException):
 class ObjectInUse(APIException):
     msg = _("%(object)s %(id)s is in use and cannot be modified.")
     code = 409
+
+
+class ProviderFlavorMismatchError(APIException):
+    msg = _("Flavor '%(flav)s' is not compatible with provider '%(prov)s'")
+    code = 400

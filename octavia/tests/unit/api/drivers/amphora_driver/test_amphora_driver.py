@@ -420,3 +420,47 @@ class TestAmphoraDriver(base.TestCase):
         payload = {consts.L7RULE_ID: self.sample_data.l7rule1_id,
                    consts.L7RULE_UPDATES: l7rule_dict}
         mock_cast.assert_called_with({}, 'update_l7rule', **payload)
+
+    # Flavor
+    def test_get_supported_flavor_metadata(self):
+        test_schema = {
+            "properties": {
+                "test_name": {"description": "Test description"},
+                "test_name2": {"description": "Another description"}}}
+        ref_dict = {"test_name": "Test description",
+                    "test_name2": "Another description"}
+
+        # mock out the supported_flavor_metadata
+        with mock.patch('octavia.api.drivers.amphora_driver.flavor_schema.'
+                        'SUPPORTED_FLAVOR_SCHEMA', test_schema):
+            result = self.amp_driver.get_supported_flavor_metadata()
+        self.assertEqual(ref_dict, result)
+
+        # Test for bad schema
+        with mock.patch('octavia.api.drivers.amphora_driver.flavor_schema.'
+                        'SUPPORTED_FLAVOR_SCHEMA', 'bogus'):
+            self.assertRaises(exceptions.DriverError,
+                              self.amp_driver.get_supported_flavor_metadata)
+
+    @mock.patch('jsonschema.validators.requests')
+    def test_validate_flavor(self, mock_validate):
+        ref_dict = {consts.LOADBALANCER_TOPOLOGY: consts.TOPOLOGY_SINGLE}
+        self.amp_driver.validate_flavor(ref_dict)
+
+        # Test bad flavor metadata value is bad
+        ref_dict = {consts.LOADBALANCER_TOPOLOGY: 'bogus'}
+        self.assertRaises(exceptions.UnsupportedOptionError,
+                          self.amp_driver.validate_flavor,
+                          ref_dict)
+
+        # Test bad flavor metadata key
+        ref_dict = {'bogus': 'bogus'}
+        self.assertRaises(exceptions.UnsupportedOptionError,
+                          self.amp_driver.validate_flavor,
+                          ref_dict)
+
+        # Test for bad schema
+        with mock.patch('octavia.api.drivers.amphora_driver.flavor_schema.'
+                        'SUPPORTED_FLAVOR_SCHEMA', 'bogus'):
+            self.assertRaises(exceptions.DriverError,
+                              self.amp_driver.validate_flavor, 'bogus')

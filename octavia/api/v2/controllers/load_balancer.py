@@ -19,6 +19,7 @@ from oslo_log import log as logging
 from oslo_utils import excutils
 from oslo_utils import strutils
 import pecan
+from sqlalchemy.orm import exc as sa_exception
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -236,6 +237,71 @@ class LoadBalancersController(base.BaseController):
                 e.msg = e.orig_msg
             raise e
 
+    def _get_provider(self, session, load_balancer):
+        """Decide on the provider for this load balancer."""
+
+        provider = None
+        if not isinstance(load_balancer.flavor_id, wtypes.UnsetType):
+            try:
+                provider = self.repositories.flavor.get_flavor_provider(
+                    session, load_balancer.flavor_id)
+            except sa_exception.NoResultFound:
+                raise exceptions.ValidationException(
+                    detail=_("Invalid flavor_id."))
+
+        # No provider specified and no flavor specified, use conf default
+        if (isinstance(load_balancer.provider, wtypes.UnsetType) and
+                not provider):
+            provider = CONF.api_settings.default_provider_driver
+        # Both provider and flavor specified, they must match
+        elif (not isinstance(load_balancer.provider, wtypes.UnsetType) and
+                provider):
+            if provider != load_balancer.provider:
+                raise exceptions.ProviderFlavorMismatchError(
+                    flav=load_balancer.flavor_id, prov=load_balancer.provider)
+        # No flavor, but provider, use the provider specified
+        elif not provider:
+            provider = load_balancer.provider
+        # Otherwise, use the flavor provider we found above
+
+        return provider
+
+    def _apply_flavor_to_lb_dict(self, lock_session, driver, lb_dict):
+
+        flavor_dict = {}
+        if 'flavor_id' in lb_dict:
+            try:
+                flavor_dict = (
+                    self.repositories.flavor.get_flavor_metadata_dict(
+                        lock_session, lb_dict['flavor_id']))
+            except sa_exception.NoResultFound:
+                raise exceptions.ValidationException(
+                    detail=_("Invalid flavor_id."))
+
+        # Make sure the driver will still accept the flavor metadata
+        if flavor_dict:
+            driver_utils.call_provider(driver.name, driver.validate_flavor,
+                                       flavor_dict)
+
+        # Apply the flavor settings to the load balanacer
+        # Use the configuration file settings as defaults
+        lb_dict[constants.TOPOLOGY] = flavor_dict.get(
+            constants.LOADBALANCER_TOPOLOGY,
+            CONF.controller_worker.loadbalancer_topology)
+
+        return flavor_dict
+
+    def _validate_flavor(self, session, load_balancer):
+        if not isinstance(load_balancer.flavor_id, wtypes.UnsetType):
+            flavor = self.repositories.flavor.get(session,
+                                                  id=load_balancer.flavor_id)
+            if not flavor:
+                raise exceptions.ValidationException(
+                    detail=_("Invalid flavor_id."))
+            if not flavor.enabled:
+                raise exceptions.DisabledOption(option='flavor',
+                                                value=load_balancer.flavor_id)
+
     @wsme_pecan.wsexpose(lb_types.LoadBalancerFullRootResponse,
                          body=lb_types.LoadBalancerRootPOST, status_code=201)
     def post(self, load_balancer):
@@ -255,8 +321,12 @@ class LoadBalancersController(base.BaseController):
 
         self._validate_vip_request_object(load_balancer)
 
+        self._validate_flavor(context.session, load_balancer)
+
+        provider = self._get_provider(context.session, load_balancer)
+
         # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(load_balancer.provider)
+        driver = driver_factory.get_driver(provider)
 
         lock_session = db_api.get_session(autocommit=False)
         try:
@@ -282,13 +352,16 @@ class LoadBalancersController(base.BaseController):
             listeners = lb_dict.pop('listeners', []) or []
             pools = lb_dict.pop('pools', []) or []
 
-            # TODO(johnsom) Remove flavor from the lb_dict
-            # as it has not been implemented beyond the API yet.
-            # Remove this line when it is implemented.
-            lb_dict.pop('flavor', None)
+            flavor_dict = self._apply_flavor_to_lb_dict(lock_session, driver,
+                                                        lb_dict)
 
             db_lb = self.repositories.create_load_balancer_and_vip(
                 lock_session, lb_dict, vip_dict)
+
+            # Pass the flavor dictionary through for the provider drivers
+            # This is a "virtual" lb_dict item that includes the expanded
+            # flavor dict instead of just the flavor_id we store in the DB.
+            lb_dict['flavor'] = flavor_dict
 
             # See if the provider driver wants to create the VIP port
             octavia_owned = False
