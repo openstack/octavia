@@ -183,7 +183,13 @@ function create_octavia_accounts {
     local octavia_service=$(get_or_create_service "octavia" \
         $OCTAVIA_SERVICE_TYPE "Octavia Load Balancing Service")
 
-    if [[ "$WSGI_MODE" == "uwsgi" ]]; then
+    if [[ "$WSGI_MODE" == "uwsgi" ]] && [[ "$OCTAVIA_NODE" == "main" ]] ; then
+        get_or_create_endpoint $octavia_service \
+            "$REGION_NAME" \
+            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/$OCTAVIA_SERVICE_TYPE" \
+            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/$OCTAVIA_SERVICE_TYPE" \
+            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/$OCTAVIA_SERVICE_TYPE"
+    elif [[ "$WSGI_MODE" == "uwsgi" ]]; then
         get_or_create_endpoint $octavia_service \
             "$REGION_NAME" \
             "$OCTAVIA_PROTOCOL://$SERVICE_HOST/$OCTAVIA_SERVICE_TYPE" \
@@ -444,7 +450,7 @@ function configure_octavia_api_haproxy {
        DATA=(${NODE//:/ })
        NAME=$(echo -e "${DATA[0]}" | tr -d '[[:space:]]')
        IP=$(echo -e "${DATA[1]}" | tr -d '[[:space:]]')
-       echo "   server octavia-${NAME} ${IP}:${OCTAVIA_HA_PORT} weight 1" >> ${OCTAVIA_CONF_DIR}/haproxy.cfg
+       echo "   server octavia-${NAME} ${IP}:80 weight 1" >> ${OCTAVIA_CONF_DIR}/haproxy.cfg
     done
 
 }
@@ -539,8 +545,10 @@ function octavia_init {
    if [ $OCTAVIA_NODE != 'main' ] && [ $OCTAVIA_NODE != 'standalone' ]  && [ $OCTAVIA_NODE != 'api' ]; then
        # without the other services enabled apparently we don't have
        # credentials at this point
-       TOP_DIR=$(cd $(dirname "$0") && pwd)
+#       TOP_DIR=$(cd $(dirname "$0") && pwd)
        source ${TOP_DIR}/openrc admin admin
+       OCTAVIA_AMP_NETWORK_ID=$(openstack network show lb-mgmt-net -f value -c id)
+       iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
    fi
 
    if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
