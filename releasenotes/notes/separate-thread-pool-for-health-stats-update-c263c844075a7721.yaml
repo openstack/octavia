@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Add new parameters to specify the number of threads for updating amphora
+    health and stats.
