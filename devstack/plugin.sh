@@ -155,8 +155,8 @@ function _start_octavia_apache_wsgi {
         enable_apache_site octavia-wsgi
     else
         enable_apache_site octavia
-        restart_apache_server
     fi
+    restart_apache_server
 }
 
 function _stop_octavia_apache_wsgi {
@@ -165,8 +165,8 @@ function _stop_octavia_apache_wsgi {
         stop_process o-api
     else
         disable_apache_site octavia
-        restart_apache_server
     fi
+    restart_apache_server
 }
 
 function create_octavia_accounts {
