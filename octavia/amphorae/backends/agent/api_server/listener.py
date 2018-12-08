@@ -43,7 +43,6 @@ CONF = cfg.CONF
 UPSTART_CONF = 'upstart.conf.j2'
 SYSVINIT_CONF = 'sysvinit.conf.j2'
 SYSTEMD_CONF = 'systemd.conf.j2'
-consts.AMP_NETNS_SVC_PREFIX = 'amphora-netns'
 
 JINJA_ENV = jinja2.Environment(
     autoescape=True,

@@ -330,9 +330,10 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
 class AmphoraVRRPUpdate(BaseAmphoraTask):
     """Task to update the VRRP configuration of the loadbalancer amphorae."""
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer, amphorae_network_config):
         """Execute update_vrrp_conf."""
-        self.amphora_driver.update_vrrp_conf(loadbalancer)
+        self.amphora_driver.update_vrrp_conf(loadbalancer,
+                                             amphorae_network_config)
         LOG.debug("Uploaded VRRP configuration of loadbalancer %s amphorae",
                   loadbalancer.id)
 

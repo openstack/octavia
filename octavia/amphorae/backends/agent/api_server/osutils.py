@@ -113,6 +113,7 @@ class BaseOS(object):
         with os.fdopen(os.open(interface_file_path, flags, mode),
                        'w') as text_file:
             text = template_vip.render(
+                consts=consts,
                 interface=primary_interface,
                 vip=vip,
                 vip_ipv6=ip.version == 6,
@@ -125,6 +126,7 @@ class BaseOS(object):
                 vrrp_ip=vrrp_ip,
                 vrrp_ipv6=vrrp_version == 6,
                 host_routes=render_host_routes,
+                topology=CONF.controller_worker.loadbalancer_topology,
             )
             text_file.write(text)
 
@@ -225,9 +227,11 @@ class BaseOS(object):
 
     def bring_interfaces_up(self, ip, primary_interface, secondary_interface):
         self._bring_if_down(primary_interface)
-        self._bring_if_down(secondary_interface)
+        if secondary_interface:
+            self._bring_if_down(secondary_interface)
         self._bring_if_up(primary_interface, 'VIP')
-        self._bring_if_up(secondary_interface, 'VIP')
+        if secondary_interface:
+            self._bring_if_up(secondary_interface, 'VIP')
 
     def has_ifup_all(self):
         return True
@@ -396,7 +400,10 @@ class RH(BaseOS):
             netmask, gateway, mtu, vrrp_ip, vrrp_version, render_host_routes,
             template_vip)
 
-        if ip.version == 4:
+        # keepalived will handle the VIP if we are on active/standby
+        if (ip.version == 4 and
+            CONF.controller_worker.loadbalancer_topology ==
+                consts.TOPOLOGY_SINGLE):
             # Create an IPv4 alias interface, needed in RH based flavors
             alias_interface_file_path = self.get_alias_network_interface_file(
                 primary_interface)
@@ -414,13 +421,16 @@ class RH(BaseOS):
             routes_interface_file_path, primary_interface,
             render_host_routes, template_routes, gateway, vip, netmask)
 
-        route_rules_interface_file_path = (
-            self.get_route_rules_interface_file(primary_interface))
-        template_rules = j2_env.get_template(self.RULE_ETH_X_CONF)
+        # keepalived will handle the rule(s) if we are on actvie/standby
+        if (CONF.controller_worker.loadbalancer_topology ==
+                consts.TOPOLOGY_SINGLE):
+            route_rules_interface_file_path = (
+                self.get_route_rules_interface_file(primary_interface))
+            template_rules = j2_env.get_template(self.RULE_ETH_X_CONF)
 
-        self.write_static_routes_interface_file(
-            route_rules_interface_file_path, primary_interface,
-            render_host_routes, template_rules, gateway, vip, netmask)
+            self.write_static_routes_interface_file(
+                route_rules_interface_file_path, primary_interface,
+                render_host_routes, template_rules, gateway, vip, netmask)
 
         self._write_ifup_ifdown_local_scripts_if_possible()
 
@@ -441,11 +451,13 @@ class RH(BaseOS):
         with os.fdopen(os.open(interface_file_path, flags, mode),
                        'w') as text_file:
             text = template_routes.render(
+                consts=consts,
                 interface=interface,
                 host_routes=host_routes,
                 gateway=gateway,
                 network=utils.ip_netmask_to_cidr(vip, netmask),
                 vip=vip,
+                topology=CONF.controller_worker.loadbalancer_topology,
             )
             text_file.write(text)
 

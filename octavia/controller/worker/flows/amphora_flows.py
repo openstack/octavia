@@ -483,7 +483,8 @@ class AmphoraFlows(object):
             provides=constants.LOADBALANCER))
         vrrp_subflow.add(amphora_driver_tasks.AmphoraVRRPUpdate(
             name=sf_name + '-' + constants.AMP_VRRP_UPDATE,
-            requires=constants.LOADBALANCER))
+            requires=(constants.LOADBALANCER,
+                      constants.AMPHORAE_NETWORK_CONFIG)))
         vrrp_subflow.add(amphora_driver_tasks.AmphoraVRRPStart(
             name=sf_name + '-' + constants.AMP_VRRP_START,
             requires=constants.LOADBALANCER))

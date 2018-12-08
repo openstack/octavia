@@ -1,0 +1,11 @@
+#!/bin/bash
+# keepalived older than 1.3 will segfault when using IPv6 VIPs if the
+# ip6_tables module is not loaded. Make sure it is loaded on releases we
+# know have the older version.
+
+set -eu
+set -o xtrace
+
+if [ "$DISTRO_NAME" == "ubuntu" ] && { [ "$DIB_RELEASE" == "trusty" ] || [ "$DIB_RELEASE" == "xenial" ]; }; then
+    echo ip6_tables > /etc/modules-load.d/ip6_tables.conf
+fi

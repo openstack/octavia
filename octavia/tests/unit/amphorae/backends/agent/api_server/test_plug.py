@@ -17,9 +17,12 @@ import subprocess
 
 import mock
 import netifaces
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 
 from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.agent.api_server import plug
+from octavia.common import constants
 import octavia.tests.unit.base as base
 
 FAKE_CIDR_IPV4 = '10.0.0.0/24'
@@ -111,6 +114,9 @@ class TestPlug(base.TestCase):
     def test_plug_vip_ipv6(self, mock_makedirs, mock_copytree,
                            mock_check_output, mock_netns, mock_netns_create,
                            mock_pyroute2, mock_webob, mock_nspopen):
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group='controller_worker',
+                    loadbalancer_topology=constants.TOPOLOGY_ACTIVE_STANDBY)
         m = mock.mock_open()
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             self.test_plug.plug_vip(

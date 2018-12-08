@@ -64,6 +64,11 @@ class Keepalived(object):
         if init_system == consts.INIT_SYSTEMD:
             template = SYSTEMD_TEMPLATE
             init_enable_cmd = "systemctl enable octavia-keepalived"
+
+            # Render and install the network namespace systemd service
+            util.install_netns_systemd_service()
+            util.run_systemctl_command(
+                consts.ENABLE, consts.AMP_NETNS_SVC_PREFIX)
         elif init_system == consts.INIT_UPSTART:
             template = UPSTART_TEMPLATE
         elif init_system == consts.INIT_SYSVINIT:
@@ -86,7 +91,8 @@ class Keepalived(object):
                     keepalived_cmd=consts.KEEPALIVED_CMD,
                     keepalived_cfg=util.keepalived_cfg_path(),
                     keepalived_log=util.keepalived_log_path(),
-                    amphora_nsname=consts.AMPHORA_NAMESPACE
+                    amphora_nsname=consts.AMPHORA_NAMESPACE,
+                    amphora_netns=consts.AMP_NETNS_SVC_PREFIX
                 )
                 text_file.write(text)
 
