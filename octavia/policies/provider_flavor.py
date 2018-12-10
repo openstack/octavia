@@ -1,5 +1,4 @@
-#    Copyright 2018 Rackspace
-#
+#    Copyright 2018 Rackspace, US Inc.
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -12,19 +11,21 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from wsme import types as wtypes
+from oslo_policy import policy
 
-from octavia.api.common import types
+from octavia.common import constants
+
+rules = [
+    policy.DocumentedRuleDefault(
+        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_PROVIDER_FLAVOR,
+                                    action=constants.RBAC_GET_ALL),
+        constants.RULE_API_ADMIN,
+        "List the provider flavor capabilities.",
+        [{'method': 'GET',
+          'path': '/v2/lbaas/providers/{provider}/capabilities'}]
+    ),
+]
 
 
-class ProviderResponse(types.BaseType):
-    name = wtypes.wsattr(wtypes.StringType())
-    description = wtypes.wsattr(wtypes.StringType())
-
-
-class ProvidersRootResponse(types.BaseType):
-    providers = wtypes.wsattr([ProviderResponse])
-
-
-class FlavorCapabilitiesResponse(types.BaseType):
-    flavor_capabilities = wtypes.wsattr([ProviderResponse])
+def list_rules():
+    return rules

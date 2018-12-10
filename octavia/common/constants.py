@@ -534,6 +534,7 @@ RBAC_L7RULE = '{}:l7rule:'.format(LOADBALANCER_API)
 RBAC_QUOTA = '{}:quota:'.format(LOADBALANCER_API)
 RBAC_AMPHORA = '{}:amphora:'.format(LOADBALANCER_API)
 RBAC_PROVIDER = '{}:provider:'.format(LOADBALANCER_API)
+RBAC_PROVIDER_FLAVOR = '{}:provider-flavor:'.format(LOADBALANCER_API)
 RBAC_FLAVOR = '{}:flavor:'.format(LOADBALANCER_API)
 RBAC_FLAVOR_PROFILE = '{}:flavor-profile:'.format(LOADBALANCER_API)
 RBAC_POST = 'post'
