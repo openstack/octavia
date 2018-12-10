@@ -194,6 +194,8 @@ if [ "$AMP_BASEOS" = "ubuntu-minimal" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"xenial"}
 elif [ "${AMP_BASEOS}" = "centos" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"7"}
+elif [ "${AMP_BASEOS}" = "fedora" ]; then
+    export DIB_RELEASE=${AMP_DIB_RELEASE:-"28"}
 fi
 
 AMP_OUTPUTFILENAME=${AMP_OUTPUTFILENAME:-"$PWD/amphora-x64-haproxy"}
