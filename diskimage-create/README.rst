@@ -17,6 +17,21 @@ Ubuntu 12.04.5 LTS.
 Python pip should be installed as well as the python modules found in the
 requirements.txt file.
 
+To do so, you can use the following command on ubuntu:
+
+.. code:: bash
+
+   $ # Install python pip
+   $ sudo apt install python-pip
+   $ # Eventually create a virtualenv
+   $ sudo apt install python-virtualenv
+   $ virtualenv octavia_disk_image_create
+   $ source octavia_disk_image_create/bin/activate
+   $ # Install octavia requirements
+   $ cd octavia/diskimage-create
+   $ pip install -r requirements.txt
+
+
 Your cache directory should have at least 1GB available, the working directory
 will need ~1.5GB, and your image destination will need ~500MB
 
@@ -26,9 +41,20 @@ or it can be overridden by setting the following environment variables:
  | DIB_REPO_PATH = /<some directory>/diskimage-builder
  | DIB_ELEMENTS = /<some directory>/diskimage-builder/elements
 
+
 The following packages are required on each platform:
-Ubuntu: qemu git
-Fedora, CentOS and RedHat Enterprise Linux: qemu-img git
+
+Ubuntu
+
+.. code:: bash
+
+   $ sudo apt install qemu git kpartx debootstrap
+
+Fedora, CentOS and Red Hat Enterprise Linux
+
+.. code:: bash
+
+   $ sudo yum install qemu-img git e2fsprogs policycoreutils-python
 
 Test Prerequisites
 ------------------
