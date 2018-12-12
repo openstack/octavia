@@ -1,0 +1,27 @@
+{# Copyright 2018 Rackspace, US Inc.
+#  Copyright 2019 Red Hat, Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#}
+{#- Tenant traffic logs -#}
+local{{ user_log_facility }}.=info {% for host in tenant_log_hosts %}{% if not loop.first %}&{% endif %}action(type="omfwd" target="{{  host['host'] }}" port="{{ host['port'] }}" protocol="{{ protocol }}" action.resumeRetryCount="{{ retry_count }}" action.resumeInterval="{{ retry_interval }}" queue.type="linkedList" queue.size="{{ queue_size }}" {% if not loop.first %}action.execOnlyWhenPreviousIsSuspended="on"{% endif %}){% endfor %}
+
+{#- Administrative logs -#}
+{%- if forward_all_logs %}
+*.*;local{{ user_log_facility }}.none {% for host in admin_log_hosts %}{% if not loop.first %}&{% endif %}action(type="omfwd" target="{{  host['host'] }}" port="{{ host['port'] }}" protocol="{{ protocol }}" action.resumeRetryCount="{{ retry_count }}" action.resumeInterval="{{ retry_interval }}" queue.type="linkedList" queue.size="{{ queue_size }}" {% if not loop.first %}action.execOnlyWhenPreviousIsSuspended="on"{% endif %}){% endfor %}
+{% else %}
+local{{ admin_log_facility }}.* {% for host in admin_log_hosts %}{% if not loop.first %}&{% endif %}action(type="omfwd" target="{{  host['host'] }}" port="{{ host['port'] }}" protocol="{{ protocol }}" action.resumeRetryCount="{{ retry_count }}" action.resumeInterval="{{ retry_interval }}" queue.type="linkedList" queue.size="{{ queue_size }}" {% if not loop.first %}action.execOnlyWhenPreviousIsSuspended="on"{% endif %}){% endfor -%}
+{%- endif -%}
+{%- if disable_local_log_storage -%}
+*.* stop
+{%- endif -%}

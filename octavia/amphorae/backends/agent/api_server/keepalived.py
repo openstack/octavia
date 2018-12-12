@@ -96,7 +96,7 @@ class Keepalived(object):
                     amphora_nsname=consts.AMPHORA_NAMESPACE,
                     amphora_netns=consts.AMP_NETNS_SVC_PREFIX,
                     administrative_log_facility=(
-                        CONF.haproxy_amphora.administrative_log_facility),
+                        CONF.amphora_agent.administrative_log_facility),
                 )
                 text_file.write(text)
 

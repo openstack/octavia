@@ -25,6 +25,7 @@ from taskflow.types import failure
 from octavia.amphorae.backends.agent import agent_jinja_cfg
 from octavia.common import constants
 from octavia.common import exceptions
+from octavia.common.jinja.logging import logging_jinja_cfg
 from octavia.common.jinja import user_data_jinja_cfg
 from octavia.common import utils
 from octavia.controller.worker import amphora_rate_limit
@@ -88,6 +89,12 @@ class ComputeCreate(BaseComputeTask):
             agent_cfg = agent_jinja_cfg.AgentJinjaTemplater()
             config_drive_files['/etc/octavia/amphora-agent.conf'] = (
                 agent_cfg.build_agent_config(amphora_id, topology))
+
+            logging_cfg = logging_jinja_cfg.LoggingJinjaTemplater(
+                CONF.amphora_agent.logging_template_override)
+            config_drive_files['/etc/rsyslog.d/10-rsyslog.conf'] = (
+                logging_cfg.build_logging_config())
+
             if user_data_config_drive:
                 udtemplater = user_data_jinja_cfg.UserDataJinjaCfg()
                 user_data = udtemplater.build_user_data_config(

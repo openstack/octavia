@@ -19,7 +19,9 @@
       - ^releasenotes/.*$
     vars:
       zuul_copy_output:
-        '/var/log/dib-build': 'logs'
+        '/var/log/dib-build/': 'logs'
+        '/var/log/octavia-tenant-traffic.log': 'logs'
+        '/var/log/octavia-amphora.log': 'logs'
 
 - job:
     name: publish-openstack-octavia-amphora-image

@@ -386,7 +386,15 @@ function create_mgmt_network_interface {
         die "Unknown network controller. Please define octavia_create_network_interface_device"
     fi
     sudo ip link set dev o-hm0 address $MGMT_PORT_MAC
-    sudo iptables -I INPUT -i o-hm0 -p udp --dport 5555 -j ACCEPT
+    sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_HM_LISTEN_PORT -j ACCEPT
+    sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_ADMIN_PORT -j ACCEPT
+    sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_TENANT_PORT -j ACCEPT
+    if [ $IPV6_ENABLED == 'true' ] ; then
+        sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_HM_LISTEN_PORT -j ACCEPT
+        sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_ADMIN_PORT -j ACCEPT
+        sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_TENANT_PORT -j ACCEPT
+    fi
+
 
     if [ $OCTAVIA_CONTROLLER_IP_PORT_LIST == 'auto' ] ; then
         iniset $OCTAVIA_CONF health_manager controller_ip_port_list $MGMT_PORT_IP:$OCTAVIA_HM_LISTEN_PORT
@@ -396,6 +404,13 @@ function create_mgmt_network_interface {
 
     iniset $OCTAVIA_CONF health_manager bind_ip $MGMT_PORT_IP
     iniset $OCTAVIA_CONF health_manager bind_port $OCTAVIA_HM_LISTEN_PORT
+
+    iniset $OCTAVIA_CONF amphora_agent admin_log_targets "${MGMT_PORT_IP}:${OCTAVIA_AMP_LOG_ADMIN_PORT}"
+    iniset $OCTAVIA_CONF amphora_agent tenant_log_targets "${MGMT_PORT_IP}:${OCTAVIA_AMP_LOG_TENANT_PORT}"
+    # Setting these here as the devstack rsyslog configuration expects
+    # these values.
+    iniset $OCTAVIA_CONF amphora_agent user_log_facility 0
+    iniset $OCTAVIA_CONF amphora_agent administrative_log_facility 1
 
 }
 
@@ -418,8 +433,13 @@ function build_mgmt_network {
     # Create security group and rules
     openstack security group create lb-health-mgr-sec-grp
     openstack security group rule create --protocol udp --dst-port $OCTAVIA_HM_LISTEN_PORT lb-health-mgr-sec-grp
+    openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_ADMIN_PORT lb-health-mgr-sec-grp
+    openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_TENANT_PORT lb-health-mgr-sec-grp
+
     if [ $IPV6_ENABLED == 'true' ] ; then
         openstack security group rule create --protocol udp --dst-port $OCTAVIA_HM_LISTEN_PORT --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
+        openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_ADMIN_PORT --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
+        openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_TENANT_PORT --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
     fi
 }
 
@@ -454,6 +474,14 @@ function configure_octavia_api_haproxy {
 
 }
 
+function configure_rsyslog {
+    sudo cp ${OCTAVIA_DIR}/devstack/etc/rsyslog/10-octavia-log-offloading.conf /etc/rsyslog.d/
+    sudo sed -e "
+        s|%ADMIN_PORT%|${OCTAVIA_AMP_LOG_ADMIN_PORT}|g;
+        s|%TENANT_PORT%|${OCTAVIA_AMP_LOG_TENANT_PORT}|g;
+    " -i /etc/rsyslog.d/10-octavia-log-offloading.conf
+}
+
 function octavia_start {
 
     if  ! ps aux | grep -q [o]-hm0 && [ $OCTAVIA_NODE != 'api' ] ; then
@@ -474,6 +502,8 @@ function octavia_start {
     run_process $OCTAVIA_CONSUMER  "$OCTAVIA_CONSUMER_BINARY $OCTAVIA_CONSUMER_ARGS"
     run_process $OCTAVIA_HOUSEKEEPER  "$OCTAVIA_HOUSEKEEPER_BINARY $OCTAVIA_HOUSEKEEPER_ARGS"
     run_process $OCTAVIA_HEALTHMANAGER  "$OCTAVIA_HEALTHMANAGER_BINARY $OCTAVIA_HEALTHMANAGER_ARGS"
+
+    restart_service rsyslog
 }
 
 function octavia_stop {
@@ -534,6 +564,10 @@ function octavia_cleanup {
     fi
 
     sudo rm -rf $NOVA_STATE_PATH $NOVA_AUTH_CACHE_DIR
+
+    sudo rm -f /etc/rsyslog.d/10-octavia-log-offloading.conf
+    restart_service rsyslog
+
 }
 
 function add_load-balancer_roles {
@@ -589,6 +623,8 @@ function octavia_init {
        create_octavia_accounts
 
        add_load-balancer_roles
+
+       configure_rsyslog
    elif [ $OCTAVIA_NODE == 'api' ] ; then
        create_octavia_accounts
 

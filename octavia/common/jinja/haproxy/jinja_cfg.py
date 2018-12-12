@@ -162,8 +162,8 @@ class JinjaTemplater(object):
              'log_http': self.log_http,
              'log_server': self.log_server,
              'administrative_log_facility':
-                 CONF.haproxy_amphora.administrative_log_facility,
-             'user_log_facility': CONF.haproxy_amphora.user_log_facility,
+                 CONF.amphora_agent.administrative_log_facility,
+             'user_log_facility': CONF.amphora_agent.user_log_facility,
              'connection_logging': self.connection_logging},
             constants=constants)
 

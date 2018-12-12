@@ -1,3 +1,4 @@
 debootstrap
 dpkg
 go
+rsyslog

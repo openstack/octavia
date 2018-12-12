@@ -57,9 +57,9 @@ class AgentJinjaTestCase(base.TestCase):
         # Test execution order could influence this with the test below
         self.conf.config(group='amphora_agent',
                          agent_server_network_file=None)
-        self.conf.config(group="haproxy_amphora",
+        self.conf.config(group="amphora_agent",
                          administrative_log_facility=1)
-        self.conf.config(group="haproxy_amphora", user_log_facility=0)
+        self.conf.config(group="amphora_agent", user_log_facility=0)
         expected_config = ('\n[DEFAULT]\n'
                            'debug = False\n'
                            'use_syslog = True\n'
@@ -101,9 +101,9 @@ class AgentJinjaTestCase(base.TestCase):
         self.conf.config(group="amphora_agent",
                          agent_server_network_file='/etc/network/interfaces')
         self.conf.config(group="haproxy_amphora", use_upstart='False')
-        self.conf.config(group="haproxy_amphora",
+        self.conf.config(group="amphora_agent",
                          administrative_log_facility=1)
-        self.conf.config(group="haproxy_amphora", user_log_facility=0)
+        self.conf.config(group="amphora_agent", user_log_facility=0)
         expected_config = ('\n[DEFAULT]\n'
                            'debug = False\n'
                            'use_syslog = True\n'
@@ -149,9 +149,9 @@ class AgentJinjaTestCase(base.TestCase):
                          agent_server_network_file=None)
         self.conf.config(group="amphora_agent",
                          amphora_udp_driver='new_udp_driver')
-        self.conf.config(group="haproxy_amphora",
+        self.conf.config(group="amphora_agent",
                          administrative_log_facility=1)
-        self.conf.config(group="haproxy_amphora", user_log_facility=0)
+        self.conf.config(group="amphora_agent", user_log_facility=0)
         expected_config = ('\n[DEFAULT]\n'
                            'debug = False\n'
                            'use_syslog = True\n'
