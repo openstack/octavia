@@ -37,6 +37,7 @@ Operator Reference
    Anchor.rst
    apache-httpd.rst
    providers.rst
+   api-audit.rst
 
 Indices and Search
 ------------------

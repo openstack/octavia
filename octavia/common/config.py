@@ -579,6 +579,20 @@ quota_opts = [
                help=_('Default per project health monitor quota.')),
 ]
 
+audit_opts = [
+    cfg.BoolOpt('enabled', default=False,
+                help=_('Enable auditing of API requests')),
+    cfg.StrOpt('audit_map_file',
+               default='/etc/octavia/octavia_api_audit_map.conf',
+               help=_('Path to audit map file for octavia-api service. '
+                      'Used only when API audit is enabled.')),
+    cfg.StrOpt('ignore_req_list', default='',
+               help=_('Comma separated list of REST API HTTP methods to be '
+                      'ignored during audit. For example: auditing will not '
+                      'be done on any GET or POST requests if this is set to '
+                      '"GET,POST". It is used only when API audit is '
+                      'enabled.')),
+]
 
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
@@ -599,7 +613,7 @@ cfg.CONF.register_opts(nova_opts, group='nova')
 cfg.CONF.register_opts(glance_opts, group='glance')
 cfg.CONF.register_opts(neutron_opts, group='neutron')
 cfg.CONF.register_opts(quota_opts, group='quotas')
-
+cfg.CONF.register_opts(audit_opts, group='audit')
 
 # Ensure that the control exchange is set correctly
 messaging.set_transport_defaults(control_exchange='octavia')

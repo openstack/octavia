@@ -43,6 +43,7 @@ def list_opts():
         ('neutron', octavia.common.config.neutron_opts),
         ('glance', octavia.common.config.glance_opts),
         ('quotas', octavia.common.config.quota_opts),
+        ('audit', octavia.common.config.audit_opts),
         add_auth_opts(),
     ]
 
