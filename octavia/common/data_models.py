@@ -620,7 +620,8 @@ class L7Policy(BaseDataModel):
                  position=None, listener=None, redirect_pool=None,
                  enabled=None, l7rules=None, provisioning_status=None,
                  operating_status=None, project_id=None, created_at=None,
-                 updated_at=None, redirect_prefix=None, tags=None):
+                 updated_at=None, redirect_prefix=None, tags=None,
+                 redirect_http_code=None):
         self.id = id
         self.name = name
         self.description = description
@@ -640,6 +641,7 @@ class L7Policy(BaseDataModel):
         self.updated_at = updated_at
         self.redirect_prefix = redirect_prefix
         self.tags = tags
+        self.redirect_http_code = redirect_http_code
 
     def _conditionally_remove_pool_links(self, pool):
         """Removes links to the given pool from parent objects.
@@ -666,6 +668,7 @@ class L7Policy(BaseDataModel):
                 self._conditionally_remove_pool_links(self.redirect_pool)
                 self.action = constants.L7POLICY_ACTION_REDIRECT_TO_POOL
                 self.redirect_url = None
+                self.redirect_http_code = None
                 pool = self._find_in_graph('Pool' + value)
                 self.redirect_pool = pool
                 if self.l7rules and (self.enabled is True or (
@@ -685,6 +688,7 @@ class L7Policy(BaseDataModel):
                 self._conditionally_remove_pool_links(self.redirect_pool)
                 self.redirect_pool = None
                 self.redirect_pool_id = None
+                self.redirect_http_code = None
             elif key == 'position':
                 self.listener.l7policies.remove(self)
                 self.listener.l7policies.insert(value - 1, self)

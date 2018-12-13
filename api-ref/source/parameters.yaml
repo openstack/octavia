@@ -704,6 +704,26 @@ l7policy-position-optional:
   in: body
   required: false
   type: integer
+l7policy-redirect-http-code:
+  description: |
+    Requests matching this policy will be redirected to the specified URL or
+    Prefix URL with the HTTP response code. Valid if ``action`` is
+    ``REDIRECT_TO_URL`` or ``REDIRECT_PREFIX``. Valid options are: 301, 302,
+    303, 307, or 308. Default is 302.
+  in: body
+  min_version: 2.9
+  required: true
+  type: integer
+l7policy-redirect-http-code-optional:
+  description: |
+    Requests matching this policy will be redirected to the specified URL or
+    Prefix URL with the HTTP response code. Valid if ``action`` is
+    ``REDIRECT_TO_URL`` or ``REDIRECT_PREFIX``. Valid options are: 301, 302,
+    303, 307, or 308. Default is 302.
+  in: body
+  min_version: 2.9
+  required: false
+  type: integer
 l7policy-redirect-pool_id:
   description: |
     Requests matching this policy will be redirected to the pool with this ID.

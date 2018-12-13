@@ -4,6 +4,7 @@
         "admin_state_up": true,
         "listener_id": "023f2e34-7806-443b-bfae-16c324569a3d",
         "redirect_url": "http://www.example.com",
+        "redirect_http_code": 301,
         "name": "redirect-example.com",
         "action": "REDIRECT_TO_URL",
         "position": 1,

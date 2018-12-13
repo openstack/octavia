@@ -2523,12 +2523,14 @@ class TestLoadBalancerGraph(base.BaseAPITest):
                 'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
                 'redirect_url': 'http://127.0.0.1/',
                 'position': 1,
+                'redirect_http_code': 302,
                 'admin_state_up': False
             }
         create_l7policies.append(create_l7policy)
         expected_l7policy = {
             'name': '',
             'description': '',
+            'redirect_http_code': None,
             'redirect_url': None,
             'redirect_prefix': None,
             'rules': [],

@@ -95,6 +95,12 @@ class L7PolicyController(base.BaseController):
 
     def _validate_create_l7policy(self, lock_session, l7policy_dict):
         try:
+            # Set the default HTTP redirect code here so it's explicit
+            if ((l7policy_dict.get('redirect_url') or
+                l7policy_dict.get('redirect_prefix')) and
+                    not l7policy_dict.get('redirect_http_code')):
+                l7policy_dict['redirect_http_code'] = 302
+
             return self.repositories.l7policy.create(lock_session,
                                                      **l7policy_dict)
         except odb_exceptions.DBDuplicateEntry:

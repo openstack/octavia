@@ -208,7 +208,8 @@ RET_L7POLICY_1 = {
     'redirect_url': None,
     'redirect_prefix': None,
     'enabled': True,
-    'l7rules': [RET_L7RULE_1]}
+    'l7rules': [RET_L7RULE_1],
+    'redirect_http_code': None}
 
 RET_L7POLICY_2 = {
     'id': 'sample_l7policy_id_2',
@@ -217,7 +218,8 @@ RET_L7POLICY_2 = {
     'redirect_url': 'http://www.example.com',
     'redirect_prefix': None,
     'enabled': True,
-    'l7rules': [RET_L7RULE_2, RET_L7RULE_3]}
+    'l7rules': [RET_L7RULE_2, RET_L7RULE_3],
+    'redirect_http_code': 302}
 
 RET_L7POLICY_3 = {
     'id': 'sample_l7policy_id_3',
@@ -226,7 +228,8 @@ RET_L7POLICY_3 = {
     'redirect_url': None,
     'redirect_prefix': None,
     'enabled': True,
-    'l7rules': [RET_L7RULE_4, RET_L7RULE_5]}
+    'l7rules': [RET_L7RULE_4, RET_L7RULE_5],
+    'redirect_http_code': None}
 
 RET_L7POLICY_4 = {
     'id': 'sample_l7policy_id_4',
@@ -235,7 +238,8 @@ RET_L7POLICY_4 = {
     'redirect_url': None,
     'redirect_prefix': None,
     'enabled': True,
-    'l7rules': []}
+    'l7rules': [],
+    'redirect_http_code': None}
 
 RET_L7POLICY_5 = {
     'id': 'sample_l7policy_id_5',
@@ -244,7 +248,8 @@ RET_L7POLICY_5 = {
     'redirect_url': None,
     'redirect_prefix': None,
     'enabled': False,
-    'l7rules': [RET_L7RULE_5]}
+    'l7rules': [RET_L7RULE_5],
+    'redirect_http_code': None}
 
 RET_L7POLICY_6 = {
     'id': 'sample_l7policy_id_6',
@@ -253,7 +258,8 @@ RET_L7POLICY_6 = {
     'redirect_url': None,
     'redirect_prefix': None,
     'enabled': True,
-    'l7rules': []}
+    'l7rules': [],
+    'redirect_http_code': None}
 
 RET_L7POLICY_7 = {
     'id': 'sample_l7policy_id_7',
@@ -262,7 +268,18 @@ RET_L7POLICY_7 = {
     'redirect_url': None,
     'redirect_prefix': 'https://example.com',
     'enabled': True,
-    'l7rules': [RET_L7RULE_2, RET_L7RULE_3]}
+    'l7rules': [RET_L7RULE_2, RET_L7RULE_3],
+    'redirect_http_code': 302}
+
+RET_L7POLICY_8 = {
+    'id': 'sample_l7policy_id_8',
+    'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+    'redirect_pool': None,
+    'redirect_url': 'http://www.example.com',
+    'redirect_prefix': None,
+    'enabled': True,
+    'l7rules': [RET_L7RULE_2, RET_L7RULE_3],
+    'redirect_http_code': None}
 
 RET_LISTENER = {
     'id': 'sample_listener_id_1',
@@ -813,11 +830,13 @@ def sample_l7policy_tuple(id,
                           action=constants.L7POLICY_ACTION_REJECT,
                           redirect_pool=None, redirect_url=None,
                           redirect_prefix=None,
-                          enabled=True, sample_policy=1):
+                          enabled=True, redirect_http_code=302,
+                          sample_policy=1):
     in_l7policy = collections.namedtuple('l7policy',
                                          'id, action, redirect_pool, '
                                          'redirect_url, redirect_prefix, '
-                                         'l7rules, enabled')
+                                         'l7rules, enabled,'
+                                         'redirect_http_code')
     l7rules = []
     if sample_policy == 1:
         action = constants.L7POLICY_ACTION_REDIRECT_TO_POOL
@@ -861,7 +880,11 @@ def sample_l7policy_tuple(id,
         redirect_url=redirect_url,
         redirect_prefix=redirect_prefix,
         l7rules=l7rules,
-        enabled=enabled)
+        enabled=enabled,
+        redirect_http_code=redirect_http_code
+        if (action in [constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+                       constants.L7POLICY_ACTION_REDIRECT_PREFIX] and
+            redirect_http_code) else None)
 
 
 def sample_l7rule_tuple(id,

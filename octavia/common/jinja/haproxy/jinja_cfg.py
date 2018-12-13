@@ -397,6 +397,12 @@ class JinjaTemplater(object):
                 l7policy.redirect_pool, feature_compatibility, **kwargs)
         else:
             ret_value['redirect_pool'] = None
+        if (l7policy.action in [constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+                                constants.L7POLICY_ACTION_REDIRECT_PREFIX] and
+                l7policy.redirect_http_code):
+            ret_value['redirect_http_code'] = l7policy.redirect_http_code
+        else:
+            ret_value['redirect_http_code'] = None
         l7rules = [self._transform_l7rule(x, feature_compatibility)
                    for x in l7policy.l7rules if x.enabled]
         ret_value['l7rules'] = l7rules

@@ -274,12 +274,14 @@ def sanitize_l7policy_api_args(l7policy, create=False):
         l7policy.update({'redirect_url': None})
         l7policy.pop('redirect_pool', None)
         l7policy.update({'redirect_prefix': None})
+        l7policy.update({'redirect_http_code': None})
     if l7policy.get('redirect_pool'):
         l7policy.update({
             'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL})
         l7policy.update({'redirect_url': None})
         l7policy.pop('redirect_pool_id', None)
         l7policy.update({'redirect_prefix': None})
+        l7policy.update({'redirect_http_code': None})
     if l7policy.get('redirect_url'):
         url(l7policy['redirect_url'])
         l7policy.update({
@@ -287,6 +289,8 @@ def sanitize_l7policy_api_args(l7policy, create=False):
         l7policy.update({'redirect_pool_id': None})
         l7policy.update({'redirect_prefix': None})
         l7policy.pop('redirect_pool', None)
+        if not l7policy.get('redirect_http_code'):
+            l7policy.update({'redirect_http_code': 302})
     if l7policy.get('redirect_prefix'):
         url(l7policy['redirect_prefix'])
         l7policy.update({
@@ -294,6 +298,8 @@ def sanitize_l7policy_api_args(l7policy, create=False):
         l7policy.update({'redirect_pool_id': None})
         l7policy.update({'redirect_url': None})
         l7policy.pop('redirect_pool', None)
+        if not l7policy.get('redirect_http_code'):
+            l7policy.update({'redirect_http_code': 302})
 
     # If we are creating, we need an action at this point
     if create and 'action' not in l7policy.keys():

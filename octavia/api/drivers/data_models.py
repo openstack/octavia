@@ -238,7 +238,7 @@ class L7Policy(BaseDataModel):
     def __init__(self, action=Unset, admin_state_up=Unset, description=Unset,
                  l7policy_id=Unset, listener_id=Unset, name=Unset,
                  position=Unset, redirect_pool_id=Unset, redirect_url=Unset,
-                 rules=Unset, redirect_prefix=Unset):
+                 rules=Unset, redirect_prefix=Unset, redirect_http_code=Unset):
 
         self.action = action
         self.admin_state_up = admin_state_up
@@ -251,6 +251,7 @@ class L7Policy(BaseDataModel):
         self.redirect_url = redirect_url
         self.rules = rules
         self.redirect_prefix = redirect_prefix
+        self.redirect_http_code = redirect_http_code
 
 
 class L7Rule(BaseDataModel):

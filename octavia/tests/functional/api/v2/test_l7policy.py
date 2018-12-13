@@ -703,6 +703,61 @@ class TestL7Policy(base.BaseAPITest):
             l7policy_prov_status=constants.PENDING_CREATE,
             l7policy_op_status=constants.OFFLINE)
 
+    def test_create_with_redirect_http_code(self):
+        action_key_values = {
+            constants.L7POLICY_ACTION_REDIRECT_PREFIX: {
+                'redirect_prefix': 'https://example.com',
+                'redirect_http_code': 302},
+            constants.L7POLICY_ACTION_REDIRECT_TO_URL: {
+                'redirect_url': 'http://www.example.com',
+                'redirect_http_code': 301}}
+        count = 1
+        # First, test with redirect actions
+        for action in [constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+                       constants.L7POLICY_ACTION_REDIRECT_PREFIX]:
+            api_l7policy = self.create_l7policy(
+                self.listener_id, action,
+                **action_key_values[action]).get(self.root_tag)
+            self.assertEqual(action, api_l7policy['action'])
+            self.assertEqual(count, api_l7policy['position'])
+            self.assertIsNone(api_l7policy.get('redirect_pool_id'))
+            if api_l7policy.get('redirect_url'):
+                self.assertEqual(action_key_values[action]['redirect_url'],
+                                 api_l7policy['redirect_url'])
+            elif api_l7policy.get('redirect_prefix'):
+                self.assertEqual(action_key_values[action]['redirect_prefix'],
+                                 api_l7policy['redirect_prefix'])
+            self.assertEqual(action_key_values[action]['redirect_http_code'],
+                             api_l7policy['redirect_http_code'])
+            self.assert_correct_status(
+                lb_id=self.lb_id, listener_id=self.listener_id,
+                l7policy_id=api_l7policy.get('id'),
+                lb_prov_status=constants.PENDING_UPDATE,
+                listener_prov_status=constants.PENDING_UPDATE,
+                l7policy_prov_status=constants.PENDING_CREATE,
+                l7policy_op_status=constants.OFFLINE)
+            self.set_lb_status(self.lb_id)
+            count += 1
+
+        # test with redirect_pool action
+        api_l7policy = self.create_l7policy(
+            self.listener_id, constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            redirect_pool_id=self.pool_id,
+            redirect_http_code=308).get(self.root_tag)
+        self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+                         api_l7policy['action'])
+        self.assertEqual(self.pool_id, api_l7policy.get('redirect_pool_id'))
+        self.assertIsNone(api_l7policy.get('redirect_url'))
+        self.assertIsNone(api_l7policy.get('redirect_prefix'))
+        self.assertIsNone(api_l7policy.get('redirect_http_code'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            l7policy_id=api_l7policy.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            l7policy_prov_status=constants.PENDING_CREATE,
+            l7policy_op_status=constants.OFFLINE)
+
     def test_bad_create(self):
         l7policy = {'listener_id': self.listener_id,
                     'name': 'test1'}
@@ -735,6 +790,15 @@ class TestL7Policy(base.BaseAPITest):
                     'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
                     'redirect_url': 'bad url'}
         self.post(self.L7POLICIES_PATH, self._build_body(l7policy), status=400)
+
+    def test_bad_create_with_redirect_http_code(self):
+        for test_code in [1, '', 'HTTPCODE']:
+            l7policy = {'listener_id': self.listener_id,
+                        'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+                        'redirect_url': 'http://www.example.com',
+                        'redirect_http_code': test_code}
+            self.post(self.L7POLICIES_PATH, self._build_body(l7policy),
+                      status=400)
 
     @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_create_with_bad_provider(self, mock_provider):
@@ -957,6 +1021,61 @@ class TestL7Policy(base.BaseAPITest):
         new_l7policy = {'redirect_url': 'http://www.example.com/'}
         self.put(self.L7POLICY_PATH.format(l7policy_id=api_l7policy.get('id')),
                  self._build_body(new_l7policy))
+
+    def test_update_with_redirect_http_code(self):
+        # test from non exist
+        api_l7policy = self.create_l7policy(self.listener_id,
+                                            constants.L7POLICY_ACTION_REJECT,
+                                            ).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_l7policy = {
+            'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            'redirect_url': 'http://www.example.com',
+            'redirect_http_code': 308}
+        response = self.put(self.L7POLICY_PATH.format(
+            l7policy_id=api_l7policy.get('id')),
+            self._build_body(new_l7policy)).json.get(self.root_tag)
+        self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+                         response.get('action'))
+        self.assertEqual(308, response.get('redirect_http_code'))
+        self.set_lb_status(self.lb_id)
+
+        # test from exist to new
+        api_l7policy = self.create_l7policy(
+            self.listener_id, constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            redirect_url='http://www.example.com',
+            redirect_http_code=302).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_l7policy = {
+            'redirect_http_code': 308}
+        response = self.put(self.L7POLICY_PATH.format(
+            l7policy_id=api_l7policy.get('id')),
+            self._build_body(new_l7policy)).json.get(self.root_tag)
+        self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+                         response.get('action'))
+        self.assertEqual(308, response.get('redirect_http_code'))
+        self.set_lb_status(self.lb_id)
+
+        # test from exist to null
+        new_l7policy = {
+            'redirect_http_code': None}
+        response = self.put(self.L7POLICY_PATH.format(
+            l7policy_id=api_l7policy.get('id')),
+            self._build_body(new_l7policy)).json.get(self.root_tag)
+        self.assertIsNone(response.get('redirect_http_code'))
+
+    def test_bad_update_with_redirect_http_code(self):
+        api_l7policy = self.create_l7policy(self.listener_id,
+                                            constants.L7POLICY_ACTION_REJECT,
+                                            ).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_l7policy = {
+            'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            'redirect_url': 'http://www.example.com',
+            'redirect_http_code': ''}
+        self.put(self.L7POLICY_PATH.format(
+            l7policy_id=api_l7policy.get('id')),
+            self._build_body(new_l7policy), status=400).json.get(self.root_tag)
 
     def test_delete(self):
         api_l7policy = self.create_l7policy(

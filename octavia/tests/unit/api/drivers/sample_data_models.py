@@ -337,7 +337,8 @@ class SampleDriverDataModels(object):
                                     'position': 1,
                                     'listener': None,
                                     'redirect_pool': None,
-                                    'l7rules': self.test_l7rules}
+                                    'l7rules': self.test_l7rules,
+                                    'redirect_http_code': 302}
 
         self.test_l7policy1_dict.update(self._common_test_dict)
 
@@ -367,7 +368,8 @@ class SampleDriverDataModels(object):
             'redirect_pool_id': self.pool1_id,
             'redirect_url': '/index.html',
             'redirect_prefix': 'https://example.com/',
-            'rules': self.provider_l7rules_dicts
+            'rules': self.provider_l7rules_dicts,
+            'redirect_http_code': 302
         }
 
         self.provider_l7policy2_dict = copy.deepcopy(

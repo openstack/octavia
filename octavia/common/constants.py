@@ -173,6 +173,9 @@ SUPPORTED_L7POLICY_ACTIONS = (L7POLICY_ACTION_REJECT,
                               L7POLICY_ACTION_REDIRECT_TO_POOL,
                               L7POLICY_ACTION_REDIRECT_PREFIX)
 
+# For redirect, only codes 301, 302, 303, 307 and 308 are # supported.
+SUPPORTED_L7POLICY_REDIRECT_HTTP_CODES = [301, 302, 303, 307, 308]
+
 MIN_POLICY_POSITION = 1
 # Largest a 32-bit integer can be, which is a limitation
 # here if you're using MySQL, as most probably are. This just needs

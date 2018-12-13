@@ -92,6 +92,9 @@ class RootController(rest.RestController):
             self._add_a_version(versions, 'v2.7', 'v2', 'SUPPORTED',
                                 '2018-01-25T12:00:00Z', host_url)
             # TLS client authentication
-            self._add_a_version(versions, 'v2.8', 'v2', 'CURRENT',
+            self._add_a_version(versions, 'v2.8', 'v2', 'SUPPORTED',
                                 '2019-02-12T00:00:00Z', host_url)
+            # HTTP Redirect code
+            self._add_a_version(versions, 'v2.9', 'v2', 'CURRENT',
+                                '2019-03-04T00:00:00Z', host_url)
         return {'versions': versions}

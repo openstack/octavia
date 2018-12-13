@@ -56,6 +56,7 @@ Response Parameters
    - position: l7policy-position
    - project_id: project_id
    - provisioning_status: provisioning_status
+   - redirect_http_code: l7policy-redirect-http-code
    - redirect_pool_id: l7policy-redirect-pool_id
    - redirect_prefix: l7policy-redirect-prefix
    - redirect_url: l7policy-redirect-url
@@ -106,8 +107,10 @@ creating multiple policies with the same action.
 If a new policy is created with a position that matches that of an existing
 policy, then the new policy is inserted at the given position.
 
-L7 policies with ``action`` of ``REDIRECT_TO_URL`` will return a HTTP
-``Found (302)`` response code with the ``redirect_url``.
+L7 policies with ``action`` of ``REDIRECT_TO_URL`` will return the default HTTP
+``Found (302)`` response code with the ``redirect_url``. Also, specify
+``redirect_http_code`` to configure the needed HTTP response code, such as,
+301, 302, 303, 307 and 308.
 
 L7 policies with ``action`` of ``REJECT`` will return a ``Forbidden (403)``
 response code to the requester.
@@ -140,6 +143,7 @@ Request
    - name: name-optional
    - position: l7policy-position-optional
    - project_id: project_id-optional
+   - redirect_http_code: l7policy-redirect-http-code-optional
    - redirect_pool_id: l7policy-redirect-pool_id-optional
    - redirect_prefix: l7policy-redirect-prefix-optional
    - redirect_url: l7policy-redirect-url-optional
@@ -173,6 +177,7 @@ Response Parameters
    - position: l7policy-position
    - project_id: project_id
    - provisioning_status: provisioning_status
+   - redirect_http_code: l7policy-redirect-http-code
    - redirect_pool_id: l7policy-redirect-pool_id
    - redirect_prefix: l7policy-redirect-prefix
    - redirect_url: l7policy-redirect-url
@@ -240,6 +245,7 @@ Response Parameters
    - position: l7policy-position
    - project_id: project_id
    - provisioning_status: provisioning_status
+   - redirect_http_code: l7policy-redirect-http-code
    - redirect_pool_id: l7policy-redirect-pool_id
    - redirect_prefix: l7policy-redirect-prefix
    - redirect_url: l7policy-redirect-url
@@ -297,6 +303,7 @@ Request
    - l7policy_id: path-l7policy-id
    - name: name-optional
    - position: l7policy-position-optional
+   - redirect_http_code: l7policy-redirect-http-code-optional
    - redirect_pool_id: l7policy-redirect-pool_id-optional
    - redirect_prefix: l7policy-redirect-prefix-optional
    - redirect_url: l7policy-redirect-url-optional
@@ -330,6 +337,7 @@ Response Parameters
    - position: l7policy-position
    - project_id: project_id
    - provisioning_status: provisioning_status
+   - redirect_http_code: l7policy-redirect-http-code
    - redirect_pool_id: l7policy-redirect-pool_id
    - redirect_prefix: l7policy-redirect-prefix
    - redirect_url: l7policy-redirect-url

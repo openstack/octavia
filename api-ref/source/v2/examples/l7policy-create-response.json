@@ -12,6 +12,7 @@
             "created_at": "2017-06-24T23:25:14",
             "provisioning_status": "PENDING_CREATE",
             "updated_at": "2017-06-24T23:30:05",
+            "redirect_http_code": 301,
             "redirect_pool_id": null,
             "redirect_prefix": null,
             "redirect_url": "http://www.example.com",

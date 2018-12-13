@@ -44,6 +44,7 @@ class L7PolicyResponse(BaseL7PolicyType):
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
+    redirect_http_code = wtypes.wsattr(wtypes.IntegerType())
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -96,6 +97,8 @@ class L7PolicyPOST(BaseL7PolicyType):
     listener_id = wtypes.wsattr(wtypes.UuidType(), mandatory=True)
     rules = wtypes.wsattr([l7rule.L7RuleSingleCreate])
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
+    redirect_http_code = wtypes.wsattr(
+        wtypes.Enum(int, *constants.SUPPORTED_L7POLICY_REDIRECT_HTTP_CODES))
 
 
 class L7PolicyRootPOST(types.BaseType):
@@ -116,6 +119,8 @@ class L7PolicyPUT(BaseL7PolicyType):
         minimum=constants.MIN_POLICY_POSITION,
         maximum=constants.MAX_POLICY_POSITION))
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
+    redirect_http_code = wtypes.wsattr(
+        wtypes.Enum(int, *constants.SUPPORTED_L7POLICY_REDIRECT_HTTP_CODES))
 
 
 class L7PolicyRootPUT(types.BaseType):
@@ -139,3 +144,5 @@ class L7PolicySingleCreate(BaseL7PolicyType):
         default=constants.MAX_POLICY_POSITION)
     rules = wtypes.wsattr([l7rule.L7RuleSingleCreate])
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
+    redirect_http_code = wtypes.wsattr(
+        wtypes.Enum(int, *constants.SUPPORTED_L7POLICY_REDIRECT_HTTP_CODES))

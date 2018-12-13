@@ -689,6 +689,7 @@ class L7Policy(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
     redirect_prefix = sa.Column(
         sa.String(255),
         nullable=True)
+    redirect_http_code = sa.Column(sa.Integer, nullable=True)
     position = sa.Column(sa.Integer, nullable=False)
     enabled = sa.Column(sa.Boolean(), nullable=False)
     listener = orm.relationship("Listener", uselist=False,

@@ -1,0 +1,6 @@
+---
+features:
+  - Now Octavia L7Policy API can accept an new option `redirect_http_code`
+    for L7Policy actions `REDIRECT_URL` or `REDIRECT_PREFIX`, then each HTTP
+    requests to the associated Listener will return the configured HTTP
+    response code.

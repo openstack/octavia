@@ -1654,6 +1654,7 @@ class L7PolicyRepository(BaseRepository):
                     model_kwargs.update(redirect_url=None)
                     model_kwargs.update(redirect_pool_id=None)
                     model_kwargs.update(redirect_prefix=None)
+                    model_kwargs.update(redirect_http_code=None)
                 elif (l7policy.action ==
                         consts.L7POLICY_ACTION_REDIRECT_TO_URL):
                     model_kwargs.update(redirect_pool_id=None)
@@ -1662,6 +1663,7 @@ class L7PolicyRepository(BaseRepository):
                         consts.L7POLICY_ACTION_REDIRECT_TO_POOL):
                     model_kwargs.update(redirect_url=None)
                     model_kwargs.update(redirect_prefix=None)
+                    model_kwargs.update(redirect_http_code=None)
                 elif (l7policy.action ==
                         consts.L7POLICY_ACTION_REDIRECT_PREFIX):
                     model_kwargs.update(redirect_url=None)
