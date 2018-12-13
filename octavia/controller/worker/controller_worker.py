@@ -80,7 +80,12 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             constants.ROLE_MASTER + '-' +
             constants.CREATE_AMP_FOR_LB_SUBFLOW + '-' +
             constants.GENERATE_SERVER_PEM,
-            constants.GENERATE_SERVER_PEM_TASK)
+            constants.GENERATE_SERVER_PEM_TASK,
+            constants.FAILOVER_AMPHORA_FLOW + '-' +
+            constants.CREATE_AMP_FOR_LB_SUBFLOW + '-' +
+            constants.GENERATE_SERVER_PEM,
+            constants.CREATE_AMP_FOR_LB_SUBFLOW + '-' +
+            constants.UPDATE_CERT_EXPIRATION)
 
         super(ControllerWorker, self).__init__()
 
