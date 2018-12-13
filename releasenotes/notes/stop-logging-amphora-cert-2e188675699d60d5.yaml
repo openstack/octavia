@@ -1,0 +1,7 @@
+---
+security:
+  - |
+    Fixed a debug level logging of Amphora certificates for flows
+    such as 'octavia-create-amp-for-lb-subflow-octavia-generate-serverpem'
+    (triggered with loadbalancer failover) and
+    'octavia-create-amp-for-lb-subflow-octavia-update-cert-expiration'.
