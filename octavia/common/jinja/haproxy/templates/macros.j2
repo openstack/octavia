@@ -293,8 +293,18 @@ backend {{ pool.id }}
         {% if (pool.health_monitor.type ==
                constants.HEALTH_MONITOR_HTTP or pool.health_monitor.type ==
                constants.HEALTH_MONITOR_HTTPS) %}
-    option httpchk {{ pool.health_monitor.http_method }} {{
-    pool.health_monitor.url_path }}
+            {% if (pool.health_monitor.http_version and
+                   pool.health_monitor.http_version == 1.1 and
+                   pool.health_monitor.domain_name) %}
+    option httpchk {{ pool.health_monitor.http_method }} {{ pool.health_monitor.url_path }} HTTP/
+    {{- pool.health_monitor.http_version -}}{{- "\\r\\n" | safe -}}
+    Host:\ {{ pool.health_monitor.domain_name }}
+            {% elif pool.health_monitor.http_version %}
+    option httpchk {{ pool.health_monitor.http_method }} {{ pool.health_monitor.url_path }} HTTP/
+    {{- pool.health_monitor.http_version -}}{{- "\\r\\n" | safe }}
+            {% else %}
+    option httpchk {{ pool.health_monitor.http_method }} {{ pool.health_monitor.url_path }}
+            {% endif %}
     http-check expect rstatus {{ pool.health_monitor.expected_codes }}
         {% endif %}
         {% if pool.health_monitor.type == constants.HEALTH_MONITOR_TLS_HELLO %}

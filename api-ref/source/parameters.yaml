@@ -507,6 +507,22 @@ healthmonitor-delay-optional:
   in: body
   required: false
   type: integer
+healthmonitor-domain_name:
+  description: |
+    The domain name, which be injected into the HTTP Host Header to the backend
+    server for HTTP health check.
+  in: body
+  min_version: 2.10
+  required: true
+  type: string
+healthmonitor-domain_name-optional:
+  description: |
+    The domain name, which be injected into the HTTP Host Header to the backend
+    server for HTTP health check.
+  in: body
+  min_version: 2.10
+  required: false
+  type: string
 healthmonitor-expected_codes:
   description: |
     The list of HTTP status codes expected in response from the member to
@@ -547,6 +563,20 @@ healthmonitor-http_method-optional:
   in: body
   required: false
   type: string
+healthmonitor-http_version:
+  description: |
+    The HTTP version. One of ``1.0`` or ``1.1``. The default is ``1.0``.
+  in: body
+  min_version: 2.10
+  required: true
+  type: float
+healthmonitor-http_version-optional:
+  description: |
+    The HTTP version. One of ``1.0`` or ``1.1``. The default is ``1.0``.
+  in: body
+  min_version: 2.10
+  required: false
+  type: float
 healthmonitor-id:
   description: |
     The associated health monitor ID.

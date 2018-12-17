@@ -21,6 +21,8 @@
         "type": "HTTP",
         "id": "8ed3c5ac-6efa-420c-bedb-99ba14e58db5",
         "operating_status": "ONLINE",
-        "tags": ["test_tag"]
+        "tags": ["test_tag"],
+        "http_version": 1.0,
+        "domain_name": null
     }
 }

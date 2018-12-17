@@ -231,7 +231,8 @@ class HealthMonitor(BaseDataModel):
                  rise_threshold=None, http_method=None, url_path=None,
                  expected_codes=None, enabled=None, pool=None, name=None,
                  provisioning_status=None, operating_status=None,
-                 created_at=None, updated_at=None, tags=None):
+                 created_at=None, updated_at=None, tags=None,
+                 http_version=None, domain_name=None):
         self.id = id
         self.project_id = project_id
         self.pool_id = pool_id
@@ -251,6 +252,8 @@ class HealthMonitor(BaseDataModel):
         self.created_at = created_at
         self.updated_at = updated_at
         self.tags = tags
+        self.http_version = http_version
+        self.domain_name = domain_name
 
     def delete(self):
         self.pool.health_monitor = None

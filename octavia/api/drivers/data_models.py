@@ -218,7 +218,8 @@ class HealthMonitor(BaseDataModel):
     def __init__(self, admin_state_up=Unset, delay=Unset, expected_codes=Unset,
                  healthmonitor_id=Unset, http_method=Unset, max_retries=Unset,
                  max_retries_down=Unset, name=Unset, pool_id=Unset,
-                 timeout=Unset, type=Unset, url_path=Unset):
+                 timeout=Unset, type=Unset, url_path=Unset, http_version=Unset,
+                 domain_name=Unset):
 
         self.admin_state_up = admin_state_up
         self.delay = delay
@@ -232,6 +233,8 @@ class HealthMonitor(BaseDataModel):
         self.timeout = timeout
         self.type = type
         self.url_path = url_path
+        self.http_version = http_version
+        self.domain_name = domain_name
 
 
 class L7Policy(BaseDataModel):

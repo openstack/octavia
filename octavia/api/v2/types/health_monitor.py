@@ -45,6 +45,8 @@ class HealthMonitorResponse(BaseHealthMonitorType):
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
+    http_version = wtypes.wsattr(float)
+    domain_name = wtypes.wsattr(wtypes.StringType())
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -100,6 +102,11 @@ class HealthMonitorPOST(BaseHealthMonitorType):
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     pool_id = wtypes.wsattr(wtypes.UuidType(), mandatory=True)
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
+    http_version = wtypes.wsattr(
+        wtypes.Enum(float, *constants.SUPPORTED_HTTP_VERSIONS))
+    domain_name = wtypes.wsattr(
+        wtypes.StringType(min_length=1, max_length=255,
+                          pattern=constants.DOMAIN_NAME_REGEX))
 
 
 class HealthMonitorRootPOST(types.BaseType):
@@ -124,6 +131,11 @@ class HealthMonitorPUT(BaseHealthMonitorType):
         wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'))
     admin_state_up = wtypes.wsattr(bool)
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
+    http_version = wtypes.wsattr(
+        wtypes.Enum(float, *constants.SUPPORTED_HTTP_VERSIONS))
+    domain_name = wtypes.wsattr(
+        wtypes.StringType(min_length=1, max_length=255,
+                          pattern=constants.DOMAIN_NAME_REGEX))
 
 
 class HealthMonitorRootPUT(types.BaseType):
@@ -152,6 +164,11 @@ class HealthMonitorSingleCreate(BaseHealthMonitorType):
         wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'))
     admin_state_up = wtypes.wsattr(bool, default=True)
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
+    http_version = wtypes.wsattr(
+        wtypes.Enum(float, *constants.SUPPORTED_HTTP_VERSIONS))
+    domain_name = wtypes.wsattr(
+        wtypes.StringType(min_length=1, max_length=255,
+                          pattern=constants.DOMAIN_NAME_REGEX))
 
 
 class HealthMonitorStatusResponse(BaseHealthMonitorType):

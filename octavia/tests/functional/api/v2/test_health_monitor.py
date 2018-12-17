@@ -1039,6 +1039,42 @@ class TestHealthMonitor(base.BaseAPITest):
             project_id=pid).get(self.root_tag)
         self.assertEqual(self.project_id, api_hm.get('project_id'))
 
+    def test_create_with_default_http_version(self):
+        # Use the default HTTP/1.0
+        api_hm = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1, admin_state_up=False, expected_codes='200',
+            http_method='GET', name='Test HM', url_path='/',
+            http_version='1.0').get(self.root_tag)
+        self.assertEqual(1.0, api_hm.get('http_version'))
+
+    def test_create_without_http_version(self):
+        # Check the default http_version is 1.0
+        api_hm = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1, admin_state_up=False, expected_codes='200',
+            http_method='GET', name='Test HM', url_path='/').get(self.root_tag)
+        self.assertIsNone(api_hm.get('http_version'))
+
+    def test_create_with_http_version_11_and_domain_name(self):
+        # Create with http_version 1.1 and domain_name
+        api_hm = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_HTTPS,
+            1, 1, 1, 1, admin_state_up=False, expected_codes='200',
+            http_method='GET', name='Test HM', url_path='/',
+            http_version=1.1, domain_name='testlab.com').get(self.root_tag)
+        self.assertEqual(1.1, api_hm.get('http_version'))
+        self.assertEqual('testlab.com', api_hm.get('domain_name'))
+
+    def test_create_with_http_version_11(self):
+        # Create with http_version 1.1
+        api_hm = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_HTTPS,
+            1, 1, 1, 1, admin_state_up=False, expected_codes='200',
+            http_method='GET', name='Test HM', url_path='/',
+            http_version=1.1).get(self.root_tag)
+        self.assertEqual(1.1, api_hm.get('http_version'))
+
     def test_bad_create(self):
         hm_json = {'name': 'test1', 'pool_id': self.pool_id}
         self.post(self.HMS_PATH, self._build_body(hm_json), status=400)
@@ -1212,6 +1248,40 @@ class TestHealthMonitor(base.BaseAPITest):
               'max_retries': 1}
         self.post(self.HMS_PATH, self._build_body(hm), status=403)
 
+    def test_bad_create_with_http_version_and_domain_name_cases(self):
+        hm_json = {'pool_id': self.pool_id,
+                   'type': constants.HEALTH_MONITOR_HTTP,
+                   'delay': 1,
+                   'timeout': 1,
+                   'max_retries_down': 1,
+                   'max_retries': 1,
+                   'expected_codes': '200',
+                   'http_version': 1.00, 'domain_name': 'testlab.com'}
+        api_hm = self.post(
+            self.HMS_PATH, self._build_body(hm_json), status=400).json
+        expect_error_msg = ("http_version 1.0 is not a valid option for "
+                            "health monitors HTTP 1.1 domain name health "
+                            "check")
+        self.assertEqual(expect_error_msg, api_hm['faultstring'])
+        for bad_case in [{'http_version': 1.0, 'domain_name': '^testla&b.com'},
+                         {'http_version': 1.1,
+                          'domain_name': 'testla\nb.com'}]:
+            hm_json = {'pool_id': self.pool_id,
+                       'type': constants.HEALTH_MONITOR_HTTP,
+                       'delay': 1,
+                       'timeout': 1,
+                       'max_retries_down': 1,
+                       'max_retries': 1,
+                       'expected_codes': '200'}
+            hm_json.update(bad_case)
+            api_hm = self.post(
+                self.HMS_PATH, self._build_body(hm_json), status=400).json
+            expect_error_msg = (
+                "Invalid input for field/attribute domain_name. Value: '%s'. "
+                "Value should match the pattern %s") % (bad_case[
+                    'domain_name'], constants.DOMAIN_NAME_REGEX)
+            self.assertEqual(expect_error_msg, api_hm['faultstring'])
+
     def test_update(self):
         api_hm = self.create_health_monitor(
             self.pool_with_listener_id,
@@ -1256,6 +1326,28 @@ class TestHealthMonitor(base.BaseAPITest):
         response = self.get(self.HM_PATH.format(
             healthmonitor_id=api_hm.get('id'))).json.get(self.root_tag)
         self.assertEqual('/health', response[constants.URL_PATH])
+
+    def test_update_http_version_and_domain_name(self):
+        api_hm = self.create_health_monitor(
+            self.pool_with_listener_id, constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1, admin_state_up=False, expected_codes='200',
+            http_method='GET', name='Test HM', url_path='/').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_hm = {'http_version': 1.1, 'domain_name': 'testlab.com'}
+        self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_with_listener_id, hm_id=api_hm.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_UPDATE)
+        response = self.get(self.HM_PATH.format(
+            healthmonitor_id=api_hm.get('id'))).json.get(self.root_tag)
+        self.assertEqual(1.1, response['http_version'])
+        self.assertEqual('testlab.com', response['domain_name'])
 
     def test_update_TCP(self):
         api_hm = self.create_health_monitor(
@@ -1493,6 +1585,31 @@ class TestHealthMonitor(base.BaseAPITest):
             healthmonitor_id=api_hm.get('id'))).json.get(self.root_tag)
         self.assertEqual(constants.HEALTH_MONITOR_DEFAULT_EXPECTED_CODES,
                          response['expected_codes'])
+
+    def test_bad_update_http_version_and_domain_name(self):
+        api_hm = self.create_health_monitor(
+            self.pool_id, constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1, admin_state_up=False, expected_codes='200',
+            http_method='GET', name='Test HM', url_path='/').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_hm = {'http_version': 1.0, 'domain_name': 'testlab.com'}
+        response = self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm), status=400)
+        expect_error_msg = ("http_version 1.0 is not a valid option for "
+                            "health monitors HTTP 1.1 domain name health "
+                            "check")
+        self.assertEqual(expect_error_msg, response.json['faultstring'])
+
+        new_hm = {'http_version': 1.0, 'domain_name': '^testla&b.com'}
+        response = self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm), status=400)
+        expect_error_msg = (
+            "Invalid input for field/attribute domain_name. Value: '%s'. "
+            "Value should match the pattern %s") % (new_hm[
+                'domain_name'], constants.DOMAIN_NAME_REGEX)
+        self.assertEqual(expect_error_msg, response.json['faultstring'])
 
     def test_delete(self):
         api_hm = self.create_health_monitor(
