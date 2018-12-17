@@ -14,9 +14,6 @@ function load_conf_hook {
     _DEVSTACK_LOCAL_CONFIG_TAIL+=$'\n'"$(cat $GATE_HOOKS/$hook)"
 }
 
-# Work around a devstack issue:https://review.openstack.org/#/c/435106
-export DEVSTACK_LOCAL_CONFIG+=$'\n'"DEFAULT_IMAGE_NAME=cirros-0.3.5-x86_64-disk"$'\n'
-
 export DEVSTACK_LOCAL_CONFIG+=$'\n'"enable_plugin barbican https://git.openstack.org/openstack/barbican"$'\n'
 
 # Allow testing against diskimage-builder changes with depends-on
