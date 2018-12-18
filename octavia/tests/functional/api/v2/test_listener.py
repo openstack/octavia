@@ -53,23 +53,30 @@ class TestListener(base.BaseAPITest):
         lb1_id = lb1.get('loadbalancer').get('id')
         self.set_lb_status(lb1_id)
         listener1 = self.create_listener(
-            constants.PROTOCOL_HTTP, 80, lb1_id).get(self.root_tag)
+            constants.PROTOCOL_HTTP, 80, lb1_id,
+            tags=['test_tag1']).get(self.root_tag)
         self.set_lb_status(lb1_id)
         listener2 = self.create_listener(
-            constants.PROTOCOL_HTTP, 81, lb1_id).get(self.root_tag)
+            constants.PROTOCOL_HTTP, 81, lb1_id,
+            tags=['test_tag2']).get(self.root_tag)
         self.set_lb_status(lb1_id)
         listener3 = self.create_listener(
-            constants.PROTOCOL_HTTP, 82, lb1_id).get(self.root_tag)
+            constants.PROTOCOL_HTTP, 82, lb1_id,
+            tags=['test_tag3']).get(self.root_tag)
         self.set_lb_status(lb1_id)
         listeners = self.get(self.LISTENERS_PATH).json.get(self.root_tag_list)
         self.assertEqual(3, len(listeners))
-        listener_id_ports = [(l.get('id'), l.get('protocol_port'))
+        listener_id_ports = [(l.get('id'), l.get('protocol_port'),
+                              l.get('tags'))
                              for l in listeners]
-        self.assertIn((listener1.get('id'), listener1.get('protocol_port')),
+        self.assertIn((listener1.get('id'), listener1.get('protocol_port'),
+                       listener1.get('tags')),
                       listener_id_ports)
-        self.assertIn((listener2.get('id'), listener2.get('protocol_port')),
+        self.assertIn((listener2.get('id'), listener2.get('protocol_port'),
+                       listener2.get('tags')),
                       listener_id_ports)
-        self.assertIn((listener3.get('id'), listener3.get('protocol_port')),
+        self.assertIn((listener3.get('id'), listener3.get('protocol_port'),
+                       listener3.get('tags')),
                       listener_id_ports)
 
     def test_get_all_non_admin(self):
@@ -385,6 +392,7 @@ class TestListener(base.BaseAPITest):
             listener_id=listener['id']))
         api_listener = response.json.get(self.root_tag)
         self.assertEqual(listener, api_listener)
+        self.assertEqual([], api_listener['tags'])
 
     def test_get_authorized(self):
         listener = self.create_listener(
@@ -466,7 +474,8 @@ class TestListener(base.BaseAPITest):
                        'sni_container_refs': [sni1, sni2],
                        'insert_headers': {},
                        'project_id': self.project_id,
-                       'loadbalancer_id': self.lb_id}
+                       'loadbalancer_id': self.lb_id,
+                       'tags': ['test_tag']}
         lb_listener.update(optionals)
         body = self._build_body(lb_listener)
         response = self.post(self.LISTENERS_PATH, body, status=response_status)
@@ -488,6 +497,7 @@ class TestListener(base.BaseAPITest):
             self.assertIn(sni, sni_ex)
         self.assertIsNotNone(listener_api.pop('created_at'))
         self.assertIsNone(listener_api.pop('updated_at'))
+        self.assertEqual(['test_tag'], listener_api['tags'])
         self.assertNotEqual(lb_listener, listener_api)
         self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
                                       constants.PENDING_UPDATE)
@@ -860,14 +870,15 @@ class TestListener(base.BaseAPITest):
             name='listener1', description='desc1',
             admin_state_up=False, connection_limit=10,
             default_tls_container_ref=tls_uuid,
-            default_pool_id=None).get(self.root_tag)
+            default_pool_id=None, tags=['old_tag']).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         new_listener = {'name': 'listener2', 'admin_state_up': True,
                         'default_pool_id': self.pool_id,
                         'timeout_client_data': 1,
                         'timeout_member_connect': 2,
                         'timeout_member_data': 3,
-                        'timeout_tcp_inspect': 4}
+                        'timeout_tcp_inspect': 4,
+                        'tags': ['new_tag']}
         body = self._build_body(new_listener)
         listener_path = self.LISTENER_PATH.format(
             listener_id=listener['id'])
@@ -878,6 +889,7 @@ class TestListener(base.BaseAPITest):
         listener.update(update_expect)
         self.assertEqual(listener['created_at'], api_listener['created_at'])
         self.assertNotEqual(listener['updated_at'], api_listener['updated_at'])
+        self.assertEqual(['new_tag'], api_listener['tags'])
         self.assertNotEqual(listener, api_listener)
         self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
                                       constants.PENDING_UPDATE)

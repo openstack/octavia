@@ -55,6 +55,7 @@ Response Parameters
    - operating_status: operating_status
    - project_id: project_id
    - provisioning_status: provisioning_status
+   - tags: tags
    - type: l7rule-type
    - updated_at: updated_at
    - value: l7rule-value
@@ -124,6 +125,7 @@ Request
    - key: l7rule-key-optional
    - l7policy_id: path-l7policy-id
    - project_id: project_id-optional
+   - tags: tags-optional
    - type: l7rule-type
    - value: l7rule-value
 
@@ -153,6 +155,7 @@ Response Parameters
    - operating_status: operating_status
    - project_id: project_id
    - provisioning_status: provisioning_status
+   - tags: tags
    - type: l7rule-type
    - updated_at: updated_at
    - value: l7rule-value
@@ -216,6 +219,7 @@ Response Parameters
    - operating_status: operating_status
    - project_id: project_id
    - provisioning_status: provisioning_status
+   - tags: tags
    - type: l7rule-type
    - updated_at: updated_at
    - value: l7rule-value
@@ -266,6 +270,7 @@ Request
    - key: l7rule-key-optional
    - l7policy_id: path-l7policy-id
    - l7rule_id: path-l7rule-id
+   - tags: tags-optional
    - type: l7rule-type-optional
    - value: l7rule-value-optional
 
@@ -295,6 +300,7 @@ Response Parameters
    - operating_status: operating_status
    - project_id: project_id
    - provisioning_status: provisioning_status
+   - tags: tags
    - type: l7rule-type
    - updated_at: updated_at
    - value: l7rule-value

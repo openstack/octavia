@@ -6,6 +6,7 @@
         "redirect_url": "http://www.example.com",
         "name": "redirect-example.com",
         "action": "REDIRECT_TO_URL",
-        "position": 1
+        "position": 1,
+        "tags": ["test_tag"]
     }
 }

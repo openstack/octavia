@@ -54,6 +54,7 @@ class ListenerResponse(BaseListenerType):
     timeout_member_connect = wtypes.wsattr(wtypes.IntegerType())
     timeout_member_data = wtypes.wsattr(wtypes.IntegerType())
     timeout_tcp_inspect = wtypes.wsattr(wtypes.IntegerType())
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -133,6 +134,7 @@ class ListenerPOST(BaseListenerType):
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
                            maximum=constants.MAX_TIMEOUT),
         default=CONF.haproxy_amphora.timeout_tcp_inspect)
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class ListenerRootPOST(types.BaseType):
@@ -164,6 +166,7 @@ class ListenerPUT(BaseListenerType):
     timeout_tcp_inspect = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
                            maximum=constants.MAX_TIMEOUT))
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class ListenerRootPUT(types.BaseType):
@@ -206,6 +209,7 @@ class ListenerSingleCreate(BaseListenerType):
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
                            maximum=constants.MAX_TIMEOUT),
         default=CONF.haproxy_amphora.timeout_tcp_inspect)
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class ListenerStatusResponse(BaseListenerType):

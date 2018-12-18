@@ -10,6 +10,7 @@
         "timeout": "5",
         "url_path": "/",
         "type": "HTTP",
-        "max_retries_down": 3
+        "max_retries_down": 3,
+        "tags": ["test_tag"]
     }
 }

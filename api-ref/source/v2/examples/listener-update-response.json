@@ -34,6 +34,7 @@
         "timeout_client_data": 100000,
         "timeout_member_connect": 1000,
         "timeout_member_data": 100000,
-        "timeout_tcp_inspect": 5
+        "timeout_tcp_inspect": 5,
+        "tags": ["updated_tag"]
     }
 }

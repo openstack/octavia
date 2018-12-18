@@ -44,6 +44,7 @@ class HealthMonitorResponse(BaseHealthMonitorType):
     operating_status = wtypes.wsattr(wtypes.StringType())
     created_at = wtypes.wsattr(wtypes.datetime.datetime)
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -98,6 +99,7 @@ class HealthMonitorPOST(BaseHealthMonitorType):
     # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     pool_id = wtypes.wsattr(wtypes.UuidType(), mandatory=True)
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class HealthMonitorRootPOST(types.BaseType):
@@ -121,6 +123,7 @@ class HealthMonitorPUT(BaseHealthMonitorType):
     expected_codes = wtypes.wsattr(
         wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'))
     admin_state_up = wtypes.wsattr(bool)
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class HealthMonitorRootPUT(types.BaseType):
@@ -148,6 +151,7 @@ class HealthMonitorSingleCreate(BaseHealthMonitorType):
     expected_codes = wtypes.wsattr(
         wtypes.StringType(pattern=r'^(\d{3}(\s*,\s*\d{3})*)$|^(\d{3}-\d{3})$'))
     admin_state_up = wtypes.wsattr(bool, default=True)
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class HealthMonitorStatusResponse(BaseHealthMonitorType):

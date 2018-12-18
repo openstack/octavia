@@ -8,6 +8,7 @@
         "timeout": 2,
         "url_path": "/index.html",
         "max_retries": 2,
-        "max_retries_down": 2
+        "max_retries_down": 2,
+        "tags": ["updated_tag"]
     }
 }

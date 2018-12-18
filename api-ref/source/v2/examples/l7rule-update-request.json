@@ -4,6 +4,7 @@
         "invert": true,
         "type": "PATH",
         "value": "/images/special*",
-        "admin_state_up": true
+        "admin_state_up": true,
+        "tags": ["updated_tag"]
     }
 }

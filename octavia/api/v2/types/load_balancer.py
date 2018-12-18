@@ -55,6 +55,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
     provider = wtypes.wsattr(wtypes.StringType())
     flavor_id = wtypes.wsattr(wtypes.StringType())
     vip_qos_policy_id = wtypes.wsattr(wtypes.UuidType())
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -125,6 +126,7 @@ class LoadBalancerPOST(BaseLoadBalancerType):
     # TODO(johnsom) This should be dynamic based on the loaded flavors
     #               once flavors are implemented.
     flavor_id = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_FLAVORS))
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class LoadBalancerRootPOST(types.BaseType):
@@ -138,6 +140,7 @@ class LoadBalancerPUT(BaseLoadBalancerType):
     description = wtypes.wsattr(wtypes.StringType(max_length=255))
     vip_qos_policy_id = wtypes.wsattr(wtypes.UuidType())
     admin_state_up = wtypes.wsattr(bool)
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class LoadBalancerRootPUT(types.BaseType):

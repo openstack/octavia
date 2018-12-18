@@ -5,6 +5,7 @@
             "type": "SOURCE_IP"
         },
         "description": "Super Least Connections Pool",
-        "name": "super-least-conn-pool"
+        "name": "super-least-conn-pool",
+        "tags": ["updated_tag"]
     }
 }

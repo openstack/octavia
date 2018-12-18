@@ -1082,6 +1082,18 @@ subnet_id-optional:
   in: body
   required: false
   type: uuid
+tags:
+  description: |
+    A list of simple strings assigned to the resource.
+  in: body
+  required: true
+  type: list
+tags-optional:
+  description: |
+    A list of simple strings assigned to the resource.
+  in: body
+  required: false
+  type: list
 timeout_client_data:
   description: |
     Frontend client inactivity timeout in milliseconds. Default: 50000.

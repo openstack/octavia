@@ -37,6 +37,7 @@ class L7RuleResponse(BaseL7Type):
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
     project_id = wtypes.wsattr(wtypes.StringType())
     admin_state_up = wtypes.wsattr(bool)
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -74,6 +75,7 @@ class L7RulePOST(BaseL7Type):
     admin_state_up = wtypes.wsattr(bool, default=True)
     # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class L7RuleRootPOST(types.BaseType):
@@ -92,6 +94,7 @@ class L7RulePUT(BaseL7Type):
     value = wtypes.wsattr(wtypes.StringType(max_length=255))
     invert = wtypes.wsattr(bool)
     admin_state_up = wtypes.wsattr(bool)
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 
 class L7RuleRootPUT(types.BaseType):
@@ -110,3 +113,4 @@ class L7RuleSingleCreate(BaseL7Type):
     value = wtypes.wsattr(wtypes.StringType(max_length=255), mandatory=True)
     invert = wtypes.wsattr(bool, default=False)
     admin_state_up = wtypes.wsattr(bool, default=True)
+    tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))

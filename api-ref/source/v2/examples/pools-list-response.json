@@ -32,7 +32,8 @@
             "project_id": "e3cd678b11784734bc366148aa37580e",
             "id": "ddb2b28f-89e9-45d3-a329-a359c3e39e4a",
             "operating_status": "ONLINE",
-            "name": "round_robin_pool"
+            "name": "round_robin_pool",
+            "tags": ["test_tag"]
         }
     ]
 }

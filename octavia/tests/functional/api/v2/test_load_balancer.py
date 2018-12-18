@@ -65,7 +65,8 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_create(self, **optionals):
         lb_json = {'name': 'test1',
                    'vip_subnet_id': uuidutils.generate_uuid(),
-                   'project_id': self.project_id
+                   'project_id': self.project_id,
+                   'tags': ['test_tag1', 'test_tag2']
                    }
         lb_json.update(optionals)
         body = self._build_body(lb_json)
@@ -849,21 +850,29 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_get_all_admin(self):
         project_id = uuidutils.generate_uuid()
         lb1 = self.create_load_balancer(uuidutils.generate_uuid(),
-                                        name='lb1', project_id=self.project_id)
+                                        name='lb1', project_id=self.project_id,
+                                        tags=['test_tag1'])
         lb2 = self.create_load_balancer(uuidutils.generate_uuid(),
-                                        name='lb2', project_id=project_id)
+                                        name='lb2', project_id=project_id,
+                                        tags=['test_tag2'])
         lb3 = self.create_load_balancer(uuidutils.generate_uuid(),
-                                        name='lb3', project_id=project_id)
+                                        name='lb3', project_id=project_id,
+                                        tags=['test_tag3'])
         response = self.get(self.LBS_PATH)
         lbs = response.json.get(self.root_tag_list)
         self.assertEqual(3, len(lbs))
-        lb_id_names = [(lb.get('id'), lb.get('name')) for lb in lbs]
+        lb_id_names = [(lb.get('id'),
+                        lb.get('name'),
+                        lb.get('tags')) for lb in lbs]
         lb1 = lb1.get(self.root_tag)
         lb2 = lb2.get(self.root_tag)
         lb3 = lb3.get(self.root_tag)
-        self.assertIn((lb1.get('id'), lb1.get('name')), lb_id_names)
-        self.assertIn((lb2.get('id'), lb2.get('name')), lb_id_names)
-        self.assertIn((lb3.get('id'), lb3.get('name')), lb_id_names)
+        self.assertIn((lb1.get('id'), lb1.get('name'), lb1.get('tags')),
+                      lb_id_names)
+        self.assertIn((lb2.get('id'), lb2.get('name'), lb2.get('tags')),
+                      lb_id_names)
+        self.assertIn((lb3.get('id'), lb3.get('name'), lb3.get('tags')),
+                      lb_id_names)
 
     def test_get_all_non_admin(self):
         project_id = uuidutils.generate_uuid()
@@ -1160,7 +1169,8 @@ class TestLoadBalancer(base.BaseAPITest):
                                            name='lb1',
                                            project_id=project_id,
                                            description='desc1',
-                                           admin_state_up=False)
+                                           admin_state_up=False,
+                                           tags=['test_tag'])
         lb_dict = lb.get(self.root_tag)
         response = self.get(
             self.LB_PATH.format(
@@ -1173,6 +1183,7 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(subnet.id, response.get('vip_subnet_id'))
         self.assertEqual(network.id, response.get('vip_network_id'))
         self.assertEqual(port.id, response.get('vip_port_id'))
+        self.assertEqual(['test_tag'], response.get('tags'))
 
     def test_get_deleted_gives_404(self):
         api_lb = self.create_load_balancer(
@@ -1293,15 +1304,17 @@ class TestLoadBalancer(base.BaseAPITest):
                                        name='lb1',
                                        project_id=project_id,
                                        description='desc1',
-                                       admin_state_up=False)
+                                       admin_state_up=False,
+                                       tags=['test_tag1'])
         lb_dict = lb.get(self.root_tag)
-        lb_json = self._build_body({'name': 'lb2'})
+        lb_json = self._build_body({'name': 'lb2', 'tags': ['test_tag2']})
         lb = self.set_lb_status(lb_dict.get('id'))
         response = self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
                             lb_json)
         api_lb = response.json.get(self.root_tag)
         self.assertIsNotNone(api_lb.get('vip_subnet_id'))
         self.assertEqual('lb2', api_lb.get('name'))
+        self.assertEqual(['test_tag2'], api_lb.get('tags'))
         self.assertEqual(project_id, api_lb.get('project_id'))
         self.assertEqual('desc1', api_lb.get('description'))
         self.assertFalse(api_lb.get('admin_state_up'))
@@ -2100,7 +2113,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'vip_network_id': mock.ANY,
             'vip_qos_policy_id': None,
             'flavor_id': '',
-            'provider': 'noop_driver'
+            'provider': 'noop_driver',
+            'tags': []
         }
         expected_lb.update(create_lb)
         expected_lb['listeners'] = expected_listeners
@@ -2133,6 +2147,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'timeout_member_connect': constants.DEFAULT_TIMEOUT_MEMBER_CONNECT,
             'timeout_member_data': constants.DEFAULT_TIMEOUT_MEMBER_DATA,
             'timeout_tcp_inspect': constants.DEFAULT_TIMEOUT_TCP_INSPECT,
+            'tags': []
         }
         if create_sni_containers:
             create_listener['sni_container_refs'] = create_sni_containers
@@ -2180,7 +2195,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'enabled': True,
             'provisioning_status': constants.PENDING_CREATE,
             'operating_status': constants.OFFLINE,
-            'project_id': self._project_id
+            'project_id': self._project_id,
+            'tags': []
         }
         expected_pool.update(create_pool)
         if expected_members:
@@ -2199,7 +2215,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'enabled': True,
             'subnet_id': None,
             'operating_status': constants.OFFLINE,
-            'project_id': self._project_id
+            'project_id': self._project_id,
+            'tags': []
         }
         expected_member.update(create_member)
         return create_member, expected_member
@@ -2219,7 +2236,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'admin_state_up': True,
             'project_id': self._project_id,
             'provisioning_status': constants.PENDING_CREATE,
-            'operating_status': constants.OFFLINE
+            'operating_status': constants.OFFLINE,
+            'tags': []
         }
         expected_hm.update(create_hm)
         return create_hm, expected_hm
@@ -2260,7 +2278,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'rules': [],
             'project_id': self._project_id,
             'provisioning_status': constants.PENDING_CREATE,
-            'operating_status': constants.OFFLINE
+            'operating_status': constants.OFFLINE,
+            'tags': []
         }
         expected_l7policy.update(create_l7policy)
         expected_l7policy.pop('redirect_pool', None)
@@ -2286,7 +2305,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'key': None,
             'project_id': self._project_id,
             'provisioning_status': constants.PENDING_CREATE,
-            'operating_status': constants.OFFLINE
+            'operating_status': constants.OFFLINE,
+            'tags': []
         }]
         expected_l7rules[0].update(create_l7rules[0])
         return create_l7rules, expected_l7rules

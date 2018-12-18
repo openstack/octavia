@@ -105,6 +105,22 @@ class TestHealthMonitor(object):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
+    def test_invalid_tags(self):
+        body = {"tags": "invalid_tag"}
+        if self._type is hm_type.HealthMonitorPOST:
+            body.update({"type": constants.PROTOCOL_HTTP,
+                         "pool_id": uuidutils.generate_uuid(),
+                         "delay": 1, "timeout": 1, "max_retries": 1})
+        self.assertRaises(ValueError, wsme_json.fromjson, self._type,
+                          body)
+        body = {"tags": [1, 2]}
+        if self._type is hm_type.HealthMonitorPOST:
+            body.update({"type": constants.PROTOCOL_HTTP,
+                         "pool_id": uuidutils.generate_uuid(),
+                         "delay": 1, "timeout": 1, "max_retries": 1})
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
 
 class TestHealthMonitorPOST(base.BaseTypesTest, TestHealthMonitor):
 
@@ -113,7 +129,8 @@ class TestHealthMonitorPOST(base.BaseTypesTest, TestHealthMonitor):
     def test_health_monitor(self):
         body = {"type": constants.HEALTH_MONITOR_HTTP, "delay": 1,
                 "timeout": 1, "max_retries_down": 1, "max_retries": 1,
-                "pool_id": uuidutils.generate_uuid()}
+                "pool_id": uuidutils.generate_uuid(),
+                "tags": ['test_tag']}
         hm = wsme_json.fromjson(self._type, body)
         self.assertTrue(hm.admin_state_up)
 
@@ -185,6 +202,7 @@ class TestHealthMonitorPUT(base.BaseTypesTest, TestHealthMonitor):
     _type = hm_type.HealthMonitorPUT
 
     def test_health_monitor(self):
-        body = {"http_method": constants.HEALTH_MONITOR_HTTP_METHOD_HEAD}
+        body = {"http_method": constants.HEALTH_MONITOR_HTTP_METHOD_HEAD,
+                "tags": ['test_tag']}
         hm = wsme_json.fromjson(self._type, body)
         self.assertEqual(wsme_types.Unset, hm.admin_state_up)

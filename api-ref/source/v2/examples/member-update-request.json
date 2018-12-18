@@ -5,6 +5,7 @@
         "admin_state_up": "true",
         "monitor_address": "192.0.2.40",
         "monitor_port": 8888,
-        "backup": false
+        "backup": false,
+        "tags": ["updated_tag"]
     }
 }

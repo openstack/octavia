@@ -86,6 +86,8 @@ def _base_to_provider_dict(current_dict, include_project_id=False):
         del new_dict['project_id']
     if 'tenant_id' in new_dict:
         del new_dict['tenant_id']
+    if 'tags' in new_dict:
+        del new_dict['tags']
     return new_dict
 
 

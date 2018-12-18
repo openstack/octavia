@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Added tags property for Octavia resources. It includes:
+
+      * Load balancer
+      * Listener
+      * Member
+      * Pool
+      * L7rule
+      * L7policy
+      * Health Monitor

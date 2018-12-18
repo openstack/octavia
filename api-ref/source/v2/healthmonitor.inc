@@ -58,6 +58,7 @@ Response Parameters
    - pool_id: pool-id
    - project_id: project_id
    - provisioning_status: provisioning_status
+   - tags: tags
    - timeout: healthmonitor-timeout
    - type: healthmonitor-type
    - updated_at: updated_at
@@ -161,6 +162,7 @@ Request
    - max_retries_down: healthmonitor-max-retries-down-optional
    - pool_id: pool-id
    - project_id: project_id-optional-deprecated
+   - tags: tags-optional
    - timeout: healthmonitor-timeout
    - type: healthmonitor-type
    - url_path: healthmonitor-url_path-optional
@@ -195,6 +197,7 @@ Response Parameters
    - pool_id: pool-id
    - project_id: project_id
    - provisioning_status: provisioning_status
+   - tags: tags
    - timeout: healthmonitor-timeout
    - type: healthmonitor-type
    - updated_at: updated_at
@@ -262,6 +265,7 @@ Response Parameters
    - pool_id: pool-id
    - project_id: project_id
    - provisioning_status: provisioning_status
+   - tags: tags
    - timeout: healthmonitor-timeout
    - type: healthmonitor-type
    - updated_at: updated_at
@@ -314,6 +318,7 @@ Request
    - max_retries: healthmonitor-max-retries-optional
    - max_retries_down: healthmonitor-max-retries-down-optional
    - name: name-optional
+   - tags: tags-optional
    - timeout: healthmonitor-timeout-optional
    - url_path: healthmonitor-url_path-optional
 
@@ -347,6 +352,7 @@ Response Parameters
    - pool_id: pool-id
    - project_id: project_id
    - provisioning_status: provisioning_status
+   - tags: tags
    - timeout: healthmonitor-timeout
    - type: healthmonitor-type
    - updated_at: updated_at

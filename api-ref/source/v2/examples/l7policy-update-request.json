@@ -5,6 +5,7 @@
         "redirect_url": "http://images.example.com",
         "name": "redirect-images.example.com",
         "action": "REDIRECT_TO_URL",
-        "position": 1
+        "position": 1,
+        "tags": ["updated_tag"]
     }
 }
