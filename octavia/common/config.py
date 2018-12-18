@@ -153,7 +153,7 @@ healthmanager_opts = [
               help=_('IP address the controller will listen on for '
                      'heart beats')),
     cfg.PortOpt('bind_port', default=5555,
-                help=_('Port number the controller will listen on'
+                help=_('Port number the controller will listen on '
                        'for heart beats')),
     cfg.IntOpt('failover_threads',
                default=10,
@@ -173,7 +173,7 @@ healthmanager_opts = [
                default=None,
                help=_('Number of processes for amphora stats update.')),
     cfg.StrOpt('heartbeat_key',
-               help=_('key used to validate amphora sending'
+               help=_('key used to validate amphora sending '
                       'the message'), secret=True),
     cfg.IntOpt('heartbeat_timeout',
                default=60,
@@ -218,8 +218,8 @@ oslo_messaging_opts = [
                default='neutron_lbaas_event',
                help=_('topic name for communicating events through a queue')),
     cfg.StrOpt('event_stream_transport_url', default=None,
-               help=_('Transport URL to use for the neutron-lbaas'
-                      'synchronization event stream when neutron and octavia'
+               help=_('Transport URL to use for the neutron-lbaas '
+                      'synchronization event stream when neutron and octavia '
                       'have separate queues.')),
 ]
 
@@ -249,7 +249,7 @@ haproxy_amphora_opts = [
                       'seconds for active amphora.')),
     cfg.IntOpt('build_rate_limit',
                default=-1,
-               help=_('Number of amphorae that could be built per controller'
+               help=_('Number of amphorae that could be built per controller '
                       'worker, simultaneously.')),
     cfg.IntOpt('build_active_retries',
                default=300,
@@ -412,7 +412,7 @@ certificate_opts = [
                default='barbican_acl_auth',
                help='Name of the Barbican authentication method to use'),
     cfg.StrOpt('service_name',
-               help=_('The name of the certificate service in the keystone'
+               help=_('The name of the certificate service in the keystone '
                       'catalog')),
     cfg.StrOpt('endpoint', help=_('A new endpoint to override the endpoint '
                                   'in the keystone catalog.')),

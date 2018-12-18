@@ -216,7 +216,7 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
 
         return webob.Response(
             json=dict(message='OK',
-                      details='keepalivedlvs listener {listener_id}'
+                      details='keepalivedlvs listener {listener_id} '
                               '{action}ed'.format(listener_id=listener_id,
                                                   action=action)),
             status=202)
