@@ -26,6 +26,7 @@ import netaddr
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
+import six
 from stevedore import driver as stevedore_driver
 
 CONF = cfg.CONF
@@ -88,6 +89,19 @@ def ip_netmask_to_cidr(ip, netmask):
             "{ip}/{netmask}".format(ip=ip, netmask=netmask)
         )
     return "{ip}/{netmask}".format(ip=net.network, netmask=net.prefixlen)
+
+
+def get_six_compatible_value(value, six_type=six.string_types):
+    if six.PY3 and isinstance(value, six_type):
+        value = value.encode('utf-8')
+    return value
+
+
+def get_six_compatible_server_certs_key_passphrase():
+    key = CONF.certificates.server_certs_key_passphrase
+    if six.PY3 and isinstance(key, six.string_types):
+        key = key.encode('utf-8')
+    return base64.urlsafe_b64encode(key)
 
 
 class exception_logger(object):
