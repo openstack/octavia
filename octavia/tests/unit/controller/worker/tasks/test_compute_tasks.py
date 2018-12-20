@@ -13,6 +13,7 @@
 # under the License.
 #
 
+from cryptography import fernet
 import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
@@ -20,6 +21,7 @@ from oslo_utils import uuidutils
 
 from octavia.common import constants
 from octavia.common import exceptions
+from octavia.common import utils
 from octavia.controller.worker.tasks import compute_tasks
 from octavia.tests.common import utils as test_utils
 import octavia.tests.unit.base as base
@@ -270,13 +272,17 @@ class TestComputeTasks(base.TestCase):
     @mock.patch('stevedore.driver.DriverManager.driver')
     def test_compute_create_cert(self, mock_driver, mock_conf, mock_jinja):
         createcompute = compute_tasks.CertComputeCreate()
+        key = utils.get_six_compatible_server_certs_key_passphrase()
+        fer = fernet.Fernet(key)
 
         mock_driver.build.return_value = COMPUTE_ID
         path = '/etc/octavia/certs/ca_01.pem'
         self.useFixture(test_utils.OpenFixture(path, 'test'))
-
         # Test execute()
-        compute_id = createcompute.execute(_amphora_mock.id, 'test_cert',
+        test_cert = fer.encrypt(
+            utils.get_six_compatible_value('test_cert')
+        )
+        compute_id = createcompute.execute(_amphora_mock.id, test_cert,
                                            server_group_id=SERVER_GRPOUP_ID
                                            )
 
@@ -293,7 +299,7 @@ class TestComputeTasks(base.TestCase):
             port_ids=[],
             user_data=None,
             config_drive_files={
-                '/etc/octavia/certs/server.pem': 'test_cert',
+                '/etc/octavia/certs/server.pem': fer.decrypt(test_cert),
                 '/etc/octavia/certs/client_ca.pem': 'test',
                 '/etc/octavia/amphora-agent.conf': 'test_conf'},
             server_group_id=SERVER_GRPOUP_ID)
@@ -307,7 +313,7 @@ class TestComputeTasks(base.TestCase):
         self.assertRaises(TypeError,
                           createcompute.execute,
                           _amphora_mock,
-                          config_drive_files='test_cert')
+                          config_drive_files=test_cert)
 
         # Test revert()
 

@@ -15,6 +15,7 @@
 
 import logging
 
+from cryptography import fernet
 from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_utils import excutils
@@ -28,6 +29,7 @@ from taskflow.types import failure
 from octavia.common import constants
 from octavia.common import data_models
 import octavia.common.tls_utils.cert_parser as cert_parser
+from octavia.common import utils
 from octavia.controller.worker import task_utils as task_utilities
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
@@ -892,7 +894,11 @@ class UpdateAmphoraDBCertExpiration(BaseDatabaseTask):
         """
 
         LOG.debug("Update DB cert expiry date of amphora id: %s", amphora_id)
-        cert_expiration = cert_parser.get_cert_expiration(server_pem)
+
+        key = utils.get_six_compatible_server_certs_key_passphrase()
+        fer = fernet.Fernet(key)
+        cert_expiration = cert_parser.get_cert_expiration(
+            fer.decrypt(server_pem))
         LOG.debug("Certificate expiration date is %s ", cert_expiration)
         self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  cert_expiration=cert_expiration)

@@ -293,6 +293,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF certificates ca_certificate ${OCTAVIA_CERTS_DIR}/ca_01.pem
     iniset $OCTAVIA_CONF certificates ca_private_key ${OCTAVIA_CERTS_DIR}/private/cakey.pem
     iniset $OCTAVIA_CONF certificates ca_private_key_passphrase foobar
+    iniset $OCTAVIA_CONF certificates server_certs_key_passphrase insecure-key-do-not-use-this-key
 
     # create dhclient.conf file for dhclient
     sudo mkdir -m755 -p $OCTAVIA_DHCLIENT_DIR
