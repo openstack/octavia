@@ -13,6 +13,7 @@
 # under the License.
 #
 
+from cryptography import fernet
 from oslo_config import cfg
 from oslo_log import log as logging
 import six
@@ -23,6 +24,7 @@ from taskflow.types import failure
 from octavia.amphorae.backends.agent import agent_jinja_cfg
 from octavia.amphorae.driver_exceptions import exceptions as driver_except
 from octavia.common import constants
+from octavia.common import utils
 from octavia.controller.worker import task_utils as task_utilities
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
@@ -273,7 +275,9 @@ class AmphoraCertUpload(BaseAmphoraTask):
     def execute(self, amphora, server_pem):
         """Execute cert_update_amphora routine."""
         LOG.debug("Upload cert in amphora REST driver")
-        self.amphora_driver.upload_cert_amp(amphora, server_pem)
+        key = utils.get_six_compatible_server_certs_key_passphrase()
+        fer = fernet.Fernet(key)
+        self.amphora_driver.upload_cert_amp(amphora, fer.decrypt(server_pem))
 
 
 class AmphoraUpdateVRRPInterface(BaseAmphoraTask):

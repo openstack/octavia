@@ -13,10 +13,12 @@
 # under the License.
 #
 
+from cryptography import fernet
 from oslo_config import cfg
 from stevedore import driver as stevedore_driver
 from taskflow import task
 
+from octavia.common import utils
 
 CONF = cfg.CONF
 CERT_VALIDITY = 2 * 365 * 24 * 60 * 60
@@ -44,5 +46,7 @@ class GenerateServerPEMTask(BaseCertTask):
         cert = self.cert_generator.generate_cert_key_pair(
             cn=amphora_id,
             validity=CERT_VALIDITY)
+        key = utils.get_six_compatible_server_certs_key_passphrase()
+        fer = fernet.Fernet(key)
 
-        return cert.certificate + cert.private_key
+        return fer.encrypt(cert.certificate + cert.private_key)

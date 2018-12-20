@@ -15,6 +15,7 @@
 
 import time
 
+from cryptography import fernet
 from oslo_config import cfg
 from oslo_log import log as logging
 from stevedore import driver as stevedore_driver
@@ -25,6 +26,7 @@ from octavia.amphorae.backends.agent import agent_jinja_cfg
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.common.jinja import user_data_jinja_cfg
+from octavia.common import utils
 from octavia.controller.worker import amphora_rate_limit
 
 CONF = cfg.CONF
@@ -144,8 +146,11 @@ class CertComputeCreate(ComputeCreate):
         # load client certificate
         with open(CONF.controller_worker.client_ca, 'r') as client_ca:
             ca = client_ca.read()
+
+        key = utils.get_six_compatible_server_certs_key_passphrase()
+        fer = fernet.Fernet(key)
         config_drive_files = {
-            '/etc/octavia/certs/server.pem': server_pem,
+            '/etc/octavia/certs/server.pem': fer.decrypt(server_pem),
             '/etc/octavia/certs/client_ca.pem': ca}
         return super(CertComputeCreate, self).execute(
             amphora_id, config_drive_files=config_drive_files,
