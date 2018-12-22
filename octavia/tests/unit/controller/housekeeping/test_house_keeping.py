@@ -117,10 +117,10 @@ class TestDatabaseCleanup(base.TestCase):
                                   vrrp_ip=self.FAKE_IP,
                                   ha_ip=self.FAKE_IP,
                                   updated_at=expired_time)
-        self.amp_repo.get_all_deleted_expiring_amphora.return_value = [amphora]
+        self.amp_repo.get_all_deleted_expiring.return_value = [amphora.id]
         self.amp_health_repo.check_amphora_health_expired.return_value = True
         self.dbclean.delete_old_amphorae()
-        self.assertTrue(self.amp_repo.get_all_deleted_expiring_amphora.called)
+        self.assertTrue(self.amp_repo.get_all_deleted_expiring.called)
         self.assertTrue(
             self.amp_health_repo.check_amphora_health_expired.called)
         self.assertTrue(self.amp_repo.delete.called)
@@ -138,9 +138,9 @@ class TestDatabaseCleanup(base.TestCase):
                         vrrp_ip=self.FAKE_IP,
                         ha_ip=self.FAKE_IP,
                         updated_at=datetime.datetime.now())
-        self.amp_repo.get_all_deleted_expiring_amphora.return_value = []
+        self.amp_repo.get_all_deleted_expiring.return_value = []
         self.dbclean.delete_old_amphorae()
-        self.assertTrue(self.amp_repo.get_all_deleted_expiring_amphora.called)
+        self.assertTrue(self.amp_repo.get_all_deleted_expiring.called)
         self.assertFalse(
             self.amp_health_repo.check_amphora_health_expired.called)
         self.assertFalse(self.amp_repo.delete.called)
@@ -165,10 +165,10 @@ class TestDatabaseCleanup(base.TestCase):
                                   vrrp_ip=self.FAKE_IP,
                                   ha_ip=self.FAKE_IP,
                                   updated_at=expired_time)
-        self.amp_repo.get_all_deleted_expiring_amphora.return_value = [amphora]
+        self.amp_repo.get_all_deleted_expiring.return_value = [amphora.id]
         self.amp_health_repo.check_amphora_health_expired.return_value = False
         self.dbclean.delete_old_amphorae()
-        self.assertTrue(self.amp_repo.get_all_deleted_expiring_amphora.called)
+        self.assertTrue(self.amp_repo.get_all_deleted_expiring.called)
         self.assertTrue(
             self.amp_health_repo.check_amphora_health_expired.called)
         self.assertFalse(self.amp_repo.delete.called)
@@ -187,12 +187,13 @@ class TestDatabaseCleanup(base.TestCase):
         for expired_status in [True, False]:
             lb_repo = mock.MagicMock()
             self.dbclean.lb_repo = lb_repo
-            lb_repo.get_all.return_value = ([load_balancer], None)
-            lb_repo.check_load_balancer_expired.return_value = (
-                expired_status)
+            if expired_status:
+                expiring_lbs = [load_balancer.id]
+            else:
+                expiring_lbs = []
+            lb_repo.get_all_deleted_expiring.return_value = expiring_lbs
             self.dbclean.cleanup_load_balancers()
-            self.assertTrue(lb_repo.get_all.called)
-            self.assertTrue(lb_repo.check_load_balancer_expired.called)
+            self.assertTrue(lb_repo.get_all_deleted_expiring.called)
             if expired_status:
                 self.assertTrue(lb_repo.delete.called)
             else:

@@ -179,6 +179,31 @@ class BaseRepository(object):
         """
         return bool(session.query(self.model_class).filter_by(id=id).first())
 
+    def get_all_deleted_expiring(self, session, exp_age):
+        """Get all previously deleted resources that are now expiring.
+
+        :param session: A Sql Alchemy database session.
+        :param exp_age: A standard datetime delta which is used to see for how
+                        long can a resource live without updates before
+                        it is considered expired
+        :returns: A list of resource IDs
+                """
+
+        expiry_time = datetime.datetime.utcnow() - exp_age
+
+        query = session.query(self.model_class).filter(
+            self.model_class.updated_at < expiry_time)
+        if hasattr(self.model_class, 'status'):
+            query = query.filter_by(status=consts.DELETED)
+        else:
+            query = query.filter_by(operating_status=consts.DELETED)
+        # Do not load any relationship
+        query = query.options(noload('*'))
+        model_list = query.all()
+
+        id_list = [model.id for model in model_list]
+        return id_list
+
 
 class Repositories(object):
     def __init__(self):
@@ -809,30 +834,6 @@ class LoadBalancerRepository(BaseRepository):
             session.add(lb)
             return True
 
-    def check_load_balancer_expired(self, session, lb_id, exp_age=None):
-        """Checks if a given load balancer is expired.
-
-        :param session: A Sql Alchemy database session.
-        :param lb_id: id of an load balancer object
-        :param exp_age: A standard datetime delta which is used to see for how
-                        long can a load balancer live without updates before
-                        it is considered expired (default:
-                        CONF.house_keeping.load_balancer_expiry_age)
-        :returns: boolean
-        """
-        if not exp_age:
-            exp_age = datetime.timedelta(
-                seconds=CONF.house_keeping.load_balancer_expiry_age)
-
-        timestamp = datetime.datetime.utcnow() - exp_age
-        lb = self.get(session, id=lb_id)
-        if lb:
-            # If a load balancer was never updated use its creation timestamp
-            last_update = lb.updated_at or lb.created_at
-            return last_update < timestamp
-        # Load balancer was just deleted.
-        return True
-
 
 class VipRepository(BaseRepository):
     model_class = models.Vip
@@ -1186,33 +1187,6 @@ class AmphoraRepository(BaseRepository):
             if db_lb:
                 return db_lb.to_data_model()
             return None
-
-    def get_all_deleted_expiring_amphora(self, session, exp_age=None):
-
-        """Get all previously deleted amphora that are now expiring.
-
-        :param session: A Sql Alchemy database session.
-        :param exp_age: A standard datetime delta which is used to see for how
-                        long can an amphora live without updates before it is
-                        considered expired (default:
-                        CONF.house_keeping.amphora_expiry_age)
-        :returns: [octavia.common.data_model]
-        """
-        if not exp_age:
-            exp_age = datetime.timedelta(
-                seconds=CONF.house_keeping.amphora_expiry_age)
-
-        expiry_time = datetime.datetime.utcnow() - exp_age
-
-        query = session.query(self.model_class).filter_by(
-            status=consts.DELETED).filter(
-            self.model_class.updated_at < expiry_time)
-        # Only make one trip to the database
-        query = query.options(joinedload('*'))
-        model_list = query.all()
-
-        data_model_list = [model.to_data_model() for model in model_list]
-        return data_model_list
 
     def get_spare_amphora_count(self, session):
         """Get the count of the spare amphora.
