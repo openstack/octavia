@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed a performance issue where the Housekeeping service could
+    significantly and incrementally utilize CPU as more amphorae and load
+    balancers are created and/or marked as DELETED.
