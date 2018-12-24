@@ -115,6 +115,7 @@ def lb_dict_to_provider_dict(lb_dict, vip=None,
 def db_loadbalancer_to_provider_loadbalancer(db_loadbalancer):
     new_loadbalancer_dict = lb_dict_to_provider_dict(
         db_loadbalancer.to_dict(recurse=True),
+        vip=db_loadbalancer.vip,
         db_pools=db_loadbalancer.pools,
         db_listeners=db_loadbalancer.listeners)
     for unsupported_field in ['server_group_id', 'amphorae',
