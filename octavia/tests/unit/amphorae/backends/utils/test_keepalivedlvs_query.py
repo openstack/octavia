@@ -312,7 +312,7 @@ class LvsQueryTestCase(base.TestCase):
                 "member1_ipport": ip_list[1],
                 "member2_ipport": ip_list[2]}
             res = lvs_query.get_ipvsadm_info(constants.AMPHORA_NAMESPACE)
-            # This expected result can referece on IPVSADM_OUTPUT_TEMPLATE,
+            # This expected result can reference on IPVSADM_OUTPUT_TEMPLATE,
             # that means the function can get every element of the virtual
             # server and the real servers.
             expected = {
@@ -378,7 +378,7 @@ class LvsQueryTestCase(base.TestCase):
             "member2_ipport": "10.0.0.35:3333"})
         mock_check_output.side_effect = output_list
         res = lvs_query.get_udp_listeners_stats()
-        # We can check the expected result referece the stats sample,
+        # We can check the expected result reference the stats sample,
         # that means this func can compute the stats info of single listener.
         expected = {self.listener_id_v4: {
             'status': constants.OPEN,
