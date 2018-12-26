@@ -82,6 +82,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
 
     FAKE_UUID_1 = uuidutils.generate_uuid()
     FAKE_UUID_2 = uuidutils.generate_uuid()
+    FAKE_UUID_3 = uuidutils.generate_uuid()
+    FAKE_IP = '192.0.2.44'
 
     def setUp(self):
         super(AllRepositoriesTest, self).setUp()
@@ -96,6 +98,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             enabled=True, provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             load_balancer_id=self.load_balancer.id)
+        self.amphora = self.repos.amphora.create(
+            self.session, id=uuidutils.generate_uuid(),
+            load_balancer_id=self.load_balancer.id,
+            compute_id=self.FAKE_UUID_3, status=constants.ACTIVE,
+            vrrp_ip=self.FAKE_IP, lb_network_ip=self.FAKE_IP)
 
     def test_all_repos_has_correct_repos(self):
         repo_attr_names = ('load_balancer', 'vip', 'health_monitor',
@@ -1836,6 +1843,40 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.assertEqual(0, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
         conf.config(group='api_settings', auth_strategy=constants.TESTING)
+
+    def test_get_amphora_stats(self):
+        listener2_id = uuidutils.generate_uuid()
+        self.repos.listener_stats.create(
+            self.session, listener_id=self.listener.id,
+            amphora_id=self.amphora.id, bytes_in=1, bytes_out=2,
+            active_connections=3, total_connections=4, request_errors=5)
+        self.repos.listener_stats.create(
+            self.session, listener_id=listener2_id,
+            amphora_id=self.amphora.id, bytes_in=6, bytes_out=7,
+            active_connections=8, total_connections=9, request_errors=10)
+        amp_stats = self.repos.get_amphora_stats(self.session, self.amphora.id)
+        self.assertEqual(2, len(amp_stats))
+        for stats in amp_stats:
+            if stats['listener_id'] == self.listener.id:
+                self.assertEqual(self.load_balancer.id,
+                                 stats['loadbalancer_id'])
+                self.assertEqual(self.listener.id, stats['listener_id'])
+                self.assertEqual(self.amphora.id, stats['id'])
+                self.assertEqual(1, stats['bytes_in'])
+                self.assertEqual(2, stats['bytes_out'])
+                self.assertEqual(3, stats['active_connections'])
+                self.assertEqual(4, stats['total_connections'])
+                self.assertEqual(5, stats['request_errors'])
+            else:
+                self.assertEqual(self.load_balancer.id,
+                                 stats['loadbalancer_id'])
+                self.assertEqual(listener2_id, stats['listener_id'])
+                self.assertEqual(self.amphora.id, stats['id'])
+                self.assertEqual(6, stats['bytes_in'])
+                self.assertEqual(7, stats['bytes_out'])
+                self.assertEqual(8, stats['active_connections'])
+                self.assertEqual(9, stats['total_connections'])
+                self.assertEqual(10, stats['request_errors'])
 
 
 class PoolRepositoryTest(BaseRepositoryTest):

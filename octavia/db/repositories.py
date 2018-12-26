@@ -677,6 +677,34 @@ class Repositories(object):
         session.expire_all()
         return self.load_balancer.get(session, id=lb_dm.id)
 
+    def get_amphora_stats(self, session, amp_id):
+        """Gets the statistics for all listeners on an amphora.
+
+        :param session: A Sql Alchemy database session.
+        :param amp_id: The amphora ID to query.
+        :returns: An amphora stats dictionary
+        """
+        with session.begin(subtransactions=True):
+            columns = (models.ListenerStatistics.__table__.columns +
+                       [models.Amphora.load_balancer_id])
+            amp_records = (
+                session.query(*columns)
+                .filter(models.ListenerStatistics.amphora_id == amp_id)
+                .filter(models.ListenerStatistics.amphora_id ==
+                        models.Amphora.id).all())
+            amp_stats = []
+            for amp in amp_records:
+                amp_stat = {consts.LOADBALANCER_ID: amp.load_balancer_id,
+                            consts.LISTENER_ID: amp.listener_id,
+                            'id': amp.amphora_id,
+                            consts.ACTIVE_CONNECTIONS: amp.active_connections,
+                            consts.BYTES_IN: amp.bytes_in,
+                            consts.BYTES_OUT: amp.bytes_out,
+                            consts.REQUEST_ERRORS: amp.request_errors,
+                            consts.TOTAL_CONNECTIONS: amp.total_connections}
+                amp_stats.append(amp_stat)
+            return amp_stats
+
 
 class LoadBalancerRepository(BaseRepository):
     model_class = models.LoadBalancer

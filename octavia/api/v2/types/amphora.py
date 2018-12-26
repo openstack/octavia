@@ -60,3 +60,19 @@ class AmphoraRootResponse(types.BaseType):
 class AmphoraeRootResponse(types.BaseType):
     amphorae = wtypes.wsattr([AmphoraResponse])
     amphorae_links = wtypes.wsattr([types.PageType])
+
+
+class AmphoraStatisticsResponse(BaseAmphoraType):
+    """Defines which attributes are to show on stats response."""
+    active_connections = wtypes.wsattr(wtypes.IntegerType())
+    bytes_in = wtypes.wsattr(wtypes.IntegerType())
+    bytes_out = wtypes.wsattr(wtypes.IntegerType())
+    id = wtypes.wsattr(wtypes.UuidType())
+    listener_id = wtypes.wsattr(wtypes.UuidType())
+    loadbalancer_id = wtypes.wsattr(wtypes.UuidType())
+    request_errors = wtypes.wsattr(wtypes.IntegerType())
+    total_connections = wtypes.wsattr(wtypes.IntegerType())
+
+
+class StatisticsRootResponse(types.BaseType):
+    amphora_stats = wtypes.wsattr([AmphoraStatisticsResponse])

@@ -1,0 +1,1 @@
+curl -X GET -H "X-Auth-Token: <token>" http://198.51.100.10:9876/v2/octavia/amphorae/63d8349e-c4d7-4156-bc94-29260607b04f/stats

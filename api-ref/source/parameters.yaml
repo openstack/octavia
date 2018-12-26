@@ -143,6 +143,13 @@ amphora-role:
   in: body
   required: true
   type: string
+amphora-stats:
+  description: |
+    A list of amphora statistics objects, one per listener.
+  in: body
+  min_version: 2.3
+  required: true
+  type: array
 amphora-status:
   description: |
     The status of the amphora. One of: ``BOOTING``, ``ALLOCATED``, ``READY``,

@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Adds an administrator API to access per-amphora statistics.
