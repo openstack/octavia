@@ -44,7 +44,8 @@ class BaseDataModel(object):
                             if type(self) not in calling_classes:
                                 ret[attr].append(
                                     item.to_dict(calling_classes=(
-                                        calling_classes + [type(self)])))
+                                        calling_classes + [type(self)]),
+                                        recurse=recurse))
                             else:
                                 ret[attr] = None
                         else:
@@ -52,7 +53,8 @@ class BaseDataModel(object):
                 elif isinstance(getattr(self, attr), BaseDataModel):
                     if type(self) not in calling_classes:
                         ret[attr] = value.to_dict(
-                            calling_classes=calling_classes + [type(self)])
+                            calling_classes=calling_classes + [type(self)],
+                            recurse=recurse)
                     else:
                         ret[attr] = None
                 elif six.PY2 and isinstance(value, six.text_type):
