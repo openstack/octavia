@@ -27,7 +27,7 @@ Deprecated API version
 
 Octavia API minor releases are additive to the API major revision and share
 the same URL path. Minor revision changes to the API are called out in the API
-reference in the section the change occured in. Subsquent minor versions are a
+reference in the section the change occurred in. Subsequent minor versions are a
 superset of the previous versions of the same major revision.
 
 The API status reflects the state of the endpoint on the service.
