@@ -70,7 +70,7 @@ def get_listener_realserver_mapping(ns_name, listener_ip_port):
     if ip_obj.version == 4:
         ip_to_hex_format = "0%X" % ip_obj._ip
     else:
-        ip_to_hex_format = '\[' + ip_obj.exploded + '\]'
+        ip_to_hex_format = r'\[' + ip_obj.exploded + r'\]'
     port_hex_format = "%.4X" % int(listener_port)
     idex = ip_to_hex_format + ':' + port_hex_format
 

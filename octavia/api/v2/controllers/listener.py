@@ -375,9 +375,9 @@ class ListenersController(base.BaseController):
 
         # Make sure we have a client CA cert if they enable client auth
         if ((listener.client_authentication != wtypes.Unset and
-             listener.client_authentication != constants.CLIENT_AUTH_NONE)
-            and not (db_listener.client_ca_tls_certificate_id or
-                     listener.client_ca_tls_container_ref)):
+             listener.client_authentication != constants.CLIENT_AUTH_NONE) and
+            not (db_listener.client_ca_tls_certificate_id or
+                 listener.client_ca_tls_container_ref)):
             raise exceptions.ValidationException(detail=_(
                 "Client authentication setting %s requires a client CA "
                 "container reference.") %

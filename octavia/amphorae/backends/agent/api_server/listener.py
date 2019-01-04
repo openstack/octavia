@@ -483,17 +483,17 @@ class Listener(object):
         with open(util.config_path(listener_id), 'r') as file:
             cfg = file.read()
 
-            m = re.search('mode\s+(http|tcp)', cfg)
+            m = re.search(r'mode\s+(http|tcp)', cfg)
             if not m:
                 raise ParsingError()
             mode = m.group(1).upper()
 
-            m = re.search('stats socket\s+(\S+)', cfg)
+            m = re.search(r'stats socket\s+(\S+)', cfg)
             if not m:
                 raise ParsingError()
             stats_socket = m.group(1)
 
-            m = re.search('ssl crt\s+(\S+)', cfg)
+            m = re.search(r'ssl crt\s+(\S+)', cfg)
             ssl_crt = None
             if m:
                 ssl_crt = m.group(1)
@@ -514,7 +514,7 @@ class Listener(object):
 
     def _check_ssl_filename_format(self, filename):
         # check if the format is (xxx.)*xxx.pem
-        if not re.search('(\w.)+pem', filename):
+        if not re.search(r'(\w.)+pem', filename):
             raise exceptions.HTTPException(
                 response=webob.Response(json=dict(
                     message='Filename has wrong format'), status=400))

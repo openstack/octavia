@@ -967,7 +967,7 @@ def sample_l7rule_tuple(id,
         type = constants.L7RULE_TYPE_SSL_DN_FIELD
         compare_type = constants.L7RULE_COMPARE_TYPE_REGEX
         key = 'STREET'
-        value = '^STREET.*NO\.$'
+        value = r'^STREET.*NO\.$'
         invert = True
         enabled = True
     if sample_rule == 10:
