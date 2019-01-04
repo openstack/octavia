@@ -58,7 +58,7 @@ Monitoring Load Balancers
 For critical applications, we recommend to monitor the access to the
 application with a tool which polls the application from various points
 on the Internet and measures response times. Alerts should be triggered
-when repsonse times become too high.
+when response times become too high.
 
 An additional check might be to monitor the provisioning status of a
 load balancer (see `Load Balance Status Codes
@@ -241,7 +241,7 @@ load balancers in error state are failed over.
 
 Since a failover puts significant load on the OpenStack installation by
 creating new virtual machines and ports, it should either be done at a very
-slow pace, during a time with little load, or with the right thottling
+slow pace, during a time with little load, or with the right throttling
 enabled in Octavia. The throttling will make sure to prioritize failovers
 higher than other operations and depending on how many failovers are
 initiated this might crowd out other operations.
