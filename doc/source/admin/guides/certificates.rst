@@ -263,7 +263,7 @@ created during the `Creating the Certificate Authorities`_ section.
        # cp server_ca/certs/ca.cert.pem /etc/octavia/certs/server_ca.cert.pem
        # cp client_ca/certs/ca.cert.pem /etc/octavia/certs/client_ca.cert.pem
        # cp client_ca/private/client.cert-and-key.pem /etc/octavia/certs/client.cert-and-key.pem
-       # chmod 700 /etc/octavia/certs/client.cert-key.pem
+       # chmod 700 /etc/octavia/certs/client.cert-and-key.pem
        # chown -R octavia.octavia /etc/octavia/certs
 
 2. Configure the [certificates] section of the octavia.conf file.
