@@ -94,68 +94,101 @@ class TestNetworkTasks(base.TestCase):
             add_nics=[],
             delete_nics=[])}
 
-        def _interface(network_id):
-            return [data_models.Interface(network_id=network_id)]
+        calc_delta = network_tasks.CalculateDelta()
 
-        net = network_tasks.CalculateDelta()
+        self.assertEqual(EMPTY, calc_delta.execute(self.load_balancer_mock))
 
-        self.assertEqual(EMPTY, net.execute(self.load_balancer_mock))
+        # Test with one amp and no pools, nothing plugged
+        # Delta should be empty
+        mock_driver.reset_mock()
 
         self.amphora_mock.load_balancer = self.load_balancer_mock
         self.load_balancer_mock.amphorae = [self.amphora_mock]
         self.load_balancer_mock.pools = []
 
-        self.assertEqual(empty_deltas, net.execute(self.load_balancer_mock))
+        self.assertEqual(empty_deltas,
+                         calc_delta.execute(self.load_balancer_mock))
         mock_driver.get_plugged_networks.assert_called_once_with(COMPUTE_ID)
 
+        # Pool mock should be configured explicitly for each test
         pool_mock = mock.MagicMock()
         self.load_balancer_mock.pools = [pool_mock]
+
+        # Test with one amp and one pool but no members, nothing plugged
+        # Delta should be empty
         pool_mock.members = []
-        self.assertEqual(empty_deltas, net.execute(self.load_balancer_mock))
+        self.assertEqual(empty_deltas,
+                         calc_delta.execute(self.load_balancer_mock))
 
+        # Test with one amp and one pool and one member, nothing plugged
+        # Delta should be one additional subnet to plug
+        mock_driver.reset_mock()
         member_mock = mock.MagicMock()
-        pool_mock.members = [member_mock]
         member_mock.subnet_id = 1
-
-        mock_driver.get_subnet.reset_mock()
+        pool_mock.members = [member_mock]
         mock_driver.get_subnet.return_value = data_models.Subnet(id=2,
                                                                  network_id=3)
 
         ndm = data_models.Delta(amphora_id=self.amphora_mock.id,
                                 compute_id=self.amphora_mock.compute_id,
-                                add_nics=_interface(2),
+                                add_nics=[
+                                    data_models.Interface(network_id=2)],
                                 delete_nics=[])
         self.assertEqual({self.amphora_mock.id: ndm},
-                         net.execute(self.load_balancer_mock))
+                         calc_delta.execute(self.load_balancer_mock))
 
         vrrp_port_call = mock.call(self.amphora_mock.vrrp_port_id)
         mock_driver.get_port.assert_has_calls([vrrp_port_call])
-        # For some reason we call calculate_delta three times?
-        self.assertEqual(3, mock_driver.get_port.call_count)
+        self.assertEqual(1, mock_driver.get_port.call_count)
 
         member_subnet_call = mock.call(member_mock.subnet_id)
         mock_driver.get_subnet.assert_has_calls([member_subnet_call])
         self.assertEqual(1, mock_driver.get_subnet.call_count)
 
-        mock_driver.get_plugged_networks.return_value = _interface(2)
-        self.assertEqual(empty_deltas, net.execute(self.load_balancer_mock))
+        # Test with one amp and one pool and one member, already plugged
+        # Delta should be empty
+        mock_driver.reset_mock()
+        member_mock = mock.MagicMock()
+        member_mock.subnet_id = 1
+        pool_mock.members = [member_mock]
+        mock_driver.get_plugged_networks.return_value = [
+            data_models.Interface(network_id=2)]
 
-        mock_driver.get_plugged_networks.return_value = _interface(3)
+        self.assertEqual(empty_deltas,
+                         calc_delta.execute(self.load_balancer_mock))
+
+        # Test with one amp and one pool and one member, wrong network plugged
+        # Delta should be one network to add and one to remove
+        mock_driver.reset_mock()
+        member_mock = mock.MagicMock()
+        member_mock.subnet_id = 1
+        pool_mock.members = [member_mock]
+        mock_driver.get_plugged_networks.return_value = [
+            data_models.Interface(network_id=3)]
+
         ndm = data_models.Delta(amphora_id=self.amphora_mock.id,
                                 compute_id=self.amphora_mock.compute_id,
-                                add_nics=_interface(2),
-                                delete_nics=_interface(3))
+                                add_nics=[
+                                    data_models.Interface(network_id=2)],
+                                delete_nics=[
+                                    data_models.Interface(network_id=3)])
         self.assertEqual({self.amphora_mock.id: ndm},
-                         net.execute(self.load_balancer_mock))
+                         calc_delta.execute(self.load_balancer_mock))
 
+        # Test with one amp and one pool and no members, one network plugged
+        # Delta should be one network to remove
+        mock_driver.reset_mock()
         pool_mock.members = []
-        mock_driver.get_plugged_networks.return_value = _interface(2)
+        mock_driver.get_plugged_networks.return_value = [
+            data_models.Interface(network_id=2)]
+
         ndm = data_models.Delta(amphora_id=self.amphora_mock.id,
                                 compute_id=self.amphora_mock.compute_id,
                                 add_nics=[],
-                                delete_nics=_interface(2))
+                                delete_nics=[
+                                    data_models.Interface(network_id=2)])
         self.assertEqual({self.amphora_mock.id: ndm},
-                         net.execute(self.load_balancer_mock))
+                         calc_delta.execute(self.load_balancer_mock))
 
     def test_get_plumbed_networks(self, mock_get_net_driver):
         mock_driver = mock.MagicMock()
