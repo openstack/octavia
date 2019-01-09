@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -17,6 +18,7 @@ type ConnectionCount struct {
 	cur_conn   int
 	max_conn   int
 	total_conn int
+	packets    int
 }
 
 var scoreboard ConnectionCount
@@ -39,11 +41,18 @@ func (cc *ConnectionCount) close() {
 	cc.cur_conn--
 }
 
-func (cc *ConnectionCount) stats() (int, int) {
+func (cc *ConnectionCount) stats() (int, int, int) {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
 
-	return cc.max_conn, cc.total_conn
+	return cc.max_conn, cc.total_conn, cc.packets
+}
+
+func (cc *ConnectionCount) inc() {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+
+	cc.packets++
 }
 
 func (cc *ConnectionCount) reset() {
@@ -52,6 +61,7 @@ func (cc *ConnectionCount) reset() {
 
 	cc.max_conn = 0
 	cc.total_conn = 0
+	cc.packets = 0
 }
 
 func root_handler(w http.ResponseWriter, r *http.Request) {
@@ -78,8 +88,8 @@ func slow_handler(w http.ResponseWriter, r *http.Request) {
 
 func stats_handler(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &sess_cookie)
-	max_conn, total_conn := scoreboard.stats()
-	fmt.Fprintf(w, "max_conn=%d\ntotal_conn=%d\n", max_conn, total_conn)
+	max_conn, total_conn, packets := scoreboard.stats()
+	fmt.Fprintf(w, "max_conn=%d\ntotal_conn=%d\npackets=%d\n", max_conn, total_conn, packets)
 }
 
 func reset_handler(w http.ResponseWriter, r *http.Request) {
@@ -88,9 +98,22 @@ func reset_handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "reset\n")
 }
 
+func udp_handler(port *int) {
+	ServerConn, _ := net.ListenUDP("udp", &net.UDPAddr{IP: []byte{0, 0, 0, 0}, Port: *port, Zone: ""})
+	defer ServerConn.Close()
+	buf := make([]byte, 1024)
+	for {
+		n, addr, _ := ServerConn.ReadFromUDP(buf)
+		scoreboard.inc()
+		fmt.Println("Received ", string(buf[0:n]), " from ", addr)
+		ServerConn.WriteTo([]byte(resp), addr)
+	}
+}
+
 func main() {
 	portPtr := flag.Int("port", 8080, "TCP port to listen on")
 	idPtr := flag.String("id", "1", "Server ID")
+	udpPortPtr := flag.Int("udpPort", -1, "UDP port to listen on. If port <=0 UDP server won't start")
 
 	flag.Parse()
 
@@ -103,5 +126,9 @@ func main() {
 	http.HandleFunc("/stats", stats_handler)
 	http.HandleFunc("/reset", reset_handler)
 	portStr := fmt.Sprintf(":%d", *portPtr)
+	if *udpPortPtr > 0 {
+		// only start server if flag is set
+		go udp_handler(udpPortPtr)
+	}
 	http.ListenAndServe(portStr, nil)
 }
