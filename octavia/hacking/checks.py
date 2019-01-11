@@ -30,9 +30,6 @@ Guidelines for writing new hacking checks
 
 """
 
-author_tag_re = (re.compile("^\s*#\s*@?(a|A)uthor"),
-                 re.compile("^\.\.\s+moduleauthor::"))
-
 _all_log_levels = {'critical', 'error', 'exception', 'info', 'warning'}
 _all_hints = {'_LC', '_LE', '_LI', '_', '_LW'}
 
@@ -102,17 +99,6 @@ def assert_equal_or_not_none(logical_line):
            assert_not_equal_end_with_none_re.match(logical_line))
     if res:
         yield (0, msg)
-
-
-def no_author_tags(physical_line):
-    for regex in author_tag_re:
-        if regex.match(physical_line):
-            physical_line = physical_line.lower()
-            pos = physical_line.find('moduleauthor')
-            if pos < 0:
-                pos = physical_line.find('author')
-            return pos, "O322: Don't use author tags"
-    return None
 
 
 def assert_equal_true_or_false(logical_line):
@@ -307,7 +293,6 @@ def factory(register):
     register(assert_true_instance)
     register(assert_equal_or_not_none)
     register(no_translate_logs)
-    register(no_author_tags)
     register(assert_equal_true_or_false)
     register(no_mutable_default_args)
     register(assert_equal_in)

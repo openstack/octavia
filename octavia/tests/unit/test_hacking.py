@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import testtools
+
 from oslotest import base
 
 from octavia.hacking import checks
@@ -50,6 +52,27 @@ class HackingTestCase(base.BaseTestCase):
     should pass.
     """
 
+    def assertLinePasses(self, func, *args):
+        with testtools.ExpectedException(StopIteration):
+            next(func(*args))
+
+    def assertLineFails(self, func, *args):
+        self.assertIsInstance(next(func(*args)), tuple)
+
+    def _get_factory_checks(self, factory):
+        check_fns = []
+
+        def _reg(check_fn):
+            self.assertTrue(hasattr(check_fn, '__call__'))
+            self.assertFalse(check_fn in check_fns)
+            check_fns.append(check_fn)
+
+        factory(_reg)
+        return check_fns
+
+    def test_factory(self):
+        self.assertTrue(len(self._get_factory_checks(checks.factory)) > 0)
+
     def test_assert_true_instance(self):
         self.assertEqual(1, len(list(checks.assert_true_instance(
             "self.assertTrue(isinstance(e, "
@@ -78,6 +101,14 @@ class HackingTestCase(base.BaseTestCase):
         self.assertEqual(0,
                          len(list(checks.assert_equal_or_not_none(
                              "self.assertIsNotNone()"))))
+
+    def test_no_mutable_default_args(self):
+        self.assertEqual(0, len(list(checks.no_mutable_default_args(
+            "def foo (bar):"))))
+        self.assertEqual(1, len(list(checks.no_mutable_default_args(
+            "def foo (bar=[]):"))))
+        self.assertEqual(1, len(list(checks.no_mutable_default_args(
+            "def foo (bar={}):"))))
 
     def test_assert_equal_in(self):
         self.assertEqual(1, len(list(checks.assert_equal_in(
@@ -143,9 +174,74 @@ class HackingTestCase(base.BaseTestCase):
         self.assertEqual(0, len(list(checks.no_xrange(
             "range(45)"))))
 
+    def test_no_log_translations(self):
+        for log in checks._all_log_levels:
+            for hint in checks._all_hints:
+                bad = 'LOG.%s(%s("Bad"))' % (log, hint)
+                self.assertEqual(
+                    1, len(list(checks.no_translate_logs(bad, 'f'))))
+                # Catch abuses when used with a variable and not a literal
+                bad = 'LOG.%s(%s(msg))' % (log, hint)
+                self.assertEqual(
+                    1, len(list(checks.no_translate_logs(bad, 'f'))))
+                # Do not do validations in tests
+                ok = 'LOG.%s(_("OK - unit tests"))' % log
+                self.assertEqual(
+                    0, len(list(checks.no_translate_logs(ok, 'f/tests/f'))))
+
+    def test_check_localized_exception_messages(self):
+        f = checks.check_raised_localized_exceptions
+        self.assertLineFails(f, "     raise KeyError('Error text')", '')
+        self.assertLineFails(f, ' raise KeyError("Error text")', '')
+        self.assertLinePasses(f, ' raise KeyError(_("Error text"))', '')
+        self.assertLinePasses(f, ' raise KeyError(_ERR("Error text"))', '')
+        self.assertLinePasses(f, " raise KeyError(translated_msg)", '')
+        self.assertLinePasses(f, '# raise KeyError("Not translated")', '')
+        self.assertLinePasses(f, 'print("raise KeyError("Not '
+                                 'translated")")', '')
+
+    def test_check_localized_exception_message_skip_tests(self):
+        f = checks.check_raised_localized_exceptions
+        self.assertLinePasses(f, "raise KeyError('Error text')",
+                              'neutron_lib/tests/unit/mytest.py')
+
+    def test_check_no_basestring(self):
+        self.assertEqual(1, len(list(checks.check_no_basestring(
+            "isinstance('foo', basestring)"))))
+
+        self.assertEqual(0, len(list(checks.check_no_basestring(
+            "isinstance('foo', six.string_types)"))))
+
+    def test_dict_iteritems(self):
+        self.assertEqual(1, len(list(checks.check_python3_no_iteritems(
+            "obj.iteritems()"))))
+
+        self.assertEqual(0, len(list(checks.check_python3_no_iteritems(
+            "six.iteritems(obj)"))))
+
+        self.assertEqual(0, len(list(checks.check_python3_no_iteritems(
+            "obj.items()"))))
+
+    def test_check_no_eventlet_imports(self):
+        f = checks.check_no_eventlet_imports
+        self.assertLinePasses(f, 'from not_eventlet import greenthread')
+        self.assertLineFails(f, 'from eventlet import greenthread')
+        self.assertLineFails(f, 'import eventlet')
+
     def test_line_continuation_no_backslash(self):
         results = list(checks.check_line_continuation_no_backslash(
             '', [(1, 'import', (2, 0), (2, 6), 'import \\\n'),
                  (1, 'os', (3, 4), (3, 6), '    os\n')]))
         self.assertEqual(1, len(results))
         self.assertEqual((2, 7), results[0][0])
+
+    def test_check_no_logging_imports(self):
+        f = checks.check_no_logging_imports
+        self.assertLinePasses(f, 'from oslo_log import log')
+        self.assertLineFails(f, 'from logging import log')
+        self.assertLineFails(f, 'import logging')
+
+    def test_revert_must_have_kwargs(self):
+        f = checks.revert_must_have_kwargs
+        self.assertLinePasses(f, 'def revert(self, *args, **kwargs):')
+        self.assertLineFails(f, 'def revert(self, loadbalancer):')
