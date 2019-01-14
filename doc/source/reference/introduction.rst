@@ -21,7 +21,7 @@ Welcome to Octavia!
 Octavia is an open source, operator-scale load balancing solution designed to
 work with OpenStack.
 
-Octavia was borne out of the Neutron LBaaS project.  Its conception influenced
+Octavia was born out of the Neutron LBaaS project.  Its conception influenced
 the transformation of the Neutron LBaaS project, as Neutron LBaaS moved from
 version 1 to version 2. Starting with the Liberty release of OpenStack, Octavia
 has become the reference implementation for Neutron LBaaS version 2.
