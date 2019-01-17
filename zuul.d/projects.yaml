@@ -58,6 +58,14 @@
               - ^tools/.*$
               - ^(test-|)requirements.txt$
               - ^tox.ini$
+        - octavia-v2-dsvm-tls-barbican:
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^octavia/tests/unit/.*$
+              - ^releasenotes/.*$
+            voting: false
     gate:
       queue: octavia
       jobs:
