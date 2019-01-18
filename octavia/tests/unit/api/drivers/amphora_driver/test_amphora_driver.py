@@ -59,7 +59,8 @@ class TestAmphoraDriver(base.TestCase):
         provider_lb = driver_dm.LoadBalancer(
             loadbalancer_id=self.sample_data.lb_id)
         self.amp_driver.loadbalancer_create(provider_lb)
-        payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id}
+        payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id,
+                   consts.FLAVOR: None}
         mock_cast.assert_called_with({}, 'create_load_balancer', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')

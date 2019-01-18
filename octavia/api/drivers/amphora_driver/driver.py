@@ -20,6 +20,7 @@ from oslo_log import log as logging
 import oslo_messaging as messaging
 
 from octavia.api.drivers.amphora_driver import flavor_schema
+from octavia.api.drivers import data_models as driver_dm
 from octavia.api.drivers import exceptions
 from octavia.api.drivers import provider_base as driver_base
 from octavia.api.drivers import utils as driver_utils
@@ -63,8 +64,13 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
                  vip.port_id, loadbalancer_id)
         return driver_utils.vip_dict_to_provider_dict(vip.to_dict())
 
+    # TODO(johnsom) convert this to octavia_lib constant flavor
+    # once octavia is transitioned to use octavia_lib
     def loadbalancer_create(self, loadbalancer):
-        payload = {consts.LOAD_BALANCER_ID: loadbalancer.loadbalancer_id}
+        if loadbalancer.flavor == driver_dm.Unset:
+            loadbalancer.flavor = None
+        payload = {consts.LOAD_BALANCER_ID: loadbalancer.loadbalancer_id,
+                   consts.FLAVOR: loadbalancer.flavor}
         self.client.cast({}, 'create_load_balancer', **payload)
 
     def loadbalancer_delete(self, loadbalancer, cascade=False):

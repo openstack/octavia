@@ -320,7 +320,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         wait=tenacity.wait_incrementing(
             RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
         stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
-    def create_load_balancer(self, load_balancer_id):
+    def create_load_balancer(self, load_balancer_id, flavor=None):
         """Creates a load balancer by allocating Amphorae.
 
         First tries to allocate an existing Amphora in READY state.
@@ -337,9 +337,12 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                         '60 seconds.', 'load_balancer', load_balancer_id)
             raise db_exceptions.NoResultFound
 
+        # TODO(johnsom) convert this to octavia_lib constant flavor
+        # once octavia is transitioned to use octavia_lib
         store = {constants.LOADBALANCER_ID: load_balancer_id,
                  constants.BUILD_TYPE_PRIORITY:
-                 constants.LB_CREATE_NORMAL_PRIORITY}
+                 constants.LB_CREATE_NORMAL_PRIORITY,
+                 constants.FLAVOR: flavor}
 
         topology = lb.topology
 
