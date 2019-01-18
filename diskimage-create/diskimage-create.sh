@@ -138,6 +138,11 @@ while getopts "a:b:c:d:ehi:l:no:pt:r:s:vw:x" opt; do
         ;;
         o)
             AMP_OUTPUTFILENAME=$(readlink -f $OPTARG)
+	    amp_dir=$(dirname $AMP_OUTPUTFILENAME)
+            if [ ! -d $amp_dir ]; then
+                echo "Error: Directory $amp_dir does not exist"
+                exit 3
+            fi
         ;;
         p)
             AMP_PACKAGE_INSTALL=1
