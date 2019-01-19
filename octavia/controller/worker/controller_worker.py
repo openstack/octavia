@@ -69,6 +69,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         self._pool_repo = repo.PoolRepository()
         self._l7policy_repo = repo.L7PolicyRepository()
         self._l7rule_repo = repo.L7RuleRepository()
+        self._flavor_repo = repo.FlavorRepository()
 
         self._exclude_result_logging_tasks = (
             constants.ROLE_STANDALONE + '-' +
@@ -840,6 +841,12 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             db_apis.get_session(), amp.id)
         if CONF.nova.enable_anti_affinity and lb:
             stored_params[constants.SERVER_GROUP_ID] = lb.server_group_id
+        if lb.flavor_id:
+            stored_params[constants.FLAVOR] = (
+                self._flavor_repo.get_flavor_metadata_dict(
+                    db_apis.get_session(), lb.flavor_id))
+        else:
+            stored_params[constants.FLAVOR] = {}
 
         failover_amphora_tf = self._taskflow_load(
             self._amphora_flows.get_failover_flow(

@@ -106,6 +106,11 @@ class NoopManager(object):
         self.computeconfig[(compute_id, port_id)] = (
             compute_id, port_id, 'detach_port')
 
+    def validate_flavor(self, flavor_id):
+        LOG.debug("Compute %s no-op, validate_flavor flavor_id %s",
+                  self.__class__.__name__, flavor_id)
+        self.computeconfig[flavor_id] = (flavor_id, 'validate_flavor')
+
 
 class NoopComputeDriver(driver_base.ComputeBase):
     def __init__(self):
@@ -147,3 +152,6 @@ class NoopComputeDriver(driver_base.ComputeBase):
 
     def detach_port(self, compute_id, port_id):
         self.driver.detach_port(compute_id, port_id)
+
+    def validate_flavor(self, flavor_id):
+        self.driver.validate_flavor(flavor_id)

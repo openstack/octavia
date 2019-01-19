@@ -126,6 +126,8 @@ class TestNovaClient(base.TestCase):
         self.manager.manager = mock.MagicMock()
         self.manager.server_groups = mock.MagicMock()
         self.manager._nova_client = mock.MagicMock()
+        self.manager.flavor_manager = mock.MagicMock()
+        self.manager.flavor_manager.get = mock.MagicMock()
 
         self.nova_response.interface_list.side_effect = [[self.interface_list]]
         self.manager.manager.get.return_value = self.nova_response
@@ -149,6 +151,7 @@ class TestNovaClient(base.TestCase):
         self.port_id = uuidutils.generate_uuid()
         self.compute_id = uuidutils.generate_uuid()
         self.network_id = uuidutils.generate_uuid()
+        self.flavor_id = uuidutils.generate_uuid()
 
         super(TestNovaClient, self).setUp()
 
@@ -373,3 +376,17 @@ class TestNovaClient(base.TestCase):
         self.manager.manager.interface_detach.side_effect = [Exception]
         self.manager.detach_port(self.compute_id,
                                  self.port_id)
+
+    def test_validate_flavor(self):
+        self.manager.validate_flavor(self.flavor_id)
+        self.manager.flavor_manager.get.assert_called_with(self.flavor_id)
+
+    def test_validate_flavor_with_exception(self):
+        self.manager.flavor_manager.get.side_effect = [
+            nova_exceptions.NotFound(404), exceptions.OctaviaException]
+        self.assertRaises(exceptions.InvalidSubresource,
+                          self.manager.validate_flavor,
+                          "bogus")
+        self.assertRaises(exceptions.OctaviaException,
+                          self.manager.validate_flavor,
+                          "bogus")

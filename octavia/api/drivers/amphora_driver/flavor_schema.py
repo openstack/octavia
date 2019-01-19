@@ -39,6 +39,10 @@ SUPPORTED_FLAVOR_SCHEMA = {
                            "SINGLE - One amphora per load balancer. "
                            "ACTIVE_STANDBY - Two amphora per load balancer.",
             "enum": list(consts.SUPPORTED_LB_TOPOLOGIES)
+        },
+        consts.COMPUTE_FLAVOR: {
+            "type": "string",
+            "description": "The compute driver flavor ID."
         }
     }
 }

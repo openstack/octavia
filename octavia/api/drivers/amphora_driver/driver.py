@@ -18,6 +18,7 @@ from jsonschema import validate
 from oslo_config import cfg
 from oslo_log import log as logging
 import oslo_messaging as messaging
+from stevedore import driver as stevedore_driver
 
 from octavia.api.drivers.amphora_driver import flavor_schema
 from octavia.api.drivers import data_models as driver_dm
@@ -311,3 +312,14 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
                                   'due to: {}'.format(str(e)),
                 operator_fault_string='Failed to validate the flavor metadata '
                                       'due to: {}'.format(str(e)))
+        compute_flavor = flavor_dict.get(consts.COMPUTE_FLAVOR, None)
+        if compute_flavor:
+            compute_driver = stevedore_driver.DriverManager(
+                namespace='octavia.compute.drivers',
+                name=CONF.controller_worker.compute_driver,
+                invoke_on_load=True
+            ).driver
+
+            # TODO(johnsom) Fix this to raise a NotFound error
+            # when the octavia-lib supports it.
+            compute_driver.validate_flavor(compute_flavor)
