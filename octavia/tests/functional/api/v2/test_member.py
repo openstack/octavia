@@ -345,6 +345,102 @@ class TestMember(base.BaseAPITest):
         self.assertEqual(mem1['id'],
                          members['members'][0]['id'])
 
+    def test_get_all_tags_filter(self):
+        mem1 = self.create_member(
+            self.pool_id,
+            '192.0.2.1',
+            80,
+            name='member1',
+            tags=['test_tag1', 'test_tag2']
+        ).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        mem2 = self.create_member(
+            self.pool_id,
+            '192.0.2.2',
+            80,
+            name='member2',
+            tags=['test_tag2', 'test_tag3']
+        ).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        mem3 = self.create_member(
+            self.pool_id,
+            '192.0.2.3',
+            80,
+            name='member3',
+            tags=['test_tag4', 'test_tag5']
+        ).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        mems = self.get(
+            self.members_path,
+            params={'tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(mems, list)
+        self.assertEqual(2, len(mems))
+        self.assertEqual(
+            [mem1.get('id'), mem2.get('id')],
+            [mem.get('id') for mem in mems]
+        )
+
+        mems = self.get(
+            self.members_path,
+            params={'tags': ['test_tag2', 'test_tag3']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(mems, list)
+        self.assertEqual(1, len(mems))
+        self.assertEqual(
+            [mem2.get('id')],
+            [mem.get('id') for mem in mems]
+        )
+
+        mems = self.get(
+            self.members_path,
+            params={'tags-any': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(mems, list)
+        self.assertEqual(2, len(mems))
+        self.assertEqual(
+            [mem1.get('id'), mem2.get('id')],
+            [mem.get('id') for mem in mems]
+        )
+
+        mems = self.get(
+            self.members_path,
+            params={'not-tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(mems, list)
+        self.assertEqual(1, len(mems))
+        self.assertEqual(
+            [mem3.get('id')],
+            [mem.get('id') for mem in mems]
+        )
+
+        mems = self.get(
+            self.members_path,
+            params={'not-tags-any': ['test_tag2', 'test_tag4']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(mems, list)
+        self.assertEqual(0, len(mems))
+
+        mems = self.get(
+            self.members_path,
+            params={'tags': 'test_tag2',
+                    'tags-any': ['test_tag1', 'test_tag3']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(mems, list)
+        self.assertEqual(2, len(mems))
+        self.assertEqual(
+            [mem1.get('id'), mem2.get('id')],
+            [mem.get('id') for mem in mems]
+        )
+
+        mems = self.get(
+            self.members_path,
+            params={'tags': 'test_tag2', 'not-tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(mems, list)
+        self.assertEqual(0, len(mems))
+
     def test_empty_get_all(self):
         response = self.get(self.members_path).json.get(self.root_tag_list)
         self.assertIsInstance(response, list)

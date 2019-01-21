@@ -547,6 +547,102 @@ class TestPool(base.BaseAPITest):
         self.assertEqual(po1['id'],
                          pools['pools'][0]['id'])
 
+    def test_get_all_tags_filter(self):
+        po1 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool1',
+            tags=['test_tag1', 'test_tag2']
+        ).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        po2 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool2',
+            tags=['test_tag2', 'test_tag3']
+        ).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        po3 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool3',
+            tags=['test_tag4', 'test_tag5']
+        ).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+
+        pos = self.get(
+            self.POOLS_PATH,
+            params={'tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(pos, list)
+        self.assertEqual(2, len(pos))
+        self.assertEqual(
+            [po1.get('id'), po2.get('id')],
+            [po.get('id') for po in pos]
+        )
+
+        pos = self.get(
+            self.POOLS_PATH,
+            params={'tags': ['test_tag2', 'test_tag3']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(pos, list)
+        self.assertEqual(1, len(pos))
+        self.assertEqual(
+            [po2.get('id')],
+            [po.get('id') for po in pos]
+        )
+
+        pos = self.get(
+            self.POOLS_PATH,
+            params={'tags-any': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(pos, list)
+        self.assertEqual(2, len(pos))
+        self.assertEqual(
+            [po1.get('id'), po2.get('id')],
+            [po.get('id') for po in pos]
+        )
+
+        pos = self.get(
+            self.POOLS_PATH,
+            params={'not-tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(pos, list)
+        self.assertEqual(1, len(pos))
+        self.assertEqual(
+            [po3.get('id')],
+            [po.get('id') for po in pos]
+        )
+
+        pos = self.get(
+            self.POOLS_PATH,
+            params={'not-tags-any': ['test_tag2', 'test_tag4']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(pos, list)
+        self.assertEqual(0, len(pos))
+
+        pos = self.get(
+            self.POOLS_PATH,
+            params={'tags': 'test_tag2',
+                    'tags-any': ['test_tag1', 'test_tag3']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(pos, list)
+        self.assertEqual(2, len(pos))
+        self.assertEqual(
+            [po1.get('id'), po2.get('id')],
+            [po.get('id') for po in pos]
+        )
+
+        pos = self.get(
+            self.POOLS_PATH,
+            params={'tags': 'test_tag2', 'not-tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(pos, list)
+        self.assertEqual(0, len(pos))
+
     def test_empty_get_all(self):
         response = self.get(self.POOLS_PATH).json.get(self.root_tag_list)
         self.assertIsInstance(response, list)
