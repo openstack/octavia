@@ -161,6 +161,62 @@ Octavia does not offer an OR mechanism for filters.
 Alternatively, you can issue a distinct request for each filter and build a
 response set from the received responses on the client-side.
 
+Filtering by Tags
+-----------------
+
+**New in version 2.5**
+
+Most Octavia resources support adding tags to the resource attributes.
+Octavia supports advanced filtering using these tags. The following tag
+filters are supported by the Octavia API:
+
+- ``tags`` - Return the list of entities that have this tag or tags.
+- ``tags-any`` - Return the list of entities that have one or more of the
+  given tags.
+- ``not-tags`` - Return the list of entities that do not have one or more
+  of the given tags.
+- ``not-tags-any`` - Return the list of entities that do not have at least
+  one of the given tags.
+
+When supplying a list of tags, the tags should be provided in a comma seperated
+list.
+
+For example, if you would like to get the list of load balancers with both the
+"red" and "blue" tags you would request:
+
+.. code::
+
+    GET /v2/lbaas/loadbalancers?tags=red,blue
+
+To get a list of load balancers that have the "red" or "blue" tag, you would
+request:
+
+.. code::
+
+    GET /v2/lbaas/loadbalancers?tags-any=red,blue
+
+For a list of load balancers that do not have the "red" tag, you would request:
+
+.. code::
+
+    GET /v2/lbaas/loadbalancers?not-tags=red
+
+To get a list of load balancers that don't have either the "red" or "blue" tag
+you would request:
+
+.. code::
+
+    GET /v2/lbaas/loadbalancers?not-tags-any=red,blue
+
+Tag filters can also be combined in the same request:
+
+.. code::
+
+    GET /v2/lbaas/loadbalancers?tags=red,blue&tags-any=green,orange
+
+Column Selection
+----------------
+
 By default, Octavia returns all attributes for any show or list call. The
 Octavia API v2 has a mechanism to limit the set of attributes returned.
 For example, return ``id``.
