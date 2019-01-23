@@ -20,6 +20,7 @@ from stevedore import driver as stevedore_driver
 from taskflow import task
 from taskflow.types import failure
 
+from octavia.amphorae.backends.agent import agent_jinja_cfg
 from octavia.amphorae.driver_exceptions import exceptions as driver_except
 from octavia.common import constants
 from octavia.controller.worker import task_utils as task_utilities
@@ -357,7 +358,7 @@ class AmphoraVRRPStart(BaseAmphoraTask):
 
 
 class AmphoraComputeConnectivityWait(BaseAmphoraTask):
-    """"Task to wait for the compute instance to be up."""
+    """Task to wait for the compute instance to be up."""
 
     def execute(self, amphora):
         """Execute get_info routine for an amphora until it responds."""
@@ -373,3 +374,28 @@ class AmphoraComputeConnectivityWait(BaseAmphoraTask):
             self.amphora_repo.update(db_apis.get_session(), amphora.id,
                                      status=constants.ERROR)
             raise
+
+
+class AmphoraConfigUpdate(BaseAmphoraTask):
+    """Task to push a new amphora agent configuration to the amphroa."""
+
+    def execute(self, amphora, flavor):
+        # Extract any flavor based settings
+        if flavor:
+            topology = flavor.get(constants.LOADBALANCER_TOPOLOGY,
+                                  CONF.controller_worker.loadbalancer_topology)
+        else:
+            topology = CONF.controller_worker.loadbalancer_topology
+
+        # Build the amphora agent config
+        agent_cfg_tmpl = agent_jinja_cfg.AgentJinjaTemplater()
+        agent_config = agent_cfg_tmpl.build_agent_config(amphora.id, topology)
+
+        # Push the new configuration to the amphroa
+        try:
+            self.amphora_driver.update_amphora_agent_config(amphora,
+                                                            agent_config)
+        except driver_except.AmpDriverNotImplementedError:
+            LOG.error('Amphora {} does not support agent configuration '
+                      'update. Please update the amphora image for this '
+                      'amphora. Skipping.'.format(amphora.id))

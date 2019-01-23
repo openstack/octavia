@@ -375,6 +375,11 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.client.get_info.assert_called_once_with(self.amp)
         self.assertEqual(ref_versions, result)
 
+    def test_update_amphora_agent_config(self):
+        self.driver.update_amphora_agent_config(self.amp, six.b('test'))
+        self.driver.client.update_agent_config.assert_called_once_with(
+            self.amp, six.b('test'), timeout_dict=None)
+
 
 class TestAmphoraAPIClientTest(base.TestCase):
 
@@ -1067,3 +1072,16 @@ class TestAmphoraAPIClientTest(base.TestCase):
         self.assertRaises(exc.InternalServerError,
                           self.driver.get_interface,
                           self.amp, ip_addr)
+
+    @requests_mock.mock()
+    def test_update_agent_config(self, m):
+        m.put("{base}/config".format(base=self.base_url))
+        resp_body = self.driver.update_agent_config(self.amp, "some_file")
+        self.assertEqual(200, resp_body.status_code)
+
+    @requests_mock.mock()
+    def test_update_agent_config_error(self, m):
+        m.put("{base}/config".format(base=self.base_url), status_code=500)
+        self.assertRaises(exc.InternalServerError,
+                          self.driver.update_agent_config, self.amp,
+                          "some_file")

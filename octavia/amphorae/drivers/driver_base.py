@@ -219,6 +219,16 @@ class AmphoraLoadBalancerDriver(object):
         """
         pass
 
+    def update_agent_config(self, amphora, agent_config):
+        """Upload and update the amphora agent configuration.
+
+        :param amphora: amphora object, needs id and network ip(s)
+        :type amphora: object
+        :param agent_config: The new amphora agent configuration file.
+        :type agent_config: string
+        """
+        pass
+
 
 @six.add_metaclass(abc.ABCMeta)
 class HealthMixin(object):

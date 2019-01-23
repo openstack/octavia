@@ -366,41 +366,45 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
         self.assertIn(constants.AMPHORA_ID, amp_flow.requires)
         self.assertIn(constants.AMPHORA, amp_flow.provides)
 
         self.assertEqual(1, len(amp_flow.provides))
-        self.assertEqual(1, len(amp_flow.requires))
+        self.assertEqual(2, len(amp_flow.requires))
 
         amp_flow = self.AmpFlow._get_post_map_lb_subflow(
             'SOMEPREFIX', constants.ROLE_BACKUP)
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
         self.assertIn(constants.AMPHORA_ID, amp_flow.requires)
         self.assertIn(constants.AMPHORA, amp_flow.provides)
 
         self.assertEqual(1, len(amp_flow.provides))
-        self.assertEqual(1, len(amp_flow.requires))
+        self.assertEqual(2, len(amp_flow.requires))
 
         amp_flow = self.AmpFlow._get_post_map_lb_subflow(
             'SOMEPREFIX', constants.ROLE_STANDALONE)
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
         self.assertIn(constants.AMPHORA_ID, amp_flow.requires)
         self.assertIn(constants.AMPHORA, amp_flow.provides)
 
         self.assertEqual(1, len(amp_flow.provides))
-        self.assertEqual(1, len(amp_flow.requires))
+        self.assertEqual(2, len(amp_flow.requires))
 
         amp_flow = self.AmpFlow._get_post_map_lb_subflow(
             'SOMEPREFIX', 'BOGUS_ROLE')
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
         self.assertIn(constants.AMPHORA_ID, amp_flow.requires)
         self.assertIn(constants.AMPHORA, amp_flow.provides)
 
         self.assertEqual(1, len(amp_flow.provides))
-        self.assertEqual(1, len(amp_flow.requires))
+        self.assertEqual(2, len(amp_flow.requires))

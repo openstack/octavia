@@ -104,10 +104,17 @@ class NoopManager(object):
             load_balancer.id, amphorae_network_config, 'post_vip_plug')
 
     def upload_cert_amp(self, amphora, pem_file):
-        LOG.debug("Amphora %s no-op, upload cert amphora %s,with pem fle %s",
+        LOG.debug("Amphora %s no-op, upload cert amphora %s,with pem file %s",
                   self.__class__.__name__, amphora.id, pem_file)
         self.amphoraconfig[amphora.id, pem_file] = (amphora.id, pem_file,
                                                     'update_amp_cert_file')
+
+    def update_agent_config(self, amphora, agent_config):
+        LOG.debug("Amphora %s no-op, update agent config amphora "
+                  "%s, with agent config %s",
+                  self.__class__.__name__, amphora.id, agent_config)
+        self.amphoraconfig[amphora.id, agent_config] = (
+            amphora.id, agent_config, 'update_agent_config')
 
 
 class NoopAmphoraLoadBalancerDriver(
@@ -163,6 +170,9 @@ class NoopAmphoraLoadBalancerDriver(
     def upload_cert_amp(self, amphora, pem_file):
 
         self.driver.upload_cert_amp(amphora, pem_file)
+
+    def update_agent_config(self, amphora, agent_config):
+        self.driver.update_agent_config(amphora, agent_config)
 
     def update_vrrp_conf(self, loadbalancer):
         pass

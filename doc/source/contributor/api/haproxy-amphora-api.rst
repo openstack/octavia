@@ -29,9 +29,9 @@ communication is limited to fail-over protocols.)
 Versioning
 ----------
 All Octavia APIs (including internal APIs like this one) are versioned. For the
-purposes of this document, the initial version of this API shall be v0.1. (So,
+purposes of this document, the initial version of this API shall be v0.5. (So,
 any reference to a *:version* variable should be replaced with the literal
-string 'v0.1'.)
+string 'v0.5'.)
 
 Response codes
 --------------
@@ -408,7 +408,7 @@ Get interface
 ::
 
   GET URL:
-  https://octavia-haproxy-img-00328.local/v0.1/interface/10.0.0.1
+  https://octavia-haproxy-img-00328.local/v0.5/interface/10.0.0.1
 
   JSON Response:
       {
@@ -422,7 +422,7 @@ Get interface
 ::
 
   GET URL:
-  https://octavia-haproxy-img-00328.local/v0.1/interface/10.5.0.1
+  https://octavia-haproxy-img-00328.local/v0.5/interface/10.5.0.1
 
   JSON Response:
       {
@@ -435,7 +435,7 @@ Get interface
 ::
 
   GET URL:
-  https://octavia-haproxy-img-00328.local/v0.1/interface/10.6.0.1.1
+  https://octavia-haproxy-img-00328.local/v0.5/interface/10.6.0.1.1
 
   JSON Response:
       {
@@ -621,7 +621,7 @@ Start or Stop a listener
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/start
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/start
 
   JSON Response:
   {
@@ -634,7 +634,7 @@ Start or Stop a listener
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/BAD_TEST_DATA
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/BAD_TEST_DATA
 
   JSON Response:
   {
@@ -647,7 +647,7 @@ Start or Stop a listener
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/stop
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/stop
 
   JSON Response:
   {
@@ -660,7 +660,7 @@ Start or Stop a listener
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/stop
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/stop
 
   Response:
   {
@@ -724,7 +724,7 @@ Delete a listener
 ::
 
   DELETE URL:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a
 
   JSON Response:
   {
@@ -736,7 +736,7 @@ Delete a listener
 ::
 
   DELETE URL:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a
 
   JSON Response:
   {
@@ -812,7 +812,7 @@ explicitly restarted
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
   (Put data should contain the certificate information, concatenated as
   described above)
 
@@ -826,7 +826,7 @@ explicitly restarted
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
   (If PUT data does not contain a certificate)
 
   JSON Response:
@@ -839,7 +839,7 @@ explicitly restarted
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
   (If PUT data does not contain an RSA key)
 
   JSON Response:
@@ -852,7 +852,7 @@ explicitly restarted
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
   (If the first certificate and the RSA key do not have the same modulus.)
 
   JSON Response:
@@ -865,7 +865,7 @@ explicitly restarted
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
 
   JSON Response:
   {
@@ -988,7 +988,7 @@ Delete SSL certificate PEM file
 ::
 
   DELETE URL:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
 
   JSON Response:
   {
@@ -1000,7 +1000,7 @@ Delete SSL certificate PEM file
 ::
 
   DELETE URL:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
 
  JSON Response:
       {
@@ -1071,7 +1071,7 @@ out of the haproxy daemon status interface for tracking health and stats).
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/d459b1c8-54b0-4030-9bec-4f449e73b1ef/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/haproxy
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/d459b1c8-54b0-4030-9bec-4f449e73b1ef/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/haproxy
   (Upload PUT data should be a raw haproxy.conf file.)
 
   JSON Response:
@@ -1134,7 +1134,7 @@ Get listener haproxy configuration
 ::
 
   GET URL:
-  https://octavia-haproxy-img-00328.local/v0.1/listeners/7e9f91eb-b3e6-4e3b-a1a7-d6f7fdc1de7c/haproxy
+  https://octavia-haproxy-img-00328.local/v0.5/listeners/7e9f91eb-b3e6-4e3b-a1a7-d6f7fdc1de7c/haproxy
 
   Response is the raw haproxy.cfg:
 
@@ -1210,7 +1210,7 @@ Plug VIP
 ::
 
   POST URL:
-  https://octavia-haproxy-img-00328.local/v0.1/plug/vip/203.0.113.2
+  https://octavia-haproxy-img-00328.local/v0.5/plug/vip/203.0.113.2
 
   JSON POST parameters:
   {
@@ -1292,7 +1292,7 @@ Plug Network
 ::
 
   POST URL:
-  https://octavia-haproxy-img-00328.local/v0.1/plug/network/
+  https://octavia-haproxy-img-00328.local/v0.5/plug/network/
 
   JSON POST parameters:
   {
@@ -1362,7 +1362,7 @@ not be available for some time.
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.1/certificate
+  https://octavia-haproxy-img-00328.local/v0.5/certificate
   (Put data should contain the certificate information, concatenated as
   described above)
 
@@ -1376,7 +1376,7 @@ not be available for some time.
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.1/certificates
+  https://octavia-haproxy-img-00328.local/v0.5/certificates
   (If PUT data does not contain a certificate)
 
   JSON Response:
@@ -1389,7 +1389,7 @@ not be available for some time.
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.1/certificate
+  https://octavia-haproxy-img-00328.local/v0.5/certificate
   (If PUT data does not contain an RSA key)
 
   JSON Response:
@@ -1402,7 +1402,7 @@ not be available for some time.
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.1/certificate
+  https://octavia-haproxy-img-00328.local/v0.5/certificate
   (If the first certificate and the RSA key do not have the same modulus.)
 
   JSON Response:
@@ -1441,7 +1441,7 @@ OK
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.1/vrrp/upload
+  https://octavia-haproxy-img-00328.local/v0.5/vrrp/upload
 
   JSON Response:
   {
@@ -1489,7 +1489,7 @@ Start, Stop, or Reload keepalived
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.1/vrrp/start
+  https://octavia-haproxy-img-00328.local/v0.5/vrrp/start
 
   JSON Response:
   {
@@ -1502,7 +1502,7 @@ Start, Stop, or Reload keepalived
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.1/vrrp/BAD_TEST_DATA
+  https://octavia-haproxy-img-00328.local/v0.5/vrrp/BAD_TEST_DATA
 
   JSON Response:
   {
@@ -1515,7 +1515,7 @@ Start, Stop, or Reload keepalived
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.1/vrrp/stop
+  https://octavia-haproxy-img-00328.local/v0.5/vrrp/stop
 
   JSON Response:
   {
@@ -1523,4 +1523,58 @@ Start, Stop, or Reload keepalived
     'details': 'keeepalived process with PID 3352 not found',
   }
 
+Update the amphora agent configuration
+--------------------------------------
 
+* **URL:** /*:version*/config
+* **Method:** PUT
+
+* **Data params:** A amphora-agent configuration file
+* **Success Response:**
+
+  * Code: 202
+
+    * Content: OK
+
+* **Error Response:**
+
+  * Code: 500
+
+    * message: Unable to update amphora-agent configuration.
+    * details: *(The exception details)*
+
+* **Response:**
+
+| OK
+
+* **Implied actions:**
+
+  * The running amphora-agent configuration file is mutated.
+
+**Notes:** Only options that are marked mutable in the oslo configuration
+will be updated.
+
+**Examples:**
+
+* Success code 202:
+
+::
+
+  PUT URL:
+  https://octavia-haproxy-img-00328.local/v0.5/config
+  (Upload PUT data should be a raw amphora-agent.conf file.)
+
+  JSON Response:
+  {
+    'message': 'OK'
+  }
+
+* Error code 500:
+
+::
+
+  JSON Response:
+  {
+    'message': 'Unable to update amphora-agent configuration.',
+    'details': *(The exception output)*,
+  }

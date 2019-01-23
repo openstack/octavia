@@ -33,18 +33,9 @@ def round_robin_addr(addrinfo_list):
 
 class UDPStatusSender(object):
     def __init__(self):
-        self.dests = []
-        for ipport in CONF.health_manager.controller_ip_port_list:
-            try:
-                ip, port = ipport.rsplit(':', 1)
-            except ValueError:
-                LOG.error("Invalid ip and port '%s' in health_manager "
-                          "controller_ip_port_list", ipport)
-                break
-            self.update(ip, port)
+        self._update_dests()
         self.v4sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.v6sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-        self.key = str(CONF.health_manager.heartbeat_key)
 
     def update(self, dest, port):
         addrlist = socket.getaddrinfo(dest, port, 0, socket.SOCK_DGRAM)
@@ -55,7 +46,9 @@ class UDPStatusSender(object):
             break
 
     def _send_msg(self, dest, msg):
-        envelope_str = status_message.wrap_envelope(msg, self.key)
+        # Note: heartbeat_key is mutable and must be looked up for each call
+        envelope_str = status_message.wrap_envelope(
+            msg, str(CONF.health_manager.heartbeat_key))
         # dest = (family, socktype, proto, canonname, sockaddr)
         # e.g. 0 = sock family, 4 = sockaddr - what we actually need
         try:
@@ -71,7 +64,25 @@ class UDPStatusSender(object):
             # if the message isn't received
             pass
 
+    # The controller_ip_port_list configuration has mutated, reload it.
+    def _update_dests(self):
+        self.dests = []
+        for ipport in CONF.health_manager.controller_ip_port_list:
+            try:
+                ip, port = ipport.rsplit(':', 1)
+            except ValueError:
+                LOG.error("Invalid ip and port '%s' in health_manager "
+                          "controller_ip_port_list", ipport)
+                break
+            self.update(ip, port)
+        self.current_controller_ip_port_list = (
+            CONF.health_manager.controller_ip_port_list)
+
     def dosend(self, obj):
+        # Check for controller_ip_port_list mutation
+        if not (self.current_controller_ip_port_list ==
+                CONF.health_manager.controller_ip_port_list):
+            self._update_dests()
         dest = round_robin_addr(self.dests)
         if dest is None:
             LOG.error('No controller address found. Unable to send heartbeat.')

@@ -116,3 +116,8 @@ class HealthMonitorProvisioningError(ProvisioningErrors):
 class NodeProvisioningError(ProvisioningErrors):
 
     message = _('couldn\'t provision Node')
+
+
+class AmpDriverNotImplementedError(AmphoraDriverError):
+
+    message = _('Amphora does not implement this feature.')
