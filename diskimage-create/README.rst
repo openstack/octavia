@@ -48,7 +48,7 @@ Ubuntu
 
 .. code:: bash
 
-   $ sudo apt install qemu git kpartx debootstrap
+   $ sudo apt install qemu-utils git kpartx debootstrap
 
 Fedora, CentOS and Red Hat Enterprise Linux
 
@@ -227,6 +227,18 @@ an OSP repository):
     $ export REG_METHOD='satellite' REG_ACTIVATION_KEY="<activation key>"
 
     $ export REG_SAT_URL="<satellite url>" REG_ORG="<satellite org>"
+
+Building in a virtualenv with tox
+---------------------------------
+To make use of a virtualenv for Python dependencies you may run ``tox``.  Note that
+you may still need to install binary dependencies on the host for the build to succeed.
+
+If you wish to customize your build modify ``tox.ini`` to pass on relevant
+environment variables or command line arguments to the ``diskimage-create.sh`` script.
+
+.. code:: bash
+
+    $ tox -e build
 
 
 Container Support
