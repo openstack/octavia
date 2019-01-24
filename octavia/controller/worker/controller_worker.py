@@ -958,3 +958,32 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         with tf_logging.DynamicLoggingListener(certrotation_amphora_tf,
                                                log=LOG):
             certrotation_amphora_tf.run()
+
+    def update_amphora_agent_config(self, amphora_id):
+        """Update the amphora agent configuration.
+
+        Note: This will update the amphora agent configuration file and
+              update the running configuration for mutatable configuration
+              items.
+
+        :param amphora_id: ID of the amphora to update.
+        :returns: None
+        """
+        LOG.info("Start amphora agent configuration update, amphora's id "
+                 "is: %s", amphora_id)
+        amp = self._amphora_repo.get(db_apis.get_session(), id=amphora_id)
+        lb = self._amphora_repo.get_lb_for_amphora(db_apis.get_session(),
+                                                   amphora_id)
+        flavor = {}
+        if lb.flavor_id:
+            flavor = self._flavor_repo.get_flavor_metadata_dict(
+                db_apis.get_session(), lb.flavor_id)
+
+        update_amphora_tf = self._taskflow_load(
+            self._amphora_flows.update_amphora_config_flow(),
+            store={constants.AMPHORA: amp,
+                   constants.FLAVOR: flavor})
+
+        with tf_logging.DynamicLoggingListener(update_amphora_tf,
+                                               log=LOG):
+            update_amphora_tf.run()

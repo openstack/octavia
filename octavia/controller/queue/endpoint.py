@@ -148,3 +148,8 @@ class Endpoint(object):
     def delete_l7rule(self, context, l7rule_id):
         LOG.info('Deleting l7rule \'%s\'...', l7rule_id)
         self.worker.delete_l7rule(l7rule_id)
+
+    def update_amphora_agent_config(self, context, amphora_id):
+        LOG.info('Updating amphora \'%s\' agent configuration...',
+                 amphora_id)
+        self.worker.update_amphora_agent_config(amphora_id)

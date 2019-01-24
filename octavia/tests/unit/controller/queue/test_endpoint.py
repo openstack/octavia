@@ -175,3 +175,8 @@ class TestEndpoint(base.TestCase):
         self.ep.delete_l7rule(self.context, self.resource_id)
         self.ep.worker.delete_l7rule.assert_called_once_with(
             self.resource_id)
+
+    def test_update_amphora_agent_config(self):
+        self.ep.update_amphora_agent_config(self.context, self.resource_id)
+        self.ep.worker.update_amphora_agent_config.assert_called_once_with(
+            self.resource_id)

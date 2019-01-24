@@ -21,6 +21,7 @@ from oslo_utils import uuidutils
 
 from octavia.common import constants
 import octavia.common.context
+from octavia.common import exceptions
 from octavia.tests.functional.api.v2 import base
 
 
@@ -501,3 +502,101 @@ class TestAmphora(base.BaseAPITest):
         self.amp2_id = self.amp2.id
         self.get(self.AMPHORA_STATS_PATH.format(
             amphora_id=self.amp2_id), status=404)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_config(self, mock_cast):
+        self.put(self.AMPHORA_CONFIG_PATH.format(
+            amphora_id=self.amp_id), body={}, status=202)
+        payload = {constants.AMPHORA_ID: self.amp_id}
+        mock_cast.assert_called_with({}, 'update_amphora_agent_config',
+                                     **payload)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_config_deleted(self, mock_cast):
+        new_amp = self._create_additional_amp()
+        self.amphora_repo.update(self.session, new_amp.id,
+                                 status=constants.DELETED)
+        self.put(self.AMPHORA_CONFIG_PATH.format(
+            amphora_id=new_amp.id), body={}, status=404)
+        self.assertFalse(mock_cast.called)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_config_bad_amp_id(self, mock_cast):
+        self.put(self.AMPHORA_CONFIG_PATH.format(
+            amphora_id='bogus'), body={}, status=404)
+        self.assertFalse(mock_cast.called)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_config_exception(self, mock_cast):
+        mock_cast.side_effect = exceptions.OctaviaException('boom')
+        self.put(self.AMPHORA_CONFIG_PATH.format(
+            amphora_id=self.amp_id), body={}, status=500)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_config_spare_amp(self, mock_cast):
+        amp_args = {
+            'compute_id': uuidutils.generate_uuid(),
+            'status': constants.AMPHORA_READY,
+            'lb_network_ip': '192.168.1.2',
+            'cert_expiration': datetime.datetime.now(),
+            'cert_busy': False,
+            'cached_zone': 'zone1',
+            'created_at': datetime.datetime.now(),
+            'updated_at': datetime.datetime.now(),
+            'image_id': uuidutils.generate_uuid(),
+        }
+        amp = self.amphora_repo.create(self.session, **amp_args)
+        self.put(self.AMPHORA_CONFIG_PATH.format(
+            amphora_id=amp.id), body={}, status=202)
+        payload = {constants.AMPHORA_ID: amp.id}
+        mock_cast.assert_called_with({}, 'update_amphora_agent_config',
+                                     **payload)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_config_authorized(self, mock_cast):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': True,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+
+                self.put(self.AMPHORA_CONFIG_PATH.format(
+                    amphora_id=self.amp_id), body={}, status=202)
+        # Reset api auth setting
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        payload = {constants.AMPHORA_ID: self.amp_id}
+        mock_cast.assert_called_with({}, 'update_amphora_agent_config',
+                                     **payload)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_config_not_authorized(self, mock_cast):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               uuidutils.generate_uuid()):
+            self.put(self.AMPHORA_CONFIG_PATH.format(
+                amphora_id=self.amp_id), body={}, status=403)
+        # Reset api auth setting
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.assertFalse(mock_cast.called)
+
+    def test_bogus_path(self):
+        self.put(self.AMPHORA_PATH.format(amphora_id=self.amp_id) + '/bogus',
+                 body={}, status=405)

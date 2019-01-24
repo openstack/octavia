@@ -83,6 +83,8 @@ class AmphoraController(base.BaseController):
         if amphora_id and remainder:
             controller = remainder[0]
             remainder = remainder[1:]
+            if controller == 'config':
+                return AmphoraUpdateController(amp_id=amphora_id), remainder
             if controller == 'failover':
                 return FailoverController(amp_id=amphora_id), remainder
             if controller == 'stats':
@@ -134,6 +136,47 @@ class FailoverController(base.BaseController):
                 self.repositories.load_balancer.update(
                     context.session, db_amp.load_balancer.id,
                     provisioning_status=constants.ERROR)
+
+
+class AmphoraUpdateController(base.BaseController):
+    RBAC_TYPE = constants.RBAC_AMPHORA
+
+    def __init__(self, amp_id):
+        super(AmphoraUpdateController, self).__init__()
+        topic = cfg.CONF.oslo_messaging.topic
+        self.transport = messaging.get_rpc_transport(cfg.CONF)
+        self.target = messaging.Target(
+            namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
+            topic=topic, version="1.0", fanout=False)
+        self.client = messaging.RPCClient(self.transport, target=self.target)
+        self.amp_id = amp_id
+
+    @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
+    def put(self):
+        """Update amphora agent configuration"""
+        pcontext = pecan.request.context
+        context = pcontext.get('octavia_context')
+        db_amp = self._get_db_amp(context.session, self.amp_id,
+                                  show_deleted=False)
+
+        # Check to see if the amphora is a spare (not associated with an LB)
+        if db_amp.load_balancer:
+            self._auth_validate_action(
+                context, db_amp.load_balancer.project_id,
+                constants.RBAC_PUT_CONFIG)
+        else:
+            self._auth_validate_action(
+                context, context.project_id, constants.RBAC_PUT_CONFIG)
+
+        try:
+            LOG.info("Sending amphora agent update request for amphora %s to "
+                     "the queue.", self.amp_id)
+            payload = {constants.AMPHORA_ID: db_amp.id}
+            self.client.cast({}, 'update_amphora_agent_config', **payload)
+        except Exception:
+            with excutils.save_and_reraise_exception(reraise=True):
+                LOG.error("Unable to send amphora agent update request for "
+                          "amphora %s to the queue.", self.amp_id)
 
 
 class AmphoraStatsController(base.BaseController):

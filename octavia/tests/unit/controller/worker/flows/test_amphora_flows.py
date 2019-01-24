@@ -408,3 +408,15 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertEqual(1, len(amp_flow.provides))
         self.assertEqual(2, len(amp_flow.requires))
+
+    def test_update_amphora_config_flow(self, mock_get_net_driver):
+
+        amp_flow = self.AmpFlow.update_amphora_config_flow()
+
+        self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.AMPHORA, amp_flow.requires)
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
+
+        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(0, len(amp_flow.provides))

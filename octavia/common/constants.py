@@ -297,6 +297,7 @@ UPDATE_POOL_FLOW = 'octavia-update-pool-flow'
 UPDATE_L7POLICY_FLOW = 'octavia-update-l7policy-flow'
 UPDATE_L7RULE_FLOW = 'octavia-update-l7rule-flow'
 UPDATE_AMPS_SUBFLOW = 'octavia-update-amps-subflow'
+UPDATE_AMPHORA_CONFIG_FLOW = 'octavia-update-amp-config-flow'
 
 POST_MAP_AMP_TO_LB_SUBFLOW = 'octavia-post-map-amp-to-lb-subflow'
 CREATE_AMP_FOR_LB_SUBFLOW = 'octavia-create-amp-for-lb-subflow'
@@ -540,6 +541,7 @@ RBAC_FLAVOR = '{}:flavor:'.format(LOADBALANCER_API)
 RBAC_FLAVOR_PROFILE = '{}:flavor-profile:'.format(LOADBALANCER_API)
 RBAC_POST = 'post'
 RBAC_PUT = 'put'
+RBAC_PUT_CONFIG = 'put_config'
 RBAC_PUT_FAILOVER = 'put_failover'
 RBAC_DELETE = 'delete'
 RBAC_GET_ONE = 'get_one'

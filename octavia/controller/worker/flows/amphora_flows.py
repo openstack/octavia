@@ -533,3 +533,19 @@ class AmphoraFlows(object):
             requires=constants.AMPHORA))
 
         return rotated_amphora_flow
+
+    def update_amphora_config_flow(self):
+        """Creates a flow to update the amphora agent configuration.
+
+        :returns: The flow for updating an amphora
+        """
+        update_amphora_flow = linear_flow.Flow(
+            constants.UPDATE_AMPHORA_CONFIG_FLOW)
+
+        update_amphora_flow.add(lifecycle_tasks.AmphoraToErrorOnRevertTask(
+            requires=constants.AMPHORA))
+
+        update_amphora_flow.add(amphora_driver_tasks.AmphoraConfigUpdate(
+            requires=(constants.AMPHORA, constants.FLAVOR)))
+
+        return update_amphora_flow

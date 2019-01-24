@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Octavia now has an administrative API that updates the amphora agent
+    configuration on running amphora.
+upgrade:
+  - |
+    When the amphora agent configuration update API is called on an amphora
+    running a version of the amphora agent that does not support configuration
+    updates, an ERROR log message will be posted to the controller log file
+    indicating that the amphora does not support agent configuration updates.
+    In this case, the amphora image should be updated to a newer version.

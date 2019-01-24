@@ -1408,3 +1408,58 @@ class TestControllerWorker(base.TestCase):
                                         constants.AMPHORA_ID:
                                             _amphora_mock.id}))
         _flow_mock.run.assert_called_once_with()
+
+    @mock.patch('octavia.db.repositories.FlavorRepository.'
+                'get_flavor_metadata_dict')
+    @mock.patch('octavia.db.repositories.AmphoraRepository.get_lb_for_amphora')
+    @mock.patch('octavia.controller.worker.flows.'
+                'amphora_flows.AmphoraFlows.update_amphora_config_flow',
+                return_value=_flow_mock)
+    def test_update_amphora_agent_config(self,
+                                         mock_update_flow,
+                                         mock_get_lb_for_amp,
+                                         mock_flavor_meta,
+                                         mock_api_get_session,
+                                         mock_dyn_log_listener,
+                                         mock_taskflow_load,
+                                         mock_pool_repo_get,
+                                         mock_member_repo_get,
+                                         mock_l7rule_repo_get,
+                                         mock_l7policy_repo_get,
+                                         mock_listener_repo_get,
+                                         mock_lb_repo_get,
+                                         mock_health_mon_repo_get,
+                                         mock_amp_repo_get):
+        _flow_mock.reset_mock()
+        mock_lb = mock.MagicMock()
+        mock_lb.flavor_id = 'vanilla'
+        mock_get_lb_for_amp.return_value = mock_lb
+        mock_flavor_meta.return_value = {'test': 'dict'}
+        cw = controller_worker.ControllerWorker()
+        cw.update_amphora_agent_config(AMP_ID)
+
+        mock_amp_repo_get.assert_called_once_with(_db_session, id=AMP_ID)
+        mock_get_lb_for_amp.assert_called_once_with(_db_session, AMP_ID)
+        mock_flavor_meta.assert_called_once_with(_db_session, 'vanilla')
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+         assert_called_once_with(_flow_mock,
+                                 store={constants.AMPHORA: _amphora_mock,
+                                        constants.FLAVOR: {'test': 'dict'}}))
+        _flow_mock.run.assert_called_once_with()
+
+        # Test with no flavor
+        _flow_mock.reset_mock()
+        mock_amp_repo_get.reset_mock()
+        mock_get_lb_for_amp.reset_mock()
+        mock_flavor_meta.reset_mock()
+        base_taskflow.BaseTaskFlowEngine._taskflow_load.reset_mock()
+        mock_lb.flavor_id = None
+        cw.update_amphora_agent_config(AMP_ID)
+        mock_amp_repo_get.assert_called_once_with(_db_session, id=AMP_ID)
+        mock_get_lb_for_amp.assert_called_once_with(_db_session, AMP_ID)
+        mock_flavor_meta.assert_not_called()
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+         assert_called_once_with(_flow_mock,
+                                 store={constants.AMPHORA: _amphora_mock,
+                                        constants.FLAVOR: {}}))
+        _flow_mock.run.assert_called_once_with()
