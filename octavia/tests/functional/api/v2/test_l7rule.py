@@ -353,6 +353,95 @@ class TestL7Rule(base.BaseAPITest):
         self.assertEqual(ru1['id'],
                          l7rus['rules'][0]['id'])
 
+    def test_get_all_tags_filter(self):
+        rule1 = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api', tags=['test_tag1', 'test_tag2']).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        rule2 = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_COOKIE,
+            constants.L7RULE_COMPARE_TYPE_CONTAINS, 'some-value',
+            key='some-cookie',
+            tags=['test_tag2', 'test_tag3']).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        rule3 = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_HOST_NAME,
+            constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            'www.example.com',
+            tags=['test_tag4', 'test_tag5']).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        rules = self.get(
+            self.l7rules_path,
+            params={'tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(rules, list)
+        self.assertEqual(2, len(rules))
+        self.assertEqual(
+            [rule1.get('id'), rule2.get('id')],
+            [rule.get('id') for rule in rules]
+        )
+
+        rules = self.get(
+            self.l7rules_path,
+            params={'tags': ['test_tag2', 'test_tag3']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(rules, list)
+        self.assertEqual(1, len(rules))
+        self.assertEqual(
+            [rule2.get('id')],
+            [rule.get('id') for rule in rules]
+        )
+
+        rules = self.get(
+            self.l7rules_path,
+            params={'tags-any': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(rules, list)
+        self.assertEqual(2, len(rules))
+        self.assertEqual(
+            [rule1.get('id'), rule2.get('id')],
+            [rule.get('id') for rule in rules]
+        )
+
+        rules = self.get(
+            self.l7rules_path,
+            params={'not-tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(rules, list)
+        self.assertEqual(1, len(rules))
+        self.assertEqual(
+            [rule3.get('id')],
+            [rule.get('id') for rule in rules]
+        )
+
+        rules = self.get(
+            self.l7rules_path,
+            params={'not-tags-any': ['test_tag2', 'test_tag4']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(rules, list)
+        self.assertEqual(0, len(rules))
+
+        rules = self.get(
+            self.l7rules_path,
+            params={'tags': 'test_tag2',
+                    'tags-any': ['test_tag1', 'test_tag3']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(rules, list)
+        self.assertEqual(2, len(rules))
+        self.assertEqual(
+            [rule1.get('id'), rule2.get('id')],
+            [rule.get('id') for rule in rules]
+        )
+
+        rules = self.get(
+            self.l7rules_path,
+            params={'tags': 'test_tag2', 'not-tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(rules, list)
+        self.assertEqual(0, len(rules))
+
     def test_empty_get_all(self):
         response = self.get(self.l7rules_path).json.get(self.root_tag_list)
         self.assertIsInstance(response, list)

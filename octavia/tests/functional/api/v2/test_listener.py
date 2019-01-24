@@ -372,6 +372,102 @@ class TestListener(base.BaseAPITest):
         self.assertEqual(li1['id'],
                          lis['listeners'][0]['id'])
 
+    def test_get_all_tags_filter(self):
+        listener1 = self.create_listener(
+            constants.PROTOCOL_HTTP,
+            80,
+            self.lb_id,
+            name='listener1',
+            tags=['test_tag1', 'test_tag2']
+        ).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        listener2 = self.create_listener(
+            constants.PROTOCOL_HTTP,
+            81,
+            self.lb_id,
+            name='listener2',
+            tags=['test_tag2', 'test_tag3']
+        ).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        listener3 = self.create_listener(
+            constants.PROTOCOL_HTTP,
+            82,
+            self.lb_id,
+            name='listener3',
+            tags=['test_tag4', 'test_tag5']
+        ).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        listeners = self.get(
+            self.LISTENERS_PATH,
+            params={'tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(listeners, list)
+        self.assertEqual(2, len(listeners))
+        self.assertEqual(
+            [listener1.get('id'), listener2.get('id')],
+            [listener.get('id') for listener in listeners]
+        )
+
+        listeners = self.get(
+            self.LISTENERS_PATH,
+            params={'tags': ['test_tag2', 'test_tag3']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(listeners, list)
+        self.assertEqual(1, len(listeners))
+        self.assertEqual(
+            [listener2.get('id')],
+            [listener.get('id') for listener in listeners]
+        )
+
+        listeners = self.get(
+            self.LISTENERS_PATH,
+            params={'tags-any': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(listeners, list)
+        self.assertEqual(2, len(listeners))
+        self.assertEqual(
+            [listener1.get('id'), listener2.get('id')],
+            [listener.get('id') for listener in listeners]
+        )
+
+        listeners = self.get(
+            self.LISTENERS_PATH,
+            params={'not-tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(listeners, list)
+        self.assertEqual(1, len(listeners))
+        self.assertEqual(
+            [listener3.get('id')],
+            [listener.get('id') for listener in listeners]
+        )
+
+        listeners = self.get(
+            self.LISTENERS_PATH,
+            params={'not-tags-any': ['test_tag2', 'test_tag4']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(listeners, list)
+        self.assertEqual(0, len(listeners))
+
+        listeners = self.get(
+            self.LISTENERS_PATH,
+            params={'tags': 'test_tag2',
+                    'tags-any': ['test_tag1', 'test_tag3']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(listeners, list)
+        self.assertEqual(2, len(listeners))
+        self.assertEqual(
+            [listener1.get('id'), listener2.get('id')],
+            [listener.get('id') for listener in listeners]
+        )
+
+        listeners = self.get(
+            self.LISTENERS_PATH,
+            params={'tags': 'test_tag2', 'not-tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(listeners, list)
+        self.assertEqual(0, len(listeners))
+
     def test_get_all_hides_deleted(self):
         api_listener = self.create_listener(
             constants.PROTOCOL_HTTP, 80, self.lb_id).get(self.root_tag)

@@ -17,12 +17,14 @@ import copy
 from oslo_log import log as logging
 from pecan import request
 import sqlalchemy
+from sqlalchemy.orm import aliased
 import sqlalchemy.sql as sa_sql
 
 from octavia.api.common import types
 from octavia.common.config import cfg
 from octavia.common import constants
 from octavia.common import exceptions
+from octavia.db import base_models
 from octavia.db import models
 
 CONF = cfg.CONF
@@ -178,6 +180,54 @@ class PaginationHelper(object):
         links = [types.PageType(**link) for link in links]
         return links
 
+    def _apply_tags_filtering(self, params, model, query):
+        if not getattr(model, "_tags", None):
+            return query
+
+        tag_alias = aliased(base_models.Tags)
+
+        if 'tags' in params:
+            tags = params.pop('tags')
+            if not isinstance(tags, list):
+                tags = [tags]
+            first_tag = tags.pop(0)
+            query = query.join(model._tags)
+            query = query.filter(base_models.Tags.tag == first_tag)
+
+            for tag in tags:
+                query = query.join(tag_alias, model._tags)
+                query = query.filter(tag_alias.tag == tag)
+
+        if 'tags-any' in params:
+            tags = params.pop('tags-any')
+            if not isinstance(tags, list):
+                tags = [tags]
+            query = query.join(tag_alias, model._tags)
+            query = query.filter(tag_alias.tag.in_(tags))
+
+        if 'not-tags' in params:
+            tags = params.pop('not-tags')
+            if not isinstance(tags, list):
+                tags = [tags]
+            first_tag = tags.pop(0)
+            subq = query.session.query(base_models.Tags.resource_id)
+            subq = subq.join(model._tags)
+            subq = subq.filter(base_models.Tags.tag == first_tag)
+            for tag in tags:
+                subq = subq.join(tag_alias, model._tags)
+                subq = subq.filter(tag_alias.tag == tag)
+
+            query = query.filter(~model.id.in_(subq))
+
+        if 'not-tags-any' in params:
+            tags = params.pop('not-tags-any')
+            if not isinstance(tags, list):
+                tags = [tags]
+            query = query.filter(
+                ~model._tags.any(base_models.Tags.tag.in_(tags)))
+
+        return query
+
     def apply(self, query, model, enforce_valid_params=True):
         """Returns a query with sorting / pagination criteria added.
 
@@ -219,6 +269,9 @@ class PaginationHelper(object):
             if 'loadbalancer_id' in filter_params:
                 filter_params['load_balancer_id'] = filter_params.pop(
                     'loadbalancer_id')
+
+            # Apply tags filtering for the models which support tags.
+            query = self._apply_tags_filtering(filter_params, model, query)
 
             # Drop invalid arguments
             self.filters = {k: v for (k, v) in filter_params.items()

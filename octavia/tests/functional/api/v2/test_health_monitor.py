@@ -611,6 +611,108 @@ class TestHealthMonitor(base.BaseAPITest):
         self.assertEqual(hm1['id'],
                          hms['healthmonitors'][0]['id'])
 
+    def test_get_all_tags_filter(self):
+        pool1 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool1').get('pool')
+        self.set_lb_status(self.lb_id)
+        pool2 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool2').get('pool')
+        self.set_lb_status(self.lb_id)
+        pool3 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool3').get('pool')
+        self.set_lb_status(self.lb_id)
+        hm1 = self.create_health_monitor(
+            pool1.get('id'), constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1, tags=['test_tag1', 'test_tag2']).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        hm2 = self.create_health_monitor(
+            pool2.get('id'), constants.HEALTH_MONITOR_PING,
+            1, 1, 1, 1, tags=['test_tag2', 'test_tag3']).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        hm3 = self.create_health_monitor(
+            pool3.get('id'), constants.HEALTH_MONITOR_TCP,
+            1, 1, 1, 1, tags=['test_tag4', 'test_tag5']).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        hms = self.get(
+            self.HMS_PATH,
+            params={'tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(hms, list)
+        self.assertEqual(2, len(hms))
+        self.assertEqual(
+            [hm1.get('id'), hm2.get('id')],
+            [hm.get('id') for hm in hms]
+        )
+
+        hms = self.get(
+            self.HMS_PATH,
+            params={'tags': ['test_tag2', 'test_tag3']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(hms, list)
+        self.assertEqual(1, len(hms))
+        self.assertEqual(
+            [hm2.get('id')],
+            [hm.get('id') for hm in hms]
+        )
+
+        hms = self.get(
+            self.HMS_PATH,
+            params={'tags-any': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(hms, list)
+        self.assertEqual(2, len(hms))
+        self.assertEqual(
+            [hm1.get('id'), hm2.get('id')],
+            [hm.get('id') for hm in hms]
+        )
+
+        hms = self.get(
+            self.HMS_PATH,
+            params={'not-tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(hms, list)
+        self.assertEqual(1, len(hms))
+        self.assertEqual(
+            [hm3.get('id')],
+            [hm.get('id') for hm in hms]
+        )
+
+        hms = self.get(
+            self.HMS_PATH,
+            params={'not-tags-any': ['test_tag2', 'test_tag4']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(hms, list)
+        self.assertEqual(0, len(hms))
+
+        hms = self.get(
+            self.HMS_PATH,
+            params={'tags': 'test_tag2',
+                    'tags-any': ['test_tag1', 'test_tag3']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(hms, list)
+        self.assertEqual(2, len(hms))
+        self.assertEqual(
+            [hm1.get('id'), hm2.get('id')],
+            [hm.get('id') for hm in hms]
+        )
+
+        hms = self.get(
+            self.HMS_PATH,
+            params={'tags': 'test_tag2', 'not-tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(hms, list)
+        self.assertEqual(0, len(hms))
+
     def test_empty_get_all(self):
         response = self.get(self.HMS_PATH).json.get(self.root_tag_list)
         self.assertIsInstance(response, list)
