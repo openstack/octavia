@@ -1100,12 +1100,14 @@ tags:
   description: |
     A list of simple strings assigned to the resource.
   in: body
+  min_version: 2.5
   required: true
   type: list
 tags-optional:
   description: |
     A list of simple strings assigned to the resource.
   in: body
+  min_version: 2.5
   required: false
   type: list
 timeout_client_data:

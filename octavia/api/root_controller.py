@@ -81,4 +81,7 @@ class RootController(rest.RestController):
                                 '2018-12-18T00:00:00Z', host_url)
             self._add_a_version(versions, 'v2.4', 'v2', 'CURRENT',
                                 '2018-12-19T00:00:00Z', host_url)
+            # Tags
+            self._add_a_version(versions, 'v2.5', 'v2', 'CURRENT',
+                                '2019-01-21T00:00:00Z', host_url)
         return {'versions': versions}
