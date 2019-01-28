@@ -1,0 +1,10 @@
+---
+upgrade:
+  - |
+    To fix IPv6 VIP addresses, you must run the "octavia-db-manage upgrade
+    head" migration script.
+fixes:
+  - |
+    Fully expanded IPv6 VIP addresses would fail to store with "Data too long
+    for column 'ip_address' at row 1". This patch includes a database migration
+    to fix this column.
