@@ -141,9 +141,8 @@ class TestNoopProviderDriver(base.TestCase):
             vip_port_id=self.vip_port_id,
             vip_subnet_id=self.vip_subnet_id)
 
-        self.ref_flavor_metadata = {
-            'amp_image_tag': 'The glance image tag to use for this load '
-            'balancer.'}
+        self.ref_flavor_metadata = {"amp_image_tag": "The glance image tag "
+                                    "to use for this load balancer."}
 
     def test_create_vip_port(self):
         vip_dict = self.driver.create_vip_port(self.loadbalancer_id,
@@ -302,6 +301,6 @@ class TestNoopProviderDriver(base.TestCase):
     def test_validate_flavor(self):
         self.driver.validate_flavor(self.ref_flavor_metadata)
 
-        flavor_hash = hash(frozenset(self.ref_flavor_metadata.items()))
+        flavor_hash = hash(frozenset(self.ref_flavor_metadata))
         self.assertEqual((self.ref_flavor_metadata, 'validate_flavor'),
                          self.driver.driver.driverconfig[flavor_hash])

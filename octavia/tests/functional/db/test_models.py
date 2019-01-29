@@ -37,6 +37,23 @@ class ModelTestMixin(object):
             session.add(model)
         return model
 
+    def create_flavor_profile(self, session, **overrides):
+        kwargs = {'id': self.FAKE_UUID_1,
+                  'name': 'fake_profile',
+                  'provider_name': 'fake_provider',
+                  'flavor_data': "{'glance_image': 'ubuntu-16.04.03'}"}
+        kwargs.update(overrides)
+        return self._insert(session, models.FlavorProfile, kwargs)
+
+    def create_flavor(self, session, profile, **overrides):
+        kwargs = {'id': self.FAKE_UUID_1,
+                  'name': 'fake_flavor',
+                  'flavor_profile_id': profile,
+                  'description': 'fake flavor',
+                  'enabled': True}
+        kwargs.update(overrides)
+        return self._insert(session, models.Flavor, kwargs)
+
     def associate_amphora(self, load_balancer, amphora):
         load_balancer.amphorae.append(amphora)
 
@@ -1715,3 +1732,45 @@ class TestDataModelManipulations(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertEqual(l7p.redirect_pool, new_pool)
         self.assertIn(new_pool, listener.pools)
         self.assertIn(listener, new_pool.listeners)
+
+
+class FlavorModelTest(base.OctaviaDBTestBase, ModelTestMixin):
+
+    def setUp(self):
+        super(FlavorModelTest, self).setUp()
+        self.profile = self.create_flavor_profile(self.session)
+
+    def test_create(self):
+        flavor = self.create_flavor(self.session, self.profile.id)
+        self.assertIsNotNone(flavor.id)
+
+    def test_delete(self):
+        flavor = self.create_flavor(self.session, self.profile.id)
+        self.assertIsNotNone(flavor.id)
+        id = flavor.id
+
+        with self.session.begin():
+            self.session.delete(flavor)
+            self.session.flush()
+        new_flavor = self.session.query(
+            models.Flavor).filter_by(id=id).first()
+        self.assertIsNone(new_flavor)
+
+
+class FlavorProfileModelTest(base.OctaviaDBTestBase, ModelTestMixin):
+
+    def test_create(self):
+        fp = self.create_flavor_profile(self.session)
+        self.assertIsNotNone(fp.id)
+
+    def test_delete(self):
+        fp = self.create_flavor_profile(self.session)
+        self.assertIsNotNone(fp.id)
+        id = fp.id
+
+        with self.session.begin():
+            self.session.delete(fp)
+            self.session.flush()
+        new_fp = self.session.query(
+            models.FlavorProfile).filter_by(id=id).first()
+        self.assertIsNone(new_fp)

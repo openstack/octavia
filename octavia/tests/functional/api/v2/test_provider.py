@@ -28,7 +28,7 @@ class TestProvider(base.BaseAPITest):
         amphora_dict = {u'description': u'Amp driver.', u'name': u'amphora'}
         noop_dict = {u'description': u'NoOp driver.', u'name': u'noop_driver'}
         providers = self.get(self.PROVIDERS_PATH).json.get(self.root_tag_list)
-        self.assertEqual(3, len(providers))
+        self.assertEqual(4, len(providers))
         self.assertTrue(octavia_dict in providers)
         self.assertTrue(amphora_dict in providers)
         self.assertTrue(noop_dict in providers)
@@ -39,7 +39,7 @@ class TestProvider(base.BaseAPITest):
         noop_dict = {u'name': u'noop_driver'}
         providers = self.get(self.PROVIDERS_PATH, params={'fields': ['name']})
         providers_list = providers.json.get(self.root_tag_list)
-        self.assertEqual(3, len(providers_list))
+        self.assertEqual(4, len(providers_list))
         self.assertTrue(octavia_dict in providers_list)
         self.assertTrue(amphora_dict in providers_list)
         self.assertTrue(noop_dict in providers_list)

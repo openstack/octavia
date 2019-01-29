@@ -62,6 +62,8 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
         self.l7policy_repo = repo.L7PolicyRepository()
         self.l7rule_repo = repo.L7RuleRepository()
         self.quota_repo = repo.QuotasRepository()
+        self.flavor_repo = repo.FlavorRepository()
+        self.flavor_profile_repo = repo.FlavorProfileRepository()
 
     def test_get_all_return_value(self):
         pool_list, _ = self.pool_repo.get_all(self.session,
@@ -76,6 +78,12 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
         member_list, _ = self.member_repo.get_all(self.session,
                                                   project_id=self.FAKE_UUID_2)
         self.assertIsInstance(member_list, list)
+        fp_list, _ = self.flavor_profile_repo.get_all(
+            self.session, id=self.FAKE_UUID_2)
+        self.assertIsInstance(fp_list, list)
+        flavor_list, _ = self.flavor_repo.get_all(
+            self.session, id=self.FAKE_UUID_2)
+        self.assertIsInstance(flavor_list, list)
 
 
 class AllRepositoriesTest(base.OctaviaDBTestBase):
@@ -109,7 +117,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                            'session_persistence', 'pool', 'member', 'listener',
                            'listener_stats', 'amphora', 'sni',
                            'amphorahealth', 'vrrpgroup', 'l7rule', 'l7policy',
-                           'amp_build_slots', 'amp_build_req', 'quotas')
+                           'amp_build_slots', 'amp_build_req', 'quotas',
+                           'flavor', 'flavor_profile')
         for repo_attr in repo_attr_names:
             single_repo = getattr(self.repos, repo_attr, None)
             message = ("Class Repositories should have %s instance"
@@ -4218,3 +4227,84 @@ class TestQuotasRepository(BaseRepositoryTest):
         self.assertRaises(exceptions.NotFound,
                           self.quota_repo.delete,
                           self.session, 'bogus')
+
+
+class FlavorProfileRepositoryTest(BaseRepositoryTest):
+
+    def create_flavor_profile(self, fp_id):
+        fp = self.flavor_profile_repo.create(
+            self.session, id=fp_id, name="fp1", provider_name='pr1',
+            flavor_data="{'image': 'unbuntu'}")
+        return fp
+
+    def test_get(self):
+        fp = self.create_flavor_profile(fp_id=self.FAKE_UUID_1)
+        new_fp = self.flavor_profile_repo.get(self.session, id=fp.id)
+        self.assertIsInstance(new_fp, models.FlavorProfile)
+        self.assertEqual(fp, new_fp)
+
+    def test_get_all(self):
+        fp1 = self.create_flavor_profile(fp_id=self.FAKE_UUID_1)
+        fp2 = self.create_flavor_profile(fp_id=self.FAKE_UUID_2)
+        fp_list, _ = self.flavor_profile_repo.get_all(self.session)
+        self.assertIsInstance(fp_list, list)
+        self.assertEqual(2, len(fp_list))
+        self.assertEqual(fp1, fp_list[0])
+        self.assertEqual(fp2, fp_list[1])
+
+    def test_create(self):
+        fp = self.create_flavor_profile(fp_id=self.FAKE_UUID_1)
+        self.assertIsInstance(fp, models.FlavorProfile)
+        self.assertEqual(self.FAKE_UUID_1, fp.id)
+        self.assertEqual("fp1", fp.name)
+
+    def test_delete(self):
+        fp = self.create_flavor_profile(fp_id=self.FAKE_UUID_1)
+        self.flavor_profile_repo.delete(self.session, id=fp.id)
+        self.assertIsNone(self.flavor_profile_repo.get(
+            self.session, id=fp.id))
+
+
+class FlavorRepositoryTest(BaseRepositoryTest):
+
+    def create_flavor_profile(self):
+        fp = self.flavor_profile_repo.create(
+            self.session, id=uuidutils.generate_uuid(),
+            name="fp1", provider_name='pr1',
+            flavor_data="{'image': 'unbuntu'}")
+        return fp
+
+    def create_flavor(self, flavor_id, name):
+        fp = self.create_flavor_profile()
+        flavor = self.flavor_repo.create(
+            self.session, id=flavor_id, name=name,
+            flavor_profile_id=fp.id, description='test',
+            enabled=True)
+        return flavor
+
+    def test_get(self):
+        flavor = self.create_flavor(flavor_id=self.FAKE_UUID_2, name='flavor')
+        new_flavor = self.flavor_repo.get(self.session, id=flavor.id)
+        self.assertIsInstance(new_flavor, models.Flavor)
+        self.assertEqual(flavor, new_flavor)
+
+    def test_get_all(self):
+        fl1 = self.create_flavor(flavor_id=self.FAKE_UUID_2, name='flavor1')
+        fl2 = self.create_flavor(flavor_id=self.FAKE_UUID_3, name='flavor2')
+        fl_list, _ = self.flavor_repo.get_all(self.session)
+        self.assertIsInstance(fl_list, list)
+        self.assertEqual(2, len(fl_list))
+        self.assertEqual(fl1, fl_list[0])
+        self.assertEqual(fl2, fl_list[1])
+
+    def test_create(self):
+        fl = self.create_flavor(flavor_id=self.FAKE_UUID_2, name='fl1')
+        self.assertIsInstance(fl, models.Flavor)
+        self.assertEqual(self.FAKE_UUID_2, fl.id)
+        self.assertEqual("fl1", fl.name)
+
+    def test_delete(self):
+        fl = self.create_flavor(flavor_id=self.FAKE_UUID_2, name='fl1')
+        self.flavor_repo.delete(self.session, id=fl.id)
+        self.assertIsNone(self.flavor_repo.get(
+            self.session, id=fl.id))
