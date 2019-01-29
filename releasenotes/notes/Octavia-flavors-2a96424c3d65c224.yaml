@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Octavia now has flavors support which allows the operator to define,
+    named, custom configurations that users can select from when creating
+    a load balancer.
