@@ -1,0 +1,8 @@
+{
+  "flavor_capabilities": [
+    {
+      "name": "loadbalancer_topology",
+      "description": "The load balancer topology. One of: SINGLE - One amphora per load balancer. ACTIVE_STANDBY - Two amphora per load balancer."
+    }
+  ]
+}

@@ -79,6 +79,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     AMPHORA_STATS_PATH = AMPHORA_PATH + '/stats'
 
     PROVIDERS_PATH = '/lbaas/providers'
+    FLAVOR_CAPABILITIES_PATH = (PROVIDERS_PATH +
+                                '/{provider}/flavor_capabilities')
 
     NOT_AUTHORIZED_BODY = {
         'debuginfo': None, 'faultcode': 'Client',
