@@ -389,6 +389,9 @@ class LoadBalancer(base_models.BASE, base_models.IdMixin,
         cascade='all,delete-orphan',
         primaryjoin='and_(foreign(Tags.resource_id)==LoadBalancer.id)'
     )
+    flavor_id = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("flavor.id", name="fk_lb_flavor_id"), nullable=True)
 
 
 class VRRPGroup(base_models.BASE):

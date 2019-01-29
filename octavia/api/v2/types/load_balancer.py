@@ -17,7 +17,6 @@ from wsme import types as wtypes
 from octavia.api.common import types
 from octavia.api.v2.types import listener
 from octavia.api.v2.types import pool
-from octavia.common import constants
 
 
 class BaseLoadBalancerType(types.BaseType):
@@ -53,7 +52,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
     listeners = wtypes.wsattr([types.IdOnlyType])
     pools = wtypes.wsattr([types.IdOnlyType])
     provider = wtypes.wsattr(wtypes.StringType())
-    flavor_id = wtypes.wsattr(wtypes.StringType())
+    flavor_id = wtypes.wsattr(wtypes.UuidType())
     vip_qos_policy_id = wtypes.wsattr(wtypes.UuidType())
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
 
@@ -78,8 +77,6 @@ class LoadBalancerResponse(BaseLoadBalancerType):
         result.pools = [
             pool_model.from_data_model(i) for i in data_model.pools]
 
-        if not result.flavor_id:
-            result.flavor_id = ""
         if not result.provider:
             result.provider = "octavia"
 
@@ -123,10 +120,8 @@ class LoadBalancerPOST(BaseLoadBalancerType):
     listeners = wtypes.wsattr([listener.ListenerSingleCreate], default=[])
     pools = wtypes.wsattr([pool.PoolSingleCreate], default=[])
     provider = wtypes.wsattr(wtypes.StringType(max_length=64))
-    # TODO(johnsom) This should be dynamic based on the loaded flavors
-    #               once flavors are implemented.
-    flavor_id = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_FLAVORS))
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
+    flavor_id = wtypes.wsattr(wtypes.UuidType())
 
 
 class LoadBalancerRootPOST(types.BaseType):

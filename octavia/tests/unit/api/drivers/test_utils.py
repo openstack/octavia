@@ -114,7 +114,6 @@ class TestUtils(base.TestCase):
             'listeners': self.sample_data.provider_listeners,
             'description': '',
             'project_id': self.sample_data.project_id,
-            'flavor_id': '',
             'vip_port_id': self.sample_data.port_id,
             'vip_qos_policy_id': self.sample_data.qos_policy_id,
             'vip_network_id': self.sample_data.network_id,

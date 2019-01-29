@@ -239,7 +239,7 @@ AMPHORAE_NETWORK_CONFIG = 'amphorae_network_config'
 ADDED_PORTS = 'added_ports'
 PORTS = 'ports'
 MEMBER_PORTS = 'member_ports'
-LOADBALANCER_TOPOLOGY = 'topology'
+TOPOLOGY = 'topology'
 HEALTHMONITORS = 'healthmonitors'
 HEALTH_MONITOR_ID = 'health_monitor_id'
 L7POLICIES = 'l7policies'
@@ -548,12 +548,7 @@ RBAC_GET_STATS = 'get_stats'
 RBAC_GET_STATUS = 'get_status'
 
 # PROVIDERS
-# TODO(johnsom) When providers are implemented, this should be removed.
 OCTAVIA = 'octavia'
-
-# FLAVORS
-# TODO(johnsom) When flavors are implemented, this should be removed.
-SUPPORTED_FLAVORS = ()
 
 # systemctl commands
 DISABLE = 'disable'
@@ -566,3 +561,6 @@ AMP_NETNS_SVC_PREFIX = 'amphora-netns'
 HTTP_REUSE = 'has_http_reuse'
 
 FLAVOR_DATA = 'flavor_data'
+
+# Flavor metadata
+LOADBALANCER_TOPOLOGY = 'loadbalancer_topology'

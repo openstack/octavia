@@ -21,6 +21,7 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_db import exception as db_exception
 from oslo_utils import uuidutils
+from sqlalchemy.orm import exc as sa_exception
 
 from octavia.common import constants
 from octavia.common import data_models as models
@@ -149,7 +150,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
               'provider': 'amphora',
               'server_group_id': uuidutils.generate_uuid(),
               'project_id': uuidutils.generate_uuid(),
-              'id': uuidutils.generate_uuid(),
+              'id': uuidutils.generate_uuid(), 'flavor_id': None,
               'tags': ['test_tag']}
         vip = {'ip_address': '192.0.2.1',
                'port_id': uuidutils.generate_uuid(),
@@ -3041,8 +3042,20 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         self.assertEqual(amphora, new_amphora)
 
     def test_count(self):
-        amphora = self.create_amphora(self.FAKE_UUID_1)
-        amp_count = self.amphora_repo.count(self.session, id=amphora.id)
+        comp_id = uuidutils.generate_uuid()
+        self.create_amphora(self.FAKE_UUID_1, compute_id=comp_id)
+        self.create_amphora(self.FAKE_UUID_2, compute_id=comp_id,
+                            status=constants.DELETED)
+        amp_count = self.amphora_repo.count(self.session, compute_id=comp_id)
+        self.assertEqual(2, amp_count)
+
+    def test_count_not_deleted(self):
+        comp_id = uuidutils.generate_uuid()
+        self.create_amphora(self.FAKE_UUID_1, compute_id=comp_id)
+        self.create_amphora(self.FAKE_UUID_2, compute_id=comp_id,
+                            status=constants.DELETED)
+        amp_count = self.amphora_repo.count(self.session, compute_id=comp_id,
+                                            show_deleted=False)
         self.assertEqual(1, amp_count)
 
     def test_create(self):
@@ -4267,11 +4280,13 @@ class FlavorProfileRepositoryTest(BaseRepositoryTest):
 
 class FlavorRepositoryTest(BaseRepositoryTest):
 
+    PROVIDER_NAME = 'provider1'
+
     def create_flavor_profile(self):
         fp = self.flavor_profile_repo.create(
             self.session, id=uuidutils.generate_uuid(),
-            name="fp1", provider_name='pr1',
-            flavor_data="{'image': 'unbuntu'}")
+            name="fp1", provider_name=self.PROVIDER_NAME,
+            flavor_data='{"image": "ubuntu"}')
         return fp
 
     def create_flavor(self, flavor_id, name):
@@ -4308,3 +4323,26 @@ class FlavorRepositoryTest(BaseRepositoryTest):
         self.flavor_repo.delete(self.session, id=fl.id)
         self.assertIsNone(self.flavor_repo.get(
             self.session, id=fl.id))
+
+    def test_get_flavor_metadata_dict(self):
+        ref_dict = {'image': 'ubuntu'}
+        self.create_flavor(flavor_id=self.FAKE_UUID_2, name='fl1')
+        flavor_metadata_dict = self.flavor_repo.get_flavor_metadata_dict(
+            self.session, self.FAKE_UUID_2)
+        self.assertEqual(ref_dict, flavor_metadata_dict)
+
+        # Test missing flavor
+        self.assertRaises(sa_exception.NoResultFound,
+                          self.flavor_repo.get_flavor_metadata_dict,
+                          self.session, self.FAKE_UUID_1)
+
+    def test_get_flavor_provider(self):
+        self.create_flavor(flavor_id=self.FAKE_UUID_2, name='fl1')
+        provider_name = self.flavor_repo.get_flavor_provider(self.session,
+                                                             self.FAKE_UUID_2)
+        self.assertEqual(self.PROVIDER_NAME, provider_name)
+
+        # Test missing flavor
+        self.assertRaises(sa_exception.NoResultFound,
+                          self.flavor_repo.get_flavor_provider,
+                          self.session, self.FAKE_UUID_1)

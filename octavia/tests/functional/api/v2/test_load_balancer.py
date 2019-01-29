@@ -19,6 +19,7 @@ import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
+from sqlalchemy.orm import exc as sa_exception
 
 from octavia.api.drivers import exceptions as provider_exceptions
 from octavia.common import constants
@@ -834,7 +835,7 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertIn("Provider 'BOGUS' is not enabled.",
                       response.json.get('faultstring'))
 
-    def test_create_flavor_bogus(self, **optionals):
+    def test_create_flavor_bad_type(self, **optionals):
         lb_json = {'name': 'test1',
                    'vip_subnet_id': uuidutils.generate_uuid(),
                    'project_id': self.project_id,
@@ -844,7 +845,109 @@ class TestLoadBalancer(base.BaseAPITest):
         body = self._build_body(lb_json)
         response = self.post(self.LBS_PATH, body, status=400)
         self.assertIn("Invalid input for field/attribute flavor_id. Value: "
-                      "'BOGUS'. Value should be one of:",
+                      "'BOGUS'. Value should be UUID format",
+                      response.json.get('faultstring'))
+
+    def test_create_flavor_invalid(self, **optionals):
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id,
+                   'flavor_id': uuidutils.generate_uuid()
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=400)
+        self.assertIn("Validation failure: Invalid flavor_id.",
+                      response.json.get('faultstring'))
+
+    def test_create_flavor_disabled(self, **optionals):
+        fp = self.create_flavor_profile('test1', 'noop_driver',
+                                        '{"image": "ubuntu"}')
+        flavor = self.create_flavor('name1', 'description',
+                                    fp.get('id'), False)
+        test_flavor_id = flavor.get('id')
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id,
+                   'flavor_id': test_flavor_id,
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=400)
+        ref_faultstring = ('The selected flavor is not allowed in this '
+                           'deployment: {}'.format(test_flavor_id))
+        self.assertEqual(ref_faultstring, response.json.get('faultstring'))
+
+    def test_create_flavor_missing(self, **optionals):
+        fp = self.create_flavor_profile('test1', 'noop_driver',
+                                        '{"image": "ubuntu"}')
+        flavor = self.create_flavor('name1', 'description', fp.get('id'), True)
+        test_flavor_id = flavor.get('id')
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id,
+                   'flavor_id': test_flavor_id
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        with mock.patch('octavia.db.repositories.FlavorRepository.'
+                        'get_flavor_metadata_dict',
+                        side_effect=sa_exception.NoResultFound):
+            response = self.post(self.LBS_PATH, body, status=400)
+        self.assertIn("Validation failure: Invalid flavor_id.",
+                      response.json.get('faultstring'))
+
+    def test_create_flavor_no_provider(self, **optionals):
+        fp = self.create_flavor_profile('test1', 'noop_driver',
+                                        '{"image": "ubuntu"}')
+        flavor = self.create_flavor('name1', 'description', fp.get('id'), True)
+        test_flavor_id = flavor.get('id')
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id,
+                   'flavor_id': test_flavor_id,
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=201)
+        api_lb = response.json.get(self.root_tag)
+        self.assertEqual('noop_driver', api_lb.get('provider'))
+        self.assertEqual(test_flavor_id, api_lb.get('flavor_id'))
+
+    def test_matching_providers(self, **optionals):
+        fp = self.create_flavor_profile('test1', 'noop_driver',
+                                        '{"image": "ubuntu"}')
+        flavor = self.create_flavor('name1', 'description', fp.get('id'), True)
+        test_flavor_id = flavor.get('id')
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id,
+                   'flavor_id': test_flavor_id,
+                   'provider': 'noop_driver'
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=201)
+        api_lb = response.json.get(self.root_tag)
+        self.assertEqual('noop_driver', api_lb.get('provider'))
+        self.assertEqual(test_flavor_id, api_lb.get('flavor_id'))
+
+    def test_conflicting_providers(self, **optionals):
+        fp = self.create_flavor_profile('test1', 'noop_driver',
+                                        '{"image": "ubuntu"}')
+        flavor = self.create_flavor('name1', 'description', fp.get('id'), True)
+        test_flavor_id = flavor.get('id')
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id,
+                   'flavor_id': test_flavor_id,
+                   'provider': 'noop_driver-alt'
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=400)
+        self.assertIn("Flavor '{}' is not compatible with provider "
+                      "'noop_driver-alt'".format(test_flavor_id),
                       response.json.get('faultstring'))
 
     def test_get_all_admin(self):
@@ -2203,7 +2306,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             # expected that this would be overwritten anyway, so 'ANY' is fine?
             'vip_network_id': mock.ANY,
             'vip_qos_policy_id': None,
-            'flavor_id': '',
+            'flavor_id': None,
             'provider': 'noop_driver',
             'tags': []
         }

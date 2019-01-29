@@ -12,12 +12,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_config import cfg
 from oslo_utils import uuidutils
 
 from octavia.api.v1.types import l7rule
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.common import validate
+
+CONF = cfg.CONF
 
 
 def create_load_balancer_tree(lb_dict):
@@ -64,6 +67,10 @@ def create_load_balancer(lb_dict):
         lb_dict['vip']['load_balancer_id'] = lb_dict.get('id')
     lb_dict[constants.PROVISIONING_STATUS] = constants.PENDING_CREATE
     lb_dict[constants.OPERATING_STATUS] = constants.OFFLINE
+
+    # Set defaults later possibly overriden by flavors later
+    lb_dict['topology'] = CONF.controller_worker.loadbalancer_topology
+
     return lb_dict
 
 

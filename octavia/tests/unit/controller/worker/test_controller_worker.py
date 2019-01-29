@@ -424,6 +424,7 @@ class TestControllerWorker(base.TestCase):
         }
         lb_mock = mock.MagicMock()
         lb_mock.listeners = []
+        lb_mock.topology = constants.TOPOLOGY_SINGLE
         mock_lb_repo_get.side_effect = [None, None, None, lb_mock]
 
         cw = controller_worker.ControllerWorker()
@@ -467,6 +468,8 @@ class TestControllerWorker(base.TestCase):
             'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY},
             constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY
         }
+        setattr(mock_lb_repo_get.return_value, 'topology',
+                constants.TOPOLOGY_ACTIVE_STANDBY)
         setattr(mock_lb_repo_get.return_value, 'listeners', [])
 
         cw = controller_worker.ControllerWorker()
@@ -501,7 +504,8 @@ class TestControllerWorker(base.TestCase):
 
         listeners = [data_models.Listener(id='listener1'),
                      data_models.Listener(id='listener2')]
-        lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners)
+        lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners,
+                                      topology=constants.TOPOLOGY_SINGLE)
         mock_lb_repo_get.return_value = lb
         mock_eng = mock.Mock()
         mock_taskflow_load.return_value = mock_eng
@@ -551,7 +555,9 @@ class TestControllerWorker(base.TestCase):
 
         listeners = [data_models.Listener(id='listener1'),
                      data_models.Listener(id='listener2')]
-        lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners)
+        lb = data_models.LoadBalancer(
+            id=LB_ID, listeners=listeners,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY)
         mock_lb_repo_get.return_value = lb
         mock_eng = mock.Mock()
         mock_taskflow_load.return_value = mock_eng
@@ -564,8 +570,6 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_load_balancer(LB_ID)
 
-        # mock_create_single_topology.assert_not_called()
-        # mock_create_active_standby_topology.assert_called_once()
         mock_get_create_load_balancer_flow.assert_called_with(
             topology=constants.TOPOLOGY_ACTIVE_STANDBY, listeners=lb.listeners)
         mock_taskflow_load.assert_called_with(

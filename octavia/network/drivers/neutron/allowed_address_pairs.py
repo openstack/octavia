@@ -185,8 +185,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
         # Currently we are using the VIP network for VRRP
         # so we need to open up the protocols for it
-        if (CONF.controller_worker.loadbalancer_topology ==
-                constants.TOPOLOGY_ACTIVE_STANDBY):
+        if load_balancer.topology == constants.TOPOLOGY_ACTIVE_STANDBY:
             try:
                 self._create_security_group_rule(
                     sec_grp_id,
