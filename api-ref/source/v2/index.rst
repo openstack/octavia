@@ -56,6 +56,16 @@ Providers
 ---------
 .. include:: provider.inc
 
+-------
+Flavors
+-------
+.. include:: flavor.inc
+
+---------------
+Flavor Profiles
+---------------
+.. include:: flavorprofile.inc
+
 --------
 Amphorae
 --------

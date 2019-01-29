@@ -1,0 +1,1 @@
+curl -X PUT -H "Content-Type: application/json" -H "X-Auth-Token: <token>" -d '{"flavor":{"name":"Basic","description":"A basic standalone Octavia load balancer.","enabled":false}}' http://198.51.100.10:9876/v2.0/lbaas/flavors/8f94060c-8d5b-4472-9cfd-e8a2b909481d

@@ -7,6 +7,18 @@ path-amphora-id:
   in: path
   required: true
   type: uuid
+path-flavor-id:
+  description: |
+    The ID of the flavor to query.
+  in: path
+  required: true
+  type: uuid
+path-flavorprofile-id:
+  description: |
+    The ID of the flavor profile to query.
+  in: path
+  required: true
+  type: uuid
 path-healthmonitor-id:
   description: |
     The ID of the health monitor to query.
@@ -305,18 +317,72 @@ description-optional:
   in: body
   required: false
   type: string
+enabled:
+  description: |
+    If the resource is available for use.
+  in: body
+  required: true
+  type: boolean
+enabled-optional:
+  description: |
+    If the resource is available for use. The default is True.
+  in: body
+  required: false
+  type: boolean
+flavor:
+  description: |
+    A flavor object.
+  in: body
+  required: true
+  type: object
+flavor-data:
+  description: |
+    The JSON string containing the flavor metadata.
+  in: body
+  required: true
+  type: string
+flavor-data-optional:
+  description: |
+    The JSON string containing the flavor metadata.
+  in: body
+  required: false
+  type: string
 flavor-id:
   description: |
     The ID of the flavor.
   in: body
   required: true
-  type: string
+  type: uuid
 flavor-id-optional:
   description: |
     The ID of the flavor.
   in: body
   required: false
-  type: string
+  type: uuid
+flavor-profile-id:
+  description: |
+    The ID of the flavor profile.
+  in: body
+  required: true
+  type: uuid
+flavorprofile:
+  description: |
+    A ``flavorprofile`` object.
+  in: body
+  required: true
+  type: object
+flavorprofiles:
+  description: |
+    A list of ``flavorprofile`` objects.
+  in: body
+  required: true
+  type: array
+flavors:
+  description: |
+    A list of ``flavor`` objects.
+  in: body
+  required: true
+  type: array
 healthmonitor-delay:
   description: |
     The time, in seconds, between sending probes to members.
@@ -910,6 +976,12 @@ provider-name:
     Provider name.
   in: body
   required: true
+  type: string
+provider-name-optional:
+  description: |
+    Provider name.
+  in: body
+  required: false
   type: string
 provider-optional:
   description: |

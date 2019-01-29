@@ -1,0 +1,1 @@
+curl -X PUT -H "Content-Type: application/json" -H "X-Auth-Token: <token>" -d '{"flavorprofile":{"name":"amphora-standalone","provider_name":"amphora","flavor_data":"{\"loadbalancer_topology\": \"SINGLE\"}"}}' http://198.51.100.10:9876/v2.0/lbaas/flavorprofiles/5712097e-0092-45dc-bff0-ab68b61ad51a

@@ -1,0 +1,10 @@
+{
+    "flavorprofiles": [
+        {
+            "id": "5712097e-0092-45dc-bff0-ab68b61ad51a",
+            "name": "amphora-act-stdby",
+            "provider_name": "amphora",
+            "flavor_data": "{\"loadbalancer_topology\": \"ACTIVE_STANDBY\"}"
+        }
+    ]
+}

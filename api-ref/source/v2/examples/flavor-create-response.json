@@ -1,0 +1,9 @@
+{
+    "flavor": {
+            "id": "8f94060c-8d5b-4472-9cfd-e8a2b909481d",
+            "name": "Basic",
+            "description": "A basic standalone Octavia load balancer.",
+            "enabled": true,
+            "flavor_profile_id": "5712097e-0092-45dc-bff0-ab68b61ad51a"
+    }
+}
