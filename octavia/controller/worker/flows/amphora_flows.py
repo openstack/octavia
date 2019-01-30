@@ -55,11 +55,12 @@ class AmphoraFlows(object):
 
             create_amphora_flow.add(compute_tasks.CertComputeCreate(
                 requires=(constants.AMPHORA_ID, constants.SERVER_PEM,
-                          constants.BUILD_TYPE_PRIORITY),
+                          constants.BUILD_TYPE_PRIORITY, constants.FLAVOR),
                 provides=constants.COMPUTE_ID))
         else:
             create_amphora_flow.add(compute_tasks.ComputeCreate(
-                requires=(constants.AMPHORA_ID, constants.BUILD_TYPE_PRIORITY),
+                requires=(constants.AMPHORA_ID, constants.BUILD_TYPE_PRIORITY,
+                          constants.FLAVOR),
                 provides=constants.COMPUTE_ID))
         create_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
@@ -140,6 +141,7 @@ class AmphoraFlows(object):
                         constants.SERVER_PEM,
                         constants.BUILD_TYPE_PRIORITY,
                         constants.SERVER_GROUP_ID,
+                        constants.FLAVOR
                     ),
                     provides=constants.COMPUTE_ID))
             else:
@@ -149,6 +151,7 @@ class AmphoraFlows(object):
                         constants.AMPHORA_ID,
                         constants.SERVER_PEM,
                         constants.BUILD_TYPE_PRIORITY,
+                        constants.FLAVOR
                     ),
                     provides=constants.COMPUTE_ID))
         else:
@@ -159,6 +162,7 @@ class AmphoraFlows(object):
                         constants.AMPHORA_ID,
                         constants.BUILD_TYPE_PRIORITY,
                         constants.SERVER_GROUP_ID,
+                        constants.FLAVOR
                     ),
                     provides=constants.COMPUTE_ID))
             else:
@@ -167,6 +171,7 @@ class AmphoraFlows(object):
                     requires=(
                         constants.AMPHORA_ID,
                         constants.BUILD_TYPE_PRIORITY,
+                        constants.FLAVOR
                     ),
                     provides=constants.COMPUTE_ID))
 

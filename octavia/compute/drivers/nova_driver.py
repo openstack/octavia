@@ -88,6 +88,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
             cacert=CONF.glance.ca_certificates_file)
         self.manager = self._nova_client.servers
         self.server_groups = self._nova_client.server_groups
+        self.flavor_manager = self._nova_client.flavors
 
     def build(self, name="amphora_name", amphora_flavor=None,
               image_id=None, image_tag=None, image_owner=None,
@@ -327,3 +328,21 @@ class VirtualMachineManager(compute_base.ComputeBase):
                       'with compute ID {compute_id}. '
                       'Skipping.'.format(port_id=port_id,
                                          compute_id=compute_id))
+
+    def validate_flavor(self, flavor_id):
+        """Validates that a flavor exists in nova.
+
+        :param flavor_id: ID of the flavor to lookup in nova.
+        :raises: NotFound
+        :returns: None
+        """
+        try:
+            self.flavor_manager.get(flavor_id)
+        except nova_exceptions.NotFound:
+            LOG.info('Flavor {} was not found in nova.'.format(flavor_id))
+            raise exceptions.InvalidSubresource(resource='Nova flavor',
+                                                id=flavor_id)
+        except Exception as e:
+            LOG.exception('Nova reports a failure getting flavor details for '
+                          'flavor ID {0}: {1}'.format(flavor_id, str(e)))
+            raise

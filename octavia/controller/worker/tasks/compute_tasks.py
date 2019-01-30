@@ -49,7 +49,7 @@ class ComputeCreate(BaseComputeTask):
 
     def execute(self, amphora_id, config_drive_files=None,
                 build_type_priority=constants.LB_CREATE_NORMAL_PRIORITY,
-                server_group_id=None, ports=None):
+                server_group_id=None, ports=None, flavor=None):
         """Create an amphora
 
         :returns: an amphora
@@ -68,6 +68,13 @@ class ComputeCreate(BaseComputeTask):
         ssh_access = CONF.controller_worker.amp_ssh_access_allowed
         key_name = None if not ssh_access else key_name
 
+        # Apply an Octavia flavor customizations
+        if flavor:
+            amp_compute_flavor = flavor.get(
+                constants.COMPUTE_FLAVOR, CONF.controller_worker.amp_flavor_id)
+        else:
+            amp_compute_flavor = CONF.controller_worker.amp_flavor_id
+
         try:
             if CONF.haproxy_amphora.build_rate_limit != -1:
                 self.rate_limit.add_to_build_request_queue(
@@ -84,7 +91,7 @@ class ComputeCreate(BaseComputeTask):
 
             compute_id = self.compute.build(
                 name="amphora-" + amphora_id,
-                amphora_flavor=CONF.controller_worker.amp_flavor_id,
+                amphora_flavor=amp_compute_flavor,
                 image_id=CONF.controller_worker.amp_image_id,
                 image_tag=CONF.controller_worker.amp_image_tag,
                 image_owner=CONF.controller_worker.amp_image_owner_id,
@@ -125,7 +132,7 @@ class ComputeCreate(BaseComputeTask):
 class CertComputeCreate(ComputeCreate):
     def execute(self, amphora_id, server_pem,
                 build_type_priority=constants.LB_CREATE_NORMAL_PRIORITY,
-                server_group_id=None, ports=None):
+                server_group_id=None, ports=None, flavor=None):
         """Create an amphora
 
         :returns: an amphora
@@ -140,7 +147,7 @@ class CertComputeCreate(ComputeCreate):
         return super(CertComputeCreate, self).execute(
             amphora_id, config_drive_files=config_drive_files,
             build_type_priority=build_type_priority,
-            server_group_id=server_group_id, ports=ports)
+            server_group_id=server_group_id, ports=ports, flavor=flavor)
 
 
 class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):

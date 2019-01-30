@@ -568,3 +568,4 @@ FLAVOR_DATA = 'flavor_data'
 
 # Flavor metadata
 LOADBALANCER_TOPOLOGY = 'loadbalancer_topology'
+COMPUTE_FLAVOR = 'compute_flavor'

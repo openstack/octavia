@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Operators can now use the 'compute_flavor' Octavia flavor capability when
+    using the amphora provider driver. This allows custom compute driver
+    flavors to be used per-load balancer. If this is not defined in an
+    Octavia flavor, the amp_flavor_id Octavia configuration file setting
+    will continue to be used.

@@ -1142,6 +1142,8 @@ class TestControllerWorker(base.TestCase):
 
         _flow_mock.run.assert_called_once_with()
 
+    @mock.patch('octavia.db.repositories.FlavorRepository.'
+                'get_flavor_metadata_dict', return_value={})
     @mock.patch('octavia.controller.worker.flows.'
                 'amphora_flows.AmphoraFlows.get_failover_flow',
                 return_value=_flow_mock)
@@ -1149,6 +1151,7 @@ class TestControllerWorker(base.TestCase):
     def test_failover_amphora(self,
                               mock_update,
                               mock_get_failover_flow,
+                              mock_get_flavor_meta,
                               mock_api_get_session,
                               mock_dyn_log_listener,
                               mock_taskflow_load,
@@ -1173,7 +1176,8 @@ class TestControllerWorker(base.TestCase):
                        constants.LOADBALANCER_ID:
                            _amphora_mock.load_balancer_id,
                        constants.BUILD_TYPE_PRIORITY:
-                           constants.LB_CREATE_FAILOVER_PRIORITY
+                           constants.LB_CREATE_FAILOVER_PRIORITY,
+                       constants.FLAVOR: {}
                        }))
 
         _flow_mock.run.assert_called_once_with()
@@ -1329,6 +1333,8 @@ class TestControllerWorker(base.TestCase):
         mock_update.assert_called_with(_db_session, 123,
                                        provisioning_status=constants.ERROR)
 
+    @mock.patch('octavia.db.repositories.FlavorRepository.'
+                'get_flavor_metadata_dict', return_value={})
     @mock.patch('octavia.controller.worker.flows.'
                 'amphora_flows.AmphoraFlows.get_failover_flow',
                 return_value=_flow_mock)
@@ -1338,8 +1344,9 @@ class TestControllerWorker(base.TestCase):
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_failover_amphora_anti_affinity(self,
                                             mock_update,
-                                            mock_get_update_listener_flow,
                                             mock_get_lb_for_amphora,
+                                            mock_get_update_listener_flow,
+                                            mock_get_flavor_meta,
                                             mock_api_get_session,
                                             mock_dyn_log_listener,
                                             mock_taskflow_load,
@@ -1368,6 +1375,7 @@ class TestControllerWorker(base.TestCase):
                        constants.BUILD_TYPE_PRIORITY:
                            constants.LB_CREATE_FAILOVER_PRIORITY,
                        constants.SERVER_GROUP_ID: "123",
+                       constants.FLAVOR: {}
                        }))
 
         _flow_mock.run.assert_called_once_with()

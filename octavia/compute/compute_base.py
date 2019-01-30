@@ -121,3 +121,14 @@ class ComputeBase(object):
         :raises: Exception
         """
         pass
+
+    @abc.abstractmethod
+    def validate_flavor(self, flavor_id):
+        """Validates that a compute flavor exists.
+
+        :param flavor_id: ID of the compute flavor.
+        :return: None
+        :raises: NotFound
+        :raises: NotImplementedError
+        """
+        pass

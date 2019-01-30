@@ -57,7 +57,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.SERVER_PEM, amp_flow.provides)
 
         self.assertEqual(5, len(amp_flow.provides))
-        self.assertEqual(1, len(amp_flow.requires))
+        self.assertEqual(2, len(amp_flow.requires))
 
     def test_get_create_amphora_flow_cert(self, mock_get_net_driver):
         self.AmpFlow = amphora_flows.AmphoraFlows()
@@ -71,7 +71,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
 
         self.assertEqual(5, len(amp_flow.provides))
-        self.assertEqual(1, len(amp_flow.requires))
+        self.assertEqual(2, len(amp_flow.requires))
 
     def test_get_create_amphora_for_lb_flow(self, mock_get_net_driver):
 
@@ -89,7 +89,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.SERVER_PEM, amp_flow.provides)
 
         self.assertEqual(5, len(amp_flow.provides))
-        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(3, len(amp_flow.requires))
 
     def test_get_cert_create_amphora_for_lb_flow(self, mock_get_net_driver):
 
@@ -109,7 +109,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.SERVER_PEM, amp_flow.provides)
 
         self.assertEqual(5, len(amp_flow.provides))
-        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(3, len(amp_flow.requires))
 
     def test_get_cert_master_create_amphora_for_lb_flow(
             self, mock_get_net_driver):
@@ -130,7 +130,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.SERVER_PEM, amp_flow.provides)
 
         self.assertEqual(5, len(amp_flow.provides))
-        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(3, len(amp_flow.requires))
 
     def test_get_cert_master_rest_anti_affinity_create_amphora_for_lb_flow(
             self, mock_get_net_driver):
@@ -149,7 +149,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.SERVER_PEM, amp_flow.provides)
 
         self.assertEqual(5, len(amp_flow.provides))
-        self.assertEqual(3, len(amp_flow.requires))
+        self.assertEqual(4, len(amp_flow.requires))
         self.conf.config(group="nova", enable_anti_affinity=False)
 
     def test_get_cert_backup_create_amphora_for_lb_flow(
@@ -170,7 +170,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.SERVER_PEM, amp_flow.provides)
 
         self.assertEqual(5, len(amp_flow.provides))
-        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(3, len(amp_flow.requires))
 
     def test_get_cert_bogus_create_amphora_for_lb_flow(
             self, mock_get_net_driver):
@@ -190,7 +190,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.SERVER_PEM, amp_flow.provides)
 
         self.assertEqual(5, len(amp_flow.provides))
-        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(3, len(amp_flow.requires))
 
     def test_get_cert_backup_rest_anti_affinity_create_amphora_for_lb_flow(
             self, mock_get_net_driver):
@@ -208,7 +208,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.SERVER_PEM, amp_flow.provides)
 
         self.assertEqual(5, len(amp_flow.provides))
-        self.assertEqual(3, len(amp_flow.requires))
+        self.assertEqual(4, len(amp_flow.requires))
         self.conf.config(group="nova", enable_anti_affinity=False)
 
     def test_get_delete_amphora_flow(self, mock_get_net_driver):
@@ -259,7 +259,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, amp_flow.provides)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
 
-        self.assertEqual(3, len(amp_flow.requires))
+        self.assertEqual(4, len(amp_flow.requires))
         self.assertEqual(12, len(amp_flow.provides))
 
         amp_flow = self.AmpFlow.get_failover_flow(
@@ -279,7 +279,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, amp_flow.provides)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
 
-        self.assertEqual(3, len(amp_flow.requires))
+        self.assertEqual(4, len(amp_flow.requires))
         self.assertEqual(12, len(amp_flow.provides))
 
         amp_flow = self.AmpFlow.get_failover_flow(
@@ -299,7 +299,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, amp_flow.provides)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
 
-        self.assertEqual(3, len(amp_flow.requires))
+        self.assertEqual(4, len(amp_flow.requires))
         self.assertEqual(12, len(amp_flow.provides))
 
         amp_flow = self.AmpFlow.get_failover_flow(
@@ -319,7 +319,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, amp_flow.provides)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
 
-        self.assertEqual(3, len(amp_flow.requires))
+        self.assertEqual(4, len(amp_flow.requires))
         self.assertEqual(12, len(amp_flow.provides))
 
     def test_get_failover_flow_spare(self, mock_get_net_driver):
