@@ -17,6 +17,7 @@ from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.amphorae.backends.agent import agent_jinja_cfg
+from octavia.common import constants
 import octavia.tests.unit.base as base
 
 AMP_ID = uuidutils.generate_uuid()
@@ -82,8 +83,9 @@ class AgentJinjaTestCase(base.TestCase):
                            'amphora_id = ' + AMP_ID + '\n'
                            'amphora_udp_driver = keepalived_lvs\n\n'
                            '[controller_worker]\n'
-                           'loadbalancer_topology = SINGLE')
-        agent_cfg = ajc.build_agent_config(AMP_ID)
+                           'loadbalancer_topology = ' +
+                           constants.TOPOLOGY_SINGLE)
+        agent_cfg = ajc.build_agent_config(AMP_ID, constants.TOPOLOGY_SINGLE)
         self.assertEqual(expected_config, agent_cfg)
 
     def test_build_agent_config_with_interfaces_file(self):
@@ -119,8 +121,10 @@ class AgentJinjaTestCase(base.TestCase):
                            'amphora_id = ' + AMP_ID + '\n'
                            'amphora_udp_driver = keepalived_lvs\n\n'
                            '[controller_worker]\n'
-                           'loadbalancer_topology = SINGLE')
-        agent_cfg = ajc.build_agent_config(AMP_ID)
+                           'loadbalancer_topology = ' +
+                           constants.TOPOLOGY_ACTIVE_STANDBY)
+        agent_cfg = ajc.build_agent_config(AMP_ID,
+                                           constants.TOPOLOGY_ACTIVE_STANDBY)
         self.assertEqual(expected_config, agent_cfg)
 
     def test_build_agent_config_with_new_udp_driver(self):
@@ -155,6 +159,7 @@ class AgentJinjaTestCase(base.TestCase):
                            'amphora_id = ' + AMP_ID + '\n'
                            'amphora_udp_driver = new_udp_driver\n\n'
                            '[controller_worker]\n'
-                           'loadbalancer_topology = SINGLE')
-        agent_cfg = ajc.build_agent_config(AMP_ID)
+                           'loadbalancer_topology = ' +
+                           constants.TOPOLOGY_SINGLE)
+        agent_cfg = ajc.build_agent_config(AMP_ID, constants.TOPOLOGY_SINGLE)
         self.assertEqual(expected_config, agent_cfg)
