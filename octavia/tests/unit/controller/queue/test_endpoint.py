@@ -15,6 +15,7 @@
 import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
+from oslo_utils import uuidutils
 
 from octavia.controller.queue import endpoint
 from octavia.controller.worker import controller_worker
@@ -39,11 +40,18 @@ class TestEndpoint(base.TestCase):
         self.resource_updates = {}
         self.resource_id = 1234
         self.server_group_id = 3456
+        self.flavor_id = uuidutils.generate_uuid()
 
     def test_create_load_balancer(self):
+        self.ep.create_load_balancer(self.context, self.resource_id,
+                                     flavor=self.flavor_id)
+        self.ep.worker.create_load_balancer.assert_called_once_with(
+            self.resource_id, self.flavor_id)
+
+    def test_create_load_balancer_no_flavor(self):
         self.ep.create_load_balancer(self.context, self.resource_id)
         self.ep.worker.create_load_balancer.assert_called_once_with(
-            self.resource_id)
+            self.resource_id, None)
 
     def test_update_load_balancer(self):
         self.ep.update_load_balancer(self.context, self.resource_id,

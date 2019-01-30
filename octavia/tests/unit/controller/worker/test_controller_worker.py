@@ -420,7 +420,8 @@ class TestControllerWorker(base.TestCase):
         store = {
             constants.LOADBALANCER_ID: LB_ID,
             'update_dict': {'topology': constants.TOPOLOGY_SINGLE},
-            constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY
+            constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY,
+            constants.FLAVOR: None
         }
         lb_mock = mock.MagicMock()
         lb_mock.listeners = []
@@ -466,7 +467,8 @@ class TestControllerWorker(base.TestCase):
         store = {
             constants.LOADBALANCER_ID: LB_ID,
             'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY},
-            constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY
+            constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY,
+            constants.FLAVOR: None
         }
         setattr(mock_lb_repo_get.return_value, 'topology',
                 constants.TOPOLOGY_ACTIVE_STANDBY)
@@ -512,7 +514,8 @@ class TestControllerWorker(base.TestCase):
         store = {
             constants.LOADBALANCER_ID: LB_ID,
             'update_dict': {'topology': constants.TOPOLOGY_SINGLE},
-            constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY
+            constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY,
+            constants.FLAVOR: None
         }
 
         cw = controller_worker.ControllerWorker()
@@ -564,7 +567,8 @@ class TestControllerWorker(base.TestCase):
         store = {
             constants.LOADBALANCER_ID: LB_ID,
             'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY},
-            constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY
+            constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY,
+            constants.FLAVOR: None
         }
 
         cw = controller_worker.ControllerWorker()

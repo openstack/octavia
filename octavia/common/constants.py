@@ -561,6 +561,9 @@ AMP_NETNS_SVC_PREFIX = 'amphora-netns'
 # Amphora Feature Compatibility
 HTTP_REUSE = 'has_http_reuse'
 
+# TODO(johnsom) convert this to octavia_lib constant flavor
+# once octavia is transitioned to use octavia_lib
+FLAVOR = 'flavor'
 FLAVOR_DATA = 'flavor_data'
 
 # Flavor metadata

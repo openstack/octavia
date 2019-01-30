@@ -30,7 +30,7 @@ class Endpoint(object):
     #   1.0 - Initial version.
     target = messaging.Target(
         namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
-        version='1.0')
+        version='1.1')
 
     def __init__(self):
         self.worker = stevedore_driver.DriverManager(
@@ -39,9 +39,10 @@ class Endpoint(object):
             invoke_on_load=True
         ).driver
 
-    def create_load_balancer(self, context, load_balancer_id):
+    def create_load_balancer(self, context, load_balancer_id,
+                             flavor=None):
         LOG.info('Creating load balancer \'%s\'...', load_balancer_id)
-        self.worker.create_load_balancer(load_balancer_id)
+        self.worker.create_load_balancer(load_balancer_id, flavor)
 
     def update_load_balancer(self, context, load_balancer_id,
                              load_balancer_updates):
