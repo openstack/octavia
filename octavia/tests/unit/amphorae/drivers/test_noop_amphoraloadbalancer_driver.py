@@ -93,11 +93,11 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
                              self.vip.ip_address)])
 
     def test_start(self):
-        self.driver.start(self.listener, self.vip)
-        self.assertEqual((self.listener, self.vip, 'start'),
+        self.driver.start(self.listener, self.vip, amphora='amp1')
+        self.assertEqual((self.listener, self.vip, 'amp1', 'start'),
                          self.driver.driver.amphoraconfig[(
                              self.listener.protocol_port,
-                             self.vip.ip_address)])
+                             self.vip.ip_address, 'amp1')])
 
     def test_delete(self):
         self.driver.delete(self.listener, self.vip)
