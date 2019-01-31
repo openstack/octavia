@@ -17,6 +17,7 @@
 Routines for configuring Octavia
 """
 
+import os
 import sys
 
 from keystoneauth1 import loading as ks_loading
@@ -635,6 +636,7 @@ def init(args, **kwargs):
              version='%%prog %s' % version.version_info.release_string(),
              **kwargs)
     handle_deprecation_compatibility()
+    setup_remote_pydev_debug()
 
 
 def setup_logging(conf):
@@ -664,3 +666,34 @@ def handle_deprecation_compatibility():
         cfg.CONF.set_default('stats_update_threads',
                              cfg.CONF.health_manager.status_update_threads,
                              group='health_manager')
+
+
+def setup_remote_pydev_debug():
+    """Required setup for remote debugging."""
+
+    pydev_debug_host = os.environ.get('PYDEV_DEBUG_HOST')
+    pydev_debug_port = os.environ.get('PYDEV_DEBUG_PORT')
+
+    if not pydev_debug_host or not pydev_debug_port:
+        return
+
+    try:
+        try:
+            from pydev import pydevd
+        except ImportError:
+            import pydevd
+
+        LOG.warning("Connecting to remote debugger. Once connected, resume "
+                    "the program on the debugger to continue with the "
+                    "initialization of the service.")
+        pydevd.settrace(pydev_debug_host,
+                        port=int(pydev_debug_port),
+                        stdoutToServer=True,
+                        stderrToServer=True)
+    except Exception:
+        LOG.exception('Unable to join debugger, please make sure that the '
+                      'debugger processes is listening on debug-host '
+                      '\'%(debug-host)s\' debug-port \'%(debug-port)s\'.',
+                      {'debug-host': pydev_debug_host,
+                       'debug-port': pydev_debug_port})
+        raise
