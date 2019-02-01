@@ -17,6 +17,7 @@ import operator
 from keystoneauth1 import loading as ks_loading
 from oslo_config import cfg
 
+import octavia.certificates.common.local
 import octavia.common.config
 from octavia.common import constants
 
