@@ -75,9 +75,9 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.driver._add_allowed_address_pair_to_port(
             t_constants.MOCK_PORT_ID, t_constants.MOCK_IP_ADDRESS)
         expected_aap_dict = {
-                'port': {
-                    'allowed_address_pairs': [
-                        {'ip_address': t_constants.MOCK_IP_ADDRESS}]}}
+            'port': {
+                'allowed_address_pairs': [
+                    {'ip_address': t_constants.MOCK_IP_ADDRESS}]}}
         self.driver.neutron_client.update_port.assert_has_calls([
             mock.call(t_constants.MOCK_PORT_ID, expected_aap_dict)])
 

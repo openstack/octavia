@@ -197,9 +197,9 @@ class Listener(object):
                                'w') as text_file:
                     text = JINJA_ENV.get_template(AMPHORA_NETNS +
                                                   '.systemd.j2').render(
-                            amphora_nsname=consts.AMPHORA_NAMESPACE,
-                            HasIFUPAll=self._osutils.has_ifup_all()
-                            )
+                        amphora_nsname=consts.AMPHORA_NAMESPACE,
+                        HasIFUPAll=self._osutils.has_ifup_all()
+                        )
                     text_file.write(text)
 
         if not os.path.exists(init_path):

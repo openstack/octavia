@@ -274,7 +274,7 @@ class TestValidations(base.TestCase):
         device_id = uuidutils.generate_uuid()
         port = network_models.Port(id=port_id, device_id=device_id)
         with mock.patch(
-                 'octavia.common.utils.get_network_driver') as net_mock:
+                'octavia.common.utils.get_network_driver') as net_mock:
             net_mock.return_value.get_port.device_id = port
             self.assertRaises(
                 exceptions.ValidationException,
