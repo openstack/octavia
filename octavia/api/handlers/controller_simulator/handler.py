@@ -297,7 +297,7 @@ def simulate_controller(data_model, delete=False, update=False, create=False,
 
 
 class InvalidHandlerInputObject(Exception):
-    message = "Invalid Input Object %(obj_type)"
+    message = "Invalid Input Object %(obj_type)s"
 
     def __init__(self, **kwargs):
         message = self.message % kwargs
