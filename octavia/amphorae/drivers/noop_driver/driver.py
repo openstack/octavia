@@ -61,12 +61,13 @@ class NoopManager(object):
         self.amphoraconfig[(listener.protocol_port,
                             vip.ip_address)] = (listener, vip, 'stop')
 
-    def start(self, listener, vip):
-        LOG.debug("Amphora %s no-op, start listener %s, vip %s",
+    def start(self, listener, vip, amphora=None):
+        LOG.debug("Amphora %s no-op, start listener %s, vip %s, amp %s",
                   self.__class__.__name__,
-                  listener.protocol_port, vip.ip_address)
+                  listener.protocol_port, vip.ip_address, amphora)
         self.amphoraconfig[(listener.protocol_port,
-                            vip.ip_address)] = (listener, vip, 'start')
+                            vip.ip_address, amphora)] = (listener, vip,
+                                                         amphora, 'start')
 
     def delete(self, listener, vip):
         LOG.debug("Amphora %s no-op, delete listener %s, vip %s",
@@ -130,9 +131,9 @@ class NoopAmphoraLoadBalancerDriver(
 
         self.driver.stop(listener, vip)
 
-    def start(self, listener, vip):
+    def start(self, listener, vip, amphora=None):
 
-        self.driver.start(listener, vip)
+        self.driver.start(listener, vip, amphora)
 
     def delete(self, listener, vip):
 
