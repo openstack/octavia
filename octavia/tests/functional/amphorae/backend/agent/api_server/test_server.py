@@ -2288,14 +2288,18 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     def test_ubuntu_upload_keepalived_config_systemd(self, mock_init_system):
-        self._test_upload_keepalived_config(consts.INIT_SYSTEMD,
-                                            consts.UBUNTU, mock_init_system)
+        with mock.patch('platform.linux_distribution',
+                        return_value=['Ubuntu', 'Foo', 'Bar']):
+            self._test_upload_keepalived_config(
+                consts.INIT_SYSTEMD, consts.UBUNTU, mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     def test_centos_upload_keepalived_config_systemd(self, mock_init_system):
-        self._test_upload_keepalived_config(consts.INIT_SYSTEMD,
-                                            consts.CENTOS, mock_init_system)
+        with mock.patch('platform.linux_distribution',
+                        return_value=['centos', 'Foo', 'Bar']):
+            self._test_upload_keepalived_config(
+                consts.INIT_SYSTEMD, consts.CENTOS, mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_UPSTART)
