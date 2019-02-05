@@ -511,3 +511,10 @@ SUPPORTED_PROVIDERS = OCTAVIA,
 # FLAVORS
 # TODO(johnsom) When flavors are implemented, this should be removed.
 SUPPORTED_FLAVORS = ()
+
+# systemctl commands
+DISABLE = 'disable'
+ENABLE = 'enable'
+
+# systemd amphora netns service prefix
+AMP_NETNS_SVC_PREFIX = 'amphora-netns'

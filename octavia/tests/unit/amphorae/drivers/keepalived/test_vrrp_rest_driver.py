@@ -14,6 +14,7 @@
 #
 
 import mock
+from oslo_utils import uuidutils
 
 from octavia.amphorae.drivers.keepalived import vrrp_rest_driver
 from octavia.common import constants
@@ -29,8 +30,14 @@ class TestVRRPRestDriver(base.TestCase):
         self.FAKE_CONFIG = 'FAKE CONFIG'
         self.lb_mock = mock.MagicMock()
         self.amphora_mock = mock.MagicMock()
+        self.amphora_mock.id = uuidutils.generate_uuid()
         self.amphora_mock.status = constants.AMPHORA_ALLOCATED
         self.lb_mock.amphorae = [self.amphora_mock]
+        self.amphorae_network_config = {}
+        vip_subnet = mock.MagicMock()
+        vip_subnet.cidr = '192.0.2.0/24'
+        self.amphorae_network_config[self.amphora_mock.id] = vip_subnet
+
         super(TestVRRPRestDriver, self).setUp()
 
     @mock.patch('octavia.amphorae.drivers.keepalived.jinja.'
@@ -39,7 +46,8 @@ class TestVRRPRestDriver(base.TestCase):
 
         mock_templater.return_value = self.FAKE_CONFIG
 
-        self.keepalived_mixin.update_vrrp_conf(self.lb_mock)
+        self.keepalived_mixin.update_vrrp_conf(self.lb_mock,
+                                               self.amphorae_network_config)
 
         self.client.upload_vrrp_config.assert_called_once_with(
             self.amphora_mock,

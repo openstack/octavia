@@ -30,10 +30,11 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
         # The Mixed class must define a self.client object for the
         # AmphoraApiClient
 
-    def update_vrrp_conf(self, loadbalancer):
+    def update_vrrp_conf(self, loadbalancer, amphorae_network_config):
         """Update amphorae of the loadbalancer with a new VRRP configuration
 
         :param loadbalancer: loadbalancer object
+        :param amphorae_network_config: amphorae network configurations
         """
         templater = jinja_cfg.KeepalivedJinjaTemplater()
 
@@ -43,8 +44,13 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
         for amp in six.moves.filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
+
+            # Get the VIP subnet prefix for the amphora
+            vip_cidr = amphorae_network_config[amp.id].vip_subnet.cidr
+
             # Generate Keepalived configuration from loadbalancer object
-            config = templater.build_keepalived_config(loadbalancer, amp)
+            config = templater.build_keepalived_config(
+                loadbalancer, amp, vip_cidr)
             self.client.upload_vrrp_config(amp, config)
 
     def stop_vrrp_service(self, loadbalancer):
