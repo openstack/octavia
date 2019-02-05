@@ -1401,7 +1401,7 @@ class TestServerTestCase(base.TestCase):
         IP = '192.0.1.5'
         MAC = '123'
         DEST1 = '198.51.100.0/24'
-        DEST2 = '203.0.113.0/24'
+        DEST2 = '203.0.113.1/32'
         NEXTHOP = '192.0.2.1'
 
         netns_handle = mock_netns.return_value.__enter__.return_value
@@ -1463,9 +1463,9 @@ class TestServerTestCase(base.TestCase):
                     ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
                     'down route del -net ' + DEST1 + ' gw ' + NEXTHOP +
                     ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
-                    'up route add -net ' + DEST2 + ' gw ' + NEXTHOP +
+                    'up route add -host ' + DEST2 + ' gw ' + NEXTHOP +
                     ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
-                    'down route del -net ' + DEST2 + ' gw ' + NEXTHOP +
+                    'down route del -host ' + DEST2 + ' gw ' + NEXTHOP +
                     ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
                 )
             elif distro == consts.CENTOS:
@@ -1621,7 +1621,7 @@ class TestServerTestCase(base.TestCase):
             'mtu': 1450,
             'host_routes': [{'destination': '203.0.114.0/24',
                              'nexthop': '203.0.113.5'},
-                            {'destination': '203.0.115.0/24',
+                            {'destination': '203.0.115.1/32',
                              'nexthop': '203.0.113.5'}]
         }
 
@@ -1687,9 +1687,9 @@ class TestServerTestCase(base.TestCase):
                     'dev {netns_int}\n'
                     'down route del -net 203.0.114.0/24 gw 203.0.113.5 '
                     'dev {netns_int}\n'
-                    'up route add -net 203.0.115.0/24 gw 203.0.113.5 '
+                    'up route add -host 203.0.115.1/32 gw 203.0.113.5 '
                     'dev {netns_int}\n'
-                    'down route del -net 203.0.115.0/24 gw 203.0.113.5 '
+                    'down route del -host 203.0.115.1/32 gw 203.0.113.5 '
                     'dev {netns_int}\n'
                     '\n'
                     'iface {netns_int}:0 inet static\n'
@@ -1710,9 +1710,9 @@ class TestServerTestCase(base.TestCase):
                     'via 203.0.113.5 dev eth1 onlink table 1\n'
                     'post-down /sbin/ip route del 203.0.114.0/24 '
                     'via 203.0.113.5 dev eth1 onlink table 1\n'
-                    'post-up /sbin/ip route add 203.0.115.0/24 '
+                    'post-up /sbin/ip route add 203.0.115.1/32 '
                     'via 203.0.113.5 dev eth1 onlink table 1\n'
-                    'post-down /sbin/ip route del 203.0.115.0/24 '
+                    'post-down /sbin/ip route del 203.0.115.1/32 '
                     'via 203.0.113.5 dev eth1 onlink table 1\n'
                     'post-up /sbin/ip rule add from 203.0.113.2/32 table 1 '
                     'priority 100\n'
@@ -1965,7 +1965,7 @@ class TestServerTestCase(base.TestCase):
             'mtu': 1450,
             'host_routes': [{'destination': '2001:db9::/32',
                              'nexthop': '2001:db8::5'},
-                            {'destination': '2001:db9::/32',
+                            {'destination': '2001:db9::1/128',
                              'nexthop': '2001:db8::5'}]
         }
 
@@ -2025,9 +2025,9 @@ class TestServerTestCase(base.TestCase):
                     'dev {netns_int}\n'
                     'down route del -net 2001:db9::/32 gw 2001:db8::5 '
                     'dev {netns_int}\n'
-                    'up route add -net 2001:db9::/32 gw 2001:db8::5 '
+                    'up route add -host 2001:db9::1/128 gw 2001:db8::5 '
                     'dev {netns_int}\n'
-                    'down route del -net 2001:db9::/32 gw 2001:db8::5 '
+                    'down route del -host 2001:db9::1/128 gw 2001:db8::5 '
                     'dev {netns_int}\n'
                     '\n'
                     'iface {netns_int}:0 inet6 static\n'
@@ -2050,9 +2050,9 @@ class TestServerTestCase(base.TestCase):
                     '2001:db8::5 dev eth1 onlink table 1\n'
                     'post-down /sbin/ip -6 route del 2001:db9::/32 '
                     'via 2001:db8::5 dev eth1 onlink table 1\n'
-                    'post-up /sbin/ip -6 route add 2001:db9::/32 via '
+                    'post-up /sbin/ip -6 route add 2001:db9::1/128 via '
                     '2001:db8::5 dev eth1 onlink table 1\n'
-                    'post-down /sbin/ip -6 route del 2001:db9::/32 '
+                    'post-down /sbin/ip -6 route del 2001:db9::1/128 '
                     'via 2001:db8::5 dev eth1 onlink table 1\n'
                     'post-up /sbin/ip -6 rule add from '
                     '2001:0db8:0000:0000:0000:0000:0000:0002/32 table 1 '
