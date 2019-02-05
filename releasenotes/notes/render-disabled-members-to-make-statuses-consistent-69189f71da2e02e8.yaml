@@ -1,0 +1,12 @@
+---
+fixes:
+  - |
+    Creating a member on a pool with no healthmonitor would sometimes briefly
+    update their operating status from `NO_MONITOR` to `OFFLINE` and back to
+    `NO_MONITOR` during the provisioning sequence. This flapping will no longer
+    occur.
+  - |
+    Members that are disabled via `admin_state_up=False` are now rendered in
+    the HAProxy configuration on the amphora as `disabled`. Previously they
+    were not rendered at all. This means that disabled members will now
+    appear in health messages, and will properly change status to OFFLINE.
