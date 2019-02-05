@@ -17,14 +17,14 @@
         - neutron-lbaasv2-dsvm-py3x-scenario:
             voting: false
         - openstack-tox-cover
-        - octavia-tox-functional:
+        - openstack-tox-functional:
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
               - ^doc/.*$
               - ^etc/.*$
               - ^releasenotes/.*$
-        - octavia-tox-functional-py35:
+        - openstack-tox-functional-py35:
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -45,14 +45,14 @@
       queue: octavia
       jobs:
         - openstack-tox-cover
-        - octavia-tox-functional:
+        - openstack-tox-functional:
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
               - ^doc/.*$
               - ^etc/.*$
               - ^releasenotes/.*$
-        - octavia-tox-functional-py35:
+        - openstack-tox-functional-py35:
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
