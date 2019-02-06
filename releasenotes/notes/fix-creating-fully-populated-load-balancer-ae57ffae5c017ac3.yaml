@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixes creating a fully populated load balancer with not REDIRECT_POOL
+    type L7 policy and default_pool field.

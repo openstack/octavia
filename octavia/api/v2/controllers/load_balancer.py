@@ -372,7 +372,7 @@ class LoadBalancersController(base.BaseController):
                 pool_name = (
                     redirect_pool.get('name') if redirect_pool else None)
                 # All pools need to have a name so they can be referenced
-                if default_pool and not pool_name:
+                if redirect_pool and not pool_name:
                     raise exceptions.ValidationException(
                         detail='Pools must be named when creating a fully '
                                'populated loadbalancer.')
@@ -383,7 +383,7 @@ class LoadBalancersController(base.BaseController):
                     policy['redirect_pool'] = {'name': pool_name}
                     pools.append(redirect_pool)
                 # Otherwise, it's a reference and we record it and move on
-                elif default_pool:
+                elif redirect_pool:
                     pools_required.add(pool_name)
 
         # Make sure all pool names are unique.
