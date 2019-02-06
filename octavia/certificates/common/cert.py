@@ -25,19 +25,15 @@ class Cert(object):
     @abc.abstractmethod
     def get_certificate(self):
         """Returns the certificate."""
-        pass
 
     @abc.abstractmethod
     def get_intermediates(self):
         """Returns the intermediate certificates as a list."""
-        pass
 
     @abc.abstractmethod
     def get_private_key(self):
         """Returns the private key for the certificate."""
-        pass
 
     @abc.abstractmethod
     def get_private_key_passphrase(self):
         """Returns the passphrase for the private key."""
-        pass

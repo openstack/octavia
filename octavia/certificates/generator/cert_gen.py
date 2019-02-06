@@ -42,7 +42,6 @@ class CertGenerator(object):
         :return: PEM Encoded Signed certificate
         :raises Exception: If certificate signing fails
         """
-        pass
 
     @abc.abstractmethod
     def generate_cert_key_pair(self, cn, validity, bit_length, passphrase):
@@ -57,4 +56,3 @@ class CertGenerator(object):
                  certificate data
         :raises Exception: If generation fails
         """
-        pass

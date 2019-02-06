@@ -74,7 +74,7 @@ class KeepalivedJinjaTemplater(object):
         vip = loadbalancer.vip.ip_address
         vip_addr = ipaddress.ip_address(
             vip if isinstance(vip, six.text_type) else six.u(vip))
-        vip_ipv6 = True if vip_addr.version == 6 else False
+        vip_ipv6 = vip_addr.version == 6
 
         # Normalize and validate the VIP subnet CIDR
         vip_network_cidr = None

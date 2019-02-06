@@ -24,7 +24,7 @@ LOG = logging.getLogger(__name__)
 
 
 def round_robin_addr(addrinfo_list):
-    if len(addrinfo_list) <= 0:
+    if not addrinfo_list:
         return None
     addrinfo = addrinfo_list.pop(0)
     addrinfo_list.append(addrinfo)

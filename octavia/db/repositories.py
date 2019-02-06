@@ -411,7 +411,7 @@ class Repositories(object):
                     quotas.in_use_load_balancer = lb_count
                     return False
                 return True
-            elif _class == data_models.Listener:
+            if _class == data_models.Listener:
                 # Decide which quota to use
                 if quotas.listener is None:
                     listener_quota = CONF.quotas.default_listener_quota
@@ -432,7 +432,7 @@ class Repositories(object):
                     quotas.in_use_listener = listener_count
                     return False
                 return True
-            elif _class == data_models.Pool:
+            if _class == data_models.Pool:
                 # Decide which quota to use
                 if quotas.pool is None:
                     pool_quota = CONF.quotas.default_pool_quota
@@ -453,7 +453,7 @@ class Repositories(object):
                     quotas.in_use_pool = pool_count
                     return False
                 return True
-            elif _class == data_models.HealthMonitor:
+            if _class == data_models.HealthMonitor:
                 # Decide which quota to use
                 if quotas.health_monitor is None:
                     hm_quota = CONF.quotas.default_health_monitor_quota
@@ -474,7 +474,7 @@ class Repositories(object):
                     quotas.in_use_health_monitor = hm_count
                     return False
                 return True
-            elif _class == data_models.Member:
+            if _class == data_models.Member:
                 # Decide which quota to use
                 if quotas.member is None:
                     member_quota = CONF.quotas.default_member_quota

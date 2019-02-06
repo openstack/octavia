@@ -123,8 +123,8 @@ class MemberController(base.BaseController):
             constraint_list = ['uq_member_pool_id_address_protocol_port']
             if ['id'] == de.columns:
                 raise exceptions.IDAlreadyExists()
-            elif (set(column_list) == set(de.columns) or
-                  set(constraint_list) == set(de.columns)):
+            if (set(column_list) == set(de.columns) or
+                    set(constraint_list) == set(de.columns)):
                 raise exceptions.DuplicateMemberEntry(
                     ip_address=member_dict.get('ip_address'),
                     port=member_dict.get('protocol_port'))

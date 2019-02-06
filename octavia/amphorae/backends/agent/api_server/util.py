@@ -37,14 +37,13 @@ def init_path(listener_id, init_system):
     if init_system == consts.INIT_SYSTEMD:
         return os.path.join(consts.SYSTEMD_DIR,
                             'haproxy-{0}.service'.format(listener_id))
-    elif init_system == consts.INIT_UPSTART:
+    if init_system == consts.INIT_UPSTART:
         return os.path.join(consts.UPSTART_DIR,
                             'haproxy-{0}.conf'.format(listener_id))
-    elif init_system == consts.INIT_SYSVINIT:
+    if init_system == consts.INIT_SYSVINIT:
         return os.path.join(consts.SYSVINIT_DIR,
                             'haproxy-{0}'.format(listener_id))
-    else:
-        raise UnknownInitError()
+    raise UnknownInitError()
 
 
 def keepalived_lvs_dir():
@@ -56,16 +55,15 @@ def keepalived_lvs_init_path(init_system, listener_id):
         return os.path.join(consts.SYSTEMD_DIR,
                             consts.KEEPALIVED_SYSTEMD_PREFIX %
                             str(listener_id))
-    elif init_system == consts.INIT_UPSTART:
+    if init_system == consts.INIT_UPSTART:
         return os.path.join(consts.UPSTART_DIR,
                             consts.KEEPALIVED_UPSTART_PREFIX %
                             str(listener_id))
-    elif init_system == consts.INIT_SYSVINIT:
+    if init_system == consts.INIT_SYSVINIT:
         return os.path.join(consts.SYSVINIT_DIR,
                             consts.KEEPALIVED_SYSVINIT_PREFIX %
                             str(listener_id))
-    else:
-        raise UnknownInitError()
+    raise UnknownInitError()
 
 
 def keepalived_backend_check_script_dir():
@@ -132,12 +130,11 @@ def keepalived_dir():
 def keepalived_init_path(init_system):
     if init_system == consts.INIT_SYSTEMD:
         return os.path.join(consts.SYSTEMD_DIR, consts.KEEPALIVED_SYSTEMD)
-    elif init_system == consts.INIT_UPSTART:
+    if init_system == consts.INIT_UPSTART:
         return os.path.join(consts.UPSTART_DIR, consts.KEEPALIVED_UPSTART)
-    elif init_system == consts.INIT_SYSVINIT:
+    if init_system == consts.INIT_SYSVINIT:
         return os.path.join(consts.SYSVINIT_DIR, consts.KEEPALIVED_SYSVINIT)
-    else:
-        raise UnknownInitError()
+    raise UnknownInitError()
 
 
 def keepalived_pid_path():
@@ -266,6 +263,6 @@ def get_listener_protocol(listener_id):
     """
     if os.path.exists(config_path(listener_id)):
         return consts.PROTOCOL_TCP
-    elif os.path.exists(keepalived_lvs_cfg_path(listener_id)):
+    if os.path.exists(keepalived_lvs_cfg_path(listener_id)):
         return consts.PROTOCOL_UDP
     return None

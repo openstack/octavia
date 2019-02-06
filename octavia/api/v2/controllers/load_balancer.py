@@ -644,11 +644,11 @@ class LoadBalancersController(base.BaseController):
         if is_children:
             controller = remainder[0]
             remainder = remainder[1:]
-            if controller == 'status' or controller == 'statuses':
+            if controller in ('status', 'statuses'):
                 return StatusController(lb_id=id), remainder
-            elif controller == 'stats':
+            if controller == 'stats':
                 return StatisticsController(lb_id=id), remainder
-            elif controller == 'failover':
+            if controller == 'failover':
                 return FailoverController(lb_id=id), remainder
         return None
 

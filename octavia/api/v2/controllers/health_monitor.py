@@ -184,7 +184,7 @@ class HealthMonitorController(base.BaseController):
                         udp_connect_min_interval_health_monitor)
             if conf_set < 0:
                 return
-            elif request.delay < conf_set:
+            if request.delay < conf_set:
                 raise exceptions.ValidationException(detail=_(
                     "The request delay value %(delay)s should be larger than "
                     "%(conf_set)s for %(type)s health monitor type.") % {

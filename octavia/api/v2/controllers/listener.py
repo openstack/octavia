@@ -246,8 +246,8 @@ class ListenersController(base.BaseController):
             constraint_list = ['uq_listener_load_balancer_id_protocol_port']
             if ['id'] == de.columns:
                 raise exceptions.IDAlreadyExists()
-            elif (set(column_list) == set(de.columns) or
-                  set(constraint_list) == set(de.columns)):
+            if (set(column_list) == set(de.columns) or
+                    set(constraint_list) == set(de.columns)):
                 raise exceptions.DuplicateListenerEntry(
                     port=listener_dict.get('protocol_port'))
         except odb_exceptions.DBError:

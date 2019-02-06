@@ -98,7 +98,6 @@ class AbstractNetworkDriver(object):
         :return: octavia.common.data_models.VIP
         :raises: AllocateVIPException, PortNotFound, SubnetNotFound
         """
-        pass
 
     @abc.abstractmethod
     def deallocate_vip(self, vip):
@@ -109,7 +108,6 @@ class AbstractNetworkDriver(object):
         :raises: DeallocateVIPException, VIPInUseException,
                  VIPConfiigurationNotFound
         """
-        pass
 
     @abc.abstractmethod
     def plug_vip(self, load_balancer, vip):
@@ -125,7 +123,6 @@ class AbstractNetworkDriver(object):
                  receive traffic to load balance.
         :raises: PlugVIPException, PortNotFound
         """
-        pass
 
     @abc.abstractmethod
     def unplug_vip(self, load_balancer, vip):
@@ -139,7 +136,6 @@ class AbstractNetworkDriver(object):
         :return: octavia.common.data_models.VIP instance
         :raises: UnplugVIPException, PluggedVIPNotFound
         """
-        pass
 
     @abc.abstractmethod
     def plug_network(self, compute_id, network_id, ip_address=None):
@@ -166,7 +162,6 @@ class AbstractNetworkDriver(object):
         :raises: UnplugNetworkException, AmphoraNotFound, NetworkNotFound,
                  NetworkException
         """
-        pass
 
     @abc.abstractmethod
     def get_plugged_networks(self, compute_id):
@@ -189,7 +184,6 @@ class AbstractNetworkDriver(object):
         :raises: MissingVIPSecurityGroup
         :return: None
         """
-        pass
 
     @abc.abstractmethod
     def get_network(self, network_id):
@@ -199,7 +193,6 @@ class AbstractNetworkDriver(object):
         :return: octavia.network.data_models.Network
         :raises: NetworkException, NetworkNotFound
         """
-        pass
 
     @abc.abstractmethod
     def get_subnet(self, subnet_id):
@@ -209,7 +202,6 @@ class AbstractNetworkDriver(object):
         :return: octavia.network.data_models.Subnet
         :raises: NetworkException, SubnetNotFound
         """
-        pass
 
     @abc.abstractmethod
     def get_port(self, port_id):
@@ -219,7 +211,6 @@ class AbstractNetworkDriver(object):
         :return: octavia.network.data_models.Port
         :raises: NetworkException, PortNotFound
         """
-        pass
 
     @abc.abstractmethod
     def get_network_by_name(self, network_name):
@@ -229,7 +220,6 @@ class AbstractNetworkDriver(object):
         :return: octavia.network.data_models.Network
         :raises: NetworkException, NetworkNotFound
         """
-        pass
 
     @abc.abstractmethod
     def get_subnet_by_name(self, subnet_name):
@@ -239,7 +229,6 @@ class AbstractNetworkDriver(object):
         :return: octavia.network.data_models.Subnet
         :raises: NetworkException, SubnetNotFound
         """
-        pass
 
     @abc.abstractmethod
     def get_port_by_name(self, port_name):
@@ -249,7 +238,6 @@ class AbstractNetworkDriver(object):
         :return: octavia.network.data_models.Port
         :raises: NetworkException, PortNotFound
         """
-        pass
 
     @abc.abstractmethod
     def get_port_by_net_id_device_id(self, network_id, device_id):
@@ -260,7 +248,6 @@ class AbstractNetworkDriver(object):
         :return: octavia.network.data_models.Port
         :raises: NetworkException, PortNotFound
         """
-        pass
 
     @abc.abstractmethod
     def failover_preparation(self, amphora):
@@ -270,7 +257,6 @@ class AbstractNetworkDriver(object):
         :return: None
         :raises: PortNotFound
         """
-        pass
 
     @abc.abstractmethod
     def plug_port(self, amphora, port):
@@ -281,7 +267,6 @@ class AbstractNetworkDriver(object):
         :return: None
         :raises: PlugNetworkException, AmphoraNotFound, NetworkNotFound
         """
-        pass
 
     @abc.abstractmethod
     def get_network_configs(self, load_balancer, amphora=None):
@@ -303,7 +288,6 @@ class AbstractNetworkDriver(object):
                  keyed off of the amphora id the config is associated with.
         :raises: NotFound, NetworkNotFound, SubnetNotFound, PortNotFound
         """
-        pass
 
     @abc.abstractmethod
     def wait_for_port_detach(self, amphora):
@@ -318,7 +302,6 @@ class AbstractNetworkDriver(object):
         :raises TimeoutException: Port did not detach in interval.
         :raises PortNotFound: Port was not found by neutron.
         """
-        pass
 
     @abc.abstractmethod
     def update_vip_sg(self, load_balancer, vip):
@@ -327,7 +310,6 @@ class AbstractNetworkDriver(object):
         :param load_balancer: Load Balancer to rpepare the VIP for
         :param vip: The VIP to plug
         """
-        pass
 
     @abc.abstractmethod
     def plug_aap_port(self, load_balancer, vip, amphora, subnet):
@@ -338,7 +320,6 @@ class AbstractNetworkDriver(object):
         :param amphora: The amphora to plug the VIP into
         :param subnet: The subnet to plug the aap into
         """
-        pass
 
     @abc.abstractmethod
     def unplug_aap_port(self, vip, amphora, subnet):
@@ -348,7 +329,6 @@ class AbstractNetworkDriver(object):
         :param amphora: The amphora to plug the VIP into
         :param subnet: The subnet to plug the aap into
         """
-        pass
 
     @abc.abstractmethod
     def qos_enabled(self):

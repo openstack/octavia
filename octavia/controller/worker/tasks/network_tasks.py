@@ -463,7 +463,6 @@ class DeallocateVIP(BaseNetworkTask):
         vip = loadbalancer.vip
         vip.load_balancer = loadbalancer
         self.network_driver.deallocate_vip(vip)
-        return
 
 
 class UpdateVIP(BaseNetworkTask):
@@ -612,7 +611,6 @@ class ApplyQos(BaseNetworkTask):
             self._apply_qos_on_vrrp_ports(loadbalancer, amps_data, orig_qos_id,
                                           is_revert=True,
                                           request_qos_id=request_qos_id)
-        return
 
 
 class ApplyQosAmphora(BaseNetworkTask):
@@ -627,13 +625,12 @@ class ApplyQosAmphora(BaseNetworkTask):
         except Exception:
             if not is_revert:
                 raise
-            else:
-                LOG.warning('Failed to undo qos policy %(qos_id)s '
-                            'on vrrp port: %(port)s from '
-                            'amphorae: %(amp)s',
-                            {'qos_id': request_qos_id,
-                             'port': amp_data.vrrp_port_id,
-                             'amp': [amp.id for amp in amp_data]})
+            LOG.warning('Failed to undo qos policy %(qos_id)s '
+                        'on vrrp port: %(port)s from '
+                        'amphorae: %(amp)s',
+                        {'qos_id': request_qos_id,
+                            'port': amp_data.vrrp_port_id,
+                            'amp': [amp.id for amp in amp_data]})
 
     def execute(self, loadbalancer, amp_data=None, update_dict=None):
         """Apply qos policy on the vrrp ports which are related with vip."""

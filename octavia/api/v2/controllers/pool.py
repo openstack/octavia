@@ -163,11 +163,11 @@ class PoolsController(base.BaseController):
                     "only accepts: type, persistence_timeout, "
                     "persistence_granularity.") % (
                         constants.SESSION_PERSISTENCE_SOURCE_IP))
-            elif request.session_persistence.cookie_name:
+            if request.session_persistence.cookie_name:
                 raise exceptions.ValidationException(detail=_(
                     "Cookie names are not supported for %s pools.") %
                     constants.PROTOCOL_UDP)
-            elif request.session_persistence.type in [
+            if request.session_persistence.type in [
                 constants.SESSION_PERSISTENCE_HTTP_COOKIE,
                     constants.SESSION_PERSISTENCE_APP_COOKIE]:
                 raise exceptions.ValidationException(detail=_(

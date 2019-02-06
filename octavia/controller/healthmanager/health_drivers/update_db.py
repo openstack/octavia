@@ -313,71 +313,71 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
             # finish processing the status updates from all of the listeners.
             potential_offline_pools[pool_id] = db_pool_dict['operating_status']
             return lb_status
+
+        pool = pools[pool_id]
+
+        processed_pools.append(pool_id)
+
+        # UP = HAProxy backend has working or no servers
+        if pool.get('status') == constants.UP:
+            pool_status = constants.ONLINE
+        # DOWN = HAProxy backend has no working servers
+        elif pool.get('status') == constants.DOWN:
+            pool_status = constants.ERROR
+            lb_status = constants.ERROR
         else:
-            pool = pools[pool_id]
+            LOG.warning(('Pool %(pool)s reported status of '
+                        '%(status)s'),
+                        {'pool': pool_id,
+                            'status': pool.get('status')})
 
-            processed_pools.append(pool_id)
+        # Deal with the members that are reporting from
+        # the Amphora
+        members = pool['members']
+        for member_id in db_pool_dict.get('members', {}):
+            member_status = None
+            member_db_status = (
+                db_pool_dict['members'][member_id]['operating_status'])
 
-            # UP = HAProxy backend has working or no servers
-            if pool.get('status') == constants.UP:
-                pool_status = constants.ONLINE
-            # DOWN = HAProxy backend has no working servers
-            elif pool.get('status') == constants.DOWN:
-                pool_status = constants.ERROR
-                lb_status = constants.ERROR
+            if member_id not in members:
+                if member_db_status != constants.NO_MONITOR:
+                    member_status = constants.OFFLINE
             else:
-                LOG.warning(('Pool %(pool)s reported status of '
-                            '%(status)s'),
-                            {'pool': pool_id,
-                             'status': pool.get('status')})
+                status = members[member_id]
 
-            # Deal with the members that are reporting from
-            # the Amphora
-            members = pool['members']
-            for member_id in db_pool_dict.get('members', {}):
-                member_status = None
-                member_db_status = (
-                    db_pool_dict['members'][member_id]['operating_status'])
-
-                if member_id not in members:
-                    if member_db_status != constants.NO_MONITOR:
-                        member_status = constants.OFFLINE
+                # Member status can be "UP" or "UP #/#"
+                # (transitional)
+                if status.startswith(constants.UP):
+                    member_status = constants.ONLINE
+                # Member status can be "DOWN" or "DOWN #/#"
+                # (transitional)
+                elif status.startswith(constants.DOWN):
+                    member_status = constants.ERROR
+                    if pool_status == constants.ONLINE:
+                        pool_status = constants.DEGRADED
+                        if lb_status == constants.ONLINE:
+                            lb_status = constants.DEGRADED
+                elif status == constants.DRAIN:
+                    member_status = constants.DRAINING
+                elif status == constants.MAINT:
+                    member_status = constants.OFFLINE
+                elif status == constants.NO_CHECK:
+                    member_status = constants.NO_MONITOR
                 else:
-                    status = members[member_id]
+                    LOG.warning('Member %(mem)s reported '
+                                'status of %(status)s',
+                                {'mem': member_id,
+                                    'status': status})
 
-                    # Member status can be "UP" or "UP #/#"
-                    # (transitional)
-                    if status.startswith(constants.UP):
-                        member_status = constants.ONLINE
-                    # Member status can be "DOWN" or "DOWN #/#"
-                    # (transitional)
-                    elif status.startswith(constants.DOWN):
-                        member_status = constants.ERROR
-                        if pool_status == constants.ONLINE:
-                            pool_status = constants.DEGRADED
-                            if lb_status == constants.ONLINE:
-                                lb_status = constants.DEGRADED
-                    elif status == constants.DRAIN:
-                        member_status = constants.DRAINING
-                    elif status == constants.MAINT:
-                        member_status = constants.OFFLINE
-                    elif status == constants.NO_CHECK:
-                        member_status = constants.NO_MONITOR
-                    else:
-                        LOG.warning('Member %(mem)s reported '
-                                    'status of %(status)s',
-                                    {'mem': member_id,
-                                     'status': status})
-
-                try:
-                    if (member_status is not None and
-                            member_status != member_db_status):
-                        self._update_status(
-                            session, self.member_repo, constants.MEMBER,
-                            member_id, member_status, member_db_status)
-                except sqlalchemy.orm.exc.NoResultFound:
-                    LOG.error("Member %s is not able to update "
-                              "in DB", member_id)
+            try:
+                if (member_status is not None and
+                        member_status != member_db_status):
+                    self._update_status(
+                        session, self.member_repo, constants.MEMBER,
+                        member_id, member_status, member_db_status)
+            except sqlalchemy.orm.exc.NoResultFound:
+                LOG.error("Member %s is not able to update "
+                          "in DB", member_id)
 
         try:
             if (pool_status is not None and
