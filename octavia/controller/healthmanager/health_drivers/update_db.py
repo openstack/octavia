@@ -87,10 +87,10 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
         except Exception as e:
             LOG.exception('Health update for amphora %(amp)s encountered '
                           'error %(err)s. Skipping health update.',
-                          {'amp': health['id'], 'err': str(e)})
+                          {'amp': health['id'], 'err': e})
         # TODO(johnsom) We need to set a warning threshold here
-        LOG.debug('Health Update finished in: {0} seconds'.format(
-            timeit.default_timer() - start_time))
+        LOG.debug('Health Update finished in: %s seconds',
+                  timeit.default_timer() - start_time)
 
     # Health heartbeat messsage pre-versioning with UDP listeners
     # need to adjust the expected listener count
@@ -173,18 +173,17 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
             if not amp or amp.load_balancer_id:
                 # This is debug and not warning because this can happen under
                 # normal deleting operations.
-                LOG.debug('Received a health heartbeat from amphora {0} with '
-                          'IP {1} that should not exist. This amphora may be '
+                LOG.debug('Received a health heartbeat from amphora %s with '
+                          'IP %s that should not exist. This amphora may be '
                           'in the process of being deleted, in which case you '
                           'will only see this message a few '
-                          'times'.format(health['id'], srcaddr))
+                          'times', health['id'], srcaddr)
                 if not amp:
-                    LOG.warning('The amphora {0} with IP {1} is missing from '
+                    LOG.warning('The amphora %s with IP %s is missing from '
                                 'the DB, so it cannot be automatically '
                                 'deleted (the compute_id is unknown). An '
                                 'operator must manually delete it from the '
-                                'compute service.'.format(health['id'],
-                                                          srcaddr))
+                                'compute service.', health['id'], srcaddr)
                     return
                 # delete the amp right there
                 try:
@@ -196,8 +195,8 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
                     compute.delete(amp.compute_id)
                     return
                 except Exception as e:
-                    LOG.info("Error deleting amp {0} with IP {1}".format(
-                        health['id'], srcaddr), e)
+                    LOG.info("Error deleting amp %s with IP %s Error: %s",
+                             health['id'], srcaddr, e)
             expected_listener_count = 0
 
         listeners = health['listeners']
@@ -434,8 +433,8 @@ class UpdateStatsDb(update_base.StatsUpdateBase, stats.StatsMixin):
             self._update_stats(health_message, srcaddr)
         except Exception:
             LOG.exception('update_stats encountered an unknown error '
-                          'processing stats for amphora {0} with IP '
-                          '{1}'.format(health_message['id'], srcaddr))
+                          'processing stats for amphora %s with IP '
+                          '%s', health_message['id'], srcaddr)
 
     def _update_stats(self, health_message, srcaddr):
         """This function is to update the db with listener stats
@@ -495,9 +494,8 @@ class UpdateStatsDb(update_base.StatsUpdateBase, stats.StatsMixin):
                 listener_db = self.repo_listener.get(session, id=listener_id)
                 if not listener_db:
                     LOG.debug('Received health stats for a non-existent '
-                              'listener {0} for amphora {1} with IP '
-                              '{2}.'.format(listener_id, amphora_id,
-                                            srcaddr))
+                              'listener %s for amphora %s with IP '
+                              '%s.', listener_id, amphora_id, srcaddr)
                     return
 
                 lb_stats = self.get_loadbalancer_stats(
