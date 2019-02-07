@@ -289,6 +289,31 @@ class HaproxyAmphoraLoadBalancerDriver(
         self.client.upload_cert_pem(
             amp, listener_id, name, pem)
 
+    def update_amphora_agent_config(self, amphora, agent_config,
+                                    timeout_dict=None):
+        """Update the amphora agent configuration file.
+
+        :param amphora: The amphora to update.
+        :type amphora: object
+        :param agent_config: The new amphora agent configuration.
+        :type agent_config: string
+        :param timeout_dict: Dictionary of timeout values for calls to the
+                             amphora. May contain: req_conn_timeout,
+                             req_read_timeout, conn_max_retries,
+                             conn_retry_interval
+        :returns: None
+
+        Note: This will mutate the amphora agent config and adopt the
+              new values.
+        """
+        try:
+            self.client.update_agent_config(amphora, agent_config,
+                                            timeout_dict=timeout_dict)
+        except exc.NotFound:
+            LOG.debug('Amphora {} does not support the update_agent_config '
+                      'API.'.format(amphora.id))
+            raise driver_except.AmpDriverNotImplementedError()
+
 
 # Check a custom hostname
 class CustomHostNameCheckingAdapter(requests.adapters.HTTPAdapter):
@@ -514,4 +539,8 @@ class AmphoraAPIClient(object):
             'listeners/{amphora_id}/{listener_id}/udp_listener'.format(
                 amphora_id=amp.id, listener_id=listener_id), timeout_dict,
             data=config)
+        return exc.check_exception(r)
+
+    def update_agent_config(self, amp, agent_config, timeout_dict=None):
+        r = self.put(amp, 'config', timeout_dict, data=agent_config)
         return exc.check_exception(r)

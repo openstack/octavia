@@ -141,7 +141,8 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with(
                 'TEST',
                 store={constants.BUILD_TYPE_PRIORITY:
-                       constants.LB_CREATE_SPARES_POOL_PRIORITY}))
+                       constants.LB_CREATE_SPARES_POOL_PRIORITY,
+                       constants.FLAVOR: None}))
 
         _flow_mock.run.assert_called_once_with()
 

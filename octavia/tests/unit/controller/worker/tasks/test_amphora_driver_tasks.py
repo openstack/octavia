@@ -33,6 +33,7 @@ LISTENER_ID = uuidutils.generate_uuid()
 LB_ID = uuidutils.generate_uuid()
 CONN_MAX_RETRIES = 10
 CONN_RETRY_INTERVAL = 6
+FAKE_CONFIG_FILE = 'fake config file'
 
 _amphora_mock = mock.MagicMock()
 _amphora_mock.id = AMP_ID
@@ -71,6 +72,8 @@ class TestAmphoraDriverTasks(base.TestCase):
                     active_connection_max_retries=CONN_MAX_RETRIES)
         conf.config(group="haproxy_amphora",
                     active_connection_rety_interval=CONN_RETRY_INTERVAL)
+        conf.config(group="controller_worker",
+                    loadbalancer_topology=constants.TOPOLOGY_SINGLE)
         super(TestAmphoraDriverTasks, self).setUp()
 
     def test_amp_listener_update(self,
@@ -615,3 +618,50 @@ class TestAmphoraDriverTasks(base.TestCase):
                           amp_compute_conn_wait_obj.execute, _amphora_mock)
         mock_amphora_repo_update.assert_called_once_with(
             _session_mock, AMP_ID, status=constants.ERROR)
+
+    @mock.patch('octavia.amphorae.backends.agent.agent_jinja_cfg.'
+                'AgentJinjaTemplater.build_agent_config')
+    def test_amphora_config_update(self,
+                                   mock_build_config,
+                                   mock_driver,
+                                   mock_generate_uuid,
+                                   mock_log,
+                                   mock_get_session,
+                                   mock_listener_repo_get,
+                                   mock_listener_repo_update,
+                                   mock_amphora_repo_update):
+        mock_build_config.return_value = FAKE_CONFIG_FILE
+        amp_config_update_obj = amphora_driver_tasks.AmphoraConfigUpdate()
+        mock_driver.update_amphora_agent_config.side_effect = [
+            None, None, driver_except.AmpDriverNotImplementedError,
+            driver_except.TimeOutException]
+        # With Flavor
+        flavor = {constants.LOADBALANCER_TOPOLOGY:
+                  constants.TOPOLOGY_ACTIVE_STANDBY}
+        amp_config_update_obj.execute(_amphora_mock, flavor)
+        mock_build_config.assert_called_once_with(
+            _amphora_mock.id, constants.TOPOLOGY_ACTIVE_STANDBY)
+        mock_driver.update_amphora_agent_config.assert_called_once_with(
+            _amphora_mock, FAKE_CONFIG_FILE)
+        # With no Flavor
+        mock_driver.reset_mock()
+        mock_build_config.reset_mock()
+        amp_config_update_obj.execute(_amphora_mock, None)
+        mock_build_config.assert_called_once_with(
+            _amphora_mock.id, constants.TOPOLOGY_SINGLE)
+        mock_driver.update_amphora_agent_config.assert_called_once_with(
+            _amphora_mock, FAKE_CONFIG_FILE)
+        # With amphora that does not support config update
+        mock_driver.reset_mock()
+        mock_build_config.reset_mock()
+        amp_config_update_obj.execute(_amphora_mock, flavor)
+        mock_build_config.assert_called_once_with(
+            _amphora_mock.id, constants.TOPOLOGY_ACTIVE_STANDBY)
+        mock_driver.update_amphora_agent_config.assert_called_once_with(
+            _amphora_mock, FAKE_CONFIG_FILE)
+        # With an unknown exception
+        mock_driver.reset_mock()
+        mock_build_config.reset_mock()
+        self.assertRaises(driver_except.TimeOutException,
+                          amp_config_update_obj.execute,
+                          _amphora_mock, flavor)

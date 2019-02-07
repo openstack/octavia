@@ -95,6 +95,10 @@ class AmphoraFlows(object):
             requires=constants.AMPHORA_ID,
             provides=constants.AMPHORA))
 
+        post_map_amp_to_lb.add(amphora_driver_tasks.AmphoraConfigUpdate(
+            name=sf_name + '-' + constants.AMPHORA_CONFIG_UPDATE_TASK,
+            requires=(constants.AMPHORA, constants.FLAVOR)))
+
         if role == constants.ROLE_MASTER:
             post_map_amp_to_lb.add(database_tasks.MarkAmphoraMasterInDB(
                 name=sf_name + '-' + constants.MARK_AMP_MASTER_INDB,
@@ -252,7 +256,7 @@ class AmphoraFlows(object):
         # Setup the task that maps an amphora to a load balancer
         allocate_and_associate_amp = database_tasks.MapLoadbalancerToAmphora(
             name=sf_name + '-' + constants.MAP_LOADBALANCER_TO_AMPHORA,
-            requires=constants.LOADBALANCER_ID,
+            requires=(constants.LOADBALANCER_ID, constants.FLAVOR),
             provides=constants.AMPHORA_ID)
 
         # Define a subflow for if we successfully map an amphora

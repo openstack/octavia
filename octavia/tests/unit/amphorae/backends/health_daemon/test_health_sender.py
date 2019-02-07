@@ -127,3 +127,37 @@ class TestHealthSender(base.TestCase):
 
         # Should not raise an exception
         sender.dosend(SAMPLE_MSG)
+
+        # Test an controller_ip_port_list update
+        sendto_mock.reset_mock()
+        mock_getaddrinfo.reset_mock()
+        self.conf.config(group="health_manager",
+                         controller_ip_port_list=['192.0.2.20:80'])
+        mock_getaddrinfo.return_value = [(socket.AF_INET,
+                                          socket.SOCK_DGRAM,
+                                          socket.IPPROTO_UDP,
+                                          '',
+                                          ('192.0.2.20', 80))]
+        sender = health_sender.UDPStatusSender()
+        sender.dosend(SAMPLE_MSG)
+        sendto_mock.assert_called_once_with(SAMPLE_MSG_BIN,
+                                            ('192.0.2.20', 80))
+        mock_getaddrinfo.assert_called_once_with('192.0.2.20', '80',
+                                                 0, socket.SOCK_DGRAM)
+        sendto_mock.reset_mock()
+        mock_getaddrinfo.reset_mock()
+
+        self.conf.config(group="health_manager",
+                         controller_ip_port_list=['192.0.2.21:81'])
+        mock_getaddrinfo.return_value = [(socket.AF_INET,
+                                          socket.SOCK_DGRAM,
+                                          socket.IPPROTO_UDP,
+                                          '',
+                                          ('192.0.2.21', 81))]
+        sender.dosend(SAMPLE_MSG)
+        mock_getaddrinfo.assert_called_once_with('192.0.2.21', '81',
+                                                 0, socket.SOCK_DGRAM)
+        sendto_mock.assert_called_once_with(SAMPLE_MSG_BIN,
+                                            ('192.0.2.21', 81))
+        sendto_mock.reset_mock()
+        mock_getaddrinfo.reset_mock()

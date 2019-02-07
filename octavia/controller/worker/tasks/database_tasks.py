@@ -27,6 +27,7 @@ from taskflow.types import failure
 from octavia.common import constants
 from octavia.common import data_models
 import octavia.common.tls_utils.cert_parser as cert_parser
+from octavia.common import validate
 from octavia.controller.worker import task_utils as task_utilities
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
@@ -479,7 +480,7 @@ class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
 class MapLoadbalancerToAmphora(BaseDatabaseTask):
     """Maps and assigns a load balancer to an amphora in the database."""
 
-    def execute(self, loadbalancer_id, server_group_id=None):
+    def execute(self, loadbalancer_id, server_group_id=None, flavor=None):
         """Allocates an Amphora for the load balancer in the database.
 
         :param loadbalancer_id: The load balancer id to map to an amphora
@@ -493,6 +494,13 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
         if server_group_id is not None:
             LOG.debug("Load balancer is using anti-affinity. Skipping spares "
                       "pool allocation.")
+            return None
+
+        # Validate the flavor is spares compatible
+        if not validate.is_flavor_spares_compatible(flavor):
+            LOG.debug("Load balancer has a flavor that is not compatible with "
+                      "using spares pool amphora. Skipping spares pool "
+                      "allocation.")
             return None
 
         amp = self.amphora_repo.allocate_and_associate(

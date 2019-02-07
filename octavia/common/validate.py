@@ -346,3 +346,11 @@ def ip_not_reserved(ip_address):
     if ip_address in CONF.networking.reserved_ips:
         raise exceptions.InvalidOption(value=ip_address,
                                        option='member address')
+
+
+def is_flavor_spares_compatible(flavor):
+    if flavor:
+        # If a compute flavor is specified, the flavor is not spares compatible
+        if flavor.get(constants.COMPUTE_FLAVOR, None):
+            return False
+    return True

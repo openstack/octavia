@@ -12,8 +12,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import os
+import stat
 
 import flask
+from oslo_config import cfg
+from oslo_log import log as logging
 import six
 import webob
 from werkzeug import exceptions
@@ -28,7 +32,10 @@ from octavia.amphorae.backends.agent.api_server import plug
 from octavia.amphorae.backends.agent.api_server import udp_listener_base
 from octavia.amphorae.backends.agent.api_server import util
 
+BUFFER = 1024
+CONF = cfg.CONF
 PATH_PREFIX = '/' + api_server.VERSION
+LOG = logging.getLogger(__name__)
 
 
 # make the error pages all json
@@ -81,6 +88,9 @@ class Server(object):
         self.app.add_url_rule(rule=PATH_PREFIX + '/listeners/<listener_id>',
                               view_func=self.delete_listener,
                               methods=['DELETE'])
+        self.app.add_url_rule(rule=PATH_PREFIX + '/config',
+                              view_func=self.upload_config,
+                              methods=['PUT'])
         self.app.add_url_rule(rule=PATH_PREFIX + '/details',
                               view_func=self.get_details,
                               methods=['GET'])
@@ -217,3 +227,27 @@ class Server(object):
 
     def get_interface(self, ip_addr):
         return self._amphora_info.get_interface(ip_addr)
+
+    def upload_config(self):
+        try:
+            stream = flask.request.stream
+            file_path = cfg.find_config_files(project=CONF.project,
+                                              prog=CONF.prog)[0]
+            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+            # mode 00600
+            mode = stat.S_IRUSR | stat.S_IWUSR
+            with os.fdopen(os.open(file_path, flags, mode), 'wb') as cfg_file:
+                b = stream.read(BUFFER)
+                while b:
+                    cfg_file.write(b)
+                    b = stream.read(BUFFER)
+
+            CONF.mutate_config_files()
+        except Exception as e:
+            LOG.error("Unable to update amphora-agent configuration: "
+                      "{}".format(str(e)))
+            return webob.Response(json=dict(
+                message="Unable to update amphora-agent configuration.",
+                details=str(e)), status=500)
+
+        return webob.Response(json={'message': 'OK'}, status=202)

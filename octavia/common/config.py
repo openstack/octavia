@@ -174,6 +174,7 @@ healthmanager_opts = [
                default=None,
                help=_('Number of processes for amphora stats update.')),
     cfg.StrOpt('heartbeat_key',
+               mutable=True,
                help=_('key used to validate amphora sending '
                       'the message'), secret=True),
     cfg.IntOpt('heartbeat_timeout',
@@ -191,9 +192,11 @@ healthmanager_opts = [
                 help=_('List of controller ip and port pairs for the '
                        'heartbeat receivers. Example 127.0.0.1:5555, '
                        '192.168.0.1:5555'),
+                mutable=True,
                 default=[]),
     cfg.IntOpt('heartbeat_interval',
                default=10,
+               mutable=True,
                help=_('Sleep time between sending heartbeats.')),
 
     # Used for updating health and stats
@@ -377,6 +380,7 @@ controller_worker_opts = [
     cfg.StrOpt('loadbalancer_topology',
                default=constants.TOPOLOGY_SINGLE,
                choices=constants.SUPPORTED_LB_TOPOLOGIES,
+               mutable=True,
                help=_('Load balancer topology configuration. '
                       'SINGLE - One amphora per load balancer. '
                       'ACTIVE_STANDBY - Two amphora per load balancer.')),

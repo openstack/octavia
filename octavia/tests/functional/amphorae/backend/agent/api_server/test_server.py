@@ -19,6 +19,7 @@ import socket
 import stat
 import subprocess
 
+import fixtures
 import mock
 import netifaces
 from oslo_config import fixture as oslo_fixture
@@ -36,6 +37,7 @@ from octavia.tests.common import utils as test_utils
 import octavia.tests.unit.base as base
 
 
+AMP_AGENT_CONF_PATH = '/etc/octavia/amphora-agent.conf'
 RANDOM_ERROR = 'random error'
 OK = dict(message='OK')
 
@@ -49,6 +51,11 @@ class TestServerTestCase(base.TestCase):
         self.conf.config(group="haproxy_amphora", base_path='/var/lib/octavia')
         self.conf.config(group="controller_worker",
                          loadbalancer_topology=consts.TOPOLOGY_SINGLE)
+        self.conf.load_raw_values(project='fake_project')
+        self.conf.load_raw_values(prog='fake_prog')
+        self.useFixture(fixtures.MockPatch(
+            'oslo_config.cfg.find_config_files',
+            return_value=[AMP_AGENT_CONF_PATH]))
         with mock.patch('distro.id',
                         return_value='ubuntu'):
             self.ubuntu_test_server = server.Server()
@@ -2650,3 +2657,38 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual(200, rv.status_code)
         self.assertEqual(expected_dict,
                          json.loads(rv.data.decode('utf-8')))
+
+    def test_ubuntu_upload_config(self):
+        self._test_upload_config(consts.UBUNTU)
+
+    def test_centos_upload_config(self):
+        self._test_upload_config(consts.CENTOS)
+
+    @mock.patch('oslo_config.cfg.CONF.mutate_config_files')
+    def _test_upload_config(self, distro, mock_mutate):
+        server.BUFFER = 5  # test the while loop
+        m = self.useFixture(
+            test_utils.OpenFixture(AMP_AGENT_CONF_PATH)).mock_open
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/config', data='TestTest')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put('/' + api_server.VERSION +
+                                         '/config', data='TestTest')
+            self.assertEqual(202, rv.status_code)
+            self.assertEqual(OK, json.loads(rv.data.decode('utf-8')))
+            handle = m()
+            handle.write.assert_any_call(six.b('TestT'))
+            handle.write.assert_any_call(six.b('est'))
+            mock_mutate.assert_called_once_with()
+
+            # Test the exception handling
+            mock_mutate.side_effect = Exception('boom')
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/config', data='TestTest')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put('/' + api_server.VERSION +
+                                         '/config', data='TestTest')
+            self.assertEqual(500, rv.status_code)
