@@ -104,8 +104,8 @@ class exception_logger(object):
 
     def __call__(self, func):
         if self.logger is None:
-            LOG = logging.getLogger(func.__module__)
-            self.logger = LOG.exception
+            _LOG = logging.getLogger(func.__module__)
+            self.logger = _LOG.exception
 
         def call(*args, **kwargs):
             try:
