@@ -33,6 +33,13 @@
               - ^doc/.*$
               - ^etc/.*$
               - ^releasenotes/.*$
+        - openstack-tox-functional-py36:
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
         - octavia-v1-dsvm-scenario
         - octavia-v1-dsvm-py3x-scenario
         - octavia-v2-dsvm-noop-api
@@ -77,6 +84,13 @@
               - ^etc/.*$
               - ^releasenotes/.*$
         - openstack-tox-functional-py35:
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+        - openstack-tox-functional-py36:
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
