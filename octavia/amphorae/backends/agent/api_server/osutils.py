@@ -81,18 +81,18 @@ class BaseOS(object):
         # interfaces and scripts.
         try:
             os.makedirs('/etc/netns/' + consts.AMPHORA_NAMESPACE)
+
+            shutil.copytree(
+                network_dir,
+                '/etc/netns/{netns}/{net_dir}'.format(
+                    netns=consts.AMPHORA_NAMESPACE,
+                    net_dir=netns_network_dir),
+                symlinks=True,
+                ignore=ignore)
         except OSError as e:
             # Raise the error if it's not "File exists" otherwise pass
             if e.errno != errno.EEXIST:
                 raise
-
-        shutil.copytree(
-            network_dir,
-            '/etc/netns/{netns}/{net_dir}'.format(
-                netns=consts.AMPHORA_NAMESPACE,
-                net_dir=netns_network_dir),
-            symlinks=True,
-            ignore=ignore)
 
     def write_vip_interface_file(self, interface_file_path,
                                  primary_interface, vip, ip, broadcast,

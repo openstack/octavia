@@ -135,7 +135,7 @@ amphora_agent_opts = [
                help=_("The file where the network interfaces are located. "
                       "Specifying this will override any value set for "
                       "agent_server_network_dir.")),
-    cfg.IntOpt('agent_request_read_timeout', default=120,
+    cfg.IntOpt('agent_request_read_timeout', default=180,
                help=_("The time in seconds to allow a request from the "
                       "controller to run before terminating the socket.")),
     # Do not specify in octavia.conf, loaded at runtime
