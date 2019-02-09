@@ -381,7 +381,7 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_keepalivedlvs_pid')
+                'get_keepalivedlvs_pid', return_value="12345")
     @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
     @mock.patch('os.path.exists')
@@ -416,7 +416,7 @@ class KeepalivedLvsTestCase(base.TestCase):
         m_webob.Response.assert_has_calls(calls)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_keepalivedlvs_pid')
+                'get_keepalivedlvs_pid', return_value="12345")
     @mock.patch('subprocess.check_output')
     @mock.patch('os.path.exists')
     def test_delete_udp_listener_stop_service_fail(self, m_exist,
@@ -432,7 +432,7 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSVINIT)
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_keepalivedlvs_pid')
+                'get_keepalivedlvs_pid', return_value="12345")
     @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
     @mock.patch('os.path.exists')
@@ -453,7 +453,7 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_keepalivedlvs_pid')
+                'get_keepalivedlvs_pid', return_value="12345")
     @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
     @mock.patch('os.path.exists')
