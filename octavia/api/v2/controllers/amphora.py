@@ -25,7 +25,7 @@ from octavia.api.v2.controllers import base
 from octavia.api.v2.types import amphora as amp_types
 from octavia.common import constants
 from octavia.common import exceptions
-
+from octavia.common import rpc
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -96,11 +96,10 @@ class FailoverController(base.BaseController):
     def __init__(self, amp_id):
         super(FailoverController, self).__init__()
         topic = cfg.CONF.oslo_messaging.topic
-        self.transport = messaging.get_rpc_transport(cfg.CONF)
         self.target = messaging.Target(
             namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
             topic=topic, version="1.0", fanout=False)
-        self.client = messaging.RPCClient(self.transport, target=self.target)
+        self.client = rpc.get_client(self.target)
         self.amp_id = amp_id
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)

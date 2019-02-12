@@ -14,7 +14,6 @@
 
 from jsonschema import exceptions as js_exceptions
 from jsonschema import validate
-
 from oslo_config import cfg
 from oslo_log import log as logging
 import oslo_messaging as messaging
@@ -27,6 +26,7 @@ from octavia.api.drivers import provider_base as driver_base
 from octavia.api.drivers import utils as driver_utils
 from octavia.common import constants as consts
 from octavia.common import data_models
+from octavia.common import rpc
 from octavia.common import utils
 from octavia.db import api as db_apis
 from octavia.db import repositories
@@ -41,11 +41,10 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
     def __init__(self):
         super(AmphoraProviderDriver, self).__init__()
         topic = cfg.CONF.oslo_messaging.topic
-        self.transport = messaging.get_rpc_transport(cfg.CONF)
         self.target = messaging.Target(
             namespace=consts.RPC_NAMESPACE_CONTROLLER_AGENT,
             topic=topic, version="1.0", fanout=False)
-        self.client = messaging.RPCClient(self.transport, target=self.target)
+        self.client = rpc.get_client(self.target)
         self.repositories = repositories.Repositories()
 
     # Load Balancer

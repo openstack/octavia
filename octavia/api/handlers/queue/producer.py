@@ -32,6 +32,8 @@ import six
 
 from octavia.api.handlers import abstract_handler
 from octavia.common import constants
+from octavia.common import rpc
+
 
 cfg.CONF.import_group('oslo_messaging', 'octavia.common.config')
 
@@ -46,11 +48,10 @@ class BaseProducer(abstract_handler.BaseObjectHandler):
 
     def __init__(self):
         topic = cfg.CONF.oslo_messaging.topic
-        self.transport = messaging.get_rpc_transport(cfg.CONF)
         self.target = messaging.Target(
             namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
             topic=topic, version="1.0", fanout=False)
-        self.client = messaging.RPCClient(self.transport, target=self.target)
+        self.client = rpc.get_client(self.target)
 
     def create(self, model):
         """Sends a create message to the controller via oslo.messaging
@@ -229,12 +230,12 @@ class ProducerHandler(abstract_handler.BaseHandler):
     used to send messages via the Class variables load_balancer, listener,
     health_monitor, member, l7policy and l7rule.
     """
-
-    load_balancer = LoadBalancerProducer()
-    listener = ListenerProducer()
-    pool = PoolProducer()
-    health_monitor = HealthMonitorProducer()
-    member = MemberProducer()
-    l7policy = L7PolicyProducer()
-    l7rule = L7RuleProducer()
-    amphora = AmphoraProducer()
+    def __init__(self):
+        self.load_balancer = LoadBalancerProducer()
+        self.listener = ListenerProducer()
+        self.pool = PoolProducer()
+        self.health_monitor = HealthMonitorProducer()
+        self.member = MemberProducer()
+        self.l7policy = L7PolicyProducer()
+        self.l7rule = L7RuleProducer()
+        self.amphora = AmphoraProducer()
