@@ -11,7 +11,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 import mock
 
 from octavia.api.drivers.amphora_driver import driver
@@ -23,7 +22,7 @@ from octavia.tests.unit.api.drivers import sample_data_models
 from octavia.tests.unit import base
 
 
-class TestAmphoraDriver(base.TestCase):
+class TestAmphoraDriver(base.TestRpc):
     def setUp(self):
         super(TestAmphoraDriver, self).setUp()
         self.amp_driver = driver.AmphoraProviderDriver()
