@@ -41,26 +41,23 @@ from octavia.common import data_models
 from octavia.tests.unit import base
 
 
-class TestProducer(base.TestCase):
+class TestProducer(base.TestRpc):
     def setUp(self):
         super(TestProducer, self).setUp()
         self.mck_model = mock.Mock()
         self.mck_model.id = '10'
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="oslo_messaging", topic='OCTAVIA_PROV')
+        self.mck_client = mock.create_autospec(messaging.RPCClient)
         mck_target = mock.patch(
             'octavia.api.handlers.queue.producer.messaging.Target')
-        mck_transport = mock.patch(
-            'octavia.api.handlers.queue.producer.messaging.get_transport')
         self.mck_client = mock.create_autospec(messaging.RPCClient)
         mck_client = mock.patch(
             'octavia.api.handlers.queue.producer.messaging.RPCClient',
             return_value=self.mck_client)
         mck_target.start()
-        mck_transport.start()
         mck_client.start()
         self.addCleanup(mck_target.stop)
-        self.addCleanup(mck_transport.stop)
         self.addCleanup(mck_client.stop)
 
     def test_create_loadbalancer(self):
