@@ -351,6 +351,60 @@ class PlugVIP(BaseNetworkTask):
                       {'vip': loadbalancer.vip.ip_address, 'except': e})
 
 
+class UpdateVIPSecurityGroup(BaseNetworkTask):
+    """Task to setup SG for LB."""
+
+    def execute(self, loadbalancer):
+        """Task to setup SG for LB."""
+
+        LOG.debug("Setup SG for loadbalancer id: %s", loadbalancer.id)
+
+        self.network_driver.update_vip_sg(loadbalancer, loadbalancer.vip)
+
+
+class GetSubnetFromVIP(BaseNetworkTask):
+    """Task to plumb a VIP."""
+
+    def execute(self, loadbalancer):
+        """Plumb a vip to an amphora."""
+
+        LOG.debug("Getting subnet for LB: %s", loadbalancer.id)
+
+        return self.network_driver.get_subnet(loadbalancer.vip.subnet_id)
+
+
+class PlugVIPAmpphora(BaseNetworkTask):
+    """Task to plumb a VIP."""
+
+    def execute(self, loadbalancer, amphora, subnet):
+        """Plumb a vip to an amphora."""
+
+        LOG.debug("Plumbing VIP for amphora id: %s", amphora.id)
+
+        amp_data = self.network_driver.plug_aap_port(
+            loadbalancer, loadbalancer.vip, amphora, subnet)
+        return amp_data
+
+    def revert(self, result, loadbalancer, amphora, subnet, *args, **kwargs):
+        """Handle a failure to plumb a vip."""
+
+        if isinstance(result, failure.Failure):
+            return
+        LOG.warning("Unable to plug VIP for amphora id %s "
+                    "load balancer id %s",
+                    amphora.id, loadbalancer.id)
+
+        try:
+            amphora.vrrp_port_id = result.vrrp_port_id
+            amphora.ha_port_id = result.ha_port_id
+
+            self.network_driver.unplug_aap_port(loadbalancer.vip,
+                                                amphora, subnet)
+        except Exception as e:
+            LOG.error('Failed to unplug AAP port. Resources may still be in '
+                      'use for VIP: %s due to error: %s', loadbalancer.vip, e)
+
+
 class UnplugVIP(BaseNetworkTask):
     """Task to unplug the vip."""
 
@@ -522,20 +576,11 @@ class ApplyQos(BaseNetworkTask):
         """Call network driver to apply QoS Policy on the vrrp ports."""
         if not amps_data:
             amps_data = loadbalancer.amphorae
-        vrrp_port_ids = [amp.vrrp_port_id for amp in amps_data]
-        for port_id in vrrp_port_ids:
-            try:
-                self.network_driver.apply_qos_on_port(qos_policy_id, port_id)
-            except Exception:
-                if not is_revert:
-                    raise
-                else:
-                    LOG.warning('Failed to undo qos policy %(qos_id)s '
-                                'on vrrp port: %(port)s from '
-                                'amphorae: %(amp)s',
-                                {'qos_id': request_qos_id,
-                                 'port': vrrp_port_ids,
-                                 'amp': [amp.id for amp in amps_data]})
+
+        apply_qos = ApplyQosAmphora()
+        for amp_data in amps_data:
+            apply_qos._apply_qos_on_vrrp_port(loadbalancer, amp_data,
+                                              qos_policy_id)
 
     def execute(self, loadbalancer, amps_data=None, update_dict=None):
         """Apply qos policy on the vrrp ports which are related with vip."""
@@ -559,3 +604,50 @@ class ApplyQos(BaseNetworkTask):
                                           is_revert=True,
                                           request_qos_id=request_qos_id)
         return
+
+
+class ApplyQosAmphora(BaseNetworkTask):
+    """Apply Quality of Services to the VIP"""
+
+    def _apply_qos_on_vrrp_port(self, loadbalancer, amp_data, qos_policy_id,
+                                is_revert=False, request_qos_id=None):
+        """Call network driver to apply QoS Policy on the vrrp ports."""
+        try:
+            self.network_driver.apply_qos_on_port(qos_policy_id,
+                                                  amp_data.vrrp_port_id)
+        except Exception:
+            if not is_revert:
+                raise
+            else:
+                LOG.warning('Failed to undo qos policy %(qos_id)s '
+                            'on vrrp port: %(port)s from '
+                            'amphorae: %(amp)s',
+                            {'qos_id': request_qos_id,
+                             'port': amp_data.vrrp_port_id,
+                             'amp': [amp.id for amp in amp_data]})
+
+    def execute(self, loadbalancer, amp_data=None, update_dict=None):
+        """Apply qos policy on the vrrp ports which are related with vip."""
+        qos_policy_id = loadbalancer.vip.qos_policy_id
+        if not qos_policy_id and (
+            update_dict and (
+                'vip' not in update_dict or
+                'qos_policy_id' not in update_dict['vip'])):
+            return
+        self._apply_qos_on_vrrp_port(loadbalancer, amp_data, qos_policy_id)
+
+    def revert(self, result, loadbalancer, amp_data=None, update_dict=None,
+               *args, **kwargs):
+        """Handle a failure to apply QoS to VIP"""
+        try:
+            request_qos_id = loadbalancer.vip.qos_policy_id
+            orig_lb = self.task_utils.get_current_loadbalancer_from_db(
+                loadbalancer.id)
+            orig_qos_id = orig_lb.vip.qos_policy_id
+            if request_qos_id != orig_qos_id:
+                self._apply_qos_on_vrrp_port(loadbalancer, amp_data,
+                                             orig_qos_id, is_revert=True,
+                                             request_qos_id=request_qos_id)
+        except Exception as e:
+            LOG.error('Failed to remove QoS policy: %s from port: %s due '
+                      'to error: %s', orig_qos_id, amp_data.vrrp_port_id, e)

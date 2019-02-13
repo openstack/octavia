@@ -299,86 +299,79 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         show_port.side_effect = neutron_exceptions.PortNotFoundClient
         self.driver.deallocate_vip(vip)
 
-    def test_plug_vip_errors_when_nova_cant_find_network_to_attach(self):
+    def test_plug_aap_errors_when_nova_cant_find_network_to_attach(self):
         lb = dmh.generate_load_balancer_tree()
-        show_subnet = self.driver.neutron_client.show_subnet
-        show_subnet.return_value = {
-            'subnet': {
-                'id': lb.vip.subnet_id
-            }
-        }
-        list_security_groups = self.driver.neutron_client.list_security_groups
-        lsc_side_effect = [
-            None, {
-                'security_groups': [
-                    {'id': 'lb-sec-grp1'}
-                ]
-            }
-        ]
-        list_security_groups.side_effect = lsc_side_effect
+        subnet = network_models.Subnet(id=t_constants.MOCK_VIP_SUBNET_ID,
+                                       network_id=t_constants.MOCK_VIP_NET_ID)
 
         network_attach = self.driver.compute.attach_network_or_port
         network_attach.side_effect = nova_exceptions.NotFound(404, "Network")
         self.assertRaises(network_base.PlugVIPException,
-                          self.driver.plug_vip, lb, lb.vip)
+                          self.driver.plug_aap_port, lb, lb.vip,
+                          lb.amphorae[0], subnet)
 
-    def test_plug_vip_errors_when_neutron_cant_find_port_to_update(self):
+    def test_plug_aap_errors_when_neutron_cant_find_port_to_update(self):
         lb = dmh.generate_load_balancer_tree()
-        show_subnet = self.driver.neutron_client.show_subnet
-        show_subnet.return_value = {
-            'subnet': {
-                'id': lb.vip.subnet_id
-            }
-        }
-        list_security_groups = self.driver.neutron_client.list_security_groups
-        lsc_side_effect = [
-            None, {
-                'security_groups': [
-                    {'id': 'lb-sec-grp1'}
-                ]
-            }
-        ]
-        list_security_groups.side_effect = lsc_side_effect
+        subnet = network_models.Subnet(id=t_constants.MOCK_VIP_SUBNET_ID,
+                                       network_id=t_constants.MOCK_VIP_NET_ID)
         network_attach = self.driver.compute.attach_network_or_port
         network_attach.return_value = t_constants.MOCK_NOVA_INTERFACE
 
         update_port = self.driver.neutron_client.update_port
         update_port.side_effect = neutron_exceptions.PortNotFoundClient
         self.assertRaises(network_base.PortNotFound,
-                          self.driver.plug_vip, lb, lb.vip)
+                          self.driver.plug_aap_port, lb, lb.vip,
+                          lb.amphorae[0], subnet)
 
-    def test_plug_vip(self):
+    @mock.patch('octavia.network.drivers.neutron.allowed_address_pairs.'
+                'AllowedAddressPairsDriver.update_vip_sg')
+    @mock.patch('octavia.network.drivers.neutron.allowed_address_pairs.'
+                'AllowedAddressPairsDriver.get_subnet')
+    @mock.patch('octavia.network.drivers.neutron.allowed_address_pairs.'
+                'AllowedAddressPairsDriver.plug_aap_port')
+    def test_plug_vip(self, mock_plug_aap, mock_get_subnet,
+                      mock_update_vip_sg):
         lb = dmh.generate_load_balancer_tree()
-        show_subnet = self.driver.neutron_client.show_subnet
-        show_subnet.return_value = {
-            'subnet': {
-                'id': t_constants.MOCK_VIP_SUBNET_ID,
-                'network_id': t_constants.MOCK_VIP_NET_ID
-            }
-        }
-        list_ports = self.driver.neutron_client.list_ports
-        port1 = t_constants.MOCK_MANAGEMENT_PORT1['port']
-        port2 = t_constants.MOCK_MANAGEMENT_PORT2['port']
-        list_ports.side_effect = [{'ports': [port1]}, {'ports': [port2]}]
-        network_attach = self.driver.compute.attach_network_or_port
-        network_attach.side_effect = [t_constants.MOCK_VRRP_INTERFACE1,
-                                      t_constants.MOCK_VRRP_INTERFACE2]
+        subnet = mock.MagicMock()
+        mock_get_subnet.return_value = subnet
+        mock_plug_aap.side_effect = lb.amphorae
+        amps = self.driver.plug_vip(lb, lb.vip)
+
+        mock_update_vip_sg.assert_called_with(lb, lb.vip)
+        mock_get_subnet.assert_called_with(lb.vip.subnet_id)
+        for amp in amps:
+            mock_plug_aap.assert_any_call(lb, lb.vip, amp, subnet)
+
+    def test_update_vip_sg(self):
+        lb = dmh.generate_load_balancer_tree()
         list_security_groups = self.driver.neutron_client.list_security_groups
         list_security_groups.return_value = {
             'security_groups': [
                 {'id': 'lb-sec-grp1'}
             ]
         }
+        self.driver.update_vip_sg(lb, lb.vip)
+
+    def test_plug_aap_port(self):
+        lb = dmh.generate_load_balancer_tree()
+
+        subnet = network_models.Subnet(id=t_constants.MOCK_VIP_SUBNET_ID,
+                                       network_id=t_constants.MOCK_VIP_NET_ID)
+
+        list_ports = self.driver.neutron_client.list_ports
+        port1 = t_constants.MOCK_MANAGEMENT_PORT1['port']
+        port2 = t_constants.MOCK_MANAGEMENT_PORT2['port']
+        list_ports.side_effect = [{'ports': [port1]}, {'ports': [port2]}]
+        network_attach = self.driver.compute.attach_network_or_port
+        network_attach.side_effect = [t_constants.MOCK_VRRP_INTERFACE1]
         update_port = self.driver.neutron_client.update_port
         expected_aap = {'port': {'allowed_address_pairs':
                                  [{'ip_address': lb.vip.ip_address}]}}
-        amps = self.driver.plug_vip(lb, lb.vip)
-        self.assertEqual(5, update_port.call_count)
-        for amp in amps:
-            update_port.assert_any_call(amp.vrrp_port_id, expected_aap)
-            self.assertIn(amp.vrrp_ip, [t_constants.MOCK_VRRP_IP1,
-                                        t_constants.MOCK_VRRP_IP2])
-            self.assertEqual(lb.vip.ip_address, amp.ha_ip)
+        amp = self.driver.plug_aap_port(lb, lb.vip, lb.amphorae[0], subnet)
+        update_port.assert_any_call(amp.vrrp_port_id, expected_aap)
+        self.assertIn(amp.vrrp_ip, [t_constants.MOCK_VRRP_IP1,
+                                    t_constants.MOCK_VRRP_IP2])
+        self.assertEqual(lb.vip.ip_address, amp.ha_ip)
 
     def _set_safely(self, obj, name, value):
         if isinstance(obj, dict):
@@ -390,16 +383,12 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             self.addCleanup(setattr, obj, name, current)
             setattr(obj, name, value)
 
-    def test_plug_vip_on_mgmt_net(self):
+    def test_plug_aap_on_mgmt_net(self):
         lb = dmh.generate_load_balancer_tree()
         lb.vip.subnet_id = t_constants.MOCK_MANAGEMENT_SUBNET_ID
-        show_subnet = self.driver.neutron_client.show_subnet
-        show_subnet.return_value = {
-            'subnet': {
-                'id': t_constants.MOCK_MANAGEMENT_SUBNET_ID,
-                'network_id': t_constants.MOCK_MANAGEMENT_NET_ID
-            }
-        }
+        subnet = network_models.Subnet(
+            id=t_constants.MOCK_MANAGEMENT_SUBNET_ID,
+            network_id=t_constants.MOCK_MANAGEMENT_NET_ID)
         list_ports = self.driver.neutron_client.list_ports
         port1 = t_constants.MOCK_MANAGEMENT_PORT1['port']
         port2 = t_constants.MOCK_MANAGEMENT_PORT2['port']
@@ -417,24 +406,15 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                          'net_id', t_constants.MOCK_MANAGEMENT_NET_ID)
         self._set_safely(t_constants.MOCK_VRRP_FIXED_IPS2[0],
                          'subnet_id', t_constants.MOCK_MANAGEMENT_SUBNET_ID)
-        network_attach.side_effect = [t_constants.MOCK_VRRP_INTERFACE1,
-                                      t_constants.MOCK_VRRP_INTERFACE2]
-        list_security_groups = self.driver.neutron_client.list_security_groups
-        list_security_groups.return_value = {
-            'security_groups': [
-                {'id': 'lb-sec-grp1'}
-            ]
-        }
+        network_attach.side_effect = [t_constants.MOCK_VRRP_INTERFACE1]
         update_port = self.driver.neutron_client.update_port
         expected_aap = {'port': {'allowed_address_pairs':
                                  [{'ip_address': lb.vip.ip_address}]}}
-        amps = self.driver.plug_vip(lb, lb.vip)
-        self.assertEqual(5, update_port.call_count)
-        for amp in amps:
-            update_port.assert_any_call(amp.vrrp_port_id, expected_aap)
-            self.assertIn(amp.vrrp_ip, [t_constants.MOCK_VRRP_IP1,
-                                        t_constants.MOCK_VRRP_IP2])
-            self.assertEqual(lb.vip.ip_address, amp.ha_ip)
+        amp = self.driver.plug_aap_port(lb, lb.vip, lb.amphorae[0], subnet)
+        update_port.assert_any_call(amp.vrrp_port_id, expected_aap)
+        self.assertIn(amp.vrrp_ip, [t_constants.MOCK_VRRP_IP1,
+                                    t_constants.MOCK_VRRP_IP2])
+        self.assertEqual(lb.vip.ip_address, amp.ha_ip)
 
     def test_allocate_vip_when_port_already_provided(self):
         show_port = self.driver.neutron_client.show_port
@@ -533,38 +513,44 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertEqual(t_constants.MOCK_PORT_ID, vip.port_id)
         self.assertEqual(fake_lb.id, vip.load_balancer_id)
 
-    def test_unplug_vip_errors_when_update_port_cant_find_port(self):
+    def test_unplug_aap_port_errors_when_update_port_cant_find_port(self):
         lb = dmh.generate_load_balancer_tree()
         list_ports = self.driver.neutron_client.list_ports
-        show_subnet = self.driver.neutron_client.show_subnet
-        show_subnet.return_value = t_constants.MOCK_SUBNET
         port1 = t_constants.MOCK_NEUTRON_PORT['port']
         port2 = {
             'id': '4', 'network_id': '3', 'fixed_ips':
             [{'ip_address': '10.0.0.2'}]
         }
+        subnet = network_models.Subnet(
+            id=t_constants.MOCK_MANAGEMENT_SUBNET_ID,
+            network_id='3')
         list_ports.return_value = {'ports': [port1, port2]}
         update_port = self.driver.neutron_client.update_port
         update_port.side_effect = neutron_exceptions.PortNotFoundClient
         self.assertRaises(network_base.UnplugVIPException,
-                          self.driver.unplug_vip, lb, lb.vip)
+                          self.driver.unplug_aap_port, lb.vip, lb.amphorae[0],
+                          subnet)
 
-    def test_unplug_vip_errors_when_update_port_fails(self):
+    def test_unplug_aap_errors_when_update_port_fails(self):
         lb = dmh.generate_load_balancer_tree()
-        show_subnet = self.driver.neutron_client.show_subnet
-        show_subnet.return_value = t_constants.MOCK_SUBNET
         port1 = t_constants.MOCK_NEUTRON_PORT['port']
         port2 = {
             'id': '4', 'network_id': '3', 'fixed_ips':
             [{'ip_address': '10.0.0.2'}]
         }
+
+        subnet = network_models.Subnet(
+            id=t_constants.MOCK_MANAGEMENT_SUBNET_ID,
+            network_id='3')
+
         list_ports = self.driver.neutron_client.list_ports
         list_ports.return_value = {'ports': [port1, port2]}
 
         update_port = self.driver.neutron_client.update_port
         update_port.side_effect = TypeError
         self.assertRaises(network_base.UnplugVIPException,
-                          self.driver.unplug_vip, lb, lb.vip)
+                          self.driver.unplug_aap_port, lb.vip,
+                          lb.amphorae[0], subnet)
 
     def test_unplug_vip_errors_when_vip_subnet_not_found(self):
         lb = dmh.generate_load_balancer_tree()
@@ -573,25 +559,33 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertRaises(network_base.PluggedVIPNotFound,
                           self.driver.unplug_vip, lb, lb.vip)
 
-    def test_unplug_vip(self):
+    @mock.patch('octavia.network.drivers.neutron.allowed_address_pairs.'
+                'AllowedAddressPairsDriver.unplug_aap_port')
+    def test_unplug_vip(self, mock):
         lb = dmh.generate_load_balancer_tree()
         show_subnet = self.driver.neutron_client.show_subnet
         show_subnet.return_value = t_constants.MOCK_SUBNET
+        self.driver.unplug_vip(lb, lb.vip)
+        self.assertEqual(len(lb.amphorae), mock.call_count)
+
+    def test_unplug_aap_port(self):
+        lb = dmh.generate_load_balancer_tree()
         update_port = self.driver.neutron_client.update_port
         port1 = t_constants.MOCK_NEUTRON_PORT['port']
         port2 = {
             'id': '4', 'network_id': '3', 'fixed_ips':
             [{'ip_address': '10.0.0.2'}]
         }
+        subnet = network_models.Subnet(
+            id=t_constants.MOCK_MANAGEMENT_SUBNET_ID,
+            network_id='3')
         list_ports = self.driver.neutron_client.list_ports
         list_ports.return_value = {'ports': [port1, port2]}
         get_port = self.driver.neutron_client.get_port
         get_port.side_effect = neutron_exceptions.NotFound
-        self.driver.unplug_vip(lb, lb.vip)
-        self.assertEqual(len(lb.amphorae), update_port.call_count)
+        self.driver.unplug_aap_port(lb.vip, lb.amphorae[0], subnet)
         clear_aap = {'port': {'allowed_address_pairs': []}}
-        update_port.assert_has_calls([mock.call(port1.get('id'), clear_aap),
-                                      mock.call(port1.get('id'), clear_aap)])
+        update_port.assert_called_once_with(port2.get('id'), clear_aap)
 
     def test_plug_network_when_compute_instance_cant_be_found(self):
         net_id = t_constants.MOCK_NOVA_INTERFACE.net_id

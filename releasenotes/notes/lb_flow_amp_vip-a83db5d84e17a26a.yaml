@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    This will speed up lb creation by allocating AAP ports in parallel for
+    LBs with more than one amp. As a side effect the AAP driver will be
+    simplified and thus easier to mainain.

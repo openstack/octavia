@@ -258,6 +258,8 @@ REQ_CONN_TIMEOUT = 'req_conn_timeout'
 REQ_READ_TIMEOUT = 'req_read_timeout'
 CONN_MAX_RETRIES = 'conn_max_retries'
 CONN_RETRY_INTERVAL = 'conn_retry_interval'
+SUBNET = 'subnet'
+AMP_DATA = 'amp_data'
 ACTIVE_CONNECTIONS = 'active_connections'
 BYTES_IN = 'bytes_in'
 BYTES_OUT = 'bytes_out'
@@ -301,6 +303,7 @@ UPDATE_AMPHORA_CONFIG_FLOW = 'octavia-update-amp-config-flow'
 
 POST_MAP_AMP_TO_LB_SUBFLOW = 'octavia-post-map-amp-to-lb-subflow'
 CREATE_AMP_FOR_LB_SUBFLOW = 'octavia-create-amp-for-lb-subflow'
+AMP_PLUG_NET_SUBFLOW = 'octavia-plug-net-subflow'
 GET_AMPHORA_FOR_LB_SUBFLOW = 'octavia-get-amphora-for-lb-subflow'
 POST_LB_AMP_ASSOCIATION_SUBFLOW = (
     'octavia-post-loadbalancer-amp_association-subflow')
@@ -333,7 +336,11 @@ CREATE_VRRP_GROUP_FOR_LB = 'octavia-create-vrrp-group-for-lb'
 CREATE_VRRP_SECURITY_RULES = 'octavia-create-vrrp-security-rules'
 AMP_COMPUTE_CONNECTIVITY_WAIT = 'octavia-amp-compute-connectivity-wait'
 AMP_LISTENER_UPDATE = 'octavia-amp-listeners-update'
-
+PLUG_VIP_AMPHORA = 'octavia-amp-plug-vip'
+APPLY_QOS_AMP = 'octavia-amp-apply-qos'
+UPDATE_AMPHORA_VIP_DATA = 'ocatvia-amp-update-vip-data'
+GET_AMP_NETWORK_CONFIG = 'octavia-amp-get-network-config'
+AMP_POST_VIP_PLUG = 'octavia-amp-post-vip-plug'
 GENERATE_SERVER_PEM_TASK = 'GenerateServerPEMTask'
 AMPHORA_CONFIG_UPDATE_TASK = 'AmphoraConfigUpdateTask'
 
@@ -353,6 +360,7 @@ DELETE_MEMBER_INDB = 'octavia-delete-member-indb'
 RELOAD_LB_AFTER_AMP_ASSOC = 'reload-lb-after-amp-assoc'
 RELOAD_LB_AFTER_AMP_ASSOC_FULL_GRAPH = 'reload-lb-after-amp-assoc-full-graph'
 RELOAD_LB_AFTER_PLUG_VIP = 'reload-lb-after-plug-vip'
+RELOAD_LB_BEFOR_ALLOCATE_VIP = "reload-lb-before-allocate-vip"
 
 NOVA_1 = '1.1'
 NOVA_21 = '2.1'

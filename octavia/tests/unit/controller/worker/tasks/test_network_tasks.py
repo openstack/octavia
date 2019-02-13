@@ -765,3 +765,37 @@ class TestNetworkTasks(base.TestCase):
         waitforportdetach.execute(amphora)
 
         mock_driver.wait_for_port_detach.assert_called_once_with(amphora)
+
+    def test_update_vip_sg(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        net = network_tasks.UpdateVIPSecurityGroup()
+
+        net.execute(LB)
+        mock_driver.update_vip_sg.assert_called_once_with(LB, LB.vip)
+
+    def test_get_subnet_from_vip(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        net = network_tasks.GetSubnetFromVIP()
+
+        net.execute(LB)
+        mock_driver.get_subnet.assert_called_once_with(LB.vip.subnet_id)
+
+    def test_plug_vip_amphora(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        net = network_tasks.PlugVIPAmpphora()
+        mockSubnet = mock.MagicMock()
+        net.execute(LB, self.amphora_mock, mockSubnet)
+        mock_driver.plug_aap_port.assert_called_once_with(
+            LB, LB.vip, self.amphora_mock, mockSubnet)
+
+    def test_revert_plug_vip_amphora(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        net = network_tasks.PlugVIPAmpphora()
+        mockSubnet = mock.MagicMock()
+        net.revert(AMPS_DATA[0], LB, self.amphora_mock, mockSubnet)
+        mock_driver.unplug_aap_port.assert_called_once_with(
+            LB.vip, self.amphora_mock, mockSubnet)

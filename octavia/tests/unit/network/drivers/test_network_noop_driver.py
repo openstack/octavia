@@ -67,6 +67,7 @@ class TestNoopNetworkDriver(base.TestCase):
         self.amphora2.ha_ip = '10.0.2.11'
         self.load_balancer.amphorae = [self.amphora1, self.amphora2]
         self.load_balancer.vip = self.vip
+        self.subnet = mock.MagicMock()
 
     def test_allocate_vip(self):
         self.driver.allocate_vip(self.load_balancer)
@@ -85,6 +86,13 @@ class TestNoopNetworkDriver(base.TestCase):
         self.driver.plug_vip(self.load_balancer, self.vip)
         self.assertEqual((self.load_balancer, self.vip,
                           'plug_vip'),
+                         self.driver.driver.networkconfigconfig[(
+                             self.load_balancer.id, self.vip.ip_address)])
+
+    def test_update_vip_sg(self):
+        self.driver.update_vip_sg(self.load_balancer, self.vip)
+        self.assertEqual((self.load_balancer, self.vip,
+                          'update_vip_sg'),
                          self.driver.driver.networkconfigconfig[(
                              self.load_balancer.id, self.vip.ip_address)])
 
@@ -209,4 +217,23 @@ class TestNoopNetworkDriver(base.TestCase):
             (self.qos_policy_id, self.vrrp_port_id, 'apply_qos_on_port'),
             self.driver.driver.networkconfigconfig[self.qos_policy_id,
                                                    self.vrrp_port_id]
+        )
+
+    def test_plug_aap_port(self):
+        self.driver.plug_aap_port(self.load_balancer, self.vip, self.amphora1,
+                                  self.subnet)
+        self.assertEqual(
+            (self.load_balancer, self.vip, self.amphora1, self.subnet,
+             'plug_aap_port'),
+            self.driver.driver.networkconfigconfig[self.amphora1.id,
+                                                   self.vip.ip_address]
+        )
+
+    def test_unplug_aap(self):
+        self.driver.unplug_aap_port(self.vip, self.amphora1, self.subnet)
+        self.assertEqual(
+            (self.vip, self.amphora1, self.subnet,
+             'unplug_aap_port'),
+            self.driver.driver.networkconfigconfig[self.amphora1.id,
+                                                   self.vip.ip_address]
         )
