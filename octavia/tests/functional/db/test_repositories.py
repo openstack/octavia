@@ -2958,6 +2958,23 @@ class VipRepositoryTest(BaseRepositoryTest):
         self.assertIsNotNone(new_lb)
         self.assertIsNone(new_lb.vip)
 
+    def test_create_ipv6(self):
+        vip = self.vip_repo.create(self.session, load_balancer_id=self.lb.id,
+                                   ip_address="2001:DB8::10")
+        self.assertEqual(self.lb.id, vip.load_balancer_id)
+        self.assertEqual("2001:DB8::10", vip.ip_address)
+
+    # Note: This test is using the unique local address range to
+    #       validate that we handle a fully expaned IP address properly.
+    #       This is not possible with the documentation/testnet range.
+    def test_create_ipv6_full(self):
+        vip = self.vip_repo.create(
+            self.session, load_balancer_id=self.lb.id,
+            ip_address="fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+        self.assertEqual(self.lb.id, vip.load_balancer_id)
+        self.assertEqual("fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+                         vip.ip_address)
+
 
 class SNIRepositoryTest(BaseRepositoryTest):
 

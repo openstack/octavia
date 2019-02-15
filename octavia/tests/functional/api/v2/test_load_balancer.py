@@ -316,6 +316,40 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(network.id, api_lb.get('vip_network_id'))
         self.assertEqual(ip_address, api_lb.get('vip_address'))
 
+    # Note: This test is using the unique local address range to
+    #       validate that we handle a fully expaned IP address properly.
+    #       This is not possible with the documentation/testnet range.
+    def test_create_with_vip_network_and_address_full_ipv6(self):
+        ip_address = 'fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'
+        network_id = uuidutils.generate_uuid()
+        subnet1 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        network_id=network_id,
+                                        cidr='fc00::/7',
+                                        ip_version=6)
+        subnet2 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        network_id=network_id,
+                                        cidr='198.51.100.0/24',
+                                        ip_version=4)
+        network = network_models.Network(id=network_id,
+                                         subnets=[subnet1.id, subnet2.id])
+        lb_json = {'vip_network_id': network.id,
+                   'vip_address': ip_address,
+                   'project_id': self.project_id}
+        body = self._build_body(lb_json)
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_network") as mock_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_subnet") as mock_get_subnet:
+            mock_get_network.return_value = network
+            mock_get_subnet.side_effect = [subnet1, subnet2]
+            response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_request_matches_response(lb_json, api_lb)
+        self.assertEqual(subnet1.id, api_lb.get('vip_subnet_id'))
+        self.assertEqual(network.id, api_lb.get('vip_network_id'))
+        self.assertEqual(ip_address, api_lb.get('vip_address'))
+
     def test_create_with_vip_port_1_fixed_ip(self):
         ip_address = '198.51.100.1'
         subnet = network_models.Subnet(id=uuidutils.generate_uuid())
