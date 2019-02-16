@@ -48,7 +48,7 @@ run_pylint () {
     echo "Running pylint..."
     echo "You can speed this up by running it on 'HEAD~[0-9]' (e.g. HEAD~1, this change only)..."
     if [ -n "${files}" ]; then
-        pylint --max-nested-blocks 7 --extension-pkg-whitelist netifaces --rcfile=.pylintrc --output-format=colorized ${files}
+        pylint -j 0 --max-nested-blocks 7 --extension-pkg-whitelist netifaces --rcfile=.pylintrc --output-format=colorized ${files}
     else
         echo "No python changes in this commit, pylint check not required."
         exit 0
