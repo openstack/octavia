@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Octavia will no longer automatically revoke access to secrets whenever
+    load balancing resources no longer require access to them. This may be
+    added in the future.
