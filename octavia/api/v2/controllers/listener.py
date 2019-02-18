@@ -402,45 +402,6 @@ class ListenersController(base.BaseController):
             driver_utils.call_provider(driver.name, driver.listener_delete,
                                        provider_listener)
 
-        # Revoke access of octavia service user to certificates
-        tls_refs = []
-
-        for sni in db_listener.sni_containers:
-            filters = {'tls_container_id': sni.tls_container_id}
-            snis = self.repositories.sni.get_all(context.session, **filters)[0]
-
-            if len(snis) == 1:
-                # referred only once, enqueue for access revoking
-                tls_refs.append(sni.tls_container_id)
-            else:
-                blocking_listeners = [s.listener_id for s in snis if
-                                      s.listener_id != id]
-                LOG.debug("Listeners %s using TLS ref %s. Access to TLS ref "
-                          "will not be revoked.", blocking_listeners,
-                          sni.tls_container_id)
-
-        if db_listener.tls_certificate_id:
-            filters = {'tls_certificate_id': db_listener.tls_certificate_id}
-            # Note get_all returns the list and links. We only want the list.
-            listeners = self.repositories.listener.get_all(
-                context.session, show_deleted=False, **filters)[0]
-
-            if len(listeners) == 1:
-                # referred only once, enqueue for access revoking
-                tls_refs.append(db_listener.tls_certificate_id)
-            else:
-                blocking_listeners = [l.id for l in listeners if l.id != id]
-                LOG.debug("Listeners %s using TLS ref %s. Access to TLS ref "
-                          "will not be revoked.", blocking_listeners,
-                          db_listener.tls_certificate_id)
-
-        for ref in tls_refs:
-            try:
-                self.cert_manager.unset_acls(context, ref)
-            except Exception:
-                # certificate may have been removed already
-                pass
-
     @pecan.expose()
     def _lookup(self, id, *remainder):
         """Overridden pecan _lookup method for custom routing.
