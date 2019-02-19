@@ -15,10 +15,10 @@
 import binascii
 import hashlib
 import hmac
-import json
 import zlib
 
 from oslo_log import log as logging
+from oslo_serialization import jsonutils
 from oslo_utils import secretutils
 
 from octavia.common import exceptions
@@ -35,14 +35,14 @@ def to_hex(byte_array):
 
 
 def encode_obj(obj):
-    json_bytes = json.dumps(obj).encode('utf-8')
+    json_bytes = jsonutils.dumps(obj).encode('utf-8')
     binary_array = zlib.compress(json_bytes, 9)
     return binary_array
 
 
 def decode_obj(binary_array):
     json_str = zlib.decompress(binary_array).decode('utf-8')
-    obj = json.loads(json_str)
+    obj = jsonutils.loads(json_str)
     return obj
 
 
