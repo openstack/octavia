@@ -1,0 +1,25 @@
+---
+upgrade:
+  - |
+    We have changed the [haproxy_amphora] connection_max_retries and
+    build_active_retries default values from 300 to 120. This means load
+    balancer builds will wait for ten minutes instead of twenty-five minutes
+    for nova to boot the virtual machine.
+    We feel these are more reasonable default values for most production
+    deployments and provide a better user experience.
+    If you are running nova in a nested virtualization environment, meaning
+    nova is booting VMs inside another VM, and you do not have nested
+    virtualization enabled in the bottom hypervisor, you may need to set these
+    values back up to 300.
+other:
+  - |
+    We have changed the [haproxy_amphora] connection_max_retries and
+    build_active_retries default values from 300 to 120. This means load
+    balancer builds will wait for ten minutes instead of twenty-five minutes
+    for nova to boot the virtual machine.
+    We feel these are more reasonable default values for most production
+    deployments and provide a better user experience.
+    If you are running nova in a nested virtualization environment, meaning
+    nova is booting VMs inside another VM, and you do not have nested
+    virtualization enabled in the bottom hypervisor, you may need to set these
+    values back up to 300.

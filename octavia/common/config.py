@@ -238,7 +238,7 @@ haproxy_amphora_opts = [
     cfg.BoolOpt('connection_logging', default=True,
                 help=_('Set this to False to disable connection logging.')),
     cfg.IntOpt('connection_max_retries',
-               default=300,
+               default=120,
                help=_('Retry threshold for connecting to amphorae.')),
     cfg.IntOpt('connection_retry_interval',
                default=5,
@@ -256,7 +256,7 @@ haproxy_amphora_opts = [
                help=_('Number of amphorae that could be built per controller '
                       'worker, simultaneously.')),
     cfg.IntOpt('build_active_retries',
-               default=300,
+               default=120,
                help=_('Retry threshold for waiting for a build slot for '
                       'an amphorae.')),
     cfg.IntOpt('build_retry_interval',
