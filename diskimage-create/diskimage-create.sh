@@ -23,7 +23,7 @@ usage() {
     echo "            [-a i386 | **amd64** | armhf | ppc64le]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
-    echo "            [-d **xenial**/**7** | trusty | <other release id> ]"
+    echo "            [-d **xenial**/**7** | trusty | 8 | <other release id> ]"
     echo "            [-e]"
     echo "            [-f]"
     echo "            [-h]"
@@ -224,7 +224,7 @@ AMP_ENABLE_FULL_MAC_SECURITY=${AMP_ENABLE_FULL_MAC_SECURITY:-0}
 AMP_DISABLE_TMP_FS=${AMP_DISABLE_TMP_FS:-""}
 
 if [ "$AMP_BASEOS" = "rhel" -o "$AMP_BASEOS" = "centos" -o "$AMP_BASEOS" = "fedora" ] && [ "$AMP_IMAGESIZE" -lt 3 ]; then
-    echo "RHEL/centos based amphora requires an image size of at least 3GB"
+    echo "RHEL/CentOS based amphora requires an image size of at least 3GB"
     exit 1
 fi
 
@@ -262,8 +262,8 @@ export CLOUD_INIT_DATASOURCES=${CLOUD_INIT_DATASOURCES:-"ConfigDrive"}
 # Additional RHEL environment checks
 if [ "${AMP_BASEOS}" = "rhel" ]; then
     if [ -z "${DIB_LOCAL_IMAGE}" ]; then
-        echo "DIB_LOCAL_IMAGE variable must be set and point to a RHEL 7 base cloud image. Exiting."
-        echo "For more information, see the README file in ${DIB_ELEMENTS_PATH}/elements/rhel7"
+        echo "DIB_LOCAL_IMAGE variable must be set and point to a RHEL base cloud image. Exiting."
+        echo "For more information, see the README file in ${DIB_ELEMENTS_PATH}/elements/rhel"
         exit 1
     fi
 fi
@@ -345,9 +345,12 @@ pushd $TEMP > /dev/null
 # Setup the elements list
 
 AMP_element_sequence=${AMP_element_sequence:-"base vm"}
-if [ "${AMP_BASEOS}" = "centos" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
+if [ "${AMP_BASEOS}" = "centos" ]; then
     AMP_element_sequence="$AMP_element_sequence ${AMP_BASEOS}${DIB_RELEASE}"
 else
+    if [ "${AMP_BASEOS}" = "rhel" ] && [ "${DIB_RELEASE}" = "8" ]; then
+        export DIB_INSTALLTYPE_pip_and_virtualenv=package
+    fi
     AMP_element_sequence="$AMP_element_sequence ${AMP_BASEOS}"
 fi
 

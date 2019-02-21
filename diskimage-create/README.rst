@@ -94,7 +94,7 @@ Command syntax:
             [-a i386 | **amd64** | armhf | ppc64le ]
             [-b **haproxy** ]
             [-c **~/.cache/image-create** | <cache directory> ]
-            [-d **xenial**/**7** | trusty | <other release id> ]
+            [-d **xenial**/**7** | trusty | 8 | <other release id> ]
             [-e]
             [-f]
             [-h]
@@ -201,22 +201,24 @@ For example to build a CentOS 7 amphora with Pike RPM packages:
 RHEL specific variables
 ------------------------
 Building a RHEL-based image requires:
-    - a RHEL 7 base cloud image, manually download from the
-      Red Hat Customer Portal. Set the DIB_LOCAL_IMAGE variable
-      to point to the file. More details at:
-      <DIB_REPO_PATH>/elements/rhel7
+    - a Red Hat Enterprise Linux KVM Guest Image, manually download from the
+      Red Hat Customer Portal. Set the DIB_LOCAL_IMAGE variable to point to
+      the file. More details at:
+      <DIB_REPO_PATH>/elements/rhel
 
     - a Red Hat subscription for the matching Red Hat OpenStack Platform
-      repository. Set the needed registration parameters depending on your
-      configuration. More details at:
+      repository if you want to install the amphora agent from the official
+      distribution package (requires setting -p option in diskimage-create.sh).
+      Set the needed registration parameters depending on your configuration.
+      More details at:
       <DIB_REPO_PATH>/elements/rhel-common
 
-Here is an example with Customer Portal registration and OSP 8 repository:
+Here is an example with Customer Portal registration and OSP 13 repository:
 .. code:: bash
 
-    $ export DIB_LOCAL_IMAGE='/tmp/rhel-guest-image-7.2-20160302.0.x86_64.qcow2'
+    $ export DIB_LOCAL_IMAGE='/tmp/rhel-server-7.6-x86_64-kvm.qcow2'
 
-    $ export REG_METHOD='portal' REG_REPOS='rhel-7-server-openstack-8-rpms'
+    $ export REG_METHOD='portal' REG_REPOS='rhel-7-server-openstack-13-rpms'
 
     $ export REG_USER='<user>' REG_PASSWORD='<password>' REG_AUTO_ATTACH=true
 
@@ -224,7 +226,7 @@ This example uses registration via a Satellite (the activation key must enable
 an OSP repository):
 .. code:: bash
 
-    $ export DIB_LOCAL_IMAGE='/tmp/rhel-guest-image-7.2-20160302.0.x86_64.qcow2'
+    $ export DIB_LOCAL_IMAGE='/tmp/rhel-server-7.6-x86_64-kvm.qcow2'
 
     $ export REG_METHOD='satellite' REG_ACTIVATION_KEY="<activation key>"
 
@@ -282,4 +284,3 @@ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 License for the specific language governing permissions and limitations
 under the License.
-

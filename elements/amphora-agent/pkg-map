@@ -1,4 +1,14 @@
 {
+  "release": {
+    "rhel": {
+      "8": {
+        "python-dev": "platform-python-devel",
+        "vlan": "",
+        "screen": "",
+        "dkms": ""
+      }
+    }
+  },
   "family": {
     "redhat": {
       "amphora-agent": "openstack-octavia-amphora-agent",
@@ -10,17 +20,19 @@
       "cloud-guest-utils": "",
       "apparmor": "",
       "dmeventd": "",
-      "isc-dhcp-client": "",
+      "isc-dhcp-client": "dhcp-client",
       "uuid-runtime": "",
       "ubuntu-cloudimage-keyring": "",
       "vim-tiny": "",
       "ureadahead": "",
       "apt-transport-https": "",
       "pollinate": "",
-      "ifupdown": ""
+      "ifupdown": "",
+      "network-scripts": "network-scripts"
     }
   },
   "default": {
-    "amphora-agent": "amphora-agent"
+    "amphora-agent": "amphora-agent",
+    "network-scripts": ""
   }
 }
