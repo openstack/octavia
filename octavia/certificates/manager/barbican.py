@@ -147,7 +147,15 @@ class BarbicanCertManager(cert_mgr.CertManager):
     def set_acls(self, context, cert_ref):
         LOG.debug('Setting project ACL for certificate secret...')
         self.auth.ensure_secret_access(context, cert_ref)
+        # TODO(velizarx): Remove this code when the deprecation cycle for
+        # the legacy driver is complete.
+        legacy_mgr = barbican_legacy.BarbicanCertManager(auth=self.auth)
+        legacy_mgr.set_acls(context, cert_ref)
 
     def unset_acls(self, context, cert_ref):
         LOG.debug('Unsetting project ACL for certificate secret...')
         self.auth.revoke_secret_access(context, cert_ref)
+        # TODO(velizarx): Remove this code when the deprecation cycle for
+        # the legacy driver is complete.
+        legacy_mgr = barbican_legacy.BarbicanCertManager(auth=self.auth)
+        legacy_mgr.unset_acls(context, cert_ref)

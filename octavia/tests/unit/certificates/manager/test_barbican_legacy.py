@@ -278,7 +278,21 @@ class TestBarbicanManager(base.TestCase):
         # our mock_bc should have one call to ensure_secret_access for each
         # of our secrets, and the container
         self.cert_manager.auth.ensure_secret_access.assert_has_calls([
-            mock.call(self.context, self.container_ref),
+            mock.call(self.context, self.certificate_uuid),
+            mock.call(self.context, self.intermediates_uuid),
+            mock.call(self.context, self.private_key_uuid),
+            mock.call(self.context, self.private_key_passphrase_uuid)
+        ], any_order=True)
+
+    def test_unset_acls(self):
+        self.cert_manager.unset_acls(
+            context=self.context,
+            cert_ref=self.container_ref
+        )
+
+        # our mock_bc should have one call to revoke_secret_access for each
+        # of our secrets, and the container
+        self.cert_manager.auth.revoke_secret_access.assert_has_calls([
             mock.call(self.context, self.certificate_uuid),
             mock.call(self.context, self.intermediates_uuid),
             mock.call(self.context, self.private_key_uuid),

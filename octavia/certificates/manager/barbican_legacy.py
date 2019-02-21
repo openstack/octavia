@@ -184,13 +184,15 @@ class BarbicanCertManager(cert_mgr.CertManager):
                           cert_ref, e)
 
     def set_acls(self, context, cert_ref):
-        LOG.debug('Setting project ACLs for certificate secrets...')
-        self.auth.ensure_secret_access(context, cert_ref)
-
         connection = self.auth.get_barbican_client(context.project_id)
-        cert_container = connection.containers.get(
-            container_ref=cert_ref
-        )
+        try:
+            cert_container = connection.containers.get(
+                container_ref=cert_ref
+            )
+        except Exception:
+            # If the containers.get failed, it was probably because it isn't
+            # legacy so we will skip this step
+            return
         self.auth.ensure_secret_access(
             context, cert_container.certificate.secret_ref)
         self.auth.ensure_secret_access(
@@ -204,13 +206,15 @@ class BarbicanCertManager(cert_mgr.CertManager):
                 context, cert_container.intermediates.secret_ref)
 
     def unset_acls(self, context, cert_ref):
-        LOG.debug('Unsetting project ACLs for certificate secrets...')
-        self.auth.revoke_secret_access(context, cert_ref)
-
         connection = self.auth.get_barbican_client(context.project_id)
-        cert_container = connection.containers.get(
-            container_ref=cert_ref
-        )
+        try:
+            cert_container = connection.containers.get(
+                container_ref=cert_ref
+            )
+        except Exception:
+            # If the containers.get failed, it was probably because it isn't
+            # legacy so we will skip this step
+            return
         self.auth.revoke_secret_access(
             context, cert_container.certificate.secret_ref)
         self.auth.revoke_secret_access(
