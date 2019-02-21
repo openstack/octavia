@@ -17,6 +17,7 @@ from oslo_log import log as logging
 import oslo_messaging as messaging
 from oslo_messaging.rpc import dispatcher
 
+from octavia.common import rpc
 from octavia.controller.queue import endpoint
 
 LOG = logging.getLogger(__name__)
@@ -35,13 +36,14 @@ class ConsumerService(cotyledon.Service):
 
     def run(self):
         LOG.info('Starting consumer...')
-        transport = messaging.get_rpc_transport(self.conf)
         target = messaging.Target(topic=self.topic, server=self.server,
                                   fanout=False)
         self.endpoints = [endpoint.Endpoint()]
-        self.message_listener = messaging.get_rpc_server(
-            transport, target, self.endpoints,
-            executor='threading', access_policy=self.access_policy)
+        self.message_listener = rpc.get_server(
+            target, self.endpoints,
+            executor='threading',
+            access_policy=self.access_policy
+        )
         self.message_listener.start()
 
     def terminate(self, graceful=False):
