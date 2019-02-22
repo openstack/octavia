@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix load balancers that could not be failed over when in ERROR provisioning
+    status.
