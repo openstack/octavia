@@ -303,16 +303,22 @@ class AmphoraFlows(object):
         flows.append(database_tasks.UpdateAmphoraVIPData(
             name=sf_name + '-' + constants.UPDATE_AMPHORA_VIP_DATA,
             requires=constants.AMP_DATA))
+        flows.append(database_tasks.ReloadAmphora(
+            name=sf_name + '-' + constants.RELOAD_AMP_AFTER_PLUG_VIP,
+            requires=constants.AMPHORA_ID,
+            provides=constants.AMPHORA))
         flows.append(database_tasks.ReloadLoadBalancer(
             name=sf_name + '-' + constants.RELOAD_LB_AFTER_PLUG_VIP,
             requires=constants.LOADBALANCER_ID,
             provides=constants.LOADBALANCER))
-        flows.append(network_tasks.GetAmphoraeNetworkConfigs(
+        flows.append(network_tasks.GetAmphoraNetworkConfigs(
             name=sf_name + '-' + constants.GET_AMP_NETWORK_CONFIG,
-            requires=constants.LOADBALANCER,
-            provides=constants.AMPHORAE_NETWORK_CONFIG))
-        flows.append(amphora_driver_tasks.AmphoraePostVIPPlug(
+            requires=(constants.LOADBALANCER, constants.AMPHORA),
+            provides=constants.AMPHORA_NETWORK_CONFIG))
+        flows.append(amphora_driver_tasks.AmphoraPostVIPPlug(
             name=sf_name + '-' + constants.AMP_POST_VIP_PLUG,
+            rebind={constants.AMPHORAE_NETWORK_CONFIG:
+                    constants.AMPHORA_NETWORK_CONFIG},
             requires=(constants.LOADBALANCER,
                       constants.AMPHORAE_NETWORK_CONFIG)))
         return flows
@@ -520,6 +526,10 @@ class AmphoraFlows(object):
     def get_vrrp_subflow(self, prefix):
         sf_name = prefix + '-' + constants.GET_VRRP_SUBFLOW
         vrrp_subflow = linear_flow.Flow(sf_name)
+        vrrp_subflow.add(network_tasks.GetAmphoraeNetworkConfigs(
+            name=sf_name + '-' + constants.GET_AMP_NETWORK_CONFIG,
+            requires=constants.LOADBALANCER,
+            provides=constants.AMPHORAE_NETWORK_CONFIG))
         vrrp_subflow.add(amphora_driver_tasks.AmphoraUpdateVRRPInterface(
             name=sf_name + '-' + constants.AMP_UPDATE_VRRP_INTF,
             requires=constants.LOADBALANCER,
