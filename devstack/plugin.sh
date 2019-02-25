@@ -617,6 +617,10 @@ function octavia_init {
    fi
 }
 
+function _configure_tempest {
+    iniset $TEMPEST_CONFIG service_available octavia "True"
+}
+
 # check for service enabled
 if is_service_enabled $OCTAVIA; then
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then # main-ha node stuff only
@@ -650,6 +654,11 @@ if is_service_enabled $OCTAVIA; then
 
         echo_summary "Starting Octavia"
         octavia_start
+    elif [[ "$1" == "stack" && "$2" == "test-config" ]]; then
+        if is_service_enabled tempest; then
+            # Configure Tempest for Congress
+            _configure_tempest
+        fi
     fi
 fi
 
