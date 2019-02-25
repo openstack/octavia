@@ -1,0 +1,27 @@
+#!/bin/bash
+
+if [ ${DIB_DEBUG_TRACE:-0} -gt 0 ]; then
+    set -x
+fi
+
+set -eu
+set -o pipefail
+
+[ "${DIB_INSTALLTYPE_amphora_agent:-}" = "package" ] && exit 0
+
+git  --git-dir=/opt/amphora-agent/.git rev-parse HEAD >> /opt/amphora-agent.gitref
+rm -rf /opt/amphora-agent
+
+case $DISTRO_NAME in
+    ubuntu | debian )
+        apt-get --assume-yes purge --auto-remove build-essential libffi-dev libssl-dev python-dev python3-dev git
+    ;;
+    fedora | centos* | rhel* )
+        YUM=${YUM:-yum}
+        ${YUM} -v -y autoremove automake make gcc gcc-c++ kernel-devel libffi-devel openssl-devel python-devel platform-python-devel python{2,3,}-pip git
+    ;;
+    *)
+        echo "ERROR: Unsupported distribution $DISTRO_NAME"
+        exit 1
+    ;;
+esac
