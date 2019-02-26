@@ -354,3 +354,67 @@ sent to *static_pool_B*, which is why *policy2* needs to be evaluated before
     openstack loadbalancer l7rule create --compare-type EQUAL_TO --key site_version --type COOKIE --value B policy2
     openstack loadbalancer l7policy create --action REDIRECT_TO_POOL --redirect-pool pool_B --name policy3 --position 2 listener1
     openstack loadbalancer l7rule create --compare-type EQUAL_TO --key site_version --type COOKIE --value B policy3
+
+
+Redirect requests with an invalid TLS client authentication certificate
+-----------------------------------------------------------------------
+**Scenario description**:
+
+* Listener *listener1* on load balancer *lb1* is configured for ``OPTIONAL``
+  client_authentication.
+* Web clients that do not present a TLS client authentication certificate
+  should be redirected to a signup page at *http://www.example.com/signup*.
+
+**Solution**:
+
+1. Create the load balancer *lb1*.
+2. Create a listener *listner1* of type ``TERMINATED_TLS`` with a
+   client_ca_tls_container_ref and client_authentication ``OPTIONAL``.
+3. Create a L7 Policy *policy1* on *listener1* with action ``REDIRECT_TO_URL``
+   pointed at the URL *http://www.example.com/signup*.
+4. Add an L7 Rule to *policy1* that does not match ``SSL_CONN_HAS_CERT``.
+
+**CLI commands**:
+
+.. code-block:: bash
+
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
+    openstack loadbalancer listener create --name listener1 --protocol TERMINATED_HTTPS --client-authentication OPTIONAL --protocol-port 443 --default-tls-container-ref http://192.0.2.15:9311/v1/secrets/697c2a6d-ffbe-40b8-be5e-7629fd636bca --client-ca-tls-container-ref http://192.0.2.15:9311/v1/secrets/dba60b77-8dad-4171-8a96-f21e1ca5fb46 lb1
+    openstack loadbalancer l7policy create --action REDIRECT_TO_URL --redirect-url http://www.example.com/signup --name policy1 listener1
+    openstack loadbalancer l7rule create --type SSL_CONN_HAS_CERT --invert --compare-type EQUAL_TO --value True policy1
+
+
+Send users from the finance department to pool2
+-----------------------------------------------
+**Scenario description**:
+
+* Users from the finance department have client certificates with the OU field
+  of the distinguished name set to ``finance``.
+* Only users with valid finance department client certificates should be able
+  to access ``pool2``. Others will be rejected.
+
+**Solution**:
+
+1. Create the load balancer *lb1*.
+2. Create a listener *listner1* of type ``TERMINATED_TLS`` with a
+   client_ca_tls_container_ref and client_authentication ``MANDATORY``.
+3. Create a pool *pool2* on load balancer *lb1*.
+4. Create a L7 Policy *policy1* on *listener1* with action ``REDIRECT_TO_POOL``
+   pointed at *pool2*.
+5. Add an L7 Rule to *policy1* that matches ``SSL_CONN_HAS_CERT``.
+6. Add an L7 Rule to *policy1* that matches ``SSL_VERIFY_RESULT`` with a value
+   of 0.
+7. Add an L7 Rule to *policy1* of type ``SSL_DN_FIELD`` that looks for
+   "finance" in the "OU" field of the client authentication distinguished name.
+
+**CLI commands**:
+
+.. code-block:: bash
+
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
+    openstack loadbalancer listener create --name listener1 --protocol TERMINATED_HTTPS --client-authentication MANDATORY --protocol-port 443 --default-tls-container-ref http://192.0.2.15:9311/v1/secrets/697c2a6d-ffbe-40b8-be5e-7629fd636bca --client-ca-tls-container-ref http://192.0.2.15:9311/v1/secrets/dba60b77-8dad-4171-8a96-f21e1ca5fb46 lb1
+    openstack loadbalancer pool create --lb-algorithm ROUND_ROBIN --loadbalancer lb1 --name pool2 --protocol HTTP
+    openstack loadbalancer l7policy create --action REDIRECT_TO_POOL --redirect-pool pool2 --name policy1 listener1
+    openstack loadbalancer l7rule create --type SSL_CONN_HAS_CERT --compare-type EQUAL_TO --value True policy1
+    openstack loadbalancer l7rule create --type SSL_VERIFY_RESULT --compare-type EQUAL_TO --value 0 policy1
+    openstack loadbalancer l7rule create --type SSL_DN_FIELD --compare-type EQUAL_TO --key OU --value finance policy1

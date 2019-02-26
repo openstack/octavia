@@ -512,7 +512,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           timeout_member_connect=5000,
                           timeout_member_data=50000,
                           timeout_tcp_inspect=0,
-                          client_ca_cert=False, client_crl_cert=False):
+                          client_ca_cert=False, client_crl_cert=False,
+                          ssl_type_l7=False):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
@@ -550,6 +551,9 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
             sample_l7policy_tuple('sample_l7policy_id_5', sample_policy=5),
             sample_l7policy_tuple('sample_l7policy_id_6', sample_policy=6),
             sample_l7policy_tuple('sample_l7policy_id_7', sample_policy=7)]
+        if ssl_type_l7:
+            l7policies.append(sample_l7policy_tuple(
+                'sample_l7policy_id_8', sample_policy=8))
     else:
         pools = [
             sample_pool_tuple(
@@ -799,6 +803,14 @@ def sample_l7policy_tuple(id,
         redirect_prefix = 'https://example.com'
         l7rules = [sample_l7rule_tuple('sample_l7rule_id_2', sample_rule=2),
                    sample_l7rule_tuple('sample_l7rule_id_3', sample_rule=3)]
+    elif sample_policy == 8:
+        action = constants.L7POLICY_ACTION_REDIRECT_TO_URL
+        redirect_url = 'http://www.ssl-type-l7rule-test.com'
+        l7rules = [sample_l7rule_tuple('sample_l7rule_id_7', sample_rule=7),
+                   sample_l7rule_tuple('sample_l7rule_id_8', sample_rule=8),
+                   sample_l7rule_tuple('sample_l7rule_id_9', sample_rule=9),
+                   sample_l7rule_tuple('sample_l7rule_id_10', sample_rule=10),
+                   sample_l7rule_tuple('sample_l7rule_id_11', sample_rule=11)]
     return in_l7policy(
         id=id,
         action=action,
@@ -855,6 +867,34 @@ def sample_l7rule_tuple(id,
         value = '.example.com'
         invert = False
         enabled = False
+    if sample_rule == 7:
+        type = constants.L7RULE_TYPE_SSL_CONN_HAS_CERT
+        compare_type = constants.L7RULE_COMPARE_TYPE_EQUAL_TO
+        key = None
+        value = 'tRuE'
+        invert = False
+        enabled = True
+    if sample_rule == 8:
+        type = constants.L7RULE_TYPE_SSL_VERIFY_RESULT
+        compare_type = constants.L7RULE_COMPARE_TYPE_EQUAL_TO
+        key = None
+        value = '1'
+        invert = True
+        enabled = True
+    if sample_rule == 9:
+        type = constants.L7RULE_TYPE_SSL_DN_FIELD
+        compare_type = constants.L7RULE_COMPARE_TYPE_REGEX
+        key = 'STREET'
+        value = '^STREET.*NO\.$'
+        invert = True
+        enabled = True
+    if sample_rule == 10:
+        type = constants.L7RULE_TYPE_SSL_DN_FIELD
+        compare_type = constants.L7RULE_COMPARE_TYPE_STARTS_WITH
+        key = 'OU-3'
+        value = 'Orgnization Bala'
+        invert = True
+        enabled = True
     return in_l7rule(
         id=id,
         type=type,

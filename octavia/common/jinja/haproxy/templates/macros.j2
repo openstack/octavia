@@ -86,6 +86,14 @@ bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
         acl {{ l7rule.id }} req.cook({{ l7rule.key }}) {{
             l7rule_compare_type_macro(
             constants, l7rule.compare_type) }} {{ l7rule.value }}
+    {% elif l7rule.type == constants.L7RULE_TYPE_SSL_CONN_HAS_CERT %}
+        acl {{ l7rule.id }} ssl_c_used
+    {% elif l7rule.type == constants.L7RULE_TYPE_SSL_VERIFY_RESULT %}
+        acl {{ l7rule.id }} ssl_c_verify eq {{ l7rule.value }}
+    {% elif l7rule.type == constants.L7RULE_TYPE_SSL_DN_FIELD %}
+        acl {{ l7rule.id }} ssl_c_s_dn({{ l7rule.key }}) {{
+            l7rule_compare_type_macro(
+            constants, l7rule.compare_type) }} {{ l7rule.value }}
     {% endif %}
 {% endmacro %}
 

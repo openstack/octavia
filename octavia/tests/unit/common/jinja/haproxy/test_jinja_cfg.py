@@ -942,3 +942,85 @@ class TestHaproxyCfg(base.TestCase):
         self.assertEqual(
             sample_configs.sample_base_expected_config(backend=be),
             rendered_obj)
+
+    def test_ssl_types_l7rules(self):
+        j_cfg = jinja_cfg.JinjaTemplater(
+            base_amp_path='/var/lib/octavia',
+            base_crt_dir='/var/lib/octavia/certs')
+        fe = ("frontend sample_listener_id_1\n"
+              "    option httplog\n"
+              "    maxconn 1000000\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
+              "    bind 10.0.0.2:443\n"
+              "    mode http\n"
+              "        acl sample_l7rule_id_1 path -m beg /api\n"
+              "    use_backend sample_pool_id_2 if sample_l7rule_id_1\n"
+              "        acl sample_l7rule_id_2 req.hdr(Some-header) -m sub "
+              "This\\ string\\\\\\ with\\ stuff\n"
+              "        acl sample_l7rule_id_3 req.cook(some-cookie) -m reg "
+              "this.*|that\n"
+              "    redirect location http://www.example.com "
+              "if !sample_l7rule_id_2 sample_l7rule_id_3\n"
+              "        acl sample_l7rule_id_4 path_end -m str jpg\n"
+              "        acl sample_l7rule_id_5 req.hdr(host) -i -m end "
+              ".example.com\n"
+              "    http-request deny "
+              "if sample_l7rule_id_4 sample_l7rule_id_5\n"
+              "        acl sample_l7rule_id_2 req.hdr(Some-header) -m sub "
+              "This\\ string\\\\\\ with\\ stuff\n"
+              "        acl sample_l7rule_id_3 req.cook(some-cookie) -m reg "
+              "this.*|that\n"
+              "    redirect prefix https://example.com "
+              "if !sample_l7rule_id_2 sample_l7rule_id_3\n"
+              "        acl sample_l7rule_id_7 ssl_c_used\n"
+              "        acl sample_l7rule_id_8 ssl_c_verify eq 1\n"
+              "        acl sample_l7rule_id_9 ssl_c_s_dn(STREET) -m reg "
+              "^STREET.*NO\\\\.$\n"
+              "        acl sample_l7rule_id_10 ssl_c_s_dn(OU-3) -m beg "
+              "Orgnization\\ Bala\n"
+              "        acl sample_l7rule_id_11 path -m beg /api\n"
+              "    redirect location http://www.ssl-type-l7rule-test.com "
+              "if sample_l7rule_id_7 !sample_l7rule_id_8 !sample_l7rule_id_9 "
+              "!sample_l7rule_id_10 sample_l7rule_id_11\n"
+              "    default_backend sample_pool_id_1\n"
+              "    timeout client 50000\n\n")
+        be = ("backend sample_pool_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31s\n"
+              "    option httpchk GET /index.html\n"
+              "    http-check expect rstatus 418\n"
+              "    fullconn 1000000\n"
+              "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
+              "    server sample_member_id_1 10.0.0.99:82 weight 13 check "
+              "inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 weight 13 check "
+              "inter 30s fall 3 rise 2 cookie sample_member_id_2\n\n"
+              "backend sample_pool_id_2\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31s\n"
+              "    option httpchk GET /healthmon.html\n"
+              "    http-check expect rstatus 418\n"
+              "    fullconn 1000000\n"
+              "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
+              "    server sample_member_id_3 10.0.0.97:82 weight 13 check "
+              "inter 30s fall 3 rise 2 cookie sample_member_id_3\n\n")
+        sample_listener = sample_configs.sample_listener_tuple(
+            proto=constants.PROTOCOL_TERMINATED_HTTPS, l7=True,
+            ssl_type_l7=True)
+        rendered_obj = j_cfg.build_config(
+            sample_configs.sample_amphora_tuple(),
+            sample_listener,
+            tls_cert=None,
+            haproxy_versions=("1", "5", "18"))
+        self.assertEqual(
+            sample_configs.sample_base_expected_config(
+                frontend=fe, backend=be),
+            rendered_obj)
