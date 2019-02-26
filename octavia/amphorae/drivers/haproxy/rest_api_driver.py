@@ -17,6 +17,7 @@ import hashlib
 import time
 import warnings
 
+from oslo_context import context as oslo_context
 from oslo_log import log as logging
 import requests
 import simplejson
@@ -115,11 +116,15 @@ class HaproxyAmphoraLoadBalancerDriver(
                                             timeout_dict=timeout_dict)
             else:
                 certs = self._process_tls_certificates(listener)
+                client_ca_filename = self._process_secret(
+                    listener, listener.client_ca_tls_certificate_id)
+
                 # Generate HaProxy configuration from listener object
                 config = self.jinja.build_config(
                     host_amphora=amp, listener=listener,
                     tls_cert=certs['tls_cert'],
-                    haproxy_versions=haproxy_versions)
+                    haproxy_versions=haproxy_versions,
+                    client_ca_filename=client_ca_filename)
                 self.client.upload_config(amp, listener.id, config,
                                           timeout_dict=timeout_dict)
                 self.client.reload_listener(amp, listener.id,
@@ -149,6 +154,8 @@ class HaproxyAmphoraLoadBalancerDriver(
 
             # Process listener certificate info
             certs = self._process_tls_certificates(listener)
+            client_ca_filename = self._process_secret(
+                listener, listener.client_ca_tls_certificate_id)
 
             for amp in listener.load_balancer.amphorae:
                 if amp.status != consts.DELETED:
@@ -159,7 +166,8 @@ class HaproxyAmphoraLoadBalancerDriver(
                     config = self.jinja.build_config(
                         host_amphora=amp, listener=listener,
                         tls_cert=certs['tls_cert'],
-                        haproxy_versions=haproxy_versions)
+                        haproxy_versions=haproxy_versions,
+                        client_ca_filename=client_ca_filename)
                     self.client.upload_config(amp, listener.id, config)
                     self.client.reload_listener(amp, listener.id)
 
@@ -277,6 +285,21 @@ class HaproxyAmphoraLoadBalancerDriver(
             self._apply(self._upload_cert, listener, None, pem, md5, name)
 
         return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
+
+    def _process_secret(self, listener, secret_ref):
+        """Get the secret from the cert manager and upload it to the amp.
+
+        :returns: The filename of the secret in the amp.
+        """
+        if not secret_ref:
+            return None
+        context = oslo_context.RequestContext(project_id=listener.project_id)
+        secret = self.cert_manager.get_secret(context, secret_ref)
+        md5 = hashlib.md5(secret.encode('utf-8')).hexdigest()  # nosec
+        id = hashlib.sha1(secret.encode('utf-8')).hexdigest()  # nosec
+        name = '{id}.pem'.format(id=id)
+        self._apply(self._upload_cert, listener, None, secret, md5, name)
+        return name
 
     def _upload_cert(self, amp, listener_id, pem, md5, name):
         try:

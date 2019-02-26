@@ -84,11 +84,13 @@ class TestUtils(base.TestCase):
         self.assertEqual({'admin_state_up': True},
                          result_dict)
 
+    @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
-    def test_lb_dict_to_provider_dict(self, mock_load_cert):
+    def test_lb_dict_to_provider_dict(self, mock_load_cert, mock_secret):
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_secret.return_value = 'ca cert'
         mock_load_cert.return_value = {'tls_cert': cert1,
                                        'sni_certs': [cert2, cert3]}
         test_lb_dict = {'name': 'lb1',
@@ -156,8 +158,11 @@ class TestUtils(base.TestCase):
         self.assertEqual(ref_provider_list.to_dict(render_unsets=True),
                          provider_list.to_dict(render_unsets=True))
 
+    @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
-    def test_db_listeners_to_provider_listeners(self, mock_load_cert):
+    def test_db_listeners_to_provider_listeners(self, mock_load_cert,
+                                                mock_secret):
+        mock_secret.return_value = 'ca cert'
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
@@ -168,8 +173,10 @@ class TestUtils(base.TestCase):
         self.assertEqual(self.sample_data.provider_listeners,
                          provider_listeners)
 
+    @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
-    def test_listener_dict_to_provider_dict(self, mock_load_cert):
+    def test_listener_dict_to_provider_dict(self, mock_load_cert, mock_secret):
+        mock_secret.return_value = 'ca cert'
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
@@ -180,8 +187,11 @@ class TestUtils(base.TestCase):
         self.assertEqual(self.sample_data.provider_listener1_dict,
                          provider_listener)
 
+    @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
-    def test_listener_dict_to_provider_dict_SNI(self, mock_load_cert):
+    def test_listener_dict_to_provider_dict_SNI(self, mock_load_cert,
+                                                mock_secret):
+        mock_secret.return_value = 'ca cert'
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')

@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    You can now specify a certificate authority certificate reference, on
+    listeners, for use with TLS client authentication.

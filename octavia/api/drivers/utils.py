@@ -17,6 +17,7 @@ import copy
 import six
 
 from oslo_config import cfg
+from oslo_context import context as oslo_context
 from oslo_log import log as logging
 from stevedore import driver as stevedore_driver
 
@@ -154,6 +155,15 @@ def db_listener_to_provider_listener(db_listener):
     return provider_listener
 
 
+def _get_secret_data(cert_manager, listener, secret_ref):
+    """Get the secret from the certificate manager and upload it to the amp.
+
+    :returns: The secret data.
+    """
+    context = oslo_context.RequestContext(project_id=listener.project_id)
+    return cert_manager.get_secret(context, secret_ref)
+
+
 def listener_dict_to_provider_dict(listener_dict):
     new_listener_dict = _base_to_provider_dict(listener_dict)
     new_listener_dict['listener_id'] = new_listener_dict.pop('id')
@@ -171,8 +181,13 @@ def listener_dict_to_provider_dict(listener_dict):
     if 'sni_container_refs' in listener_dict:
         listener_dict['sni_containers'] = listener_dict.pop(
             'sni_container_refs')
+    if 'client_ca_tls_certificate_id' in new_listener_dict:
+        new_listener_dict['client_ca_tls_container_ref'] = (
+            new_listener_dict.pop('client_ca_tls_certificate_id'))
+
     listener_obj = data_models.Listener(**listener_dict)
-    if listener_obj.tls_certificate_id or listener_obj.sni_containers:
+    if (listener_obj.tls_certificate_id or listener_obj.sni_containers or
+            listener_obj.client_ca_tls_certificate_id):
         SNI_objs = []
         for sni in listener_obj.sni_containers:
             if isinstance(sni, dict):
@@ -192,14 +207,19 @@ def listener_dict_to_provider_dict(listener_dict):
         ).driver
         cert_dict = cert_parser.load_certificates_data(cert_manager,
                                                        listener_obj)
-        if 'tls_cert' in cert_dict:
+        if 'tls_cert' in cert_dict and cert_dict['tls_cert']:
             new_listener_dict['default_tls_container_data'] = (
                 cert_dict['tls_cert'].to_dict())
-        if 'sni_certs' in cert_dict:
+        if 'sni_certs' in cert_dict and cert_dict['sni_certs']:
             sni_data_list = []
             for sni in cert_dict['sni_certs']:
                 sni_data_list.append(sni.to_dict())
             new_listener_dict['sni_container_data'] = sni_data_list
+
+        if listener_obj.client_ca_tls_certificate_id:
+            cert = _get_secret_data(cert_manager, listener_obj,
+                                    listener_obj.client_ca_tls_certificate_id)
+            new_listener_dict['client_ca_tls_container_data'] = cert
 
     # Remove the DB back references
     if 'load_balancer' in new_listener_dict:

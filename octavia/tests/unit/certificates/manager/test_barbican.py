@@ -20,6 +20,7 @@ import mock
 import octavia.certificates.common.barbican as barbican_common
 import octavia.certificates.common.cert as cert
 import octavia.certificates.manager.barbican as barbican_cert_mgr
+from octavia.common import exceptions
 import octavia.tests.unit.base as base
 import octavia.tests.unit.common.sample_configs.sample_certs as sample
 
@@ -39,10 +40,14 @@ class TestBarbicanManager(base.TestCase):
         )
 
         self.name = 'My Fancy Cert'
-        self.secret = secrets.Secret(
+        self.secret_pkcs12 = secrets.Secret(
             api=mock.MagicMock(),
             payload=sample.PKCS12_BUNDLE
         )
+
+        self.fake_secret = 'Fake secret'
+        self.secret = secrets.Secret(api=mock.MagicMock(),
+                                     payload=self.fake_secret)
 
         self.empty_secret = mock.Mock(spec=secrets.Secret)
 
@@ -111,7 +116,7 @@ class TestBarbicanManager(base.TestCase):
 
     def test_get_cert(self):
         # Mock out the client
-        self.bc.secrets.get.return_value = self.secret
+        self.bc.secrets.get.return_value = self.secret_pkcs12
 
         # Get the secret data
         data = self.cert_manager.get_cert(
@@ -174,3 +179,25 @@ class TestBarbicanManager(base.TestCase):
         self.cert_manager.auth.revoke_secret_access.assert_called_once_with(
             self.context, self.secret_ref
         )
+
+    def test_get_secret(self):
+        # Mock out the client
+        self.bc.secrets.get.side_effect = [self.secret, Exception]
+
+        # Get the secret data
+        data = self.cert_manager.get_secret(
+            context=self.context,
+            secret_ref=self.secret_ref,
+        )
+
+        # 'get_secret' should be called once with the secret_ref
+        self.bc.secrets.get.assert_called_once_with(
+            secret_ref=self.secret_ref
+        )
+
+        self.assertEqual(self.fake_secret, data)
+
+        # Test with a failure
+        self.assertRaises(exceptions.CertificateStorageException,
+                          self.cert_manager.get_secret,
+                          context=self.context, secret_ref=self.secret_ref)

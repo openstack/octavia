@@ -13,6 +13,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import hashlib
+
 import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
@@ -63,7 +65,8 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.udp_jinja = mock.MagicMock()
 
         # Build sample Listener and VIP configs
-        self.sl = sample_configs.sample_listener_tuple(tls=True, sni=True)
+        self.sl = sample_configs.sample_listener_tuple(
+            tls=True, sni=True, client_ca_cert=True)
         self.sl_udp = sample_configs.sample_listener_tuple(
             proto=constants.PROTOCOL_UDP,
             persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
@@ -99,13 +102,17 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                              constants.CONN_MAX_RETRIES: 3,
                              constants.CONN_RETRY_INTERVAL: 4}
 
+    @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'
+                'HaproxyAmphoraLoadBalancerDriver._process_secret')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
-    def test_update_amphora_listeners(self, mock_load_cert):
+    def test_update_amphora_listeners(self, mock_load_cert, mock_secret):
         mock_amphora = mock.MagicMock()
         mock_amphora.id = uuidutils.generate_uuid()
         mock_listener = mock.MagicMock()
         mock_listener.id = uuidutils.generate_uuid()
-        mock_load_cert.return_value = {'tls_cert': None, 'sni_certs': []}
+        mock_secret.return_value = 'filename.pem'
+        mock_load_cert.return_value = {'tls_cert': None, 'sni_certs': [],
+                                       'client_ca_cert': None}
         self.driver.jinja.build_config.return_value = 'the_config'
 
         self.driver.update_amphora_listeners(None, 1, [],
@@ -135,19 +142,24 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.client.upload_config.assert_not_called()
         self.driver.client.reload_listener.assert_not_called()
 
+    @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'
+                'HaproxyAmphoraLoadBalancerDriver._process_secret')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.get_host_names')
-    def test_update(self, mock_cert, mock_load_crt):
+    def test_update(self, mock_cert, mock_load_crt, mock_secret):
         mock_cert.return_value = {'cn': sample_certs.X509_CERT_CN}
+        mock_secret.return_value = 'filename.pem'
         sconts = []
         for sni_container in self.sl.sni_containers:
             sconts.append(sni_container.tls_container)
         mock_load_crt.return_value = {
             'tls_cert': self.sl.default_tls_container,
-            'sni_certs': sconts
+            'sni_certs': sconts,
+            'client_ca_cert': self.sl.client_ca_tls_certificate
         }
         self.driver.client.get_cert_md5sum.side_effect = [
-            exc.NotFound, 'Fake_MD5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']
+            exc.NotFound, 'Fake_MD5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            'CA_CERT_MD5']
         self.driver.jinja.build_config.side_effect = ['fake_config']
         self.driver.client.get_listener_status.side_effect = [
             dict(status='ACTIVE')]
@@ -156,7 +168,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.update(self.sl, self.sv)
 
         # verify result
-        # this is called 3 times
+        # this is called 4 times
         gcm_calls = [
             mock.call(self.amp, self.sl.id,
                       self.sl.default_tls_container.id + '.pem',
@@ -164,7 +176,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             mock.call(self.amp, self.sl.id,
                       sconts[0].id + '.pem', ignore=(404,)),
             mock.call(self.amp, self.sl.id,
-                      sconts[1].id + '.pem', ignore=(404,))
+                      sconts[1].id + '.pem', ignore=(404,)),
         ]
         self.driver.client.get_cert_md5sum.assert_has_calls(gcm_calls,
                                                             any_order=True)
@@ -179,13 +191,14 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         fp3 = b'\n'.join([sample_certs.X509_CERT_3,
                           sample_certs.X509_CERT_KEY_3,
                           sample_certs.X509_IMDS]) + b'\n'
+
         ucp_calls = [
             mock.call(self.amp, self.sl.id,
                       self.sl.default_tls_container.id + '.pem', fp1),
             mock.call(self.amp, self.sl.id,
                       sconts[0].id + '.pem', fp2),
             mock.call(self.amp, self.sl.id,
-                      sconts[1].id + '.pem', fp3)
+                      sconts[1].id + '.pem', fp3),
         ]
         self.driver.client.upload_cert_pem.assert_has_calls(ucp_calls,
                                                             any_order=True)
@@ -215,6 +228,90 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.upload_cert_amp(self.amp, six.b('test'))
         self.driver.client.update_cert_for_rotation.assert_called_once_with(
             self.amp, six.b('test'))
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test__process_tls_certificates_no_ca_cert(self, mock_load_crt):
+        sample_listener = sample_configs.sample_listener_tuple(
+            tls=True, sni=True)
+        sconts = []
+        for sni_container in sample_listener.sni_containers:
+            sconts.append(sni_container.tls_container)
+        mock_load_crt.return_value = {
+            'tls_cert': self.sl.default_tls_container,
+            'sni_certs': sconts,
+            'client_ca_cert': None
+        }
+        self.driver.client.get_cert_md5sum.side_effect = [
+            exc.NotFound, 'Fake_MD5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']
+        self.driver._process_tls_certificates(sample_listener)
+        gcm_calls = [
+            mock.call(self.amp, self.sl.id,
+                      self.sl.default_tls_container.id + '.pem',
+                      ignore=(404,)),
+            mock.call(self.amp, self.sl.id,
+                      sconts[0].id + '.pem', ignore=(404,)),
+            mock.call(self.amp, self.sl.id,
+                      sconts[1].id + '.pem', ignore=(404,))
+        ]
+        self.driver.client.get_cert_md5sum.assert_has_calls(gcm_calls,
+                                                            any_order=True)
+        fp1 = b'\n'.join([sample_certs.X509_CERT,
+                          sample_certs.X509_CERT_KEY,
+                          sample_certs.X509_IMDS]) + b'\n'
+        fp2 = b'\n'.join([sample_certs.X509_CERT_2,
+                          sample_certs.X509_CERT_KEY_2,
+                          sample_certs.X509_IMDS]) + b'\n'
+        fp3 = b'\n'.join([sample_certs.X509_CERT_3,
+                          sample_certs.X509_CERT_KEY_3,
+                          sample_certs.X509_IMDS]) + b'\n'
+        ucp_calls = [
+            mock.call(self.amp, self.sl.id,
+                      self.sl.default_tls_container.id + '.pem', fp1),
+            mock.call(self.amp, self.sl.id,
+                      sconts[0].id + '.pem', fp2),
+            mock.call(self.amp, self.sl.id,
+                      sconts[1].id + '.pem', fp3)
+        ]
+        self.driver.client.upload_cert_pem.assert_has_calls(ucp_calls,
+                                                            any_order=True)
+        self.assertEqual(3, self.driver.client.upload_cert_pem.call_count)
+
+    @mock.patch('oslo_context.context.RequestContext')
+    @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'
+                'HaproxyAmphoraLoadBalancerDriver._apply')
+    def test_process_secret(self, mock_apply, mock_oslo):
+        # Test bypass if no secret_ref
+        sample_listener = sample_configs.sample_listener_tuple(
+            tls=True, sni=True)
+
+        result = self.driver._process_secret(sample_listener, None)
+
+        self.assertIsNone(result)
+        self.driver.cert_manager.get_secret.assert_not_called()
+
+        # Test the secret process
+        sample_listener = sample_configs.sample_listener_tuple(
+            tls=True, sni=True, client_ca_cert=True)
+        fake_context = 'fake context'
+        fake_secret = 'fake cert'
+        mock_oslo.return_value = fake_context
+        self.driver.cert_manager.get_secret.reset_mock()
+        self.driver.cert_manager.get_secret.return_value = fake_secret
+        ref_md5 = hashlib.md5(fake_secret.encode('utf-8')).hexdigest()  # nosec
+        ref_id = hashlib.sha1(fake_secret.encode('utf-8')).hexdigest()  # nosec
+        ref_name = '{id}.pem'.format(id=ref_id)
+
+        result = self.driver._process_secret(
+            sample_listener, sample_listener.client_ca_tls_certificate_id)
+
+        mock_oslo.assert_called_once_with(
+            project_id=sample_listener.project_id)
+        self.driver.cert_manager.get_secret.assert_called_once_with(
+            fake_context, sample_listener.client_ca_tls_certificate_id)
+        mock_apply.assert_called_once_with(
+            self.driver._upload_cert, sample_listener, None, fake_secret,
+            ref_md5, ref_name)
+        self.assertEqual(ref_name, result)
 
     def test_stop(self):
         self.driver.client.stop_listener.__name__ = 'stop_listener'

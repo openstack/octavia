@@ -159,3 +159,24 @@ class BarbicanCertManager(cert_mgr.CertManager):
         # the legacy driver is complete.
         legacy_mgr = barbican_legacy.BarbicanCertManager(auth=self.auth)
         legacy_mgr.unset_acls(context, cert_ref)
+
+    def get_secret(self, context, secret_ref):
+        """Retrieves a secret payload by reference.
+
+        :param context: Oslo context of the request
+        :param secret_ref: The secret reference ID
+
+        :return: The secret payload
+        :raises CertificateStorageException: if retrieval fails
+        """
+        connection = self.auth.get_barbican_client(context.project_id)
+
+        LOG.info('Loading secret %s from Barbican.', secret_ref)
+        try:
+            secret = connection.secrets.get(secret_ref=secret_ref)
+            return secret.payload
+        except Exception as e:
+            LOG.error("Failed to access secret for %s due to: %s.",
+                      secret_ref, str(e))
+            raise exceptions.CertificateStorageException(
+                msg="Secret could not be accessed.")

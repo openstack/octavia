@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from cryptography.hazmat.backends import default_backend
+from cryptography import x509
 from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
@@ -140,11 +142,48 @@ class ListenersController(base.BaseController):
         if bad_refs:
             raise exceptions.CertificateRetrievalException(ref=bad_refs)
 
+    def _validate_client_ca_ref(self, client_ca_ref):
+        context = pecan.request.context.get('octavia_context')
+        bad_refs = []
+        try:
+            self.cert_manager.set_acls(context, client_ca_ref)
+            ca_pem = self.cert_manager.get_secret(context, client_ca_ref)
+        except Exception:
+            bad_refs.append(client_ca_ref)
+
+        # This will be used in a later patch
+        if bad_refs:
+            raise exceptions.CertificateRetrievalException(ref=bad_refs)
+
+        try:
+            # Test if it needs to be UTF-8 encoded
+            try:
+                ca_pem = ca_pem.encode('utf-8')
+            except AttributeError:
+                pass
+            x509.load_pem_x509_certificate(ca_pem, default_backend())
+        except Exception as e:
+            raise exceptions.ValidationException(detail=_(
+                "The client authentication CA certificate is invalid. "
+                "It must be a valid x509 PEM format certificate. "
+                "Error: %s") % str(e))
+
+    def _has_tls_container_refs(self, listener_dict):
+        return (listener_dict.get('tls_certificate_id') or
+                listener_dict.get('client_ca_tls_container_id') or
+                listener_dict.get('sni_containers'))
+
+    def _is_tls_or_insert_header(self, listener_dict):
+        return (self._has_tls_container_refs(listener_dict) or
+                listener_dict.get('insert_headers'))
+
     def _validate_create_listener(self, lock_session, listener_dict):
         """Validate listener for wrong protocol or duplicate listeners
 
         Update the load balancer db when provisioning status changes.
         """
+        listener_protocol = listener_dict.get('protocol')
+
         if (listener_dict and
             listener_dict.get('insert_headers') and
             list(set(listener_dict['insert_headers'].keys()) -
@@ -153,12 +192,53 @@ class ListenersController(base.BaseController):
                 value=listener_dict.get('insert_headers'),
                 option='insert_headers')
 
+        # Check for UDP compatibility
+        if (listener_protocol == constants.PROTOCOL_UDP and
+                self._is_tls_or_insert_header(listener_dict)):
+            raise exceptions.ValidationException(detail=_(
+                "%s protocol listener does not support TLS or header "
+                "insertion.") % constants.PROTOCOL_UDP)
+
+        # Check for TLS disabled
+        if (not CONF.api_settings.allow_tls_terminated_listeners and
+                listener_protocol == constants.PROTOCOL_TERMINATED_HTTPS):
+            raise exceptions.DisabledOption(
+                value=constants.PROTOCOL_TERMINATED_HTTPS, option='protocol')
+
+        # Check for certs when not TERMINATED_HTTPS
+        if (listener_protocol != constants.PROTOCOL_TERMINATED_HTTPS and
+                self._has_tls_container_refs(listener_dict)):
+            raise exceptions.ValidationException(detail=_(
+                "Certificate container references are only allowed on "
+                "%s protocol listeners.") %
+                constants.PROTOCOL_TERMINATED_HTTPS)
+
+        # Make sure a base certificate exists if specifying a client ca
+        if (listener_dict.get('client_ca_tls_certificate_id') and
+            not (listener_dict.get('tls_certificate_id') or
+                 listener_dict.get('sni_containers'))):
+            raise exceptions.ValidationException(detail=_(
+                "An SNI or default certificate container reference must "
+                "be provided with a client CA container reference."))
+
+        # Make sure a certificate container is specified for TERMINATED_HTTPS
+        if (listener_protocol == constants.PROTOCOL_TERMINATED_HTTPS and
+            not (listener_dict.get('tls_certificate_id') or
+                 listener_dict.get('sni_containers'))):
+            raise exceptions.ValidationException(detail=_(
+                "An SNI or default certificate container reference must "
+                "be provided for %s protocol listeners.") %
+                constants.PROTOCOL_TERMINATED_HTTPS)
+
         try:
             sni_containers = listener_dict.pop('sni_containers', [])
             tls_refs = [sni['tls_container_id'] for sni in sni_containers]
             if listener_dict.get('tls_certificate_id'):
                 tls_refs.append(listener_dict.get('tls_certificate_id'))
             self._validate_tls_refs(tls_refs)
+            if listener_dict.get('client_ca_tls_certificate_id'):
+                self._validate_client_ca_ref(
+                    listener_dict.get('client_ca_tls_certificate_id'))
             db_listener = self.repositories.listener.create(
                 lock_session, **listener_dict)
             if sni_containers:
@@ -183,10 +263,6 @@ class ListenersController(base.BaseController):
             raise exceptions.InvalidOption(value=listener_dict.get('protocol'),
                                            option='protocol')
 
-    def _is_tls_or_insert_header(self, listener):
-        return (listener.default_tls_container_ref or
-                listener.sni_container_refs or listener.insert_headers)
-
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse,
                          body=listener_types.ListenerRootPOST, status_code=201)
     def post(self, listener_):
@@ -200,15 +276,6 @@ class ListenersController(base.BaseController):
 
         self._auth_validate_action(context, listener.project_id,
                                    constants.RBAC_POST)
-        if (listener.protocol == constants.PROTOCOL_UDP and
-                self._is_tls_or_insert_header(listener)):
-            raise exceptions.ValidationException(detail=_(
-                "%s protocol listener does not support TLS or header "
-                "insertion.") % constants.PROTOCOL_UDP)
-        if (not CONF.api_settings.allow_tls_terminated_listeners and
-                listener.protocol == constants.PROTOCOL_TERMINATED_HTTPS):
-            raise exceptions.DisabledOption(
-                value=constants.PROTOCOL_TERMINATED_HTTPS, option='protocol')
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
@@ -293,6 +360,37 @@ class ListenersController(base.BaseController):
         db_listener.l7policies = new_l7ps
         return db_listener
 
+    def _validate_listener_PUT(self, listener, db_listener):
+        # TODO(rm_work): Do we need something like this? What do we do on an
+        # empty body for a PUT?
+        if not listener:
+            raise exceptions.ValidationException(
+                detail='No listener object supplied.')
+
+        # Check for UDP compatibility
+        if (db_listener.protocol == constants.PROTOCOL_UDP and
+                self._is_tls_or_insert_header(listener.to_dict())):
+            raise exceptions.ValidationException(detail=_(
+                "%s protocol listener does not support TLS or header "
+                "insertion.") % constants.PROTOCOL_UDP)
+
+        # Check for certs when not TERMINATED_HTTPS
+        if (db_listener.protocol != constants.PROTOCOL_TERMINATED_HTTPS and
+                self._has_tls_container_refs(listener.to_dict())):
+            raise exceptions.ValidationException(detail=_(
+                "Certificate container references are only allowed on "
+                "%s protocol listeners.") %
+                constants.PROTOCOL_TERMINATED_HTTPS)
+
+        # Make sure the refs are valid
+        sni_containers = listener.sni_container_refs or []
+        tls_refs = [sni for sni in sni_containers]
+        if listener.default_tls_container_ref:
+            tls_refs.append(listener.default_tls_container_ref)
+        self._validate_tls_refs(tls_refs)
+        if listener.client_ca_tls_container_ref:
+            self._validate_client_ca_ref(listener.client_ca_tls_container_ref)
+
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text,
                          body=listener_types.ListenerRootPUT, status_code=200)
     def put(self, id, listener_):
@@ -308,27 +406,11 @@ class ListenersController(base.BaseController):
 
         self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
-        # TODO(rm_work): Do we need something like this? What do we do on an
-        # empty body for a PUT?
-        if not listener:
-            raise exceptions.ValidationException(
-                detail='No listener object supplied.')
-
-        if (db_listener.protocol == constants.PROTOCOL_UDP and
-                self._is_tls_or_insert_header(listener)):
-            raise exceptions.ValidationException(detail=_(
-                "%s protocol listener does not support TLS or header "
-                "insertion.") % constants.PROTOCOL_UDP)
+        self._validate_listener_PUT(listener, db_listener)
 
         if listener.default_pool_id:
             self._validate_pool(context.session, load_balancer_id,
                                 listener.default_pool_id, db_listener.protocol)
-
-        sni_containers = listener.sni_container_refs or []
-        tls_refs = [sni for sni in sni_containers]
-        if listener.default_tls_container_ref:
-            tls_refs.append(listener.default_tls_container_ref)
-        self._validate_tls_refs(tls_refs)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)

@@ -38,8 +38,13 @@ peers {{ "%s_peers"|format(listener.id.replace("-", ""))|trim() }}
     {% else %}
         {% set crt_dir_opt = "" %}
     {% endif %}
+    {% if listener.client_ca_tls_path %}
+        {% set client_ca_opt = "ca-file %s"|format(listener.client_ca_tls_path)|trim() %}
+    {% else %}
+        {% set client_ca_opt = "" %}
+    {% endif %}
 bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
-"%s %s"|format(def_crt_opt, crt_dir_opt)|trim() }}
+"%s %s %s"|format(def_crt_opt, crt_dir_opt, client_ca_opt)|trim() }}
 {% endmacro %}
 
 

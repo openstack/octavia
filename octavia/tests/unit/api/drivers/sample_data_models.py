@@ -37,6 +37,7 @@ class SampleDriverDataModels(object):
         self.default_tls_container_ref = uuidutils.generate_uuid()
         self.sni_container_ref_1 = uuidutils.generate_uuid()
         self.sni_container_ref_2 = uuidutils.generate_uuid()
+        self.client_ca_tls_certificate_ref = uuidutils.generate_uuid()
 
         self.pool1_id = uuidutils.generate_uuid()
         self.pool2_id = uuidutils.generate_uuid()
@@ -380,7 +381,9 @@ class SampleDriverDataModels(object):
             'timeout_client_data': 1000,
             'timeout_member_connect': 2000,
             'timeout_member_data': 3000,
-            'timeout_tcp_inspect': 4000}
+            'timeout_tcp_inspect': 4000,
+            'client_ca_tls_certificate_id': self.client_ca_tls_certificate_ref
+        }
 
         self.test_listener1_dict.update(self._common_test_dict)
 
@@ -392,6 +395,7 @@ class SampleDriverDataModels(object):
         self.test_listener2_dict['default_pool'] = self.test_pool2_dict
         del self.test_listener2_dict['l7policies']
         del self.test_listener2_dict['sni_containers']
+        del self.test_listener2_dict['client_ca_tls_certificate_id']
 
         self.test_listeners = [self.test_listener1_dict,
                                self.test_listener2_dict]
@@ -410,6 +414,7 @@ class SampleDriverDataModels(object):
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
+        ca_cert = 'ca cert'
 
         self.provider_listener1_dict = {
             'admin_state_up': True,
@@ -432,7 +437,10 @@ class SampleDriverDataModels(object):
             'timeout_client_data': 1000,
             'timeout_member_connect': 2000,
             'timeout_member_data': 3000,
-            'timeout_tcp_inspect': 4000}
+            'timeout_tcp_inspect': 4000,
+            'client_ca_tls_container_ref': self.client_ca_tls_certificate_ref,
+            'client_ca_tls_container_data': ca_cert
+        }
 
         self.provider_listener2_dict = copy.deepcopy(
             self.provider_listener1_dict)
@@ -442,6 +450,8 @@ class SampleDriverDataModels(object):
         self.provider_listener2_dict['default_pool_id'] = self.pool2_id
         self.provider_listener2_dict['default_pool'] = self.provider_pool2_dict
         del self.provider_listener2_dict['l7policies']
+        self.provider_listener2_dict['client_ca_tls_container_ref'] = None
+        del self.provider_listener2_dict['client_ca_tls_container_data']
 
         self.provider_listener1 = driver_dm.Listener(
             **self.provider_listener1_dict)
