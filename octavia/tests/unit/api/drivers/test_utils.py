@@ -90,7 +90,7 @@ class TestUtils(base.TestCase):
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
-        mock_secret.return_value = 'ca cert'
+        mock_secret.side_effect = ['ca cert', 'X509 CRL FILE']
         mock_load_cert.return_value = {'tls_cert': cert1,
                                        'sni_certs': [cert2, cert3]}
         test_lb_dict = {'name': 'lb1',
@@ -162,7 +162,7 @@ class TestUtils(base.TestCase):
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_db_listeners_to_provider_listeners(self, mock_load_cert,
                                                 mock_secret):
-        mock_secret.return_value = 'ca cert'
+        mock_secret.side_effect = ['ca cert', 'X509 CRL FILE']
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
@@ -176,16 +176,24 @@ class TestUtils(base.TestCase):
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_listener_dict_to_provider_dict(self, mock_load_cert, mock_secret):
-        mock_secret.return_value = 'ca cert'
+        mock_secret.side_effect = ['ca cert', 'X509 CRL FILE']
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
         mock_load_cert.return_value = {'tls_cert': cert1,
                                        'sni_certs': [cert2, cert3]}
+        # The reason to do this, as before the logic arrives the test func,
+        # there are two data sources, one is from db_dict, the other is from
+        # the api layer model_dict, actually, they are different and contain
+        # different fields. That's why the test_listener1_dict from sample data
+        # just contain the client_ca_tls_certificate_id for client certificate,
+        # not any other related fields. So we need to delete them.
+        expect_prov = copy.deepcopy(self.sample_data.provider_listener1_dict)
         provider_listener = utils.listener_dict_to_provider_dict(
             self.sample_data.test_listener1_dict)
-        self.assertEqual(self.sample_data.provider_listener1_dict,
-                         provider_listener)
+        expect_prov.pop('client_crl_container_ref')
+        provider_listener.pop('client_crl_container_ref')
+        self.assertEqual(expect_prov, provider_listener)
 
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')

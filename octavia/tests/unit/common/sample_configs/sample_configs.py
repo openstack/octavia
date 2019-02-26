@@ -512,7 +512,7 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           timeout_member_connect=5000,
                           timeout_member_data=50000,
                           timeout_tcp_inspect=0,
-                          client_ca_cert=False):
+                          client_ca_cert=False, client_crl_cert=False):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
@@ -527,8 +527,9 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                     'sni_containers, load_balancer, peer_port, pools, '
                     'l7policies, enabled, insert_headers, timeout_client_data,'
                     'timeout_member_connect, timeout_member_data, '
-                    'timeout_tcp_inspect, client_ca_tls_certificate_id,'
-                    'client_ca_tls_certificate, client_authentication')
+                    'timeout_tcp_inspect, client_ca_tls_certificate_id, '
+                    'client_ca_tls_certificate, client_authentication, '
+                    'client_crl_container_id')
     if l7:
         pools = [
             sample_pool_tuple(
@@ -614,7 +615,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
         ) if client_ca_cert else '',
         client_authentication=(
             constants.CLIENT_AUTH_MANDATORY if client_ca_cert else
-            constants.CLIENT_AUTH_NONE)
+            constants.CLIENT_AUTH_NONE),
+        client_crl_container_id='cont_id_crl' if client_crl_cert else '',
     )
 
 

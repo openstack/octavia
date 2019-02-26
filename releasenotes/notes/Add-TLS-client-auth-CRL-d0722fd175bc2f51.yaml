@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    You can now provide a certificate revocation list reference for listeners
+    using TLS client authentication.
+security:
+  - |
+    Note that the amphora provider currently only supports the crl-file
+    provided to check for revocation. Remote revocation lists and/or OCSP
+    will not be used by the amphora provider.

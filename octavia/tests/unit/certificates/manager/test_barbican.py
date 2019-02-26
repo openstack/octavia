@@ -48,7 +48,6 @@ class TestBarbicanManager(base.TestCase):
         self.fake_secret = 'Fake secret'
         self.secret = secrets.Secret(api=mock.MagicMock(),
                                      payload=self.fake_secret)
-
         self.empty_secret = mock.Mock(spec=secrets.Secret)
 
         # Mock out the client

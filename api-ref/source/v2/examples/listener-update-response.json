@@ -37,6 +37,7 @@
         "timeout_tcp_inspect": 5,
         "tags": ["updated_tag"],
         "client_ca_tls_container_ref": null,
-        "client_authentication": "NONE"
+        "client_authentication": "NONE",
+        "client_crl_container_ref": null
     }
 }

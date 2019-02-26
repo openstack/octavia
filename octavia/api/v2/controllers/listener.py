@@ -142,7 +142,7 @@ class ListenersController(base.BaseController):
         if bad_refs:
             raise exceptions.CertificateRetrievalException(ref=bad_refs)
 
-    def _validate_client_ca_ref(self, client_ca_ref):
+    def _validate_client_ca_and_crl_refs(self, client_ca_ref, crl_ref):
         context = pecan.request.context.get('octavia_context')
         bad_refs = []
         try:
@@ -151,22 +151,50 @@ class ListenersController(base.BaseController):
         except Exception:
             bad_refs.append(client_ca_ref)
 
-        # This will be used in a later patch
+        pem_crl = None
+        if crl_ref:
+            try:
+                self.cert_manager.set_acls(context, crl_ref)
+                pem_crl = self.cert_manager.get_secret(context, crl_ref)
+            except Exception:
+                bad_refs.append(crl_ref)
         if bad_refs:
             raise exceptions.CertificateRetrievalException(ref=bad_refs)
 
+        ca_cert = None
         try:
             # Test if it needs to be UTF-8 encoded
             try:
                 ca_pem = ca_pem.encode('utf-8')
             except AttributeError:
                 pass
-            x509.load_pem_x509_certificate(ca_pem, default_backend())
+            ca_cert = x509.load_pem_x509_certificate(ca_pem, default_backend())
         except Exception as e:
             raise exceptions.ValidationException(detail=_(
                 "The client authentication CA certificate is invalid. "
                 "It must be a valid x509 PEM format certificate. "
                 "Error: %s") % str(e))
+
+        # Validate the CRL is for the client CA
+        if pem_crl:
+            ca_pub_key = ca_cert.public_key()
+            crl = None
+            # Test if it needs to be UTF-8 encoded
+            try:
+                pem_crl = pem_crl.encode('utf-8')
+            except AttributeError:
+                pass
+            try:
+                crl = x509.load_pem_x509_crl(pem_crl, default_backend())
+            except Exception as e:
+                raise exceptions.ValidationException(detail=_(
+                    "The client authentication certificate revocation list "
+                    "is invalid. It must be a valid x509 PEM format "
+                    "certificate revocation list. Error: %s") % str(e))
+            if not crl.is_signature_valid(ca_pub_key):
+                raise exceptions.ValidationException(detail=_(
+                    "The CRL specified is not valid for client certificate "
+                    "authority reference supplied."))
 
     def _has_tls_container_refs(self, listener_dict):
         return (listener_dict.get('tls_certificate_id') or
@@ -239,15 +267,27 @@ class ListenersController(base.BaseController):
                 "container reference.") %
                 listener_dict.get('client_authentication'))
 
+        # Make sure we have a client CA if they specify a CRL
+        if (listener_dict.get('client_crl_container_id') and
+                not listener_dict.get('client_ca_tls_certificate_id')):
+            raise exceptions.ValidationException(detail=_(
+                "A client authentication CA reference is required to "
+                "specify a client authentication revocation list."))
+
+        # Validate the TLS containers
+        sni_containers = listener_dict.pop('sni_containers', [])
+        tls_refs = [sni['tls_container_id'] for sni in sni_containers]
+        if listener_dict.get('tls_certificate_id'):
+            tls_refs.append(listener_dict.get('tls_certificate_id'))
+        self._validate_tls_refs(tls_refs)
+
+        # Validate the client CA cert and optional client CRL
+        if listener_dict.get('client_ca_tls_certificate_id'):
+            self._validate_client_ca_and_crl_refs(
+                listener_dict.get('client_ca_tls_certificate_id'),
+                listener_dict.get('client_crl_container_id', None))
+
         try:
-            sni_containers = listener_dict.pop('sni_containers', [])
-            tls_refs = [sni['tls_container_id'] for sni in sni_containers]
-            if listener_dict.get('tls_certificate_id'):
-                tls_refs.append(listener_dict.get('tls_certificate_id'))
-            self._validate_tls_refs(tls_refs)
-            if listener_dict.get('client_ca_tls_certificate_id'):
-                self._validate_client_ca_ref(
-                    listener_dict.get('client_ca_tls_certificate_id'))
             db_listener = self.repositories.listener.create(
                 lock_session, **listener_dict)
             if sni_containers:
@@ -406,8 +446,28 @@ class ListenersController(base.BaseController):
         if listener.default_tls_container_ref:
             tls_refs.append(listener.default_tls_container_ref)
         self._validate_tls_refs(tls_refs)
-        if listener.client_ca_tls_container_ref:
-            self._validate_client_ca_ref(listener.client_ca_tls_container_ref)
+
+        ca_ref = None
+        if (listener.client_ca_tls_container_ref and
+                listener.client_ca_tls_container_ref != wtypes.Unset):
+            ca_ref = listener.client_ca_tls_container_ref
+        elif db_listener.client_ca_tls_certificate_id:
+            ca_ref = db_listener.client_ca_tls_certificate_id
+
+        crl_ref = None
+        if (listener.client_crl_container_ref and
+                listener.client_crl_container_ref != wtypes.Unset):
+            crl_ref = listener.client_crl_container_ref
+        elif db_listener.client_crl_container_id:
+            crl_ref = db_listener.client_crl_container_id
+
+        if crl_ref and not ca_ref:
+            raise exceptions.ValidationException(detail=_(
+                "A client authentication CA reference is required to "
+                "specify a client authentication revocation list."))
+
+        if ca_ref or crl_ref:
+            self._validate_client_ca_and_crl_refs(ca_ref, crl_ref)
 
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text,
                          body=listener_types.ListenerRootPUT, status_code=200)

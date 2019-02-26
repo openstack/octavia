@@ -66,7 +66,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
 
         # Build sample Listener and VIP configs
         self.sl = sample_configs.sample_listener_tuple(
-            tls=True, sni=True, client_ca_cert=True)
+            tls=True, sni=True, client_ca_cert=True, client_crl_cert=True)
         self.sl_udp = sample_configs.sample_listener_tuple(
             proto=constants.PROTOCOL_UDP,
             persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
@@ -148,7 +148,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
     @mock.patch('octavia.common.tls_utils.cert_parser.get_host_names')
     def test_update(self, mock_cert, mock_load_crt, mock_secret):
         mock_cert.return_value = {'cn': sample_certs.X509_CERT_CN}
-        mock_secret.return_value = 'filename.pem'
+        mock_secret.side_effect = ['filename.pem', 'crl-filename.pem']
         sconts = []
         for sni_container in self.sl.sni_containers:
             sconts.append(sni_container.tls_container)
@@ -168,7 +168,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.update(self.sl, self.sv)
 
         # verify result
-        # this is called 4 times
+        # this is called 5 times
         gcm_calls = [
             mock.call(self.amp, self.sl.id,
                       self.sl.default_tls_container.id + '.pem',
@@ -209,6 +209,11 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         # start should be called once
         self.driver.client.reload_listener.assert_called_once_with(
             self.amp, self.sl.id)
+        secret_calls = [
+            mock.call(self.sl, self.sl.client_ca_tls_certificate_id),
+            mock.call(self.sl, self.sl.client_crl_container_id)
+        ]
+        mock_secret.assert_has_calls(secret_calls)
 
     def test_udp_update(self):
         self.driver.udp_jinja.build_config.side_effect = ['fake_udp_config']

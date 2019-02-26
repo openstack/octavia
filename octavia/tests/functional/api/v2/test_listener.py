@@ -555,7 +555,8 @@ class TestListener(base.BaseAPITest):
 
     # TODO(johnsom) Fix this when there is a noop certificate manager
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
-    def test_create(self, mock_cert_data, response_status=201, **optionals):
+    def test_create(self, mock_cert_data,
+                    response_status=201, **optionals):
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
@@ -767,6 +768,18 @@ class TestListener(base.BaseAPITest):
         self.assertIn(
             'be provided with a client CA container reference.', fault)
 
+    def test_create_crl_without_ca_cert(self):
+        optionals = {
+            'protocol': constants.PROTOCOL_TERMINATED_HTTPS,
+            'client_ca_tls_container_ref': None,
+            'client_crl_container_ref': uuidutils.generate_uuid()
+        }
+        resp = self.test_create(response_status=400, **optionals).json
+        fault = resp.get('faultstring')
+        self.assertIn(
+            'A client authentication CA reference is required to specify a '
+            'client authentication revocation list.', fault)
+
     def test_create_with_default_pool_id(self):
         lb_listener = {'name': 'listener1',
                        'default_pool_id': self.pool_id,
@@ -973,11 +986,36 @@ class TestListener(base.BaseAPITest):
         self.assertEqual(optionals['client_authentication'],
                          listener_api.get('client_authentication'))
 
-    def test_create_with_ca_cert_negative_cases(self):
-        # create just with option, no client_ca_tls_container_ref specified.
+    def test_create_with_ca_cert_and_crl(self):
+        # Load up sample certs to test the validation
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL]
+
         optionals = {
-            'client_authentication': constants.CLIENT_AUTH_MANDATORY
+            'client_ca_tls_container_ref': uuidutils.generate_uuid(),
+            'client_crl_container_ref': uuidutils.generate_uuid()
         }
+        listener_api = self.test_create(**optionals)
+        self.assertEqual(optionals['client_ca_tls_container_ref'],
+                         listener_api.get('client_ca_tls_container_ref'))
+        self.assertEqual(constants.CLIENT_AUTH_NONE,
+                         listener_api.get('client_authentication'))
+        self.assertEqual(optionals['client_crl_container_ref'],
+                         listener_api.get('client_crl_container_ref'))
+
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_with_crl_mismatch_ca_cert(self, mock_cert_data):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_cert_data.return_value = {'tls_cert': cert1,
+                                       'sni_certs': [cert2, cert3]}
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CERT, sample_certs.X509_CA_CRL]
+
         sni1 = uuidutils.generate_uuid()
         sni2 = uuidutils.generate_uuid()
         lb_listener = {
@@ -989,14 +1027,45 @@ class TestListener(base.BaseAPITest):
             'default_tls_container_ref': uuidutils.generate_uuid(),
             'sni_container_refs': [sni1, sni2],
             'project_id': self.project_id,
-            'loadbalancer_id': self.lb_id}
-        lb_listener.update(optionals)
+            'loadbalancer_id': self.lb_id,
+            'client_ca_tls_container_ref': uuidutils.generate_uuid(),
+            'client_crl_container_ref': uuidutils.generate_uuid()
+        }
         body = self._build_body(lb_listener)
         response = self.post(self.LISTENERS_PATH, body, status=400).json
         self.assertEqual(
-            "Validation failure: Client authentication setting %s "
-            "requires a client CA container reference." %
-            constants.CLIENT_AUTH_MANDATORY, response['faultstring'])
+            "Validation failure: The CRL specified is not valid for client "
+            "certificate authority reference supplied.",
+            response['faultstring'])
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_with_ca_cert_negative_cases(self, mock_load_cert):
+        # create just with option or crl,
+        # no client_ca_tls_container_ref specified.
+        sni1 = uuidutils.generate_uuid()
+        sni2 = uuidutils.generate_uuid()
+
+        for opt in [{'client_authentication': constants.CLIENT_AUTH_MANDATORY,
+                     'client_crl_container_ref': uuidutils.generate_uuid()},
+                    {'client_authentication': constants.CLIENT_AUTH_OPTIONAL,
+                     'client_crl_container_ref': uuidutils.generate_uuid()}]:
+            lb_listener = {
+                'name': 'listener1', 'default_pool_id': None,
+                'description': 'desc1',
+                'admin_state_up': False,
+                'protocol': constants.PROTOCOL_TERMINATED_HTTPS,
+                'protocol_port': 80,
+                'default_tls_container_ref': uuidutils.generate_uuid(),
+                'sni_container_refs': [sni1, sni2],
+                'project_id': self.project_id,
+                'loadbalancer_id': self.lb_id}
+            lb_listener.update(opt)
+            body = self._build_body(lb_listener)
+            response = self.post(self.LISTENERS_PATH, body, status=400).json
+            self.assertEqual(
+                "Validation failure: Client authentication setting %s "
+                "requires a client CA container reference." %
+                opt['client_authentication'], response['faultstring'])
 
     def test_create_with_bad_ca_cert_ref(self):
         sni1 = uuidutils.generate_uuid()
@@ -1018,7 +1087,30 @@ class TestListener(base.BaseAPITest):
         self.cert_manager_mock().get_secret.side_effect = [
             Exception('bad ca cert')]
         response = self.post(self.LISTENERS_PATH, body, status=400).json
-        self.assertIn(lb_listener['client_ca_tls_container_ref'],
+        self.assertEqual("Could not retrieve certificate: ['%s']" %
+                         lb_listener['client_ca_tls_container_ref'],
+                         response['faultstring'])
+
+    def test_create_with_unreachable_crl(self):
+        sni1 = uuidutils.generate_uuid()
+        sni2 = uuidutils.generate_uuid()
+        lb_listener = {
+            'name': 'listener1', 'default_pool_id': None,
+            'description': 'desc1',
+            'admin_state_up': False,
+            'protocol': constants.PROTOCOL_TERMINATED_HTTPS,
+            'protocol_port': 80,
+            'default_tls_container_ref': uuidutils.generate_uuid(),
+            'sni_container_refs': [sni1, sni2],
+            'project_id': self.project_id,
+            'loadbalancer_id': self.lb_id,
+            'client_ca_tls_container_ref': uuidutils.generate_uuid(),
+            'client_crl_container_ref': uuidutils.generate_uuid()}
+        body = self._build_body(lb_listener)
+        self.cert_manager_mock().get_secret.side_effect = Exception(
+            'bad CRL ref')
+        response = self.post(self.LISTENERS_PATH, body, status=400).json
+        self.assertIn(lb_listener['client_crl_container_ref'],
                       response['faultstring'])
 
     def test_create_with_bad_ca_cert(self):
@@ -1213,6 +1305,22 @@ class TestListener(base.BaseAPITest):
         self.assertNotEqual(ori_listener['client_authentication'],
                             optionals['client_authentication'])
 
+    def test_update_with_crl(self):
+        # Load up sample certs to test the validation
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL]
+
+        optionals = {
+            'client_crl_container_ref': uuidutils.generate_uuid()
+        }
+        ori_listener, update_listener = self.test_update(**optionals)
+        self.assertEqual(optionals['client_crl_container_ref'],
+                         update_listener.get('client_crl_container_ref'))
+        self.assertNotEqual(ori_listener['client_crl_container_ref'],
+                            optionals['client_crl_container_ref'])
+
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_update_from_nonexist_ca_cert_to_new_ca_cert(self, mock_cert_data):
         cert1 = data_models.TLSContainer(certificate='cert 1')
@@ -1244,7 +1352,7 @@ class TestListener(base.BaseAPITest):
                          api_listener['client_authentication'])
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
-    def test_update_with_ca_cert_negative_cases(self, mock_cert_data):
+    def test_update_with_ca_cert_missing(self, mock_cert_data):
         # update a listener, no ca cert exist
         cert1 = data_models.TLSContainer(certificate='cert 1')
         mock_cert_data.return_value = {'tls_cert': cert1}
@@ -1256,16 +1364,42 @@ class TestListener(base.BaseAPITest):
             default_tls_container_ref=tls_uuid,
             default_pool_id=None).get(self.root_tag)
         self.set_lb_status(self.lb_id)
-        lb_listener = {
-            'client_authentication': constants.CLIENT_AUTH_OPTIONAL}
-        body = self._build_body(lb_listener)
+        for opt in [{'client_authentication': constants.CLIENT_AUTH_OPTIONAL,
+                     'client_crl_container_ref': uuidutils.generate_uuid()},
+                    {'client_authentication': constants.CLIENT_AUTH_MANDATORY,
+                     'client_crl_container_ref': uuidutils.generate_uuid()}]:
+            body = self._build_body(opt)
+            listener_path = self.LISTENER_PATH.format(
+                listener_id=listener['id'])
+            response = self.put(listener_path, body, status=400).json
+            self.assertEqual(
+                "Validation failure: Client authentication setting %s "
+                "requires a client CA container reference." %
+                opt['client_authentication'], response['faultstring'])
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_crl_but_ca_cert_missing(self, mock_cert_data):
+        # update a listener, no ca cert exist
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1,
+                                       'client_ca_cert': None}
+        tls_uuid = uuidutils.generate_uuid()
+        listener = self.create_listener(
+            constants.PROTOCOL_TERMINATED_HTTPS, 80, self.lb_id,
+            name='listener1', description='desc1',
+            admin_state_up=False, connection_limit=10,
+            default_tls_container_ref=tls_uuid,
+            default_pool_id=None).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        body = self._build_body(
+            {'client_crl_container_ref': uuidutils.generate_uuid()})
         listener_path = self.LISTENER_PATH.format(
             listener_id=listener['id'])
         response = self.put(listener_path, body, status=400).json
         self.assertEqual(
-            "Validation failure: Client authentication setting %s "
-            "requires a client CA container reference." %
-            constants.CLIENT_AUTH_OPTIONAL, response['faultstring'])
+            "Validation failure: A client authentication CA reference is "
+            "required to specify a client authentication revocation list.",
+            response['faultstring'])
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_update_unset_ca_cert(self, mock_cert_data):
@@ -1290,6 +1424,41 @@ class TestListener(base.BaseAPITest):
         api_listener = self.put(listener_path, body).json.get(self.root_tag)
         self.assertIsNone(api_listener.get('client_ca_tls_container_ref'))
         self.assertIsNone(api_listener.get('client_auth_option'))
+        self.assertIsNone(api_listener.get('client_crl_container_ref'))
+
+    @mock.patch(
+        'octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_unset_crl(self, mock_cert_data):
+        # Load up sample certs to test the validation
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL]
+
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
+        listener = self.create_listener(
+            constants.PROTOCOL_TERMINATED_HTTPS, 80, self.lb_id,
+            name='listener1', description='desc1',
+            admin_state_up=False, connection_limit=10,
+            default_tls_container_ref=uuidutils.generate_uuid(),
+            default_pool_id=None,
+            client_ca_tls_container_ref=uuidutils.generate_uuid(),
+            client_crl_container_ref=uuidutils.generate_uuid(),
+            client_authentication=constants.CLIENT_AUTH_MANDATORY).get(
+            self.root_tag)
+        self.set_lb_status(self.lb_id)
+        lb_listener = {'client_crl_container_ref': None}
+        body = self._build_body(lb_listener)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['id'])
+        api_listener = self.put(listener_path, body).json.get(self.root_tag)
+        self.assertEqual(listener.get('client_ca_tls_container_ref'),
+                         api_listener.get('client_ca_tls_container_ref'))
+        self.assertEqual(listener.get('client_authentication'),
+                         api_listener.get('client_authentication'))
+        self.assertIsNone(api_listener.get('client_crl_container_ref'))
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_update_with_bad_ca_cert(self, mock_cert_data):
@@ -1310,6 +1479,8 @@ class TestListener(base.BaseAPITest):
         self.set_lb_status(self.lb_id)
         self.cert_manager_mock().get_secret.side_effect = Exception(
             'bad ca cert')
+        self.cert_manager_mock().get_secret.side_effect = Exception(
+            'bad secret')
         lb_listener = {
             'client_ca_tls_container_ref': uuidutils.generate_uuid()}
         body = self._build_body(lb_listener)
@@ -1317,6 +1488,72 @@ class TestListener(base.BaseAPITest):
             listener_id=listener['id'])
         response = self.put(listener_path, body, status=400).json
         self.assertIn(lb_listener['client_ca_tls_container_ref'],
+                      response['faultstring'])
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_unreachable_crl(self, mock_cert_data):
+        # Load up sample certs to test the validation
+        tls_cert_mock = mock.MagicMock()
+        tls_cert_mock.get_certificate.return_value = sample_certs.X509_CA_CERT
+        self.cert_manager_mock().get_cert.return_value = tls_cert_mock
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, Exception('bad CRL ref')]
+
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
+        listener = self.create_listener(
+            constants.PROTOCOL_TERMINATED_HTTPS, 80, self.lb_id,
+            name='listener1', description='desc1',
+            admin_state_up=False, connection_limit=10,
+            default_tls_container_ref=uuidutils.generate_uuid(),
+            default_pool_id=None,
+            client_ca_tls_container_ref=uuidutils.generate_uuid(),
+            client_crl_container_ref=uuidutils.generate_uuid()).get(
+            self.root_tag)
+        self.set_lb_status(self.lb_id)
+        lb_listener = {
+            'client_crl_container_ref': uuidutils.generate_uuid()}
+        body = self._build_body(lb_listener)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['id'])
+        response = self.put(listener_path, body, status=400).json
+        self.assertIn(lb_listener['client_crl_container_ref'],
+                      response['faultstring'])
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_bad_crl(self, mock_cert_data):
+        # Load up sample certs to test the validation
+        tls_cert_mock = mock.MagicMock()
+        tls_cert_mock.get_certificate.return_value = sample_certs.X509_CA_CERT
+        self.cert_manager_mock().get_cert.return_value = tls_cert_mock
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, 'bad CRL']
+
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
+        listener = self.create_listener(
+            constants.PROTOCOL_TERMINATED_HTTPS, 80, self.lb_id,
+            name='listener1', description='desc1',
+            admin_state_up=False, connection_limit=10,
+            default_tls_container_ref=uuidutils.generate_uuid(),
+            default_pool_id=None,
+            client_ca_tls_container_ref=uuidutils.generate_uuid(),
+            client_crl_container_ref=uuidutils.generate_uuid()).get(
+            self.root_tag)
+        self.set_lb_status(self.lb_id)
+        lb_listener = {
+            'client_crl_container_ref': uuidutils.generate_uuid()}
+        body = self._build_body(lb_listener)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['id'])
+        response = self.put(listener_path, body, status=400).json
+        self.assertIn("The client authentication certificate revocation list "
+                      "is invalid. It must be a valid x509 PEM format "
+                      "certificate revocation list.",
                       response['faultstring'])
 
     def test_update_authorized(self):
@@ -1586,6 +1823,8 @@ class TestListener(base.BaseAPITest):
             listener_id=api_listener['id'])
         self.cert_manager_mock().get_cert.side_effect = [
             Exception("bad cert"), None, Exception("bad cert")]
+        self.cert_manager_mock().get_secret.side_effect = [
+            Exception("bad secret"), Exception("bad secret")]
         response = self.put(listener_path, body, status=400).json
         self.assertIn(tls_ref2, response['faultstring'])
         self.assertIn(sni1, response['faultstring'])

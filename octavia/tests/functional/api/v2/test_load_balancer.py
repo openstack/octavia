@@ -2358,7 +2358,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             expected_client_ca_tls_container=None,
             create_protocol=constants.PROTOCOL_HTTP,
             create_client_authentication=None,
-            expected_client_authentication=constants.CLIENT_AUTH_NONE):
+            expected_client_authentication=constants.CLIENT_AUTH_NONE,
+            create_client_crl_container=None,
+            expected_client_crl_container=None):
         create_listener = {
             'name': name,
             'protocol_port': protocol_port,
@@ -2380,7 +2382,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'timeout_tcp_inspect': constants.DEFAULT_TIMEOUT_TCP_INSPECT,
             'tags': [],
             'client_ca_tls_container_ref': None,
-            'client_authentication': constants.CLIENT_AUTH_NONE
+            'client_authentication': constants.CLIENT_AUTH_NONE,
+            'client_crl_container_ref': None
         }
         if create_sni_containers:
             create_listener['sni_container_refs'] = create_sni_containers
@@ -2402,6 +2405,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         if create_client_authentication:
             create_listener['client_authentication'] = (
                 create_client_authentication)
+        if create_client_crl_container:
+            create_listener['client_crl_container_ref'] = (
+                create_client_crl_container)
         if expected_sni_containers:
             expected_listener['sni_container_refs'] = expected_sni_containers
         if expected_l7policies:
@@ -2416,6 +2422,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         if expected_client_authentication:
             expected_listener[
                 'client_authentication'] = expected_client_authentication
+        if expected_client_crl_container:
+            expected_listener['client_crl_container_ref'] = (
+                expected_client_crl_container)
         return create_listener, expected_listener
 
     def _get_pool_bodies(self, name='pool1', create_members=None,
@@ -2664,23 +2673,27 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         self._assert_graphs_equal(expected_lb, api_lb)
 
     @mock.patch('cryptography.hazmat.backends.default_backend')
+    @mock.patch('cryptography.x509.load_pem_x509_crl')
     @mock.patch('cryptography.x509.load_pem_x509_certificate')
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_with_full_listener_certs(self, mock_cert_data, mock_get_secret,
-                                      mock_x509_cert, mock_backend):
+                                      mock_x509_cert, mock_x509_crl,
+                                      mock_backend):
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_get_secret.side_effect = ['ca cert', 'X509 CRL FILE']
         mock_cert_data.return_value = {'tls_cert': cert1,
                                        'sni_certs': [cert2, cert3]}
-        mock_get_secret.side_effect = ['ca cert']
         cert_mock = mock.MagicMock()
         mock_x509_cert.return_value = cert_mock
-        create_client_ca_tls_container = uuidutils.generate_uuid()
+        create_client_ca_tls_container, create_client_crl_container = (
+            uuidutils.generate_uuid(), uuidutils.generate_uuid())
         expected_client_ca_tls_container = create_client_ca_tls_container
         create_client_authentication = constants.CLIENT_AUTH_MANDATORY
         expected_client_authentication = constants.CLIENT_AUTH_MANDATORY
+        expected_client_crl_container = create_client_crl_container
         create_sni_containers, expected_sni_containers = (
             self._get_sni_container_bodies())
         create_listener, expected_listener = self._get_listener_bodies(
@@ -2690,7 +2703,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             create_client_ca_tls_container=create_client_ca_tls_container,
             expected_client_ca_tls_container=expected_client_ca_tls_container,
             create_client_authentication=create_client_authentication,
-            expected_client_authentication=expected_client_authentication)
+            expected_client_authentication=expected_client_authentication,
+            create_client_crl_container=create_client_crl_container,
+            expected_client_crl_container=expected_client_crl_container)
         create_lb, expected_lb = self._get_lb_bodies(
             create_listeners=[create_listener],
             expected_listeners=[expected_listener])

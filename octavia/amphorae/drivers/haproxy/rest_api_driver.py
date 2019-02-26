@@ -118,13 +118,16 @@ class HaproxyAmphoraLoadBalancerDriver(
                 certs = self._process_tls_certificates(listener)
                 client_ca_filename = self._process_secret(
                     listener, listener.client_ca_tls_certificate_id)
+                crl_filename = self._process_secret(
+                    listener, listener.client_crl_container_id)
 
                 # Generate HaProxy configuration from listener object
                 config = self.jinja.build_config(
                     host_amphora=amp, listener=listener,
                     tls_cert=certs['tls_cert'],
                     haproxy_versions=haproxy_versions,
-                    client_ca_filename=client_ca_filename)
+                    client_ca_filename=client_ca_filename,
+                    client_crl=crl_filename)
                 self.client.upload_config(amp, listener.id, config,
                                           timeout_dict=timeout_dict)
                 self.client.reload_listener(amp, listener.id,
@@ -156,6 +159,8 @@ class HaproxyAmphoraLoadBalancerDriver(
             certs = self._process_tls_certificates(listener)
             client_ca_filename = self._process_secret(
                 listener, listener.client_ca_tls_certificate_id)
+            crl_filename = self._process_secret(
+                listener, listener.client_crl_container_id)
 
             for amp in listener.load_balancer.amphorae:
                 if amp.status != consts.DELETED:
@@ -167,7 +172,8 @@ class HaproxyAmphoraLoadBalancerDriver(
                         host_amphora=amp, listener=listener,
                         tls_cert=certs['tls_cert'],
                         haproxy_versions=haproxy_versions,
-                        client_ca_filename=client_ca_filename)
+                        client_ca_filename=client_ca_filename,
+                        client_crl=crl_filename)
                     self.client.upload_config(amp, listener.id, config)
                     self.client.reload_listener(amp, listener.id)
 
