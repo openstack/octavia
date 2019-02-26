@@ -40,7 +40,7 @@ class TestHaproxyCfg(base.TestCase):
               "sample_listener_id_1/tls_container_id.pem "
               "crt /var/lib/octavia/certs/sample_listener_id_1 "
               "ca-file /var/lib/octavia/certs/sample_listener_id_1/"
-              "client_ca.pem\n"
+              "client_ca.pem verify required\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1\n"
               "    timeout client 50000\n\n").format(

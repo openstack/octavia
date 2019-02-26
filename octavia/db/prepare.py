@@ -101,6 +101,8 @@ def create_listener(listener_dict, lb_id):
                       for sni_container_id in sni_container_ids]
     listener_dict['sni_containers'] = sni_containers
 
+    if 'client_authentication' not in listener_dict:
+        listener_dict['client_authentication'] = constants.CLIENT_AUTH_NONE
     return listener_dict
 
 

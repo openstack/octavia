@@ -364,9 +364,13 @@ contain the following:
 | admin_state_up               | bool   | Admin state: True if up, False if   |
 |                              |        | down.                               |
 +------------------------------+--------+-------------------------------------+
-|client_ca_tls_container_data  | string | A PEM encoded certificate.          |
+| client_authentication        | string | The TLS client authentication mode. |
+|                              |        | One of the options ``NONE``,        |
+|                              |        | ``OPTIONAL`` or ``MANDATORY``.      |
 +------------------------------+--------+-------------------------------------+
-|client_ca_tls_container_ref   | string | The reference to the secrets        |
+| client_ca_tls_container_data | string | A PEM encoded certificate.          |
++------------------------------+--------+-------------------------------------+
+| client_ca_tls_container_ref  | string | The reference to the secrets        |
 |                              |        | container.                          |
 +------------------------------+--------+-------------------------------------+
 | connection_limit             | int    | The max number of connections       |

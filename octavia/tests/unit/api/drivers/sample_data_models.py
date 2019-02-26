@@ -382,7 +382,8 @@ class SampleDriverDataModels(object):
             'timeout_member_connect': 2000,
             'timeout_member_data': 3000,
             'timeout_tcp_inspect': 4000,
-            'client_ca_tls_certificate_id': self.client_ca_tls_certificate_ref
+            'client_ca_tls_certificate_id': self.client_ca_tls_certificate_ref,
+            'client_authentication': constants.CLIENT_AUTH_NONE
         }
 
         self.test_listener1_dict.update(self._common_test_dict)
@@ -439,7 +440,8 @@ class SampleDriverDataModels(object):
             'timeout_member_data': 3000,
             'timeout_tcp_inspect': 4000,
             'client_ca_tls_container_ref': self.client_ca_tls_certificate_ref,
-            'client_ca_tls_container_data': ca_cert
+            'client_ca_tls_container_data': ca_cert,
+            'client_authentication': constants.CLIENT_AUTH_NONE
         }
 
         self.provider_listener2_dict = copy.deepcopy(
@@ -452,6 +454,8 @@ class SampleDriverDataModels(object):
         del self.provider_listener2_dict['l7policies']
         self.provider_listener2_dict['client_ca_tls_container_ref'] = None
         del self.provider_listener2_dict['client_ca_tls_container_data']
+        self.provider_listener2_dict['client_authentication'] = (
+            constants.CLIENT_AUTH_NONE)
 
         self.provider_listener1 = driver_dm.Listener(
             **self.provider_listener1_dict)

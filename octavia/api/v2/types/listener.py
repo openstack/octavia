@@ -58,6 +58,7 @@ class ListenerResponse(BaseListenerType):
     timeout_tcp_inspect = wtypes.wsattr(wtypes.IntegerType())
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
     client_ca_tls_container_ref = wtypes.StringType()
+    client_authentication = wtypes.wsattr(wtypes.StringType())
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -138,6 +139,9 @@ class ListenerPOST(BaseListenerType):
         default=CONF.haproxy_amphora.timeout_tcp_inspect)
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
     client_ca_tls_container_ref = wtypes.StringType(max_length=255)
+    client_authentication = wtypes.wsattr(
+        wtypes.Enum(str, *constants.SUPPORTED_CLIENT_AUTH_MODES),
+        default=constants.CLIENT_AUTH_NONE)
 
 
 class ListenerRootPOST(types.BaseType):
@@ -171,6 +175,8 @@ class ListenerPUT(BaseListenerType):
                            maximum=constants.MAX_TIMEOUT))
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
     client_ca_tls_container_ref = wtypes.StringType(max_length=255)
+    client_authentication = wtypes.wsattr(
+        wtypes.Enum(str, *constants.SUPPORTED_CLIENT_AUTH_MODES))
 
 
 class ListenerRootPUT(types.BaseType):
@@ -215,6 +221,9 @@ class ListenerSingleCreate(BaseListenerType):
         default=CONF.haproxy_amphora.timeout_tcp_inspect)
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
     client_ca_tls_container_ref = wtypes.StringType(max_length=255)
+    client_authentication = wtypes.wsattr(
+        wtypes.Enum(str, *constants.SUPPORTED_CLIENT_AUTH_MODES),
+        default=constants.CLIENT_AUTH_NONE)
 
 
 class ListenerStatusResponse(BaseListenerType):

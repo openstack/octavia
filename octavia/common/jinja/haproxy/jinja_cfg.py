@@ -36,6 +36,10 @@ BALANCE_MAP = {
     constants.LB_ALGORITHM_SOURCE_IP: 'source'
 }
 
+CLIENT_AUTH_MAP = {constants.CLIENT_AUTH_NONE: 'none',
+                   constants.CLIENT_AUTH_OPTIONAL: 'optional',
+                   constants.CLIENT_AUTH_MANDATORY: 'required'}
+
 ACTIVE_PENDING_STATUSES = constants.SUPPORTED_PROVISIONING_STATUSES + (
     constants.DEGRADED,)
 
@@ -239,6 +243,9 @@ class JinjaTemplater(object):
             ret_value['client_ca_tls_path'] = '%s' % (
                 os.path.join(self.base_crt_dir, listener.id,
                              client_ca_filename))
+            ret_value['client_auth'] = CLIENT_AUTH_MAP.get(
+                listener.client_authentication)
+
         if listener.default_pool:
             ret_value['default_pool'] = self._transform_pool(
                 listener.default_pool, feature_compatibility)

@@ -36,6 +36,7 @@
         "timeout_member_data": 100000,
         "timeout_tcp_inspect": 5,
         "tags": ["updated_tag"],
-        "client_ca_tls_container_ref": null
+        "client_ca_tls_container_ref": null,
+        "client_authentication": "NONE"
     }
 }

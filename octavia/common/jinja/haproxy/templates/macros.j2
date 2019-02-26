@@ -38,8 +38,8 @@ peers {{ "%s_peers"|format(listener.id.replace("-", ""))|trim() }}
     {% else %}
         {% set crt_dir_opt = "" %}
     {% endif %}
-    {% if listener.client_ca_tls_path %}
-        {% set client_ca_opt = "ca-file %s"|format(listener.client_ca_tls_path)|trim() %}
+    {% if listener.client_ca_tls_path and listener.client_auth %}
+        {% set client_ca_opt = "ca-file %s verify %s"|format(listener.client_ca_tls_path, listener.client_auth)|trim() %}
     {% else %}
         {% set client_ca_opt = "" %}
     {% endif %}
