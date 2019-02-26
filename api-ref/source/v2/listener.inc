@@ -172,25 +172,74 @@ Supported HTTP Header Insertions
    header insertions.
 
 
-+-------------------+--------+------------------------------------------------+
-| Key               | Value  | Description                                    |
-+===================+========+================================================+
-| X-Forwarded-For   | string | When "``true``" a ``X-Forwarded-For`` header   |
-|                   |        | is inserted into the request to the backend    |
-|                   |        | ``member`` that specifies the client IP        |
-|                   |        | address.                                       |
-+-------------------+--------+------------------------------------------------+
-| X-Forwarded-Port  | string | When "``true``" a ``X-Forwarded-Port`` header  |
-|                   |        | is inserted into the request to the backend    |
-|                   |        | ``member`` that specifies the listener port.   |
-+-------------------+--------+------------------------------------------------+
-| X-Forwarded-Proto | string | When "``true``" a ``X-Forwarded-Proto`` header |
-|                   |        | is inserted into the request to the backend    |
-|                   |        | ``member``. HTTP for the HTTP listener         |
-|                   |        | protocol type, HTTPS for the TERMINATED_HTTPS  |
-|                   |        | listener protocol type.                        |
-|                   |        | **New in version 2.1**                         |
-+-------------------+--------+------------------------------------------------+
++-------------------------+--------+------------------------------------------------+
+| Key                     | Value  | Description                                    |
++=========================+========+================================================+
+| X-Forwarded-For         | string | When "``true``" a ``X-Forwarded-For`` header   |
+|                         |        | is inserted into the request to the backend    |
+|                         |        | ``member`` that specifies the client IP        |
+|                         |        | address.                                       |
++-------------------------+--------+------------------------------------------------+
+| X-Forwarded-Port        | string | When "``true``" a ``X-Forwarded-Port`` header  |
+|                         |        | is inserted into the request to the backend    |
+|                         |        | ``member`` that specifies the listener port.   |
++-------------------------+--------+------------------------------------------------+
+| X-Forwarded-Proto       | string | When "``true``" a ``X-Forwarded-Proto`` header |
+|                         |        | is inserted into the request to the backend    |
+|                         |        | ``member``. HTTP for the HTTP listener         |
+|                         |        | protocol type, HTTPS for the TERMINATED_HTTPS  |
+|                         |        | listener protocol type.                        |
+|                         |        | **New in version 2.1**                         |
++-------------------------+--------+------------------------------------------------+
+| X-SSL-Client-Verify     | string | When "``true``" a ``X-SSL-Client-Verify``      |
+|                         |        | header is inserted into the request to the     |
+|                         |        | backend ``member`` that contains 0 if the      |
+|                         |        | client authentication was successful, or an    |
+|                         |        | result error number greater than 0 that align  |
+|                         |        | to the openssl veryify error codes.            |
++-------------------------+--------+------------------------------------------------+
+| X-SSL-Client-Has-Cert   | string | When "``true``" a ``X-SSL-Client-Has-Cert``    |
+|                         |        | header is inserted into the request to the     |
+|                         |        | backend ``member`` that is ''true'' if a client|
+|                         |        | authentication certificate was presented, and  |
+|                         |        | ''false'' if not. Does not indicate validity.  |
++-------------------------+--------+------------------------------------------------+
+| X-SSL-Client-DN         | string | When "``true``" a ``X-SSL-Client-DN`` header   |
+|                         |        | is inserted into the request to the backend    |
+|                         |        | ``member`` that contains the full              |
+|                         |        | Distinguished Name of the certificate          |
+|                         |        | presented by the client.                       |
++-------------------------+--------+------------------------------------------------+
+| X-SSL-Client-CN         | string | When "``true``" a ``X-SSL-Client-CN`` header   |
+|                         |        | is inserted into the request to the backend    |
+|                         |        | ``member`` that contains the Common Name from  |
+|                         |        | the full Distinguished Name of the certificate |
+|                         |        | presented by the client.                       |
++-------------------------+--------+------------------------------------------------+
+| X-SSL-Issuer            | string | When "``true``" a ``X-SSL-Issuer`` header is   |
+|                         |        | inserted into the request to the backend       |
+|                         |        | ``member`` that contains the full              |
+|                         |        | Distinguished Name of the client certificate   |
+|                         |        | issuer.                                        |
++-------------------------+--------+------------------------------------------------+
+| X-SSL-Client-SHA1       | string | When "``true``" a ``X-SSL-Client-SHA1`` header |
+|                         |        | is inserted into the request to the backend    |
+|                         |        | ``member`` that contains the SHA-1 fingerprint |
+|                         |        | of the certificate presented by the client in  |
+|                         |        | hex string format.                             |
++-------------------------+--------+------------------------------------------------+
+| X-SSL-Client-Not-Before | string | When "``true``" a ``X-SSL-Client-Not-Before``  |
+|                         |        | header is inserted into the request to the     |
+|                         |        | backend ``member`` that contains the start     |
+|                         |        | date presented by the client as a formatted    |
+|                         |        | string YYMMDDhhmmss[Z].                        |
++-------------------------+--------+------------------------------------------------+
+| X-SSL-Client-Not-After  | string | When "``true``" a ``X-SSL-Client-Not-After``   |
+|                         |        | header is inserted into the request to the     |
+|                         |        | backend ``member`` that contains the end date  |
+|                         |        | presented by the client as a formatted string  |
+|                         |        | YYMMDDhhmmss[Z].                               |
++-------------------------+--------+------------------------------------------------+
 
 Request Example
 ----------------

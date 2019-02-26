@@ -286,6 +286,40 @@ backend {{ pool.id }}
     http-request set-header X-Forwarded-Proto https
         {% endif %}
     {% endif %}
+    {% if listener.protocol.lower() == constants.PROTOCOL_TERMINATED_HTTPS.lower() %}
+        {% if listener.insert_headers.get('X-SSL-Client-Verify',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-Verify %[ssl_c_verify]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Client-Has-Cert',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-Has-Cert %[ssl_c_used]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Client-DN',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-DN %{+Q}[ssl_c_s_dn]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Client-CN',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-CN %{+Q}[ssl_c_s_dn(cn)]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Issuer',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Issuer %{+Q}[ssl_c_i_dn]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Client-SHA1',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-SHA1 %{+Q}[ssl_c_sha1,hex]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Client-Not-Before',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-Not-Before %{+Q}[ssl_c_notbefore]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Client-Not-After',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-Not-After %{+Q}[ssl_c_notafter]
+        {% endif %}
+    {% endif %}
     {% if listener.connection_limit is defined %}
     fullconn {{ listener.connection_limit }}
     {% endif %}
