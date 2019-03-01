@@ -115,6 +115,14 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         if 'admin_state_up' in listener_dict:
             listener_dict['enabled'] = listener_dict.pop('admin_state_up')
         listener_id = listener_dict.pop('listener_id')
+        if 'client_ca_tls_container_ref' in listener_dict:
+            listener_dict['client_ca_tls_container_id'] = listener_dict.pop(
+                'client_ca_tls_container_ref')
+        listener_dict.pop('client_ca_tls_container_data', None)
+        if 'client_crl_container_ref' in listener_dict:
+            listener_dict['client_crl_container_id'] = listener_dict.pop(
+                'client_crl_container_ref')
+        listener_dict.pop('client_crl_container_data', None)
 
         payload = {consts.LISTENER_ID: listener_id,
                    consts.LISTENER_UPDATES: listener_dict}
