@@ -768,7 +768,7 @@ class TestHaproxyCfg(base.TestCase):
               "check inter 30s fall 3 rise 2 cookie sample_member_id_2 "
               "{opts}\n\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN,
-            opts="ssl crt %s verify none" % cert_file_path)
+            opts="ssl crt %s verify none sni ssl_fc_sni" % cert_file_path)
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
@@ -807,7 +807,7 @@ class TestHaproxyCfg(base.TestCase):
                 "ssl", "crt", pool_client_cert,
                 "ca-file %s" % pool_ca_cert,
                 "crl-file %s" % pool_crl,
-                "verify required"))
+                "verify required sni ssl_fc_sni"))
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs.sample_amphora_tuple(),
             sample_configs.sample_listener_tuple(
