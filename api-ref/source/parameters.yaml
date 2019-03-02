@@ -1374,6 +1374,22 @@ tls_container_ref-optional:
   min_version: 2.8
   required: false
   type: string
+tls_enabled:
+  description: |
+    When ``true`` connections to backend member servers will use TLS
+    encryption. Default is ``false``.
+  in: body
+  min_version: 2.8
+  required: true
+  type: boolean
+tls_enabled-optional:
+  description: |
+    When ``true`` connections to backend member servers will use TLS
+    encryption. Default is ``false``.
+  in: body
+  min_version: 2.8
+  required: false
+  type: boolean
 total_connections:
   description: |
     The total connections handled.

@@ -210,28 +210,26 @@ frontend {{ listener.id }}
     {% else %}
         {% set member_enabled_opt = " disabled" %}
     {% endif %}
-    {% if pool.client_cert or pool.ca_cert %}
+    {% if pool.tls_enabled %}
         {% set def_opt_prefix = " ssl" %}
     {% else %}
         {% set def_opt_prefix = "" %}
     {% endif %}
-    {% if pool.client_cert %}
+    {% if pool.client_cert and pool.tls_enabled %}
         {% set def_crt_opt = " crt %s"|format(pool.client_cert) %}
     {% else %}
         {% set def_crt_opt = "" %}
     {% endif %}
-    {% if pool.ca_cert %}
+    {% if pool.ca_cert and pool.tls_enabled %}
         {% set ca_opt = " ca-file %s"|format(pool.ca_cert) %}
         {% set def_verify_opt = " verify required" %}
         {% if pool.crl %}
             {% set crl_opt = " crl-file %s"|format(pool.crl) %}
         {% else %}
-            {% set crl_opt = "" %}
+            {% set def_verify_opt = "" %}
         {% endif %}
-    {% else %}
-        {% set ca_opt = "" %}
-        {% set def_verify_opt = "" %}
-        {% set crl_opt = "" %}
+    {% elif pool.tls_enabled %}
+        {% set def_verify_opt = " verify none" %}
     {% endif %}
     {{ "server %s %s:%d weight %s%s%s%s%s%s%s%s%s%s%s"|e|format(
         member.id, member.address, member.protocol_port, member.weight,

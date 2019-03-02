@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    You can now enable TLS backend re-encryption for connections to member
+    servers by enabling tls_enabled option on pools.

@@ -691,6 +691,9 @@ contain the following:
 | tls_container_ref     | string | The reference to the secrets             |
 |                       |        | container.                               |
 +-----------------------+--------+------------------------------------------+
+| tls_enabled           | bool   | True when backend re-encryption is       |
+|                       |        | enabled.                                 |
++-----------------------+--------+------------------------------------------+
 
 Delete
 ^^^^^^
@@ -753,6 +756,9 @@ contain the following:
 +-----------------------+--------+------------------------------------------+
 | tls_container_ref     | string | The reference to the secrets             |
 |                       |        | container.                               |
++-----------------------+--------+------------------------------------------+
+| tls_enabled           | bool   | True when backend re-encryption is       |
+|                       |        | enabled.                                 |
 +-----------------------+--------+------------------------------------------+
 
 The pool will be in the ``PENDING_UPDATE`` provisioning_status when it is

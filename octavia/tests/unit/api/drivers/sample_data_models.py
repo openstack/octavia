@@ -214,7 +214,8 @@ class SampleDriverDataModels(object):
                                 'ca_tls_certificate_id':
                                     self.pool_ca_container_ref,
                                 'crl_container_id':
-                                    self.pool_crl_container_ref}
+                                    self.pool_crl_container_ref,
+                                'tls_enabled': True}
 
         self.test_pool1_dict.update(self._common_test_dict)
 
@@ -257,7 +258,8 @@ class SampleDriverDataModels(object):
             'ca_tls_container_ref': self.pool_ca_container_ref,
             'ca_tls_container_data': pool_ca_file_content,
             'crl_container_ref': self.pool_crl_container_ref,
-            'crl_container_data': pool_crl_file_content
+            'crl_container_data': pool_crl_file_content,
+            'tls_enabled': True
         }
 
         self.provider_pool2_dict = copy.deepcopy(self.provider_pool1_dict)
