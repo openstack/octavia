@@ -61,6 +61,7 @@ Response Parameters
    - provisioning_status: provisioning_status
    - session_persistence: session_persistence
    - tags: tags
+   - tls_container_ref: tls_container_ref
    - updated_at: updated_at
 
 Response Example
@@ -169,6 +170,7 @@ Request
    - protocol: protocol-pools
    - session_persistence: session_persistence-optional
    - tags: tags-optional
+   - tls_container_ref: tls_container_ref-optional
 
 .. _session_persistence:
 
@@ -246,6 +248,7 @@ Response Parameters
    - provisioning_status: provisioning_status
    - session_persistence: session_persistence
    - tags: tags
+   - tls_container_ref: tls_container_ref
    - updated_at: updated_at
 
 Response Example
@@ -313,6 +316,7 @@ Response Parameters
    - provisioning_status: provisioning_status
    - session_persistence: session_persistence
    - tags: tags
+   - tls_container_ref: tls_container_ref
    - updated_at: updated_at
 
 Response Example
@@ -361,6 +365,7 @@ Request
    - pool_id: path-pool-id
    - session_persistence: session_persistence-optional
    - tags: tags-optional
+   - tls_container_ref: tls_container_ref-optional
 
 Request Example
 ---------------
@@ -395,6 +400,7 @@ Response Parameters
    - provisioning_status: provisioning_status
    - session_persistence: session_persistence
    - tags: tags
+   - tls_container_ref: tls_container_ref
    - updated_at: updated_at
 
 Response Example

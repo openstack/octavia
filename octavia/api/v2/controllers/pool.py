@@ -18,6 +18,7 @@ from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
 import pecan
+from stevedore import driver as stevedore_driver
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -46,6 +47,11 @@ class PoolsController(base.BaseController):
 
     def __init__(self):
         super(PoolsController, self).__init__()
+        self.cert_manager = stevedore_driver.DriverManager(
+            namespace='octavia.cert_manager',
+            name=CONF.certificates.cert_manager,
+            invoke_on_load=True,
+        ).driver
 
     @wsme_pecan.wsexpose(pool_types.PoolRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -98,6 +104,19 @@ class PoolsController(base.BaseController):
             raise exceptions.ImmutableObject(resource=_('Load Balancer'),
                                              id=lb_id)
 
+    def _validate_tls_refs(self, tls_refs):
+        context = pecan.request.context.get('octavia_context')
+        bad_refs = []
+        for ref in tls_refs:
+            try:
+                self.cert_manager.set_acls(context, ref)
+                self.cert_manager.get_cert(context, ref, check_only=True)
+            except Exception:
+                bad_refs.append(ref)
+
+        if bad_refs:
+            raise exceptions.CertificateRetrievalException(ref=bad_refs)
+
     def _validate_create_pool(self, lock_session, pool_dict, listener_id=None):
         """Validate creating pool on load balancer.
 
@@ -105,6 +124,9 @@ class PoolsController(base.BaseController):
         provisioning status.
         """
         try:
+            tls_certificate_id = pool_dict.get('tls_certificate_id', None)
+            tls_refs = [tls_certificate_id] if tls_certificate_id else []
+            self._validate_tls_refs(tls_refs)
             return self.repositories.create_pool_on_load_balancer(
                 lock_session, pool_dict,
                 listener_id=listener_id)
@@ -326,6 +348,9 @@ class PoolsController(base.BaseController):
         if pool.session_persistence:
             sp_dict = pool.session_persistence.to_dict(render_unsets=False)
             validate.check_session_persistence(sp_dict)
+
+        if pool.tls_container_ref:
+            self._validate_tls_refs([pool.tls_container_ref])
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)

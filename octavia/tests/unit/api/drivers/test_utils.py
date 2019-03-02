@@ -91,8 +91,12 @@ class TestUtils(base.TestCase):
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
         mock_secret.side_effect = ['ca cert', 'X509 CRL FILE']
-        mock_load_cert.return_value = {'tls_cert': cert1,
-                                       'sni_certs': [cert2, cert3]}
+        listener_certs = {'tls_cert': cert1, 'sni_certs': [cert2, cert3]}
+        pool_cert = data_models.TLSContainer(certificate='pool cert')
+        pool_certs = {'tls_cert': pool_cert, 'sni_certs': []}
+        mock_load_cert.side_effect = [pool_certs, listener_certs,
+                                      listener_certs, listener_certs,
+                                      listener_certs]
         test_lb_dict = {'name': 'lb1',
                         'project_id': self.sample_data.project_id,
                         'vip_subnet_id': self.sample_data.subnet_id,
@@ -180,8 +184,10 @@ class TestUtils(base.TestCase):
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
-        mock_load_cert.return_value = {'tls_cert': cert1,
-                                       'sni_certs': [cert2, cert3]}
+        listener_certs = {'tls_cert': cert1, 'sni_certs': [cert2, cert3]}
+        pool_cert = data_models.TLSContainer(certificate='pool cert')
+        pool_certs = {'tls_cert': pool_cert, 'sni_certs': []}
+        mock_load_cert.side_effect = [listener_certs, pool_certs]
         # The reason to do this, as before the logic arrives the test func,
         # there are two data sources, one is from db_dict, the other is from
         # the api layer model_dict, actually, they are different and contain
@@ -191,8 +197,6 @@ class TestUtils(base.TestCase):
         expect_prov = copy.deepcopy(self.sample_data.provider_listener1_dict)
         provider_listener = utils.listener_dict_to_provider_dict(
             self.sample_data.test_listener1_dict)
-        expect_prov.pop('client_crl_container_ref')
-        provider_listener.pop('client_crl_container_ref')
         self.assertEqual(expect_prov, provider_listener)
 
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
@@ -212,23 +216,43 @@ class TestUtils(base.TestCase):
                           utils.listener_dict_to_provider_dict,
                           test_listener)
 
-    def test_db_pool_to_provider_pool(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_db_pool_to_provider_pool(self, mock_load_cert):
+        pool_cert = data_models.TLSContainer(certificate='pool cert')
+        mock_load_cert.return_value = {'tls_cert': pool_cert,
+                                       'sni_certs': None,
+                                       'client_ca_cert': None}
         provider_pool = utils.db_pool_to_provider_pool(
             self.sample_data.db_pool1)
         self.assertEqual(self.sample_data.provider_pool1, provider_pool)
 
-    def test_db_pool_to_provider_pool_partial(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_db_pool_to_provider_pool_partial(self, mock_load_cert):
+        pool_cert = data_models.TLSContainer(certificate='pool cert')
+        mock_load_cert.return_value = {'tls_cert': pool_cert,
+                                       'sni_certs': None,
+                                       'client_ca_cert': None}
         test_db_pool = self.sample_data.db_pool1
         test_db_pool.members = [self.sample_data.db_member1]
         provider_pool = utils.db_pool_to_provider_pool(test_db_pool)
         self.assertEqual(self.sample_data.provider_pool1, provider_pool)
 
-    def test_db_pools_to_provider_pools(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_db_pools_to_provider_pools(self, mock_load_cert):
+        pool_cert = data_models.TLSContainer(certificate='pool cert')
+        mock_load_cert.return_value = {'tls_cert': pool_cert,
+                                       'sni_certs': None,
+                                       'client_ca_cert': None}
         provider_pools = utils.db_pools_to_provider_pools(
             self.sample_data.test_db_pools)
         self.assertEqual(self.sample_data.provider_pools, provider_pools)
 
-    def test_pool_dict_to_provider_dict(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_pool_dict_to_provider_dict(self, mock_load_cert):
+        pool_cert = data_models.TLSContainer(certificate='pool cert')
+        mock_load_cert.return_value = {'tls_cert': pool_cert,
+                                       'sni_certs': None,
+                                       'client_ca_cert': None}
         provider_pool_dict = utils.pool_dict_to_provider_dict(
             self.sample_data.test_pool1_dict)
         self.assertEqual(self.sample_data.provider_pool1_dict,

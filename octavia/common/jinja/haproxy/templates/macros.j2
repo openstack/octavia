@@ -210,10 +210,19 @@ frontend {{ listener.id }}
     {% else %}
         {% set member_enabled_opt = " disabled" %}
     {% endif %}
-    {{ "server %s %s:%d weight %s%s%s%s%s%s"|e|format(
+    {% if pool.client_cert %}
+        {% set def_opt_prefix = " ssl" %}
+        {% set def_crt_opt = " crt %s"|format(pool.client_cert) %}
+        {% set def_verify_opt = " verify none" %}
+    {% else %}
+        {% set def_opt_prefix = "" %}
+        {% set def_crt_opt = "" %}
+        {% set def_verify_opt = "" %}
+    {% endif %}
+    {{ "server %s %s:%d weight %s%s%s%s%s%s%s%s%s"|e|format(
         member.id, member.address, member.protocol_port, member.weight,
         hm_opt, persistence_opt, proxy_protocol_opt, member_backup_opt,
-        member_enabled_opt)|trim() }}
+        member_enabled_opt, def_opt_prefix, def_crt_opt, def_verify_opt)|trim() }}
 {% endmacro %}
 
 

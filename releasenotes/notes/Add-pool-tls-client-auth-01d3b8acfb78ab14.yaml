@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    You can now specify a tls_container_ref on pools for TLS client
+    authentication to pool members.

@@ -328,6 +328,7 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         cascade='all,delete-orphan',
         primaryjoin='and_(foreign(Tags.resource_id)==Pool.id)'
     )
+    tls_certificate_id = sa.Column(sa.String(255), nullable=True)
 
     # This property should be a unique list of any listeners that reference
     # this pool as its default_pool and any listeners referenced by enabled
@@ -544,7 +545,6 @@ class SNI(base_models.BASE):
     __table_args__ = (
         sa.PrimaryKeyConstraint('listener_id', 'tls_container_id'),
     )
-
     listener_id = sa.Column(
         sa.String(36),
         sa.ForeignKey("listener.id", name="fk_sni_listener_id"),

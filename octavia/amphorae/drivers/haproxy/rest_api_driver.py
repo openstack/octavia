@@ -14,6 +14,7 @@
 # under the License.
 import functools
 import hashlib
+import os
 import time
 import warnings
 
@@ -120,6 +121,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                     listener, listener.client_ca_tls_certificate_id)
                 crl_filename = self._process_secret(
                     listener, listener.client_crl_container_id)
+                pool_tls_certs = self._process_listener_pool_certs(listener)
 
                 # Generate HaProxy configuration from listener object
                 config = self.jinja.build_config(
@@ -127,7 +129,8 @@ class HaproxyAmphoraLoadBalancerDriver(
                     tls_cert=certs['tls_cert'],
                     haproxy_versions=haproxy_versions,
                     client_ca_filename=client_ca_filename,
-                    client_crl=crl_filename)
+                    client_crl=crl_filename,
+                    pool_tls_certs=pool_tls_certs)
                 self.client.upload_config(amp, listener.id, config,
                                           timeout_dict=timeout_dict)
                 self.client.reload_listener(amp, listener.id,
@@ -161,6 +164,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                 listener, listener.client_ca_tls_certificate_id)
             crl_filename = self._process_secret(
                 listener, listener.client_crl_container_id)
+            pool_tls_certs = self._process_listener_pool_certs(listener)
 
             for amp in listener.load_balancer.amphorae:
                 if amp.status != consts.DELETED:
@@ -173,7 +177,8 @@ class HaproxyAmphoraLoadBalancerDriver(
                         tls_cert=certs['tls_cert'],
                         haproxy_versions=haproxy_versions,
                         client_ca_filename=client_ca_filename,
-                        client_crl=crl_filename)
+                        client_crl=crl_filename,
+                        pool_tls_certs=pool_tls_certs)
                     self.client.upload_config(amp, listener.id, config)
                     self.client.reload_listener(amp, listener.id)
 
@@ -301,11 +306,50 @@ class HaproxyAmphoraLoadBalancerDriver(
             return None
         context = oslo_context.RequestContext(project_id=listener.project_id)
         secret = self.cert_manager.get_secret(context, secret_ref)
-        md5 = hashlib.md5(secret.encode('utf-8')).hexdigest()  # nosec
-        id = hashlib.sha1(secret.encode('utf-8')).hexdigest()  # nosec
+        try:
+            secret = secret.encode('utf-8')
+        except AttributeError:
+            pass
+        md5 = hashlib.md5(secret).hexdigest()  # nosec
+        id = hashlib.sha1(secret).hexdigest()  # nosec
         name = '{id}.pem'.format(id=id)
         self._apply(self._upload_cert, listener, None, secret, md5, name)
         return name
+
+    def _process_listener_pool_certs(self, listener):
+        #     {'POOL-ID': {
+        #         'client_cert': client_full_filename,
+        #         'ca_cert': ca_cert_full_filename,
+        #         'crl': crl_full_filename}}
+        pool_certs_dict = dict()
+        for pool in listener.pools:
+            if pool.id not in pool_certs_dict:
+                pool_certs_dict[pool.id] = self._process_pool_certs(listener,
+                                                                    pool)
+        for l7policy in listener.l7policies:
+            if (l7policy.redirect_pool and
+                    l7policy.redirect_pool.id not in pool_certs_dict):
+                pool_certs_dict[l7policy.redirect_pool.id] = (
+                    self._process_pool_certs(listener, l7policy.redirect_pool))
+        return pool_certs_dict
+
+    def _process_pool_certs(self, listener, pool):
+        pool_cert_dict = dict()
+
+        # Handle the cleint cert(s) and key
+        if pool.tls_certificate_id:
+            data = cert_parser.load_certificates_data(self.cert_manager, pool)
+            pem = cert_parser.build_pem(data)
+            try:
+                pem = pem.encode('utf-8')
+            except AttributeError:
+                pass
+            md5 = hashlib.md5(pem).hexdigest()  # nosec
+            name = '{id}.pem'.format(id=data.id)
+            self._apply(self._upload_cert, listener, None, pem, md5, name)
+            pool_cert_dict['client_cert'] = os.path.join(
+                CONF.haproxy_amphora.base_cert_dir, listener.id, name)
+        return pool_cert_dict
 
     def _upload_cert(self, amp, listener_id, pem, md5, name):
         try:
@@ -315,8 +359,7 @@ class HaproxyAmphoraLoadBalancerDriver(
         except exc.NotFound:
             pass
 
-        self.client.upload_cert_pem(
-            amp, listener_id, name, pem)
+        self.client.upload_cert_pem(amp, listener_id, name, pem)
 
     def update_amphora_agent_config(self, amphora, agent_config,
                                     timeout_dict=None):
@@ -488,23 +531,28 @@ class AmphoraAPIClient(object):
 
     def upload_cert_pem(self, amp, listener_id, pem_filename, pem_file):
         r = self.put(
-            amp,
-            'listeners/{listener_id}/certificates/{filename}'.format(
+            amp, 'listeners/{listener_id}/certificates/{filename}'.format(
                 listener_id=listener_id, filename=pem_filename),
             data=pem_file)
         return exc.check_exception(r)
 
-    def update_cert_for_rotation(self, amp, pem_file):
-        r = self.put(amp, 'certificate', data=pem_file)
-        return exc.check_exception(r)
-
     def get_cert_md5sum(self, amp, listener_id, pem_filename, ignore=tuple()):
-        r = self.get(amp,
-                     'listeners/{listener_id}/certificates/{filename}'.format(
-                         listener_id=listener_id, filename=pem_filename))
+        r = self.get(
+            amp, 'listeners/{listener_id}/certificates/{filename}'.format(
+                listener_id=listener_id, filename=pem_filename))
         if exc.check_exception(r, ignore):
             return r.json().get("md5sum")
         return None
+
+    def delete_cert_pem(self, amp, listener_id, pem_filename):
+        r = self.delete(
+            amp, 'listeners/{listener_id}/certificates/{filename}'.format(
+                listener_id=listener_id, filename=pem_filename))
+        return exc.check_exception(r, (404,))
+
+    def update_cert_for_rotation(self, amp, pem_file):
+        r = self.put(amp, 'certificate', data=pem_file)
+        return exc.check_exception(r)
 
     def delete_listener(self, amp, listener_id):
         r = self.delete(
@@ -528,13 +576,6 @@ class AmphoraAPIClient(object):
         if exc.check_exception(r):
             return r.json()
         return None
-
-    def delete_cert_pem(self, amp, listener_id, pem_filename):
-        r = self.delete(
-            amp,
-            'listeners/{listener_id}/certificates/{filename}'.format(
-                listener_id=listener_id, filename=pem_filename))
-        return exc.check_exception(r, (404,))
 
     def plug_network(self, amp, port):
         r = self.post(amp, 'plug/network',

@@ -179,7 +179,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'project_id': uuidutils.generate_uuid(),
                 'id': uuidutils.generate_uuid(),
                 'provisioning_status': constants.ACTIVE,
-                'tags': ['test_tag']}
+                'tags': ['test_tag'],
+                'tls_certificate_id': uuidutils.generate_uuid()}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         pool_dm_dict = pool_dm.to_dict()
@@ -205,7 +206,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'project_id': uuidutils.generate_uuid(),
                 'id': uuidutils.generate_uuid(),
                 'provisioning_status': constants.ACTIVE,
-                'tags': ['test_tag']}
+                'tags': ['test_tag'],
+                'tls_certificate_id': uuidutils.generate_uuid()}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id'],
@@ -261,6 +263,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['created_at']
         del pool_dm_dict['updated_at']
         pool.update(update_pool)
+        pool['tls_certificate_id'] = None
         self.assertEqual(pool, pool_dm_dict)
         self.assertIsNone(new_pool_dm.session_persistence)
 
@@ -272,7 +275,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'project_id': uuidutils.generate_uuid(),
                 'id': uuidutils.generate_uuid(),
                 'provisioning_status': constants.ACTIVE,
-                'tags': ['test_tag']}
+                'tags': ['test_tag'],
+                'tls_certificate_id': uuidutils.generate_uuid()}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id'],
@@ -363,6 +367,33 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool)
         self.assertIsNone(new_pool_dm.session_persistence)
+
+    def test_update_pool_with_cert(self):
+        pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
+                'description': 'desc1',
+                'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                'enabled': True, 'operating_status': constants.ONLINE,
+                'project_id': uuidutils.generate_uuid(),
+                'id': uuidutils.generate_uuid(),
+                'provisioning_status': constants.ACTIVE}
+        pool_dm = self.repos.create_pool_on_load_balancer(
+            self.session, pool, listener_id=self.listener.id)
+        update_pool = {'tls_certificate_id': uuidutils.generate_uuid()}
+        new_pool_dm = self.repos.update_pool_and_sp(
+            self.session, pool_dm.id, update_pool)
+        pool_dm_dict = new_pool_dm.to_dict()
+        del pool_dm_dict['members']
+        del pool_dm_dict['health_monitor']
+        del pool_dm_dict['session_persistence']
+        del pool_dm_dict['listeners']
+        del pool_dm_dict['load_balancer']
+        del pool_dm_dict['load_balancer_id']
+        del pool_dm_dict['l7policies']
+        del pool_dm_dict['created_at']
+        del pool_dm_dict['updated_at']
+        del pool_dm_dict['tags']
+        pool.update(update_pool)
+        self.assertEqual(pool, pool_dm_dict)
 
     def test_create_load_balancer_tree(self):
         project_id = uuidutils.generate_uuid()

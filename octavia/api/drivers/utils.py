@@ -281,6 +281,25 @@ def db_pool_to_provider_pool(db_pool):
 def pool_dict_to_provider_dict(pool_dict):
     new_pool_dict = _base_to_provider_dict(pool_dict)
     new_pool_dict['pool_id'] = new_pool_dict.pop('id')
+
+    # Pull the certs out of the certificate manager to pass to the provider
+    if 'tls_certificate_id' in new_pool_dict:
+        new_pool_dict['tls_container_ref'] = new_pool_dict.pop(
+            'tls_certificate_id')
+
+    pool_obj = data_models.Pool(**pool_dict)
+    if pool_obj.tls_certificate_id:
+        cert_manager = stevedore_driver.DriverManager(
+            namespace='octavia.cert_manager',
+            name=CONF.certificates.cert_manager,
+            invoke_on_load=True,
+        ).driver
+        cert_dict = cert_parser.load_certificates_data(cert_manager,
+                                                       pool_obj)
+        if 'tls_cert' in cert_dict and cert_dict['tls_cert']:
+            new_pool_dict['tls_container_data'] = (
+                cert_dict['tls_cert'].to_dict())
+
     # Remove the DB back references
     if ('session_persistence' in new_pool_dict and
             new_pool_dict['session_persistence']):
