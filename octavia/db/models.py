@@ -329,6 +329,8 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         primaryjoin='and_(foreign(Tags.resource_id)==Pool.id)'
     )
     tls_certificate_id = sa.Column(sa.String(255), nullable=True)
+    ca_tls_certificate_id = sa.Column(sa.String(255), nullable=True)
+    crl_container_id = sa.Column(sa.String(255), nullable=True)
 
     # This property should be a unique list of any listeners that reference
     # this pool as its default_pool and any listeners referenced by enabled

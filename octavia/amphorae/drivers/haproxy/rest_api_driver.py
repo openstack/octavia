@@ -349,6 +349,15 @@ class HaproxyAmphoraLoadBalancerDriver(
             self._apply(self._upload_cert, listener, None, pem, md5, name)
             pool_cert_dict['client_cert'] = os.path.join(
                 CONF.haproxy_amphora.base_cert_dir, listener.id, name)
+        if pool.ca_tls_certificate_id:
+            name = self._process_secret(listener, pool.ca_tls_certificate_id)
+            pool_cert_dict['ca_cert'] = os.path.join(
+                CONF.haproxy_amphora.base_cert_dir, listener.id, name)
+        if pool.crl_container_id:
+            name = self._process_secret(listener, pool.crl_container_id)
+            pool_cert_dict['crl'] = os.path.join(
+                CONF.haproxy_amphora.base_cert_dir, listener.id, name)
+
         return pool_cert_dict
 
     def _upload_cert(self, amp, listener_id, pem, md5, name):

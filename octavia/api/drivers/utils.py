@@ -155,12 +155,12 @@ def db_listener_to_provider_listener(db_listener):
     return provider_listener
 
 
-def _get_secret_data(cert_manager, listener, secret_ref):
+def _get_secret_data(cert_manager, project_id, secret_ref):
     """Get the secret from the certificate manager and upload it to the amp.
 
     :returns: The secret data.
     """
-    context = oslo_context.RequestContext(project_id=listener.project_id)
+    context = oslo_context.RequestContext(project_id=project_id)
     return cert_manager.get_secret(context, secret_ref)
 
 
@@ -219,11 +219,11 @@ def listener_dict_to_provider_dict(listener_dict):
             new_listener_dict['sni_container_data'] = sni_data_list
 
         if listener_obj.client_ca_tls_certificate_id:
-            cert = _get_secret_data(cert_manager, listener_obj,
+            cert = _get_secret_data(cert_manager, listener_obj.project_id,
                                     listener_obj.client_ca_tls_certificate_id)
             new_listener_dict['client_ca_tls_container_data'] = cert
         if listener_obj.client_crl_container_id:
-            crl_file = _get_secret_data(cert_manager, listener_obj,
+            crl_file = _get_secret_data(cert_manager, listener_obj.project_id,
                                         listener_obj.client_crl_container_id)
             new_listener_dict['client_crl_container_data'] = crl_file
 
@@ -286,9 +286,16 @@ def pool_dict_to_provider_dict(pool_dict):
     if 'tls_certificate_id' in new_pool_dict:
         new_pool_dict['tls_container_ref'] = new_pool_dict.pop(
             'tls_certificate_id')
+    if 'ca_tls_certificate_id' in new_pool_dict:
+        new_pool_dict['ca_tls_container_ref'] = new_pool_dict.pop(
+            'ca_tls_certificate_id')
+    if 'crl_container_id' in new_pool_dict:
+        new_pool_dict['crl_container_ref'] = new_pool_dict.pop(
+            'crl_container_id')
 
     pool_obj = data_models.Pool(**pool_dict)
-    if pool_obj.tls_certificate_id:
+    if (pool_obj.tls_certificate_id or pool_obj.ca_tls_certificate_id or
+            pool_obj.crl_container_id):
         cert_manager = stevedore_driver.DriverManager(
             namespace='octavia.cert_manager',
             name=CONF.certificates.cert_manager,
@@ -299,6 +306,16 @@ def pool_dict_to_provider_dict(pool_dict):
         if 'tls_cert' in cert_dict and cert_dict['tls_cert']:
             new_pool_dict['tls_container_data'] = (
                 cert_dict['tls_cert'].to_dict())
+
+        if pool_obj.ca_tls_certificate_id:
+            cert = _get_secret_data(cert_manager, pool_obj.project_id,
+                                    pool_obj.ca_tls_certificate_id)
+            new_pool_dict['ca_tls_container_data'] = cert
+
+        if pool_obj.crl_container_id:
+            crl_file = _get_secret_data(cert_manager, pool_obj.project_id,
+                                        pool_obj.crl_container_id)
+            new_pool_dict['crl_container_data'] = crl_file
 
     # Remove the DB back references
     if ('session_persistence' in new_pool_dict and

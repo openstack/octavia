@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    You can now specify a ca_tls_container_ref and crl_container_ref on pools
+    for validating backend pool members using TLS.

@@ -23,6 +23,7 @@ import octavia.common.context
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.tests.functional.api.v2 import base
+from octavia.tests.unit.common.sample_configs import sample_certs
 
 
 class TestPool(base.BaseAPITest):
@@ -884,9 +885,42 @@ class TestPool(base.BaseAPITest):
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=api_pool.get('id'))
 
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_with_ca_and_crl(self, mock_cert_data):
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL]
+
+        ca_tls_container_ref = uuidutils.generate_uuid()
+        crl_container_ref = uuidutils.generate_uuid()
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            ca_tls_container_ref=ca_tls_container_ref,
+            crl_container_ref=crl_container_ref).get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_CREATE,
+            pool_op_status=constants.OFFLINE)
+        self.set_lb_status(self.lb_id)
+        self.assertEqual(ca_tls_container_ref,
+                         api_pool.get('ca_tls_container_ref'))
+        self.assertEqual(crl_container_ref,
+                         api_pool.get('crl_container_ref'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'))
+
     def test_create_with_bad_tls_container_ref(self):
         tls_container_ref = uuidutils.generate_uuid()
         self.cert_manager_mock().get_cert.side_effect = [Exception(
+            "bad cert")]
+        self.cert_manager_mock().get_secret.side_effect = [Exception(
             "bad secret")]
         api_pool = self.create_pool(
             self.lb_id, constants.PROTOCOL_HTTP,
@@ -894,6 +928,45 @@ class TestPool(base.BaseAPITest):
             listener_id=self.listener_id,
             tls_container_ref=tls_container_ref, status=400)
         self.assertIn(tls_container_ref, api_pool['faultstring'])
+
+    def test_create_with_bad_ca_tls_container_ref(self):
+        ca_tls_container_ref = uuidutils.generate_uuid()
+        self.cert_manager_mock().get_cert.side_effect = [Exception(
+            "bad ca cert")]
+        self.cert_manager_mock().get_secret.side_effect = [Exception(
+            "bad ca secret")]
+        api_pool = self.create_pool(
+            self.lb_id, constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            ca_tls_container_ref=ca_tls_container_ref, status=400)
+        self.assertIn(ca_tls_container_ref, api_pool['faultstring'])
+
+    def test_create_with_unreachable_crl(self):
+        ca_tls_container_ref = uuidutils.generate_uuid()
+        crl_container_ref = uuidutils.generate_uuid()
+        self.cert_manager_mock().get_cert.side_effect = [
+            'cert 1', Exception('unknow/bad cert')]
+        self.cert_manager_mock().get_secret.side_effect = [Exception(
+            'bad secret')]
+        api_pool = self.create_pool(
+            self.lb_id, constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            ca_tls_container_ref=ca_tls_container_ref,
+            crl_container_ref=crl_container_ref, status=400)
+        self.assertIn(crl_container_ref, api_pool['faultstring'])
+
+    def test_create_with_crl_only(self):
+        crl_container_ref = uuidutils.generate_uuid()
+        api_pool = self.create_pool(
+            self.lb_id, constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            crl_container_ref=crl_container_ref, status=400)
+        self.assertIn(
+            'A CA certificate reference is required to specify a '
+            'revocation list.', api_pool['faultstring'])
 
     def test_negative_create_udp_case(self):
         # Error create pool with udp protocol but non-udp-type
@@ -1337,10 +1410,230 @@ class TestPool(base.BaseAPITest):
         new_pool = {'tls_container_ref': tls_container_ref}
 
         self.cert_manager_mock().get_cert.side_effect = [Exception(
+            "bad cert")]
+        self.cert_manager_mock().get_secret.side_effect = [Exception(
             "bad secret")]
         resp = self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
                         self._build_body(new_pool), status=400).json
         self.assertIn(tls_container_ref, resp['faultstring'])
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_ca_and_crl(self, mock_cert_data):
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL]
+        ca_tls_container_ref = uuidutils.generate_uuid()
+        crl_container_ref = uuidutils.generate_uuid()
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        new_pool = {'ca_tls_container_ref': ca_tls_container_ref,
+                    'crl_container_ref': crl_container_ref}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE)
+        self.set_lb_status(self.lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        self.assertEqual(ca_tls_container_ref,
+                         response.get('ca_tls_container_ref'))
+        self.assertEqual(crl_container_ref,
+                         response.get('crl_container_ref'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=response.get('id'))
+
+    def test_update_with_bad_ca_tls_container_ref(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        ca_tls_container_ref = uuidutils.generate_uuid()
+        new_pool = {'ca_tls_container_ref': ca_tls_container_ref}
+        self.cert_manager_mock().get_cert.side_effect = [Exception(
+            "bad cert")]
+        self.cert_manager_mock().get_secret.side_effect = [Exception(
+            "bad secret")]
+        resp = self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                        self._build_body(new_pool), status=400).json
+        self.assertIn(ca_tls_container_ref, resp['faultstring'])
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_crl(self, mock_cert_data):
+        ca_tls_container_ref = uuidutils.generate_uuid()
+        crl_container_ref = uuidutils.generate_uuid()
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL]
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            ca_tls_container_ref=ca_tls_container_ref,
+            crl_container_ref=crl_container_ref).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        new_crl_container_ref = uuidutils.generate_uuid()
+        new_pool = {'crl_container_ref': new_crl_container_ref}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE)
+        self.set_lb_status(self.lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        self.assertEqual(new_crl_container_ref,
+                         response.get('crl_container_ref'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=response.get('id'))
+
+    def test_update_with_crl_only_negative_case(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        crl_container_ref = uuidutils.generate_uuid()
+        new_pool = {'crl_container_ref': crl_container_ref}
+        resp = self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                        self._build_body(new_pool), status=400).json
+        self.assertIn(
+            'A CA reference is required to specify a certificate revocation '
+            'list.', resp['faultstring'])
+
+    def test_update_with_crl_only_none_ca(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        crl_container_ref = uuidutils.generate_uuid()
+        new_pool = {'ca_tls_container_ref': None,
+                    'crl_container_ref': crl_container_ref}
+        resp = self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                        self._build_body(new_pool), status=400).json
+        self.assertIn(
+            'A CA reference is required to specify a certificate revocation '
+            'list.', resp['faultstring'])
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_unreachable_crl(self, mock_cert_data):
+        crl_container_ref = uuidutils.generate_uuid()
+        new_crl_container_ref = uuidutils.generate_uuid()
+        ca_tls_container_ref = uuidutils.generate_uuid()
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL]
+
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            ca_tls_container_ref=ca_tls_container_ref,
+            crl_container_ref=crl_container_ref).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_crl_container_ref = uuidutils.generate_uuid()
+        new_pool = {'crl_container_ref': new_crl_container_ref}
+        self.cert_manager_mock().get_secret.side_effect = [
+            exceptions.CertificateRetrievalException(
+                ref=new_crl_container_ref)]
+        resp = self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                        self._build_body(new_pool), status=400).json
+        self.assertIn(new_crl_container_ref, resp['faultstring'])
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_unset_ca_cert(self, mock_cert_data):
+        self.cert_manager_mock().get_secret.return_value = (
+            sample_certs.X509_CA_CERT)
+
+        ca_tls_uuid = uuidutils.generate_uuid()
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            ca_tls_container_ref=ca_tls_uuid).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_pool = {'ca_tls_container_ref': None}
+        body = self._build_body(new_pool)
+        listener_path = self.POOL_PATH.format(
+            pool_id=api_pool['id'])
+        api_pool = self.put(listener_path, body).json.get(self.root_tag)
+        self.assertIsNone(api_pool.get('ca_tls_container_ref'))
+        self.assertIsNone(api_pool.get('crl_container_ref'))
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_unset_ca_cert_with_crl(self, mock_cert_data):
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL]
+
+        ca_tls_uuid = uuidutils.generate_uuid()
+        crl_uuid = uuidutils.generate_uuid()
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            ca_tls_container_ref=ca_tls_uuid,
+            crl_container_ref=crl_uuid).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_pool = {'ca_tls_container_ref': None}
+        body = self._build_body(new_pool)
+        listener_path = self.POOL_PATH.format(
+            pool_id=api_pool['id'])
+        response = self.put(listener_path, body, status=400).json
+        self.assertIn('A CA reference cannot be removed when a certificate '
+                      'revocation list is present.', response['faultstring'])
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_unset_crl(self, mock_cert_data):
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL]
+        ca_tls_uuid = uuidutils.generate_uuid()
+        crl_uuid = uuidutils.generate_uuid()
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            ca_tls_container_ref=ca_tls_uuid,
+            crl_container_ref=crl_uuid).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_pool = {'crl_container_ref': None}
+        body = self._build_body(new_pool)
+        listener_path = self.POOL_PATH.format(
+            pool_id=api_pool['id'])
+        update_pool = self.put(listener_path, body).json.get(self.root_tag)
+        self.assertEqual(api_pool.get('ca_tls_container_ref'),
+                         update_pool.get('ca_tls_container_ref'))
+        self.assertIsNone(update_pool.get('crl_container_ref'))
 
     def test_delete(self):
         api_pool = self.create_pool(

@@ -44,6 +44,6 @@ class TestCastellanCertManager(base.TestCase):
         self.manager.get.assert_called_once_with('context', 'secret_ref')
         self.certbag.get_encoded.assert_called_once()
 
-        self.assertRaises(exceptions.CertificateStorageException,
+        self.assertRaises(exceptions.CertificateRetrievalException,
                           castellan_mgr_obj.get_secret, 'context',
                           'secret_ref')

@@ -154,6 +154,6 @@ class TestLocalManager(base.TestCase):
         with mock.patch('os.open', open_mock), mock.patch.object(
                 os, 'fdopen', fd_mock) as mock_open:
             mock_open.side_effect = IOError
-            self.assertRaises(exceptions.CertificateStorageException,
+            self.assertRaises(exceptions.CertificateRetrievalException,
                               local_cert_mgr.LocalCertManager.get_secret,
                               None, secret_id)
