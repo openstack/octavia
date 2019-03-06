@@ -13,6 +13,7 @@
 # under the License.
 #
 
+from cryptography import fernet
 import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
@@ -22,6 +23,7 @@ from taskflow.types import failure
 from octavia.amphorae.driver_exceptions import exceptions as driver_except
 from octavia.common import constants
 from octavia.common import data_models
+from octavia.common import utils
 from octavia.controller.worker.tasks import amphora_driver_tasks
 from octavia.db import repositories as repo
 import octavia.tests.unit.base as base
@@ -506,12 +508,15 @@ class TestAmphoraDriverTasks(base.TestCase):
                                  mock_listener_repo_get,
                                  mock_listener_repo_update,
                                  mock_amphora_repo_update):
-        pem_file_mock = 'test-perm-file'
+        key = utils.get_six_compatible_server_certs_key_passphrase()
+        fer = fernet.Fernet(key)
+        pem_file_mock = fer.encrypt(
+            utils.get_six_compatible_value('test-pem-file'))
         amphora_cert_upload_mock = amphora_driver_tasks.AmphoraCertUpload()
         amphora_cert_upload_mock.execute(_amphora_mock, pem_file_mock)
 
         mock_driver.upload_cert_amp.assert_called_once_with(
-            _amphora_mock, pem_file_mock)
+            _amphora_mock, fer.decrypt(pem_file_mock))
 
     def test_amphora_update_vrrp_interface(self,
                                            mock_driver,

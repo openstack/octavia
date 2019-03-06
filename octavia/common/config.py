@@ -26,6 +26,7 @@ from oslo_db import options as db_options
 from oslo_log import log as logging
 import oslo_messaging as messaging
 
+from octavia.certificates.common import local
 from octavia.common import constants
 from octavia.common import utils
 from octavia.i18n import _
@@ -620,6 +621,9 @@ cfg.CONF.register_opts(glance_opts, group='glance')
 cfg.CONF.register_opts(neutron_opts, group='neutron')
 cfg.CONF.register_opts(quota_opts, group='quotas')
 cfg.CONF.register_opts(audit_opts, group='audit')
+
+cfg.CONF.register_opts(local.certgen_opts, group='certificates')
+cfg.CONF.register_opts(local.certmgr_opts, group='certificates')
 
 # Ensure that the control exchange is set correctly
 messaging.set_transport_defaults(control_exchange='octavia')

@@ -15,6 +15,7 @@
 
 import random
 
+from cryptography import fernet
 import mock
 from oslo_db import exception as odb_exceptions
 from oslo_utils import uuidutils
@@ -23,6 +24,7 @@ from taskflow.types import failure
 
 from octavia.common import constants
 from octavia.common import data_models
+from octavia.common import utils
 from octavia.controller.worker.tasks import database_tasks
 from octavia.db import repositories as repo
 import octavia.tests.unit.base as base
@@ -83,42 +85,6 @@ _vip_mock.subnet_id = SUBNET_ID
 _vip_mock.ip_address = VIP_IP
 _vrrp_group_mock = mock.MagicMock()
 _cert_mock = mock.MagicMock()
-_pem_mock = """Junk
------BEGIN CERTIFICATE-----
-MIIBhDCCAS6gAwIBAgIGAUo7hO/eMA0GCSqGSIb3DQEBCwUAMA8xDTALBgNVBAMT
-BElNRDIwHhcNMTQxMjExMjI0MjU1WhcNMjUxMTIzMjI0MjU1WjAPMQ0wCwYDVQQD
-EwRJTUQzMFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKHIPXo2pfD5dpnpVDVz4n43
-zn3VYsjz/mgOZU0WIWjPA97mvulb7mwb4/LB4ijOMzHj9XfwP75GiOFxYFs8O80C
-AwEAAaNwMG4wDwYDVR0TAQH/BAUwAwEB/zA8BgNVHSMENTAzgBS6rfnABCO3oHEz
-NUUtov2hfXzfVaETpBEwDzENMAsGA1UEAxMESU1EMYIGAUo7hO/DMB0GA1UdDgQW
-BBRiLW10LVJiFO/JOLsQFev0ToAcpzANBgkqhkiG9w0BAQsFAANBABtdF+89WuDi
-TC0FqCocb7PWdTucaItD9Zn55G8KMd93eXrOE/FQDf1ScC+7j0jIHXjhnyu6k3NV
-8el/x5gUHlc=
------END CERTIFICATE-----
-Junk should be ignored by x509 splitter
------BEGIN CERTIFICATE-----
-MIIBhDCCAS6gAwIBAgIGAUo7hO/DMA0GCSqGSIb3DQEBCwUAMA8xDTALBgNVBAMT
-BElNRDEwHhcNMTQxMjExMjI0MjU1WhcNMjUxMTIzMjI0MjU1WjAPMQ0wCwYDVQQD
-EwRJTUQyMFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJYHqnsisVKTlwVaCSa2wdrv
-CeJJzqpEVV0RVgAAF6FXjX2Tioii+HkXMR9zFgpE1w4yD7iu9JDb8yTdNh+NxysC
-AwEAAaNwMG4wDwYDVR0TAQH/BAUwAwEB/zA8BgNVHSMENTAzgBQt3KvN8ncGj4/s
-if1+wdvIMCoiE6ETpBEwDzENMAsGA1UEAxMEcm9vdIIGAUo7hO+mMB0GA1UdDgQW
-BBS6rfnABCO3oHEzNUUtov2hfXzfVTANBgkqhkiG9w0BAQsFAANBAIlJODvtmpok
-eoRPOb81MFwPTTGaIqafebVWfBlR0lmW8IwLhsOUdsQqSzoeypS3SJUBpYT1Uu2v
-zEDOmgdMsBY=
------END CERTIFICATE-----
-Junk should be thrown out like junk
------BEGIN CERTIFICATE-----
-MIIBfzCCASmgAwIBAgIGAUo7hO+mMA0GCSqGSIb3DQEBCwUAMA8xDTALBgNVBAMT
-BHJvb3QwHhcNMTQxMjExMjI0MjU1WhcNMjUxMTIzMjI0MjU1WjAPMQ0wCwYDVQQD
-EwRJTUQxMFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAI+tSJxr60ogwXFmgqbLMW7K
-3fkQnh9sZBi7Qo6AzUnfe/AhXoisib651fOxKXCbp57IgzLTv7O9ygq3I+5fQqsC
-AwEAAaNrMGkwDwYDVR0TAQH/BAUwAwEB/zA3BgNVHSMEMDAugBR73ZKSpjbsz9tZ
-URkvFwpIO7gB4KETpBEwDzENMAsGA1UEAxMEcm9vdIIBATAdBgNVHQ4EFgQULdyr
-zfJ3Bo+P7In9fsHbyDAqIhMwDQYJKoZIhvcNAQELBQADQQBenkZ2k7RgZqgj+dxA
-D7BF8MN1oUAOpyYqAjkGddSEuMyNmwtHKZI1dyQ0gBIQdiU9yAG2oTbUIK4msbBV
-uJIQ
------END CERTIFICATE-----"""
 _compute_mock = mock.MagicMock()
 _compute_mock.lb_network_ip = LB_NET_IP
 _compute_mock.cached_zone = CACHED_ZONE
@@ -1095,6 +1061,11 @@ class TestDatabaseTasks(base.TestCase):
                                         mock_get_cert_exp):
 
         update_amp_cert = database_tasks.UpdateAmphoraDBCertExpiration()
+        key = utils.get_six_compatible_server_certs_key_passphrase()
+        fer = fernet.Fernet(key)
+        _pem_mock = fer.encrypt(
+            utils.get_six_compatible_value('test_cert')
+        )
         update_amp_cert.execute(_amphora_mock.id, _pem_mock)
 
         repo.AmphoraRepository.update.assert_called_once_with(

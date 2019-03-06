@@ -325,6 +325,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF certificates ca_certificate ${OCTAVIA_CERTS_DIR}/ca_01.pem
     iniset $OCTAVIA_CONF certificates ca_private_key ${OCTAVIA_CERTS_DIR}/private/cakey.pem
     iniset $OCTAVIA_CONF certificates ca_private_key_passphrase foobar
+    iniset $OCTAVIA_CONF certificates server_certs_key_passphrase insecure-key-do-not-use-this-key
 
     if [[ "$OCTAVIA_USE_LEGACY_RBAC" == "True" ]]; then
         cp $OCTAVIA_DIR/etc/policy/admin_or_owner-policy.json $OCTAVIA_CONF_DIR/policy.json

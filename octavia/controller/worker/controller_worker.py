@@ -71,23 +71,6 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         self._l7rule_repo = repo.L7RuleRepository()
         self._flavor_repo = repo.FlavorRepository()
 
-        self._exclude_result_logging_tasks = (
-            constants.ROLE_STANDALONE + '-' +
-            constants.CREATE_AMP_FOR_LB_SUBFLOW + '-' +
-            constants.GENERATE_SERVER_PEM,
-            constants.ROLE_BACKUP + '-' +
-            constants.CREATE_AMP_FOR_LB_SUBFLOW + '-' +
-            constants.GENERATE_SERVER_PEM,
-            constants.ROLE_MASTER + '-' +
-            constants.CREATE_AMP_FOR_LB_SUBFLOW + '-' +
-            constants.GENERATE_SERVER_PEM,
-            constants.GENERATE_SERVER_PEM_TASK,
-            constants.FAILOVER_AMPHORA_FLOW + '-' +
-            constants.CREATE_AMP_FOR_LB_SUBFLOW + '-' +
-            constants.GENERATE_SERVER_PEM,
-            constants.CREATE_AMP_FOR_LB_SUBFLOW + '-' +
-            constants.UPDATE_CERT_EXPIRATION)
-
         super(ControllerWorker, self).__init__()
 
     @tenacity.retry(
@@ -115,10 +98,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                        constants.LB_CREATE_SPARES_POOL_PRIORITY,
                        constants.FLAVOR: None}
             )
-            with tf_logging.DynamicLoggingListener(
-                    create_amp_tf, log=LOG,
-                    hide_inputs_outputs_of=self._exclude_result_logging_tasks):
-
+            with tf_logging.DynamicLoggingListener(create_amp_tf, log=LOG):
                 create_amp_tf.run()
 
             return create_amp_tf.storage.fetch('amphora')
@@ -359,9 +339,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             topology=topology, listeners=lb.listeners)
 
         create_lb_tf = self._taskflow_load(create_lb_flow, store=store)
-        with tf_logging.DynamicLoggingListener(
-                create_lb_tf, log=LOG,
-                hide_inputs_outputs_of=self._exclude_result_logging_tasks):
+        with tf_logging.DynamicLoggingListener(create_lb_tf, log=LOG):
             create_lb_tf.run()
 
     def delete_load_balancer(self, load_balancer_id, cascade=False):
@@ -857,10 +835,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                 role=amp.role, load_balancer=lb),
             store=stored_params)
 
-        with tf_logging.DynamicLoggingListener(
-                failover_amphora_tf, log=LOG,
-                hide_inputs_outputs_of=self._exclude_result_logging_tasks):
-
+        with tf_logging.DynamicLoggingListener(failover_amphora_tf, log=LOG):
             failover_amphora_tf.run()
 
     def failover_amphora(self, amphora_id):
