@@ -397,8 +397,8 @@ function create_mgmt_network_interface {
 
 function build_mgmt_network {
     # Create network and attach a subnet
-    OCTAVIA_AMP_NETWORK_ID=$(openstack network create lb-mgmt-net -f value -c id)
-    OCTAVIA_AMP_SUBNET_ID=$(openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET --allocation-pool start=$OCTAVIA_MGMT_SUBNET_START,end=$OCTAVIA_MGMT_SUBNET_END --network lb-mgmt-net lb-mgmt-subnet -f value -c id)
+    openstack network create lb-mgmt-net
+    openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET --allocation-pool start=$OCTAVIA_MGMT_SUBNET_START,end=$OCTAVIA_MGMT_SUBNET_END --network lb-mgmt-net lb-mgmt-subnet
 
     # Create security group and rules
     openstack security group create lb-mgmt-sec-grp
