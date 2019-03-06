@@ -292,6 +292,14 @@ class TestUtils(base.TestCase):
             self.sample_data.test_hm1_dict)
         self.assertEqual(self.sample_data.provider_hm1_dict, provider_hm_dict)
 
+    def test_HM_to_provider_HM_with_http_version_and_domain_name(self):
+        provider_hm = utils.db_HM_to_provider_HM(self.sample_data.db_hm2)
+        self.assertEqual(self.sample_data.provider_hm2, provider_hm)
+
+        provider_hm_dict = utils.hm_dict_to_provider_dict(
+            self.sample_data.test_hm2_dict)
+        self.assertEqual(self.sample_data.provider_hm2_dict, provider_hm_dict)
+
     def test_hm_dict_to_provider_dict_partial(self):
         provider_hm_dict = utils.hm_dict_to_provider_dict({'id': 1})
         self.assertEqual({'healthmonitor_id': 1}, provider_hm_dict)

@@ -139,6 +139,17 @@ class HealthMonitorController(base.BaseController):
                 hm_dict[consts.EXPECTED_CODES] = (
                     consts.HEALTH_MONITOR_DEFAULT_EXPECTED_CODES)
 
+        if hm_dict.get('domain_name') and not hm_dict.get('http_version'):
+            raise exceptions.ValidationException(
+                detail=_("'http_version' must be specified when 'domain_name' "
+                         "is provided."))
+
+        if hm_dict.get('http_version') and hm_dict.get('domain_name'):
+            if hm_dict['http_version'] < 1.1:
+                raise exceptions.InvalidOption(
+                    value='http_version %s' % hm_dict['http_version'],
+                    option='health monitors HTTP 1.1 domain name health check')
+
         try:
             return self.repositories.health_monitor.create(
                 lock_session, **hm_dict)
@@ -279,6 +290,20 @@ class HealthMonitorController(base.BaseController):
                 health_monitor.url_path = wtypes.Unset
             if health_monitor.expected_codes is None:
                 health_monitor.expected_codes = wtypes.Unset
+
+        if health_monitor.domain_name and not (
+                db_hm.http_version or health_monitor.http_version):
+            raise exceptions.ValidationException(
+                detail=_("'http_version' must be specified when 'domain_name' "
+                         "is provided."))
+
+        if ((db_hm.http_version or health_monitor.http_version) and
+                (db_hm.domain_name or health_monitor.domain_name)):
+            http_version = health_monitor.http_version or db_hm.http_version
+            if http_version < 1.1:
+                raise exceptions.InvalidOption(
+                    value='http_version %s' % http_version,
+                    option='health monitors HTTP 1.1 domain name health check')
 
     @wsme_pecan.wsexpose(hm_types.HealthMonitorRootResponse, wtypes.text,
                          body=hm_types.HealthMonitorRootPUT, status_code=200)

@@ -59,7 +59,9 @@ RET_MONITOR_1 = {
     'http_method': 'GET',
     'url_path': '/index.html',
     'expected_codes': '418',
-    'enabled': True}
+    'enabled': True,
+    'http_version': 1.0,
+    'domain_name': None}
 
 RET_MONITOR_2 = {
     'id': 'sample_monitor_id_2',
@@ -71,7 +73,9 @@ RET_MONITOR_2 = {
     'http_method': 'GET',
     'url_path': '/healthmon.html',
     'expected_codes': '418',
-    'enabled': True}
+    'enabled': True,
+    'http_version': 1.0,
+    'domain_name': None}
 
 RET_MEMBER_1 = {
     'id': 'sample_member_id_1',
@@ -554,7 +558,7 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           client_ca_cert=False, client_crl_cert=False,
                           ssl_type_l7=False, pool_cert=False,
                           pool_ca_cert=False, pool_crl=False,
-                          tls_enabled=False):
+                          tls_enabled=False, hm_host_http_check=False):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
@@ -580,14 +584,16 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                 persistence_cookie=persistence_cookie,
                 monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto,
                 pool_cert=pool_cert, pool_ca_cert=pool_ca_cert,
-                pool_crl=pool_crl, tls_enabled=tls_enabled),
+                pool_crl=pool_crl, tls_enabled=tls_enabled,
+                hm_host_http_check=hm_host_http_check),
             sample_pool_tuple(
                 proto=be_proto, monitor=monitor, persistence=persistence,
                 persistence_type=persistence_type,
                 persistence_cookie=persistence_cookie, sample_pool=2,
                 monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto,
                 pool_cert=pool_cert, pool_ca_cert=pool_ca_cert,
-                pool_crl=pool_crl, tls_enabled=tls_enabled)]
+                pool_crl=pool_crl, tls_enabled=tls_enabled,
+                hm_host_http_check=hm_host_http_check)]
         l7policies = [
             sample_l7policy_tuple('sample_l7policy_id_1', sample_policy=1),
             sample_l7policy_tuple('sample_l7policy_id_2', sample_policy=2),
@@ -608,7 +614,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                 monitor_ip_port=monitor_ip_port, monitor_proto=monitor_proto,
                 backup_member=backup_member, disabled_member=disabled_member,
                 pool_cert=pool_cert, pool_ca_cert=pool_ca_cert,
-                pool_crl=pool_crl, tls_enabled=tls_enabled)]
+                pool_crl=pool_crl, tls_enabled=tls_enabled,
+                hm_host_http_check=hm_host_http_check)]
         l7policies = []
     return in_listener(
         id='sample_listener_id_1',
@@ -629,7 +636,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
             pool_cert=pool_cert,
             pool_ca_cert=pool_ca_cert,
             pool_crl=pool_crl,
-            tls_enabled=tls_enabled
+            tls_enabled=tls_enabled,
+            hm_host_http_check=hm_host_http_check
         ) if alloc_default_pool else '',
         connection_limit=connection_limit,
         tls_certificate_id='cont_id_1' if tls else '',
@@ -705,7 +713,7 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
                       monitor_proto=None, backup_member=False,
                       disabled_member=False, has_http_reuse=True,
                       pool_cert=False, pool_ca_cert=False, pool_crl=False,
-                      tls_enabled=False):
+                      tls_enabled=False, hm_host_http_check=False):
     proto = 'HTTP' if proto is None else proto
     monitor_proto = proto if monitor_proto is None else monitor_proto
     in_pool = collections.namedtuple(
@@ -732,13 +740,16 @@ def sample_pool_tuple(proto=None, monitor=True, persistence=True,
                                        backup=backup_member,
                                        enabled=not disabled_member)]
         if monitor is True:
-            mon = sample_health_monitor_tuple(proto=monitor_proto)
+            mon = sample_health_monitor_tuple(
+                proto=monitor_proto, host_http_check=hm_host_http_check)
     elif sample_pool == 2:
         id = 'sample_pool_id_2'
         members = [sample_member_tuple('sample_member_id_3', '10.0.0.97',
                                        monitor_ip_port=monitor_ip_port)]
         if monitor is True:
-            mon = sample_health_monitor_tuple(proto=monitor_proto, sample_hm=2)
+            mon = sample_health_monitor_tuple(
+                proto=monitor_proto, sample_hm=2,
+                host_http_check=hm_host_http_check)
 
     return in_pool(
         id=id,
@@ -793,12 +804,13 @@ def sample_session_persistence_tuple(persistence_type=None,
                         persistence_granularity=persistence_granularity)
 
 
-def sample_health_monitor_tuple(proto='HTTP', sample_hm=1):
+def sample_health_monitor_tuple(proto='HTTP', sample_hm=1,
+                                host_http_check=False):
     proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
     monitor = collections.namedtuple(
         'monitor', 'id, type, delay, timeout, fall_threshold, rise_threshold,'
                    'http_method, url_path, expected_codes, enabled, '
-                   'check_script_path')
+                   'check_script_path, http_version, domain_name')
 
     if sample_hm == 1:
         id = 'sample_monitor_id_1'
@@ -818,6 +830,10 @@ def sample_health_monitor_tuple(proto='HTTP', sample_hm=1):
         'expected_codes': '418',
         'enabled': True
     }
+    if host_http_check:
+        kwargs.update({'http_version': 1.1, 'domain_name': 'testlab.com'})
+    else:
+        kwargs.update({'http_version': 1.0, 'domain_name': None})
     if proto == constants.HEALTH_MONITOR_UDP_CONNECT:
         kwargs['check_script_path'] = (CONF.haproxy_amphora.base_path +
                                        'lvs/check/' + 'udp_check.sh')
@@ -988,7 +1004,7 @@ def sample_base_expected_config(frontend=None, backend=None,
                    "    balance roundrobin\n"
                    "    cookie SRV insert indirect nocache\n"
                    "    timeout check 31s\n"
-                   "    option httpchk GET /index.html\n"
+                   "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
                    "    http-check expect rstatus 418\n"
                    "    fullconn {maxconn}\n"
                    "    option allbackups\n"

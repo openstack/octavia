@@ -52,6 +52,7 @@ SUPPORTED_HEALTH_MONITOR_HTTP_METHODS = (
     HEALTH_MONITOR_HTTP_METHOD_DELETE, HEALTH_MONITOR_HTTP_METHOD_TRACE,
     HEALTH_MONITOR_HTTP_METHOD_OPTIONS, HEALTH_MONITOR_HTTP_METHOD_CONNECT,
     HEALTH_MONITOR_HTTP_METHOD_PATCH)
+SUPPORTED_HTTP_VERSIONS = [1.0, 1.1]
 HEALTH_MONITOR_DEFAULT_EXPECTED_CODES = '200'
 HEALTH_MONITOR_DEFAULT_URL_PATH = '/'
 TYPE = 'type'
@@ -202,6 +203,9 @@ HTTP_HEADER_VALUE_REGEX = (r'\A[a-zA-Z0-9'
 # when quoted with double quotes.
 HTTP_QUOTED_HEADER_VALUE_REGEX = (r'\A"[a-zA-Z0-9 \t'
                                   r'!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~\\]*"\Z')
+
+DOMAIN_NAME_REGEX = (
+    r'^(?=.{1,253}\.?$)(?:(?!-|[^.]+_)[A-Za-z0-9-_]{1,63}(?<!-)(?:\.|$))+$')
 
 # Task/Flow constants
 AMPHORA = 'amphora'

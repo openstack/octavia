@@ -372,6 +372,8 @@ class JinjaTemplater(object):
             'url_path': monitor.url_path,
             'expected_codes': codes,
             'enabled': monitor.enabled,
+            'http_version': monitor.http_version,
+            'domain_name': monitor.domain_name,
         }
 
     def _transform_l7policy(self, l7policy, feature_compatibility,

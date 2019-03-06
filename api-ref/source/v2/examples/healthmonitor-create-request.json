@@ -11,6 +11,8 @@
         "url_path": "/",
         "type": "HTTP",
         "max_retries_down": 3,
-        "tags": ["test_tag"]
+        "tags": ["test_tag"],
+        "http_version": 1.1,
+        "domain_name": "testlab.com"
     }
 }

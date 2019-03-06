@@ -48,8 +48,10 @@ Response Parameters
    - admin_state_up: admin_state_up
    - created_at: created_at
    - delay: healthmonitor-delay
+   - domain_name: healthmonitor-domain_name
    - expected_codes: healthmonitor-expected_codes
    - http_method: healthmonitor-http_method
+   - http_version: healthmonitor-http_version
    - id: healthmonitor-id
    - max_retries: healthmonitor-max-retries
    - max_retries_down: healthmonitor-max-retries-down
@@ -127,6 +129,8 @@ Some attributes receive default values if you omit them from the request:
 
 - ``http_method`` The default is ``GET``.
 
+- ``http_version`` The default is ``1.0``.
+
 - ``max_retries_down`` The default is ``3``.
 
 - ``url_path`` The default is ``/``.
@@ -155,8 +159,10 @@ Request
 
    - admin_state_up: admin_state_up-default-optional
    - delay: healthmonitor-delay
+   - domain_name: healthmonitor-domain_name-optional
    - expected_codes: healthmonitor-expected_codes-optional
    - http_method: healthmonitor-http_method-optional
+   - http_version: healthmonitor-http_version-optional
    - name: name-optional
    - max_retries: healthmonitor-max-retries
    - max_retries_down: healthmonitor-max-retries-down-optional
@@ -187,8 +193,10 @@ Response Parameters
    - admin_state_up: admin_state_up
    - created_at: created_at
    - delay: healthmonitor-delay
+   - domain_name: healthmonitor-domain_name
    - expected_codes: healthmonitor-expected_codes
    - http_method: healthmonitor-http_method
+   - http_version: healthmonitor-http_version
    - id: healthmonitor-id
    - max_retries: healthmonitor-max-retries
    - max_retries_down: healthmonitor-max-retries-down
@@ -255,8 +263,10 @@ Response Parameters
    - admin_state_up: admin_state_up
    - created_at: created_at
    - delay: healthmonitor-delay
+   - domain_name: healthmonitor-domain_name
    - expected_codes: healthmonitor-expected_codes
    - http_method: healthmonitor-http_method
+   - http_version: healthmonitor-http_version
    - id: healthmonitor-id
    - max_retries: healthmonitor-max-retries
    - max_retries_down: healthmonitor-max-retries-down
@@ -312,9 +322,11 @@ Request
 
    - admin_state_up: admin_state_up-default-optional
    - delay: healthmonitor-delay-optional
+   - domain_name: healthmonitor-domain_name-optional
    - expected_codes: healthmonitor-expected_codes-optional
    - healthmonitor_id: path-healthmonitor-id
    - http_method: healthmonitor-http_method-optional
+   - http_version: healthmonitor-http_version-optional
    - max_retries: healthmonitor-max-retries-optional
    - max_retries_down: healthmonitor-max-retries-down-optional
    - name: name-optional
@@ -342,8 +354,10 @@ Response Parameters
    - admin_state_up: admin_state_up
    - created_at: created_at
    - delay: healthmonitor-delay
+   - domain_name: healthmonitor-domain_name
    - expected_codes: healthmonitor-expected_codes
    - http_method: healthmonitor-http_method
+   - http_version: healthmonitor-http_version
    - id: healthmonitor-id
    - max_retries: healthmonitor-max-retries
    - max_retries_down: healthmonitor-max-retries-down

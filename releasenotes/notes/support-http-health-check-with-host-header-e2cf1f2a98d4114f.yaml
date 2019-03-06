@@ -1,0 +1,5 @@
+---
+features:
+  - Extend the Octavia Health Monitor API with two new fields ``http_version``
+    and ``domain_name`` for support HTTP health check, which will inject the
+    domain name into HTTP host header.

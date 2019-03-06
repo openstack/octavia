@@ -273,6 +273,8 @@ class HealthMonitor(base_models.BASE, base_models.IdMixin,
         cascade='all,delete-orphan',
         primaryjoin='and_(foreign(Tags.resource_id)==HealthMonitor.id)'
     )
+    http_version = sa.Column(sa.Float, nullable=True)
+    domain_name = sa.Column(sa.String(255), nullable=True)
 
 
 class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
