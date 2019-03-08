@@ -280,7 +280,7 @@ class HealthMonitorController(base.BaseController):
                     'type {}'.format(db_hm.type))
             if health_monitor.expected_codes != wtypes.Unset:
                 raise exceptions.InvalidOption(
-                    value=consts.URL_PATH, option='health monitors of '
+                    value=consts.EXPECTED_CODES, option='health monitors of '
                     'type {}'.format(db_hm.type))
         else:
             # For HTTP health monitor these cannot be null/None
