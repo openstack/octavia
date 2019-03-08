@@ -23,7 +23,7 @@ For example
 
 For example
 
-    ENABLED_SERVICES+=octavia,o-api,o-cw,o-hk,o-hm
+    ENABLED_SERVICES+=octavia,o-api,o-cw,o-hk,o-hm,o-da
 
 For more information, see the "Externally Hosted Plugins" section of
 https://docs.openstack.org/devstack/latest/plugins.html

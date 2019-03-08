@@ -45,6 +45,7 @@ def list_opts():
         ('glance', octavia.common.config.glance_opts),
         ('quotas', octavia.common.config.quota_opts),
         ('audit', octavia.common.config.audit_opts),
+        ('driver_agent', octavia.common.config.driver_agent_opts),
         add_auth_opts(),
     ]
 

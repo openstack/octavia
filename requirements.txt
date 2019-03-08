@@ -44,6 +44,8 @@ castellan>=0.16.0 # Apache-2.0
 tenacity>=4.9.0  # Apache-2.0
 distro>=1.2.0 # Apache-2.0
 jsonschema>=2.6.0 # MIT
+debtcollector>=1.19.0 # Apache-2.0
+octavia-lib>=1.1.1 # Apache-2.0
 
 #for the amphora api
 Flask!=0.11,>=0.10 # BSD

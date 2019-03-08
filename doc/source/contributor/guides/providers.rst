@@ -55,10 +55,11 @@ Provider drivers should only access the following Octavia APIs. All other
 Octavia APIs are not considered stable or safe for provider driver use and
 may change at any time.
 
-* octavia.api.drivers.data_models
-* octavia.api.drivers.driver_lib
-* octavia.api.drivers.exceptions
-* octavia.api.drivers.provider_base
+* octavia_lib.api.drivers.data_models
+* octavia_lib.api.drivers.driver_lib
+* octavia_lib.api.drivers.exceptions
+* octavia_lib.api.drivers.provider_base
+* octavia_lib.common.constants
 
 Octavia Provider Driver API
 ===========================
@@ -1695,7 +1696,7 @@ Driver Support Library
 
 Provider drivers need support for updating provisioning status, operating
 status, and statistics. Drivers will not directly use database operations,
-and instead will callback to Octavia using a new API.
+and instead will callback to octavia-lib using a new API.
 
 .. warning::
 
@@ -1708,7 +1709,7 @@ and instead will callback to Octavia using a new API.
 
   This library is interim and will be removed when the driver support endpoint
   is made available. At which point drivers will not import any code from
-  Octavia.
+  octavia-lib.
 
 Update Provisioning and Operating Status API
 --------------------------------------------
@@ -1722,6 +1723,13 @@ For the following status API, valid values for provisioning status
 and operating status parameters are as defined by Octavia status codes. If an
 existing object is not included in the input parameter, the status remains
 unchanged.
+
+.. note::
+
+  If the driver-agent exceeds its configured `status_max_processes` this call
+  may block while it waits for a status process slot to become available.
+  The operator will be notified if the driver-agent approaches or reaches
+  the configured limit.
 
 provisioning_status: status associated with lifecycle of the
 resource. See `Octavia Provisioning Status Codes <https://developer.openstack.org/api-ref/load-balancer/v2/index.html#provisioning-status-codes>`_.
@@ -1764,6 +1772,13 @@ Similar to the status function above, a single dictionary
 with multiple listener statistics is used to update statistics in a single
 call. If an existing listener is not included, the statistics that object
 remain unchanged.
+
+.. note::
+
+  If the driver-agent exceeds its configured `stats_max_processes` this call
+  may block while it waits for a stats process slot to become available.
+  The operator will be notified if the driver-agent approaches or reaches
+  the configured limit.
 
 The general form of the input dictionary is a list of listener statistics:
 

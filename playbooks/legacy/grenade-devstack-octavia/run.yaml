@@ -31,6 +31,7 @@
 
           export PROJECTS="openstack-dev/grenade $PROJECTS"
           export PROJECTS="openstack/octavia $PROJECTS"
+          export PROJECTS="openstack/octavia-lib $PROJECTS"
           export PROJECTS="openstack/octavia-tempest-plugin $PROJECTS"
           export PROJECTS="openstack/python-octaviaclient $PROJECTS"
           export DEVSTACK_PROJECT_FROM_GIT="python-octaviaclient $DEVSTACK_PROJECT_FROM_GIT"

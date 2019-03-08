@@ -13,9 +13,12 @@
 #    under the License.
 import mock
 
+from oslo_utils import uuidutils
+
+from octavia_lib.api.drivers import data_models as driver_dm
+from octavia_lib.api.drivers import exceptions
+
 from octavia.api.drivers.amphora_driver import driver
-from octavia.api.drivers import data_models as driver_dm
-from octavia.api.drivers import exceptions
 from octavia.common import constants as consts
 from octavia.network import base as network_base
 from octavia.tests.unit.api.drivers import sample_data_models
@@ -96,6 +99,20 @@ class TestAmphoraDriver(base.TestRpc):
         provider_lb = driver_dm.LoadBalancer(
             loadbalancer_id=self.sample_data.lb_id, name='Great LB')
         lb_dict = {'name': 'Great LB'}
+        self.amp_driver.loadbalancer_update(old_provider_lb, provider_lb)
+        payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id,
+                   consts.LOAD_BALANCER_UPDATES: lb_dict}
+        mock_cast.assert_called_with({}, 'update_load_balancer', **payload)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_loadbalancer_update_qos(self, mock_cast):
+        qos_policy_id = uuidutils.generate_uuid()
+        old_provider_lb = driver_dm.LoadBalancer(
+            loadbalancer_id=self.sample_data.lb_id)
+        provider_lb = driver_dm.LoadBalancer(
+            loadbalancer_id=self.sample_data.lb_id,
+            vip_qos_policy_id=qos_policy_id)
+        lb_dict = {'vip': {'vip_qos_policy_id': qos_policy_id}}
         self.amp_driver.loadbalancer_update(old_provider_lb, provider_lb)
         payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id,
                    consts.LOAD_BALANCER_UPDATES: lb_dict}

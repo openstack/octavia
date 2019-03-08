@@ -15,8 +15,8 @@
 from oslo_log import log as logging
 from oslo_utils import uuidutils
 
-from octavia.api.drivers import data_models
-from octavia.api.drivers import provider_base as driver_base
+from octavia_lib.api.drivers import data_models
+from octavia_lib.api.drivers import provider_base as driver_base
 
 LOG = logging.getLogger(__name__)
 

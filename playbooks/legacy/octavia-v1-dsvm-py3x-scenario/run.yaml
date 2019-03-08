@@ -43,6 +43,7 @@
           export PROJECTS="openstack/diskimage-builder $PROJECTS"
           export PROJECTS="openstack/tripleo-image-elements $PROJECTS"
           export PROJECTS="openstack/neutron-lbaas $PROJECTS"
+          export PROJECTS="openstack/octavia-lib $PROJECTS"
           export PROJECTS="openstack/octavia $PROJECTS"
 
           if ! [[ "$ZUUL_BRANCH" =~ "stable/newton"|"stable/ocata" ]]; then

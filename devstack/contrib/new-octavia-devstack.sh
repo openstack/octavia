@@ -45,7 +45,7 @@ ENABLED_SERVICES+=,neutron-metadata-agent,neutron-qos
 # Tempest (optional)
 #ENABLED_SERVICES+=,tempest
 # Octavia
-ENABLED_SERVICES+=,octavia,o-api,o-cw,o-hm,o-hk
+ENABLED_SERVICES+=,octavia,o-api,o-cw,o-hm,o-hk,o-da
 EOF
 
 # Create the stack user

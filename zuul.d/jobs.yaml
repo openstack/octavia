@@ -8,6 +8,7 @@
       - openstack/diskimage-builder
       - openstack/neutron-lbaas
       - openstack/octavia
+      - openstack/octavia-lib
       - openstack/python-barbicanclient
       - openstack/python-octaviaclient
       - openstack/tripleo-image-elements
@@ -78,5 +79,6 @@
       - openstack-dev/grenade
       - openstack-infra/devstack-gate
       - openstack/octavia
+      - openstack/octavia-lib
       - openstack/octavia-tempest-plugin
       - openstack/python-octaviaclient

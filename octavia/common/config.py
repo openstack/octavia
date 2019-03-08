@@ -601,6 +601,37 @@ audit_opts = [
                       'enabled.')),
 ]
 
+driver_agent_opts = [
+    cfg.StrOpt('status_socket_path',
+               default='/var/run/octavia/status.sock',
+               help=_('Path to the driver status unix domain socket file.')),
+    cfg.StrOpt('stats_socket_path',
+               default='/var/run/octavia/stats.sock',
+               help=_('Path to the driver statistics unix domain socket '
+                      'file.')),
+    cfg.IntOpt('status_request_timeout',
+               default=5,
+               help=_('Time, in seconds, to wait for a status update '
+                      'request.')),
+    cfg.IntOpt('status_max_processes',
+               default=50,
+               help=_('Maximum number of concurrent processes to use '
+                      'servicing status updates.')),
+    cfg.IntOpt('stats_request_timeout',
+               default=5,
+               help=_('Time, in seconds, to wait for a statistics update '
+                      'request.')),
+    cfg.IntOpt('stats_max_processes',
+               default=50,
+               help=_('Maximum number of concurrent processes to use '
+                      'servicing statistics updates.')),
+    cfg.FloatOpt('max_process_warning_percent',
+                 default=0.75, min=0.01, max=0.99,
+                 help=_('Percentage of max_processes (both status and stats) '
+                        'in use to start logging warning messages about an '
+                        'overloaded driver-agent.')),
+]
+
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_opts(api_opts, group='api_settings')
@@ -621,6 +652,7 @@ cfg.CONF.register_opts(glance_opts, group='glance')
 cfg.CONF.register_opts(neutron_opts, group='neutron')
 cfg.CONF.register_opts(quota_opts, group='quotas')
 cfg.CONF.register_opts(audit_opts, group='audit')
+cfg.CONF.register_opts(driver_agent_opts, group='driver_agent')
 
 cfg.CONF.register_opts(local.certgen_opts, group='certificates')
 cfg.CONF.register_opts(local.certmgr_opts, group='certificates')
