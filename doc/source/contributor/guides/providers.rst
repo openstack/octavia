@@ -460,25 +460,78 @@ contains the following:
 As of the writing of this specification the Supported HTTP Header Insertions
 are:
 
-+-------------------+--------+------------------------------------------------+
-| Key               | Type   | Description                                    |
-+===================+========+================================================+
-| X-Forwarded-For   | bool   | When True a X-Forwarded-For header is inserted |
-|                   |        | into the request to the backend member that    |
-|                   |        | specifies the client IP address.               |
-+-------------------+--------+------------------------------------------------+
-| X-Forwarded-Port  | int    | A X-Forwarded-Port header is inserted into the |
-|                   |        | request to the backend member that specifies   |
-|                   |        | the integer provided. Typically this is used to|
-|                   |        | indicate the port the client connected to on   |
-|                   |        | the load balancer.                             |
-+-------------------+--------+------------------------------------------------+
-| X-Forwarded-Proto | bool   | A X-Forwarded-Proto header is inserted into    |
-|                   |        | the end of request to the backend member.      |
-|                   |        | HTTP for the HTTP listener protocol type,      |
-|                   |        | HTTPS for the TERMINATED_HTTPS listener        |
-|                   |        | protocol type.                                 |
-+-------------------+--------+------------------------------------------------+
++-----------------------+--------+--------------------------------------------+
+| Key                   | Type   | Description                                |
++=======================+========+============================================+
+| X-Forwarded-For       | bool   | When True a X-Forwarded-For header is      |
+|                       |        | inserted into the request to the backend   |
+|                       |        | member that specifies the client IP        |
+|                       |        | address.                                   |
++-----------------------+--------+--------------------------------------------+
+| X-Forwarded-Port      | int    | A X-Forwarded-Port header is inserted into |
+|                       |        | the request to the backend member that     |
+|                       |        | specifies the integer provided. Typically  |
+|                       |        | this is used to indicate the port the      |
+|                       |        | client connected to on the load balancer.  |
++-----------------------+--------+--------------------------------------------+
+| X-Forwarded-Proto     | bool   | A X-Forwarded-Proto header is inserted into|
+|                       |        | the end of request to the backend member.  |
+|                       |        | HTTP for the HTTP listener protocol type,  |
+|                       |        | HTTPS for the TERMINATED_HTTPS listener    |
+|                       |        | protocol type.                             |
++-----------------------+--------+--------------------------------------------+
+| X-SSL-Client-Verify   | string | When "``true``" a ``X-SSL-Client-Verify``  |
+|                       |        | header is inserted into the request to the |
+|                       |        | backend ``member`` that contains 0 if the  |
+|                       |        | client authentication was successful, or an|
+|                       |        | result error number greater than 0 that    |
+|                       |        | align to the openssl veryify error codes.  |
++-----------------------+--------+--------------------------------------------+
+| X-SSL-Client-Has-Cert | string | When "``true``" a ``X-SSL-Client-Has-Cert``|
+|                       |        | header is inserted into the request to the |
+|                       |        | backend ``member`` that is ''true'' if a   |
+|                       |        | client authentication certificate was      |
+|                       |        | presented, and ''false'' if not. Does not  |
+|                       |        | indicate validity.                         |
++-----------------------+--------+--------------------------------------------+
+| X-SSL-Client-DN       | string | When "``true``" a ``X-SSL-Client-DN``      |
+|                       |        | header is inserted into the request to the |
+|                       |        | backend ``member`` that contains the full  |
+|                       |        | Distinguished Name of the certificate      |
+|                       |        | presented by the client.                   |
++-----------------------+--------+--------------------------------------------+
+| X-SSL-Client-CN       | string | When "``true``" a ``X-SSL-Client-CN``      |
+|                       |        | header is inserted into the request to the |
+|                       |        | backend ``member`` that contains the Common|
+|                       |        | Name from the full Distinguished Name of   |
+|                       |        | the certificate presented by the client.   |
++-----------------------+--------+--------------------------------------------+
+| X-SSL-Issuer          | string | When "``true``" a ``X-SSL-Issuer`` header  |
+|                       |        | is inserted into the request to the backend|
+|                       |        | ``member`` that contains the full          |
+|                       |        | Distinguished Name of the client           |
+|                       |        | certificate issuer.                        |
++-----------------------+--------+--------------------------------------------+
+| X-SSL-Client-SHA1     | string | When "``true``" a ``X-SSL-Client-SHA1``    |
+|                       |        | header is inserted into the request to the |
+|                       |        | backend ``member`` that contains the SHA-1 |
+|                       |        | fingerprint of the certificate presented by|
+|                       |        | the client in hex string format.           |
++-----------------------+--------+--------------------------------------------+
+|X-SSL-Client-Not-Before| string | When "``true``" a                          |
+|                       |        | ``X-SSL-Client-Not-Before``                |
+|                       |        | header is inserted into the request to the |
+|                       |        | backend ``member`` that contains the start |
+|                       |        | date presented by the client as a formatted|
+|                       |        | string YYMMDDhhmmss[Z].                    |
++-----------------------+--------+--------------------------------------------+
+|X-SSL-Client-Not-After | string | When "``true``" a                          |
+|                       |        | ``X-SSL-Client-Not-After`` header is       |
+|                       |        | inserted into the request to the           |
+|                       |        | backend ``member`` that contains the end   |
+|                       |        | date presented by the client as a formatted|
+|                       |        | string YYMMDDhhmmss[Z].                    |
++-----------------------+--------+--------------------------------------------+
 
 **Creating a Fully Populated Listener**
 
@@ -517,6 +570,20 @@ contain the following:
 +============================+========+=====================================+
 | admin_state_up             | bool   | Admin state: True if up, False if   |
 |                            |        | down.                               |
++----------------------------+--------+-------------------------------------+
+| client_authentication      | string | The TLS client authentication mode. |
+|                            |        | One of the options ``NONE``,        |
+|                            |        | ``OPTIONAL`` or ``MANDATORY``.      |
++----------------------------+--------+-------------------------------------+
+|client_ca_tls_container_data| string | A PEM encoded certificate.          |
++----------------------------+--------+-------------------------------------+
+| client_ca_tls_container_ref| string | The reference to the secrets        |
+|                            |        | container.                          |
++----------------------------+--------+-------------------------------------+
+| client_crl_container_data  | string | A PEM encoded CRL file.             |
++----------------------------+--------+-------------------------------------+
+| client_crl_container_ref   | string | The reference to the secrets        |
+|                            |        | container.                          |
 +----------------------------+--------+-------------------------------------+
 | connection_limit           | int    | The max number of connections       |
 |                            |        | permitted for this listener. Default|
@@ -1066,6 +1133,9 @@ and validated with the following exceptions:
 | delay                 | int    | The interval, in seconds, between health |
 |                       |        | checks.                                  |
 +-----------------------+--------+------------------------------------------+
+| domain_name           | string | The domain name to be passed in the host |
+|                       |        | header for health monitor checks.        |
++-----------------------+--------+------------------------------------------+
 | expected_codes        | string | The expected HTTP status codes to get    |
 |                       |        | from a successful health check. This may |
 |                       |        | be a single value, a list, or a range.   |
@@ -1076,6 +1146,10 @@ and validated with the following exceptions:
 |                       |        | uses for requests. One of CONNECT,       |
 |                       |        | DELETE, GET, HEAD, OPTIONS, PATCH, POST, |
 |                       |        | PUT, or TRACE.                           |
++-----------------------+--------+------------------------------------------+
+| http_version          | float  | The HTTP version to use for health       |
+|                       |        | monitor connections. One of '1.0' or     |
+|                       |        | '1.1'. Defaults to '1.0'.                |
 +-----------------------+--------+------------------------------------------+
 | max_retries           | int    | The number of successful checks before   |
 |                       |        | changing the operating status of the     |
@@ -1138,6 +1212,9 @@ contain the following:
 | delay                 | int    | The interval, in seconds, between health |
 |                       |        | checks.                                  |
 +-----------------------+--------+------------------------------------------+
+| domain_name           | string | The domain name to be passed in the host |
+|                       |        | header for health monitor checks.        |
++-----------------------+--------+------------------------------------------+
 | expected_codes        | string | The expected HTTP status codes to get    |
 |                       |        | from a successful health check. This may |
 |                       |        | be a single value, a list, or a range.   |
@@ -1148,6 +1225,10 @@ contain the following:
 |                       |        | uses for requests. One of CONNECT,       |
 |                       |        | DELETE, GET, HEAD, OPTIONS, PATCH, POST, |
 |                       |        | PUT, or TRACE.                           |
++-----------------------+--------+------------------------------------------+
+| http_version          | float  | The HTTP version to use for health       |
+|                       |        | monitor connections. One of '1.0' or     |
+|                       |        | '1.1'. Defaults to '1.0'.                |
 +-----------------------+--------+------------------------------------------+
 | max_retries           | int    | The number of successful checks before   |
 |                       |        | changing the operating status of the     |
@@ -1272,9 +1353,17 @@ contain the following:
 | position              | int    | The position of this policy on the       |
 |                       |        | listener. Positions start at 1.          |
 +-----------------------+--------+------------------------------------------+
+| redirect_http_code    | int    | The HTTP status code to be returned on   |
+|                       |        | a redirect policy.                       |
++-----------------------+--------+------------------------------------------+
 | redirect_pool_id      | string | Requests matching this policy will be    |
 |                       |        | redirected to the pool with this ID.     |
 |                       |        | Only valid if action is REDIRECT_TO_POOL.|
++-----------------------+--------+------------------------------------------+
+| redirect_prefix       | string | Requests matching this policy will be    |
+|                       |        | redirected to this Prefix URL. Only      |
+|                       |        | valid if ``action`` is                   |
+|                       |        | ``REDIRECT_PREFIX``.                     |
 +-----------------------+--------+------------------------------------------+
 | redirect_url          | string | Requests matching this policy will be    |
 |                       |        | redirected to this URL. Only valid if    |
@@ -1334,9 +1423,17 @@ contain the following:
 | position              | int    | The position of this policy on the       |
 |                       |        | listener. Positions start at 1.          |
 +-----------------------+--------+------------------------------------------+
+| redirect_http_code    | int    | The HTTP status code to be returned on   |
+|                       |        | a redirect policy.                       |
++-----------------------+--------+------------------------------------------+
 | redirect_pool_id      | string | Requests matching this policy will be    |
 |                       |        | redirected to the pool with this ID.     |
 |                       |        | Only valid if action is REDIRECT_TO_POOL.|
++-----------------------+--------+------------------------------------------+
+| redirect_prefix       | string | Requests matching this policy will be    |
+|                       |        | redirected to this Prefix URL. Only      |
+|                       |        | valid if ``action`` is                   |
+|                       |        | ``REDIRECT_PREFIX``.                     |
 +-----------------------+--------+------------------------------------------+
 | redirect_url          | string | Requests matching this policy will be    |
 |                       |        | redirected to this URL. Only valid if    |
