@@ -41,7 +41,15 @@ echo $CERT_DIR
 
 mkdir -p $CERT_DIR
 cd $CERT_DIR
+if [[ $? -ne 0 ]]; then
+    echo "Failed to change to $CERT_DIR. Check the existence and permission"
+    exit 1
+fi
 mkdir newcerts private
+if [[ $? -ne 0 ]]; then
+    echo "Failed to create directories. Check the permission"
+    exit 1
+fi
 chmod 700 private
 
 # prepare files
