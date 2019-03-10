@@ -1,0 +1,23 @@
+---
+prelude: |
+    For the OpenStack Stein release, the Octavia team is excited to announce
+    support for: Octavia flavors, TLS client authentication, backend
+    re-encryption, and object tags.
+
+    * Octavia flavors allow an operator to define "flavors" of load balancers,
+      such as "active-standby" or "single" using the amphora driver, that
+      configure the load balancer topology. The Amphora driver also supports
+      specifying the nova compute flavor to use for the load balancer amphora.
+    * TLS client authentication allows the listener to request a client
+      certificate from users connecting to the load balancer. This certificate
+      can then be checked against a CA certificate and optionally a certificate
+      revocation list. New HTTP header insertions allow passing client
+      certificate information to the backend members, while new L7 rules
+      allow you to take custom actions based on the content of the client
+      certificate.
+    * Backend re-encryption allows users to configure pools to initiate TLS
+      connections to the backend member servers. This enables load balancers
+      to authenticate and encrypt connections from the load balancer to the
+      backend member server.
+    * Object tags allow users to assign a list of strings to the load balancer
+      objects that can then be used for advanced API list filtering.

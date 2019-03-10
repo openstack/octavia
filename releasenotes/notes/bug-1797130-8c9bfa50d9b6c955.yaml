@@ -3,9 +3,9 @@ features:
   - |
     Listeners default timeouts can be set by config in section haproxy_amphora:
 
-     * `timeout_client_data`: Frontend client inactivity timeout
-     * `timeout_member_connect`: Backend member connection timeout
-     * `timeout_member_data`: Backend member inactivity timeout
-     * `timeout_tcp_inspect`: Time to wait for TCP packets for content inspection
+    * `timeout_client_data`: Frontend client inactivity timeout
+    * `timeout_member_connect`: Backend member connection timeout
+    * `timeout_member_data`: Backend member inactivity timeout
+    * `timeout_tcp_inspect`: Time to wait for TCP packets for content inspection
 
-     The value for all of these options is expected to be in milliseconds.
+    The value for all of these options is expected to be in milliseconds.
