@@ -284,7 +284,7 @@ class AbstractNetworkDriver(object):
         pass
 
     @abc.abstractmethod
-    def get_network_configs(self, load_balancer):
+    def get_network_configs(self, load_balancer, amphora=None):
         """Retrieve network configurations
 
         This method assumes that a dictionary of AmphoraNetworkConfigs keyed
@@ -298,6 +298,7 @@ class AbstractNetworkDriver(object):
         Example return: {<amphora.id>: <AmphoraNetworkConfig>}
 
         :param load_balancer: The load_balancer configuration
+        :param amphora: Optional amphora to only query.
         :return: dict of octavia.network.data_models.AmphoraNetworkConfig
                  keyed off of the amphora id the config is associated with.
         :raises: NotFound, NetworkNotFound, SubnetNotFound, PortNotFound

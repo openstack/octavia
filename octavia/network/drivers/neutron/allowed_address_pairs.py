@@ -591,30 +591,38 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
         return plugged_interface
 
-    def get_network_configs(self, loadbalancer):
+    def _get_amp_net_configs(self, amp, amp_configs, vip_subnet, vip_port):
+        if amp.status != constants.DELETED:
+            LOG.debug("Retrieving network details for amphora %s", amp.id)
+            vrrp_port = self.get_port(amp.vrrp_port_id)
+            vrrp_subnet = self.get_subnet(
+                vrrp_port.get_subnet_id(amp.vrrp_ip))
+            vrrp_port.network = self.get_network(vrrp_port.network_id)
+            ha_port = self.get_port(amp.ha_port_id)
+            ha_subnet = self.get_subnet(
+                ha_port.get_subnet_id(amp.ha_ip))
+
+            amp_configs[amp.id] = n_data_models.AmphoraNetworkConfig(
+                amphora=amp,
+                vip_subnet=vip_subnet,
+                vip_port=vip_port,
+                vrrp_subnet=vrrp_subnet,
+                vrrp_port=vrrp_port,
+                ha_subnet=ha_subnet,
+                ha_port=ha_port
+            )
+
+    def get_network_configs(self, loadbalancer, amphora=None):
         vip_subnet = self.get_subnet(loadbalancer.vip.subnet_id)
         vip_port = self.get_port(loadbalancer.vip.port_id)
         amp_configs = {}
-        for amp in loadbalancer.amphorae:
-            if amp.status != constants.DELETED:
-                LOG.debug("Retrieving network details for amphora %s", amp.id)
-                vrrp_port = self.get_port(amp.vrrp_port_id)
-                vrrp_subnet = self.get_subnet(
-                    vrrp_port.get_subnet_id(amp.vrrp_ip))
-                vrrp_port.network = self.get_network(vrrp_port.network_id)
-                ha_port = self.get_port(amp.ha_port_id)
-                ha_subnet = self.get_subnet(
-                    ha_port.get_subnet_id(amp.ha_ip))
-
-                amp_configs[amp.id] = n_data_models.AmphoraNetworkConfig(
-                    amphora=amp,
-                    vip_subnet=vip_subnet,
-                    vip_port=vip_port,
-                    vrrp_subnet=vrrp_subnet,
-                    vrrp_port=vrrp_port,
-                    ha_subnet=ha_subnet,
-                    ha_port=ha_port
-                )
+        if amphora:
+            self._get_amp_net_configs(amphora, amp_configs,
+                                      vip_subnet, vip_port)
+        else:
+            for amp in loadbalancer.amphorae:
+                self._get_amp_net_configs(amp, amp_configs,
+                                          vip_subnet, vip_port)
         return amp_configs
 
     def wait_for_port_detach(self, amphora):

@@ -210,26 +210,37 @@ class NoopManager(object):
         self.networkconfigconfig[(amphora.id, port.id)] = (
             amphora, port, 'plug_port')
 
-    def get_network_configs(self, loadbalancer):
-        LOG.debug("Network %s no-op, get_network_configs loadbalancer id %s ",
-                  self.__class__.__name__, loadbalancer.id)
+    def _get_amp_net_configs(self, amp, amp_configs, vip_subnet, vip_port):
+        vrrp_port = self.get_port(amp.vrrp_port_id)
+        ha_port = self.get_port(amp.ha_port_id)
+        amp_configs[amp.id] = network_models.AmphoraNetworkConfig(
+            amphora=amp,
+            vrrp_subnet=self.get_subnet(
+                vrrp_port.get_subnet_id(amp.vrrp_ip)),
+            vrrp_port=vrrp_port,
+            ha_subnet=self.get_subnet(
+                ha_port.get_subnet_id(amp.ha_ip)),
+            ha_port=ha_port)
+
+    def get_network_configs(self, loadbalancer, amphora=None):
+        amphora_id = amphora.id if amphora else None
+        LOG.debug("Network %s no-op, get_network_configs loadbalancer id "
+                  "%s amphora id: %s", self.__class__.__name__,
+                  loadbalancer.id, amphora_id)
         self.networkconfigconfig[(loadbalancer.id)] = (
             loadbalancer, 'get_network_configs')
+        vip_subnet = self.get_subnet(loadbalancer.vip.subnet_id)
+        vip_port = self.get_port(loadbalancer.vip.port_id)
 
         amp_configs = {}
-        for amp in loadbalancer.amphorae:
-            vrrp_port = self.get_port(amp.vrrp_port_id)
-            ha_port = self.get_port(amp.ha_port_id)
-            amp_configs[amp.id] = network_models.AmphoraNetworkConfig(
-                amphora=amp,
-                vip_subnet=self.get_subnet(loadbalancer.vip.subnet_id),
-                vip_port=self.get_port(loadbalancer.vip.port_id),
-                vrrp_subnet=self.get_subnet(
-                    vrrp_port.get_subnet_id(amp.vrrp_ip)),
-                vrrp_port=vrrp_port,
-                ha_subnet=self.get_subnet(
-                    ha_port.get_subnet_id(amp.ha_ip)),
-                ha_port=ha_port)
+        if amphora:
+            self._get_amp_net_configs(amphora, amp_configs,
+                                      vip_subnet, vip_port)
+        else:
+            for amp in loadbalancer.amphorae:
+                self._get_amp_net_configs(amp, amp_configs,
+                                          vip_subnet, vip_port)
+
         return amp_configs
 
     def wait_for_port_detach(self, amphora):
@@ -310,8 +321,8 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def plug_port(self, amphora, port):
         return self.driver.plug_port(amphora, port)
 
-    def get_network_configs(self, loadbalancer):
-        return self.driver.get_network_configs(loadbalancer)
+    def get_network_configs(self, loadbalancer, amphora=None):
+        return self.driver.get_network_configs(loadbalancer, amphora)
 
     def wait_for_port_detach(self, amphora):
         self.driver.wait_for_port_detach(amphora)

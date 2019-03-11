@@ -485,6 +485,15 @@ class UpdateVIPForDelete(BaseNetworkTask):
         self.network_driver.update_vip(loadbalancer, for_delete=True)
 
 
+class GetAmphoraNetworkConfigs(BaseNetworkTask):
+    """Task to retrieve amphora network details."""
+
+    def execute(self, loadbalancer, amphora=None):
+        LOG.debug("Retrieving vip network details.")
+        return self.network_driver.get_network_configs(loadbalancer,
+                                                       amphora=amphora)
+
+
 class GetAmphoraeNetworkConfigs(BaseNetworkTask):
     """Task to retrieve amphorae network details."""
 
