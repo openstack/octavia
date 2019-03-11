@@ -263,7 +263,7 @@ can accept the QoS Policy from Neutron; Then limits the vip of Load Balancer
 incoming or outgoing traffic.
 
 .. note::
-   Before using this feature, please make sure the Neutron QoS externsion(qos)
+   Before using this feature, please make sure the Neutron QoS extension(qos)
    is enabled on running OpenStack environment by command
 
    .. code-block:: console
@@ -373,7 +373,6 @@ balancer features, like Layer 7 features and header manipulation.
   current directory. The key and certificate are PEM-encoded, and the
   intermediate certificate chain is multiple PEM-encoded certs concatenated
   together. The key is not encrypted with a passphrase.
-* The *admin* user on this cloud installation has keystone ID *admin_id*
 * We want to configure a TLS-terminated HTTPS load balancer that is accessible
   from the internet using the key and certificate mentioned above, which
   distributes requests to the back-end servers over the non-encrypted HTTP
@@ -426,7 +425,6 @@ listener using Server Name Indication (SNI) technology.
   current directory. The keys and certificates are PEM-encoded, and the
   intermediate certificate chains are multiple certs PEM-encoded and
   concatenated together. Neither key is encrypted with a passphrase.
-* The *admin* user on this cloud installation has keystone ID *admin_id*
 * We want to configure a TLS-terminated HTTPS load balancer that is accessible
   from the internet using the keys and certificates mentioned above, which
   distributes requests to the back-end servers over the non-encrypted HTTP
@@ -489,7 +487,6 @@ HTTP just get redirected to the HTTPS listener), then please see `the example
   current directory. The key and certificate are PEM-encoded, and the
   intermediate certificate chain is multiple PEM-encoded certs concatenated
   together. The key is not encrypted with a passphrase.
-* The *admin* user on this cloud installation has keystone ID *admin_id*
 * We want to configure a TLS-terminated HTTPS load balancer that is accessible
   from the internet using the key and certificate mentioned above, which
   distributes requests to the back-end servers over the non-encrypted HTTP
@@ -525,7 +522,6 @@ HTTP just get redirected to the HTTPS listener), then please see `the example
     openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
     openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
     openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
-    openstack secret store --name='tls_secret1' --payload-content-type='text/plain' --payload="$(cat server.crt)"
     openstack loadbalancer listener create --protocol-port 80 --protocol HTTP --name listener2 --default-pool pool1 lb1
 
 
