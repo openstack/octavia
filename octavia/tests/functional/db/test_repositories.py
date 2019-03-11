@@ -2936,36 +2936,6 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         lb = self.lb_repo.get(self.session, id=lb_id)
         self.assertEqual(constants.PENDING_UPDATE, lb.provisioning_status)
 
-    def test_check_load_balancer_expired_default_exp_age(self):
-        """When exp_age defaults to load_balancer_expiry_age."""
-        newdate = datetime.datetime.utcnow() - datetime.timedelta(minutes=10)
-        self.lb_repo.create(self.session, id=self.FAKE_UUID_1,
-                            project_id=self.FAKE_UUID_2,
-                            provisioning_status=constants.ACTIVE,
-                            operating_status=constants.ONLINE,
-                            enabled=True,
-                            updated_at=newdate)
-        check_res = self.lb_repo.check_load_balancer_expired(
-            self.session, self.FAKE_UUID_1)
-        # Default load_balancer_expiry_age value is 1 week so load balancer
-        # shouldn't be considered expired.
-        self.assertFalse(check_res)
-
-    def test_check_load_balancer_expired_with_exp_age(self):
-        """When exp_age is passed as an argument."""
-        exp_age = datetime.timedelta(
-            seconds=self.FAKE_EXP_AGE)
-        newdate = datetime.datetime.utcnow() - datetime.timedelta(minutes=10)
-        self.lb_repo.create(self.session, id=self.FAKE_UUID_1,
-                            project_id=self.FAKE_UUID_2,
-                            provisioning_status=constants.ACTIVE,
-                            operating_status=constants.ONLINE,
-                            enabled=True,
-                            updated_at=newdate)
-        check_res = self.lb_repo.check_load_balancer_expired(
-            self.session, self.FAKE_UUID_1, exp_age)
-        self.assertTrue(check_res)
-
 
 class VipRepositoryTest(BaseRepositoryTest):
 
@@ -3213,7 +3183,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         amphora2 = self.create_amphora(
             self.FAKE_UUID_2, status=constants.DELETED)
 
-        expiring_list = self.amphora_repo.get_all_deleted_expiring_amphora(
+        expiring_list = self.amphora_repo.get_all_deleted_expiring(
             self.session, exp_age=exp_age)
         expiring_ids = [amp.id for amp in expiring_list]
         self.assertIn(amphora1.id, expiring_ids)
