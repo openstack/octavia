@@ -718,6 +718,7 @@ RBAC_GET_STATUS = 'get_status'
 
 # PROVIDERS
 OCTAVIA = 'octavia'
+AMPHORAV2 = 'amphorav2'
 
 # systemctl commands
 DISABLE = 'disable'

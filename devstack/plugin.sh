@@ -225,6 +225,36 @@ function create_octavia_accounts {
     fi
 }
 
+function install_redis {
+    if is_fedora; then
+        install_package redis
+    elif is_ubuntu; then
+        install_package redis-server
+    elif is_suse; then
+        install_package redis
+    else
+        exit_distro_not_supported "redis installation"
+    fi
+
+    start_service redis
+
+    pip_install_gr redis
+}
+
+function uninstall_redis {
+    if is_fedora; then
+        uninstall_package redis
+    elif is_ubuntu; then
+        uninstall_package redis-server
+    elif is_suse; then
+        uninstall_package redis
+    fi
+
+    stop_service redis
+
+    pip_unistall redis
+}
+
 function octavia_configure {
 
     sudo mkdir -m 755 -p $OCTAVIA_CONF_DIR
@@ -250,7 +280,9 @@ function octavia_configure {
     iniset $OCTAVIA_CONF api_settings api_handler queue_producer
 
     iniset $OCTAVIA_CONF database connection "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia"
-
+    if [[ ${OCTAVIA_ENABLE_AMPHORAV2_PROVIDER} = True ]]; then
+        iniset $OCTAVIA_CONF task_flow persistence_connection "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia_persistence"
+    fi
     # Configure keystone auth_token for all users
     configure_keystone_authtoken_middleware $OCTAVIA_CONF octavia
 
@@ -324,10 +356,20 @@ function octavia_configure {
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] || [ $OCTAVIA_NODE == 'api' ]; then
         recreate_database_mysql octavia
         octavia-db-manage upgrade head
+
+        if [[ ${OCTAVIA_ENABLE_AMPHORAV2_PROVIDER} = True ]]; then
+            recreate_database_mysql octavia_persistence
+            octavia-db-manage upgrade_persistence
+        fi
     fi
 
     if [[ -a $OCTAVIA_CERTS_DIR ]] ; then
         rm -rf $OCTAVIA_CERTS_DIR
+    fi
+
+    # amphorav2 required redis installation
+    if [[ ${OCTAVIA_ENABLE_AMPHORAV2_PROVIDER} = True ]]; then
+        install_redis
     fi
 
     if [[ "$(trueorfalse False OCTAVIA_USE_PREGENERATED_CERTS)" == "True" ]]; then
@@ -614,6 +656,10 @@ function octavia_cleanup {
     sudo rm -rf $OCTAVIA_DIR/bin/single_ca
 
     sudo rm -rf $NOVA_STATE_PATH $NOVA_AUTH_CACHE_DIR
+
+    if [[ ${OCTAVIA_ENABLE_AMPHORAV2_PROVIDER} = True ]]; then
+        uninstall_redis
+    fi
 
     sudo rm -f /etc/rsyslog.d/10-octavia-log-offloading.conf
     restart_service rsyslog

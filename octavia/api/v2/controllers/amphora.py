@@ -98,10 +98,15 @@ class FailoverController(base.BaseController):
 
     def __init__(self, amp_id):
         super(FailoverController, self).__init__()
-        topic = cfg.CONF.oslo_messaging.topic
+        if CONF.api_settings.default_provider_driver == constants.AMPHORAV2:
+            topic = constants.TOPIC_AMPHORA_V2
+            version = "2.0"
+        else:
+            topic = cfg.CONF.oslo_messaging.topic
+            version = "1.0"
         self.target = messaging.Target(
             namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
-            topic=topic, version="1.0", fanout=False)
+            topic=topic, version=version, fanout=False)
         self.client = rpc.get_client(self.target)
         self.amp_id = amp_id
 
@@ -143,11 +148,17 @@ class AmphoraUpdateController(base.BaseController):
 
     def __init__(self, amp_id):
         super(AmphoraUpdateController, self).__init__()
-        topic = cfg.CONF.oslo_messaging.topic
+
+        if CONF.api_settings.default_provider_driver == constants.AMPHORAV2:
+            topic = constants.TOPIC_AMPHORA_V2
+            version = "2.0"
+        else:
+            topic = cfg.CONF.oslo_messaging.topic
+            version = "1.0"
         self.transport = messaging.get_rpc_transport(cfg.CONF)
         self.target = messaging.Target(
             namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
-            topic=topic, version="1.0", fanout=False)
+            topic=topic, version=version, fanout=False)
         self.client = messaging.RPCClient(self.transport, target=self.target)
         self.amp_id = amp_id
 

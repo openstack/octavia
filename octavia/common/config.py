@@ -92,7 +92,8 @@ api_opts = [
                        'Amphora driver.'),
                 default={'amphora': 'The Octavia Amphora driver.',
                          'octavia': 'Deprecated alias of the Octavia Amphora '
-                         'driver.'}),
+                         'driver.',
+                         }),
     cfg.StrOpt('default_provider_driver', default='amphora',
                help=_('Default provider driver.')),
     cfg.IntOpt('udp_connect_min_interval_health_monitor',
@@ -457,7 +458,46 @@ task_flow_opts = [
                 help=_('If True, disables the controller worker taskflow '
                        'flows from reverting.  This will leave resources in '
                        'an inconsistent state and should only be used for '
-                       'debugging purposes.'))
+                       'debugging purposes.')),
+    cfg.StrOpt('persistence_connection',
+               default='sqlite://',
+               help='Persistence database, which will be used to store tasks '
+                    'states. Database connection url with db name'),
+    cfg.StrOpt('jobboard_backend_driver',
+               default='redis_taskflow_driver',
+               choices=['redis_taskflow_driver', 'zookeeper_taskflow_driver'],
+               help='Jobboard backend driver that will monitor job state.'),
+    cfg.ListOpt('jobboard_backend_hosts', default=['127.0.0.1'],
+                help='Jobboard backend server host(s).'),
+    cfg.PortOpt('jobboard_backend_port', default=6379,
+                help='Jobboard backend server port'),
+    cfg.StrOpt('jobboard_backend_password', default='', secret=True,
+               help='Jobboard backend server password'),
+    cfg.StrOpt('jobboard_backend_namespace', default='octavia_jobboard',
+               help='Jobboard name that should be used to store taskflow '
+                    'job id and claims for it.'),
+    cfg.DictOpt('jobboard_redis_backend_ssl_options',
+                help='Redis jobboard backend ssl configuration options.',
+                default={'ssl': False,
+                         'ssl_keyfile': None,
+                         'ssl_certfile': None,
+                         'ssl_ca_certs': None,
+                         'ssl_cert_reqs': 'required'}),
+    cfg.DictOpt('jobboard_zookeeper_ssl_options',
+                help='Zookeeper jobboard backend ssl configuration options.',
+                default={'use_ssl': False,
+                         'keyfile': None,
+                         'keyfile_password': None,
+                         'certfile': None,
+                         'verify_certs': True}),
+    cfg.IntOpt('jobboard_expiration_time', default=30,
+               help='For backends like redis claiming jobs requiring setting '
+                    'the expiry - how many seconds the claim should be '
+                    'retained for.'),
+    cfg.BoolOpt('jobboard_save_logbook', default=False,
+                help='If for analysis required saving logbooks info, set this '
+                     'parameter to True. By default remove logbook from '
+                     'persistence backend when job completed.'),
 ]
 
 core_cli_opts = []

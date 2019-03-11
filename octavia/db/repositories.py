@@ -1249,21 +1249,31 @@ class AmphoraRepository(BaseRepository):
                 return db_lb.to_data_model()
             return None
 
-    def get_spare_amphora_count(self, session, availability_zone=None):
+    def get_spare_amphora_count(self, session, availability_zone=None,
+                                check_booting_amphora=False):
         """Get the count of the spare amphora.
 
         :returns: Number of current spare amphora.
         """
         filters = {
-            'status': consts.AMPHORA_READY,
             'load_balancer_id': None
         }
+        # For jobboard based controller amphora in booting/pending create state
+        # can reach READY state after restart of housekeeping/worker service,
+        # so include amphora in these state to query
+        if check_booting_amphora:
+            status = [consts.AMPHORA_READY,
+                      consts.AMPHORA_BOOTING,
+                      consts.PENDING_CREATE]
+        else:
+            status = [consts.AMPHORA_READY]
+
         if availability_zone is not None:
             filters['cached_zone'] = availability_zone
 
         with session.begin(subtransactions=True):
             count = session.query(self.model_class).filter_by(
-                **filters).count()
+                **filters).filter(self.model_class.status.in_(status)).count()
 
         return count
 

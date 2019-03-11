@@ -21,7 +21,8 @@ from oslo_utils import timeutils
 from sqlalchemy.orm import exc as sqlalchemy_exceptions
 
 from octavia.common import constants
-from octavia.controller.worker.v1 import controller_worker as cw
+from octavia.controller.worker.v1 import controller_worker as cw1
+from octavia.controller.worker.v2 import controller_worker as cw2
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
 
@@ -34,7 +35,12 @@ class SpareAmphora(object):
         self.amp_repo = repo.AmphoraRepository()
         self.spares_repo = repo.SparesPoolRepository()
         self.az_repo = repo.AvailabilityZoneRepository()
-        self.cw = cw.ControllerWorker()
+        if CONF.api_settings.default_provider_driver == constants.AMPHORAV2:
+            self.cw = cw2.ControllerWorker()
+            self.check_booting_amphora = True
+        else:
+            self.cw = cw1.ControllerWorker()
+            self.check_booting_amphora = False
 
     def spare_check(self):
         """Checks the DB for the Spare amphora count.
@@ -74,7 +80,8 @@ class SpareAmphora(object):
                 # will function more accurately if the operator actually
                 # configures the AZ setting properly.
                 curr_spare_cnt = self.amp_repo.get_spare_amphora_count(
-                    session, availability_zone=az_name)
+                    session, availability_zone=az_name,
+                    check_booting_amphora=self.check_booting_amphora)
                 LOG.debug("Current Spare Amphora count for AZ %s: %d",
                           az_name, curr_spare_cnt)
                 diff_count = conf_spare_cnt - curr_spare_cnt
@@ -151,7 +158,10 @@ class DatabaseCleanup(object):
 class CertRotation(object):
     def __init__(self):
         self.threads = CONF.house_keeping.cert_rotate_threads
-        self.cw = cw.ControllerWorker()
+        if CONF.api_settings.default_provider_driver == constants.AMPHORAV2:
+            self.cw = cw2.ControllerWorker()
+        else:
+            self.cw = cw1.ControllerWorker()
 
     def rotate(self):
         """Check the amphora db table for expiring auth certs."""

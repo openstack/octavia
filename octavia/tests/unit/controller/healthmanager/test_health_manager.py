@@ -45,11 +45,14 @@ class TestHealthManager(base.TestCase):
     @mock.patch('octavia.db.api.wait_for_connection')
     @mock.patch('octavia.controller.worker.v1.controller_worker.'
                 'ControllerWorker.failover_amphora')
+    @mock.patch('octavia.controller.worker.v2.controller_worker.'
+                'ControllerWorker.failover_amphora')
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.'
                 'get_stale_amphora')
     @mock.patch('octavia.db.api.get_session')
     def test_health_check_stale_amphora(self, session_mock, get_stale_amp_mock,
-                                        failover_mock, db_wait_mock):
+                                        failover_mockv2, failover_mock,
+                                        db_wait_mock):
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="health_manager", heartbeat_timeout=5)
         amphora_health = mock.MagicMock()
@@ -86,11 +89,14 @@ class TestHealthManager(base.TestCase):
 
     @mock.patch('octavia.controller.worker.v1.controller_worker.'
                 'ControllerWorker.failover_amphora')
+    @mock.patch('octavia.controller.worker.v2.controller_worker.'
+                'ControllerWorker.failover_amphora')
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.'
                 'get_stale_amphora', return_value=None)
     @mock.patch('octavia.db.api.get_session')
     def test_health_check_nonstale_amphora(self, session_mock,
-                                           get_stale_amp_mock, failover_mock):
+                                           get_stale_amp_mock, failover_mockv2,
+                                           failover_mock):
         get_stale_amp_mock.side_effect = [None, TestException('test')]
 
         exit_event = threading.Event()
@@ -98,15 +104,20 @@ class TestHealthManager(base.TestCase):
 
         hm.health_check()
         session_mock.assert_called_once_with(autocommit=False)
-        self.assertFalse(failover_mock.called)
+        if CONF.api_settings.default_provider_driver == 'amphorav2':
+            self.assertFalse(failover_mockv2.called)
+        else:
+            self.assertFalse(failover_mock.called)
 
     @mock.patch('octavia.controller.worker.v1.controller_worker.'
+                'ControllerWorker.failover_amphora')
+    @mock.patch('octavia.controller.worker.v2.controller_worker.'
                 'ControllerWorker.failover_amphora')
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.'
                 'get_stale_amphora', return_value=None)
     @mock.patch('octavia.db.api.get_session')
     def test_health_check_exit(self, session_mock, get_stale_amp_mock,
-                               failover_mock):
+                               failover_mockv2, failover_mock):
         get_stale_amp_mock.return_value = None
 
         exit_event = threading.Event()
@@ -114,15 +125,20 @@ class TestHealthManager(base.TestCase):
         hm.health_check()
 
         session_mock.assert_called_once_with(autocommit=False)
-        self.assertFalse(failover_mock.called)
+        if CONF.api_settings.default_provider_driver == 'amphorav2':
+            self.assertFalse(failover_mockv2.called)
+        else:
+            self.assertFalse(failover_mock.called)
 
     @mock.patch('octavia.controller.worker.v1.controller_worker.'
+                'ControllerWorker.failover_amphora')
+    @mock.patch('octavia.controller.worker.v2.controller_worker.'
                 'ControllerWorker.failover_amphora')
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.'
                 'get_stale_amphora', return_value=None)
     @mock.patch('octavia.db.api.get_session')
     def test_health_check_db_error(self, session_mock, get_stale_amp_mock,
-                                   failover_mock):
+                                   failover_mockv2, failover_mock):
         get_stale_amp_mock.return_value = None
 
         mock_session = mock.MagicMock()

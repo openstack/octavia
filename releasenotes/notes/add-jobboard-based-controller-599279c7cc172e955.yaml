@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Operators can now use the amphorav2 provider which uses jobboard-based
+    controller. A jobboard controller solves the issue with resources stuck in
+    PENDING_* states by writing info about task states in persistent backend
+    and monitoring job claims via jobboard.

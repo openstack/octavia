@@ -3258,6 +3258,21 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         count = self.amphora_repo.get_spare_amphora_count(self.session)
         self.assertEqual(2, count)
 
+    def test_get_spare_amphora_count_check_booting_amphora_true(self):
+        count = self.amphora_repo.get_spare_amphora_count(
+            self.session, check_booting_amphora=True)
+        self.assertEqual(0, count)
+
+        amphora1 = self.create_amphora(self.FAKE_UUID_1)
+        self.amphora_repo.update(self.session, amphora1.id,
+                                 status=constants.AMPHORA_READY,)
+        amphora2 = self.create_amphora(self.FAKE_UUID_2)
+        self.amphora_repo.update(self.session, amphora2.id,
+                                 status=constants.AMPHORA_BOOTING)
+        count = self.amphora_repo.get_spare_amphora_count(
+            self.session, check_booting_amphora=True)
+        self.assertEqual(2, count)
+
     def test_get_none_cert_expired_amphora(self):
         # test with no expired amphora
         amp = self.amphora_repo.get_cert_expiring_amphora(self.session)
