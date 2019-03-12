@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Removes unnecessary listener delete from non-cascade delete load balancer
+    flow thus speeding up the loadbalancer delete.

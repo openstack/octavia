@@ -90,13 +90,12 @@ class TestLoadBalancerFlows(base.TestCase):
         lb_flow, store = self.LBFlow.get_delete_load_balancer_flow(lb_mock)
 
         self.assertIsInstance(lb_flow, flow.Flow)
-        self.assertEqual({'listener_123': listener_mock}, store)
 
         self.assertIn(constants.LOADBALANCER, lb_flow.requires)
         self.assertIn(constants.SERVER_GROUP_ID, lb_flow.requires)
 
         self.assertEqual(0, len(lb_flow.provides))
-        self.assertEqual(3, len(lb_flow.requires))
+        self.assertEqual(2, len(lb_flow.requires))
 
     def test_get_delete_load_balancer_flow_cascade(self, mock_get_net_driver):
         lb_mock = mock.Mock()
