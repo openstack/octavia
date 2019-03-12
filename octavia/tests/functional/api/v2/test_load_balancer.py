@@ -1955,7 +1955,7 @@ class TestLoadBalancer(base.BaseAPITest):
                                 status=constants.ERROR)
         self.app.put(self._get_full_path(
             self.LB_PATH.format(lb_id=lb_dict.get('id')) + "/failover"),
-            status=409)
+            status=202)
 
     def test_failover_not_authorized(self):
         project_id = uuidutils.generate_uuid()
