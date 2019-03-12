@@ -782,3 +782,10 @@ class ClientAuthenticationMode(base_models.BASE):
     __tablename__ = "client_authentication_mode"
 
     name = sa.Column(sa.String(10), primary_key=True, nullable=False)
+
+
+class SparesPool(base_models.BASE):
+
+    __tablename__ = "spares_pool"
+
+    updated_at = sa.Column(sa.DateTime, primary_key=True, nullable=True)
