@@ -118,9 +118,11 @@
               - ^tox.ini$
     periodic:
       jobs:
-        - publish-openstack-octavia-amphora-image-ubuntu:
+        - publish-openstack-octavia-amphora-image-xenial:
             branches: ^(?!stable/.*).*$
-        - publish-openstack-octavia-amphora-image-centos:
+        - publish-openstack-octavia-amphora-image-bionic:
             branches: ^(?!stable/.*).*$
-        - publish-openstack-octavia-amphora-image-fedora:
+        - publish-openstack-octavia-amphora-image-centos7:
+            branches: ^(?!stable/.*).*$
+        - publish-openstack-octavia-amphora-image-fedora28:
             branches: ^(?!stable/.*).*$

@@ -43,28 +43,38 @@
         - openstack/diskimage-builder
         - openstack/octavia
 - job:
-    name: publish-openstack-octavia-amphora-image-ubuntu
+    name: publish-openstack-octavia-amphora-image-xenial
     parent: publish-openstack-octavia-amphora-image
     description: |
-      Publish Ubuntu-based amphora image to tarballs.o.o.
+      Publish Ubuntu Xenial (16.04) based amphora image to tarballs.o.o.
     vars:
         amphora_os: ubuntu
         amphora_os_release: xenial
+
 - job:
-    name: publish-openstack-octavia-amphora-image-centos
+    name: publish-openstack-octavia-amphora-image-bionic
     parent: publish-openstack-octavia-amphora-image
     description: |
-      Publish CentOS-based amphora image to tarballs.o.o.
+      Publish Ubuntu Bionic (18.04) based amphora image to tarballs.o.o.
+    vars:
+        amphora_os: ubuntu
+        amphora_os_release: bionic
+
+- job:
+    name: publish-openstack-octavia-amphora-image-centos7
+    parent: publish-openstack-octavia-amphora-image
+    description: |
+      Publish CentOS 7 based amphora image to tarballs.o.o.
     vars:
         amphora_os: centos
         amphora_image_size: 3
         amphora_os_release: 7
 
 - job:
-    name: publish-openstack-octavia-amphora-image-fedora
+    name: publish-openstack-octavia-amphora-image-fedora28
     parent: publish-openstack-octavia-amphora-image
     description: |
-      Publish Fedora-based amphora image to tarballs.o.o.
+      Publish Fedora 28 based amphora image to tarballs.o.o.
     vars:
         amphora_os: fedora
         amphora_image_size: 3
