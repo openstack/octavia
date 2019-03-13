@@ -81,4 +81,4 @@ cat client-.pem client.key > client.pem
 echo "Note: For production use the ca issuing the client certificate and the ca issuing the server"
 echo "certificate need to be different so a hacker can't just use the server certificate from a"
 echo "compromised amphora to control all the others."
-echo "\nTo use the certificates copy them to the directory specified in the octavia.conf"
+echo "To use the certificates copy them to the directory specified in the octavia.conf"
