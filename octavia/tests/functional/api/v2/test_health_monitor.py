@@ -22,6 +22,7 @@ from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.db import repositories
 from octavia.tests.functional.api.v2 import base
 
 
@@ -53,6 +54,7 @@ class TestHealthMonitor(base.BaseAPITest):
         self.pool_with_listener_id = (
             self.pool_with_listener.get('pool').get('id'))
         self.set_lb_status(self.lb_id)
+        self.pool_repo = repositories.PoolRepository()
         self._setup_udp_lb_resources()
 
     def _setup_udp_lb_resources(self):
@@ -998,6 +1000,24 @@ class TestHealthMonitor(base.BaseAPITest):
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_hm)
+
+    def test_create_pool_in_error(self):
+        project_id = uuidutils.generate_uuid()
+        lb1 = self.create_load_balancer(uuidutils.generate_uuid(), name='lb1',
+                                        project_id=project_id)
+        lb1_id = lb1.get('loadbalancer').get('id')
+        self.set_lb_status(lb1_id)
+        pool1 = self.create_pool(
+            lb1_id, constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+        pool1_id = pool1.get('id')
+        self.set_lb_status(lb1_id)
+        self.set_object_status(self.pool_repo, pool1_id,
+                               provisioning_status=constants.ERROR)
+        api_hm = self.create_health_monitor(
+            pool1_id, constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1, status=409)
+        ref_msg = 'Pool %s is immutable and cannot be updated.' % pool1_id
+        self.assertEqual(ref_msg, api_hm.get('faultstring'))
 
     def test_create_with_listener(self):
         api_hm = self.create_health_monitor(
