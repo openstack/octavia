@@ -20,6 +20,7 @@ from oslo_utils import uuidutils
 from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
+from octavia.db import repositories
 from octavia.network import base as network_base
 from octavia.tests.functional.api.v2 import base
 
@@ -58,6 +59,7 @@ class TestMember(base.BaseAPITest):
         self.members_path_listener = self.MEMBERS_PATH.format(
             pool_id=self.pool_with_listener_id)
         self.member_path_listener = self.members_path_listener + '/{member_id}'
+        self.pool_repo = repositories.PoolRepository()
 
     def test_get(self):
         api_member = self.create_member(
@@ -413,6 +415,23 @@ class TestMember(base.BaseAPITest):
                 self.pool_id, '10.0.0.1', 80, status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_member)
+
+    def test_create_pool_in_error(self):
+        project_id = uuidutils.generate_uuid()
+        lb1 = self.create_load_balancer(uuidutils.generate_uuid(), name='lb1',
+                                        project_id=project_id)
+        lb1_id = lb1.get('loadbalancer').get('id')
+        self.set_lb_status(lb1_id)
+        pool1 = self.create_pool(
+            lb1_id, constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+        pool1_id = pool1.get('id')
+        self.set_lb_status(lb1_id)
+        self.set_object_status(self.pool_repo, pool1_id,
+                               provisioning_status=constants.ERROR)
+        api_member = self.create_member(pool1_id, '192.0.2.1', 80, status=409)
+        ref_msg = 'Pool %s is immutable and cannot be updated.' % pool1_id
+        self.assertEqual(ref_msg, api_member.get('faultstring'))
 
     # TODO(rm_work) Remove after deprecation of project_id in POST (R series)
     def test_create_with_project_id_is_ignored(self):
@@ -982,6 +1001,23 @@ class TestMember(base.BaseAPITest):
     def test_bad_delete(self):
         self.delete(self.member_path.format(
             member_id=uuidutils.generate_uuid()), status=404)
+
+    def test_delete_mismatch_pool(self):
+        # Create a pool that will not have the member, but is valid.
+        self.pool = self.create_pool(self.lb_id, constants.PROTOCOL_HTTP,
+                                     constants.LB_ALGORITHM_ROUND_ROBIN)
+        bad_pool_id = self.pool.get('pool').get('id')
+        self.set_lb_status(self.lb_id)
+        # Create a member on our reference pool
+        api_member = self.create_member(
+            self.pool_with_listener_id, '192.0.2.1', 80).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        # Attempt to delete the member using the wrong pool in the path
+        member_path = self.MEMBERS_PATH.format(
+            pool_id=bad_pool_id) + '/' + api_member['id']
+        result = self.delete(member_path, status=404).json
+        ref_msg = 'Member %s not found.' % api_member['id']
+        self.assertEqual(ref_msg, result.get('faultstring'))
 
     def test_delete_with_bad_handler(self):
         api_member = self.create_member(

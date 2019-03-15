@@ -84,6 +84,10 @@ class L7RuleController(base.BaseController):
         l7policy = self._get_db_l7policy(session, self.l7policy_id)
         listener_id = l7policy.listener_id
         load_balancer_id = l7policy.listener.load_balancer_id
+        # Check the parent is not locked for some reason (ERROR, etc.)
+        if l7policy.provisioning_status not in constants.MUTABLE_STATUSES:
+            raise exceptions.ImmutableObject(resource='L7Policy',
+                                             id=self.l7policy_id)
         if not self.repositories.test_and_set_lb_and_listeners_prov_status(
                 session, load_balancer_id,
                 constants.PENDING_UPDATE, constants.PENDING_UPDATE,

@@ -52,6 +52,8 @@ class MemberController(base.BaseController):
         self._auth_validate_action(context, db_member.project_id,
                                    constants.RBAC_GET_ONE)
 
+        self._validate_pool_id(id, db_member.pool_id)
+
         result = self._convert_db_to_type(
             db_member, member_types.MemberResponse)
         if fields is not None:
@@ -95,6 +97,9 @@ class MemberController(base.BaseController):
         # We need to verify that any listeners referencing this member's
         # pool are also mutable
         pool = self._get_db_pool(session, self.pool_id)
+        # Check the parent is not locked for some reason (ERROR, etc.)
+        if pool.provisioning_status not in constants.MUTABLE_STATUSES:
+            raise exceptions.ImmutableObject(resource='Pool', id=self.pool_id)
         load_balancer_id = pool.load_balancer_id
         if not self.repositories.test_and_set_lb_and_listeners_prov_status(
                 session, load_balancer_id,
@@ -158,6 +163,10 @@ class MemberController(base.BaseController):
         result = self._convert_db_to_type(db_member,
                                           member_types.MemberResponse)
         return member_types.MemberRootResponse(member=result)
+
+    def _validate_pool_id(self, member_id, db_member_pool_id):
+        if db_member_pool_id != self.pool_id:
+            raise exceptions.NotFound(resource='Member', id=member_id)
 
     @wsme_pecan.wsexpose(member_types.MemberRootResponse,
                          body=member_types.MemberRootPOST, status_code=201)
@@ -228,6 +237,8 @@ class MemberController(base.BaseController):
             context.session, db_member.id,
             provisioning_status=constants.PENDING_UPDATE)
 
+        self._validate_pool_id(id, db_member.pool_id)
+
         try:
             LOG.info("Sending Update of Member %s to handler", id)
             self.handler.update(db_member, member)
@@ -256,6 +267,8 @@ class MemberController(base.BaseController):
 
         if db_member.provisioning_status == constants.DELETED:
             return
+
+        self._validate_pool_id(id, db_member.pool_id)
 
         self._test_lb_and_listener_and_pool_statuses(context.session,
                                                      member=db_member)

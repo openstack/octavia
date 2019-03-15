@@ -87,6 +87,22 @@ class TaskUtils(object):
                       "provisioning status to ERROR due to: "
                       "%(except)s", {'health': health_mon_id, 'except': e})
 
+    def mark_l7policy_prov_status_active(self, l7policy_id):
+        """Sets a L7 policy provisioning status to ACTIVE.
+
+        NOTE: This should only be called from revert methods.
+
+        :param l7policy_id: L7 Policy ID to set provisioning status to ACTIVE
+        """
+        try:
+            self.l7policy_repo.update(db_apis.get_session(),
+                                      id=l7policy_id,
+                                      provisioning_status=constants.ACTIVE)
+        except Exception as e:
+            LOG.error("Failed to update l7policy %(l7p)s "
+                      "provisioning status to ACTIVE due to: "
+                      "%(except)s", {'l7p': l7policy_id, 'except': e})
+
     def mark_l7policy_prov_status_error(self, l7policy_id):
         """Sets a L7 policy provisioning status to ERROR.
 
