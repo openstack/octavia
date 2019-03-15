@@ -54,6 +54,8 @@ class MemberController(base.BaseController):
         self._auth_validate_action(context, db_member.project_id,
                                    constants.RBAC_GET_ONE)
 
+        self._validate_pool_id(id, db_member.pool_id)
+
         result = self._convert_db_to_type(
             db_member, member_types.MemberResponse)
         if fields is not None:
@@ -98,6 +100,9 @@ class MemberController(base.BaseController):
         # We need to verify that any listeners referencing this member's
         # pool are also mutable
         pool = self._get_db_pool(session, self.pool_id)
+        # Check the parent is not locked for some reason (ERROR, etc.)
+        if pool.provisioning_status not in constants.MUTABLE_STATUSES:
+            raise exceptions.ImmutableObject(resource='Pool', id=self.pool_id)
         load_balancer_id = pool.load_balancer_id
         if not self.repositories.test_and_set_lb_and_listeners_prov_status(
                 session, load_balancer_id,
@@ -128,6 +133,10 @@ class MemberController(base.BaseController):
             # before creation or update since the exception messages
             # do not give any information as to what constraint failed
             raise exceptions.InvalidOption(value='', option='')
+
+    def _validate_pool_id(self, member_id, db_member_pool_id):
+        if db_member_pool_id != self.pool_id:
+            raise exceptions.NotFound(resource='Member', id=member_id)
 
     @wsme_pecan.wsexpose(member_types.MemberRootResponse,
                          body=member_types.MemberRootPOST, status_code=201)
@@ -214,6 +223,8 @@ class MemberController(base.BaseController):
 
         self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
+        self._validate_pool_id(id, db_member.pool_id)
+
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
@@ -265,6 +276,8 @@ class MemberController(base.BaseController):
             context.session, pool.load_balancer_id)
 
         self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
+
+        self._validate_pool_id(id, db_member.pool_id)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
