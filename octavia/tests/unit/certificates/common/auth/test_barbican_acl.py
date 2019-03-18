@@ -33,7 +33,7 @@ class TestBarbicanACLAuth(base.TestCase):
         # Reset the client
         keystone._SESSION = None
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        self.conf.config(group="certificates", region_name=None)
+        self.conf.config(group="certificates", region_name='RegionOne')
         self.conf.config(group="certificates", endpoint_type='publicURL')
 
     @mock.patch('keystoneauth1.session.Session', mock.Mock())
@@ -91,3 +91,5 @@ class TestBarbicanACLAuth(base.TestCase):
         bc = acl_auth_object.get_barbican_client_user_auth(mock.Mock())
         self.assertTrue(hasattr(bc, 'containers') and
                         hasattr(bc.containers, 'register_consumer'))
+        self.assertEqual('publicURL', bc.client.interface)
+        self.assertEqual('RegionOne', bc.client.region_name)
