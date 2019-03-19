@@ -349,3 +349,10 @@ class AbstractNetworkDriver(object):
         :param subnet: The subnet to plug the aap into
         """
         pass
+
+    @abc.abstractmethod
+    def qos_enabled(self):
+        """Whether QoS is enabled
+
+        :return: Boolean
+        """
