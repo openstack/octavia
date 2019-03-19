@@ -444,11 +444,12 @@ class LoadBalancersController(base.BaseController):
         self._auth_validate_action(context, db_lb.project_id,
                                    constants.RBAC_PUT)
 
-        if (load_balancer.vip_qos_policy_id and
-                not isinstance(load_balancer.vip_qos_policy_id,
-                               wtypes.UnsetType) and
-                db_lb.vip.qos_policy_id != load_balancer.vip_qos_policy_id):
-            validate.qos_policy_exists(load_balancer.vip_qos_policy_id)
+        if not isinstance(load_balancer.vip_qos_policy_id, wtypes.UnsetType):
+            network_driver = utils.get_network_driver()
+            validate.qos_extension_enabled(network_driver)
+            if load_balancer.vip_qos_policy_id is not None:
+                if db_lb.vip.qos_policy_id != load_balancer.vip_qos_policy_id:
+                    validate.qos_policy_exists(load_balancer.vip_qos_policy_id)
         self._test_lb_status(context.session, id)
         try:
             LOG.info("Sending updated Load Balancer %s to the handler", id)

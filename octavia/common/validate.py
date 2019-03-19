@@ -258,12 +258,19 @@ def subnet_exists(subnet_id):
 
 def qos_policy_exists(qos_policy_id):
     network_driver = utils.get_network_driver()
+    qos_extension_enabled(network_driver)
     try:
         qos_policy = network_driver.get_qos_policy(qos_policy_id)
     except Exception:
         raise exceptions.InvalidSubresource(resource='qos_policy',
                                             id=qos_policy_id)
     return qos_policy
+
+
+def qos_extension_enabled(network_driver):
+    if not network_driver.qos_enabled():
+        raise exceptions.ValidationException(detail=_(
+            "VIP QoS policy is not allowed in this deployment."))
 
 
 def network_exists_optionally_contains_subnet(network_id, subnet_id=None):
