@@ -1349,6 +1349,20 @@ class TestLoadBalancer(base.BaseAPITest):
         self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
                  lb_json, status=400)
 
+    def test_update_with_qos_ext_disabled(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id)
+        lb_dict = lb.get(self.root_tag)
+        self.set_lb_status(lb_dict.get('id'))
+        vip_qos_policy_id = uuidutils.generate_uuid()
+        lb_json = self._build_body({'vip_qos_policy_id': vip_qos_policy_id})
+        with mock.patch("octavia.network.drivers.noop_driver.driver"
+                        ".NoopManager.qos_enabled", return_value=False):
+            self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
+                     lb_json, status=400)
+
     def test_update_bad_lb_id(self):
         path = self.LB_PATH.format(lb_id='SEAN-CONNERY')
         self.put(path, body={}, status=404)

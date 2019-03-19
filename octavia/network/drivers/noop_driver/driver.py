@@ -26,6 +26,7 @@ class NoopManager(object):
     def __init__(self):
         super(NoopManager, self).__init__()
         self.networkconfigconfig = {}
+        self._qos_extension_enabled = True
 
     def allocate_vip(self, loadbalancer):
         LOG.debug("Network %s no-op, allocate_vip loadbalancer %s",
@@ -220,6 +221,9 @@ class NoopManager(object):
         self.networkconfigconfig[(qos_id, port_id)] = (
             qos_id, port_id, 'apply_qos_on_port')
 
+    def qos_enabled(self):
+        return self._qos_extension_enabled
+
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def __init__(self):
@@ -289,3 +293,6 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def apply_qos_on_port(self, qos_id, port_id):
         self.driver.apply_qos_on_port(qos_id, port_id)
+
+    def qos_enabled(self):
+        return self.driver.qos_enabled()
