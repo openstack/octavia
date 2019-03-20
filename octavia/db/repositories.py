@@ -226,6 +226,7 @@ class Repositories(object):
         self.quotas = QuotasRepository()
         self.flavor = FlavorRepository()
         self.flavor_profile = FlavorProfileRepository()
+        self.spares_pool = SparesPoolRepository()
 
     def create_load_balancer_and_vip(self, session, lb_dict, vip_dict):
         """Inserts load balancer and vip entities into the database.
@@ -1785,3 +1786,17 @@ class FlavorRepository(BaseRepository):
 
 class FlavorProfileRepository(BaseRepository):
     model_class = models.FlavorProfile
+
+
+class SparesPoolRepository(BaseRepository):
+    model_class = models.SparesPool
+
+    def get_for_update(self, lock_session):
+        """Queries and locks the SparesPool record.
+
+        This call will query for the SparesPool table record and lock it
+        so that other processes cannot read or write it.
+        :returns: expected_spares_count, updated_at
+        """
+        row = lock_session.query(models.SparesPool).with_for_update().one()
+        return row

@@ -83,6 +83,21 @@ class TestSpareCheck(base.TestCase):
         self.assertEqual(0, DIFF_CNT)
         self.assertEqual(DIFF_CNT, self.cw.create_amphora.call_count)
 
+    @mock.patch('octavia.db.repositories.SparesPoolRepository.get_for_update')
+    @mock.patch('octavia.db.api.get_session')
+    def test_spare_check_rollback(self, mock_session, mock_update):
+        """When spare amphora count meets the requirement."""
+        lock_session = mock.MagicMock()
+        session = mock.MagicMock()
+        mock_session.side_effect = [lock_session, session]
+        mock_update.side_effect = [Exception('boom')]
+#        self.CONF.config(group="house_keeping",
+#                         spare_amphora_pool_size=self.FAKE_CNF_SPAR2)
+#        self.amp_repo.get_spare_amphora_count.return_value = (
+#            self.FAKE_CUR_SPAR2)
+        self.spare_amp.spare_check()
+        lock_session.rollback.assert_called_once()
+
 
 class TestDatabaseCleanup(base.TestCase):
     FAKE_IP = "10.0.0.1"

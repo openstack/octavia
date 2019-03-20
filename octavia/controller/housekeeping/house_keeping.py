@@ -17,6 +17,7 @@ import datetime
 
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_utils import timeutils
 from sqlalchemy.orm import exc as sqlalchemy_exceptions
 
 from octavia.controller.worker import controller_worker as cw
@@ -30,6 +31,7 @@ CONF = cfg.CONF
 class SpareAmphora(object):
     def __init__(self):
         self.amp_repo = repo.AmphoraRepository()
+        self.spares_repo = repo.SparesPoolRepository()
         self.cw = cw.ControllerWorker()
 
     def spare_check(self):
@@ -37,26 +39,42 @@ class SpareAmphora(object):
 
         If it's less than the requirement, starts new amphora.
         """
+        lock_session = db_api.get_session(autocommit=False)
         session = db_api.get_session()
-        conf_spare_cnt = CONF.house_keeping.spare_amphora_pool_size
-        curr_spare_cnt = self.amp_repo.get_spare_amphora_count(session)
-        LOG.debug("Required Spare Amphora count : %d", conf_spare_cnt)
-        LOG.debug("Current Spare Amphora count : %d", curr_spare_cnt)
-        diff_count = conf_spare_cnt - curr_spare_cnt
+        try:
+            # Lock the spares_pool record for read and write
+            spare_amp_row = self.spares_repo.get_for_update(lock_session)
 
-        # When the current spare amphora is less than required
-        if diff_count > 0:
-            LOG.info("Initiating creation of %d spare amphora.", diff_count)
+            conf_spare_cnt = CONF.house_keeping.spare_amphora_pool_size
+            curr_spare_cnt = self.amp_repo.get_spare_amphora_count(session)
+            LOG.debug("Required Spare Amphora count : %d", conf_spare_cnt)
+            LOG.debug("Current Spare Amphora count : %d", curr_spare_cnt)
+            diff_count = conf_spare_cnt - curr_spare_cnt
 
-            # Call Amphora Create Flow diff_count times
-            with futures.ThreadPoolExecutor(
-                    max_workers=CONF.house_keeping.spare_amphora_pool_size
-            ) as executor:
-                for i in range(1, diff_count + 1):
-                    LOG.debug("Starting amphorae number %d ...", i)
-                    executor.submit(self.cw.create_amphora)
-        else:
-            LOG.debug("Current spare amphora count satisfies the requirement")
+            # When the current spare amphora is less than required
+            amp_booting = []
+            if diff_count > 0:
+                LOG.info("Initiating creation of %d spare amphora.",
+                         diff_count)
+
+                # Call Amphora Create Flow diff_count times
+                with futures.ThreadPoolExecutor(
+                        max_workers=CONF.house_keeping.spare_amphora_pool_size
+                ) as executor:
+                    for i in range(1, diff_count + 1):
+                        LOG.debug("Starting amphorae number %d ...", i)
+                        amp_booting.append(
+                            executor.submit(self.cw.create_amphora))
+            else:
+                LOG.debug("Current spare amphora count satisfies the "
+                          "requirement")
+
+            # Wait for the amphora boot threads to finish
+            futures.wait(amp_booting)
+            spare_amp_row.updated_at = timeutils.utcnow()
+            lock_session.commit()
+        except Exception:
+            lock_session.rollback()
 
 
 class DatabaseCleanup(object):
