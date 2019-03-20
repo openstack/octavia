@@ -227,32 +227,7 @@ class LoadBalancerFlows(object):
 
         :returns: The flow for deleting a load balancer
         """
-        (listeners_delete, store) = self._get_delete_listeners_flow(lb)
-
-        delete_LB_flow = linear_flow.Flow(constants.DELETE_LOADBALANCER_FLOW)
-        delete_LB_flow.add(lifecycle_tasks.LoadBalancerToErrorOnRevertTask(
-            requires=constants.LOADBALANCER))
-        delete_LB_flow.add(compute_tasks.NovaServerGroupDelete(
-            requires=constants.SERVER_GROUP_ID))
-        delete_LB_flow.add(database_tasks.MarkLBAmphoraeHealthBusy(
-            requires=constants.LOADBALANCER))
-        delete_LB_flow.add(listeners_delete)
-        delete_LB_flow.add(network_tasks.UnplugVIP(
-            requires=constants.LOADBALANCER))
-        delete_LB_flow.add(network_tasks.DeallocateVIP(
-            requires=constants.LOADBALANCER))
-        delete_LB_flow.add(compute_tasks.DeleteAmphoraeOnLoadBalancer(
-            requires=constants.LOADBALANCER))
-        delete_LB_flow.add(database_tasks.MarkLBAmphoraeDeletedInDB(
-            requires=constants.LOADBALANCER))
-        delete_LB_flow.add(database_tasks.DisableLBAmphoraeHealthMonitoring(
-            requires=constants.LOADBALANCER))
-        delete_LB_flow.add(database_tasks.MarkLBDeletedInDB(
-            requires=constants.LOADBALANCER))
-        delete_LB_flow.add(database_tasks.DecrementLoadBalancerQuota(
-            requires=constants.LOADBALANCER))
-
-        return (delete_LB_flow, store)
+        return self._get_delete_load_balancer_flow(lb, False)
 
     def _get_delete_pools_flow(self, lb):
         """Sets up an internal delete flow
@@ -273,16 +248,8 @@ class LoadBalancerFlows(object):
                     pool_name))
         return (pools_delete_flow, store)
 
-    def get_cascade_delete_load_balancer_flow(self, lb):
-        """Creates a flow to delete a load balancer.
-
-        :returns: The flow for deleting a load balancer
-        """
-
-        (listeners_delete, store) = self._get_delete_listeners_flow(lb)
-        (pools_delete, pool_store) = self._get_delete_pools_flow(lb)
-        store.update(pool_store)
-
+    def _get_delete_load_balancer_flow(self, lb, cascade):
+        store = {}
         delete_LB_flow = linear_flow.Flow(constants.DELETE_LOADBALANCER_FLOW)
         delete_LB_flow.add(lifecycle_tasks.LoadBalancerToErrorOnRevertTask(
             requires=constants.LOADBALANCER))
@@ -290,8 +257,12 @@ class LoadBalancerFlows(object):
             requires=constants.SERVER_GROUP_ID))
         delete_LB_flow.add(database_tasks.MarkLBAmphoraeHealthBusy(
             requires=constants.LOADBALANCER))
-        delete_LB_flow.add(pools_delete)
-        delete_LB_flow.add(listeners_delete)
+        if cascade:
+            (listeners_delete, store) = self._get_delete_listeners_flow(lb)
+            (pools_delete, pool_store) = self._get_delete_pools_flow(lb)
+            store.update(pool_store)
+            delete_LB_flow.add(pools_delete)
+            delete_LB_flow.add(listeners_delete)
         delete_LB_flow.add(network_tasks.UnplugVIP(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(network_tasks.DeallocateVIP(
@@ -306,8 +277,14 @@ class LoadBalancerFlows(object):
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(database_tasks.DecrementLoadBalancerQuota(
             requires=constants.LOADBALANCER))
-
         return (delete_LB_flow, store)
+
+    def get_cascade_delete_load_balancer_flow(self, lb):
+        """Creates a flow to delete a load balancer.
+
+        :returns: The flow for deleting a load balancer
+        """
+        return self._get_delete_load_balancer_flow(lb, True)
 
     def get_new_LB_networking_subflow(self):
         """Create a sub-flow to setup networking.
