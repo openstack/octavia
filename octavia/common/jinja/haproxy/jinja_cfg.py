@@ -457,4 +457,4 @@ class JinjaTemplater(object):
                     str(i) for i in six.moves.xrange(int(low), int(hi) + 1))
             else:
                 retval.add(code)
-        return retval
+        return sorted(retval)
