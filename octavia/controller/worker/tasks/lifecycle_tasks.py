@@ -53,6 +53,7 @@ class HealthMonitorToErrorOnRevertTask(BaseLifecycleTask):
 
     def revert(self, health_mon, listeners, loadbalancer, *args, **kwargs):
         self.task_utils.mark_health_mon_prov_status_error(health_mon.pool_id)
+        self.task_utils.mark_pool_prov_status_active(health_mon.pool_id)
         self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_active(listener.id)
@@ -79,6 +80,7 @@ class L7RuleToErrorOnRevertTask(BaseLifecycleTask):
 
     def revert(self, l7rule, listeners, loadbalancer, *args, **kwargs):
         self.task_utils.mark_l7rule_prov_status_error(l7rule.id)
+        self.task_utils.mark_l7policy_prov_status_active(l7rule.l7policy_id)
         self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_active(listener.id)

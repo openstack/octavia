@@ -20,6 +20,7 @@ from oslo_utils import uuidutils
 from octavia.common import constants
 import octavia.common.context
 from octavia.common import exceptions
+from octavia.db import repositories
 from octavia.tests.functional.api.v2 import base
 
 
@@ -46,6 +47,7 @@ class TestL7Rule(base.BaseAPITest):
         self.l7rules_path = self.L7RULES_PATH.format(
             l7policy_id=self.l7policy_id)
         self.l7rule_path = self.l7rules_path + '/{l7rule_id}'
+        self.l7policy_repo = repositories.L7PolicyRepository()
 
     def test_get(self):
         l7rule = self.create_l7rule(
@@ -540,6 +542,21 @@ class TestL7Rule(base.BaseAPITest):
                 'www.example.com', status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_l7rule)
+
+    def test_create_l7policy_in_error(self):
+        l7policy = self.create_l7policy(
+            self.listener_id, constants.L7POLICY_ACTION_REJECT)
+        l7policy_id = l7policy.get('l7policy').get('id')
+        self.set_lb_status(self.lb_id)
+        self.set_object_status(self.l7policy_repo, l7policy_id,
+                               provisioning_status=constants.ERROR)
+        api_l7rule = self.create_l7rule(
+            l7policy_id, constants.L7RULE_TYPE_HOST_NAME,
+            constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            'www.example.com', status=409)
+        ref_msg = ('L7Policy %s is immutable and cannot be updated.' %
+                   l7policy_id)
+        self.assertEqual(ref_msg, api_l7rule.get('faultstring'))
 
     def test_create_path_rule(self):
         api_l7rule = self.create_l7rule(

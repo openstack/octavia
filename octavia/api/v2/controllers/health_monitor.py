@@ -92,6 +92,9 @@ class HealthMonitorController(base.BaseController):
         # mutable
         pool = self.repositories.pool.get(session, id=hm.pool_id)
         load_balancer_id = pool.load_balancer_id
+        # Check the parent is not locked for some reason (ERROR, etc.)
+        if pool.provisioning_status not in consts.MUTABLE_STATUSES:
+            raise exceptions.ImmutableObject(resource='Pool', id=hm.pool_id)
         if not self.repositories.test_and_set_lb_and_listeners_prov_status(
                 session, load_balancer_id,
                 consts.PENDING_UPDATE, consts.PENDING_UPDATE,
