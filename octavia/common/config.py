@@ -676,7 +676,7 @@ def init(args, **kwargs):
              version='%%prog %s' % version.version_info.release_string(),
              **kwargs)
     handle_deprecation_compatibility()
-    setup_remote_pydev_debug()
+    setup_remote_debugger()
 
 
 def setup_logging(conf):
@@ -708,32 +708,54 @@ def handle_deprecation_compatibility():
                              group='health_manager')
 
 
-def setup_remote_pydev_debug():
+def _enable_pydev(debugger_host, debugger_port):
+    try:
+        from pydev import pydevd
+    except ImportError:
+        import pydevd
+
+    pydevd.settrace(debugger_host,
+                    port=int(debugger_port),
+                    stdoutToServer=True,
+                    stderrToServer=True)
+
+
+def _enable_ptvsd(debuggger_host, debugger_port):
+    import ptvsd
+
+    # Allow other computers to attach to ptvsd at this IP address and port.
+    ptvsd.enable_attach(address=(debuggger_host, debugger_port),
+                        redirect_output=True)
+
+    # Pause the program until a remote debugger is attached
+    ptvsd.wait_for_attach()
+
+
+def setup_remote_debugger():
     """Required setup for remote debugging."""
 
-    pydev_debug_host = os.environ.get('PYDEV_DEBUG_HOST')
-    pydev_debug_port = os.environ.get('PYDEV_DEBUG_PORT')
+    debugger_type = os.environ.get('DEBUGGER_TYPE', 'pydev')
+    debugger_host = os.environ.get('DEBUGGER_HOST')
+    debugger_port = os.environ.get('DEBUGGER_PORT')
 
-    if not pydev_debug_host or not pydev_debug_port:
+    if not debugger_type or not debugger_host or not debugger_port:
         return
 
     try:
-        try:
-            from pydev import pydevd
-        except ImportError:
-            import pydevd
-
         LOG.warning("Connecting to remote debugger. Once connected, resume "
                     "the program on the debugger to continue with the "
                     "initialization of the service.")
-        pydevd.settrace(pydev_debug_host,
-                        port=int(pydev_debug_port),
-                        stdoutToServer=True,
-                        stderrToServer=True)
+        if debugger_type == 'pydev':
+            _enable_pydev(debugger_host, debugger_port)
+        elif debugger_type == 'ptvsd':
+            _enable_ptvsd(debugger_host, debugger_port)
+        else:
+            LOG.exception('Debugger %(debugger)s is not supported',
+                          debugger_type)
     except Exception:
         LOG.exception('Unable to join debugger, please make sure that the '
                       'debugger processes is listening on debug-host '
                       '\'%(debug-host)s\' debug-port \'%(debug-port)s\'.',
-                      {'debug-host': pydev_debug_host,
-                       'debug-port': pydev_debug_port})
+                      {'debug-host': debugger_host,
+                       'debug-port': debugger_port})
         raise

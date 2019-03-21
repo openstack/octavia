@@ -16,7 +16,7 @@ Debugging Octavia code
 ======================
 
 This document describes how to setup and debug Octavia code using your favorite
-IDE (e.g. PyCharm).
+IDE (e.g. PyCharm, Visual Studio Code).
 
 Prerequisites
 =============
@@ -27,8 +27,10 @@ Prerequisites
 Setup
 =====
 
-Ensure your OpenStack and IDE environments have the PyDev library installed. If
-you're using PyCharm, you can find it in
+Ensure your OpenStack and IDE environments have the PyDev or ptvsd library
+installed.
+
+If you're using PyCharm, you can find it in
 */path/to/pycharm/debug-eggs/pycharm-debug.egg* (Python 2) and
 */path/to/pycharm/debug-eggs/pycharm-debug-py3k.egg* (Python 3). Copy that file
 into your OpenStack host and install the library in your Python path:
@@ -37,6 +39,11 @@ into your OpenStack host and install the library in your Python path:
 
     $ sudo easy_install pycharm-debug.egg
 
+If using Visual Studio Code, simply install ptvsd in both environments:
+
+::
+
+    $ pip install ptvsd
 
 Create a remote debugging configuration in your IDE. In PyCharm, go to *Run ->
 Edit Configurations -> Python Remote Debug*. The local host name refers to the
@@ -48,23 +55,25 @@ a path mapping in the remote debug configuration.
 Invoke the debug configuration (*Run -> Debug... -> (config name)*). PyCharm
 will begin listening on the specified host and port.
 
-Export *PYDEV_DEBUG_HOST* and *PYDEV_DEBUG_PORT* (host and port of the system
-running the IDE, respectively), and start the Octavia service you want to
-debug. It is recommended to run only one uWSGI process/controller worker.
-For example, to debug the Octavia Worker service:
+Export *DEBUGGER_TYPE*, *DEBUGGER_HOST* and *DEBUGGER_PORT* (host and port of
+the system running the IDE, respectively), and start the Octavia service you
+want to debug. It is recommended to run only one uWSGI process/controller
+worker. For example, to debug the Octavia Worker service:
 
 ::
 
-    $ export PYDEV_DEBUG_HOST=192.168.121.1
-    $ export PYDEV_DEBUG_PORT=5678
+    $ export DEBUGGER_TYPE=pydev
+    $ export DEBUGGER_HOST=192.168.121.1
+    $ export DEBUGGER_PORT=5678
     $ /usr/bin/octavia-worker --config-file /etc/octavia/octavia.conf
 
-Another example is the Octavia API service:
+Another example is debugging the Octavia API service with the ptvsd debugger:
 
 ::
 
-    $ export PYDEV_DEBUG_HOST=192.168.121.1
-    $ export PYDEV_DEBUG_PORT=5678
+    $ export DEBUGGER_TYPE=ptvsd
+    $ export DEBUGGER_HOST=192.168.121.1
+    $ export DEBUGGER_PORT=5678
     $ /usr/bin/uwsgi --ini /etc/octavia/octavia-uwsgi.ini -p 1
 
 The service will connect to your IDE, at which point remote debugging is
