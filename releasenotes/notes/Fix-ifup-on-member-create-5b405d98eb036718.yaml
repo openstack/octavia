@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed an issue creating members on networks with IPv6 subnets.
