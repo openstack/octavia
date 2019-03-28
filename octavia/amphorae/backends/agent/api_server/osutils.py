@@ -197,10 +197,25 @@ class BaseOS(object):
     def _bring_if_up(self, interface, what):
         # Note, we are not using pyroute2 for this as it is not /etc/netns
         # aware.
-        cmd = ("ip netns exec {ns} ifup {params}".format(
+        # Work around for bug:
+        # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=845121
+        int_up = "ip netns exec {ns} ip link set {int} up".format(
+            ns=consts.AMPHORA_NAMESPACE, int=interface)
+        addr_flush = "ip netns exec {ns} ip addr flush {int}".format(
+            ns=consts.AMPHORA_NAMESPACE, int=interface)
+
+        cmd = ("ip netns exec {ns} ifup -v {params}".format(
             ns=consts.AMPHORA_NAMESPACE, params=interface))
         try:
-            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+            out = subprocess.check_output(int_up.split(),
+                                          stderr=subprocess.STDOUT)
+            LOG.debug(out)
+            out = subprocess.check_output(addr_flush.split(),
+                                          stderr=subprocess.STDOUT)
+            LOG.debug(out)
+            out = subprocess.check_output(cmd.split(),
+                                          stderr=subprocess.STDOUT)
+            LOG.debug(out)
         except subprocess.CalledProcessError as e:
             LOG.error('Failed to ifup %s due to error: %s %s', interface, e,
                       e.output)
