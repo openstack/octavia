@@ -1,0 +1,15 @@
+---
+security:
+  - |
+    As a followup to the fix that resolved CVE-2018-16856, Octavia will now
+    encrypt certificates and keys used for secure communication with amphorae,
+    in its internal workflows. Octavia used to exclude debug-level log prints
+    for specific tasks and flows that were explicitly specified by name, a
+    method that is susceptive to code changes.
+other:
+  - |
+    Added a new option named server_certs_key_passphrase under the certificates
+    section. The default value gets copied from an environment variable named
+    TLS_PASS_AMPS_DEFAULT. In a case where TLS_PASS_AMPS_DEFAULT is not set,
+    and the operator did not fill any other value directly,
+    'insecure-key-do-not-use-this-key' will be used.

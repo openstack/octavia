@@ -29,6 +29,9 @@ TLS_KEY_DEFAULT = os.environ.get(
     'OS_OCTAVIA_TLS_CA_KEY', '/etc/ssl/private/ssl-cert-snakeoil.key'
 )
 TLS_PKP_DEFAULT = os.environ.get('OS_OCTAVIA_CA_KEY_PASS')
+TLS_PASS_AMPS_DEFAULT = os.environ.get('TLS_PASS_AMPS_DEFAULT',
+                                       'insecure-key-do-not-use-this-key')
+
 TLS_DIGEST_DEFAULT = os.environ.get('OS_OCTAVIA_CA_SIGNING_DIGEST', 'sha256')
 TLS_STORAGE_DEFAULT = os.environ.get(
     'OS_OCTAVIA_TLS_STORAGE', '/var/lib/octavia/certificates/'
@@ -47,6 +50,12 @@ certgen_opts = [
                default=TLS_PKP_DEFAULT,
                help='Passphrase for the Private Key. Defaults'
                     ' to env[OS_OCTAVIA_CA_KEY_PASS] or None.'),
+    cfg.StrOpt('server_certs_key_passphrase',
+               default=TLS_PASS_AMPS_DEFAULT,
+               help='Passphrase for encrypting Amphora Certificates and '
+                    'Private Keys. Defaults to env[TLS_PASS_AMPS_DEFAULT] or '
+                    'insecure-key-do-not-use-this-key',
+               required=True),
     cfg.StrOpt('signing_digest',
                default=TLS_DIGEST_DEFAULT,
                help='Certificate signing digest. Defaults'
@@ -59,10 +68,6 @@ certmgr_opts = [
                help='Absolute path to the certificate storage directory. '
                     'Defaults to env[OS_OCTAVIA_TLS_STORAGE].')
 ]
-
-CONF = cfg.CONF
-CONF.register_opts(certgen_opts, group='certificates')
-CONF.register_opts(certmgr_opts, group='certificates')
 
 
 class LocalCert(cert.Cert):
