@@ -2458,6 +2458,27 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
+    def test_with_l7policies_one_redirect_url_with_default_pool(self):
+        create_pool, expected_pool = self._get_pool_bodies(create_members=[],
+                                                           expected_members=[])
+        create_l7rules, expected_l7rules = self._get_l7rules_bodies()
+        create_l7policies, expected_l7policies = self._get_l7policies_bodies(
+            create_l7rules=create_l7rules,
+            expected_l7rules=expected_l7rules)
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_default_pool_name=create_pool['name'],
+            create_l7policies=create_l7policies,
+            expected_l7policies=expected_l7policies,
+        )
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_graphs_equal(expected_lb, api_lb)
+
     def test_with_l7policies_redirect_pools_no_rules(self):
         create_pool, expected_pool = self._get_pool_bodies()
         create_l7policies, expected_l7policies = self._get_l7policies_bodies(
