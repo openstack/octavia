@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug that caused an excessive number of RabbitMQ connections to be
+    opened.
