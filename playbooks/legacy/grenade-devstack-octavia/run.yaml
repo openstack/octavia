@@ -37,6 +37,7 @@
 
           export GRENADE_PLUGINRC="enable_grenade_plugin octavia https://git.openstack.org/openstack/octavia"
           export DEVSTACK_LOCAL_CONFIG+=$'\n'"export TEMPEST_PLUGINS='/opt/stack/new/octavia-tempest-plugin'"
+          export DEVSTACK_LOCAL_CONFIG+=$'\n'"[[post-config|/etc/octavia/octavia.conf]]"$'\n'"[DEFAULT]"$'\n'"debug = True"
 
           export DEVSTACK_GATE_TEMPEST=1
           export DEVSTACK_GATE_GRENADE=pullup
