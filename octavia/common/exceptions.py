@@ -103,7 +103,7 @@ class L7RuleValidation(APIException):
 
 
 class SingleCreateDetailsMissing(APIException):
-    msg = _("Missing details for %(type)s object: %(name)")
+    msg = _("Missing details for %(type)s object: %(name)s")
     code = 400
 
 
