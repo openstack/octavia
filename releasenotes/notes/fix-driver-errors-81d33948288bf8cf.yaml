@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed an issue where the driver errors were not caught.

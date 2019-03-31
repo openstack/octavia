@@ -16,6 +16,7 @@ import copy
 
 import six
 
+from octavia_lib.api.drivers import exceptions as lib_exceptions
 from oslo_config import cfg
 from oslo_context import context as oslo_context
 from oslo_log import log as logging
@@ -48,17 +49,28 @@ def call_provider(provider, driver_method, *args, **kwargs):
 
     try:
         return driver_method(*args, **kwargs)
-    except driver_exceptions.DriverError as e:
+    except (driver_exceptions.DriverError, lib_exceptions.DriverError) as e:
         LOG.exception("Provider '%s' raised a driver error: %s",
                       provider, e.operator_fault_string)
         raise exceptions.ProviderDriverError(prov=provider,
                                              user_msg=e.user_fault_string)
-    except (driver_exceptions.NotImplementedError, NotImplementedError) as e:
+    except (driver_exceptions.NotImplementedError,
+            lib_exceptions.NotImplementedError,
+            NotImplementedError) as e:
+        op_fault_string = (
+            e.operator_fault_string
+            if hasattr(e, "operator_fault_string")
+            else _("This feature is not implemented by this provider."))
+        usr_fault_string = (
+            e.user_fault_string
+            if hasattr(e, "user_fault_string")
+            else _("This feature is not implemented by the provider."))
         LOG.info("Provider '%s' raised a not implemented error: %s",
-                 provider, e.operator_fault_string)
+                 provider, op_fault_string)
         raise exceptions.ProviderNotImplementedError(
-            prov=provider, user_msg=e.user_fault_string)
-    except driver_exceptions.UnsupportedOptionError as e:
+            prov=provider, user_msg=usr_fault_string)
+    except (driver_exceptions.UnsupportedOptionError,
+            lib_exceptions.UnsupportedOptionError) as e:
         LOG.info("Provider '%s' raised an unsupported option error: "
                  "%s", provider, e.operator_fault_string)
         raise exceptions.ProviderUnsupportedOptionError(
