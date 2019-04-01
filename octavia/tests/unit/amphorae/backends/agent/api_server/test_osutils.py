@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import ipaddress
 import os
 import shutil
 
@@ -22,6 +23,8 @@ from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.common import config
 from octavia.common import constants as consts
 from octavia.common import exceptions as octavia_exceptions
+from octavia.common import utils
+from octavia.tests.common import utils as test_utils
 from octavia.tests.unit import base
 
 
@@ -186,6 +189,131 @@ class TestOSUtils(base.TestCase):
         self.assertTrue(self.base_os_util.has_ifup_all())
         self.assertTrue(self.ubuntu_os_util.has_ifup_all())
         self.assertFalse(self.rh_os_util.has_ifup_all())
+
+    def test_write_vip_interface_file(self):
+        netns_interface = u'eth1234'
+        FIXED_IP = u'192.0.2.2'
+        SUBNET_CIDR = u'192.0.2.0/24'
+        GATEWAY = u'192.51.100.1'
+        DEST1 = u'198.51.100.0/24'
+        DEST2 = u'203.0.113.0/24'
+        NEXTHOP = u'192.0.2.1'
+        MTU = 1450
+        FIXED_IP_IPV6 = u'2001:0db8:0000:0000:0000:0000:0000:0001'
+        # Subnet prefix is purposefully not 32, because that coincidentally
+        # matches the result of any arbitrary IPv4->prefixlen conversion
+        SUBNET_CIDR_IPV6 = u'2001:db8::/70'
+
+        ip = ipaddress.ip_address(FIXED_IP)
+        network = ipaddress.ip_network(SUBNET_CIDR)
+        broadcast = network.broadcast_address.exploded
+        netmask = network.netmask.exploded
+        netmask_prefix = utils.netmask_to_prefix(netmask)
+
+        ipv6 = ipaddress.ip_address(FIXED_IP_IPV6)
+        networkv6 = ipaddress.ip_network(SUBNET_CIDR_IPV6)
+        broadcastv6 = networkv6.broadcast_address.exploded
+        netmaskv6 = networkv6.prefixlen
+
+        host_routes = [
+            {'gw': NEXTHOP, 'network': ipaddress.ip_network(DEST1)},
+            {'gw': NEXTHOP, 'network': ipaddress.ip_network(DEST2)}
+        ]
+
+        path = self.ubuntu_os_util.get_network_interface_file(netns_interface)
+        mock_open = self.useFixture(test_utils.OpenFixture(path)).mock_open
+        mock_template = mock.MagicMock()
+
+        # Test an IPv4 VIP
+        with mock.patch('os.open'), mock.patch.object(
+                os, 'fdopen', mock_open):
+            self.ubuntu_os_util.write_vip_interface_file(
+                interface_file_path=path,
+                primary_interface=netns_interface,
+                vip=FIXED_IP,
+                ip=ip,
+                broadcast=broadcast,
+                netmask=netmask,
+                gateway=GATEWAY,
+                mtu=MTU,
+                vrrp_ip=None,
+                vrrp_version=None,
+                render_host_routes=host_routes,
+                template_vip=mock_template)
+
+        mock_template.render.assert_called_once_with(
+            consts=consts,
+            interface=netns_interface,
+            vip=FIXED_IP,
+            vip_ipv6=False,
+            prefix=netmask_prefix,
+            broadcast=broadcast,
+            netmask=netmask,
+            gateway=GATEWAY,
+            network=SUBNET_CIDR,
+            mtu=MTU,
+            vrrp_ip=None,
+            vrrp_ipv6=False,
+            host_routes=host_routes,
+            topology="SINGLE",
+        )
+
+        # Now test with an IPv6 VIP
+        mock_template.reset_mock()
+        with mock.patch('os.open'), mock.patch.object(
+                os, 'fdopen', mock_open):
+            self.ubuntu_os_util.write_vip_interface_file(
+                interface_file_path=path,
+                primary_interface=netns_interface,
+                vip=FIXED_IP_IPV6,
+                ip=ipv6,
+                broadcast=broadcastv6,
+                netmask=netmaskv6,
+                gateway=GATEWAY,
+                mtu=MTU,
+                vrrp_ip=None,
+                vrrp_version=None,
+                render_host_routes=host_routes,
+                template_vip=mock_template)
+
+        mock_template.render.assert_called_once_with(
+            consts=consts,
+            interface=netns_interface,
+            vip=FIXED_IP_IPV6,
+            vip_ipv6=True,
+            prefix=netmaskv6,
+            broadcast=broadcastv6,
+            netmask=netmaskv6,
+            gateway=GATEWAY,
+            network=SUBNET_CIDR_IPV6,
+            mtu=MTU,
+            vrrp_ip=None,
+            vrrp_ipv6=False,
+            host_routes=host_routes,
+            topology="SINGLE",
+        )
+
+    def test_write_port_interface_file(self):
+        netns_interface = 'eth1234'
+        MTU = 1450
+        fixed_ips = []
+        path = 'mypath'
+        mock_template = mock.MagicMock()
+        mock_open = self.useFixture(test_utils.OpenFixture(path)).mock_open
+        mock_gen_text = mock.MagicMock()
+
+        with mock.patch('os.open'), mock.patch.object(
+                os, 'fdopen', mock_open), mock.patch.object(
+                osutils.BaseOS, '_generate_network_file_text', mock_gen_text):
+            self.base_os_util.write_port_interface_file(
+                netns_interface=netns_interface,
+                fixed_ips=fixed_ips,
+                mtu=MTU,
+                interface_file_path=path,
+                template_port=mock_template)
+
+        mock_gen_text.assert_called_once_with(
+            netns_interface, fixed_ips, MTU, mock_template)
 
     @mock.patch('shutil.copy2')
     @mock.patch('os.makedirs')
