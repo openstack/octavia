@@ -96,6 +96,16 @@ class LoadBalancersController(base.BaseController):
             raise exceptions.LBPendingStateError(
                 state=prov_status, id=id)
 
+    def _test_and_set_failover_prov_status(self, session, id):
+        lb_repo = self.repositories.load_balancer
+        if not lb_repo.set_status_for_failover(session, id,
+                                               constants.PENDING_UPDATE):
+            prov_status = lb_repo.get(session, id=id).provisioning_status
+            LOG.info("Invalid state %(state)s of loadbalancer resource %(id)s",
+                     {"state": prov_status, "id": id})
+            raise exceptions.LBPendingStateError(
+                state=prov_status, id=id)
+
     @staticmethod
     def _validate_network_and_fill_or_validate_subnet(load_balancer):
         network = validate.network_exists_optionally_contains_subnet(
@@ -576,7 +586,7 @@ class FailoverController(LoadBalancersController):
         self._auth_validate_action(context, db_lb.project_id,
                                    constants.RBAC_PUT_FAILOVER)
 
-        self._test_lb_status(context.session, self.lb_id)
+        self._test_and_set_failover_prov_status(context.session, self.lb_id)
         try:
             LOG.info("Sending failover request for lb %s to the handler",
                      self.lb_id)
