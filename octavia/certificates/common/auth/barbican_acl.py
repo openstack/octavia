@@ -90,4 +90,7 @@ class BarbicanACLAuth(barbican_common.BarbicanAuth):
         user_session = session.Session(auth=user_auth)
 
         # create a special barbican client with our user's session
-        return barbican_client.Client(session=user_session)
+        return barbican_client.Client(
+            session=user_session,
+            region_name=CONF.certificates.region_name,
+            interface=CONF.certificates.endpoint_type)
