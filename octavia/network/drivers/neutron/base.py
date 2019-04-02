@@ -118,7 +118,7 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             raise base.NetworkException(str(e))
 
     def _get_ports_by_security_group(self, sec_grp_id):
-        all_ports = self.neutron_client.list_ports(project=self.project_id)
+        all_ports = self.neutron_client.list_ports(project_id=self.project_id)
         filtered_ports = []
         for port in all_ports.get('ports', []):
             if sec_grp_id in port.get('security_groups', []):
