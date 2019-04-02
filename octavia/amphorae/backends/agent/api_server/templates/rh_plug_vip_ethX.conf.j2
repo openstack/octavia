@@ -52,7 +52,9 @@ PERSISTENT_DHCLIENT="1"
 {%- endif %} {# end if vip_ipv6 #}
 {%- endif %} {# end if vrrp_ip #}
 
+{%- if topology == consts.TOPOLOGY_SINGLE -%}
 {%- if vip_ipv6 %}
 IPV6ADDR_SECONDARIES="{{ vip }}/{{ prefix }}"
+{%- endif %}
 {%- endif %}
 
