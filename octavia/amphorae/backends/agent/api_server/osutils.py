@@ -196,7 +196,7 @@ class BaseOS(object):
         addr_flush = "ip netns exec {ns} ip addr flush {int}".format(
             ns=consts.AMPHORA_NAMESPACE, int=interface)
 
-        cmd = ("ip netns exec {ns} ifup -v {params}".format(
+        cmd = ("ip netns exec {ns} ifup {params}".format(
             ns=consts.AMPHORA_NAMESPACE, params=interface))
         try:
             out = subprocess.check_output(int_up.split(),
