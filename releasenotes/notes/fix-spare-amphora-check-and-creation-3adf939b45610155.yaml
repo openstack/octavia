@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed an issue that prevents spare amphorae to be created.
