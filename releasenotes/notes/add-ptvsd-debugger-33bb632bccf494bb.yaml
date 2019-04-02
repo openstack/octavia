@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Added support to debug with the Python Visual Studio Debugger engine
+    (ptvsd).
