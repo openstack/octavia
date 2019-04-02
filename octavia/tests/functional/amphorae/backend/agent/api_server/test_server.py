@@ -1177,7 +1177,7 @@ class TestServerTestCase(base.TestCase):
                     'PERSISTENT_DHCLIENT="1"\n'.format(int=test_int_num))
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'ifup', '-v', 'eth' + test_int_num], stderr=-2)
+                 'ifup', 'eth' + test_int_num], stderr=-2)
 
         # fixed IPs happy path
         port_info = {'mac_address': '123', 'mtu': 1450, 'fixed_ips': [
@@ -1255,7 +1255,7 @@ class TestServerTestCase(base.TestCase):
                     'NETMASK="255.255.255.0"\n'.format(int=test_int_num))
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'ifup', '-v', 'eth' + test_int_num], stderr=-2)
+                 'ifup', 'eth' + test_int_num], stderr=-2)
 
         # fixed IPs happy path IPv6
         port_info = {'mac_address': '123', 'mtu': 1450, 'fixed_ips': [
@@ -1329,7 +1329,7 @@ class TestServerTestCase(base.TestCase):
                     '0000:0002"\n'.format(int=test_int_num))
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'ifup', '-v', 'eth' + test_int_num], stderr=-2)
+                 'ifup', 'eth' + test_int_num], stderr=-2)
 
         # fixed IPs, bogus IP
         port_info = {'mac_address': '123', 'fixed_ips': [
@@ -1531,7 +1531,7 @@ class TestServerTestCase(base.TestCase):
                 mock_os_chmod.assert_has_calls(calls)
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'ifup', '-v', consts.NETNS_PRIMARY_INTERFACE], stderr=-2)
+                 'ifup', consts.NETNS_PRIMARY_INTERFACE], stderr=-2)
 
     def test_ubuntu_plug_VIP4(self):
         self._test_plug_VIP4(consts.UBUNTU)
@@ -1790,7 +1790,7 @@ class TestServerTestCase(base.TestCase):
                 mock_os_chmod.assert_has_calls(calls)
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'ifup', '-v', '{netns_int}:0'.format(
+                 'ifup', '{netns_int}:0'.format(
                      netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
 
         # Verify sysctl was loaded
@@ -1893,7 +1893,7 @@ class TestServerTestCase(base.TestCase):
                         netns_int=consts.NETNS_PRIMARY_INTERFACE))
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'ifup', '-v', '{netns_int}:0'.format(
+                 'ifup', '{netns_int}:0'.format(
                      netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
 
         mock_interfaces.side_effect = [['blah']]
@@ -2153,12 +2153,12 @@ class TestServerTestCase(base.TestCase):
             if distro == consts.UBUNTU:
                 mock_check_output.assert_called_with(
                     ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                     'ifup', '-v', '{netns_int}:0'.format(
+                     'ifup', '{netns_int}:0'.format(
                          netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
             elif distro == consts.CENTOS:
                 mock_check_output.assert_called_with(
                     ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                     'ifup', '-v', '{netns_int}'.format(
+                     'ifup', '{netns_int}'.format(
                          netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
 
         # Verify sysctl was loaded
@@ -2263,12 +2263,12 @@ class TestServerTestCase(base.TestCase):
             if distro == consts.UBUNTU:
                 mock_check_output.assert_called_with(
                     ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                     'ifup', '-v', '{netns_int}:0'.format(
+                     'ifup', '{netns_int}:0'.format(
                          netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
             elif distro == consts.CENTOS:
                 mock_check_output.assert_called_with(
                     ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                     'ifup', '-v', '{netns_int}'.format(
+                     'ifup', '{netns_int}'.format(
                          netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
 
         mock_interfaces.side_effect = [['blah']]
