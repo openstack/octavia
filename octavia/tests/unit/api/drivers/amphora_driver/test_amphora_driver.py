@@ -112,7 +112,7 @@ class TestAmphoraDriver(base.TestRpc):
         provider_lb = driver_dm.LoadBalancer(
             loadbalancer_id=self.sample_data.lb_id,
             vip_qos_policy_id=qos_policy_id)
-        lb_dict = {'vip': {'vip_qos_policy_id': qos_policy_id}}
+        lb_dict = {'vip': {'qos_policy_id': qos_policy_id}}
         self.amp_driver.loadbalancer_update(old_provider_lb, provider_lb)
         payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id,
                    consts.LOAD_BALANCER_UPDATES: lb_dict}

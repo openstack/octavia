@@ -374,6 +374,18 @@ class TestValidations(base.TestCase):
                               validate.qos_policy_exists,
                               qos_policy_id)
 
+    def test_qos_extension_enabled(self):
+        network_driver = mock.Mock()
+        network_driver.qos_enabled.return_value = True
+        self.assertIsNone(validate.qos_extension_enabled(network_driver))
+
+    def test_qos_extension_disabled(self):
+        network_driver = mock.Mock()
+        network_driver.qos_enabled.return_value = False
+        self.assertRaises(exceptions.ValidationException,
+                          validate.qos_extension_enabled,
+                          network_driver)
+
     def test_check_session_persistence(self):
         valid_cookie_name_dict = {'type': 'APP_COOKIE',
                                   'cookie_name': 'chocolate_chip'}
