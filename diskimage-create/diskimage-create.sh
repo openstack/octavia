@@ -284,10 +284,11 @@ fi
 
 # Make sure we have the required packages installed
 if [ "$platform" = 'NAME="Ubuntu"' ]; then
-    PKG_LIST="qemu git"
+    PKG_LIST="qemu-utils git kpartx debootstrap"
     for pkg in $PKG_LIST; do
         if ! dpkg --get-selections | grep -q "^$pkg[[:space:]]*install$" >/dev/null; then
             echo "Required package " $pkg " is not installed.  Exiting."
+	    echo "Binary dependencies on this platform are: ${PKG_LIST}"
             exit 1
         fi
     done
@@ -307,6 +308,7 @@ elif [[ $platform =~ "SUSE" ]]; then
     for pkg in $PKG_LIST; do
         if ! rpm -q $pkg &> /dev/null; then
             echo "Required package " ${pkg/\*} " is not installed.  Exiting."
+	    echo "Binary dependencies on this platform are: ${PKG_LIST}"
             exit 1
         fi
     done
@@ -318,6 +320,7 @@ else
     for pkg in $PKG_LIST; do
         if ! rpm -qa $pkg ; then
             echo "Required package " ${pkg/\*} " is not installed.  Exiting."
+	    echo "Binary dependencies on this platform are: ${PKG_LIST}"
             exit 1
         fi
     done
