@@ -934,6 +934,49 @@ class TestListener(base.BaseAPITest):
 
     # TODO(johnsom) Fix this when there is a noop certificate manager
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_unset_defaults(self, mock_cert_data):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
+        tls_uuid = uuidutils.generate_uuid()
+        listener = self.create_listener(
+            constants.PROTOCOL_TERMINATED_HTTPS, 80, self.lb_id,
+            name='listener1', description='desc1',
+            admin_state_up=False, connection_limit=10,
+            default_tls_container_ref=tls_uuid,
+            default_pool_id=self.pool_id,
+            insert_headers={'X-Forwarded-For': 'true'},
+            timeout_client_data=1, timeout_member_connect=2,
+            timeout_member_data=3, timeout_tcp_inspect=4).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        unset_params = {
+            'name': None, 'description': None, 'connection_limit': None,
+            'default_tls_container_ref': None, 'sni_container_refs': None,
+            'insert_headers': None, 'timeout_client_data': None,
+            'timeout_member_connect': None, 'timeout_member_data': None,
+            'timeout_tcp_inspect': None, 'default_pool_id': None}
+        body = self._build_body(unset_params)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['id'])
+        api_listener = self.put(listener_path, body).json.get(self.root_tag)
+
+        self.assertEqual('', api_listener['name'])
+        self.assertEqual('', api_listener['description'])
+        self.assertEqual(constants.DEFAULT_CONNECTION_LIMIT,
+                         api_listener['connection_limit'])
+        self.assertIsNone(api_listener['default_tls_container_ref'])
+        self.assertEqual([], api_listener['sni_container_refs'])
+        self.assertEqual({}, api_listener['insert_headers'])
+        self.assertEqual(constants.DEFAULT_TIMEOUT_CLIENT_DATA,
+                         api_listener['timeout_client_data'])
+        self.assertEqual(constants.DEFAULT_TIMEOUT_MEMBER_CONNECT,
+                         api_listener['timeout_member_connect'])
+        self.assertEqual(constants.DEFAULT_TIMEOUT_MEMBER_DATA,
+                         api_listener['timeout_member_data'])
+        self.assertEqual(constants.DEFAULT_TIMEOUT_TCP_INSPECT,
+                         api_listener['timeout_tcp_inspect'])
+        self.assertIsNone(api_listener['default_pool_id'])
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_update_authorized(self, mock_cert_data):
         cert1 = data_models.TLSContainer(certificate='cert 1')
         mock_cert_data.return_value = {'tls_cert': cert1}

@@ -101,7 +101,8 @@ class ListenerPOST(BaseListenerType):
         wtypes.IntegerType(minimum=constants.MIN_PORT_NUMBER,
                            maximum=constants.MAX_PORT_NUMBER), mandatory=True)
     connection_limit = wtypes.wsattr(
-        wtypes.IntegerType(minimum=constants.MIN_CONNECTION_LIMIT), default=-1)
+        wtypes.IntegerType(minimum=constants.MIN_CONNECTION_LIMIT),
+        default=constants.DEFAULT_CONNECTION_LIMIT)
     default_tls_container_ref = wtypes.wsattr(
         wtypes.StringType(max_length=255))
     sni_container_refs = [wtypes.StringType(max_length=255)]
@@ -177,7 +178,8 @@ class ListenerSingleCreate(BaseListenerType):
         wtypes.IntegerType(minimum=constants.MIN_PORT_NUMBER,
                            maximum=constants.MAX_PORT_NUMBER), mandatory=True)
     connection_limit = wtypes.wsattr(
-        wtypes.IntegerType(minimum=constants.MIN_CONNECTION_LIMIT), default=-1)
+        wtypes.IntegerType(minimum=constants.MIN_CONNECTION_LIMIT),
+        default=constants.DEFAULT_CONNECTION_LIMIT)
     default_tls_container_ref = wtypes.wsattr(
         wtypes.StringType(max_length=255))
     sni_container_refs = [wtypes.StringType(max_length=255)]

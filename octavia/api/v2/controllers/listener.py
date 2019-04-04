@@ -299,6 +299,32 @@ class ListenersController(base.BaseController):
         db_listener.l7policies = new_l7ps
         return db_listener
 
+    def _set_default_on_none(self, listener):
+        """Reset settings to their default values if None/null was passed in
+
+        A None/null value can be passed in to clear a value. PUT values
+        that were not provided by the user have a type of wtypes.UnsetType.
+        If the user is attempting to clear values, they should either
+        be set to None (for example in the name field) or they should be
+        reset to their default values.
+        This method is intended to handle those values that need to be set
+        back to a default value.
+        """
+        if listener.connection_limit is None:
+            listener.connection_limit = constants.DEFAULT_CONNECTION_LIMIT
+        if listener.timeout_client_data is None:
+            listener.timeout_client_data = (
+                constants.DEFAULT_TIMEOUT_CLIENT_DATA)
+        if listener.timeout_member_connect is None:
+            listener.timeout_member_connect = (
+                constants.DEFAULT_TIMEOUT_MEMBER_CONNECT)
+        if listener.timeout_member_data is None:
+            listener.timeout_member_data = (
+                constants.DEFAULT_TIMEOUT_MEMBER_DATA)
+        if listener.timeout_tcp_inspect is None:
+            listener.timeout_tcp_inspect = (
+                constants.DEFAULT_TIMEOUT_TCP_INSPECT)
+
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text,
                          body=listener_types.ListenerRootPUT, status_code=200)
     def put(self, id, listener_):
@@ -325,6 +351,8 @@ class ListenersController(base.BaseController):
             raise exceptions.ValidationException(detail=_(
                 "%s protocol listener does not support TLS or header "
                 "insertion.") % constants.PROTOCOL_UDP)
+
+        self._set_default_on_none(listener)
 
         if listener.default_pool_id:
             self._validate_pool(context.session, load_balancer_id,
