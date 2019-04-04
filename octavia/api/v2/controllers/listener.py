@@ -286,6 +286,20 @@ class ListenersController(base.BaseController):
                 lock_session, l7p))
         return db_listener, new_l7ps
 
+    def _set_default_on_none(self, listener):
+        """Reset settings to their default values if None/null was passed in
+
+        A None/null value can be passed in to clear a value. PUT values
+        that were not provided by the user have a type of wtypes.UnsetType.
+        If the user is attempting to clear values, they should either
+        be set to None (for example in the name field) or they should be
+        reset to their default values.
+        This method is intended to handle those values that need to be set
+        back to a default value.
+        """
+        if listener.connection_limit is None:
+            listener.connection_limit = constants.DEFAULT_CONNECTION_LIMIT
+
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text,
                          body=listener_types.ListenerRootPUT, status_code=200)
     def put(self, id, listener_):
@@ -303,6 +317,8 @@ class ListenersController(base.BaseController):
         if not listener:
             raise exceptions.ValidationException(
                 detail='No listener object supplied.')
+
+        self._set_default_on_none(listener)
 
         if listener.default_pool_id:
             self._validate_pool(context.session, load_balancer_id,

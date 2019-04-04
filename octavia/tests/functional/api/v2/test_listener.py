@@ -774,6 +774,28 @@ class TestListener(base.BaseAPITest):
         self.assert_final_listener_statuses(self.lb_id,
                                             listener['listener']['id'])
 
+    def test_update_unset_defaults(self):
+        tls_uuid = uuidutils.generate_uuid()
+        listener = self.create_listener(
+            constants.PROTOCOL_TERMINATED_HTTPS, 80, self.lb_id,
+            name='listener1', description='desc1',
+            admin_state_up=False, connection_limit=10,
+            default_tls_container_ref=tls_uuid,
+            default_pool_id=self.pool_id,
+            insert_headers={'X-Forwarded-For': 'true'}).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        unset_params = {
+            'name': None, 'description': None, 'connection_limit': None,
+            'default_tls_container_ref': None, 'sni_container_refs': None,
+            'insert_headers': None, 'default_pool_id': None}
+        body = self._build_body(unset_params)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['id'])
+        api_listener = self.put(listener_path, body).json.get(self.root_tag)
+
+        self.assertEqual([], api_listener['sni_container_refs'])
+        self.assertNotEqual(listener, api_listener)
+
     def test_update_authorized(self):
         tls_uuid = uuidutils.generate_uuid()
         listener = self.create_listener(
