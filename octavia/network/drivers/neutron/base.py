@@ -27,6 +27,7 @@ from octavia.network.drivers.neutron import utils
 LOG = logging.getLogger(__name__)
 DNS_INT_EXT_ALIAS = 'dns-integration'
 SEC_GRP_EXT_ALIAS = 'security-group'
+QOS_EXT_ALIAS = 'qos'
 
 CONF = cfg.CONF
 
@@ -46,6 +47,7 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
         self.sec_grp_enabled = self._check_extension_enabled(SEC_GRP_EXT_ALIAS)
         self.dns_integration_enabled = self._check_extension_enabled(
             DNS_INT_EXT_ALIAS)
+        self._qos_enabled = self._check_extension_enabled(QOS_EXT_ALIAS)
         self.project_id = self.neutron_client.get_auth_info().get(
             'auth_tenant_id')
 
@@ -248,3 +250,6 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
 
     def get_qos_policy(self, qos_policy_id):
         return self._get_resource('qos_policy', qos_policy_id)
+
+    def qos_enabled(self):
+        return self._qos_enabled

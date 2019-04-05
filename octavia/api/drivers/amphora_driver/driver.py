@@ -95,7 +95,7 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         # expects
         vip_qos_policy_id = lb_dict.pop('vip_qos_policy_id', None)
         if vip_qos_policy_id:
-            vip_dict = {"vip_qos_policy_id": vip_qos_policy_id}
+            vip_dict = {"qos_policy_id": vip_qos_policy_id}
             lb_dict["vip"] = vip_dict
 
         payload = {consts.LOAD_BALANCER_ID: lb_id,
