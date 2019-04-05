@@ -199,7 +199,7 @@ class BaseOS(object):
         return host_routes
 
     @classmethod
-    def _bring_if_up(cls, interface, what):
+    def _bring_if_up(cls, interface, what, flush=True):
         # Note, we are not using pyroute2 for this as it is not /etc/netns
         # aware.
         # Work around for bug:
@@ -215,9 +215,10 @@ class BaseOS(object):
             out = subprocess.check_output(int_up.split(),
                                           stderr=subprocess.STDOUT)
             LOG.debug(out)
-            out = subprocess.check_output(addr_flush.split(),
-                                          stderr=subprocess.STDOUT)
-            LOG.debug(out)
+            if flush:
+                out = subprocess.check_output(addr_flush.split(),
+                                              stderr=subprocess.STDOUT)
+                LOG.debug(out)
             out = subprocess.check_output(cmd.split(),
                                           stderr=subprocess.STDOUT)
             LOG.debug(out)
@@ -248,7 +249,7 @@ class BaseOS(object):
             cls._bring_if_down(secondary_interface)
         cls._bring_if_up(primary_interface, 'VIP')
         if secondary_interface:
-            cls._bring_if_up(secondary_interface, 'VIP')
+            cls._bring_if_up(secondary_interface, 'VIP', flush=False)
 
     def has_ifup_all(self):
         return True
