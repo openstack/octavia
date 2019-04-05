@@ -1,0 +1,11 @@
+---
+upgrade:
+  - |
+    To fix the issue with active/standby load balancers or single topology
+    load balancers with members on the VIP subnet, you need to update the
+    amphora image.
+critical:
+  - |
+    Fixed a bug where active/standby load balancers and single topology
+    load balancers with members on the VIP subnet may fail. An updated
+    image is required to fix this bug.
