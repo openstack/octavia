@@ -318,3 +318,10 @@ class AbstractNetworkDriver(object):
         :raises PortNotFound: Port was not found by neutron.
         """
         pass
+
+    @abc.abstractmethod
+    def qos_enabled(self):
+        """Whether QoS is enabled
+
+        :return: Boolean
+        """
