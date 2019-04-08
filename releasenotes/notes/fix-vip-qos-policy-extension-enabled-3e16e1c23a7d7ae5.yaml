@@ -1,0 +1,7 @@
+---
+fixes:
+  - Fixed an issue where trying to set a QoS policy on a VIP while the QoS
+    extension is disabled would bring the load balancer to ERROR. Should the
+    QoS extension be disabled, the API will now return HTTP 400 to the user.
+  - Fixed an issue where setting a QoS policy on the VIP would bring the load
+    balancer to ERROR when the QoS extension is enabled.
