@@ -1957,3 +1957,77 @@ references to the failed record if available.
           self.stats_record = kwargs.pop('stats_record', None)
 
           super(UpdateStatisticsError, self).__init__(*args, **kwargs)
+
+Documenting the Driver
+======================
+
+Octavia provides two documents to let operators and users know about available
+drivers and their features.
+
+Available Provider Drivers
+--------------------------
+
+The :doc:`../../admin/providers` document provides administrators with a
+guide to the available Octavia provider drivers. Since provider drivers are
+not included in the Octavia source repositories, this guide is an important
+tool for administrators to find your provider driver.
+
+You can submit information for your provider driver by submitting a patch to
+the Octavia documentation following the normal OpenStack process.
+
+See the
+`OpenStack Contributor Guide <https://docs.openstack.org/contributors/>`_
+for more information on submitting a patch to OpenStack.
+
+Octavia Provider Feature Matrix
+-------------------------------
+
+The Octavia documentation includes a
+:doc:`../../user/feature-classification/index` that informs users on which
+Octavia features are supported by each provider driver.
+
+The feature matrices are built using the `Oslo sphinx-feature-classification
+<https://docs.openstack.org/sphinx-feature-classification/latest/>`_ library.
+This allows a simple INI file format for describing the capabilities of an
+Octavia provider driver.
+
+Each driver should define a [driver.<driver name>] section and then add a line
+to each feature specifying the level of support the provider driver provides
+for the feature.
+
+For example, the Amphora driver support for "admin_state_up" would add the
+following to the feature-matrix-lb.ini file.
+
+.. code-block:: INI
+
+    [driver.amphora]
+    title=Amphora Provider
+    link=https://developer.openstack.org/api-ref/load-balancer/v2/index.html
+
+    [operation.admin_state_up]
+    ...
+    driver.amphora=complete
+
+Valid driver feature support statuses are:
+
+``complete``
+  Fully implemented, expected to work at all times.
+
+``partial``
+  Implemented, but with caveats about when it will work.
+
+``missing``
+  Not implemented at all.
+
+You can also optionally provide additional, provider driver specific, notes for
+users by defining a "driver-notes.<driver name>".
+
+.. code-block:: INI
+
+    [operation.admin_state_up]
+    ...
+    driver.amphora=complete
+    driver-notes.amphora=The Amphora driver fully supports admin_state_up.
+
+Driver notes are highly recommended when a provider driver declares a
+``partial`` status.
