@@ -103,7 +103,7 @@ Command syntax:
             [-a i386 | **amd64** | armhf | ppc64le ]
             [-b **haproxy** ]
             [-c **~/.cache/image-create** | <cache directory> ]
-            [-d **xenial**/**7** | trusty | 8 | <other release id> ]
+            [-d **bionic**/**7** | xenial | 8 | <other release id> ]
             [-e]
             [-f]
             [-h]
@@ -123,7 +123,7 @@ Command syntax:
         '-a' is the architecture type for the image (default: amd64)
         '-b' is the backend type (default: haproxy)
         '-c' is the path to the cache directory (default: ~/.cache/image-create)
-        '-d' distribution release id (default on ubuntu: xenial)
+        '-d' distribution release id (default on ubuntu: bionic)
         '-e' enable complete mandatory access control systems when available (default: permissive)
         '-f' disable tmpfs for build
         '-h' display help message

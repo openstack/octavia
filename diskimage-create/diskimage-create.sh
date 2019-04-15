@@ -23,7 +23,7 @@ usage() {
     echo "            [-a i386 | **amd64** | armhf | ppc64le]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
-    echo "            [-d **xenial**/**7** | trusty | 8 | <other release id> ]"
+    echo "            [-d **bionic**/**7** | xenial | 8 | <other release id> ]"
     echo "            [-e]"
     echo "            [-f]"
     echo "            [-h]"
@@ -43,7 +43,7 @@ usage() {
     echo "        '-a' is the architecture type for the image (default: amd64)"
     echo "        '-b' is the backend type (default: haproxy)"
     echo "        '-c' is the path to the cache directory (default: ~/.cache/image-create)"
-    echo "        '-d' distribution release id (default on ubuntu: xenial)"
+    echo "        '-d' distribution release id (default on ubuntu: bionic)"
     echo "        '-e' enable complete mandatory access control systems when available (default: permissive)"
     echo "        '-f' disable tmpfs for build"
     echo "        '-h' display this help message"
@@ -207,7 +207,7 @@ AMP_CACHEDIR=${AMP_CACHEDIR:-"$HOME/.cache/image-create"}
 AMP_BASEOS=${AMP_BASEOS:-"ubuntu-minimal"}
 
 if [ "$AMP_BASEOS" = "ubuntu-minimal" ]; then
-    export DIB_RELEASE=${AMP_DIB_RELEASE:-"xenial"}
+    export DIB_RELEASE=${AMP_DIB_RELEASE:-"bionic"}
 elif [ "${AMP_BASEOS}" = "centos" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"7"}
 elif [ "${AMP_BASEOS}" = "fedora" ]; then
