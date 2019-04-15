@@ -698,15 +698,15 @@ l7policies-status-object-list:
   type: array
 l7policy-action:
   description: |
-    The L7 policy action.  One of ``REDIRECT_TO_POOL``, ``REDIRECT_TO_URL``,
-    or ``REJECT``.
+    The L7 policy action.  One of ``REDIRECT_PREFIX``, ``REDIRECT_TO_POOL``,
+    ``REDIRECT_TO_URL``, or ``REJECT``.
   in: body
   required: true
   type: string
 l7policy-action-optional:
   description: |
-    The L7 policy action.  One of ``REDIRECT_TO_POOL``, ``REDIRECT_TO_URL``,
-    or ``REJECT``.
+    The L7 policy action.  One of ``REDIRECT_PREFIX``, ``REDIRECT_TO_POOL``,
+    ``REDIRECT_TO_URL``, or ``REJECT``.
   in: body
   required: false
   type: string
