@@ -214,15 +214,13 @@ Best Practices/Optimizations
 To speed up the failovers, the spare pool can be temporarily increased to
 accommodate the rapid failover of the amphora. In this case after the
 new image has been loaded into glance, shut down or initiate a failover of the
-amphora in the spare pool. They can be found, for instance, by looking for the
-servers in ``openstack server list --all`` who only have an ip on the
-management network assigned but not any tenant network. Alternatively, use this
-database query:
+amphora in the spare pool. They can be found by listing amphorae in ``READY``
+status:
 
 
     .. code-block:: bash
 
-        mysql octavia -e 'select id, compute_id, lb_network_ip from amphora where status="READY";'
+        openstack loadbalancer amphora list --status READY
 
 
 After you have increased the spare pool size and restarted all Octavia
@@ -245,13 +243,6 @@ slow pace, during a time with little load, or with the right throttling
 enabled in Octavia. The throttling will make sure to prioritize failovers
 higher than other operations and depending on how many failovers are
 initiated this might crowd out other operations.
-
-.. note::
-    In Pike a failover command is being added to the API which allows to failover
-    a load balancer's amphora while taking care of the intricacies of different
-    topologies and prioritizes administrative failovers behind other operations.
-    This function should be used instead of the ones described above once it
-    becomes available.
 
 Rotating Cryptographic Certificates
 ===================================
