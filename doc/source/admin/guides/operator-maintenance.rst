@@ -182,6 +182,29 @@ If you didn't configure image tags and instead configured an image id, you
 will need to update the Octavia configuration file with the new id and restart
 the Octavia services (except octavia-api).
 
+Rotating spare Amphorae
+-----------------------
+
+If the spare pool is enabled in Octavia, spare amphorae must be rotated
+first, so a new load balancer will use the new amphora image from a newly
+spawned spare amphora.
+
+To rotate spare amphorae, list the IDs of all amphorae in ``READY`` status:
+
+    .. code-block:: bash
+
+        openstack loadbalancer amphora list -c id -f value --status READY
+
+Then, for each ID, perform the failover on the amphora:
+
+    .. code-block:: bash
+
+        openstack loadbalancer amphora failover <amphora id>
+
+Spare amphorae now use the new amphora image, and those spare amphorae will be
+used when creating a new load balancer or when performing a failover of a load
+balancer.
+
 Generating a List of Load Balancers to Rotate
 ---------------------------------------------
 
@@ -194,8 +217,8 @@ load balancers:
 
 Take note of the IDs.
 
-Rotate a Load Balancer
-----------------------
+Rotating a Load Balancer
+------------------------
 
 Octavia has an API call to initiate the failover of a load balancer:
 
