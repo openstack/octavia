@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed a bug that prevents spare amphora rotation.
