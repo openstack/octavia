@@ -823,7 +823,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             db_apis.get_session(), amp.id)
         if CONF.nova.enable_anti_affinity and lb:
             stored_params[constants.SERVER_GROUP_ID] = lb.server_group_id
-        if lb.flavor_id:
+        if lb and lb.flavor_id:
             stored_params[constants.FLAVOR] = (
                 self._flavor_repo.get_flavor_metadata_dict(
                     db_apis.get_session(), lb.flavor_id))
