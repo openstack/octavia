@@ -20,11 +20,12 @@ set -e
 usage() {
     echo
     echo "Usage: $(basename $0)"
-    echo "            [-a i386 | **amd64** | armhf ]"
+    echo "            [-a i386 | **amd64** | armhf | ppc64le]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
     echo "            [-d **xenial**/**7** | trusty | <other release id> ]"
     echo "            [-e]"
+    echo "            [-f]"
     echo "            [-h]"
     echo "            [-i **ubuntu-minimal** | fedora | centos | rhel ]"
     echo "            [-l <log file> ]"
@@ -43,6 +44,7 @@ usage() {
     echo "        '-c' is the path to the cache directory (default: ~/.cache/image-create)"
     echo "        '-d' distribution release id (default on ubuntu: xenial)"
     echo "        '-e' enable complete mandatory access control systems when available (default: permissive)"
+    echo "        '-f' disable tmpfs for build"
     echo "        '-h' display this help message"
     echo "        '-i' is the base OS (default: ubuntu)"
     echo "        '-l' is output logfile (default: none)"
@@ -85,12 +87,13 @@ dib_enable_tracing=
 
 AMP_LOGFILE=""
 
-while getopts "a:b:c:d:ehi:l:no:pt:r:s:vw:x" opt; do
+while getopts "a:b:c:d:efhi:l:no:pt:r:s:vw:x" opt; do
     case $opt in
         a)
             AMP_ARCH=$OPTARG
             if [ $AMP_ARCH != "i386" ] && \
                 [ $AMP_ARCH != "amd64" ] && \
+                [ $AMP_ARCH != "ppc64le" ] && \
                 [ $AMP_ARCH != "armhf" ]; then
                 echo "Error: Unsupported architecture " $AMP_ARCH " specified"
                 exit 3
@@ -112,6 +115,9 @@ while getopts "a:b:c:d:ehi:l:no:pt:r:s:vw:x" opt; do
         ;;
         e)
             AMP_ENABLE_FULL_MAC_SECURITY=1
+        ;;
+        f)
+            AMP_DISABLE_TMP_FS='--no-tmpfs'
         ;;
         h)
             usage
@@ -138,7 +144,7 @@ while getopts "a:b:c:d:ehi:l:no:pt:r:s:vw:x" opt; do
         ;;
         o)
             AMP_OUTPUTFILENAME=$(readlink -f $OPTARG)
-	    amp_dir=$(dirname $AMP_OUTPUTFILENAME)
+            amp_dir=$(dirname $AMP_OUTPUTFILENAME)
             if [ ! -d $amp_dir ]; then
                 echo "Error: Directory $amp_dir does not exist"
                 exit 3
@@ -215,6 +221,8 @@ AMP_PACKAGE_INSTALL=${AMP_PACKAGE_INSTALL:-0}
 
 AMP_ENABLE_FULL_MAC_SECURITY=${AMP_ENABLE_FULL_MAC_SECURITY:-0}
 
+AMP_DISABLE_TMP_FS=${AMP_DISABLE_TMP_FS:-""}
+
 if [ "$AMP_BASEOS" = "rhel" -o "$AMP_BASEOS" = "centos" -o "$AMP_BASEOS" = "fedora" ] && [ "$AMP_IMAGESIZE" -lt 3 ]; then
     echo "RHEL/centos based amphora requires an image size of at least 3GB"
     exit 1
@@ -288,7 +296,7 @@ if [ "$platform" = 'NAME="Ubuntu"' ]; then
     for pkg in $PKG_LIST; do
         if ! dpkg --get-selections | grep -q "^$pkg[[:space:]]*install$" >/dev/null; then
             echo "Required package " $pkg " is not installed.  Exiting."
-	    echo "Binary dependencies on this platform are: ${PKG_LIST}"
+            echo "Binary dependencies on this platform are: ${PKG_LIST}"
             exit 1
         fi
     done
@@ -308,7 +316,7 @@ elif [[ $platform =~ "SUSE" ]]; then
     for pkg in $PKG_LIST; do
         if ! rpm -q $pkg &> /dev/null; then
             echo "Required package " ${pkg/\*} " is not installed.  Exiting."
-	    echo "Binary dependencies on this platform are: ${PKG_LIST}"
+            echo "Binary dependencies on this platform are: ${PKG_LIST}"
             exit 1
         fi
     done
@@ -320,7 +328,7 @@ else
     for pkg in $PKG_LIST; do
         if ! rpm -qa $pkg ; then
             echo "Required package " ${pkg/\*} " is not installed.  Exiting."
-	    echo "Binary dependencies on this platform are: ${PKG_LIST}"
+            echo "Binary dependencies on this platform are: ${PKG_LIST}"
             exit 1
         fi
     done
@@ -405,7 +413,7 @@ if [ -n "$dib_enable_tracing" ]; then
     dib_trace_arg="-x"
 fi
 
-disk-image-create $AMP_LOGFILE $dib_trace_arg -a $AMP_ARCH -o $AMP_OUTPUTFILENAME -t $AMP_IMAGETYPE --image-size $AMP_IMAGESIZE --image-cache $AMP_CACHEDIR $AMP_element_sequence
+disk-image-create $AMP_LOGFILE $dib_trace_arg -a $AMP_ARCH -o $AMP_OUTPUTFILENAME -t $AMP_IMAGETYPE --image-size $AMP_IMAGESIZE --image-cache $AMP_CACHEDIR $AMP_DISABLE_TMP_FS $AMP_element_sequence
 
 popd > /dev/null # out of $TEMP
 rm -rf $TEMP

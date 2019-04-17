@@ -91,11 +91,12 @@ Command syntax:
 .. line-block::
 
     $ diskimage-create.sh
-            [-a i386 | **amd64** | armhf ]
+            [-a i386 | **amd64** | armhf | ppc64le ]
             [-b **haproxy** ]
             [-c **~/.cache/image-create** | <cache directory> ]
             [-d **xenial**/**7** | trusty | <other release id> ]
             [-e]
+            [-f]
             [-h]
             [-i **ubuntu** | fedora | centos | rhel ]
             [-l <log file> ]
@@ -114,6 +115,7 @@ Command syntax:
         '-c' is the path to the cache directory (default: ~/.cache/image-create)
         '-d' distribution release id (default on ubuntu: xenial)
         '-e' enable complete mandatory access control systems when available (default: permissive)
+        '-f' disable tmpfs for build
         '-h' display help message
         '-i' is the base OS (default: ubuntu)
         '-l' is output logfile (default: none)
