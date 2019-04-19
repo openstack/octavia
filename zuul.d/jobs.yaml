@@ -11,7 +11,7 @@
     post-run: playbooks/legacy/octavia-v1-dsvm-scenario/post.yaml
     timeout: 7800
     required-projects:
-      - openstack-infra/devstack-gate
+      - openstack/devstack-gate
       - openstack/barbican
       - openstack/diskimage-builder
       - openstack/neutron-lbaas
@@ -27,7 +27,7 @@
     post-run: playbooks/legacy/octavia-v1-dsvm-scenario-multinode/post.yaml
     timeout: 7800
     required-projects:
-      - openstack-infra/devstack-gate
+      - openstack/devstack-gate
       - openstack/barbican
       - openstack/diskimage-builder
       - openstack/neutron-lbaas
@@ -44,7 +44,7 @@
     post-run: playbooks/legacy/octavia-v1-dsvm-scenario-kvm-centos.7/post.yaml
     timeout: 7800
     required-projects:
-      - openstack-infra/devstack-gate
+      - openstack/devstack-gate
       - openstack/barbican
       - openstack/barbican-tempest-plugin
       - openstack/diskimage-builder
