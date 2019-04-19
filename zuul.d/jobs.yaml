@@ -3,7 +3,7 @@
     parent: legacy-dsvm-base
     timeout: 7800
     required-projects:
-      - openstack-infra/devstack-gate
+      - openstack/devstack-gate
       - openstack/barbican
       - openstack/diskimage-builder
       - openstack/neutron-lbaas
@@ -86,8 +86,8 @@
     run: playbooks/legacy/grenade-devstack-octavia/run.yaml
     post-run: playbooks/legacy/grenade-devstack-octavia/post.yaml
     required-projects:
-      - openstack-dev/grenade
-      - openstack-infra/devstack-gate
+      - openstack/grenade
+      - openstack/devstack-gate
       - openstack/octavia
       - openstack/octavia-lib
       - openstack/octavia-tempest-plugin
