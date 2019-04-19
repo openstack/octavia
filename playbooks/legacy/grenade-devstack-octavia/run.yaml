@@ -13,12 +13,12 @@
           set -x
           cat > clonemap.yaml << EOF
           clonemap:
-            - name: openstack-infra/devstack-gate
+            - name: openstack/devstack-gate
               dest: devstack-gate
           EOF
           /usr/zuul-env/bin/zuul-cloner -m clonemap.yaml --cache-dir /opt/git \
-              https://git.openstack.org \
-              openstack-infra/devstack-gate
+              https://opendev.org \
+              openstack/devstack-gate
         executable: /bin/bash
         chdir: '{{ ansible_user_dir }}/workspace'
       environment: '{{ zuul | zuul_legacy_vars }}'
@@ -29,14 +29,14 @@
           set -x
           export PYTHONUNBUFFERED=true
 
-          export PROJECTS="openstack-dev/grenade $PROJECTS"
+          export PROJECTS="openstack/grenade $PROJECTS"
           export PROJECTS="openstack/octavia $PROJECTS"
           export PROJECTS="openstack/octavia-lib $PROJECTS"
           export PROJECTS="openstack/octavia-tempest-plugin $PROJECTS"
           export PROJECTS="openstack/python-octaviaclient $PROJECTS"
           export DEVSTACK_PROJECT_FROM_GIT="python-octaviaclient $DEVSTACK_PROJECT_FROM_GIT"
 
-          export GRENADE_PLUGINRC="enable_grenade_plugin octavia https://git.openstack.org/openstack/octavia"
+          export GRENADE_PLUGINRC="enable_grenade_plugin octavia https://opendev.org/openstack/octavia"
           export DEVSTACK_LOCAL_CONFIG+=$'\n'"export TEMPEST_PLUGINS='/opt/stack/new/octavia-tempest-plugin'"
           export DEVSTACK_LOCAL_CONFIG+=$'\n'"[[post-config|/etc/octavia/octavia.conf]]"$'\n'"[DEFAULT]"$'\n'"debug = True"
 

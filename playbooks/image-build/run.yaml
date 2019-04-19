@@ -42,6 +42,6 @@
               -d {{ amphora_os_release }} \
               -s {{ amphora_image_size | default(2) }}
       args:
-        chdir: "{{ ansible_user_dir }}/src/git.openstack.org/openstack/octavia/diskimage-create"
+        chdir: "{{ ansible_user_dir }}/src/opendev.org/openstack/octavia/diskimage-create"
       tags:
         - skip_ansible_lint
