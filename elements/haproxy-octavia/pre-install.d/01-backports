@@ -7,11 +7,30 @@ set -o xtrace
 if [ "$DISTRO_NAME" == "ubuntu" ] && [ "$DIB_RELEASE" == "trusty" ]; then
     echo deb http://archive.ubuntu.com/ubuntu trusty-backports main restricted universe multiverse > /etc/apt/sources.list.d/backports.list
 elif [ "$DISTRO_NAME" == "centos7" ]; then
+    case $ARCH in  ## Change this to an environment variable from DIB?!
+    x86_64|amd64)
+        BASEURL=http://mirror.centos.org/\$contentdir/\$releasever/paas/\$basearch/openshift-origin/
+        ;;
+    ppc64le)
+        #  For ppc64le, the CentOS PaaS sig does not currently publish a repo
+        #  even though it does build everything for that architecture.  Until
+        #  there is an official repo, the publish buildroot can be used.  One
+        #  down-side to doing this is that the build root contains *all* of the
+        #  CentOS-base, CentOS-extras, and CentOS-updates content.  To ensure
+        #  *only* `haproxy18` is retrieved from this repo, the explicit limit
+        #  for that package can be used.  This should be fine for now since
+        #  haproxy18's dependencies are available outside this repo.  If things
+        #  change, the includepkgs line can be expanded as needed.
+        BASEURL=https://cbs.centos.org/kojifiles/repos/paas7-openshift-multiarch-el7-build/latest/\$basearch/
+        INCLUDEPKGS='includepkgs=haproxy*'
+        ;;
+    esac
     cat > /etc/yum.repos.d/CentOS-PaaS.repo <<EOF
 [paas]
 name=CentOS-7 - PaaS
-baseurl=http://mirror.centos.org/centos/7/paas/\$basearch/openshift-origin/
+baseurl=$BASEURL
 gpgcheck=0
 enabled=1
+$INCLUDEPKGS
 EOF
 fi
