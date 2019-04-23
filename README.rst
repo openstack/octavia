@@ -36,7 +36,7 @@ Release notes for the Octavia project are available at
 https://docs.openstack.org/releasenotes/octavia/
 
 The project source code repository is located at
-https://git.openstack.org/cgit/openstack/octavia
+https://opendev.org/openstack/octavia
 
 Project status, bugs, and requests for feature enhancements are tracked on
 https://storyboard.openstack.org/#!/project/openstack/octavia

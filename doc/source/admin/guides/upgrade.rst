@@ -38,7 +38,7 @@ operators should observe:
   Compute, Networking, Image and Identify. On a staging environment, upgrade
   the Load Balancing service and verify it works as expected. For example, a
   good indicator would be the successful run of `Octavia Tempest tests
-  <https://git.openstack.org/cgit/openstack/octavia-tempest-plugin>`.
+  <https://opendev.org/openstack/octavia-tempest-plugin>`.
 
 Cold upgrade
 ============
@@ -93,7 +93,7 @@ DevStack to initially perform a base OpenStack install and then upgrade to a
 target version.
 
 Octavia has a `Grenade plugin
-<https://git.openstack.org/cgit/openstack/octavia/tree/devstack/upgrade>`_ and
+<https://opendev.org/openstack/octavia/src/branch/master/devstack/upgrade>`_ and
 a CI gate job that validates cold upgrades of an OpenStack deployment with
 Octavia enabled. The plugin creates load balancing resources and verifies that
 resources are still working during and after upgrade.

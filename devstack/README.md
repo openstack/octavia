@@ -17,7 +17,7 @@ where
 
 For example
 
-    enable_plugin octavia https://git.openstack.org/openstack/octavia master
+    enable_plugin octavia https://opendev.org/openstack/octavia master
 
 2) Enable the Octavia services
 
