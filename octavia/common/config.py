@@ -80,12 +80,13 @@ api_opts = [
     cfg.BoolOpt('allow_ping_health_monitors', default=True,
                 help=_("Allow users to create PING type Health Monitors?")),
     cfg.DictOpt('enabled_provider_drivers',
-                help=_('List of enabled provider drivers and description '
-                       'dictionaries. Must match the driver name in the '
+                help=_('A comma separated list of dictionaries of the '
+                       'enabled provider driver names and descriptions. '
+                       'Must match the driver name in the '
                        'octavia.api.drivers entrypoint. Example: '
-                       '{\'amphora\': \'The Octavia Amphora driver.\', '
-                       '\'octavia\': \'Deprecated alias of the Octavia '
-                       'Amphora driver.\'}'),
+                       'amphora:The Octavia Amphora driver.,'
+                       'octavia:Deprecated alias of the Octavia '
+                       'Amphora driver.'),
                 default={'amphora': 'The Octavia Amphora driver.',
                          'octavia': 'Deprecated alias of the Octavia Amphora '
                          'driver.'}),
