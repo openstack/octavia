@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed an issue where the listener API would accept null/None values for
+    fields that must have a valid value, such as connection-limit.
+    Now when a PUT call is made to one of these fields with null as the value
+    the API will reset the field value to the field default value.

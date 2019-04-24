@@ -1460,6 +1460,70 @@ class TestListener(base.BaseAPITest):
                          api_listener.get('client_authentication'))
         self.assertIsNone(api_listener.get('client_crl_container_ref'))
 
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_unset_defaults(self, mock_cert_data):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(group='haproxy_amphora', timeout_client_data=20)
+        self.conf.config(group='haproxy_amphora', timeout_member_connect=21)
+        self.conf.config(group='haproxy_amphora', timeout_member_data=22)
+        self.conf.config(group='haproxy_amphora', timeout_tcp_inspect=23)
+
+        self.cert_manager_mock().get_secret.side_effect = [
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL]
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
+        self.cert_manager_mock().get_secret.return_value = (
+            sample_certs.X509_CA_CERT)
+        tls_uuid = uuidutils.generate_uuid()
+        ca_tls_uuid = uuidutils.generate_uuid()
+        crl_tls_uuid = uuidutils.generate_uuid()
+        listener = self.create_listener(
+            constants.PROTOCOL_TERMINATED_HTTPS, 80, self.lb_id,
+            name='listener1', description='desc1',
+            admin_state_up=False, connection_limit=10,
+            default_tls_container_ref=tls_uuid,
+            default_pool_id=self.pool_id, tags=['old_tag'],
+            insert_headers={'X-Forwarded-For': 'true'},
+            timeout_client_data=1, timeout_member_connect=2,
+            timeout_member_data=3, timeout_tcp_inspect=4,
+            client_authentication=constants.CLIENT_AUTH_OPTIONAL,
+            client_crl_container_ref=crl_tls_uuid,
+            client_ca_tls_container_ref=ca_tls_uuid).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        unset_params = {
+            'name': None, 'description': None, 'connection_limit': None,
+            'default_tls_container_ref': None, 'sni_container_refs': None,
+            'insert_headers': None, 'timeout_client_data': None,
+            'timeout_member_connect': None, 'timeout_member_data': None,
+            'timeout_tcp_inspect': None, 'client_ca_tls_container_ref': None,
+            'client_authentication': None, 'default_pool_id': None,
+            'client_crl_container_ref': None}
+        body = self._build_body(unset_params)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['id'])
+        api_listener = self.put(listener_path, body).json.get(self.root_tag)
+
+        self.assertEqual('', api_listener['name'])
+        self.assertEqual('', api_listener['description'])
+        self.assertEqual(constants.DEFAULT_CONNECTION_LIMIT,
+                         api_listener['connection_limit'])
+        self.assertIsNone(api_listener['default_tls_container_ref'])
+        self.assertEqual([], api_listener['sni_container_refs'])
+        self.assertEqual({}, api_listener['insert_headers'])
+        self.assertEqual(20, api_listener['timeout_client_data'])
+        self.assertEqual(21, api_listener['timeout_member_connect'])
+        self.assertEqual(22, api_listener['timeout_member_data'])
+        self.assertEqual(23, api_listener['timeout_tcp_inspect'])
+        self.assertIsNone(api_listener['client_ca_tls_container_ref'])
+        self.assertIsNone(api_listener['client_crl_container_ref'])
+        self.assertEqual(constants.CLIENT_AUTH_NONE,
+                         api_listener['client_authentication'])
+        self.assertIsNone(api_listener['default_pool_id'])
+
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_update_with_bad_ca_cert(self, mock_cert_data):
         cert1 = data_models.TLSContainer(certificate='cert 1')
