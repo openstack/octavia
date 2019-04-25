@@ -9,6 +9,8 @@ network load balancing to OpenStack.
 
 See :doc:`reference/introduction` for an overview of Octavia.
 
+For information on what is new see the `Octavia Release Notes <https://docs.openstack.org/releasenotes/octavia/>`_.
+
 To align with the overall OpenStack documentation, the Octavia documentation
 is grouped into the following topic areas.
 
