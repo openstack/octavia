@@ -16,10 +16,14 @@
 from cryptography import fernet
 import mock
 
+from oslo_config import cfg
+
 from octavia.certificates.common import local
 from octavia.common import utils
 from octavia.controller.worker.tasks import cert_task
 import octavia.tests.unit.base as base
+
+CONF = cfg.CONF
 
 
 class TestCertTasks(base.TestCase):
@@ -40,4 +44,4 @@ class TestCertTasks(base.TestCase):
             dummy_cert.get_private_key()
         )
         mock_driver.generate_cert_key_pair.assert_called_once_with(
-            cn='123', validity=cert_task.CERT_VALIDITY)
+            cn='123', validity=CONF.certificates.cert_validity_time)

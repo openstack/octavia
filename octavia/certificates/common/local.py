@@ -59,7 +59,11 @@ certgen_opts = [
     cfg.StrOpt('signing_digest',
                default=TLS_DIGEST_DEFAULT,
                help='Certificate signing digest. Defaults'
-                    ' to env[OS_OCTAVIA_CA_SIGNING_DIGEST] or "sha256".')
+                    ' to env[OS_OCTAVIA_CA_SIGNING_DIGEST] or "sha256".'),
+    cfg.IntOpt('cert_validity_time',
+               default=30 * 24 * 60 * 60,
+               help="The validity time for the Amphora Certificates "
+                    "(in seconds)."),
 ]
 
 certmgr_opts = [

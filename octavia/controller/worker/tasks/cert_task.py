@@ -21,7 +21,6 @@ from taskflow import task
 from octavia.common import utils
 
 CONF = cfg.CONF
-CERT_VALIDITY = 2 * 365 * 24 * 60 * 60
 
 
 class BaseCertTask(task.Task):
@@ -45,7 +44,7 @@ class GenerateServerPEMTask(BaseCertTask):
     def execute(self, amphora_id):
         cert = self.cert_generator.generate_cert_key_pair(
             cn=amphora_id,
-            validity=CERT_VALIDITY)
+            validity=CONF.certificates.cert_validity_time)
         key = utils.get_six_compatible_server_certs_key_passphrase()
         fer = fernet.Fernet(key)
 

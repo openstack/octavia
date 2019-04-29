@@ -1,0 +1,9 @@
+---
+features:
+  - |
+    The validity period for locally generated certificates used inside Amphora
+    is now configurable. See ``[certificates] cert_validity_time``.
+security:
+  - |
+    The default validity time for Amphora certificates has been reduced from
+    two years to 30 days.
