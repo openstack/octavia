@@ -10,8 +10,6 @@ Cookbooks
 
    guides/basic-cookbook
    guides/l7-cookbook
-   guides/basic-cookbook-neutron
-   guides/l7-cookbook-neutron
 
 Guides
 ======

@@ -6,7 +6,6 @@
       - openstack/devstack-gate
       - openstack/barbican
       - openstack/diskimage-builder
-      - openstack/neutron-lbaas
       - openstack/octavia
       - openstack/octavia-lib
       - openstack/python-barbicanclient
@@ -21,18 +20,6 @@
     vars:
       zuul_copy_output:
         '/var/log/dib-build': 'logs'
-
-- job:
-    name: octavia-v1-dsvm-scenario
-    parent: octavia-legacy-dsvm-base
-    run: playbooks/legacy/octavia-v1-dsvm-scenario/run.yaml
-    post-run: playbooks/legacy/octavia-v1-dsvm-scenario/post.yaml
-
-- job:
-    name: octavia-v1-dsvm-py3x-scenario
-    parent: octavia-legacy-dsvm-base
-    run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario/run.yaml
-    post-run: playbooks/legacy/octavia-v1-dsvm-py3x-scenario/post.yaml
 
 - job:
     name: publish-openstack-octavia-amphora-image

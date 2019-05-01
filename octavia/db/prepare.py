@@ -15,7 +15,7 @@
 from oslo_config import cfg
 from oslo_utils import uuidutils
 
-from octavia.api.v1.types import l7rule
+from octavia.api.v2.types import l7rule
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.common import validate

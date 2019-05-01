@@ -270,15 +270,6 @@ function octavia_configure {
     iniset $OCTAVIA_CONF oslo_messaging rpc_thread_pool_size 2
     iniset $OCTAVIA_CONF oslo_messaging topic octavia_prov
 
-    # TODO(nmagnezi): Remove this when neutron-lbaas gets deprecated
-    # Setting neutron request_poll_timeout
-    iniset $NEUTRON_CONF octavia request_poll_timeout 3000
-    if [[ "$WSGI_MODE" == "uwsgi" ]]; then
-        iniadd $NEUTRON_CONF octavia base_url "$OCTAVIA_PROTOCOL://$SERVICE_HOST/$OCTAVIA_SERVICE_TYPE"
-    else
-        iniadd $NEUTRON_CONF octavia base_url "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/"
-    fi
-
     # Uncomment other default options
     iniuncomment $OCTAVIA_CONF haproxy_amphora base_path
     iniuncomment $OCTAVIA_CONF haproxy_amphora base_cert_dir

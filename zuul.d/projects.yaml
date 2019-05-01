@@ -12,12 +12,6 @@
       - release-notes-jobs-python3
     check:
       jobs:
-        - neutron-lbaasv2-dsvm-api
-        - neutron-lbaasv2-dsvm-py3x-api
-        - neutron-lbaasv2-dsvm-scenario:
-            voting: false
-        - neutron-lbaasv2-dsvm-py3x-scenario:
-            voting: false
         - openstack-tox-functional:
             irrelevant-files:
               - ^.*\.rst$
@@ -32,8 +26,6 @@
               - ^doc/.*$
               - ^etc/.*$
               - ^releasenotes/.*$
-        - octavia-v1-dsvm-scenario
-        - octavia-v1-dsvm-py3x-scenario
         - octavia-v2-dsvm-noop-api
         - octavia-v2-dsvm-noop-py2-api
         - octavia-v2-dsvm-scenario
@@ -82,10 +74,6 @@
               - ^doc/.*$
               - ^etc/.*$
               - ^releasenotes/.*$
-        - octavia-v1-dsvm-scenario
-        - octavia-v1-dsvm-py3x-scenario
-        - neutron-lbaasv2-dsvm-api
-        - neutron-lbaasv2-dsvm-py3x-api
         - octavia-v2-dsvm-noop-api
         - octavia-v2-dsvm-noop-py2-api
         - octavia-v2-dsvm-scenario
