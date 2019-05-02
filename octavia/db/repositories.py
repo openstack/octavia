@@ -19,6 +19,7 @@ reference
 """
 
 import datetime
+from typing import Optional
 
 from oslo_config import cfg
 from oslo_db import api as oslo_db_api
@@ -28,9 +29,12 @@ from oslo_serialization import jsonutils
 from oslo_utils import excutils
 from oslo_utils import uuidutils
 from sqlalchemy.orm import noload
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import subqueryload
+from sqlalchemy import select
 from sqlalchemy.sql.expression import false
 from sqlalchemy.sql import func
+from sqlalchemy import update
 
 from octavia.common import constants as consts
 from octavia.common import data_models
@@ -1678,28 +1682,99 @@ class AmphoraHealthRepository(BaseRepository):
         # In this case, the amphora is expired.
         return amphora_model is None
 
-    def get_stale_amphora(self, session):
+    def get_stale_amphora(self,
+                          lock_session: Session) -> Optional[models.Amphora]:
         """Retrieves a stale amphora from the health manager database.
 
-        :param session: A Sql Alchemy database session.
+        :param lock_session: A Sql Alchemy database autocommit session.
         :returns: [octavia.common.data_model]
         """
-
         timeout = CONF.health_manager.heartbeat_timeout
         expired_time = datetime.datetime.utcnow() - datetime.timedelta(
             seconds=timeout)
 
-        amp = session.query(self.model_class).with_for_update().filter_by(
-            busy=False).filter(
-            self.model_class.last_update < expired_time).order_by(
-            func.random()).first()
+        # Update any amphora that were previously FAILOVER_STOPPED
+        # but are no longer expired.
+        self.update_failover_stopped(lock_session, expired_time)
 
-        if amp is None:
+        # Handle expired amphora
+        expired_ids_query = select(self.model_class.amphora_id).where(
+            self.model_class.busy == false()).where(
+                self.model_class.last_update < expired_time)
+
+        expired_count = lock_session.scalar(
+            select(func.count()).select_from(expired_ids_query))
+
+        threshold = CONF.health_manager.failover_threshold
+        if threshold is not None and expired_count >= threshold:
+            LOG.error('Stale amphora count reached the threshold '
+                      '(%(th)s). %(count)s amphorae were set into '
+                      'FAILOVER_STOPPED status.',
+                      {'th': threshold, 'count': expired_count})
+            lock_session.execute(
+                update(
+                    models.Amphora
+                ).where(
+                    models.Amphora.status.notin_(
+                        [consts.DELETED, consts.PENDING_DELETE])
+                ).where(
+                    models.Amphora.id.in_(expired_ids_query)
+                ).values(
+                    status=consts.AMPHORA_FAILOVER_STOPPED
+                ).execution_options(synchronize_session="fetch"))
             return None
 
-        amp.busy = True
+        # We don't want to attempt to failover amphora that are not
+        # currently in the ALLOCATED or FAILOVER_STOPPED state.
+        # i.e. Not DELETED, PENDING_*, etc.
+        allocated_amp_ids_subquery = (
+            select(models.Amphora.id).where(
+                models.Amphora.status.in_(
+                    [consts.AMPHORA_ALLOCATED,
+                     consts.AMPHORA_FAILOVER_STOPPED])))
 
-        return amp.to_data_model()
+        # Pick one expired amphora for automatic failover
+        amp_health = lock_session.query(
+            self.model_class
+        ).with_for_update(
+        ).filter(
+            self.model_class.amphora_id.in_(expired_ids_query)
+        ).filter(
+            self.model_class.amphora_id.in_(allocated_amp_ids_subquery)
+        ).order_by(
+            func.random()
+        ).limit(1).first()
+
+        if amp_health is None:
+            return None
+
+        amp_health.busy = True
+
+        return amp_health.to_data_model()
+
+    def update_failover_stopped(self, lock_session: Session,
+                                expired_time: datetime) -> None:
+        """Updates the status of amps that are FAILOVER_STOPPED."""
+        # Update any FAILOVER_STOPPED amphora that are no longer stale
+        # back to ALLOCATED.
+        # Note: This uses sqlalchemy 2.0 syntax
+        not_expired_ids_subquery = (
+            select(self.model_class.amphora_id).where(
+                self.model_class.busy == false()
+            ).where(
+                self.model_class.last_update >= expired_time
+            ))
+
+        # Note: mysql and sqlite do not support RETURNING, so we cannot
+        #       get back the affected amphora IDs. (09/2022)
+        lock_session.execute(
+            update(models.Amphora).where(
+                models.Amphora.status == consts.AMPHORA_FAILOVER_STOPPED
+            ).where(
+                models.Amphora.id.in_(not_expired_ids_subquery)
+            ).values(
+                status=consts.AMPHORA_ALLOCATED
+            ).execution_options(synchronize_session="fetch"))
 
 
 class VRRPGroupRepository(BaseRepository):

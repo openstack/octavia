@@ -4144,11 +4144,30 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
 class AmphoraHealthRepositoryTest(BaseRepositoryTest):
     def setUp(self):
         super().setUp()
+        self._fake_ip_gen = (self.FAKE_IP + str(ip_end) for ip_end in
+                             range(100))
         self.amphora = self.amphora_repo.create(self.session,
                                                 id=self.FAKE_UUID_1,
                                                 compute_id=self.FAKE_UUID_3,
                                                 status=constants.ACTIVE,
                                                 lb_network_ip=self.FAKE_IP)
+
+    def create_amphora(self, amphora_id, **overrides):
+        fake_ip = next(self._fake_ip_gen)
+        settings = {
+            'id': amphora_id,
+            'compute_id': uuidutils.generate_uuid(),
+            'status': constants.ACTIVE,
+            'lb_network_ip': fake_ip,
+            'vrrp_ip': fake_ip,
+            'ha_ip': fake_ip,
+            'role': constants.ROLE_MASTER,
+            'cert_expiration': datetime.datetime.utcnow(),
+            'cert_busy': False
+        }
+        settings.update(overrides)
+        amphora = self.amphora_repo.create(self.session, **settings)
+        return amphora
 
     def create_amphora_health(self, amphora_id):
         newdate = datetime.datetime.utcnow() - datetime.timedelta(minutes=10)
@@ -4216,10 +4235,94 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
             self.session)
         self.assertIsNone(stale_amphora)
 
-        self.create_amphora_health(self.amphora.id)
+        uuid = uuidutils.generate_uuid()
+        self.create_amphora(uuid)
+        self.amphora_repo.update(self.session, uuid,
+                                 status=constants.AMPHORA_ALLOCATED)
+        self.create_amphora_health(uuid)
         stale_amphora = self.amphora_health_repo.get_stale_amphora(
             self.session)
-        self.assertEqual(self.amphora.id, stale_amphora.amphora_id)
+        self.assertEqual(uuid, stale_amphora.amphora_id)
+
+    def test_get_stale_amphora_past_threshold(self):
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group='health_manager', failover_threshold=3)
+
+        stale_amphora = self.amphora_health_repo.get_stale_amphora(
+            self.session)
+        self.assertIsNone(stale_amphora)
+
+        # Two stale amphora expected, should return that amp
+        # These will go into failover and be marked "busy"
+        uuids = []
+        for _ in range(2):
+            uuid = uuidutils.generate_uuid()
+            uuids.append(uuid)
+            self.create_amphora(uuid)
+            self.amphora_repo.update(self.session, uuid,
+                                     status=constants.AMPHORA_ALLOCATED)
+            self.create_amphora_health(uuid)
+            stale_amphora = self.amphora_health_repo.get_stale_amphora(
+                self.session)
+            self.assertIn(stale_amphora.amphora_id, uuids)
+
+        # Creating more stale amphorae should return no amps (past threshold)
+        stale_uuids = []
+        for _ in range(4):
+            uuid = uuidutils.generate_uuid()
+            stale_uuids.append(uuid)
+            self.create_amphora(uuid)
+            self.amphora_repo.update(self.session, uuid,
+                                     status=constants.AMPHORA_ALLOCATED)
+            self.create_amphora_health(uuid)
+        stale_amphora = self.amphora_health_repo.get_stale_amphora(
+            self.session)
+        self.assertIsNone(stale_amphora)
+        num_fo_stopped = self.session.query(db_models.Amphora).filter(
+            db_models.Amphora.status == constants.AMPHORA_FAILOVER_STOPPED
+        ).count()
+        # Note that the two amphora started failover, so are "busy" and
+        # should not be marked FAILOVER_STOPPED.
+        self.assertEqual(4, num_fo_stopped)
+
+        # One recovered, but still over threshold
+        # Two "busy", One fully healthy, three in FAILOVER_STOPPED
+        amp = self.session.query(db_models.AmphoraHealth).filter_by(
+            amphora_id=stale_uuids[2]).first()
+        amp.last_update = datetime.datetime.utcnow()
+        self.session.flush()
+        stale_amphora = self.amphora_health_repo.get_stale_amphora(
+            self.session)
+        self.assertIsNone(stale_amphora)
+        num_fo_stopped = self.session.query(db_models.Amphora).filter(
+            db_models.Amphora.status == constants.AMPHORA_FAILOVER_STOPPED
+        ).count()
+        self.assertEqual(3, num_fo_stopped)
+
+        # Another one recovered, now below threshold
+        # Two are "busy", Two are fully healthy, Two are in FAILOVER_STOPPED
+        amp = self.session.query(db_models.AmphoraHealth).filter_by(
+            amphora_id=stale_uuids[3]).first()
+        amp.last_update = datetime.datetime.utcnow()
+        stale_amphora = self.amphora_health_repo.get_stale_amphora(
+            self.session)
+        self.assertIsNotNone(stale_amphora)
+        num_fo_stopped = self.session.query(db_models.Amphora).filter(
+            db_models.Amphora.status == constants.AMPHORA_FAILOVER_STOPPED
+        ).count()
+        self.assertEqual(2, num_fo_stopped)
+
+        # After error recovery all amps should be allocated again
+        now = datetime.datetime.utcnow()
+        for amp in self.session.query(db_models.AmphoraHealth).all():
+            amp.last_update = now
+        stale_amphora = self.amphora_health_repo.get_stale_amphora(
+            self.session)
+        self.assertIsNone(stale_amphora)
+        num_allocated = self.session.query(db_models.Amphora).filter(
+            db_models.Amphora.status == constants.AMPHORA_ALLOCATED
+        ).count()
+        self.assertEqual(5, num_allocated)
 
     def test_create(self):
         amphora_health = self.create_amphora_health(self.FAKE_UUID_1)

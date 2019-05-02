@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    A new configuration option ``failover_threshold`` can be set to limit the
+    number of amphorae simultaneously pending failover before halting the
+    automatic failover process. This should help prevent unwanted mass failover
+    events that can happen in cases like network interruption to an AZ or the
+    database becoming read-only. This feature is not enabled by default, and it
+    should be configured carefully based on the size of the environment.
+    For example, with 100 amphorae a good threshold might be 20 or 30, or
+    a value greater than the typical number of amphorae that would be expected
+    on a single host.

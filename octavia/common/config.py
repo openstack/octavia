@@ -304,6 +304,11 @@ health_manager_opts = [
                help=_('Sleep time between health checks in seconds.')),
     cfg.IntOpt('sock_rlimit', default=0,
                help=_(' sets the value of the heartbeat recv buffer')),
+    cfg.IntOpt('failover_threshold', default=None,
+               help=_('Stop failovers if the count of simultaneously failed '
+                      'amphora reaches this number. This may prevent large '
+                      'scale accidental failover events, like in the case of '
+                      'network failures or read-only database issues.')),
 
     # Used by the health manager on the amphora
     cfg.ListOpt('controller_ip_port_list',
