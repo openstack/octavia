@@ -7,6 +7,7 @@ set -o xtrace
 if [ "$DISTRO_NAME" == "ubuntu" ] && [ "$DIB_RELEASE" == "trusty" ]; then
     echo deb http://archive.ubuntu.com/ubuntu trusty-backports main restricted universe multiverse > /etc/apt/sources.list.d/backports.list
 elif [ "$DISTRO_NAME" == "centos7" ]; then
+    INCLUDEPKGS=''
     case $ARCH in
     x86_64|amd64)
         BASEURL=http://mirror.centos.org/\$contentdir/\$releasever/paas/\$basearch/openshift-origin/
