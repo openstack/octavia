@@ -66,7 +66,6 @@ def run_sender(cmd_queue):
     keepalived_pid_path = util.keepalived_pid_path()
 
     while True:
-
         try:
             # If the keepalived config file is present check
             # that it is running, otherwise don't send the health
@@ -79,18 +78,13 @@ def run_sender(cmd_queue):
 
             message = build_stats_message()
             sender.dosend(message)
-
-        except IOError as e:
-            # Missing PID file, skip health heartbeat
+        except (IOError, OSError) as e:
             if e.errno == errno.ENOENT:
+                # Missing PID file, skip health heartbeat.
                 LOG.error('Missing keepalived PID file %s, skipping health '
                           'heartbeat.', keepalived_pid_path)
-            else:
-                LOG.error('Failed to check keepalived and haproxy status due '
-                          'to exception %s, skipping health heartbeat.', e)
-        except OSError as e:
-            # Keepalived is not running, skip health heartbeat
-            if e.errno == errno.ESRCH:
+            elif e.errno == errno.ESRCH:
+                # Keepalived is not running, skip health heartbeat.
                 LOG.error('Keepalived is configured but not running, '
                           'skipping health heartbeat.')
             else:
