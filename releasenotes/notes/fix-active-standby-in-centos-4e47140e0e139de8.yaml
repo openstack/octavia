@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed duplicated IPv6 addresses in Active/Standby mode in CentOS amphorae.
