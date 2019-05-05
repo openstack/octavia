@@ -13,6 +13,7 @@ doc/source/contributor/devref/flow_diagrams/
 doc/source/contributor/modules
 api-ref/build
 .idea/*
+.vscode/*
 *.DS_Store
 *.pyc
 *.egg-info/
