@@ -304,7 +304,8 @@ class TestLifecycleTasks(base.TestCase):
         member_to_error_on_revert = lifecycle_tasks.MemberToErrorOnRevertTask()
 
         # Execute
-        member_to_error_on_revert.execute(self.MEMBER,
+        member_to_error_on_revert.execute({constants.MEMBER_ID:
+                                           self.MEMBER_ID},
                                           self.LISTENERS,
                                           self.LOADBALANCER,
                                           self.POOL_ID)
@@ -312,7 +313,7 @@ class TestLifecycleTasks(base.TestCase):
         self.assertFalse(mock_member_prov_status_error.called)
 
         # Revert
-        member_to_error_on_revert.revert(self.MEMBER,
+        member_to_error_on_revert.revert({constants.MEMBER_ID: self.MEMBER_ID},
                                          self.LISTENERS,
                                          self.LOADBALANCER,
                                          self.POOL_ID)
@@ -344,7 +345,8 @@ class TestLifecycleTasks(base.TestCase):
             lifecycle_tasks.MembersToErrorOnRevertTask())
 
         # Execute
-        members_to_error_on_revert.execute(self.MEMBERS,
+        members_to_error_on_revert.execute([{constants.MEMBER_ID:
+                                             self.MEMBER_ID}],
                                            self.LISTENERS,
                                            self.LOADBALANCER,
                                            self.POOL_ID)
@@ -352,7 +354,8 @@ class TestLifecycleTasks(base.TestCase):
         self.assertFalse(mock_member_prov_status_error.called)
 
         # Revert
-        members_to_error_on_revert.revert(self.MEMBERS,
+        members_to_error_on_revert.revert([{constants.MEMBER_ID:
+                                            self.MEMBER_ID}],
                                           self.LISTENERS,
                                           self.LOADBALANCER,
                                           self.POOL_ID)

@@ -124,26 +124,29 @@ class TestEndpoints(base.TestCase):
             self.resource_id)
 
     def test_create_member(self):
-        self.ep.create_member(self.context, self.resource_id)
+        self.ep.create_member(self.context, self.resource)
         self.ep.worker.create_member.assert_called_once_with(
-            self.resource_id)
+            self.resource)
 
     def test_update_member(self):
-        self.ep.update_member(self.context, self.resource_id,
+        self.ep.update_member(self.context, self.resource,
                               self.resource_updates)
         self.ep.worker.update_member.assert_called_once_with(
-            self.resource_id, self.resource_updates)
+            self.resource, self.resource_updates)
 
     def test_batch_update_members(self):
         self.ep.batch_update_members(
-            self.context, [9], [11], [self.resource_updates])
+            self.context, [{constants.MEMBER_ID: 9}],
+            [{constants.MEMBER_ID: 11}],
+            [self.resource_updates])
         self.ep.worker.batch_update_members.assert_called_once_with(
-            [9], [11], [self.resource_updates])
+            [{constants.MEMBER_ID: 9}], [{constants.MEMBER_ID: 11}],
+            [self.resource_updates])
 
     def test_delete_member(self):
-        self.ep.delete_member(self.context, self.resource_id)
+        self.ep.delete_member(self.context, self.resource)
         self.ep.worker.delete_member.assert_called_once_with(
-            self.resource_id)
+            self.resource)
 
     def test_create_l7policy(self):
         self.ep.create_l7policy(self.context, self.resource_id)

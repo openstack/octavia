@@ -175,9 +175,11 @@ class TestDatabaseTasksQuota(base.TestCase):
         self._test_decrement_quota(task, data_model, project_id=project_id)
 
     def test_decrement_member_quota(self):
+        project_id = uuidutils.generate_uuid()
         task = database_tasks.DecrementMemberQuota()
         data_model = data_models.Member
-        self._test_decrement_quota(task, data_model)
+        self._test_decrement_quota(task, data_model,
+                                   project_id=project_id)
 
     @mock.patch('octavia.db.repositories.Repositories.decrement_quota')
     @mock.patch('octavia.db.repositories.Repositories.check_quota_met')

@@ -239,9 +239,9 @@ class TestAmphoraDriver(base.TestRpc):
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_member_create(self, mock_cast, mock_pool_get, mock_session):
         provider_member = driver_dm.Member(
-            member_id=self.sample_data.member1_id)
+            member_id=self.sample_data)
         self.amp_driver.member_create(provider_member)
-        payload = {consts.MEMBER_ID: self.sample_data.member1_id}
+        payload = {consts.MEMBER: provider_member.to_dict()}
         mock_cast.assert_called_with({}, 'create_member', **payload)
 
     @mock.patch('octavia.db.api.get_session')
@@ -263,7 +263,7 @@ class TestAmphoraDriver(base.TestRpc):
             member_id=self.sample_data.member1_id,
             address="192.0.2.1")
         self.amp_driver.member_create(provider_member)
-        payload = {consts.MEMBER_ID: self.sample_data.member1_id}
+        payload = {consts.MEMBER: provider_member.to_dict()}
         mock_cast.assert_called_with({}, 'create_member', **payload)
 
     @mock.patch('octavia.db.api.get_session')
@@ -293,7 +293,7 @@ class TestAmphoraDriver(base.TestRpc):
         provider_member = driver_dm.Member(
             member_id=self.sample_data.member1_id)
         self.amp_driver.member_delete(provider_member)
-        payload = {consts.MEMBER_ID: self.sample_data.member1_id}
+        payload = {consts.MEMBER: provider_member.to_dict()}
         mock_cast.assert_called_with({}, 'delete_member', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
@@ -302,9 +302,12 @@ class TestAmphoraDriver(base.TestRpc):
             member_id=self.sample_data.member1_id)
         provider_member = driver_dm.Member(
             member_id=self.sample_data.member1_id, admin_state_up=True)
-        member_dict = {'enabled': True}
-        self.amp_driver.member_update(old_provider_member, provider_member)
-        payload = {consts.MEMBER_ID: self.sample_data.member1_id,
+        member_dict = provider_member.to_dict()
+        member_dict.pop(consts.MEMBER_ID)
+        member_dict['enabled'] = member_dict.pop('admin_state_up')
+        self.amp_driver.member_update(old_provider_member,
+                                      provider_member)
+        payload = {consts.ORIGINAL_MEMBER: old_provider_member.to_dict(),
                    consts.MEMBER_UPDATES: member_dict}
         mock_cast.assert_called_with({}, 'update_member', **payload)
 
@@ -314,9 +317,11 @@ class TestAmphoraDriver(base.TestRpc):
             member_id=self.sample_data.member1_id)
         provider_member = driver_dm.Member(
             member_id=self.sample_data.member1_id, name='Great member')
-        member_dict = {'name': 'Great member'}
-        self.amp_driver.member_update(old_provider_member, provider_member)
-        payload = {consts.MEMBER_ID: self.sample_data.member1_id,
+        member_dict = provider_member.to_dict()
+        member_dict.pop(consts.MEMBER_ID)
+        self.amp_driver.member_update(old_provider_member,
+                                      provider_member)
+        payload = {consts.ORIGINAL_MEMBER: old_provider_member.to_dict(),
                    consts.MEMBER_UPDATES: member_dict}
         mock_cast.assert_called_with({}, 'update_member', **payload)
 
@@ -351,9 +356,10 @@ class TestAmphoraDriver(base.TestRpc):
         self.amp_driver.member_batch_update(
             self.sample_data.pool1_id, prov_members)
 
-        payload = {'old_member_ids': [self.sample_data.member1_id],
-                   'new_member_ids': [self.sample_data.member3_id],
-                   'updated_members': [update_mem_dict]}
+        payload = {
+            'old_members': [self.sample_data.db_pool1_members[0].to_dict()],
+            'new_members': [prov_new_member.to_dict()],
+            'updated_members': [update_mem_dict]}
         mock_cast.assert_called_with({}, 'batch_update_members', **payload)
 
     @mock.patch('octavia.db.api.get_session')
@@ -386,9 +392,10 @@ class TestAmphoraDriver(base.TestRpc):
         self.amp_driver.member_batch_update(
             self.sample_data.pool1_id, prov_members)
 
-        payload = {'old_member_ids': [self.sample_data.member1_id],
-                   'new_member_ids': [self.sample_data.member3_id],
-                   'updated_members': [update_mem_dict]}
+        payload = {
+            'old_members': [self.sample_data.db_pool1_members[0].to_dict()],
+            'new_members': [prov_new_member.to_dict()],
+            'updated_members': [update_mem_dict]}
         mock_cast.assert_called_with({}, 'batch_update_members', **payload)
 
     @mock.patch('octavia.db.api.get_session')
@@ -461,8 +468,9 @@ class TestAmphoraDriver(base.TestRpc):
         self.amp_driver.member_batch_update(
             self.sample_data.pool1_id, prov_members)
 
-        payload = {'old_member_ids': [self.sample_data.member1_id],
-                   'new_member_ids': [self.sample_data.member3_id],
+        payload = {'old_members':
+                   [self.sample_data.db_pool1_members[0].to_dict()],
+                   'new_members': [prov_new_member.to_dict()],
                    'updated_members': [update_mem_dict]}
         mock_cast.assert_called_with({}, 'batch_update_members', **payload)
 

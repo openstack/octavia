@@ -196,22 +196,21 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
                                              id=pool_id)
         self._validate_members(db_pool, [member])
 
-        payload = {consts.MEMBER_ID: member.member_id}
+        payload = {consts.MEMBER: member.to_dict()}
         self.client.cast({}, 'create_member', **payload)
 
     def member_delete(self, member):
-        member_id = member.member_id
-        payload = {consts.MEMBER_ID: member_id}
+        payload = {consts.MEMBER: member.to_dict()}
         self.client.cast({}, 'delete_member', **payload)
 
     def member_update(self, old_member, new_member):
-        member_dict = new_member.to_dict()
-        if 'admin_state_up' in member_dict:
-            member_dict['enabled'] = member_dict.pop('admin_state_up')
-        member_id = member_dict.pop('member_id')
-
-        payload = {consts.MEMBER_ID: member_id,
-                   consts.MEMBER_UPDATES: member_dict}
+        original_member = old_member.to_dict()
+        member_updates = new_member.to_dict()
+        if 'admin_state_up' in member_updates:
+            member_updates['enabled'] = member_updates.pop('admin_state_up')
+        member_updates.pop(consts.MEMBER_ID)
+        payload = {consts.ORIGINAL_MEMBER: original_member,
+                   consts.MEMBER_UPDATES: member_updates}
         self.client.cast({}, 'update_member', **payload)
 
     def member_batch_update(self, pool_id, members):
@@ -248,8 +247,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
                 deleted_members.append(m)
 
         if deleted_members or new_members or updated_members:
-            payload = {'old_member_ids': [m.id for m in deleted_members],
-                       'new_member_ids': [m.member_id for m in new_members],
+            payload = {'old_members': [m.to_dict() for m in deleted_members],
+                       'new_members': [m.to_dict() for m in new_members],
                        'updated_members': updated_members}
             self.client.cast({}, 'batch_update_members', **payload)
         else:

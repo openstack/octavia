@@ -395,26 +395,15 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             update_lb_tf.run()
 
-    @tenacity.retry(
-        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
-        wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
-    def create_member(self, member_id):
+    def create_member(self, member):
         """Creates a pool member.
 
-        :param member_id: ID of the member to create
+        :param member: A member provider dictionary to create
         :returns: None
         :raises NoSuitablePool: Unable to find the node pool
         """
-        member = self._member_repo.get(db_apis.get_session(),
-                                       id=member_id)
-        if not member:
-            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
-                        '60 seconds.', 'member', member_id)
-            raise db_exceptions.NoResultFound
-
-        pool = member.pool
+        pool = self._pool_repo.get(db_apis.get_session(),
+                                   id=member[constants.POOL_ID])
         load_balancer = pool.load_balancer
 
         listeners_dicts = (
@@ -432,16 +421,16 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             create_member_tf.run()
 
-    def delete_member(self, member_id):
+    def delete_member(self, member):
         """Deletes a pool member.
 
-        :param member_id: ID of the member to delete
+        :param member: A member provider dictionary to delete
         :returns: None
         :raises MemberNotFound: The referenced member was not found
         """
-        member = self._member_repo.get(db_apis.get_session(),
-                                       id=member_id)
-        pool = member.pool
+        pool = self._pool_repo.get(db_apis.get_session(),
+                                   id=member[constants.POOL_ID])
+
         load_balancer = pool.load_balancer
 
         listeners_dicts = (
@@ -454,27 +443,38 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                    constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER: load_balancer,
                    constants.LOADBALANCER_ID: load_balancer.id,
-                   constants.POOL_ID: pool.id}
+                   constants.POOL_ID: pool.id,
+                   constants.PROJECT_ID: load_balancer.project_id
+                   }
+
         )
         with tf_logging.DynamicLoggingListener(delete_member_tf,
                                                log=LOG):
             delete_member_tf.run()
 
-    def batch_update_members(self, old_member_ids, new_member_ids,
+    def batch_update_members(self, old_members, new_members,
                              updated_members):
-        old_members = [self._member_repo.get(db_apis.get_session(), id=mid)
-                       for mid in old_member_ids]
-        new_members = [self._member_repo.get(db_apis.get_session(), id=mid)
-                       for mid in new_member_ids]
         updated_members = [
-            (self._member_repo.get(db_apis.get_session(), id=m.get('id')), m)
+            (provider_utils.db_member_to_provider_member(
+                self._member_repo.get(db_apis.get_session(),
+                                      id=m.get(constants.ID))).to_dict(),
+             m)
             for m in updated_members]
+        provider_old_members = [
+            provider_utils.db_member_to_provider_member(
+                self._member_repo.get(db_apis.get_session(),
+                                      id=m.get(constants.ID))).to_dict()
+            for m in old_members]
         if old_members:
-            pool = old_members[0].pool
+            pool = self._pool_repo.get(db_apis.get_session(),
+                                       id=old_members[0][constants.POOL_ID])
         elif new_members:
-            pool = new_members[0].pool
+            pool = self._pool_repo.get(db_apis.get_session(),
+                                       id=new_members[0][constants.POOL_ID])
         else:
-            pool = updated_members[0][0].pool
+            pool = self._pool_repo.get(
+                db_apis.get_session(),
+                id=updated_members[0][0][constants.POOL_ID])
         load_balancer = pool.load_balancer
 
         listeners_dicts = (
@@ -483,36 +483,27 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         batch_update_members_tf = self._taskflow_load(
             self._member_flows.get_batch_update_members_flow(
-                old_members, new_members, updated_members),
+                provider_old_members, new_members, updated_members),
             store={constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER: load_balancer,
                    constants.LOADBALANCER_ID: load_balancer.id,
-                   constants.POOL_ID: pool.id})
+                   constants.POOL_ID: pool.id,
+                   constants.PROJECT_ID: load_balancer.project_id})
         with tf_logging.DynamicLoggingListener(batch_update_members_tf,
                                                log=LOG):
             batch_update_members_tf.run()
 
-    def update_member(self, member_id, member_updates):
+    def update_member(self, member, member_updates):
         """Updates a pool member.
 
-        :param member_id: ID of the member to update
+        :param member_id: A member provider dictionary  to update
         :param member_updates: Dict containing updated member attributes
         :returns: None
         :raises MemberNotFound: The referenced member was not found
         """
-        member = None
-        try:
-            member = self._get_db_obj_until_pending_update(
-                self._member_repo, member_id)
-        except tenacity.RetryError as e:
-            LOG.warning('Member did not go into %s in 60 seconds. '
-                        'This either due to an in-progress Octavia upgrade '
-                        'or an overloaded and failing database. Assuming '
-                        'an upgrade is in progress and continuing.',
-                        constants.PENDING_UPDATE)
-            member = e.last_attempt.result()
-
-        pool = member.pool
+        # TODO(ataraday) when other flows will use dicts - revisit this
+        pool = self._pool_repo.get(db_apis.get_session(),
+                                   id=member[constants.POOL_ID])
         load_balancer = pool.load_balancer
 
         listeners_dicts = (

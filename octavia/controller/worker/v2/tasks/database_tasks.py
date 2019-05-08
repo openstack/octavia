@@ -222,8 +222,9 @@ class DeleteMemberInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("DB delete member for id: %s ", member.id)
-        self.member_repo.delete(db_apis.get_session(), id=member.id)
+        LOG.debug("DB delete member for id: %s ", member[constants.MEMBER_ID])
+        self.member_repo.delete(db_apis.get_session(),
+                                id=member[constants.MEMBER_ID])
 
     def revert(self, member, *args, **kwargs):
         """Mark the member ERROR since the delete couldn't happen
@@ -232,14 +233,16 @@ class DeleteMemberInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warning("Reverting delete in DB for member id %s", member.id)
+        LOG.warning("Reverting delete in DB for member id %s",
+                    member[constants.MEMBER_ID])
         try:
-            self.member_repo.update(db_apis.get_session(), member.id,
+            self.member_repo.update(db_apis.get_session(),
+                                    member[constants.MEMBER_ID],
                                     provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update member %(mem)s "
                       "provisioning_status to ERROR due to: %(except)s",
-                      {'mem': member.id, 'except': e})
+                      {'mem': member[constants.MEMBER_ID], 'except': e})
 
 
 class DeleteListenerInDB(BaseDatabaseTask):
@@ -1034,7 +1037,7 @@ class MarkLBActiveInDB(BaseDatabaseTask):
 
     def _mark_member_status(self, member, status):
         self.member_repo.update(
-            db_apis.get_session(), member.id,
+            db_apis.get_session(), member[constants.MEMBER_ID],
             provisioning_status=status)
 
     def revert(self, loadbalancer, *args, **kwargs):
@@ -1465,8 +1468,9 @@ class UpdateMemberInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for member id: %s ", member.id)
-        self.member_repo.update(db_apis.get_session(), member.id,
+        LOG.debug("Update DB for member id: %s ", member[constants.MEMBER_ID])
+        self.member_repo.update(db_apis.get_session(),
+                                member[constants.MEMBER_ID],
                                 **update_dict)
 
     def revert(self, member, *args, **kwargs):
@@ -1477,14 +1481,15 @@ class UpdateMemberInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting update member in DB "
-                    "for member id %s", member.id)
+                    "for member id %s", member[constants.MEMBER_ID])
         try:
-            self.member_repo.update(db_apis.get_session(), member.id,
+            self.member_repo.update(db_apis.get_session(),
+                                    member[constants.MEMBER_ID],
                                     provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update member %(member)s provisioning_status "
-                      "to ERROR due to: %(except)s", {'member': member.id,
-                                                      'except': e})
+                      "to ERROR due to: %(except)s",
+                      {'member': member[constants.MEMBER_ID], 'except': e})
 
 
 class UpdatePoolInDB(BaseDatabaseTask):
@@ -2153,9 +2158,10 @@ class MarkMemberActiveInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Mark ACTIVE in DB for member id: %s", member.id)
+        LOG.debug("Mark ACTIVE in DB for member id: %s",
+                  member[constants.MEMBER_ID])
         self.member_repo.update(db_apis.get_session(),
-                                member.id,
+                                member[constants.MEMBER_ID],
                                 provisioning_status=constants.ACTIVE)
 
     def revert(self, member, *args, **kwargs):
@@ -2166,8 +2172,9 @@ class MarkMemberActiveInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark member ACTIVE in DB "
-                    "for member id %s", member.id)
-        self.task_utils.mark_member_prov_status_error(member.id)
+                    "for member id %s", member[constants.MEMBER_ID])
+        self.task_utils.mark_member_prov_status_error(
+            member[constants.MEMBER_ID])
 
 
 class MarkMemberPendingCreateInDB(BaseDatabaseTask):
@@ -2183,9 +2190,10 @@ class MarkMemberPendingCreateInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Mark PENDING CREATE in DB for member id: %s", member.id)
+        LOG.debug("Mark PENDING CREATE in DB for member id: %s",
+                  member[constants.MEMBER_ID])
         self.member_repo.update(db_apis.get_session(),
-                                member.id,
+                                member[constants.MEMBER_ID],
                                 provisioning_status=constants.PENDING_CREATE)
 
     def revert(self, member, *args, **kwargs):
@@ -2196,8 +2204,9 @@ class MarkMemberPendingCreateInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark member pending create in DB "
-                    "for member id %s", member.id)
-        self.task_utils.mark_member_prov_status_error(member.id)
+                    "for member id %s", member[constants.MEMBER_ID])
+        self.task_utils.mark_member_prov_status_error(
+            member[constants.MEMBER_ID])
 
 
 class MarkMemberPendingDeleteInDB(BaseDatabaseTask):
@@ -2213,9 +2222,10 @@ class MarkMemberPendingDeleteInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Mark PENDING DELETE in DB for member id: %s", member.id)
+        LOG.debug("Mark PENDING DELETE in DB for member id: %s",
+                  member[constants.MEMBER_ID])
         self.member_repo.update(db_apis.get_session(),
-                                member.id,
+                                member[constants.MEMBER_ID],
                                 provisioning_status=constants.PENDING_DELETE)
 
     def revert(self, member, *args, **kwargs):
@@ -2226,8 +2236,9 @@ class MarkMemberPendingDeleteInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark member pending delete in DB "
-                    "for member id %s", member.id)
-        self.task_utils.mark_member_prov_status_error(member.id)
+                    "for member id %s", member[constants.MEMBER_ID])
+        self.task_utils.mark_member_prov_status_error(
+            member[constants.MEMBER_ID])
 
 
 class MarkMemberPendingUpdateInDB(BaseDatabaseTask):
@@ -2244,9 +2255,9 @@ class MarkMemberPendingUpdateInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING UPDATE in DB for member id: %s",
-                  member.id)
+                  member[constants.MEMBER_ID])
         self.member_repo.update(db_apis.get_session(),
-                                member.id,
+                                member[constants.MEMBER_ID],
                                 provisioning_status=constants.PENDING_UPDATE)
 
     def revert(self, member, *args, **kwargs):
@@ -2257,8 +2268,9 @@ class MarkMemberPendingUpdateInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark member pending update in DB "
-                    "for member id %s", member.id)
-        self.task_utils.mark_member_prov_status_error(member.id)
+                    "for member id %s", member[constants.MEMBER_ID])
+        self.task_utils.mark_member_prov_status_error(
+            member[constants.MEMBER_ID])
 
 
 class MarkPoolActiveInDB(BaseDatabaseTask):
@@ -2567,7 +2579,7 @@ class DecrementMemberQuota(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, member):
+    def execute(self, project_id):
         """Decrements the member quota.
 
         :param member: The member to decrement the quota on.
@@ -2575,22 +2587,22 @@ class DecrementMemberQuota(BaseDatabaseTask):
         """
 
         LOG.debug("Decrementing member quota for "
-                  "project: %s ", member.project_id)
+                  "project: %s ", project_id)
 
         lock_session = db_apis.get_session(autocommit=False)
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.Member,
-                                       member.project_id)
+                                       project_id)
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
                 LOG.error('Failed to decrement member quota for project: '
                           '%(proj)s the project may have excess quota in use.',
-                          {'proj': member.project_id})
+                          {'proj': project_id})
                 lock_session.rollback()
 
-    def revert(self, member, result, *args, **kwargs):
+    def revert(self, project_id, result, *args, **kwargs):
         """Re-apply the quota
 
         :param member: The member to decrement the quota on.
@@ -2599,7 +2611,7 @@ class DecrementMemberQuota(BaseDatabaseTask):
 
         LOG.warning('Reverting decrement quota for member on project %(proj)s '
                     'Project quota counts may be incorrect.',
-                    {'proj': member.project_id})
+                    {'proj': project_id})
 
         # Increment the quota back if this task wasn't the failure
         if not isinstance(result, failure.Failure):
@@ -2611,7 +2623,7 @@ class DecrementMemberQuota(BaseDatabaseTask):
                     self.repos.check_quota_met(session,
                                                lock_session,
                                                data_models.Member,
-                                               member.project_id)
+                                               project_id)
                     lock_session.commit()
                 except Exception:
                     lock_session.rollback()

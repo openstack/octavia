@@ -53,6 +53,7 @@ _vip_mock = mock.MagicMock()
 _listener_mock = mock.MagicMock()
 _load_balancer_mock = mock.MagicMock()
 _load_balancer_mock.listeners = [_listener_mock]
+_load_balancer_mock.project_id = PROJECT_ID
 _member_mock = mock.MagicMock()
 _pool_mock = {constants.POOL_ID: POOL_ID}
 _db_pool_mock = mock.MagicMock()
@@ -740,13 +741,13 @@ class TestControllerWorker(base.TestCase):
 
         _flow_mock.reset_mock()
         mock_member_repo_get.side_effect = [None, _member_mock]
-
+        _member = _member_mock.to_dict()
         cw = controller_worker.ControllerWorker()
-        cw.create_member(MEMBER_ID)
+        cw.create_member(_member)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={constants.MEMBER: _member_mock,
+                                    store={constants.MEMBER: _member,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER_ID:
@@ -757,7 +758,6 @@ class TestControllerWorker(base.TestCase):
                                                POOL_ID}))
 
         _flow_mock.run.assert_called_once_with()
-        self.assertEqual(2, mock_member_repo_get.call_count)
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'member_flows.MemberFlows.get_delete_member_flow',
@@ -777,13 +777,13 @@ class TestControllerWorker(base.TestCase):
                            mock_amp_repo_get):
 
         _flow_mock.reset_mock()
-
+        _member = _member_mock.to_dict()
         cw = controller_worker.ControllerWorker()
-        cw.delete_member(MEMBER_ID)
+        cw.delete_member(_member)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(
-                _flow_mock, store={constants.MEMBER: _member_mock,
+                _flow_mock, store={constants.MEMBER: _member,
                                    constants.LISTENERS:
                                        [self.ref_listener_dict],
                                    constants.LOADBALANCER_ID:
@@ -791,7 +791,8 @@ class TestControllerWorker(base.TestCase):
                                    constants.LOADBALANCER:
                                        _load_balancer_mock,
                                    constants.POOL_ID:
-                                       POOL_ID}))
+                                       POOL_ID,
+                                   constants.PROJECT_ID: PROJECT_ID}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -813,14 +814,15 @@ class TestControllerWorker(base.TestCase):
                            mock_amp_repo_get):
 
         _flow_mock.reset_mock()
-        _member_mock.provisioning_status = constants.PENDING_UPDATE
+        _member = _member_mock.to_dict()
+        _member[constants.PROVISIONING_STATUS] = constants.PENDING_UPDATE
 
         cw = controller_worker.ControllerWorker()
-        cw.update_member(MEMBER_ID, MEMBER_UPDATE_DICT)
+        cw.update_member(_member, MEMBER_UPDATE_DICT)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={constants.MEMBER: _member_mock,
+                                    store={constants.MEMBER: _member,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER:
@@ -854,15 +856,18 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
 
         cw = controller_worker.ControllerWorker()
-        cw.batch_update_members([9], [11], [MEMBER_UPDATE_DICT])
-
+        cw.batch_update_members([{constants.MEMBER_ID: 9,
+                                  constants.POOL_ID: 'testtest'}],
+                                [{constants.MEMBER_ID: 11}],
+                                [MEMBER_UPDATE_DICT])
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(
                 _flow_mock,
                 store={constants.LISTENERS: [self.ref_listener_dict],
                        constants.LOADBALANCER_ID: _load_balancer_mock.id,
                        constants.LOADBALANCER: _load_balancer_mock,
-                       constants.POOL_ID: POOL_ID}))
+                       constants.POOL_ID: POOL_ID,
+                       constants.PROJECT_ID: PROJECT_ID}))
 
         _flow_mock.run.assert_called_once_with()
 

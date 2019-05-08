@@ -77,7 +77,7 @@ class MemberFlows(object):
         delete_member_flow.add(database_tasks.DeleteMemberInDB(
             requires=constants.MEMBER))
         delete_member_flow.add(database_tasks.DecrementMemberQuota(
-            requires=constants.MEMBER))
+            requires=constants.PROJECT_ID))
         delete_member_flow.add(database_tasks.MarkPoolActiveInDB(
             requires=constants.POOL_ID))
         delete_member_flow.add(database_tasks.
@@ -138,11 +138,13 @@ class MemberFlows(object):
             unordered_members_flow.add(database_tasks.DeleteMemberInDB(
                 inject={constants.MEMBER: m},
                 name='{flow}-{id}'.format(
-                    id=m.id, flow=constants.DELETE_MEMBER_INDB)))
+                    id=m[constants.MEMBER_ID],
+                    flow=constants.DELETE_MEMBER_INDB)))
             unordered_members_flow.add(database_tasks.DecrementMemberQuota(
-                inject={constants.MEMBER: m},
+                requires=constants.PROJECT_ID,
                 name='{flow}-{id}'.format(
-                    id=m.id, flow=constants.DECREMENT_MEMBER_QUOTA_FLOW)))
+                    id=m[constants.MEMBER_ID],
+                    flow=constants.DECREMENT_MEMBER_QUOTA_FLOW)))
 
         # Create new members
         unordered_members_flow.add(
@@ -155,7 +157,8 @@ class MemberFlows(object):
                 database_tasks.MarkMemberActiveInDB(
                     inject={constants.MEMBER: m},
                     name='{flow}-{id}'.format(
-                        id=m.id, flow=constants.MARK_MEMBER_ACTIVE_INDB)))
+                        id=m[constants.MEMBER_ID],
+                        flow=constants.MARK_MEMBER_ACTIVE_INDB)))
 
         # Update existing members
         unordered_members_flow.add(
@@ -165,12 +168,13 @@ class MemberFlows(object):
                 name='{flow}-updated'.format(
                     flow=constants.MEMBER_TO_ERROR_ON_REVERT_FLOW)))
         for m, um in updated_members:
-            um.pop('id', None)
+            um.pop(constants.ID, None)
             unordered_members_active_flow.add(
                 database_tasks.MarkMemberActiveInDB(
                     inject={constants.MEMBER: m},
                     name='{flow}-{id}'.format(
-                        id=m.id, flow=constants.MARK_MEMBER_ACTIVE_INDB)))
+                        id=m[constants.MEMBER_ID],
+                        flow=constants.MARK_MEMBER_ACTIVE_INDB)))
 
         batch_update_members_flow.add(unordered_members_flow)
 

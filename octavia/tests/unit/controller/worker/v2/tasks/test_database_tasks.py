@@ -121,6 +121,11 @@ class TestDatabaseTasks(base.TestCase):
         self.db_pool_mock.id = POOL_ID
         self.db_pool_mock.health_monitor = self.health_mon_mock
 
+        self.member_mock = {
+            constants.MEMBER_ID: MEMBER_ID,
+            constants.POOL_ID: POOL_ID,
+        }
+
         self.l7policy_mock = mock.MagicMock()
         self.l7policy_mock.id = L7POLICY_ID
 
@@ -1279,16 +1284,16 @@ class TestDatabaseTasks(base.TestCase):
                                              mock_amphora_repo_update,
                                              mock_amphora_repo_delete):
         unused_pool = data_models.Pool(id='unused_pool')
-        members1 = [data_models.Member(id='member1'),
-                    data_models.Member(id='member2')]
+        members1 = [{constants.MEMBER_ID: 'member1'},
+                    {constants.MEMBER_ID: 'member2'}]
         health_monitor = data_models.HealthMonitor(id='hm1')
         default_pool = data_models.Pool(id='default_pool',
                                         members=members1,
                                         health_monitor=health_monitor)
         listener1 = data_models.Listener(id='listener1',
                                          default_pool=default_pool)
-        members2 = [data_models.Member(id='member3'),
-                    data_models.Member(id='member4')]
+        members2 = [{constants.MEMBER_ID: 'member3'},
+                    {constants.MEMBER_ID: 'member4'}]
         redirect_pool = data_models.Pool(id='redirect_pool',
                                          members=members2)
         l7rules = [data_models.L7Rule(id='rule1')]
@@ -1322,16 +1327,6 @@ class TestDatabaseTasks(base.TestCase):
             [mock.call('TEST', default_pool.id,
                        provisioning_status=constants.ACTIVE),
              mock.call('TEST', redirect_pool.id,
-                       provisioning_status=constants.ACTIVE)])
-        self.assertEqual(4, repo.MemberRepository.update.call_count)
-        repo.MemberRepository.update.has_calls(
-            [mock.call('TEST', members1[0].id,
-                       provisioning_status=constants.ACTIVE),
-             mock.call('TEST', members1[1].id,
-                       provisioning_status=constants.ACTIVE),
-             mock.call('TEST', members2[0].id,
-                       provisioning_status=constants.ACTIVE),
-             mock.call('TEST', members2[1].id,
                        provisioning_status=constants.ACTIVE)])
         self.assertEqual(1, repo.HealthMonitorRepository.update.call_count)
         repo.HealthMonitorRepository.update.has_calls(
@@ -1370,16 +1365,6 @@ class TestDatabaseTasks(base.TestCase):
             [mock.call('TEST', default_pool.id,
                        provisioning_status=constants.ERROR),
              mock.call('TEST', redirect_pool.id,
-                       provisioning_status=constants.ERROR)])
-        self.assertEqual(4, repo.MemberRepository.update.call_count)
-        repo.MemberRepository.update.has_calls(
-            [mock.call('TEST', members1[0].id,
-                       provisioning_status=constants.ERROR),
-             mock.call('TEST', members1[1].id,
-                       provisioning_status=constants.ERROR),
-             mock.call('TEST', members2[0].id,
-                       provisioning_status=constants.ERROR),
-             mock.call('TEST', members2[1].id,
                        provisioning_status=constants.ERROR)])
         self.assertEqual(1, repo.HealthMonitorRepository.update.call_count)
         repo.HealthMonitorRepository.update.has_calls(

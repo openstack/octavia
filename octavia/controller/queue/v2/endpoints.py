@@ -100,28 +100,31 @@ class Endpoints(object):
         LOG.info('Deleting health monitor \'%s\'...', health_monitor_id)
         self.worker.delete_health_monitor(health_monitor_id)
 
-    def create_member(self, context, member_id):
-        LOG.info('Creating member \'%s\'...', member_id)
-        self.worker.create_member(member_id)
+    def create_member(self, context, member):
+        LOG.info('Creating member \'%s\'...', member.get(constants.ID))
+        self.worker.create_member(member)
 
-    def update_member(self, context, member_id, member_updates):
-        LOG.info('Updating member \'%s\'...', member_id)
-        self.worker.update_member(member_id, member_updates)
+    def update_member(self, context, original_member, member_updates):
+        LOG.info('Updating member \'%s\'...', original_member.get(
+            constants.ID))
+        self.worker.update_member(original_member, member_updates)
 
-    def batch_update_members(self, context, old_member_ids, new_member_ids,
+    def batch_update_members(self, context, old_members, new_members,
                              updated_members):
-        updated_member_ids = [m.get('id') for m in updated_members]
+        updated_member_ids = [m.get(constants.ID) for m in updated_members]
+        new_member_ids = [m.get(constants.ID) for m in new_members]
+        old_member_ids = [m.get(constants.ID) for m in old_members]
         LOG.info(
             'Batch updating members: old=\'%(old)s\', new=\'%(new)s\', '
             'updated=\'%(updated)s\'...',
             {'old': old_member_ids, 'new': new_member_ids,
              'updated': updated_member_ids})
         self.worker.batch_update_members(
-            old_member_ids, new_member_ids, updated_members)
+            old_members, new_members, updated_members)
 
-    def delete_member(self, context, member_id):
-        LOG.info('Deleting member \'%s\'...', member_id)
-        self.worker.delete_member(member_id)
+    def delete_member(self, context, member):
+        LOG.info('Deleting member \'%s\'...', member.get(constants.ID))
+        self.worker.delete_member(member)
 
     def create_l7policy(self, context, l7policy_id):
         LOG.info('Creating l7policy \'%s\'...', l7policy_id)
