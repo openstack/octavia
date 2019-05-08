@@ -15,6 +15,7 @@
 import functools
 import hashlib
 import os
+import ssl
 import time
 import warnings
 
@@ -402,6 +403,12 @@ class CustomHostNameCheckingAdapter(requests.adapters.HTTPAdapter):
         conn.assert_hostname = self.uuid
         return super(CustomHostNameCheckingAdapter,
                      self).cert_verify(conn, url, verify, cert)
+
+    def init_poolmanager(self, *pool_args, **pool_kwargs):
+        proto = CONF.amphora_agent.agent_tls_protocol.replace('.', '_')
+        pool_kwargs['ssl_version'] = getattr(ssl, "PROTOCOL_%s" % proto)
+        return super(CustomHostNameCheckingAdapter,
+                     self).init_poolmanager(*pool_args, **pool_kwargs)
 
 
 class AmphoraAPIClient(object):

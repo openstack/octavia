@@ -18,6 +18,7 @@ Routines for configuring Octavia
 """
 
 import os
+import ssl
 import sys
 
 from keystoneauth1 import loading as ks_loading
@@ -33,6 +34,9 @@ from octavia.i18n import _
 from octavia import version
 
 LOG = logging.getLogger(__name__)
+
+TLS_PROTOCOL_CHOICES = [
+    p[9:].replace('_', '.') for p in ssl._PROTOCOL_NAMES.values()]
 
 
 core_opts = [
@@ -110,6 +114,10 @@ amphora_agent_opts = [
     cfg.IntOpt('agent_request_read_timeout', default=180,
                help=_("The time in seconds to allow a request from the "
                       "controller to run before terminating the socket.")),
+    cfg.StrOpt('agent_tls_protocol', default='TLSv1.2',
+               help=_("Minimum TLS protocol for communication with the "
+                      "amphora agent."),
+               choices=TLS_PROTOCOL_CHOICES),
     # Do not specify in octavia.conf, loaded at runtime
     cfg.StrOpt('amphora_id', help=_("The amphora ID.")),
     cfg.StrOpt('amphora_udp_driver',

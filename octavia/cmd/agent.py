@@ -15,6 +15,7 @@
 # make sure PYTHONPATH includes the home directory if you didn't install
 
 import multiprocessing as multiproc
+import ssl
 import sys
 
 import gunicorn.app.base
@@ -68,6 +69,7 @@ def main():
 
     bind_ip_port = utils.ip_port_str(CONF.haproxy_amphora.bind_host,
                                      CONF.haproxy_amphora.bind_port)
+    proto = CONF.amphora_agent.agent_tls_protocol.replace('.', '_')
     options = {
         'bind': bind_ip_port,
         'workers': 1,
@@ -75,6 +77,7 @@ def main():
         'certfile': CONF.amphora_agent.agent_server_cert,
         'ca_certs': CONF.amphora_agent.agent_server_ca,
         'cert_reqs': True,
+        'ssl_version': getattr(ssl, "PROTOCOL_%s" % proto),
         'preload_app': True,
         'accesslog': '/var/log/amphora-agent.log',
         'errorlog': '/var/log/amphora-agent.log',

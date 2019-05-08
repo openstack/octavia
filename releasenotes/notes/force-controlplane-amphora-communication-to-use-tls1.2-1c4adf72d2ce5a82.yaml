@@ -1,0 +1,6 @@
+---
+security:
+  - |
+    Communication between the control-plane and the amphora-agent now uses
+    minimum TLSv1.2 by default, and is configurable. The previous default of
+    SSLv2/3 is widely considered insecure.
