@@ -3273,7 +3273,8 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
             load_balancer_id=self.lb.id, provisioning_status=constants.ACTIVE,
             enabled=True, peer_port=1025, default_pool_id=pool.id)
 
-        listener_ref = {listener.id: {'operating_status': constants.ONLINE}}
+        listener_ref = {listener.id: {'operating_status': constants.ONLINE,
+                                      'protocol': constants.PROTOCOL_HTTP}}
         lb_ref['listeners'] = listener_ref
 
         # Test with an LB, pool, and listener (no members)
