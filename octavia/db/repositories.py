@@ -1196,6 +1196,7 @@ class AmphoraRepository(BaseRepository):
             "load_balancer.operating_status AS lb_op_status, "
             "listener.id AS list_id, "
             "listener.operating_status AS list_op_status, "
+            "listener.protocol AS list_protocol, "
             "pool.id AS pool_id, "
             "pool.operating_status AS pool_op_status, "
             "member.id AS member_id, "
@@ -1219,7 +1220,8 @@ class AmphoraRepository(BaseRepository):
                 lb['provisioning_status'] = row['lb_prov_status']
                 lb['operating_status'] = row['lb_op_status']
             if row['list_id'] and row['list_id'] not in listeners:
-                listener = {'operating_status': row['list_op_status']}
+                listener = {'operating_status': row['list_op_status'],
+                            'protocol': row['list_protocol']}
                 listeners[row['list_id']] = listener
             if row['pool_id']:
                 if row['pool_id'] in pools and row['member_id']:
