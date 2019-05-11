@@ -246,6 +246,6 @@ Documentation Impact
 References
 ==========
 
-| Amphora lifecycle management: https://review.openstack.org/#/c/130424/
+| Amphora lifecycle management: https://review.opendev.org/#/c/130424/
 | LBaaS metering:
 |    https://blueprints.launchpad.net/ceilometer/+spec/ceilometer-meter-lbaas

@@ -11,7 +11,7 @@ function octavia_install {
             if [[ ${DISTRO} =~ "rhel7" ]]; then
                 # Installing qemu would bring in the default OS qemu package,
                 # which is too old for Pike and later releases
-                # See https://review.openstack.org/#/c/438325 for details
+                # See https://review.opendev.org/#/c/438325 for details
                 install_package qemu-kvm
             else
                 install_package qemu
