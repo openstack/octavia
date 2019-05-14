@@ -52,7 +52,7 @@ Default provider name: **amphora**
 
 The driver package: https://pypi.org/project/octavia/
 
-The driver source: https://git.openstack.org/cgit/openstack/octavia/
+The driver source: https://opendev.org/openstack/octavia/
 
 The documentation: https://docs.openstack.org/octavia/latest/
 

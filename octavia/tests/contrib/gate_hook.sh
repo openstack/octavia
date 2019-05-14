@@ -14,7 +14,7 @@ function load_conf_hook {
     _DEVSTACK_LOCAL_CONFIG_TAIL+=$'\n'"$(cat $GATE_HOOKS/$hook)"
 }
 
-export DEVSTACK_LOCAL_CONFIG+=$'\n'"enable_plugin barbican https://git.openstack.org/openstack/barbican"$'\n'
+export DEVSTACK_LOCAL_CONFIG+=$'\n'"enable_plugin barbican https://opendev.org/openstack/barbican"$'\n'
 
 # Allow testing against diskimage-builder changes with depends-on
 export DEVSTACK_LOCAL_CONFIG+=$'\n'"LIBS_FROM_GIT+=,diskimage-builder"$'\n'
@@ -54,13 +54,13 @@ OCTAVIA_MGMT_PORT_IP=192.168.0.3"$'\n'
 
     export DEVSTACK_SUBNODE_CONFIG+="$COMMON_MULTINODE_CONFIG
 OCTAVIA_NODE=second
-enable_plugin octavia https://git.openstack.org/openstack/octavia
+enable_plugin octavia https://opendev.org/openstack/octavia
 OCTAVIA_MGMT_PORT_IP=192.168.0.4"$'\n'
 }
 
 function _setup_octavia {
     export DEVSTACK_LOCAL_CONFIG+=$'\n'"OCTAVIA_DIB_TRACING=True"$'\n'
-    export DEVSTACK_LOCAL_CONFIG+=$'\n'"enable_plugin octavia https://git.openstack.org/openstack/octavia"$'\n'
+    export DEVSTACK_LOCAL_CONFIG+=$'\n'"enable_plugin octavia https://opendev.org/openstack/octavia"$'\n'
     # Use infra's cached version of the file
     if [ -f /opt/stack/new/devstack/files/get-pip.py ]; then
             export DEVSTACK_LOCAL_CONFIG+=$'\n'"DIB_REPOLOCATION_pip_and_virtualenv=file:///opt/stack/new/devstack/files/get-pip.py"$'\n'

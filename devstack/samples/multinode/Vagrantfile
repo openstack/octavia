@@ -17,7 +17,7 @@ Vagrant.configure(2) do |config|
           sudo apt-get -y upgrade
           sudo apt-get -y install git
 
-          git clone https://git.openstack.org/openstack-dev/devstack
+          git clone https://opendev.org/openstack/devstack
           cp /vagrant/local.conf ~/devstack
           cp /vagrant/local.sh ~/devstack/local-manual.sh
           cp /vagrant/webserver.sh ~/devstack
@@ -39,7 +39,7 @@ Vagrant.configure(2) do |config|
           sudo apt-get -y upgrade
           sudo apt-get -y install git
 
-          git clone https://git.openstack.org/openstack-dev/devstack
+          git clone https://opendev.org/openstack/devstack
           cp /vagrant/local-2.conf ~/devstack/local.conf
 
           cd ~/devstack

@@ -86,7 +86,7 @@ Vagrant.configure(2) do |config|
     sudo apt-get -y upgrade
     sudo apt-get -y install git
 
-    git clone https://git.openstack.org/openstack-dev/devstack
+    git clone https://opendev.org/openstack/devstack
     cp /vagrant/local.* /vagrant/webserver.sh ~/devstack
     cd ~/devstack
     ./stack.sh
