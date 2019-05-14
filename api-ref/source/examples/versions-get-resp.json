@@ -1,13 +1,5 @@
 {
   "versions": [{
-    "status": "DEPRECATED",
-    "updated": "2014-12-11T00:00:00Z",
-    "id": "v1",
-    "links": [{
-      "href": "http://10.21.21.53/load-balancer/v1",
-      "rel": "self"
-    }]
-  }, {
     "status": "SUPPORTED",
     "updated": "2016-12-11T00:00:00Z",
     "id": "v2.0",

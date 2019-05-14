@@ -52,8 +52,6 @@ api_opts = [
                         constants.KEYSTONE,
                         constants.TESTING],
                help=_("The auth strategy for API requests.")),
-    cfg.StrOpt('api_handler', default='queue_producer',
-               help=_("The handler that the API communicates with")),
     cfg.BoolOpt('allow_pagination', default=True,
                 help=_("Allow the usage of pagination")),
     cfg.BoolOpt('allow_sorting', default=True,
@@ -71,10 +69,6 @@ api_opts = [
                help=_("Base URI for the API for use in pagination links. "
                       "This will be autodetected from the request if not "
                       "overridden here.")),
-    cfg.BoolOpt('api_v1_enabled', default=True,
-                help=_("Expose the v1 API?")),
-    cfg.BoolOpt('api_v2_enabled', default=True,
-                help=_("Expose the v2 API?")),
     cfg.BoolOpt('allow_tls_terminated_listeners', default=True,
                 help=_("Allow users to create TLS Terminated listeners?")),
     cfg.BoolOpt('allow_ping_health_monitors', default=True,
@@ -206,27 +200,10 @@ healthmanager_opts = [
                help=_('Driver for updating amphora health system.')),
     cfg.StrOpt('stats_update_driver', default='stats_db',
                help=_('Driver for updating amphora statistics.')),
-
-    # Used for synchronizing neutron-lbaas and octavia
-    cfg.StrOpt('event_streamer_driver',
-               help=_('Specifies which driver to use for the event_streamer '
-                      'for syncing the octavia and neutron_lbaas dbs. If you '
-                      'don\'t need to sync the database or are running '
-                      'octavia in stand alone mode use the '
-                      'noop_event_streamer'),
-               default='noop_event_streamer'),
-    cfg.BoolOpt('sync_provisioning_status', default=False,
-                help=_("Enable provisioning status sync with neutron db"))]
+]
 
 oslo_messaging_opts = [
     cfg.StrOpt('topic'),
-    cfg.StrOpt('event_stream_topic',
-               default='neutron_lbaas_event',
-               help=_('topic name for communicating events through a queue')),
-    cfg.StrOpt('event_stream_transport_url', default=None,
-               help=_('Transport URL to use for the neutron-lbaas '
-                      'synchronization event stream when neutron and octavia '
-                      'have separate queues.')),
 ]
 
 haproxy_amphora_opts = [

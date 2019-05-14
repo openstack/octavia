@@ -1,0 +1,10 @@
+---
+upgrade:
+  - |
+    Octavia v1 API (used for integration with Neutron-LBaaS) has been removed.
+    If Neutron-LBaaS integration is still required, do not upgrade to this
+    version.
+deprecations:
+  - |
+    Octavia v1 API deprecation is complete. All relevant code, tests, and docs
+    have been removed.

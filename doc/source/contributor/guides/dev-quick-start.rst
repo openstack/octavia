@@ -72,8 +72,7 @@ Deployment
 2. Copy ``devstack/contrib/new-octavia-devstack.sh`` from this source
    repository onto that host.
 3. Run new-octavia-devstack.sh as root.
-4. Deploy loadbalancers, listeners, etc. as you would with any Neutron LBaaS v2
-   enabled cloud.
+4. Deploy loadbalancers, listeners, etc.
 
 
 Running Octavia in production
@@ -125,7 +124,7 @@ For the purposes of this guide, we will therefore assume the following core
 components have already been set up for your production OpenStack environment:
 
 * Nova
-* Neutron (with Neutron LBaaS v2)
+* Neutron
 * Glance
 * Barbican (if TLS offloading functionality is enabled)
 * Keystone
@@ -138,11 +137,8 @@ Production Deployment Walkthrough
 
 Create Octavia User
 ___________________
-By default Octavia will use the 'neutron' user for keystone authentication, and
-the admin user for interactions with all other services. However, it doesn't
-actually share neutron's database or otherwise access Neutron outside of
-Neutron's API, so a dedicated 'octavia' keystone user should generally be
-created for Octavia to use.
+By default Octavia will use the 'octavia' user for keystone authentication, and
+the admin user for interactions with all other services.
 
 You must:
 
@@ -225,14 +221,8 @@ Running multiple instances of the individual Octavia controller components on
 separate physical hosts is recommended in order to provide scalability and
 availability of the controller software.
 
-One important security note: In 0.9 of Octavia, the Octavia API is designed to
-be consumed only by the Neutron-LBaaS v2 Octavia driver. As such, there is
-presently no authentication required to use the Octavia API, and therefore the
-Octavia API should only be accessible on trusted network segments
-(specifically, the segment that runs the neutron-services daemons.)
-
 The Octavia controller presently consists of several components which may be
-split across several physical machines. For the 0.9 release of Octavia, the
+split across several physical machines. For the 4.0 release of Octavia, the
 important (and potentially separable) components are the controller worker,
 housekeeper, health manager and API controller. Please see the component
 diagrams elsewhere in this repository's documentation for detailed descriptions
@@ -253,7 +243,7 @@ components need access to outside resources:
 | housekeeper       | Yes        | Yes      | No             |
 +-------------------+------------+----------+----------------+
 
-In addition to talking to each other via OSLO messaging, various controller
+In addition to talking to each other via Oslo messaging, various controller
 components must also communicate with other OpenStack components, like nova,
 neutron, barbican, etc. via their APIs.
 
@@ -438,46 +428,22 @@ You must:
 * Make sure each Octavia controller component is started appropriately.
 
 
-Configuring Neutron LBaaS
-_________________________
-This is fairly straightforward. Neutron LBaaS needs to be directed to use the
-Octavia service provider. There should be a line like the following in
-``/etc/neutron/neutron_lbaas.conf`` file's ``[service providers]`` section:
-
-::
-
-    service_provider = LOADBALANCERV2:Octavia:neutron_lbaas.drivers.octavia.driver.OctaviaDriver:default
-
-In addition to the above you must add the octavia API ``base_url`` to the
-``[octavia]`` section of ``/etc/neutron/neutron.conf``. For example:
-
-::
-
-    [octavia]
-    base_url=http://127.0.0.1:9876
-
-You must:
-
-* Update ``/etc/neutron/neutron_lbaas.conf`` as described above.
-* Add the octavia API URL to ``/etc/neutron/neutron.conf``.
-
-
-Install Neutron-LBaaS v2 extension in Horizon
+Install Octavia extension in Horizon
 _____________________________________________
 This isn't strictly necessary for all cloud installations, however, if yours
 makes use of the Horizon GUI interface for tenants, it is probably also a good
-idea to make sure that it is configured with the Neutron-LBaaS v2 extension.
+idea to make sure that it is configured with the Octavia extension.
 
 You may:
 
-* Install the neutron-lbaasv2 GUI extension in Horizon
+* Install the octavia GUI extension in Horizon
 
 
 Test deployment
 _______________
 If all of the above instructions have been followed, it should now be possible
-to deploy load balancing services using the python neutronclient CLI,
-communicating with the neutron-lbaas v2 API.
+to deploy load balancing services using the OpenStack CLI,
+communicating with the Octavia v2 API.
 
 Example:
 

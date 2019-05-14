@@ -17,7 +17,6 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
-from octavia.api.v1.types import load_balancer as lb_types
 import octavia.common.constants as constants
 import octavia.common.exceptions as exceptions
 import octavia.common.validate as validate
@@ -299,53 +298,50 @@ class TestValidations(base.TestCase):
             self.assertEqual(validate.subnet_exists(subnet_id), subnet)
 
     def test_network_exists_with_bad_network(self):
-        vip = lb_types.VIP()
-        vip.network_id = uuidutils.generate_uuid()
+        network_id = uuidutils.generate_uuid()
         with mock.patch(
                 'octavia.common.utils.get_network_driver') as net_mock:
             net_mock.return_value.get_network = mock.Mock(
                 side_effect=network_base.NetworkNotFound('Network not found'))
             self.assertRaises(
                 exceptions.InvalidSubresource,
-                validate.network_exists_optionally_contains_subnet, vip)
+                validate.network_exists_optionally_contains_subnet, network_id)
 
     def test_network_exists_with_valid_network(self):
-        vip = lb_types.VIP()
-        vip.network_id = uuidutils.generate_uuid()
-        network = network_models.Network(id=vip.network_id)
+        network_id = uuidutils.generate_uuid()
+        network = network_models.Network(id=network_id)
         with mock.patch(
                 'octavia.common.utils.get_network_driver') as net_mock:
             net_mock.return_value.get_network.return_value = network
             self.assertEqual(
-                validate.network_exists_optionally_contains_subnet(vip),
+                validate.network_exists_optionally_contains_subnet(network_id),
                 network)
 
     def test_network_exists_with_valid_subnet(self):
-        vip = lb_types.VIP()
-        vip.network_id = uuidutils.generate_uuid()
-        vip.subnet_id = uuidutils.generate_uuid()
+        network_id = uuidutils.generate_uuid()
+        subnet_id = uuidutils.generate_uuid()
         network = network_models.Network(
-            id=vip.network_id,
-            subnets=[vip.subnet_id])
+            id=network_id,
+            subnets=[subnet_id])
         with mock.patch(
                 'octavia.common.utils.get_network_driver') as net_mock:
             net_mock.return_value.get_network.return_value = network
             self.assertEqual(
-                validate.network_exists_optionally_contains_subnet(vip),
+                validate.network_exists_optionally_contains_subnet(
+                    network_id, subnet_id),
                 network)
 
     def test_network_exists_with_bad_subnet(self):
-        vip = lb_types.VIP()
-        vip.network_id = uuidutils.generate_uuid()
-        vip.subnet_id = uuidutils.generate_uuid()
-        network = network_models.Network(id=vip.network_id)
+        network_id = uuidutils.generate_uuid()
+        subnet_id = uuidutils.generate_uuid()
+        network = network_models.Network(id=network_id)
         with mock.patch(
                 'octavia.common.utils.get_network_driver') as net_mock:
             net_mock.return_value.get_network.return_value = network
             self.assertRaises(
                 exceptions.InvalidSubresource,
                 validate.network_exists_optionally_contains_subnet,
-                vip.network_id, vip.subnet_id)
+                network_id, subnet_id)
 
     def test_network_allowed_by_config(self):
         net_id1 = uuidutils.generate_uuid()

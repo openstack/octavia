@@ -17,7 +17,6 @@ import time
 
 import mock
 from oslo_config import cfg
-from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 import six
 import sqlalchemy
@@ -44,10 +43,6 @@ class TestUpdateHealthDb(base.TestCase):
     def setUp(self):
         super(TestUpdateHealthDb, self).setUp()
 
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        self.conf.config(group="health_manager",
-                         event_streamer_driver='queue_event_streamer')
-
         session_patch = mock.patch('octavia.db.api.get_session')
         self.addCleanup(session_patch.stop)
         self.mock_session = session_patch.start()
@@ -55,8 +50,6 @@ class TestUpdateHealthDb(base.TestCase):
         self.mock_session.return_value = self.session_mock
 
         self.hm = update_db.UpdateHealthDb()
-        self.event_client = mock.MagicMock()
-        self.hm.event_streamer.client = self.event_client
         self.amphora_repo = mock.MagicMock()
         self.amphora_health_repo = mock.MagicMock()
         self.listener_repo = mock.MagicMock()
@@ -145,38 +138,6 @@ class TestUpdateHealthDb(base.TestCase):
             lb_ref['listeners'] = listener_ref
 
         return lb_ref
-
-    def test_update_health_event_stream(self):
-        health = {
-            "id": self.FAKE_UUID_1,
-            "listeners": {
-                "listener-id-1": {"status": constants.OPEN, "pools": {
-                    "pool-id-1": {"status": constants.UP,
-                                  "members": {"member-id-1": constants.UP,
-                                              "member-id-2": constants.UP}
-                                  }
-                }
-                }
-            },
-            "recv_time": time.time()
-        }
-
-        lb_ref = self._make_fake_lb_health_dict()
-        self.amphora_repo.get_lb_for_health_update.return_value = lb_ref
-
-        self.hm.update_health(health, '192.0.2.1')
-        self.event_client.cast.assert_any_call(
-            {}, 'update_info', container={
-                'info_type': 'listener', 'info_id': 'listener-id-1',
-                'info_payload': {'operating_status': 'ONLINE'}})
-        self.event_client.cast.assert_any_call(
-            {}, 'update_info', container={
-                'info_type': 'member', 'info_id': 'member-id-1',
-                'info_payload': {'operating_status': 'ONLINE'}})
-        self.event_client.cast.assert_any_call(
-            {}, 'update_info', container={
-                'info_type': 'pool', 'info_id': 'pool-id-1',
-                'info_payload': {'operating_status': 'ONLINE'}})
 
     def test_update_health_no_listener(self):
 
@@ -1063,7 +1024,6 @@ class TestUpdateHealthDb(base.TestCase):
         self.amphora_repo.get_lb_for_health_update.return_value = lb_ref
 
         self.hm.update_health(health, '192.0.2.1')
-        self.event_client.cast.assert_not_called()
         self.loadbalancer_repo.update.assert_not_called()
         self.listener_repo.update.assert_not_called()
         self.pool_repo.update.assert_not_called()
@@ -1215,43 +1175,21 @@ class TestUpdateHealthDb(base.TestCase):
         result = self.hm._update_listener_count_for_UDP('bogus_session', 1, 1)
         self.assertEqual(0, result)
 
-    def test_update_status_and_emit_event(self):
+    def test_update_status(self):
 
         # Test update with the same operating status
-        self.conf.config(group="health_manager",
-                         event_streamer_driver=constants.NOOP_EVENT_STREAMER)
-        self.hm._update_status_and_emit_event(
+        self.hm._update_status(
             'fake_session', self.loadbalancer_repo, constants.LOADBALANCER,
             1, 'ONLINE', 'ONLINE')
         self.assertFalse(self.loadbalancer_repo.update.called)
-        self.assertFalse(self.event_client.cast.called)
-
-        self.conf.config(group="health_manager",
-                         event_streamer_driver='queue_event_streamer',
-                         sync_provisioning_status=True)
 
         self.loadbalancer_repo.update.reset_mock()
-        self.event_client.reset_mock()
 
         # Test stream with provisioning sync
-        self.hm._update_status_and_emit_event(
+        self.hm._update_status(
             'fake_session', self.loadbalancer_repo, constants.LOADBALANCER,
             1, 'ONLINE', 'OFFLINE')
         self.assertTrue(self.loadbalancer_repo.update.called)
-        self.assertTrue(self.event_client.cast.called)
-
-        self.conf.config(group="health_manager",
-                         sync_provisioning_status=False)
-
-        self.loadbalancer_repo.update.reset_mock()
-        self.event_client.reset_mock()
-
-        # Test stream with no provisioning sync
-        self.hm._update_status_and_emit_event(
-            'fake_session', self.loadbalancer_repo, constants.LOADBALANCER,
-            1, 'ONLINE', 'ONLINE')
-        self.assertFalse(self.loadbalancer_repo.update.called)
-        self.assertFalse(self.event_client.cast.called)
 
 
 class TestUpdateStatsDb(base.TestCase):
@@ -1259,13 +1197,7 @@ class TestUpdateStatsDb(base.TestCase):
     def setUp(self):
         super(TestUpdateStatsDb, self).setUp()
 
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        self.conf.config(group="health_manager",
-                         event_streamer_driver='queue_event_streamer')
-
         self.sm = update_db.UpdateStatsDb()
-        self.event_client = mock.MagicMock()
-        self.sm.event_streamer.client = self.event_client
 
         self.listener_stats_repo = mock.MagicMock()
         self.sm.listener_stats_repo = self.listener_stats_repo
@@ -1339,65 +1271,12 @@ class TestUpdateStatsDb(base.TestCase):
             active_connections=self.listener_stats.active_connections,
             total_connections=self.listener_stats.total_connections,
             request_errors=self.listener_stats.request_errors)
-        self.event_client.cast.assert_any_call(
-            {}, 'update_info', container={
-                'info_type': 'listener_stats',
-                'info_id': self.listener_id,
-                'info_payload': {
-                    'bytes_in': self.listener_stats.bytes_in,
-                    'total_connections':
-                        self.listener_stats.total_connections,
-                    'active_connections':
-                        self.listener_stats.active_connections,
-                    'bytes_out': self.listener_stats.bytes_out,
-                    'request_errors': self.listener_stats.request_errors}})
-
-        self.event_client.cast.assert_any_call(
-            {}, 'update_info',
-            container={
-                'info_type': 'loadbalancer_stats',
-                'info_id': self.loadbalancer_id,
-                'info_payload': {
-                    'bytes_in': self.listener_stats.bytes_in,
-                    'total_connections':
-                        self.listener_stats.total_connections,
-                    'active_connections':
-                        self.listener_stats.active_connections,
-                    'bytes_out': self.listener_stats.bytes_out,
-                    'request_errors': self.listener_stats.request_errors}})
-
-        # Test with noop streamer
-        self.event_client.cast.reset_mock()
-        self.conf.config(group="health_manager",
-                         event_streamer_driver=constants.NOOP_EVENT_STREAMER)
-
-        self.sm.update_stats(health, '192.0.2.1')
-
-        self.conf.config(group="health_manager",
-                         event_streamer_driver='queue_event_streamer')
-        self.assertFalse(self.event_client.cast.called)
 
         # Test with missing DB listener
-        self.event_client.cast.reset_mock()
         self.sm.repo_listener.get.return_value = None
 
         self.sm.update_stats(health, '192.0.2.1')
 
-        self.event_client.cast.assert_called_once_with(
-            {}, 'update_info', container={
-                'info_type': 'listener_stats',
-                'info_id': self.listener_id,
-                'info_payload': {
-                    'bytes_in': self.listener_stats.bytes_in,
-                    'total_connections':
-                        self.listener_stats.total_connections,
-                    'active_connections':
-                        self.listener_stats.active_connections,
-                    'bytes_out': self.listener_stats.bytes_out,
-                    'request_errors': self.listener_stats.request_errors}})
-
         # Test with update failure
-        self.event_client.cast.reset_mock()
         mock_session.side_effect = Exception
         self.sm.update_stats(health, '192.0.2.1')
-        self.assertFalse(self.event_client.cast.called)

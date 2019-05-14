@@ -15,15 +15,10 @@ Supported API version
 
     None
 
-Deprecated API version
-
-    :doc:`v1/octaviaapi`
-
 .. toctree::
    :hidden:
 
    v2/index
-   v1/octaviaapi
 
 Octavia API minor releases are additive to the API major revision and share
 the same URL path. Minor revision changes to the API are called out in the API

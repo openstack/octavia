@@ -25,7 +25,6 @@ from stevedore import driver as stevedore_driver
 from octavia.common import constants
 from octavia.common import stats
 from octavia.controller.healthmanager.health_drivers import update_base
-from octavia.controller.healthmanager import update_serializer
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
 
@@ -37,10 +36,6 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
     def __init__(self):
         super(UpdateHealthDb, self).__init__()
         # first setup repo for amphora, listener,member(nodes),pool repo
-        self.event_streamer = stevedore_driver.DriverManager(
-            namespace='octavia.controller.queues',
-            name=CONF.health_manager.event_streamer_driver,
-            invoke_on_load=True).driver
         self.amphora_repo = repo.AmphoraRepository()
         self.amphora_health_repo = repo.AmphoraHealthRepository()
         self.listener_repo = repo.ListenerRepository()
@@ -48,12 +43,8 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
         self.member_repo = repo.MemberRepository()
         self.pool_repo = repo.PoolRepository()
 
-    def emit(self, info_type, info_id, info_obj):
-        cnt = update_serializer.InfoContainer(info_type, info_id, info_obj)
-        self.event_streamer.emit(cnt)
-
-    def _update_status_and_emit_event(self, session, repo, entity_type,
-                                      entity_id, new_op_status, old_op_status):
+    def _update_status(self, session, repo, entity_type,
+                       entity_id, new_op_status, old_op_status):
         message = {}
         if old_op_status.lower() != new_op_status.lower():
             LOG.debug("%s %s status has changed from %s to "
@@ -61,22 +52,10 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
                       entity_type, entity_id, old_op_status,
                       new_op_status)
             repo.update(session, entity_id, operating_status=new_op_status)
-            # Map the status for neutron-lbaas
+            # Map the status for neutron-lbaas compatibility
             if new_op_status == constants.DRAINING:
                 new_op_status = constants.ONLINE
             message.update({constants.OPERATING_STATUS: new_op_status})
-        if (CONF.health_manager.event_streamer_driver !=
-                constants.NOOP_EVENT_STREAMER):
-            if CONF.health_manager.sync_provisioning_status:
-                current_prov_status = repo.get(
-                    session, id=entity_id).provisioning_status
-                LOG.debug("%s %s provisioning_status %s. "
-                          "Sending event.",
-                          entity_type, entity_id, current_prov_status)
-                message.update(
-                    {constants.PROVISIONING_STATUS: current_prov_status})
-            if message:
-                self.emit(entity_type, entity_id, message)
 
     def update_health(self, health, srcaddr):
         # The executor will eat any exceptions from the update_health code
@@ -277,7 +256,7 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
             try:
                 if (listener_status is not None and
                         listener_status != db_op_status):
-                    self._update_status_and_emit_event(
+                    self._update_status(
                         session, self.listener_repo, constants.LISTENER,
                         listener_id, listener_status, db_op_status)
             except sqlalchemy.orm.exc.NoResultFound:
@@ -305,7 +284,7 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
             try:
                 # If the database doesn't already show the pool offline, update
                 if potential_offline_pools[pool_id] != constants.OFFLINE:
-                    self._update_status_and_emit_event(
+                    self._update_status(
                         session, self.pool_repo, constants.POOL,
                         pool_id, constants.OFFLINE,
                         potential_offline_pools[pool_id])
@@ -315,7 +294,7 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
         # Update the load balancer status last
         try:
             if lb_status != db_lb['operating_status']:
-                self._update_status_and_emit_event(
+                self._update_status(
                     session, self.loadbalancer_repo,
                     constants.LOADBALANCER, db_lb['id'], lb_status,
                     db_lb[constants.OPERATING_STATUS])
@@ -393,7 +372,7 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
                 try:
                     if (member_status is not None and
                             member_status != member_db_status):
-                        self._update_status_and_emit_event(
+                        self._update_status(
                             session, self.member_repo, constants.MEMBER,
                             member_id, member_status, member_db_status)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -403,7 +382,7 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
         try:
             if (pool_status is not None and
                     pool_status != db_pool_dict['operating_status']):
-                self._update_status_and_emit_event(
+                self._update_status(
                     session, self.pool_repo, constants.POOL,
                     pool_id, pool_status, db_pool_dict['operating_status'])
         except sqlalchemy.orm.exc.NoResultFound:
@@ -416,15 +395,7 @@ class UpdateStatsDb(update_base.StatsUpdateBase, stats.StatsMixin):
 
     def __init__(self):
         super(UpdateStatsDb, self).__init__()
-        self.event_streamer = stevedore_driver.DriverManager(
-            namespace='octavia.controller.queues',
-            name=CONF.health_manager.event_streamer_driver,
-            invoke_on_load=True).driver
         self.repo_listener = repo.ListenerRepository()
-
-    def emit(self, info_type, info_id, info_obj):
-        cnt = update_serializer.InfoContainer(info_type, info_id, info_obj)
-        self.event_streamer.emit(cnt)
 
     def update_stats(self, health_message, srcaddr):
         # The executor will eat any exceptions from the update_stats code
@@ -484,21 +455,3 @@ class UpdateStatsDb(update_base.StatsUpdateBase, stats.StatsMixin):
                       listener_id, amphora_id, stats)
             self.listener_stats_repo.replace(
                 session, listener_id, amphora_id, **stats)
-
-            if (CONF.health_manager.event_streamer_driver !=
-                    constants.NOOP_EVENT_STREAMER):
-                listener_stats = self.get_listener_stats(session, listener_id)
-                self.emit(
-                    'listener_stats', listener_id, listener_stats.get_stats())
-
-                listener_db = self.repo_listener.get(session, id=listener_id)
-                if not listener_db:
-                    LOG.debug('Received health stats for a non-existent '
-                              'listener %s for amphora %s with IP '
-                              '%s.', listener_id, amphora_id, srcaddr)
-                    return
-
-                lb_stats = self.get_loadbalancer_stats(
-                    session, listener_db.load_balancer_id)
-                self.emit('loadbalancer_stats',
-                          listener_db.load_balancer_id, lb_stats.get_stats())

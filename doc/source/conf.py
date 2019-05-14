@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Tempest documentation build configuration file, created by
+# Octavia documentation build configuration file, created by
 # sphinx-quickstart on Tue May 21 17:43:32 2013.
 #
 # This file is execfile()d with the current directory set to its containing
