@@ -330,10 +330,13 @@ class PoolsController(base.BaseController):
             validate.check_session_persistence(sp_dict)
 
         crl_ref = None
+        # If we got a crl_ref and it's not unset, use it
         if (pool.crl_container_ref and
                 pool.crl_container_ref != wtypes.Unset):
             crl_ref = pool.crl_container_ref
-        elif db_pool.crl_container_id:
+        # If we got Unset and a CRL exists in the DB, use the DB crl_ref
+        elif (db_pool.crl_container_id and
+              pool.crl_container_ref == wtypes.Unset):
             crl_ref = db_pool.crl_container_id
 
         ca_ref = None
@@ -350,8 +353,8 @@ class PoolsController(base.BaseController):
                     "specify a certificate revocation list."))
             if pool.ca_tls_container_ref:
                 ca_ref = pool.ca_tls_container_ref
-            elif db_ca_ref:
-                ca_ref = db_ca_ref
+        elif db_ca_ref and pool.ca_tls_container_ref == wtypes.Unset:
+            ca_ref = db_ca_ref
         elif crl_ref and not db_ca_ref:
             raise exceptions.ValidationException(detail=_(
                 "A CA reference is required to "
