@@ -110,7 +110,8 @@ class TestUpdateHealthDb(base.TestCase):
 
     def _make_fake_lb_health_dict(self, listener=True, pool=True,
                                   health_monitor=True, members=1,
-                                  lb_prov_status=constants.ACTIVE):
+                                  lb_prov_status=constants.ACTIVE,
+                                  listener_protocol=constants.PROTOCOL_TCP):
 
         lb_ref = {'enabled': True, 'id': self.FAKE_UUID_1,
                   constants.OPERATING_STATUS: 'bogus',
@@ -134,7 +135,8 @@ class TestUpdateHealthDb(base.TestCase):
 
         if listener:
             listener_ref = {'listener-id-1': {
-                constants.OPERATING_STATUS: 'bogus'}}
+                constants.OPERATING_STATUS: 'bogus',
+                'protocol': listener_protocol}}
             lb_ref['listeners'] = listener_ref
 
         return lb_ref
@@ -330,7 +332,8 @@ class TestUpdateHealthDb(base.TestCase):
             'members': {'member-id-2': {constants.OPERATING_STATUS: 'bogus'}}}
 
         lb_ref['listeners']['listener-id-2'] = {
-            constants.OPERATING_STATUS: 'bogus'}
+            constants.OPERATING_STATUS: 'bogus',
+            'protocol': constants.PROTOCOL_TCP}
 
         self.amphora_repo.get_lb_for_health_update.return_value = lb_ref
         self.hm.update_health(health, '192.0.2.1')
@@ -891,7 +894,8 @@ class TestUpdateHealthDb(base.TestCase):
         for i in [1, 2, 3, 4, 5]:
 
             lb_ref['listeners']['listener-id-%s' % i] = {
-                constants.OPERATING_STATUS: 'bogus'}
+                constants.OPERATING_STATUS: 'bogus',
+                'protocol': constants.PROTOCOL_TCP}
 
             if i == 3:
                 members_dict = {'member-id-3': {
@@ -1110,11 +1114,14 @@ class TestUpdateHealthDb(base.TestCase):
 
         self.loadbalancer_repo.get.return_value = mock_lb
 
-        lb_ref = self._make_fake_lb_health_dict()
+        lb_ref = self._make_fake_lb_health_dict(
+            listener_protocol=constants.PROTOCOL_UDP)
         lb_ref['listeners']['listener-id-2'] = {
-            constants.OPERATING_STATUS: 'bogus'}
+            constants.OPERATING_STATUS: 'bogus',
+            'protocol': constants.PROTOCOL_UDP}
         lb_ref['listeners']['listener-id-3'] = {
-            constants.OPERATING_STATUS: 'bogus'}
+            constants.OPERATING_STATUS: 'bogus',
+            'protocol': constants.PROTOCOL_UDP}
 
         self.amphora_repo.get_lb_for_health_update.return_value = lb_ref
         self.hm.update_health(health, '192.0.2.1')
@@ -1149,30 +1156,71 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_repo.get.called)
         self.assertTrue(self.amphora_health_repo.replace.called)
 
-    def test_update_listener_count_for_UDP(self):
+    def test_update_health_with_without_udp_listeners(self):
+        health = {
+            "id": self.FAKE_UUID_1,
+            "listeners": {
+                "listener-id-1": {"status": constants.OPEN, "pools": {
+                    "pool-id-1": {"status": constants.UP,
+                                  "members": {"member-id-1": constants.DOWN}
+                                  }
+                }}},
+            "recv_time": time.time()
+        }
 
+        # Test with a TCP listener
+        lb_ref = self._make_fake_lb_health_dict(
+            listener_protocol=constants.PROTOCOL_TCP)
+        self.amphora_repo.get_lb_for_health_update.return_value = lb_ref
+
+        self.hm.update_health(health, '192.0.2.1')
+        # We should have no calls to listener_repo.get, because we skip
+        # running the extra UDP function
+        self.assertFalse(self.listener_repo.get.called)
+
+        # Reset the mocks to try again
+        self.listener_repo.reset_mock()
+
+        # Test with a UDP listener
+        lb_ref = self._make_fake_lb_health_dict(
+            listener_protocol=constants.PROTOCOL_UDP)
+        self.amphora_repo.get_lb_for_health_update.return_value = lb_ref
+
+        self.hm.update_health(health, '192.0.2.1')
+        # This time we should have a call to listener_repo.get because the
+        # UDP helper function is triggered
+        self.assertTrue(self.listener_repo.get.called)
+
+    def test_update_listener_count_for_UDP(self):
         mock_lb, mock_listener1, mock_pool1, mock_members = (
             self._make_mock_lb_tree())
 
         mock_listener1.protocol = constants.PROTOCOL_TCP
 
-        self.hm.loadbalancer_repo.get.return_value = mock_lb
+        self.hm.listener_repo.get.return_value = mock_listener1
 
         # Test only TCP listeners
-        result = self.hm._update_listener_count_for_UDP('bogus_session', 1, 0)
+        lb_ref = self._make_fake_lb_health_dict(
+            listener_protocol=constants.PROTOCOL_TCP)
+        result = self.hm._update_listener_count_for_UDP(
+            'bogus_session', lb_ref, 0)
         self.assertEqual(0, result)
 
         # Test with a valid member
+        lb_ref = self._make_fake_lb_health_dict(
+            listener_protocol=constants.PROTOCOL_UDP)
         mock_listener1.protocol = constants.PROTOCOL_UDP
 
-        result = self.hm._update_listener_count_for_UDP('bogus_session', 1, 1)
+        result = self.hm._update_listener_count_for_UDP(
+            'bogus_session', lb_ref, 1)
         self.assertEqual(1, result)
 
         # Test with a disabled member
         mock_listener1.protocol = constants.PROTOCOL_UDP
         mock_members[0].enabled = False
 
-        result = self.hm._update_listener_count_for_UDP('bogus_session', 1, 1)
+        result = self.hm._update_listener_count_for_UDP(
+            'bogus_session', lb_ref, 1)
         self.assertEqual(0, result)
 
     def test_update_status(self):

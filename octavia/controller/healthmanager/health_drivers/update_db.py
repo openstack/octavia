@@ -75,18 +75,17 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
     # need to adjust the expected listener count
     # This is for backward compatibility with Rocky pre-versioning
     # heartbeat amphora.
-    def _update_listener_count_for_UDP(self, session, lb_id,
+    def _update_listener_count_for_UDP(self, session, db_lb,
                                        expected_listener_count):
-        lb_db_obj = self.loadbalancer_repo.get(session, id=lb_id)
-
         # For udp listener, the udp health won't send out by amp agent.
         # Once the default_pool of udp listener have the first enabled
         # member, then the health will be sent out. So during this
         # period, need to figure out the udp listener and ignore them
         # by changing expected_listener_count.
-        for listener in lb_db_obj.listeners:
+        for list_id, list_db in db_lb.get('listeners', {}).items():
             need_remove = False
-            if listener.protocol == constants.PROTOCOL_UDP:
+            if list_db['protocol'] == constants.PROTOCOL_UDP:
+                listener = self.listener_repo.get(session, id=list_id)
                 enabled_members = ([member
                                     for member in
                                     listener.default_pool.members
@@ -139,13 +138,16 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
             if 'PENDING' in db_lb['provisioning_status']:
                 ignore_listener_count = True
             else:
-
                 # If this is a heartbeat older than versioning, handle
                 # UDP special for backward compatibility.
                 if 'ver' not in health:
-                    expected_listener_count = (
-                        self._update_listener_count_for_UDP(
-                            session, db_lb['id'], expected_listener_count))
+                    udp_listeners = [
+                        l for k, l in db_lb.get('listeners', {}).items()
+                        if l['protocol'] == constants.PROTOCOL_UDP]
+                    if udp_listeners:
+                        expected_listener_count = (
+                            self._update_listener_count_for_UDP(
+                                session, db_lb, expected_listener_count))
         else:
             # If this is not a spare amp, log and skip it.
             amp = self.amphora_repo.get(session, id=health['id'])
