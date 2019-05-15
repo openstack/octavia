@@ -428,16 +428,6 @@ function configure_lb_mgmt_sec_grp {
     iniset ${OCTAVIA_CONF} controller_worker amp_secgroup_list ${OCTAVIA_MGMT_SEC_GRP_ID}
 }
 
-function configure_octavia_tempest {
-    # Load the amp_boot_network_list to tempest.conf and copy to tree
-
-    # TODO (ptoohill): remove check when tempest structure merges
-    if ! [ $OCTAVIA_TEMPEST == 'disabled' ] ; then
-        iniset $TEMPEST_CONFIG controller_worker amp_boot_network_list [$1]
-        cp $TEMPEST_CONFIG $OCTAVIA_TEMPEST_DIR/etc
-    fi
-}
-
 function create_amphora_flavor {
     # Pass even if it exists to avoid race condition on multinode
     openstack flavor create --id auto --ram 1024 --disk ${OCTAVIA_AMP_IMAGE_SIZE:-2} --vcpus 1 --private m1.amphora -f value -c id || true
@@ -598,19 +588,9 @@ function octavia_init {
 
        create_octavia_accounts
 
-       # Adds service and endpoint
-       if is_service_enabled tempest; then
-           configure_octavia_tempest ${OCTAVIA_AMP_NETWORK_ID}
-       fi
-
        add_load-balancer_roles
    elif [ $OCTAVIA_NODE == 'api' ] ; then
        create_octavia_accounts
-
-       # Adds service and endpoint
-       if is_service_enabled tempest; then
-           configure_octavia_tempest ${OCTAVIA_AMP_NETWORK_ID}
-       fi
 
        add_load-balancer_roles
    fi
