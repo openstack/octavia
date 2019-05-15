@@ -41,7 +41,7 @@ _log_translation_hint = re.compile(
 
 assert_trueinst_re = re.compile(
     r"(.)*assertTrue\(isinstance\((\w|\.|\'|\"|\[|\])+, "
-    "(\w|\.|\'|\"|\[|\])+\)\)")
+    r"(\w|\.|\'|\"|\[|\])+\)\)")
 assert_equal_in_end_with_true_or_false_re = re.compile(
     r"assertEqual\((\w|[][.'\"])+ in (\w|[][.'\", ])+, (True|False)\)")
 assert_equal_in_start_with_true_or_false_re = re.compile(
@@ -264,7 +264,7 @@ def check_line_continuation_no_backslash(logical_line, tokens):
 
 
 def revert_must_have_kwargs(logical_line):
-    """O347 - Taskflow revert methods must have \*\*kwargs.
+    """O347 - Taskflow revert methods must have \\*\\*kwargs.
 
     :param logical_line: The logical line to check.
     :returns: None if the logical line passes the check, otherwise a tuple
