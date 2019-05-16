@@ -204,11 +204,11 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             if not resource['%ss' % resource_type]:
                 # no items found
                 raise neutron_client_exceptions.NotFound()
-            elif unique_item:
+            if unique_item:
                 return conversion_function(resource['%ss' % resource_type][0])
-            else:
-                return list(map(conversion_function,
-                                resource['%ss' % resource_type]))
+
+            return list(map(conversion_function,
+                            resource['%ss' % resource_type]))
         except neutron_client_exceptions.NotFound:
             message = _('{resource_type} not found '
                         '({resource_type} Filters: {filters}.').format(

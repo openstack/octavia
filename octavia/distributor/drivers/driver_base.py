@@ -38,7 +38,6 @@ class DistributorDriver(object):
         instantiate one.
         The flow must store the generated distibutor ID in the flow.
         """
-        pass
 
     @abc.abstractmethod
     def get_delete_distributor_subflow(self):
@@ -52,7 +51,6 @@ class DistributorDriver(object):
         (if applicable for the driver) and cleans up any associated database
         records.
         """
-        pass
 
     @abc.abstractmethod
     def get_add_vip_subflow(self):
@@ -72,7 +70,6 @@ class DistributorDriver(object):
         distributor by perfoming the necessary steps to plug the VIP and
         configure the distributor to start receiving requests on this VIP.
         """
-        pass
 
     @abc.abstractmethod
     def get_remove_vip_subflow(self):
@@ -88,7 +85,6 @@ class DistributorDriver(object):
         distributor by reconfiguring the distributor and unplugging the
         associated port.
         """
-        pass
 
     @abc.abstractmethod
     def get_register_amphorae_subflow(self):
@@ -106,7 +102,6 @@ class DistributorDriver(object):
         distributor. Amphora should be ready to receive requests prior to
         this call being made.
         """
-        pass
 
     @abc.abstractmethod
     def get_drain_amphorae_subflow(self):
@@ -124,7 +119,6 @@ class DistributorDriver(object):
         list. Existing connections will continue to pass traffic to the
         amphorae in this list.
         """
-        pass
 
     @abc.abstractmethod
     def get_unregister_amphorae_subflow(self):
@@ -141,4 +135,3 @@ class DistributorDriver(object):
         from the distributor. Amphorae in this list will immediately stop
         receiving traffic.
         """
-        pass

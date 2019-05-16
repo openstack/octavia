@@ -54,7 +54,8 @@ disable=
  too-many-statements,
  multiple-statements,
  duplicate-except,
- keyword-arg-before-vararg
+ keyword-arg-before-vararg,
+ useless-object-inheritance
 
 [BASIC]
 # Variable names can be 1 to 31 characters long, with lowercase and underscores

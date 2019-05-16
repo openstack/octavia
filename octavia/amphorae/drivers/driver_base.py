@@ -38,7 +38,6 @@ class AmphoraLoadBalancerDriver(object):
         Builds a new configuration, pushes it to the amphora, and reloads
         the listener on one amphora.
         """
-        pass
 
     @abc.abstractmethod
     def update(self, listener, vip):
@@ -54,7 +53,6 @@ class AmphoraLoadBalancerDriver(object):
         At this moment, we just build the basic structure for testing, will
         add more function along with the development.
         """
-        pass
 
     @abc.abstractmethod
     def stop(self, listener, vip):
@@ -70,7 +68,6 @@ class AmphoraLoadBalancerDriver(object):
         At this moment, we just build the basic structure for testing, will
         add more function along with the development.
         """
-        pass
 
     @abc.abstractmethod
     def start(self, listener, vip, amphora):
@@ -88,7 +85,6 @@ class AmphoraLoadBalancerDriver(object):
         At this moment, we just build the basic structure for testing, will
         add more function along with the development.
         """
-        pass
 
     @abc.abstractmethod
     def delete(self, listener, vip):
@@ -104,7 +100,6 @@ class AmphoraLoadBalancerDriver(object):
         At this moment, we just build the basic structure for testing, will
         add more function along with the development.
         """
-        pass
 
     @abc.abstractmethod
     def get_info(self, amphora):
@@ -121,7 +116,6 @@ class AmphoraLoadBalancerDriver(object):
         "packages":{"ha proxy":"1.5"}}
         some information might come from querying the amphora
         """
-        pass
 
     @abc.abstractmethod
     def get_diagnostics(self, amphora):
@@ -138,7 +132,6 @@ class AmphoraLoadBalancerDriver(object):
         are healthy the idea is that those tests are triggered more infrequent
         than the health gathering.
         """
-        pass
 
     @abc.abstractmethod
     def finalize_amphora(self, amphora):
@@ -154,7 +147,6 @@ class AmphoraLoadBalancerDriver(object):
         to accept listeners. Please keep in mind that amphora might be kept in
         an offline pool after this call.
         """
-        pass
 
     def post_vip_plug(self, amphora, load_balancer, amphorae_network_config):
         """Called after network driver has allocated and plugged the VIP
@@ -171,7 +163,6 @@ class AmphoraLoadBalancerDriver(object):
         This is to do any additional work needed on the amphorae to plug
         the vip, such as bring up interfaces.
         """
-        pass
 
     def post_network_plug(self, amphora, port):
         """Called after amphora added to network
@@ -186,7 +177,6 @@ class AmphoraLoadBalancerDriver(object):
         access said network.  Ex: creating an interface on an amphora for a
         neutron network to utilize.
         """
-        pass
 
     def start_health_check(self, health_mixin):
         """Start health checks.
@@ -197,7 +187,6 @@ class AmphoraLoadBalancerDriver(object):
         Starts listener process and calls HealthMixin to update
         databases information.
         """
-        pass
 
     def stop_health_check(self):
         """Stop health checks.
@@ -205,7 +194,6 @@ class AmphoraLoadBalancerDriver(object):
         Stops listener process and calls HealthMixin to update
         databases information.
         """
-        pass
 
     def upload_cert_amp(self, amphora, pem_file):
         """Upload cert info to the amphora.
@@ -217,7 +205,6 @@ class AmphoraLoadBalancerDriver(object):
 
         Upload cert file to amphora for Controller Communication.
         """
-        pass
 
     def update_agent_config(self, amphora, agent_config):
         """Upload and update the amphora agent configuration.
@@ -227,7 +214,6 @@ class AmphoraLoadBalancerDriver(object):
         :param agent_config: The new amphora agent configuration file.
         :type agent_config: string
         """
-        pass
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -250,7 +236,6 @@ class HealthMixin(object):
         only items whose health has changed need to be submitted
         awesome update code
         """
-        pass
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -272,7 +257,6 @@ class StatsMixin(object):
         elements are named to keep it extsnsible for future versions
         awesome update code and code to send to ceilometer
         """
-        pass
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -289,7 +273,6 @@ class VRRPDriverMixin(object):
 
         :param loadbalancer: loadbalancer object
         """
-        pass
 
     @abc.abstractmethod
     def stop_vrrp_service(self, loadbalancer):
@@ -297,7 +280,6 @@ class VRRPDriverMixin(object):
 
         :param loadbalancer: loadbalancer object
         """
-        pass
 
     @abc.abstractmethod
     def start_vrrp_service(self, loadbalancer):
@@ -305,7 +287,6 @@ class VRRPDriverMixin(object):
 
         :param loadbalancer: loadbalancer object
         """
-        pass
 
     @abc.abstractmethod
     def reload_vrrp_service(self, loadbalancer):
@@ -313,7 +294,6 @@ class VRRPDriverMixin(object):
 
         :param loadbalancer: loadbalancer object
         """
-        pass
 
     @abc.abstractmethod
     def get_vrrp_interface(self, amphora):
@@ -321,4 +301,3 @@ class VRRPDriverMixin(object):
 
         :param amphora: amphora object
         """
-        pass

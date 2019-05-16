@@ -96,19 +96,18 @@ class BaseDataModel(object):
                                       'Listener', 'Amphora', 'L7Policy',
                                       'L7Rule']:
             return obj.__class__.__name__ + obj.id
-        elif obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
+        if obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
             return obj.__class__.__name__ + obj.pool_id
-        elif obj.__class__.__name__ in ['ListenerStatistics']:
+        if obj.__class__.__name__ in ['ListenerStatistics']:
             return obj.__class__.__name__ + obj.listener_id + obj.amphora_id
-        elif obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
+        if obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
             return obj.__class__.__name__ + obj.load_balancer_id
-        elif obj.__class__.__name__ in ['AmphoraHealth']:
+        if obj.__class__.__name__ in ['AmphoraHealth']:
             return obj.__class__.__name__ + obj.amphora_id
-        elif obj.__class__.__name__ in ['SNI']:
+        if obj.__class__.__name__ in ['SNI']:
             return (obj.__class__.__name__ +
                     obj.listener_id + obj.tls_container_id)
-        else:
-            raise NotImplementedError
+        raise NotImplementedError
 
     def _find_in_graph(self, key, _visited_nodes=None):
         """Locates an object with the given unique key in the current
@@ -120,26 +119,25 @@ class BaseDataModel(object):
         if mykey in _visited_nodes:
             # Seen this node already, don't traverse further
             return None
-        elif mykey == key:
+        if mykey == key:
             return self
-        else:
-            _visited_nodes.append(mykey)
-            attr_names = [attr_name for attr_name in dir(self)
-                          if not attr_name.startswith('_')]
-            for attr_name in attr_names:
-                attr = getattr(self, attr_name)
-                if isinstance(attr, BaseDataModel):
-                    result = attr._find_in_graph(
-                        key, _visited_nodes=_visited_nodes)
-                    if result is not None:
-                        return result
-                elif isinstance(attr, (collections.InstrumentedList, list)):
-                    for item in attr:
-                        if isinstance(item, BaseDataModel):
-                            result = item._find_in_graph(
-                                key, _visited_nodes=_visited_nodes)
-                            if result is not None:
-                                return result
+        _visited_nodes.append(mykey)
+        attr_names = [attr_name for attr_name in dir(self)
+                      if not attr_name.startswith('_')]
+        for attr_name in attr_names:
+            attr = getattr(self, attr_name)
+            if isinstance(attr, BaseDataModel):
+                result = attr._find_in_graph(
+                    key, _visited_nodes=_visited_nodes)
+                if result is not None:
+                    return result
+            elif isinstance(attr, (collections.InstrumentedList, list)):
+                for item in attr:
+                    if isinstance(item, BaseDataModel):
+                        result = item._find_in_graph(
+                            key, _visited_nodes=_visited_nodes)
+                        if result is not None:
+                            return result
         # If we are here we didn't find it.
         return None
 

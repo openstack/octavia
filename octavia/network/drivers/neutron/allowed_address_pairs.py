@@ -492,10 +492,9 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         except nova_client_exceptions.NotFound as e:
             if 'Instance' in str(e):
                 raise base.AmphoraNotFound(str(e))
-            elif 'Network' in str(e):
+            if 'Network' in str(e):
                 raise base.NetworkNotFound(str(e))
-            else:
-                raise base.PlugNetworkException(str(e))
+            raise base.PlugNetworkException(str(e))
         except Exception:
             message = _('Error plugging amphora (compute_id: {compute_id}) '
                         'into network {network_id}.').format(
@@ -568,10 +567,9 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         except nova_client_exceptions.NotFound as e:
             if 'Instance' in str(e):
                 raise base.AmphoraNotFound(str(e))
-            elif 'Network' in str(e):
+            if 'Network' in str(e):
                 raise base.NetworkNotFound(str(e))
-            else:
-                raise base.PlugNetworkException(str(e))
+            raise base.PlugNetworkException(str(e))
         except nova_client_exceptions.Conflict:
             LOG.info('Port %(portid)s is already plugged, '
                      'skipping', {'portid': port.id})

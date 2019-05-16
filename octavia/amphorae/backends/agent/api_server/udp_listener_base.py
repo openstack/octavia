@@ -57,7 +57,6 @@ class UdpListenerApiServerBase(object):
                             fail to create.
 
         """
-        pass
 
     @abc.abstractmethod
     def get_udp_listener_config(self, listener_id):
@@ -69,7 +68,6 @@ class UdpListenerApiServerBase(object):
         :raises Exception: If the listener is failed to find.
 
         """
-        pass
 
     @abc.abstractmethod
     def manage_udp_listener(self, listener_id, action):
@@ -82,7 +80,6 @@ class UdpListenerApiServerBase(object):
         :raises Exception: If the listener is failed to find.
 
         """
-        pass
 
     @abc.abstractmethod
     def get_all_udp_listeners_status(self):
@@ -96,7 +93,6 @@ class UdpListenerApiServerBase(object):
         :raises Exception: If the listener pid located directory is not exist
 
         """
-        pass
 
     @abc.abstractmethod
     def get_udp_listener_status(self, listener_id):
@@ -108,7 +104,6 @@ class UdpListenerApiServerBase(object):
         :raises Exception: If the listener is failed to find.
 
         """
-        pass
 
     @abc.abstractmethod
     def delete_udp_listener(self, listener_id):
@@ -120,4 +115,3 @@ class UdpListenerApiServerBase(object):
         :raises Exception: If unsupport initial system of amphora.
 
         """
-        pass

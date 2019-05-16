@@ -111,8 +111,8 @@ class FlavorsController(base.BaseController):
         try:
             flavor_dict = flavor.to_dict(render_unsets=False)
             if flavor_dict:
-                db_flavor = self.repositories.flavor.update(lock_session, id,
-                                                            **flavor_dict)
+                self.repositories.flavor.update(lock_session, id,
+                                                **flavor_dict)
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():

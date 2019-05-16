@@ -50,7 +50,6 @@ class ComputeBase(object):
         :raises ComputeBuildException: if compute failed to build amphora
         :returns: UUID of amphora
         """
-        pass
 
     @abc.abstractmethod
     def delete(self, compute_id):
@@ -58,7 +57,6 @@ class ComputeBase(object):
 
         :param compute_id: The id of the amphora to delete
         """
-        pass
 
     @abc.abstractmethod
     def status(self, compute_id):
@@ -67,7 +65,6 @@ class ComputeBase(object):
         :param compute_id: the ID of the desired amphora
         :returns: The compute "status" response ("ONLINE" or "OFFLINE")
         """
-        pass
 
     @abc.abstractmethod
     def get_amphora(self, compute_id):
@@ -77,7 +74,6 @@ class ComputeBase(object):
         :returns: the amphora object
         :returns: fault message or None
         """
-        pass
 
     @abc.abstractmethod
     def create_server_group(self, name, policy):
@@ -87,7 +83,6 @@ class ComputeBase(object):
         :param policy: the policy of the server group
         :returns: the server group object
         """
-        pass
 
     @abc.abstractmethod
     def delete_server_group(self, server_group_id):
@@ -95,7 +90,6 @@ class ComputeBase(object):
 
         :param server_group_id: the uuid of a server group
         """
-        pass
 
     @abc.abstractmethod
     def attach_network_or_port(self, compute_id, network_id=None,
@@ -109,7 +103,6 @@ class ComputeBase(object):
         :return: nova interface
         :raises: Exception
         """
-        pass
 
     @abc.abstractmethod
     def detach_port(self, compute_id, port_id):
@@ -120,7 +113,6 @@ class ComputeBase(object):
         :return: None
         :raises: Exception
         """
-        pass
 
     @abc.abstractmethod
     def validate_flavor(self, flavor_id):
@@ -131,4 +123,3 @@ class ComputeBase(object):
         :raises: NotFound
         :raises: NotImplementedError
         """
-        pass

@@ -154,8 +154,8 @@ class FlavorProfileController(base.BaseController):
         try:
             flavorprofile_dict = flavorprofile.to_dict(render_unsets=False)
             if flavorprofile_dict:
-                db_flavor_profile = self.repositories.flavor_profile.update(
-                    lock_session, id, **flavorprofile_dict)
+                self.repositories.flavor_profile.update(lock_session, id,
+                                                        **flavorprofile_dict)
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():

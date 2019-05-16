@@ -202,7 +202,7 @@ class ComputeActiveWait(BaseComputeTask):
                 if CONF.haproxy_amphora.build_rate_limit != -1:
                     self.rate_limit.remove_from_build_req_queue(amphora_id)
                 return amp
-            elif amp.status == constants.ERROR:
+            if amp.status == constants.ERROR:
                 raise exceptions.ComputeBuildException(fault=fault)
             time.sleep(CONF.controller_worker.amp_active_wait_sec)
 

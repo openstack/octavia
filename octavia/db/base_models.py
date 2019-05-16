@@ -33,21 +33,20 @@ class OctaviaBase(models.ModelBase):
                                       'Listener', 'Amphora', 'L7Policy',
                                       'L7Rule', 'Flavor', 'FlavorProfile']:
             return obj.__class__.__name__ + obj.id
-        elif obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
+        if obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
             return obj.__class__.__name__ + obj.pool_id
-        elif obj.__class__.__name__ in ['ListenerStatistics']:
+        if obj.__class__.__name__ in ['ListenerStatistics']:
             return obj.__class__.__name__ + obj.listener_id + obj.amphora_id
-        elif obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
+        if obj.__class__.__name__ in ['VRRPGroup', 'Vip']:
             return obj.__class__.__name__ + obj.load_balancer_id
-        elif obj.__class__.__name__ in ['AmphoraHealth']:
+        if obj.__class__.__name__ in ['AmphoraHealth']:
             return obj.__class__.__name__ + obj.amphora_id
-        elif obj.__class__.__name__ in ['SNI']:
+        if obj.__class__.__name__ in ['SNI']:
             return (obj.__class__.__name__ +
                     obj.listener_id + obj.tls_container_id)
-        elif obj.__class__.__name__ in ['Quotas']:
+        if obj.__class__.__name__ in ['Quotas']:
             return obj.__class__.__name__ + obj.project_id
-        else:
-            raise NotImplementedError
+        raise NotImplementedError
 
     def to_data_model(self, _graph_nodes=None):
         """Converts to a data model graph.

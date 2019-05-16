@@ -85,8 +85,6 @@ class ListenersUpdate(BaseAmphoraTask):
         for listener in loadbalancer.listeners:
             self.task_utils.mark_listener_prov_status_error(listener.id)
 
-        return None
-
 
 class ListenerStop(BaseAmphoraTask):
     """Task to stop the listener on the vip."""
@@ -102,8 +100,6 @@ class ListenerStop(BaseAmphoraTask):
         LOG.warning("Reverting listener stop.")
 
         self.task_utils.mark_listener_prov_status_error(listener.id)
-
-        return None
 
 
 class ListenerStart(BaseAmphoraTask):
@@ -121,8 +117,6 @@ class ListenerStart(BaseAmphoraTask):
 
         self.task_utils.mark_listener_prov_status_error(listener.id)
 
-        return None
-
 
 class ListenersStart(BaseAmphoraTask):
     """Task to start all listeners on the vip."""
@@ -139,8 +133,6 @@ class ListenersStart(BaseAmphoraTask):
         LOG.warning("Reverting listeners starts.")
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_error(listener.id)
-
-        return None
 
 
 class ListenerDelete(BaseAmphoraTask):
