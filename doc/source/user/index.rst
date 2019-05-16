@@ -18,6 +18,7 @@ Guides
    :maxdepth: 1
 
    guides/l7
+   feature-classification/index
 
 References
 ==========

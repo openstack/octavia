@@ -62,6 +62,7 @@ extensions = [
     'sphinxcontrib.seqdiag',
     'sphinxcontrib.nwdiag',
     'sphinx.ext.graphviz',
+    'sphinx_feature_classification.support_matrix',
     'openstackdocstheme',
     'oslo_config.sphinxext',
     'oslo_policy.sphinxpolicygen',
