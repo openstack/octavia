@@ -59,6 +59,7 @@
               - ^releasenotes/.*$
             voting: false
     gate:
+      fail-fast: true
       queue: octavia
       jobs:
         - openstack-tox-functional:
