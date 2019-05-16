@@ -45,7 +45,7 @@ class TestHealthManager(base.TestCase):
         super(TestHealthManager, self).setUp()
 
     @mock.patch('octavia.db.api.wait_for_connection')
-    @mock.patch('octavia.controller.worker.controller_worker.'
+    @mock.patch('octavia.controller.worker.v1.controller_worker.'
                 'ControllerWorker.failover_amphora')
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.'
                 'get_stale_amphora')
@@ -86,7 +86,7 @@ class TestHealthManager(base.TestCase):
         self.assertRaises(TestException, hm.health_check)
         self.assertEqual(4, mock_session.rollback.call_count)
 
-    @mock.patch('octavia.controller.worker.controller_worker.'
+    @mock.patch('octavia.controller.worker.v1.controller_worker.'
                 'ControllerWorker.failover_amphora')
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.'
                 'get_stale_amphora', return_value=None)
@@ -102,7 +102,7 @@ class TestHealthManager(base.TestCase):
         session_mock.assert_called_once_with(autocommit=False)
         self.assertFalse(failover_mock.called)
 
-    @mock.patch('octavia.controller.worker.controller_worker.'
+    @mock.patch('octavia.controller.worker.v1.controller_worker.'
                 'ControllerWorker.failover_amphora')
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.'
                 'get_stale_amphora', return_value=None)

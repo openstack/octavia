@@ -301,7 +301,9 @@ class ListenersController(base.BaseController):
 
             # re-inject the sni container references lost due to SNI
             # being a separate table in the DB
-            provider_listener.sni_container_refs = listener.sni_container_refs
+            if listener.sni_container_refs != wtypes.Unset:
+                provider_listener.sni_container_refs = (
+                    listener.sni_container_refs)
 
             # Dispatch to the driver
             LOG.info("Sending create Listener %s to provider %s",
