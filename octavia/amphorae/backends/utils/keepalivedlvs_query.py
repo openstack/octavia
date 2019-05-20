@@ -35,6 +35,10 @@ V6_VS_REGEX = re.compile(r"virtual_server\s([\w*:]+\b)\s(\d{1,5})")
 V6_RS_REGEX = re.compile(r"real_server\s([\w*:]+\b)\s(\d{1,5})")
 CONFIG_COMMENT_REGEX = re.compile(
     r"#\sConfiguration\sfor\s(\w+)\s(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})")
+DISABLED_MEMBER_COMMENT_REGEX = re.compile(
+    r"#\sMember\s(\w{8}-\w{4}-\w{4}-\w{4}-\w{12}) is disabled")
+
+CHECKER_REGEX = re.compile(r"MISC_CHECK")
 
 
 def read_kernel_file(ns_name, file_path):
@@ -55,7 +59,8 @@ def read_kernel_file(ns_name, file_path):
     return output
 
 
-def get_listener_realserver_mapping(ns_name, listener_ip_port):
+def get_listener_realserver_mapping(ns_name, listener_ip_port,
+                                    health_monitor_enabled):
     # returned result:
     # actual_member_result = {'rs_ip:listened_port': {
     #   'status': 'UP',
@@ -73,6 +78,11 @@ def get_listener_realserver_mapping(ns_name, listener_ip_port):
         ip_to_hex_format = r'\[' + ip_obj.exploded + r'\]'
     port_hex_format = "%.4X" % int(listener_port)
     idex = ip_to_hex_format + ':' + port_hex_format
+
+    if health_monitor_enabled:
+        member_status = constants.UP
+    else:
+        member_status = constants.NO_CHECK
 
     actual_member_result = {}
     find_target_block = False
@@ -111,7 +121,7 @@ def get_listener_realserver_mapping(ns_name, listener_ip_port):
             for index in range(result_key_count):
                 if member_ip_port_string not in actual_member_result:
                     actual_member_result[
-                        member_ip_port_string] = {'status': constants.UP,
+                        member_ip_port_string] = {'status': member_status,
                                                   result_keys[index]:
                                                       result_values[index]}
                 else:
@@ -171,6 +181,16 @@ def get_udp_listener_resource_ipports_nsname(listener_id):
             elif resource_type == 'Members':
                 resource_ipport_mapping[resource_type].append(value)
 
+        disabled_member_ids = DISABLED_MEMBER_COMMENT_REGEX.findall(cfg)
+
+        resource_type = 'Members'
+        for member_id in disabled_member_ids:
+            value = {'id': member_id,
+                     'ipport': None}
+            if resource_type not in resource_ipport_mapping:
+                resource_ipport_mapping[resource_type] = []
+            resource_ipport_mapping[resource_type].append(value)
+
         if rs_ip_port_list:
             rs_ip_port_count = len(rs_ip_port_list)
             for index in range(rs_ip_port_count):
@@ -205,8 +225,13 @@ def get_udp_listener_pool_status(listener_id):
             'members': {}
         }}
 
+    with open(util.keepalived_lvs_cfg_path(listener_id), 'r') as f:
+        cfg = f.read()
+        hm_enabled = len(CHECKER_REGEX.findall(cfg)) > 0
+
     _, realserver_result = get_listener_realserver_mapping(
-        ns_name, resource_ipport_mapping['Listener']['ipport'])
+        ns_name, resource_ipport_mapping['Listener']['ipport'],
+        hm_enabled)
     pool_status = constants.UP
     member_results = {}
     if realserver_result:
@@ -220,7 +245,9 @@ def get_udp_listener_pool_status(listener_id):
             for member in resource_ipport_mapping['Members']:
                 if member['ipport'] == member_ip_port:
                     member_id = member['id']
-            if member_ip_port in down_member_ip_port_set:
+            if member_ip_port is None:
+                status = constants.MAINT
+            elif member_ip_port in down_member_ip_port_set:
                 status = constants.DOWN
             elif int(realserver_result[member_ip_port]['Weight']) == 0:
                 status = constants.DRAIN
@@ -230,9 +257,16 @@ def get_udp_listener_pool_status(listener_id):
             if member_id:
                 member_results[member_id] = status
     else:
-        pool_status = constants.DOWN
+        if hm_enabled:
+            pool_status = constants.DOWN
+
         for member in resource_ipport_mapping['Members']:
-            member_results[member['id']] = constants.DOWN
+            if member['ipport'] is None:
+                member_results[member['id']] = constants.MAINT
+            elif hm_enabled:
+                member_results[member['id']] = constants.DOWN
+            else:
+                member_results[member['id']] = constants.NO_CHECK
 
     return {
         'lvs':

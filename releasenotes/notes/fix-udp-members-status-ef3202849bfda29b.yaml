@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix operating_status for pools and members that use UDP protocol.
+    operating_status values are now consistant with the values of non-UDP
+    load balancers.
