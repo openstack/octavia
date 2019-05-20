@@ -22,6 +22,7 @@ from octavia.tests.unit import base
 # Kernal_file_sample which is in /proc/net/ip_vs
 # The realservers and the listened ports are
 # 10.0.0.25:2222, 10.0.0.35:3333.
+# Realserver 10.0.0.45:4444 is not listed because healthcheck failed.
 # The virtual server and the listened port is
 # 10.0.0.37:7777.
 KERNAL_FILE_SAMPLE_V4 = (
@@ -35,6 +36,8 @@ KERNAL_FILE_SAMPLE_V4 = (
 # The realservers and the listened ports are
 # [fd79:35e2:9963:0:f816:3eff:feca:b7bf]:2222,
 # [fd79:35e2:9963:0:f816:3eff:fe9d:94df]:3333.
+# Readlserver [fd79:35e2:9963:0:f816:3eff:fe9d:8f3f]:4444 is not listed
+# because healthcheck failed.
 # The virtual server and the listened port is
 # [fd79:35e2:9963:0:f816:3eff:fe6d:7a2a]:7777.
 KERNAL_FILE_SAMPLE_V6 = (
@@ -60,13 +63,32 @@ CFG_FILE_TEMPLATE_v4 = (
     "        weight 3\n"
     "        persistence_timeout 5\n"
     "        persistence_granularity 255.0.0.0\n\n"
+    "        MISC_CHECK {\n\n"
+    "            misc_path \"/usr/bin/check_script.sh\"\n\n"
+    "            misc_timeout 5\n\n"
+    "        }\n\n"
     "    }\n\n"
     "    # Configuration for Member %(member_id2)s\n"
     "    real_server 10.0.0.35 3333 {\n"
     "        weight 2\n"
     "        persistence_timeout 5\n"
     "        persistence_granularity 255.0.0.0\n\n"
+    "        MISC_CHECK {\n\n"
+    "            misc_path \"/usr/bin/check_script.sh\"\n\n"
+    "            misc_timeout 5\n\n"
+    "        }\n\n"
     "    }\n\n"
+    "    # Configuration for Member %(member_id3)s\n"
+    "    real_server 10.0.0.45 4444 {\n"
+    "        weight 2\n"
+    "        persistence_timeout 5\n"
+    "        persistence_granularity 255.0.0.0\n\n"
+    "        MISC_CHECK {\n\n"
+    "            misc_path \"/usr/bin/check_script.sh\"\n\n"
+    "            misc_timeout 5\n\n"
+    "        }\n\n"
+    "    }\n\n"
+    "    # Member %(member_id4)s is disabled\n\n"
     "}")
 
 CFG_FILE_TEMPLATE_v6 = (
@@ -80,11 +102,28 @@ CFG_FILE_TEMPLATE_v6 = (
     "    # Configuration for Member %(member_id1)s\n"
     "    real_server fd79:35e2:9963:0:f816:3eff:feca:b7bf 2222 {\n"
     "        weight 3\n"
+    "        MISC_CHECK {\n\n"
+    "            misc_path \"/usr/bin/check_script.sh\"\n\n"
+    "            misc_timeout 5\n\n"
+    "        }\n\n"
     "    }\n\n"
     "    # Configuration for Member %(member_id2)s\n"
     "    real_server fd79:35e2:9963:0:f816:3eff:fe9d:94df 3333 {\n"
     "        weight 2\n"
+    "        MISC_CHECK {\n\n"
+    "            misc_path \"/usr/bin/check_script.sh\"\n\n"
+    "            misc_timeout 5\n\n"
+    "        }\n\n"
     "    }\n\n"
+    "    # Configuration for Member %(member_id3)s\n"
+    "    real_server fd79:35e2:9963:0:f816:3eff:fe9d:8f3f 4444 {\n"
+    "        weight 2\n"
+    "        MISC_CHECK {\n\n"
+    "            misc_path \"/usr/bin/check_script.sh\"\n\n"
+    "            misc_timeout 5\n\n"
+    "        }\n\n"
+    "    }\n\n"
+    "    # Member %(member_id4)s is disabled\n\n"
     "}")
 
 IPVSADM_OUTPUT_TEMPLATE = (
@@ -115,23 +154,31 @@ class LvsQueryTestCase(base.TestCase):
         self.pool_id_v4 = uuidutils.generate_uuid()
         self.member_id1_v4 = uuidutils.generate_uuid()
         self.member_id2_v4 = uuidutils.generate_uuid()
+        self.member_id3_v4 = uuidutils.generate_uuid()
+        self.member_id4_v4 = uuidutils.generate_uuid()
         self.listener_id_v6 = uuidutils.generate_uuid()
         self.pool_id_v6 = uuidutils.generate_uuid()
         self.member_id1_v6 = uuidutils.generate_uuid()
         self.member_id2_v6 = uuidutils.generate_uuid()
+        self.member_id3_v6 = uuidutils.generate_uuid()
+        self.member_id4_v6 = uuidutils.generate_uuid()
         cfg_content_v4 = CFG_FILE_TEMPLATE_v4 % {
             'listener_id': self.listener_id_v4,
             'ns_name': constants.AMPHORA_NAMESPACE,
             'pool_id': self.pool_id_v4,
             'member_id1': self.member_id1_v4,
-            'member_id2': self.member_id2_v4
+            'member_id2': self.member_id2_v4,
+            'member_id3': self.member_id3_v4,
+            'member_id4': self.member_id4_v4,
         }
         cfg_content_v6 = CFG_FILE_TEMPLATE_v6 % {
             'listener_id': self.listener_id_v6,
             'ns_name': constants.AMPHORA_NAMESPACE,
             'pool_id': self.pool_id_v6,
             'member_id1': self.member_id1_v6,
-            'member_id2': self.member_id2_v6
+            'member_id2': self.member_id2_v6,
+            'member_id3': self.member_id3_v6,
+            'member_id4': self.member_id4_v6
         }
         self.useFixture(test_utils.OpenFixture(
             util.keepalived_lvs_cfg_path(self.listener_id_v4), cfg_content_v4))
@@ -145,7 +192,8 @@ class LvsQueryTestCase(base.TestCase):
         target_ns = constants.AMPHORA_NAMESPACE
         mock_check_output.return_value = KERNAL_FILE_SAMPLE_V4
         result = lvs_query.get_listener_realserver_mapping(
-            target_ns, input_listener_ip_port)
+            target_ns, input_listener_ip_port,
+            health_monitor_enabled=True)
         expected = {'10.0.0.25:2222': {'status': 'UP',
                                        'Forward': 'Masq',
                                        'Weight': '3',
@@ -162,7 +210,8 @@ class LvsQueryTestCase(base.TestCase):
         input_listener_ip_port = '[fd79:35e2:9963:0:f816:3eff:fe6d:7a2a]:7777'
         mock_check_output.return_value = KERNAL_FILE_SAMPLE_V6
         result = lvs_query.get_listener_realserver_mapping(
-            target_ns, input_listener_ip_port)
+            target_ns, input_listener_ip_port,
+            health_monitor_enabled=True)
         expected = {'[fd79:35e2:9963:0:f816:3eff:feca:b7bf]:2222':
                     {'status': constants.UP,
                      'Forward': 'Masq',
@@ -181,7 +230,8 @@ class LvsQueryTestCase(base.TestCase):
         mock_check_output.return_value = KERNAL_FILE_SAMPLE_V4
         for listener_ip_port in ['10.0.0.37:7776', '10.0.0.31:7777']:
             result = lvs_query.get_listener_realserver_mapping(
-                target_ns, listener_ip_port)
+                target_ns, listener_ip_port,
+                health_monitor_enabled=True)
             self.assertEqual((False, {}), result)
 
         mock_check_output.return_value = KERNAL_FILE_SAMPLE_V6
@@ -189,7 +239,8 @@ class LvsQueryTestCase(base.TestCase):
             '[fd79:35e2:9963:0:f816:3eff:fe6d:7a2a]:7776',
                 '[fd79:35e2:9973:0:f816:3eff:fe6d:7a2a]:7777']:
             result = lvs_query.get_listener_realserver_mapping(
-                target_ns, listener_ip_port)
+                target_ns, listener_ip_port,
+                health_monitor_enabled=True)
             self.assertEqual((False, {}), result)
 
     def test_get_udp_listener_resource_ipports_nsname(self):
@@ -202,7 +253,11 @@ class LvsQueryTestCase(base.TestCase):
                     'Members': [{'id': self.member_id1_v4,
                                  'ipport': '10.0.0.25:2222'},
                                 {'id': self.member_id2_v4,
-                                 'ipport': '10.0.0.35:3333'}]}
+                                 'ipport': '10.0.0.35:3333'},
+                                {'id': self.member_id3_v4,
+                                 'ipport': '10.0.0.45:4444'},
+                                {'id': self.member_id4_v4,
+                                 'ipport': None}]}
         self.assertEqual((expected, constants.AMPHORA_NAMESPACE), res)
 
         # ipv6
@@ -216,7 +271,11 @@ class LvsQueryTestCase(base.TestCase):
                 {'id': self.member_id1_v6,
                  'ipport': '[fd79:35e2:9963:0:f816:3eff:feca:b7bf]:2222'},
                 {'id': self.member_id2_v6,
-                 'ipport': '[fd79:35e2:9963:0:f816:3eff:fe9d:94df]:3333'}]}
+                 'ipport': '[fd79:35e2:9963:0:f816:3eff:fe9d:94df]:3333'},
+                {'id': self.member_id3_v6,
+                 'ipport': '[fd79:35e2:9963:0:f816:3eff:fe9d:8f3f]:4444'},
+                {'id': self.member_id4_v6,
+                 'ipport': None}]}
         self.assertEqual((expected, constants.AMPHORA_NAMESPACE), res)
 
     @mock.patch('subprocess.check_output')
@@ -229,7 +288,9 @@ class LvsQueryTestCase(base.TestCase):
             {'uuid': self.pool_id_v4,
              'status': constants.UP,
              'members': {self.member_id1_v4: constants.UP,
-                         self.member_id2_v4: constants.UP}}}
+                         self.member_id2_v4: constants.UP,
+                         self.member_id3_v4: constants.DOWN,
+                         self.member_id4_v4: constants.MAINT}}}
         self.assertEqual(expected, res)
 
         mock_check_output.return_value = KERNAL_FILE_SAMPLE_V6
@@ -239,7 +300,9 @@ class LvsQueryTestCase(base.TestCase):
             {'uuid': self.pool_id_v6,
              'status': constants.UP,
              'members': {self.member_id1_v6: constants.UP,
-                         self.member_id2_v6: constants.UP}}}
+                         self.member_id2_v6: constants.UP,
+                         self.member_id3_v6: constants.DOWN,
+                         self.member_id4_v6: constants.MAINT}}}
         self.assertEqual(expected, res)
 
     @mock.patch('octavia.amphorae.backends.utils.keepalivedlvs_query.'
@@ -298,7 +361,9 @@ class LvsQueryTestCase(base.TestCase):
             {'uuid': self.pool_id_v4,
              'status': constants.DOWN,
              'members': {self.member_id1_v4: constants.DOWN,
-                         self.member_id2_v4: constants.DOWN}}}
+                         self.member_id2_v4: constants.DOWN,
+                         self.member_id3_v4: constants.DOWN,
+                         self.member_id4_v4: constants.MAINT}}}
         self.assertEqual(expected, res)
 
     @mock.patch('subprocess.check_output')
