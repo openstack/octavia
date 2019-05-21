@@ -15,6 +15,7 @@
 import mock
 from oslo_utils import uuidutils
 
+from octavia.common import constants
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
 import octavia.tests.unit.base as base
 
@@ -37,12 +38,12 @@ class TestLifecycleTasks(base.TestCase):
         self.L7RULE.id = self.L7RULE_ID
         self.LISTENER = mock.MagicMock()
         self.LISTENER_ID = uuidutils.generate_uuid()
-        self.LISTENER.id = self.LISTENER_ID
+        self.LISTENER = {constants.LISTENER_ID: self.LISTENER_ID}
         self.LISTENERS = [self.LISTENER]
         self.LOADBALANCER = mock.MagicMock()
         self.LOADBALANCER_ID = uuidutils.generate_uuid()
         self.LOADBALANCER.id = self.LOADBALANCER_ID
-        self.LISTENER.load_balancer = self.LOADBALANCER
+        self.LISTENER[constants.LOADBALANCER_ID] = self.LOADBALANCER_ID
         self.MEMBER = mock.MagicMock()
         self.MEMBER_ID = uuidutils.generate_uuid()
         self.MEMBER.id = self.MEMBER_ID
@@ -234,14 +235,12 @@ class TestLifecycleTasks(base.TestCase):
                                         ListenersToErrorOnRevertTask())
 
         # Execute
-        listeners_to_error_on_revert.execute(self.LISTENERS,
-                                             self.LOADBALANCER)
+        listeners_to_error_on_revert.execute([self.LISTENER])
 
         self.assertFalse(mock_listener_prov_status_error.called)
 
         # Revert
-        listeners_to_error_on_revert.revert(self.LISTENERS,
-                                            self.LOADBALANCER)
+        listeners_to_error_on_revert.revert([self.LISTENER])
 
         mock_listener_prov_status_error.assert_called_once_with(
             self.LISTENER_ID)

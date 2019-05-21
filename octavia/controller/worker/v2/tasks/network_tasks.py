@@ -22,6 +22,8 @@ from taskflow.types import failure
 from octavia.common import constants
 from octavia.common import utils
 from octavia.controller.worker import task_utils
+from octavia.db import api as db_apis
+from octavia.db import repositories as repo
 from octavia.network import base
 from octavia.network import data_models as n_data_models
 
@@ -36,6 +38,7 @@ class BaseNetworkTask(task.Task):
         super(BaseNetworkTask, self).__init__(**kwargs)
         self._network_driver = None
         self.task_utils = task_utils.TaskUtils()
+        self.loadbalancer_repo = repo.LoadBalancerRepository()
 
     @property
     def network_driver(self):
@@ -468,7 +471,10 @@ class DeallocateVIP(BaseNetworkTask):
 class UpdateVIP(BaseNetworkTask):
     """Task to update a VIP."""
 
-    def execute(self, loadbalancer):
+    def execute(self, listeners):
+        loadbalancer = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=listeners[0][constants.LOADBALANCER_ID])
+
         LOG.debug("Updating VIP of load_balancer %s.", loadbalancer.id)
 
         self.network_driver.update_vip(loadbalancer)
@@ -477,7 +483,9 @@ class UpdateVIP(BaseNetworkTask):
 class UpdateVIPForDelete(BaseNetworkTask):
     """Task to update a VIP for listener delete flows."""
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer_id):
+        loadbalancer = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer_id)
         LOG.debug("Updating VIP for listener delete on load_balancer %s.",
                   loadbalancer.id)
 

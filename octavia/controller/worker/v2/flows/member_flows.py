@@ -20,7 +20,6 @@ from octavia.common import constants
 from octavia.controller.worker.v2.tasks import amphora_driver_tasks
 from octavia.controller.worker.v2.tasks import database_tasks
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
-from octavia.controller.worker.v2.tasks import model_tasks
 from octavia.controller.worker.v2.tasks import network_tasks
 
 
@@ -55,8 +54,8 @@ class MemberFlows(object):
             requires=constants.POOL))
         create_member_flow.add(database_tasks.
                                MarkLBAndListenersActiveInDB(
-                                   requires=(constants.LOADBALANCER,
-                                             constants.LISTENERS)))
+                                   requires=(constants.LISTENERS,
+                                             constants.LOADBALANCER_ID)))
 
         return create_member_flow
 
@@ -73,21 +72,18 @@ class MemberFlows(object):
                       constants.POOL]))
         delete_member_flow.add(database_tasks.MarkMemberPendingDeleteInDB(
             requires=constants.MEMBER))
-        delete_member_flow.add(model_tasks.
-                               DeleteModelObject(rebind={constants.OBJECT:
-                                                         constants.MEMBER}))
-        delete_member_flow.add(database_tasks.DeleteMemberInDB(
-            requires=constants.MEMBER))
         delete_member_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=constants.LOADBALANCER))
+        delete_member_flow.add(database_tasks.DeleteMemberInDB(
+            requires=constants.MEMBER))
         delete_member_flow.add(database_tasks.DecrementMemberQuota(
             requires=constants.MEMBER))
         delete_member_flow.add(database_tasks.MarkPoolActiveInDB(
             requires=constants.POOL))
         delete_member_flow.add(database_tasks.
                                MarkLBAndListenersActiveInDB(
-                                   requires=[constants.LOADBALANCER,
-                                             constants.LISTENERS]))
+                                   requires=(constants.LISTENERS,
+                                             constants.LOADBALANCER_ID)))
 
         return delete_member_flow
 
@@ -114,8 +110,8 @@ class MemberFlows(object):
             requires=constants.POOL))
         update_member_flow.add(database_tasks.
                                MarkLBAndListenersActiveInDB(
-                                   requires=[constants.LOADBALANCER,
-                                             constants.LISTENERS]))
+                                   requires=(constants.LISTENERS,
+                                             constants.LOADBALANCER_ID)))
 
         return update_member_flow
 
@@ -139,11 +135,6 @@ class MemberFlows(object):
                 name='{flow}-deleted'.format(
                     flow=constants.MEMBER_TO_ERROR_ON_REVERT_FLOW)))
         for m in old_members:
-            unordered_members_flow.add(
-                model_tasks.DeleteModelObject(
-                    inject={constants.OBJECT: m},
-                    name='{flow}-{id}'.format(
-                        id=m.id, flow=constants.DELETE_MODEL_OBJECT_FLOW)))
             unordered_members_flow.add(database_tasks.DeleteMemberInDB(
                 inject={constants.MEMBER: m},
                 name='{flow}-{id}'.format(
@@ -203,7 +194,6 @@ class MemberFlows(object):
             requires=constants.POOL))
         batch_update_members_flow.add(
             database_tasks.MarkLBAndListenersActiveInDB(
-                requires=(constants.LOADBALANCER,
-                          constants.LISTENERS)))
+                requires=(constants.LISTENERS, constants.LOADBALANCER_ID)))
 
         return batch_update_members_flow

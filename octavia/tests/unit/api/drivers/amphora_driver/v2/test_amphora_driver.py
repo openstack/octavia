@@ -124,7 +124,7 @@ class TestAmphoraDriver(base.TestRpc):
         provider_listener = driver_dm.Listener(
             listener_id=self.sample_data.listener1_id)
         self.amp_driver.listener_create(provider_listener)
-        payload = {consts.LISTENER_ID: self.sample_data.listener1_id}
+        payload = {consts.LISTENER: provider_listener.to_dict()}
         mock_cast.assert_called_with({}, 'create_listener', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
@@ -132,7 +132,7 @@ class TestAmphoraDriver(base.TestRpc):
         provider_listener = driver_dm.Listener(
             listener_id=self.sample_data.listener1_id)
         self.amp_driver.listener_delete(provider_listener)
-        payload = {consts.LISTENER_ID: self.sample_data.listener1_id}
+        payload = {consts.LISTENER: provider_listener.to_dict()}
         mock_cast.assert_called_with({}, 'delete_listener', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
@@ -141,10 +141,11 @@ class TestAmphoraDriver(base.TestRpc):
             listener_id=self.sample_data.listener1_id)
         provider_listener = driver_dm.Listener(
             listener_id=self.sample_data.listener1_id, admin_state_up=False)
-        listener_dict = {'enabled': False}
+        listener_dict = provider_listener.to_dict()
+        listener_dict['admin_state_up'] = False
         self.amp_driver.listener_update(old_provider_listener,
                                         provider_listener)
-        payload = {consts.LISTENER_ID: self.sample_data.listener1_id,
+        payload = {consts.ORIGINAL_LISTENER: old_provider_listener.to_dict(),
                    consts.LISTENER_UPDATES: listener_dict}
         mock_cast.assert_called_with({}, 'update_listener', **payload)
 
@@ -154,10 +155,11 @@ class TestAmphoraDriver(base.TestRpc):
             listener_id=self.sample_data.listener1_id)
         provider_listener = driver_dm.Listener(
             listener_id=self.sample_data.listener1_id, name='Great Listener')
-        listener_dict = {'name': 'Great Listener'}
+        listener_dict = provider_listener.to_dict()
+        listener_dict['name'] = 'Great Listener'
         self.amp_driver.listener_update(old_provider_listener,
                                         provider_listener)
-        payload = {consts.LISTENER_ID: self.sample_data.listener1_id,
+        payload = {consts.ORIGINAL_LISTENER: old_provider_listener.to_dict(),
                    consts.LISTENER_UPDATES: listener_dict}
         mock_cast.assert_called_with({}, 'update_listener', **payload)
 
@@ -690,3 +692,39 @@ class TestAmphoraDriver(base.TestRpc):
             self.assertRaises(exceptions.DriverError,
                               self.amp_driver.validate_availability_zone,
                               'bogus')
+
+    @mock.patch('cryptography.fernet.Fernet')
+    def test_encrypt_listener_dict(self, mock_fernet):
+        mock_fern = mock.MagicMock()
+        mock_fernet.return_value = mock_fern
+        TEST_DATA = 'some data'
+        TEST_DATA2 = 'more data'
+        FAKE_ENCRYPTED_DATA = 'alqwkhjetrhth'
+        mock_fern.encrypt.return_value = FAKE_ENCRYPTED_DATA
+
+        # We need a class instance with the mock
+        amp_driver = driver.AmphoraProviderDriver()
+
+        # Test just default_tls_container_data
+        list_dict = {consts.DEFAULT_TLS_CONTAINER_DATA: TEST_DATA}
+
+        amp_driver._encrypt_listener_dict(list_dict)
+
+        mock_fern.encrypt.assert_called_once_with(TEST_DATA)
+
+        self.assertEqual(FAKE_ENCRYPTED_DATA,
+                         list_dict[consts.DEFAULT_TLS_CONTAINER_DATA])
+
+        mock_fern.reset_mock()
+
+        # Test just sni_container_data
+        list_dict = {consts.SNI_CONTAINER_DATA: [TEST_DATA, TEST_DATA2]}
+
+        amp_driver._encrypt_listener_dict(list_dict)
+
+        calls = [mock.call(TEST_DATA), mock.call(TEST_DATA2)]
+
+        mock_fern.encrypt.assert_has_calls(calls)
+
+        encrypted_sni = [FAKE_ENCRYPTED_DATA, FAKE_ENCRYPTED_DATA]
+        self.assertEqual(encrypted_sni, list_dict[consts.SNI_CONTAINER_DATA])

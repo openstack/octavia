@@ -271,7 +271,9 @@ class JinjaTemplater(object):
             ret_value['client_crl_path'] = '%s' % (
                 os.path.join(self.base_crt_dir, listener.id, client_crl))
 
-        if listener.default_pool:
+        if (listener.default_pool and
+            listener.default_pool.provisioning_status !=
+                constants.PENDING_DELETE):
             kwargs = {}
             if pool_tls_certs and pool_tls_certs.get(listener.default_pool.id):
                 kwargs = {'pool_tls_certs': pool_tls_certs.get(
@@ -279,16 +281,20 @@ class JinjaTemplater(object):
             ret_value['default_pool'] = self._transform_pool(
                 listener.default_pool, feature_compatibility, **kwargs)
         pools = []
-        for x in listener.pools:
+        pool_gen = (pool for pool in listener.pools if
+                    pool.provisioning_status != constants.PENDING_DELETE)
+        for x in pool_gen:
             kwargs = {}
             if pool_tls_certs and pool_tls_certs.get(x.id):
                 kwargs = {'pool_tls_certs': pool_tls_certs.get(x.id)}
             pools.append(self._transform_pool(
                 x, feature_compatibility, **kwargs))
         ret_value['pools'] = pools
+        policy_gen = (policy for policy in listener.l7policies if
+                      policy.provisioning_status != constants.PENDING_DELETE)
         l7policies = [self._transform_l7policy(
                       x, feature_compatibility, pool_tls_certs)
-                      for x in listener.l7policies]
+                      for x in policy_gen]
         ret_value['l7policies'] = l7policies
         return ret_value
 
@@ -314,12 +320,16 @@ class JinjaTemplater(object):
             'crl_path': '',
             'tls_enabled': pool.tls_enabled
         }
+        members_gen = (mem for mem in pool.members if
+                       mem.provisioning_status != constants.PENDING_DELETE)
         members = [self._transform_member(x, feature_compatibility)
-                   for x in pool.members]
+                   for x in members_gen]
         ret_value['members'] = members
-        if pool.health_monitor:
+        health_mon = pool.health_monitor
+        if (health_mon and
+                health_mon.provisioning_status != constants.PENDING_DELETE):
             ret_value['health_monitor'] = self._transform_health_monitor(
-                pool.health_monitor, feature_compatibility)
+                health_mon, feature_compatibility)
         if pool.session_persistence:
             ret_value[
                 'session_persistence'] = self._transform_session_persistence(
@@ -403,7 +413,9 @@ class JinjaTemplater(object):
             'redirect_prefix': l7policy.redirect_prefix,
             'enabled': l7policy.enabled
         }
-        if l7policy.redirect_pool:
+        if (l7policy.redirect_pool and
+            l7policy.redirect_pool.provisioning_status !=
+                constants.PENDING_DELETE):
             kwargs = {}
             if pool_tls_certs and pool_tls_certs.get(
                     l7policy.redirect_pool.id):
@@ -419,8 +431,10 @@ class JinjaTemplater(object):
             ret_value['redirect_http_code'] = l7policy.redirect_http_code
         else:
             ret_value['redirect_http_code'] = None
+        rule_gen = (rule for rule in l7policy.l7rules if rule.enabled and
+                    rule.provisioning_status != constants.PENDING_DELETE)
         l7rules = [self._transform_l7rule(x, feature_compatibility)
-                   for x in l7policy.l7rules if x.enabled]
+                   for x in rule_gen]
         ret_value['l7rules'] = l7rules
         return ret_value
 

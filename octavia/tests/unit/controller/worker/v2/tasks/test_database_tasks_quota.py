@@ -35,16 +35,16 @@ class TestDatabaseTasksQuota(base.TestCase):
     @mock.patch('octavia.db.api.get_session', return_value='TEST')
     @mock.patch('octavia.db.repositories.Repositories.decrement_quota')
     @mock.patch('octavia.db.repositories.Repositories.check_quota_met')
-    def _test_decrement_quota(self,
-                              task,
-                              data_model,
-                              mock_check_quota_met,
-                              mock_decrement_quota,
-                              mock_get_session):
-
-        project_id = uuidutils.generate_uuid()
-        test_object = mock.MagicMock()
-        test_object.project_id = project_id
+    def _test_decrement_quota(self, task, data_model,
+                              mock_check_quota_met, mock_decrement_quota,
+                              mock_get_session, project_id=None):
+        test_object = None
+        if project_id:
+            test_object = project_id
+        else:
+            project_id = uuidutils.generate_uuid()
+            test_object = mock.MagicMock()
+            test_object.project_id = project_id
 
         # execute without exception
         mock_decrement_quota.reset_mock()
@@ -105,6 +105,7 @@ class TestDatabaseTasksQuota(base.TestCase):
                         'get_session') as mock_get_session_local:
             mock_session = mock.MagicMock()
             mock_lock_session = mock.MagicMock()
+
             mock_get_session_local.side_effect = [mock_session,
                                                   mock_lock_session]
 
@@ -124,8 +125,10 @@ class TestDatabaseTasksQuota(base.TestCase):
                         'get_session') as mock_get_session_local:
             mock_session = mock.MagicMock()
             mock_lock_session = mock.MagicMock()
+
             mock_get_session_local.side_effect = [mock_session,
                                                   mock_lock_session]
+
             mock_check_quota_met.side_effect = (
                 exceptions.OctaviaException('fail'))
 
@@ -155,9 +158,10 @@ class TestDatabaseTasksQuota(base.TestCase):
         self._test_decrement_quota(task, data_model)
 
     def test_decrement_listener_quota(self):
+        project_id = uuidutils.generate_uuid()
         task = database_tasks.DecrementListenerQuota()
         data_model = data_models.Listener
-        self._test_decrement_quota(task, data_model)
+        self._test_decrement_quota(task, data_model, project_id=project_id)
 
     def test_decrement_loadbalancer_quota(self):
         task = database_tasks.DecrementLoadBalancerQuota()

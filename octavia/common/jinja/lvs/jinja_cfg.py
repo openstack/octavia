@@ -120,7 +120,9 @@ class LvsJinjaTemplater(object):
         }
         if listener.connection_limit and listener.connection_limit > -1:
             ret_value['connection_limit'] = listener.connection_limit
-        if listener.default_pool:
+        if (listener.default_pool and
+            listener.default_pool.provisioning_status !=
+                constants.PENDING_DELETE):
             ret_value['default_pool'] = self._transform_pool(
                 listener.default_pool)
         return ret_value
@@ -140,9 +142,13 @@ class LvsJinjaTemplater(object):
             'session_persistence': '',
             'enabled': pool.enabled
         }
-        members = [self._transform_member(x) for x in pool.members]
+        members_gen = (mem for mem in pool.members if
+                       mem.provisioning_status != constants.PENDING_DELETE)
+        members = [self._transform_member(x) for x in members_gen]
         ret_value['members'] = members
-        if pool.health_monitor:
+        if (pool.health_monitor and
+            pool.health_monitor.provisioning_status !=
+                constants.PENDING_DELETE):
             ret_value['health_monitor'] = self._transform_health_monitor(
                 pool.health_monitor)
         if pool.session_persistence:

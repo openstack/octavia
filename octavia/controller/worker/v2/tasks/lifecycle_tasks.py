@@ -14,6 +14,7 @@
 
 from taskflow import task
 
+from octavia.common import constants
 from octavia.controller.worker import task_utils as task_utilities
 
 
@@ -56,7 +57,8 @@ class HealthMonitorToErrorOnRevertTask(BaseLifecycleTask):
         self.task_utils.mark_pool_prov_status_active(health_mon.pool_id)
         self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
         for listener in listeners:
-            self.task_utils.mark_listener_prov_status_active(listener.id)
+            self.task_utils.mark_listener_prov_status_active(
+                listener[constants.LISTENER_ID])
 
 
 class L7PolicyToErrorOnRevertTask(BaseLifecycleTask):
@@ -69,7 +71,8 @@ class L7PolicyToErrorOnRevertTask(BaseLifecycleTask):
         self.task_utils.mark_l7policy_prov_status_error(l7policy.id)
         self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
         for listener in listeners:
-            self.task_utils.mark_listener_prov_status_active(listener.id)
+            self.task_utils.mark_listener_prov_status_active(
+                listener[constants.LISTENER_ID])
 
 
 class L7RuleToErrorOnRevertTask(BaseLifecycleTask):
@@ -83,7 +86,8 @@ class L7RuleToErrorOnRevertTask(BaseLifecycleTask):
         self.task_utils.mark_l7policy_prov_status_active(l7rule.l7policy_id)
         self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
         for listener in listeners:
-            self.task_utils.mark_listener_prov_status_active(listener.id)
+            self.task_utils.mark_listener_prov_status_active(
+                listener[constants.LISTENER_ID])
 
 
 class ListenerToErrorOnRevertTask(BaseLifecycleTask):
@@ -93,22 +97,24 @@ class ListenerToErrorOnRevertTask(BaseLifecycleTask):
         pass
 
     def revert(self, listener, *args, **kwargs):
-        self.task_utils.mark_listener_prov_status_error(listener.id)
+        self.task_utils.mark_listener_prov_status_error(
+            listener[constants.LISTENER_ID])
         self.task_utils.mark_loadbalancer_prov_status_active(
-            listener.load_balancer.id)
+            listener[constants.LOADBALANCER_ID])
 
 
 class ListenersToErrorOnRevertTask(BaseLifecycleTask):
-    """Task to set listeners to ERROR on revert."""
+    """Task to set a listener to ERROR on revert."""
 
-    def execute(self, listeners, loadbalancer):
+    def execute(self, listeners):
         pass
 
-    def revert(self, listeners, loadbalancer, *args, **kwargs):
-        self.task_utils.mark_loadbalancer_prov_status_active(
-            loadbalancer.id)
+    def revert(self, listeners, *args, **kwargs):
         for listener in listeners:
-            self.task_utils.mark_listener_prov_status_error(listener.id)
+            self.task_utils.mark_listener_prov_status_error(
+                listener[constants.LISTENER_ID])
+        self.task_utils.mark_loadbalancer_prov_status_active(
+            listeners[0][constants.LOADBALANCER_ID])
 
 
 class LoadBalancerIDToErrorOnRevertTask(BaseLifecycleTask):
@@ -140,7 +146,8 @@ class MemberToErrorOnRevertTask(BaseLifecycleTask):
     def revert(self, member, listeners, loadbalancer, pool, *args, **kwargs):
         self.task_utils.mark_member_prov_status_error(member.id)
         for listener in listeners:
-            self.task_utils.mark_listener_prov_status_active(listener.id)
+            self.task_utils.mark_listener_prov_status_active(
+                listener[constants.LISTENER_ID])
         self.task_utils.mark_pool_prov_status_active(pool.id)
         self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
 
@@ -155,7 +162,8 @@ class MembersToErrorOnRevertTask(BaseLifecycleTask):
         for m in members:
             self.task_utils.mark_member_prov_status_error(m.id)
         for listener in listeners:
-            self.task_utils.mark_listener_prov_status_active(listener.id)
+            self.task_utils.mark_listener_prov_status_active(
+                listener[constants.LISTENER_ID])
         self.task_utils.mark_pool_prov_status_active(pool.id)
         self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
 
@@ -170,4 +178,5 @@ class PoolToErrorOnRevertTask(BaseLifecycleTask):
         self.task_utils.mark_pool_prov_status_error(pool.id)
         self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
         for listener in listeners:
-            self.task_utils.mark_listener_prov_status_active(listener.id)
+            self.task_utils.mark_listener_prov_status_active(
+                listener[constants.LISTENER_ID])

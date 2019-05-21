@@ -28,7 +28,7 @@ class Endpoints(object):
 
     # API version history:
     #   1.0 - Initial version.
-    #   2.0 - Provider driver format
+    #   2.0 - Provider driver format.
     target = messaging.Target(
         namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
         version='2.0')
@@ -61,17 +61,18 @@ class Endpoints(object):
                  amphora_id)
         self.worker.failover_amphora(amphora_id)
 
-    def create_listener(self, context, listener_id):
-        LOG.info('Creating listener \'%s\'...', listener_id)
-        self.worker.create_listener(listener_id)
+    def create_listener(self, context, listener):
+        LOG.info('Creating listener \'%s\'...', listener.get(constants.ID))
+        self.worker.create_listener(listener)
 
-    def update_listener(self, context, listener_id, listener_updates):
-        LOG.info('Updating listener \'%s\'...', listener_id)
-        self.worker.update_listener(listener_id, listener_updates)
+    def update_listener(self, context, original_listener, listener_updates):
+        LOG.info('Updating listener \'%s\'...', original_listener.get(
+            constants.ID))
+        self.worker.update_listener(original_listener, listener_updates)
 
-    def delete_listener(self, context, listener_id):
-        LOG.info('Deleting listener \'%s\'...', listener_id)
-        self.worker.delete_listener(listener_id)
+    def delete_listener(self, context, listener):
+        LOG.info('Deleting listener \'%s\'...', listener.get(constants.ID))
+        self.worker.delete_listener(listener)
 
     def create_pool(self, context, pool_id):
         LOG.info('Creating pool \'%s\'...', pool_id)

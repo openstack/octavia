@@ -77,7 +77,10 @@ _l7policy_mock.id = L7POLICY_ID
 _l7rule_mock = mock.MagicMock()
 _l7rule_mock.id = L7RULE_ID
 _listener_mock = mock.MagicMock()
+_listener_to_dict_mock = mock.MagicMock(
+    return_value={'id': LISTENER_ID})
 _listener_mock.id = LISTENER_ID
+_listener_mock.to_dict = _listener_to_dict_mock
 _tf_failure_mock = mock.Mock(spec=failure.Failure)
 _vip_mock = mock.MagicMock()
 _vip_mock.port_id = PORT_ID
@@ -184,11 +187,16 @@ class TestDatabaseTasks(base.TestCase):
                                    mock_amphora_repo_delete):
 
         delete_listener = database_tasks.DeleteListenerInDB()
-        delete_listener.execute(_listener_mock)
+        delete_listener.execute({constants.LISTENER_ID: LISTENER_ID})
 
         repo.ListenerRepository.delete.assert_called_once_with(
             'TEST',
             id=LISTENER_ID)
+
+        # Test the revert
+        repo.ListenerRepository.delete.reset_mock()
+        delete_listener.revert({constants.LISTENER_ID: LISTENER_ID})
+        repo.ListenerRepository.delete.assert_not_called()
 
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.delete')
@@ -1000,10 +1008,11 @@ class TestDatabaseTasks(base.TestCase):
                                                 mock_amphora_repo_update,
                                                 mock_amphora_repo_delete):
 
+        listener_dict = {constants.LISTENER_ID: LISTENER_ID,
+                         constants.LOADBALANCER_ID: LB_ID}
         mark_lb_and_listeners_active = (database_tasks.
                                         MarkLBAndListenersActiveInDB())
-        mark_lb_and_listeners_active.execute(self.loadbalancer_mock,
-                                             [self.listener_mock])
+        mark_lb_and_listeners_active.execute(LB_ID, [listener_dict])
 
         repo.ListenerRepository.update.assert_called_once_with(
             'TEST',
@@ -1014,12 +1023,35 @@ class TestDatabaseTasks(base.TestCase):
             LB_ID,
             provisioning_status=constants.ACTIVE)
 
+        # Test with LB_ID from listeners
+        mock_loadbalancer_repo_update.reset_mock()
+        mock_listener_repo_update.reset_mock()
+
+        listener_dict = {constants.LISTENER_ID: LISTENER_ID,
+                         constants.LOADBALANCER_ID: LB_ID}
+        mark_lb_and_listeners_active = (database_tasks.
+                                        MarkLBAndListenersActiveInDB())
+        mark_lb_and_listeners_active.execute(None, [listener_dict])
+
+        repo.ListenerRepository.update.assert_called_once_with(
+            'TEST',
+            LISTENER_ID,
+            provisioning_status=constants.ACTIVE)
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            LB_ID,
+            provisioning_status=constants.ACTIVE)
+
+        # Test with no LB_ID
+        mock_loadbalancer_repo_update.reset_mock()
+        mark_lb_and_listeners_active.execute(None, [])
+        mock_loadbalancer_repo_update.assert_not_called()
+
         # Test the revert
         mock_loadbalancer_repo_update.reset_mock()
         mock_listener_repo_update.reset_mock()
 
-        mark_lb_and_listeners_active.revert(self.loadbalancer_mock,
-                                            [self.listener_mock])
+        mark_lb_and_listeners_active.revert(LB_ID, [listener_dict])
 
         repo.ListenerRepository.update.assert_called_once_with(
             'TEST',
@@ -1030,14 +1062,37 @@ class TestDatabaseTasks(base.TestCase):
             id=LB_ID,
             provisioning_status=constants.ERROR)
 
+        # Test the revert LB_ID from listeners
+        mock_loadbalancer_repo_update.reset_mock()
+        mock_listener_repo_update.reset_mock()
+
+        mark_lb_and_listeners_active.revert(None, [listener_dict])
+
+        repo.ListenerRepository.update.assert_called_once_with(
+            'TEST',
+            id=LISTENER_ID,
+            provisioning_status=constants.ERROR)
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            id=LB_ID,
+            provisioning_status=constants.ERROR)
+
+        # Test the revert no LB_ID
+        mock_loadbalancer_repo_update.reset_mock()
+        mock_listener_repo_update.reset_mock()
+
+        mark_lb_and_listeners_active.revert(None, [])
+
+        mock_loadbalancer_repo_update.assert_not_called()
+        mock_listener_repo_update.assert_not_called()
+
         # Test the revert with exceptions
         mock_loadbalancer_repo_update.reset_mock()
         mock_loadbalancer_repo_update.side_effect = Exception('fail')
         mock_listener_repo_update.reset_mock()
         mock_listener_repo_update.side_effect = Exception('fail')
 
-        mark_lb_and_listeners_active.revert(self.loadbalancer_mock,
-                                            [self.listener_mock])
+        mark_lb_and_listeners_active.revert(LB_ID, [listener_dict])
 
         repo.ListenerRepository.update.assert_called_once_with(
             'TEST',
@@ -1120,6 +1175,46 @@ class TestDatabaseTasks(base.TestCase):
         mock_loadbalancer_repo_update.reset_mock()
         mock_loadbalancer_repo_update.side_effect = Exception('fail')
         mark_loadbalancer_active.revert(self.loadbalancer_mock)
+
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            id=LB_ID,
+            provisioning_status=constants.ERROR)
+        self.assertEqual(0, repo.ListenerRepository.update.call_count)
+
+    def test_mark_LB_active_in_db_by_listener(self,
+                                              mock_generate_uuid,
+                                              mock_LOG,
+                                              mock_get_session,
+                                              mock_loadbalancer_repo_update,
+                                              mock_listener_repo_update,
+                                              mock_amphora_repo_update,
+                                              mock_amphora_repo_delete):
+
+        listener_dict = {'loadbalancer_id': LB_ID}
+        mark_loadbalancer_active = database_tasks.MarkLBActiveInDBByListener()
+        mark_loadbalancer_active.execute(listener_dict)
+
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            LB_ID,
+            provisioning_status=constants.ACTIVE)
+        self.assertEqual(0, repo.ListenerRepository.update.call_count)
+
+        # Test the revert
+        mock_loadbalancer_repo_update.reset_mock()
+        mark_loadbalancer_active.revert(listener_dict)
+
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            id=LB_ID,
+            provisioning_status=constants.ERROR)
+        self.assertEqual(0, repo.ListenerRepository.update.call_count)
+
+        # Test the revert with exception
+        mock_loadbalancer_repo_update.reset_mock()
+        mock_loadbalancer_repo_update.side_effect = Exception('fail')
+        mark_loadbalancer_active.revert(listener_dict)
 
         repo.LoadBalancerRepository.update.assert_called_once_with(
             'TEST',
@@ -1486,7 +1581,8 @@ class TestDatabaseTasks(base.TestCase):
                                    mock_amphora_repo_delete):
 
         update_listener = database_tasks.UpdateListenerInDB()
-        update_listener.execute(self.listener_mock,
+        listener_dict = {constants.LISTENER_ID: LISTENER_ID}
+        update_listener.execute(listener_dict,
                                 {'name': 'test', 'description': 'test2'})
 
         repo.ListenerRepository.update.assert_called_once_with(
@@ -1496,7 +1592,7 @@ class TestDatabaseTasks(base.TestCase):
 
         # Test the revert
         mock_listener_repo_update.reset_mock()
-        update_listener.revert(self.listener_mock)
+        update_listener.revert(listener_dict)
         repo.ListenerRepository.update.assert_called_once_with(
             'TEST',
             id=LISTENER_ID,
@@ -1505,7 +1601,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert
         mock_listener_repo_update.reset_mock()
         mock_listener_repo_update.side_effect = Exception('fail')
-        update_listener.revert(self.listener_mock)
+        update_listener.revert(listener_dict)
         repo.ListenerRepository.update.assert_called_once_with(
             'TEST',
             id=LISTENER_ID,
@@ -1798,7 +1894,7 @@ class TestDatabaseTasks(base.TestCase):
         get_list_from_lb_obj = database_tasks.GetListenersFromLoadbalancer()
         result = get_list_from_lb_obj.execute(_loadbalancer_mock)
         mock_listener_get.assert_called_once_with('TEST', id=_listener_mock.id)
-        self.assertEqual([_listener_mock], result)
+        self.assertEqual([{constants.LISTENER_ID: LISTENER_ID}], result)
 
     def test_get_vip_from_loadbalancer(self,
                                        mock_generate_uuid,

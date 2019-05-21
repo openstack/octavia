@@ -31,15 +31,15 @@ class ListenerFlows(object):
         """
         create_listener_flow = linear_flow.Flow(constants.CREATE_LISTENER_FLOW)
         create_listener_flow.add(lifecycle_tasks.ListenersToErrorOnRevertTask(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=constants.LISTENERS))
         create_listener_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=constants.LOADBALANCER))
         create_listener_flow.add(network_tasks.UpdateVIP(
-            requires=constants.LOADBALANCER))
+            requires=constants.LISTENERS))
         create_listener_flow.add(database_tasks.
                                  MarkLBAndListenersActiveInDB(
-                                     requires=[constants.LOADBALANCER,
-                                               constants.LISTENERS]))
+                                     requires=(constants.LOADBALANCER_ID,
+                                               constants.LISTENERS)))
         return create_listener_flow
 
     def get_create_all_listeners_flow(self):
@@ -59,7 +59,7 @@ class ListenerFlows(object):
         create_all_listeners_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=constants.LOADBALANCER))
         create_all_listeners_flow.add(network_tasks.UpdateVIP(
-            requires=constants.LOADBALANCER))
+            requires=constants.LISTENERS))
         return create_all_listeners_flow
 
     def get_delete_listener_flow(self):
@@ -73,13 +73,13 @@ class ListenerFlows(object):
         delete_listener_flow.add(amphora_driver_tasks.ListenerDelete(
             requires=constants.LISTENER))
         delete_listener_flow.add(network_tasks.UpdateVIPForDelete(
-            requires=constants.LOADBALANCER))
+            requires=constants.LOADBALANCER_ID))
         delete_listener_flow.add(database_tasks.DeleteListenerInDB(
             requires=constants.LISTENER))
         delete_listener_flow.add(database_tasks.DecrementListenerQuota(
+            requires=constants.PROJECT_ID))
+        delete_listener_flow.add(database_tasks.MarkLBActiveInDBByListener(
             requires=constants.LISTENER))
-        delete_listener_flow.add(database_tasks.MarkLBActiveInDB(
-            requires=constants.LOADBALANCER))
 
         return delete_listener_flow
 
@@ -94,15 +94,14 @@ class ListenerFlows(object):
         # Should cascade delete all L7 policies
         delete_listener_flow.add(network_tasks.UpdateVIPForDelete(
             name='delete_update_vip_' + listener_name,
-            requires=constants.LOADBALANCER))
+            requires=constants.LOADBALANCER_ID))
         delete_listener_flow.add(database_tasks.DeleteListenerInDB(
             name='delete_listener_in_db_' + listener_name,
             requires=constants.LISTENER,
             rebind={constants.LISTENER: listener_name}))
         delete_listener_flow.add(database_tasks.DecrementListenerQuota(
             name='decrement_listener_quota_' + listener_name,
-            requires=constants.LISTENER,
-            rebind={constants.LISTENER: listener_name}))
+            requires=constants.PROJECT_ID))
 
         return delete_listener_flow
 
@@ -112,17 +111,17 @@ class ListenerFlows(object):
         :returns: The flow for updating a listener
         """
         update_listener_flow = linear_flow.Flow(constants.UPDATE_LISTENER_FLOW)
-        update_listener_flow.add(lifecycle_tasks.ListenersToErrorOnRevertTask(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+        update_listener_flow.add(lifecycle_tasks.ListenerToErrorOnRevertTask(
+            requires=constants.LISTENER))
         update_listener_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=constants.LOADBALANCER))
         update_listener_flow.add(network_tasks.UpdateVIP(
-            requires=constants.LOADBALANCER))
+            requires=constants.LISTENERS))
         update_listener_flow.add(database_tasks.UpdateListenerInDB(
             requires=[constants.LISTENER, constants.UPDATE_DICT]))
         update_listener_flow.add(database_tasks.
                                  MarkLBAndListenersActiveInDB(
-                                     requires=[constants.LOADBALANCER,
-                                               constants.LISTENERS]))
+                                     requires=(constants.LOADBALANCER_ID,
+                                               constants.LISTENERS)))
 
         return update_listener_flow

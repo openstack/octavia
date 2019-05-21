@@ -19,7 +19,6 @@ from octavia.common import constants
 from octavia.controller.worker.v2.tasks import amphora_driver_tasks
 from octavia.controller.worker.v2.tasks import database_tasks
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
-from octavia.controller.worker.v2.tasks import model_tasks
 
 
 class PoolFlows(object):
@@ -41,7 +40,7 @@ class PoolFlows(object):
         create_pool_flow.add(database_tasks.MarkPoolActiveInDB(
             requires=constants.POOL))
         create_pool_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=(constants.LOADBALANCER_ID, constants.LISTENERS)))
 
         return create_pool_flow
 
@@ -59,8 +58,6 @@ class PoolFlows(object):
             requires=constants.POOL))
         delete_pool_flow.add(database_tasks.CountPoolChildrenForQuota(
             requires=constants.POOL, provides=constants.POOL_CHILD_COUNT))
-        delete_pool_flow.add(model_tasks.DeleteModelObject(
-            rebind={constants.OBJECT: constants.POOL}))
         delete_pool_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=constants.LOADBALANCER))
         delete_pool_flow.add(database_tasks.DeletePoolInDB(
@@ -68,7 +65,7 @@ class PoolFlows(object):
         delete_pool_flow.add(database_tasks.DecrementPoolQuota(
             requires=[constants.POOL, constants.POOL_CHILD_COUNT]))
         delete_pool_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=(constants.LOADBALANCER_ID, constants.LISTENERS)))
 
         return delete_pool_flow
 
@@ -89,9 +86,6 @@ class PoolFlows(object):
             requires=constants.POOL,
             provides=constants.POOL_CHILD_COUNT,
             rebind={constants.POOL: name}))
-        delete_pool_flow.add(model_tasks.DeleteModelObject(
-            name='delete_model_object_' + name,
-            rebind={constants.OBJECT: name}))
         delete_pool_flow.add(database_tasks.DeletePoolInDB(
             name='delete_pool_in_db_' + name,
             requires=constants.POOL,
@@ -122,6 +116,6 @@ class PoolFlows(object):
         update_pool_flow.add(database_tasks.MarkPoolActiveInDB(
             requires=constants.POOL))
         update_pool_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=(constants.LOADBALANCER_ID, constants.LISTENERS)))
 
         return update_pool_flow

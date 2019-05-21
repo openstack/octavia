@@ -35,8 +35,9 @@ class TestL7PolicyFlows(base.TestCase):
 
         self.assertIn(constants.LISTENERS, l7policy_flow.requires)
         self.assertIn(constants.LOADBALANCER, l7policy_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, l7policy_flow.requires)
 
-        self.assertEqual(3, len(l7policy_flow.requires))
+        self.assertEqual(4, len(l7policy_flow.requires))
         self.assertEqual(0, len(l7policy_flow.provides))
 
     def test_get_delete_l7policy_flow(self):
@@ -47,9 +48,10 @@ class TestL7PolicyFlows(base.TestCase):
 
         self.assertIn(constants.LISTENERS, l7policy_flow.requires)
         self.assertIn(constants.LOADBALANCER, l7policy_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, l7policy_flow.requires)
         self.assertIn(constants.L7POLICY, l7policy_flow.requires)
 
-        self.assertEqual(3, len(l7policy_flow.requires))
+        self.assertEqual(4, len(l7policy_flow.requires))
         self.assertEqual(0, len(l7policy_flow.provides))
 
     def test_get_update_l7policy_flow(self):
@@ -61,7 +63,8 @@ class TestL7PolicyFlows(base.TestCase):
         self.assertIn(constants.L7POLICY, l7policy_flow.requires)
         self.assertIn(constants.LISTENERS, l7policy_flow.requires)
         self.assertIn(constants.LOADBALANCER, l7policy_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, l7policy_flow.requires)
         self.assertIn(constants.UPDATE_DICT, l7policy_flow.requires)
 
-        self.assertEqual(4, len(l7policy_flow.requires))
+        self.assertEqual(5, len(l7policy_flow.requires))
         self.assertEqual(0, len(l7policy_flow.provides))

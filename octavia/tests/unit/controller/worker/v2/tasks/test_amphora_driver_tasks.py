@@ -107,7 +107,9 @@ class TestAmphoraDriverTasks(base.TestCase):
         mock_amphora_repo_update.assert_called_once_with(
             _session_mock, AMP_ID, status=constants.ERROR)
 
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_listener_update(self,
+                             mock_lb_get,
                              mock_driver,
                              mock_generate_uuid,
                              mock_log,
@@ -139,7 +141,9 @@ class TestAmphoraDriverTasks(base.TestCase):
             provisioning_status=constants.ERROR)
         self.assertIsNone(amp)
 
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_listeners_update(self,
+                              mock_lb_get,
                               mock_driver,
                               mock_generate_uuid,
                               mock_log,
@@ -148,13 +152,20 @@ class TestAmphoraDriverTasks(base.TestCase):
                               mock_listener_repo_update,
                               mock_amphora_repo_update):
         listeners_update_obj = amphora_driver_tasks.ListenersUpdate()
+        LB_ID = 'lb1'
         listeners = [data_models.Listener(id='listener1'),
                      data_models.Listener(id='listener2')]
         vip = data_models.Vip(ip_address='10.0.0.1')
-        lb = data_models.LoadBalancer(id='lb1', listeners=listeners, vip=vip)
+        lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners, vip=vip)
+        mock_lb_get.return_value = lb
         listeners_update_obj.execute(lb)
         mock_driver.update.assert_called_once_with(lb)
         self.assertEqual(1, mock_driver.update.call_count)
+
+        mock_lb_get.reset_mock()
+
+        listeners_update_obj.execute(None)
+        mock_lb_get.assert_not_called()
 
         # Test the revert
         amp = listeners_update_obj.revert(lb)
@@ -209,13 +220,14 @@ class TestAmphoraDriverTasks(base.TestCase):
                              mock_listener_repo_update,
                              mock_amphora_repo_update):
 
+        listener_dict = {constants.LISTENER_ID: LISTENER_ID}
         listener_delete_obj = amphora_driver_tasks.ListenerDelete()
-        listener_delete_obj.execute(_listener_mock)
+        listener_delete_obj.execute(listener_dict)
 
         mock_driver.delete.assert_called_once_with(_listener_mock)
 
         # Test the revert
-        amp = listener_delete_obj.revert(_listener_mock)
+        amp = listener_delete_obj.revert(listener_dict)
         repo.ListenerRepository.update.assert_called_once_with(
             _session_mock,
             id=LISTENER_ID,
@@ -225,7 +237,7 @@ class TestAmphoraDriverTasks(base.TestCase):
         # Test the revert with exception
         repo.ListenerRepository.update.reset_mock()
         mock_listener_repo_update.side_effect = Exception('fail')
-        amp = listener_delete_obj.revert(_listener_mock)
+        amp = listener_delete_obj.revert(listener_dict)
         repo.ListenerRepository.update.assert_called_once_with(
             _session_mock,
             id=LISTENER_ID,

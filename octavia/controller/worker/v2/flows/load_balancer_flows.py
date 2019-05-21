@@ -18,6 +18,7 @@ from oslo_log import log as logging
 from taskflow.patterns import linear_flow
 from taskflow.patterns import unordered_flow
 
+from octavia.api.drivers import utils as provider_utils
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.controller.worker.v2.flows import amphora_flows
@@ -216,10 +217,14 @@ class LoadBalancerFlows(object):
         store = {}
         for listener in lb.listeners:
             listener_name = 'listener_' + listener.id
-            store[listener_name] = listener
+            prov_listener = provider_utils.db_listener_to_provider_listener(
+                listener)
+            store[listener_name] = prov_listener.to_dict()
             listeners_delete_flow.add(
                 self.listener_flows.get_delete_listener_internal_flow(
                     listener_name))
+        store.update({constants.LOADBALANCER_ID: lb.id,
+                      constants.PROJECT_ID: lb.project_id})
         return (listeners_delete_flow, store)
 
     def get_delete_load_balancer_flow(self, lb):

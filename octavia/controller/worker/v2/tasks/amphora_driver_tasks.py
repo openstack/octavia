@@ -102,7 +102,8 @@ class ListenersUpdate(BaseAmphoraTask):
         LOG.warning("Reverting listeners updates.")
 
         for listener in loadbalancer.listeners:
-            self.task_utils.mark_listener_prov_status_error(listener.id)
+            self.task_utils.mark_listener_prov_status_error(
+                listener.id)
 
 
 class ListenersStart(BaseAmphoraTask):
@@ -127,8 +128,9 @@ class ListenerDelete(BaseAmphoraTask):
 
     def execute(self, listener):
         """Execute listener delete routines for an amphora."""
-        # TODO(rm_work): This is only relevant because of UDP listeners now.
-        self.amphora_driver.delete(listener)
+        db_listener = self.listener_repo.get(
+            db_apis.get_session(), id=listener[constants.LISTENER_ID])
+        self.amphora_driver.delete(db_listener)
         LOG.debug("Deleted the listener on the vip")
 
     def revert(self, listener, *args, **kwargs):
@@ -136,7 +138,8 @@ class ListenerDelete(BaseAmphoraTask):
 
         LOG.warning("Reverting listener delete.")
 
-        self.task_utils.mark_listener_prov_status_error(listener.id)
+        self.task_utils.mark_listener_prov_status_error(
+            listener[constants.LISTENER_ID])
 
 
 class AmphoraGetInfo(BaseAmphoraTask):

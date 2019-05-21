@@ -25,6 +25,7 @@ from sqlalchemy.orm import exc
 from taskflow import task
 from taskflow.types import failure
 
+from octavia.api.drivers import utils as provider_utils
 from octavia.common import constants
 from octavia.common import data_models
 import octavia.common.tls_utils.cert_parser as cert_parser
@@ -250,8 +251,10 @@ class DeleteListenerInDB(BaseDatabaseTask):
         :param listener: The listener to delete
         :returns: None
         """
-        LOG.debug("Delete in DB for listener id: %s", listener.id)
-        self.listener_repo.delete(db_apis.get_session(), id=listener.id)
+        LOG.debug("Delete in DB for listener id: %s",
+                  listener[constants.LISTENER_ID])
+        self.listener_repo.delete(db_apis.get_session(),
+                                  id=listener[constants.LISTENER_ID])
 
     def revert(self, listener, *args, **kwargs):
         """Mark the listener ERROR since the listener didn't delete
@@ -261,7 +264,7 @@ class DeleteListenerInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark listener delete in DB for listener id %s",
-                    listener.id)
+                    listener[constants.LISTENER_ID])
 
 
 class DeletePoolInDB(BaseDatabaseTask):
@@ -1059,6 +1062,42 @@ class MarkLBActiveInDB(BaseDatabaseTask):
         self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
 
 
+class MarkLBActiveInDBByListener(BaseDatabaseTask):
+    """Mark the load balancer active in the DB using a listener dict.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, listener):
+        """Mark the load balancer as active in DB.
+
+        :param listener: Listener dictionary
+        :returns: None
+        """
+
+        LOG.info("Mark ACTIVE in DB for load balancer id: %s",
+                 listener[constants.LOADBALANCER_ID])
+        self.loadbalancer_repo.update(db_apis.get_session(),
+                                      listener[constants.LOADBALANCER_ID],
+                                      provisioning_status=constants.ACTIVE)
+
+    def revert(self, listener, *args, **kwargs):
+        """Mark the load balancer as broken and ready to be cleaned up.
+
+        This also puts all sub-objects of the load balancer to ERROR state if
+        self.mark_subobjects is True
+
+        :param listener: Listener dictionary
+        :returns: None
+        """
+
+        LOG.warning("Reverting mark load balancer active in DB "
+                    "for load balancer id %s",
+                    listener[constants.LOADBALANCER_ID])
+        self.task_utils.mark_loadbalancer_prov_status_error(
+            listener[constants.LOADBALANCER_ID])
+
+
 class UpdateLBServerGroupInDB(BaseDatabaseTask):
     """Update the server group id info for load balancer in DB."""
 
@@ -1167,39 +1206,55 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, loadbalancer, listeners):
+    def execute(self, loadbalancer_id, listeners):
         """Mark the load balancer and listeners as active in DB.
 
-        :param loadbalancer: Load balancer object to be updated
+        :param loadbalancer_id: The load balancer ID to be updated
         :param listeners: Listener objects to be updated
         :returns: None
         """
+        lb_id = None
+        if loadbalancer_id:
+            lb_id = loadbalancer_id
+        elif listeners:
+            lb_id = listeners[0][constants.LOADBALANCER_ID]
 
-        LOG.debug("Mark ACTIVE in DB for load balancer id: %s "
-                  "and listener ids: %s", loadbalancer.id,
-                  ', '.join([l.id for l in listeners]))
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer.id,
-                                      provisioning_status=constants.ACTIVE)
+        if lb_id:
+            LOG.debug("Mark ACTIVE in DB for load balancer id: %s "
+                      "and listener ids: %s", lb_id,
+                      ', '.join([l[constants.LISTENER_ID] for l in listeners]))
+            self.loadbalancer_repo.update(db_apis.get_session(),
+                                          lb_id,
+                                          provisioning_status=constants.ACTIVE)
         for listener in listeners:
-            self.listener_repo.update(db_apis.get_session(), listener.id,
-                                      provisioning_status=constants.ACTIVE)
+            self.listener_repo.update(
+                db_apis.get_session(), listener[constants.LISTENER_ID],
+                provisioning_status=constants.ACTIVE)
 
-    def revert(self, loadbalancer, listeners, *args, **kwargs):
+    def revert(self, loadbalancer_id, listeners, *args, **kwargs):
         """Mark the load balancer and listeners as broken.
 
-        :param loadbalancer: Load balancer object that failed to update
+        :param loadbalancer_id: The load balancer ID to be updated
         :param listeners: Listener objects that failed to update
         :returns: None
         """
+        lb_id = None
+        if loadbalancer_id:
+            lb_id = loadbalancer_id
+        elif listeners:
+            lb_id = listeners[0][constants.LOADBALANCER_ID]
 
-        LOG.warning("Reverting mark load balancer and listeners active in DB "
-                    "for load balancer id %(LB)s and listener ids: %(list)s",
-                    {'LB': loadbalancer.id,
-                     'list': ', '.join([l.id for l in listeners])})
-        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
+        if lb_id:
+            lists = ', '.join([l[constants.LISTENER_ID] for l in listeners])
+            LOG.warning("Reverting mark load balancer and listeners active in "
+                        "DB for load balancer id %(LB)s and listener ids: "
+                        "%(list)s", {'LB': lb_id,
+                                     'list': lists})
+            self.task_utils.mark_loadbalancer_prov_status_error(lb_id)
+
         for listener in listeners:
-            self.task_utils.mark_listener_prov_status_error(listener.id)
+            self.task_utils.mark_listener_prov_status_error(
+                listener[constants.LISTENER_ID])
 
 
 class MarkListenerActiveInDB(BaseDatabaseTask):
@@ -1377,8 +1432,10 @@ class UpdateListenerInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for listener id: %s ", listener.id)
-        self.listener_repo.update(db_apis.get_session(), listener.id,
+        LOG.debug("Update DB for listener id: %s ",
+                  listener[constants.LISTENER_ID])
+        self.listener_repo.update(db_apis.get_session(),
+                                  listener[constants.LISTENER_ID],
                                   **update_dict)
 
     def revert(self, listener, *args, **kwargs):
@@ -1389,8 +1446,9 @@ class UpdateListenerInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting update listener in DB "
-                    "for listener id %s", listener.id)
-        self.task_utils.mark_listener_prov_status_error(listener.id)
+                    "for listener id %s", listener[constants.LISTENER_ID])
+        self.task_utils.mark_listener_prov_status_error(
+            listener[constants.LISTENER_ID])
 
 
 class UpdateMemberInDB(BaseDatabaseTask):
@@ -1587,9 +1645,11 @@ class GetListenersFromLoadbalancer(BaseDatabaseTask):
         """
         listeners = []
         for listener in loadbalancer.listeners:
-            lb = self.listener_repo.get(db_apis.get_session(), id=listener.id)
-            lb.load_balancer = loadbalancer
-            listeners.append(lb)
+            db_l = self.listener_repo.get(db_apis.get_session(),
+                                          id=listener.id)
+            prov_listener = provider_utils.db_listener_to_provider_listener(
+                db_l)
+            listeners.append(prov_listener.to_dict())
         return listeners
 
 
@@ -2389,39 +2449,38 @@ class DecrementListenerQuota(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, listener):
+    def execute(self, project_id):
         """Decrements the listener quota.
 
-        :param listener: The listener to decrement the quota on.
+        :param project_id: The project_id to decrement the quota on.
         :returns: None
         """
 
         LOG.debug("Decrementing listener quota for "
-                  "project: %s ", listener.project_id)
+                  "project: %s ", project_id)
 
         lock_session = db_apis.get_session(autocommit=False)
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.Listener,
-                                       listener.project_id)
+                                       project_id)
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
                 LOG.error('Failed to decrement listener quota for project: '
                           '%(proj)s the project may have excess quota in use.',
-                          {'proj': listener.project_id})
+                          {'proj': project_id})
                 lock_session.rollback()
 
-    def revert(self, listener, result, *args, **kwargs):
+    def revert(self, project_id, result, *args, **kwargs):
         """Re-apply the quota
 
-        :param listener: The listener to decrement the quota on.
+        :param project_id: The project_id to decrement the quota on.
         :returns: None
         """
-
         LOG.warning('Reverting decrement quota for listener on project '
                     '%(proj)s Project quota counts may be incorrect.',
-                    {'proj': listener.project_id})
+                    {'proj': project_id})
 
         # Increment the quota back if this task wasn't the failure
         if not isinstance(result, failure.Failure):
@@ -2433,7 +2492,7 @@ class DecrementListenerQuota(BaseDatabaseTask):
                     self.repos.check_quota_met(session,
                                                lock_session,
                                                data_models.Listener,
-                                               listener.project_id)
+                                               project_id)
                     lock_session.commit()
                 except Exception:
                     lock_session.rollback()

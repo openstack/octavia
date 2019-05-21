@@ -27,7 +27,9 @@ import octavia.tests.unit.base as base
 
 AMP_ID = uuidutils.generate_uuid()
 LB_ID = uuidutils.generate_uuid()
+LISTENER_ID = uuidutils.generate_uuid()
 POOL_ID = uuidutils.generate_uuid()
+PROJECT_ID = uuidutils.generate_uuid()
 HM_ID = uuidutils.generate_uuid()
 MEMBER_ID = uuidutils.generate_uuid()
 COMPUTE_ID = uuidutils.generate_uuid()
@@ -102,7 +104,14 @@ class TestControllerWorker(base.TestCase):
         _health_mon_mock.pool = _pool_mock
         _load_balancer_mock.amphorae = _amphora_mock
         _load_balancer_mock.vip = _vip_mock
+        _load_balancer_mock.id = LB_ID
+        _load_balancer_mock.project_id = PROJECT_ID
         _listener_mock.load_balancer = _load_balancer_mock
+        _listener_mock.id = LISTENER_ID
+        _listener_mock.to_dict.return_value = {
+            'id': LISTENER_ID, constants.LOAD_BALANCER_ID: LB_ID}
+        self.ref_listener_dict = {constants.LISTENER_ID: LISTENER_ID,
+                                  constants.LOADBALANCER_ID: LB_ID}
         _member_mock.pool = _pool_mock
         _l7policy_mock.listener = _listener_mock
         _l7rule_mock.l7policy = _l7policy_mock
@@ -212,7 +221,9 @@ class TestControllerWorker(base.TestCase):
                                     store={constants.HEALTH_MON:
                                            _health_mon_mock,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.LOADBALANCER:
                                                _load_balancer_mock,
                                            constants.POOL:
@@ -249,7 +260,9 @@ class TestControllerWorker(base.TestCase):
                                     store={constants.HEALTH_MON:
                                            _health_mon_mock,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.LOADBALANCER:
                                                _load_balancer_mock,
                                            constants.POOL:
@@ -288,8 +301,10 @@ class TestControllerWorker(base.TestCase):
                                            _health_mon_mock,
                                            constants.POOL:
                                                _pool_mock,
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
                                            constants.LOADBALANCER:
                                                _load_balancer_mock,
                                            constants.UPDATE_DICT:
@@ -315,20 +330,21 @@ class TestControllerWorker(base.TestCase):
                              mock_amp_repo_get):
 
         _flow_mock.reset_mock()
-        mock_listener_repo_get.side_effect = [None, _listener_mock]
 
         cw = controller_worker.ControllerWorker()
-        cw.create_listener(LB_ID)
+
+        listener_dict = {constants.LISTENER_ID: LISTENER_ID,
+                         constants.LOADBALANCER_ID: LB_ID}
+        cw.create_listener(listener_dict)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
-                                    store={constants.LOADBALANCER:
-                                           _load_balancer_mock,
-                                           constants.LISTENERS:
-                                           _load_balancer_mock.listeners}))
+            assert_called_once_with(
+                _flow_mock, store={
+                    constants.LOADBALANCER: _load_balancer_mock,
+                    constants.LOADBALANCER_ID: LB_ID,
+                    constants.LISTENERS: [listener_dict]}))
 
         _flow_mock.run.assert_called_once_with()
-        self.assertEqual(2, mock_listener_repo_get.call_count)
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'listener_flows.ListenerFlows.get_delete_listener_flow',
@@ -349,13 +365,16 @@ class TestControllerWorker(base.TestCase):
 
         _flow_mock.reset_mock()
 
+        listener_dict = {constants.LISTENER_ID: LISTENER_ID,
+                         constants.LOADBALANCER_ID: LB_ID}
         cw = controller_worker.ControllerWorker()
-        cw.delete_listener(LB_ID)
+        cw.delete_listener(listener_dict)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
          assert_called_once_with(
-             _flow_mock, store={constants.LISTENER: _listener_mock,
-                                constants.LOADBALANCER: _load_balancer_mock}))
+             _flow_mock, store={constants.LISTENER: self.ref_listener_dict,
+                                constants.LOADBALANCER_ID: LB_ID,
+                                constants.PROJECT_ID: PROJECT_ID}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -379,18 +398,21 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
         _listener_mock.provisioning_status = constants.PENDING_UPDATE
 
+        listener_dict = {constants.LISTENER_ID: LISTENER_ID,
+                         constants.LOADBALANCER_ID: LB_ID}
         cw = controller_worker.ControllerWorker()
-        cw.update_listener(LB_ID, LISTENER_UPDATE_DICT)
+        cw.update_listener(listener_dict, LISTENER_UPDATE_DICT)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={constants.LISTENER: _listener_mock,
-                                           constants.LOADBALANCER:
-                                           _load_balancer_mock,
+                                    store={constants.LISTENER: listener_dict,
                                            constants.UPDATE_DICT:
                                            LISTENER_UPDATE_DICT,
+                                           constants.LOADBALANCER_ID: LB_ID,
+                                           constants.LOADBALANCER:
+                                               _load_balancer_mock,
                                            constants.LISTENERS:
-                                           [_listener_mock]}))
+                                           [listener_dict]}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -694,8 +716,7 @@ class TestControllerWorker(base.TestCase):
                                     store={constants.UPDATE_DICT: change,
                                            constants.LOADBALANCER:
                                                _load_balancer_mock,
-                                           constants.LISTENERS:
-                                               [_listener_mock]}))
+                                           }))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -726,7 +747,9 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with(_flow_mock,
                                     store={constants.MEMBER: _member_mock,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.LOADBALANCER:
                                                _load_balancer_mock,
                                            constants.POOL:
@@ -761,7 +784,9 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with(
                 _flow_mock, store={constants.MEMBER: _member_mock,
                                    constants.LISTENERS:
-                                       [_listener_mock],
+                                       [self.ref_listener_dict],
+                                   constants.LOADBALANCER_ID:
+                                       _load_balancer_mock.id,
                                    constants.LOADBALANCER:
                                        _load_balancer_mock,
                                    constants.POOL:
@@ -796,11 +821,13 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with(_flow_mock,
                                     store={constants.MEMBER: _member_mock,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
                                            constants.LOADBALANCER:
                                                _load_balancer_mock,
                                            constants.POOL:
                                                _pool_mock,
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.UPDATE_DICT:
                                                MEMBER_UPDATE_DICT}))
 
@@ -829,12 +856,12 @@ class TestControllerWorker(base.TestCase):
         cw.batch_update_members([9], [11], [MEMBER_UPDATE_DICT])
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
-                                    store={
-                                        constants.LISTENERS: [_listener_mock],
-                                        constants.LOADBALANCER:
-                                            _load_balancer_mock,
-                                        constants.POOL: _pool_mock}))
+            assert_called_once_with(
+                _flow_mock,
+                store={constants.LISTENERS: [self.ref_listener_dict],
+                       constants.LOADBALANCER_ID: _load_balancer_mock.id,
+                       constants.LOADBALANCER: _load_balancer_mock,
+                       constants.POOL: _pool_mock}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -864,8 +891,10 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.POOL: _pool_mock,
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
                                            constants.LOADBALANCER:
                                                _load_balancer_mock}))
 
@@ -897,8 +926,10 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.POOL: _pool_mock,
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
                                            constants.LOADBALANCER:
                                                _load_balancer_mock}))
 
@@ -931,7 +962,9 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with(_flow_mock,
                                     store={constants.POOL: _pool_mock,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.LOADBALANCER:
                                                _load_balancer_mock,
                                            constants.UPDATE_DICT:
@@ -965,8 +998,10 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7POLICY: _l7policy_mock,
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
                                            constants.LOADBALANCER:
                                                _load_balancer_mock}))
 
@@ -999,7 +1034,9 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with(_flow_mock,
                                     store={constants.L7POLICY: _l7policy_mock,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.LOADBALANCER:
                                                _load_balancer_mock}))
 
@@ -1032,7 +1069,9 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with(_flow_mock,
                                     store={constants.L7POLICY: _l7policy_mock,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.LOADBALANCER:
                                                _load_balancer_mock,
                                            constants.UPDATE_DICT:
@@ -1067,8 +1106,10 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
                                            constants.L7POLICY: _l7policy_mock,
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
                                            constants.LOADBALANCER:
                                                _load_balancer_mock}))
 
@@ -1100,9 +1141,11 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.L7POLICY: _l7policy_mock,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
                                            constants.LOADBALANCER:
                                                _load_balancer_mock}))
 
@@ -1135,8 +1178,10 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
                                            constants.L7POLICY: _l7policy_mock,
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            constants.LISTENERS:
-                                               [_listener_mock],
+                                               [self.ref_listener_dict],
                                            constants.LOADBALANCER:
                                                _load_balancer_mock,
                                            constants.UPDATE_DICT:

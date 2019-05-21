@@ -173,6 +173,13 @@ def db_listeners_to_provider_listeners(db_listeners, for_delete=False):
     return provider_listeners
 
 
+def db_listeners_to_provider_dicts_list_of_dicts(db_listeners,
+                                                 for_delete=False):
+    listeners = db_listeners_to_provider_listeners(
+        db_listeners, for_delete=for_delete)
+    return [listener.to_dict() for listener in listeners]
+
+
 def db_listener_to_provider_listener(db_listener, for_delete=False):
     new_listener_dict = listener_dict_to_provider_dict(
         db_listener.to_dict(recurse=True), for_delete=for_delete)

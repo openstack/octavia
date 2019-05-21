@@ -19,7 +19,6 @@ from octavia.common import constants
 from octavia.controller.worker.v2.tasks import amphora_driver_tasks
 from octavia.controller.worker.v2.tasks import database_tasks
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
-from octavia.controller.worker.v2.tasks import model_tasks
 
 
 class HealthMonitorFlows(object):
@@ -43,7 +42,7 @@ class HealthMonitorFlows(object):
         create_hm_flow.add(database_tasks.MarkPoolActiveInDB(
             requires=constants.POOL))
         create_hm_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=(constants.LOADBALANCER_ID, constants.LISTENERS)))
 
         return create_hm_flow
 
@@ -59,9 +58,6 @@ class HealthMonitorFlows(object):
                       constants.LOADBALANCER]))
         delete_hm_flow.add(database_tasks.MarkHealthMonitorPendingDeleteInDB(
             requires=constants.HEALTH_MON))
-        delete_hm_flow.add(model_tasks.
-                           DeleteModelObject(rebind={constants.OBJECT:
-                                                     constants.HEALTH_MON}))
         delete_hm_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=constants.LOADBALANCER))
         delete_hm_flow.add(database_tasks.DeleteHealthMonitorInDB(
@@ -75,7 +71,7 @@ class HealthMonitorFlows(object):
         delete_hm_flow.add(database_tasks.MarkPoolActiveInDB(
             requires=constants.POOL))
         delete_hm_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=(constants.LOADBALANCER_ID, constants.LISTENERS)))
 
         return delete_hm_flow
 
@@ -100,6 +96,6 @@ class HealthMonitorFlows(object):
         update_hm_flow.add(database_tasks.MarkPoolActiveInDB(
             requires=constants.POOL))
         update_hm_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=(constants.LOADBALANCER_ID, constants.LISTENERS)))
 
         return update_hm_flow

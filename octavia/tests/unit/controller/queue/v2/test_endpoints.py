@@ -17,6 +17,7 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
+from octavia.common import constants
 from octavia.controller.queue.v2 import endpoints
 from octavia.tests.unit import base
 
@@ -38,6 +39,7 @@ class TestEndpoints(base.TestCase):
         self.resource_updates = {}
         self.resource_id = 1234
         self.server_group_id = 3456
+        self.listener_dict = {constants.ID: uuidutils.generate_uuid()}
         self.flavor_id = uuidutils.generate_uuid()
 
     def test_create_load_balancer(self):
@@ -73,20 +75,20 @@ class TestEndpoints(base.TestCase):
             self.resource_id)
 
     def test_create_listener(self):
-        self.ep.create_listener(self.context, self.resource_id)
+        self.ep.create_listener(self.context, self.listener_dict)
         self.ep.worker.create_listener.assert_called_once_with(
-            self.resource_id)
+            self.listener_dict)
 
     def test_update_listener(self):
-        self.ep.update_listener(self.context, self.resource_id,
+        self.ep.update_listener(self.context, self.listener_dict,
                                 self.resource_updates)
         self.ep.worker.update_listener.assert_called_once_with(
-            self.resource_id, self.resource_updates)
+            self.listener_dict, self.resource_updates)
 
     def test_delete_listener(self):
-        self.ep.delete_listener(self.context, self.resource_id)
+        self.ep.delete_listener(self.context, self.listener_dict)
         self.ep.worker.delete_listener.assert_called_once_with(
-            self.resource_id)
+            self.listener_dict)
 
     def test_create_pool(self):
         self.ep.create_pool(self.context, self.resource_id)

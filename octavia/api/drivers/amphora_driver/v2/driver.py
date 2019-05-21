@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from cryptography import fernet
 from jsonschema import exceptions as js_exceptions
 from jsonschema import validate
 
@@ -52,6 +53,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             topic=consts.TOPIC_AMPHORA_V2, version="2.0", fanout=False)
         self.client = rpc.get_client(self.target)
         self.repositories = repositories.Repositories()
+        key = utils.get_six_compatible_server_certs_key_passphrase()
+        self.fernet = fernet.Fernet(key)
 
     def _validate_pool_algorithm(self, pool):
         if pool.lb_algorithm not in AMPHORA_SUPPORTED_LB_ALGORITHMS:
@@ -114,32 +117,40 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
                    consts.LOAD_BALANCER_UPDATES: lb_dict}
         self.client.cast({}, 'update_load_balancer', **payload)
 
+    def _encrypt_listener_dict(self, listener_dict):
+        # We need to encrypt the user cert/key data for sending it
+        # over messaging.
+        if listener_dict.get(consts.DEFAULT_TLS_CONTAINER_DATA, False):
+            listener_dict[consts.DEFAULT_TLS_CONTAINER_DATA] = (
+                self.fernet.encrypt(
+                    listener_dict[consts.DEFAULT_TLS_CONTAINER_DATA]))
+        if listener_dict.get(consts.SNI_CONTAINER_DATA, False):
+            sni_list = []
+            for sni_data in listener_dict[consts.SNI_CONTAINER_DATA]:
+                sni_list.append(self.fernet.encrypt(sni_data))
+            if sni_list:
+                listener_dict[consts.SNI_CONTAINER_DATA] = sni_list
+
     # Listener
     def listener_create(self, listener):
-        payload = {consts.LISTENER_ID: listener.listener_id}
+        payload = {consts.LISTENER: listener.to_dict()}
+        self._encrypt_listener_dict(payload)
+
         self.client.cast({}, 'create_listener', **payload)
 
     def listener_delete(self, listener):
-        listener_id = listener.listener_id
-        payload = {consts.LISTENER_ID: listener_id}
+        payload = {consts.LISTENER: listener.to_dict()}
         self.client.cast({}, 'delete_listener', **payload)
 
     def listener_update(self, old_listener, new_listener):
-        listener_dict = new_listener.to_dict()
-        if 'admin_state_up' in listener_dict:
-            listener_dict['enabled'] = listener_dict.pop('admin_state_up')
-        listener_id = listener_dict.pop('listener_id')
-        if 'client_ca_tls_container_ref' in listener_dict:
-            listener_dict['client_ca_tls_container_id'] = listener_dict.pop(
-                'client_ca_tls_container_ref')
-        listener_dict.pop('client_ca_tls_container_data', None)
-        if 'client_crl_container_ref' in listener_dict:
-            listener_dict['client_crl_container_id'] = listener_dict.pop(
-                'client_crl_container_ref')
-        listener_dict.pop('client_crl_container_data', None)
+        original_listener = old_listener.to_dict()
+        listener_updates = new_listener.to_dict()
 
-        payload = {consts.LISTENER_ID: listener_id,
-                   consts.LISTENER_UPDATES: listener_dict}
+        self._encrypt_listener_dict(original_listener)
+        self._encrypt_listener_dict(listener_updates)
+
+        payload = {consts.ORIGINAL_LISTENER: original_listener,
+                   consts.LISTENER_UPDATES: listener_updates}
         self.client.cast({}, 'update_listener', **payload)
 
     # Pool

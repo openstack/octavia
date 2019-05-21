@@ -19,7 +19,6 @@ from octavia.common import constants
 from octavia.controller.worker.v2.tasks import amphora_driver_tasks
 from octavia.controller.worker.v2.tasks import database_tasks
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
-from octavia.controller.worker.v2.tasks import model_tasks
 
 
 class L7RuleFlows(object):
@@ -43,7 +42,7 @@ class L7RuleFlows(object):
         create_l7rule_flow.add(database_tasks.MarkL7PolicyActiveInDB(
             requires=constants.L7POLICY))
         create_l7rule_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=(constants.LOADBALANCER_ID, constants.LISTENERS)))
 
         return create_l7rule_flow
 
@@ -59,8 +58,6 @@ class L7RuleFlows(object):
                       constants.LOADBALANCER]))
         delete_l7rule_flow.add(database_tasks.MarkL7RulePendingDeleteInDB(
             requires=constants.L7RULE))
-        delete_l7rule_flow.add(model_tasks.DeleteModelObject(
-            rebind={constants.OBJECT: constants.L7RULE}))
         delete_l7rule_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=constants.LOADBALANCER))
         delete_l7rule_flow.add(database_tasks.DeleteL7RuleInDB(
@@ -68,7 +65,7 @@ class L7RuleFlows(object):
         delete_l7rule_flow.add(database_tasks.MarkL7PolicyActiveInDB(
             requires=constants.L7POLICY))
         delete_l7rule_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=(constants.LOADBALANCER_ID, constants.LISTENERS)))
 
         return delete_l7rule_flow
 
@@ -93,6 +90,6 @@ class L7RuleFlows(object):
         update_l7rule_flow.add(database_tasks.MarkL7PolicyActiveInDB(
             requires=constants.L7POLICY))
         update_l7rule_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=(constants.LOADBALANCER_ID, constants.LISTENERS)))
 
         return update_l7rule_flow

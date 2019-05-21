@@ -21,6 +21,7 @@ from sqlalchemy.orm import exc as db_exceptions
 from taskflow.listeners import logging as tf_logging
 import tenacity
 
+from octavia.api.drivers import utils as provider_utils
 from octavia.common import base_taskflow
 from octavia.common import constants
 from octavia.controller.worker.v2.flows import amphora_flows
@@ -141,15 +142,19 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             raise db_exceptions.NoResultFound
 
         pool = health_mon.pool
-        listeners = pool.listeners
         pool.health_monitor = health_mon
         load_balancer = pool.load_balancer
+
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                pool.listeners))
 
         create_hm_tf = self._taskflow_load(
             self._health_monitor_flows.get_create_health_monitor_flow(),
             store={constants.HEALTH_MON: health_mon,
                    constants.POOL: pool,
-                   constants.LISTENERS: listeners,
+                   constants.LISTENERS: listeners_dicts,
+                   constants.LOADBALANCER_ID: load_balancer.id,
                    constants.LOADBALANCER: load_balancer})
         with tf_logging.DynamicLoggingListener(create_hm_tf,
                                                log=LOG):
@@ -166,14 +171,18 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                id=health_monitor_id)
 
         pool = health_mon.pool
-        listeners = pool.listeners
         load_balancer = pool.load_balancer
+
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                pool.listeners))
 
         delete_hm_tf = self._taskflow_load(
             self._health_monitor_flows.get_delete_health_monitor_flow(),
             store={constants.HEALTH_MON: health_mon,
                    constants.POOL: pool,
-                   constants.LISTENERS: listeners,
+                   constants.LISTENERS: listeners_dicts,
+                   constants.LOADBALANCER_ID: load_balancer.id,
                    constants.LOADBALANCER: load_balancer})
         with tf_logging.DynamicLoggingListener(delete_hm_tf,
                                                log=LOG):
@@ -200,7 +209,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             health_mon = e.last_attempt.result()
 
         pool = health_mon.pool
-        listeners = pool.listeners
+
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                pool.listeners))
+
         pool.health_monitor = health_mon
         load_balancer = pool.load_balancer
 
@@ -208,96 +221,83 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             self._health_monitor_flows.get_update_health_monitor_flow(),
             store={constants.HEALTH_MON: health_mon,
                    constants.POOL: pool,
-                   constants.LISTENERS: listeners,
+                   constants.LISTENERS: listeners_dicts,
+                   constants.LOADBALANCER_ID: load_balancer.id,
                    constants.LOADBALANCER: load_balancer,
                    constants.UPDATE_DICT: health_monitor_updates})
         with tf_logging.DynamicLoggingListener(update_hm_tf,
                                                log=LOG):
             update_hm_tf.run()
 
-    @tenacity.retry(
-        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
-        wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
-    def create_listener(self, listener_id):
+    def create_listener(self, listener):
         """Creates a listener.
 
-        :param listener_id: ID of the listener to create
+        :param listener: A listener provider dictionary.
         :returns: None
         :raises NoResultFound: Unable to find the object
         """
-        listener = self._listener_repo.get(db_apis.get_session(),
-                                           id=listener_id)
-        if not listener:
+        db_listener = self._listener_repo.get(
+            db_apis.get_session(), id=listener[constants.LISTENER_ID])
+        if not db_listener:
             LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
-                        '60 seconds.', 'listener', listener_id)
+                        '60 seconds.', 'listener',
+                        listener[constants.LISTENER_ID])
             raise db_exceptions.NoResultFound
 
-        load_balancer = listener.load_balancer
+        load_balancer = db_listener.load_balancer
         listeners = load_balancer.listeners
+        dict_listeners = []
+        for l in listeners:
+            dict_listeners.append(
+                provider_utils.db_listener_to_provider_listener(l).to_dict())
 
-        create_listener_tf = self._taskflow_load(self._listener_flows.
-                                                 get_create_listener_flow(),
-                                                 store={constants.LOADBALANCER:
-                                                        load_balancer,
-                                                        constants.LISTENERS:
-                                                            listeners})
+        create_listener_tf = self._taskflow_load(
+            self._listener_flows.get_create_listener_flow(),
+            store={constants.LISTENERS: dict_listeners,
+                   constants.LOADBALANCER: load_balancer,
+                   constants.LOADBALANCER_ID: load_balancer.id})
         with tf_logging.DynamicLoggingListener(create_listener_tf,
                                                log=LOG):
             create_listener_tf.run()
 
-    def delete_listener(self, listener_id):
+    def delete_listener(self, listener):
         """Deletes a listener.
 
-        :param listener_id: ID of the listener to delete
+        :param listener: A listener provider dictionary to delete
         :returns: None
         :raises ListenerNotFound: The referenced listener was not found
         """
-        listener = self._listener_repo.get(db_apis.get_session(),
-                                           id=listener_id)
-        load_balancer = listener.load_balancer
+        # TODO(johnsom) Remove once the provider data model includes
+        #               the project ID
+        lb = self._lb_repo.get(db_apis.get_session(),
+                               id=listener[constants.LOADBALANCER_ID])
 
         delete_listener_tf = self._taskflow_load(
             self._listener_flows.get_delete_listener_flow(),
-            store={constants.LOADBALANCER: load_balancer,
-                   constants.LISTENER: listener})
+            store={constants.LISTENER: listener,
+                   constants.LOADBALANCER_ID: lb.id,
+                   constants.PROJECT_ID: lb.project_id})
         with tf_logging.DynamicLoggingListener(delete_listener_tf,
                                                log=LOG):
             delete_listener_tf.run()
 
-    def update_listener(self, listener_id, listener_updates):
+    def update_listener(self, listener, listener_updates):
         """Updates a listener.
 
-        :param listener_id: ID of the listener to update
+        :param listener: A listener provider dictionary to update
         :param listener_updates: Dict containing updated listener attributes
         :returns: None
         :raises ListenerNotFound: The referenced listener was not found
         """
-        listener = None
-        try:
-            listener = self._get_db_obj_until_pending_update(
-                self._listener_repo, listener_id)
-        except tenacity.RetryError as e:
-            LOG.warning('Listener did not go into %s in 60 seconds. '
-                        'This either due to an in-progress Octavia upgrade '
-                        'or an overloaded and failing database. Assuming '
-                        'an upgrade is in progress and continuing.',
-                        constants.PENDING_UPDATE)
-            listener = e.last_attempt.result()
-
-        load_balancer = listener.load_balancer
-
-        update_listener_tf = self._taskflow_load(self._listener_flows.
-                                                 get_update_listener_flow(),
-                                                 store={constants.LISTENER:
-                                                        listener,
-                                                        constants.LOADBALANCER:
-                                                            load_balancer,
-                                                        constants.UPDATE_DICT:
-                                                            listener_updates,
-                                                        constants.LISTENERS:
-                                                            [listener]})
+        db_lb = self._lb_repo.get(db_apis.get_session(),
+                                  id=listener[constants.LOADBALANCER_ID])
+        update_listener_tf = self._taskflow_load(
+            self._listener_flows.get_update_listener_flow(),
+            store={constants.LISTENER: listener,
+                   constants.UPDATE_DICT: listener_updates,
+                   constants.LOADBALANCER_ID: db_lb.id,
+                   constants.LOADBALANCER: db_lb,
+                   constants.LISTENERS: [listener]})
         with tf_logging.DynamicLoggingListener(update_listener_tf, log=LOG):
             update_listener_tf.run()
 
@@ -386,14 +386,9 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                         constants.PENDING_UPDATE)
             lb = e.last_attempt.result()
 
-        listeners, _ = self._listener_repo.get_all(
-            db_apis.get_session(),
-            load_balancer_id=load_balancer_id)
-
         update_lb_tf = self._taskflow_load(
             self._lb_flows.get_update_load_balancer_flow(),
             store={constants.LOADBALANCER: lb,
-                   constants.LISTENERS: listeners,
                    constants.UPDATE_DICT: load_balancer_updates})
 
         with tf_logging.DynamicLoggingListener(update_lb_tf,
@@ -420,17 +415,19 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             raise db_exceptions.NoResultFound
 
         pool = member.pool
-        listeners = pool.listeners
         load_balancer = pool.load_balancer
 
-        create_member_tf = self._taskflow_load(self._member_flows.
-                                               get_create_member_flow(),
-                                               store={constants.MEMBER: member,
-                                                      constants.LISTENERS:
-                                                          listeners,
-                                                      constants.LOADBALANCER:
-                                                          load_balancer,
-                                                      constants.POOL: pool})
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                pool.listeners))
+
+        create_member_tf = self._taskflow_load(
+            self._member_flows.get_create_member_flow(),
+            store={constants.MEMBER: member,
+                   constants.LISTENERS: listeners_dicts,
+                   constants.LOADBALANCER_ID: load_balancer.id,
+                   constants.LOADBALANCER: load_balancer,
+                   constants.POOL: pool})
         with tf_logging.DynamicLoggingListener(create_member_tf,
                                                log=LOG):
             create_member_tf.run()
@@ -445,13 +442,19 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         member = self._member_repo.get(db_apis.get_session(),
                                        id=member_id)
         pool = member.pool
-        listeners = pool.listeners
         load_balancer = pool.load_balancer
+
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                pool.listeners))
 
         delete_member_tf = self._taskflow_load(
             self._member_flows.get_delete_member_flow(),
-            store={constants.MEMBER: member, constants.LISTENERS: listeners,
-                   constants.LOADBALANCER: load_balancer, constants.POOL: pool}
+            store={constants.MEMBER: member,
+                   constants.LISTENERS: listeners_dicts,
+                   constants.LOADBALANCER: load_balancer,
+                   constants.LOADBALANCER_ID: load_balancer.id,
+                   constants.POOL: pool}
         )
         with tf_logging.DynamicLoggingListener(delete_member_tf,
                                                log=LOG):
@@ -472,14 +475,18 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             pool = new_members[0].pool
         else:
             pool = updated_members[0][0].pool
-        listeners = pool.listeners
         load_balancer = pool.load_balancer
+
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                pool.listeners))
 
         batch_update_members_tf = self._taskflow_load(
             self._member_flows.get_batch_update_members_flow(
                 old_members, new_members, updated_members),
-            store={constants.LISTENERS: listeners,
+            store={constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER: load_balancer,
+                   constants.LOADBALANCER_ID: load_balancer.id,
                    constants.POOL: pool})
         with tf_logging.DynamicLoggingListener(batch_update_members_tf,
                                                log=LOG):
@@ -506,20 +513,20 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             member = e.last_attempt.result()
 
         pool = member.pool
-        listeners = pool.listeners
         load_balancer = pool.load_balancer
 
-        update_member_tf = self._taskflow_load(self._member_flows.
-                                               get_update_member_flow(),
-                                               store={constants.MEMBER: member,
-                                                      constants.LISTENERS:
-                                                          listeners,
-                                                      constants.LOADBALANCER:
-                                                          load_balancer,
-                                                      constants.POOL:
-                                                          pool,
-                                                      constants.UPDATE_DICT:
-                                                          member_updates})
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                pool.listeners))
+
+        update_member_tf = self._taskflow_load(
+            self._member_flows.get_update_member_flow(),
+            store={constants.MEMBER: member,
+                   constants.LISTENERS: listeners_dicts,
+                   constants.LOADBALANCER: load_balancer,
+                   constants.LOADBALANCER_ID: load_balancer.id,
+                   constants.POOL: pool,
+                   constants.UPDATE_DICT: member_updates})
         with tf_logging.DynamicLoggingListener(update_member_tf,
                                                log=LOG):
             update_member_tf.run()
@@ -543,16 +550,18 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                         '60 seconds.', 'pool', pool_id)
             raise db_exceptions.NoResultFound
 
-        listeners = pool.listeners
         load_balancer = pool.load_balancer
 
-        create_pool_tf = self._taskflow_load(self._pool_flows.
-                                             get_create_pool_flow(),
-                                             store={constants.POOL: pool,
-                                                    constants.LISTENERS:
-                                                        listeners,
-                                                    constants.LOADBALANCER:
-                                                        load_balancer})
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                pool.listeners))
+
+        create_pool_tf = self._taskflow_load(
+            self._pool_flows.get_create_pool_flow(),
+            store={constants.POOL: pool,
+                   constants.LISTENERS: listeners_dicts,
+                   constants.LOADBALANCER_ID: load_balancer.id,
+                   constants.LOADBALANCER: load_balancer})
         with tf_logging.DynamicLoggingListener(create_pool_tf,
                                                log=LOG):
             create_pool_tf.run()
@@ -568,12 +577,16 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                    id=pool_id)
 
         load_balancer = pool.load_balancer
-        listeners = pool.listeners
+
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                pool.listeners))
 
         delete_pool_tf = self._taskflow_load(
             self._pool_flows.get_delete_pool_flow(),
-            store={constants.POOL: pool, constants.LISTENERS: listeners,
-                   constants.LOADBALANCER: load_balancer})
+            store={constants.POOL: pool, constants.LISTENERS: listeners_dicts,
+                   constants.LOADBALANCER: load_balancer,
+                   constants.LOADBALANCER_ID: load_balancer.id})
         with tf_logging.DynamicLoggingListener(delete_pool_tf,
                                                log=LOG):
             delete_pool_tf.run()
@@ -598,18 +611,19 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                         constants.PENDING_UPDATE)
             pool = e.last_attempt.result()
 
-        listeners = pool.listeners
         load_balancer = pool.load_balancer
 
-        update_pool_tf = self._taskflow_load(self._pool_flows.
-                                             get_update_pool_flow(),
-                                             store={constants.POOL: pool,
-                                                    constants.LISTENERS:
-                                                        listeners,
-                                                    constants.LOADBALANCER:
-                                                        load_balancer,
-                                                    constants.UPDATE_DICT:
-                                                        pool_updates})
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                pool.listeners))
+
+        update_pool_tf = self._taskflow_load(
+            self._pool_flows.get_update_pool_flow(),
+            store={constants.POOL: pool,
+                   constants.LISTENERS: listeners_dicts,
+                   constants.LOADBALANCER: load_balancer,
+                   constants.LOADBALANCER_ID: load_balancer.id,
+                   constants.UPDATE_DICT: pool_updates})
         with tf_logging.DynamicLoggingListener(update_pool_tf,
                                                log=LOG):
             update_pool_tf.run()
@@ -633,13 +647,17 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                         '60 seconds.', 'l7policy', l7policy_id)
             raise db_exceptions.NoResultFound
 
-        listeners = [l7policy.listener]
         load_balancer = l7policy.listener.load_balancer
+
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                [l7policy.listener]))
 
         create_l7policy_tf = self._taskflow_load(
             self._l7policy_flows.get_create_l7policy_flow(),
             store={constants.L7POLICY: l7policy,
-                   constants.LISTENERS: listeners,
+                   constants.LISTENERS: listeners_dicts,
+                   constants.LOADBALANCER_ID: load_balancer.id,
                    constants.LOADBALANCER: load_balancer})
         with tf_logging.DynamicLoggingListener(create_l7policy_tf,
                                                log=LOG):
@@ -656,12 +674,16 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                            id=l7policy_id)
 
         load_balancer = l7policy.listener.load_balancer
-        listeners = [l7policy.listener]
+
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                [l7policy.listener]))
 
         delete_l7policy_tf = self._taskflow_load(
             self._l7policy_flows.get_delete_l7policy_flow(),
             store={constants.L7POLICY: l7policy,
-                   constants.LISTENERS: listeners,
+                   constants.LISTENERS: listeners_dicts,
+                   constants.LOADBALANCER_ID: load_balancer.id,
                    constants.LOADBALANCER: load_balancer})
         with tf_logging.DynamicLoggingListener(delete_l7policy_tf,
                                                log=LOG):
@@ -687,14 +709,18 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                         constants.PENDING_UPDATE)
             l7policy = e.last_attempt.result()
 
-        listeners = [l7policy.listener]
         load_balancer = l7policy.listener.load_balancer
+
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                [l7policy.listener]))
 
         update_l7policy_tf = self._taskflow_load(
             self._l7policy_flows.get_update_l7policy_flow(),
             store={constants.L7POLICY: l7policy,
-                   constants.LISTENERS: listeners,
+                   constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER: load_balancer,
+                   constants.LOADBALANCER_ID: load_balancer.id,
                    constants.UPDATE_DICT: l7policy_updates})
         with tf_logging.DynamicLoggingListener(update_l7policy_tf,
                                                log=LOG):
@@ -720,14 +746,18 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             raise db_exceptions.NoResultFound
 
         l7policy = l7rule.l7policy
-        listeners = [l7policy.listener]
         load_balancer = l7policy.listener.load_balancer
+
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                [l7policy.listener]))
 
         create_l7rule_tf = self._taskflow_load(
             self._l7rule_flows.get_create_l7rule_flow(),
             store={constants.L7RULE: l7rule,
                    constants.L7POLICY: l7policy,
-                   constants.LISTENERS: listeners,
+                   constants.LISTENERS: listeners_dicts,
+                   constants.LOADBALANCER_ID: load_balancer.id,
                    constants.LOADBALANCER: load_balancer})
         with tf_logging.DynamicLoggingListener(create_l7rule_tf,
                                                log=LOG):
@@ -744,13 +774,17 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                        id=l7rule_id)
         l7policy = l7rule.l7policy
         load_balancer = l7policy.listener.load_balancer
-        listeners = [l7policy.listener]
+
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                [l7policy.listener]))
 
         delete_l7rule_tf = self._taskflow_load(
             self._l7rule_flows.get_delete_l7rule_flow(),
             store={constants.L7RULE: l7rule,
                    constants.L7POLICY: l7policy,
-                   constants.LISTENERS: listeners,
+                   constants.LISTENERS: listeners_dicts,
+                   constants.LOADBALANCER_ID: load_balancer.id,
                    constants.LOADBALANCER: load_balancer})
         with tf_logging.DynamicLoggingListener(delete_l7rule_tf,
                                                log=LOG):
@@ -777,15 +811,19 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             l7rule = e.last_attempt.result()
 
         l7policy = l7rule.l7policy
-        listeners = [l7policy.listener]
         load_balancer = l7policy.listener.load_balancer
+
+        listeners_dicts = (
+            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
+                [l7policy.listener]))
 
         update_l7rule_tf = self._taskflow_load(
             self._l7rule_flows.get_update_l7rule_flow(),
             store={constants.L7RULE: l7rule,
                    constants.L7POLICY: l7policy,
-                   constants.LISTENERS: listeners,
+                   constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER: load_balancer,
+                   constants.LOADBALANCER_ID: load_balancer.id,
                    constants.UPDATE_DICT: l7rule_updates})
         with tf_logging.DynamicLoggingListener(update_l7rule_tf,
                                                log=LOG):

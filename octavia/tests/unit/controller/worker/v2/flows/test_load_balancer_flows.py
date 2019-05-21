@@ -101,7 +101,11 @@ class TestLoadBalancerFlows(base.TestCase):
         lb_mock = mock.Mock()
         listener_mock = mock.Mock()
         listener_mock.id = '123'
+        listener_dict = {constants.LISTENER_ID: '123'}
+        listener_mock.to_dict.return_value = {'id': '123'}
         lb_mock.listeners = [listener_mock]
+        lb_mock.id = '321'
+        lb_mock.project_id = '876'
         pool_mock = mock.Mock()
         pool_mock.id = '345'
         lb_mock.pools = [pool_mock]
@@ -113,13 +117,15 @@ class TestLoadBalancerFlows(base.TestCase):
             lb_mock)
 
         self.assertIsInstance(lb_flow, flow.Flow)
-        self.assertEqual({'listener_123': listener_mock,
+        self.assertEqual({'listener_123': listener_dict,
+                          constants.LOADBALANCER_ID: lb_mock.id,
+                          constants.PROJECT_ID: lb_mock.project_id,
                           'pool345': pool_mock}, store)
 
         self.assertIn(constants.LOADBALANCER, lb_flow.requires)
 
         self.assertEqual(1, len(lb_flow.provides))
-        self.assertEqual(4, len(lb_flow.requires))
+        self.assertEqual(6, len(lb_flow.requires))
 
     def test_get_update_load_balancer_flow(self, mock_get_net_driver):
 

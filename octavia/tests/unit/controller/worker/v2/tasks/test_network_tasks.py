@@ -55,6 +55,7 @@ AMPS_DATA = [o_data_models.Amphora(id=t_constants.MOCK_AMP_ID1,
                                    vrrp_ip=t_constants.MOCK_VRRP_IP2)
              ]
 UPDATE_DICT = {constants.TOPOLOGY: None}
+_session_mock = mock.MagicMock()
 
 
 class TestException(Exception):
@@ -643,22 +644,32 @@ class TestNetworkTasks(base.TestCase):
         net.execute(lb)
         mock_driver.deallocate_vip.assert_called_once_with(lb.vip)
 
-    def test_update_vip(self, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_update_vip(self, mock_get_session, mock_get_lb,
+                        mock_get_net_driver):
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
         vip = o_data_models.Vip()
         lb = o_data_models.LoadBalancer(vip=vip)
+        mock_get_lb.return_value = lb
+        listeners = [{constants.LOADBALANCER_ID: lb.id}]
         net_task = network_tasks.UpdateVIP()
-        net_task.execute(lb)
+        net_task.execute(listeners)
         mock_driver.update_vip.assert_called_once_with(lb)
 
-    def test_update_vip_for_delete(self, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_update_vip_for_delete(self, mock_get_session, mock_get_lb,
+                                   mock_get_net_driver):
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
         vip = o_data_models.Vip()
         lb = o_data_models.LoadBalancer(vip=vip)
+        mock_get_lb.return_value = lb
+        listener = {constants.LOADBALANCER_ID: lb.id}
         net_task = network_tasks.UpdateVIPForDelete()
-        net_task.execute(lb)
+        net_task.execute(listener)
         mock_driver.update_vip.assert_called_once_with(lb, for_delete=True)
 
     def test_get_amphorae_network_configs(self, mock_get_net_driver):
