@@ -606,8 +606,8 @@ generates the health check in your web application:
 
 Other heath monitors
 --------------------
-Other health monitor types include ``PING``, ``TCP``, ``HTTPS``, and
-``TLS-HELLO``.
+Other health monitor types include ``PING``, ``TCP``, ``HTTPS``, ``TLS-HELLO``,
+and ``UDP-CONNECT``.
 
 ``PING`` health monitors send periodic ICMP PING requests to the back-end
 servers. Obviously, your back-end servers must be configured to allow PINGs in
@@ -626,6 +626,11 @@ In this case, using ``TLS-HELLO`` type monitoring is an alternative.
 ``TLS-HELLO`` health monitors simply ensure the back-end server responds to
 SSLv3 client hello messages. It will not check any other health metrics, like
 status code or body contents.
+
+``UDP-CONNECT`` health monitors do a basic UDP port connect. Health monitors
+of this type may not work correctly if Destination Unreachable (ICMP type 3) is
+not enabled on the member server or is blocked by a security rule. A member
+server may be marked as operating status ONLINE when it is actually down.
 
 
 Intermediate certificate chains
