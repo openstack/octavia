@@ -556,6 +556,7 @@ SYSCTL_CMD = '/sbin/sysctl'
 AMP_ACTION_START = 'start'
 AMP_ACTION_STOP = 'stop'
 AMP_ACTION_RELOAD = 'reload'
+AMP_ACTION_RESTART = 'restart'
 GLANCE_IMAGE_ACTIVE = 'active'
 
 INIT_SYSTEMD = 'systemd'

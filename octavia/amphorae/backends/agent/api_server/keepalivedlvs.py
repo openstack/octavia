@@ -198,6 +198,13 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
                 message='Invalid Request',
                 details="Unknown action: {0}".format(action)), status=400)
 
+        # When octavia requests a reload of keepalived, force a restart since
+        # a keepalived reload doesn't restore members in their initial state.
+        #
+        # TODO(gthiemonge) remove this when keepalived>=2.0.14 is widely use
+        if action == consts.AMP_ACTION_RELOAD:
+            action = consts.AMP_ACTION_RESTART
+
         self._check_udp_listener_exists(listener_id)
         if action == consts.AMP_ACTION_RELOAD:
             if consts.OFFLINE == self._check_udp_listener_status(listener_id):
