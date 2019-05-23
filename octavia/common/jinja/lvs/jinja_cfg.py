@@ -174,7 +174,9 @@ class LvsJinjaTemplater(object):
             'address': member.ip_address,
             'protocol_port': member.protocol_port,
             'weight': member.weight,
-            'enabled': member.enabled
+            'enabled': member.enabled,
+            'monitor_address': member.monitor_address,
+            'monitor_port': member.monitor_port
         }
 
     def _get_default_lvs_check_script_path(self):
