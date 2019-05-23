@@ -19,7 +19,7 @@ lb_algo {{ pool.lb_algorithm }}
 {%- endmacro -%}
 
 {% macro misc_path_macro(member, health_monitor) -%}
-misc_path "{{ health_monitor.check_script_path }} {{ member.address }} {{ member.protocol_port }}"
+misc_path "{{ health_monitor.check_script_path }} {{ member.monitor_address|default(member.address, true) }} {{ member.monitor_port|default(member.protocol_port, true) }}"
 {%- endmacro %}
 
 {%- macro misc_check_macro(pool, member, health_monitor) -%}

@@ -179,6 +179,54 @@ class TestLvsCfg(base.TestCase):
                 connection_limit=98))
         self.assertEqual(exp, rendered_obj)
 
+    def test_render_template_udp_with_health_monitor_ip_port(self):
+        exp = ("# Configuration for Loadbalancer sample_loadbalancer_id_1\n"
+               "# Configuration for Listener sample_listener_id_1\n\n"
+               "net_namespace amphora-haproxy\n\n"
+               "virtual_server 10.0.0.2 80 {\n"
+               "    lb_algo rr\n"
+               "    lb_kind NAT\n"
+               "    protocol UDP\n"
+               "    delay_loop 30\n"
+               "    delay_before_retry 31\n"
+               "    retry 3\n\n\n"
+               "    # Configuration for Pool sample_pool_id_1\n"
+               "    # Configuration for HealthMonitor sample_monitor_id_1\n"
+               "    # Configuration for Member sample_member_id_1\n"
+               "    real_server 10.0.0.99 82 {\n"
+               "        weight 13\n"
+               "        uthreshold 98\n"
+               "        delay_before_retry 31\n"
+               "        retry 3\n"
+               "        MISC_CHECK {\n"
+               "            misc_path \"/var/lib/octavia/lvs/check/"
+               "udp_check.sh 192.168.1.1 9000\"\n"
+               "            misc_timeout 30\n"
+               "        }\n"
+               "    }\n\n"
+               "    # Configuration for Member sample_member_id_2\n"
+               "    real_server 10.0.0.98 82 {\n"
+               "        weight 13\n"
+               "        uthreshold 98\n"
+               "        delay_before_retry 31\n"
+               "        retry 3\n"
+               "        MISC_CHECK {\n"
+               "            misc_path \"/var/lib/octavia/lvs/check/"
+               "udp_check.sh 192.168.1.1 9000\"\n"
+               "            misc_timeout 30\n"
+               "        }\n"
+               "    }\n\n"
+               "}\n\n")
+
+        rendered_obj = self.udp_jinja_cfg.render_loadbalancer_obj(
+            sample_configs.sample_listener_tuple(
+                proto=constants.PROTOCOL_UDP,
+                monitor_ip_port=True,
+                monitor_proto=constants.HEALTH_MONITOR_UDP_CONNECT,
+                persistence=False,
+                connection_limit=98))
+        self.assertEqual(exp, rendered_obj)
+
     def test_render_template_udp_no_other_resources(self):
         exp = ("# Configuration for Loadbalancer sample_loadbalancer_id_1\n"
                "# Configuration for Listener sample_listener_id_1\n\n"
@@ -214,6 +262,14 @@ class TestLvsCfg(base.TestCase):
                                                        '192.0.2.10')
         ret = self.udp_jinja_cfg._transform_member(in_member)
         self.assertEqual(sample_configs.RET_UDP_MEMBER, ret)
+
+        in_member = sample_configs.sample_member_tuple(
+            'member_id_1',
+            '192.0.2.10',
+            monitor_ip_port=True)
+        ret = self.udp_jinja_cfg._transform_member(in_member)
+        self.assertEqual(
+            sample_configs.RET_UDP_MEMBER_MONITOR_IP_PORT, ret)
 
     def test_udp_transform_pool(self):
         in_pool = sample_configs.sample_pool_tuple(
