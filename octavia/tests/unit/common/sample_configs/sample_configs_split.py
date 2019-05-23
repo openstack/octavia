@@ -429,7 +429,19 @@ RET_UDP_MEMBER = {
     'address': '192.0.2.10',
     'protocol_port': 82,
     'weight': 13,
-    'enabled': True
+    'enabled': True,
+    'monitor_address': None,
+    'monitor_port': None
+}
+
+RET_UDP_MEMBER_MONITOR_IP_PORT = {
+    'id': 'member_id_1',
+    'address': '192.0.2.10',
+    'protocol_port': 82,
+    'weight': 13,
+    'enabled': True,
+    'monitor_address': '192.168.1.1',
+    'monitor_port': 9000
 }
 
 UDP_MEMBER_1 = {
@@ -437,7 +449,9 @@ UDP_MEMBER_1 = {
     'address': '10.0.0.99',
     'enabled': True,
     'protocol_port': 82,
-    'weight': 13
+    'weight': 13,
+    'monitor_address': None,
+    'monitor_port': None
 }
 
 UDP_MEMBER_2 = {
@@ -445,7 +459,9 @@ UDP_MEMBER_2 = {
     'address': '10.0.0.98',
     'enabled': True,
     'protocol_port': 82,
-    'weight': 13
+    'weight': 13,
+    'monitor_address': None,
+    'monitor_port': None
 }
 
 RET_UDP_POOL = {
