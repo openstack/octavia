@@ -1,0 +1,12 @@
+---
+issues:
+  - |
+    When a load balancer with a UDP listener is updated, the listener service
+    is restarted, which causes an interruption of the flow of traffic during a
+    short period of time. This issue is caused by a keepalived bug
+    (https://github.com/acassen/keepalived/issues/1163) that was fixed in
+    keepalived 2.0.14, but this package is not yet provided by distributions.
+fixes:
+  - |
+    Fix a bug that prevented UDP servers to be restored as members of a pool
+    after removing a health monitor resource.
