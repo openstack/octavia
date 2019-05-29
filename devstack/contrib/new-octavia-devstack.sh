@@ -15,9 +15,9 @@ apt-get install git vim -y
 git clone https://github.com/openstack-dev/devstack.git $HOME/devstack
 
 cat <<EOF > $HOME/devstack/localrc
-enable_plugin barbican https://review.openstack.org/openstack/barbican
-enable_plugin neutron https://review.openstack.org/openstack/neutron
-enable_plugin octavia https://review.openstack.org/openstack/octavia
+enable_plugin barbican https://opendev.org/openstack/barbican
+enable_plugin neutron https://opendev.org/openstack/neutron
+enable_plugin octavia https://opendev.org/openstack/octavia
 LIBS_FROM_GIT+=python-octaviaclient
 
 KEYSTONE_TOKEN_FORMAT=fernet

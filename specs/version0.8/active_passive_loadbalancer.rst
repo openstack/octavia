@@ -370,7 +370,7 @@ http://goo.gl/eP71g7
 
 [2] RFC3768 Virtual Router Redundancy Protocol (VRRP)
 
-[3] https://review.openstack.org/#/c/38230/
+[3] https://review.opendev.org/#/c/38230/
 
 [4] http://www.keepalived.org/LVS-NAT-Keepalived-HOWTO.html
 

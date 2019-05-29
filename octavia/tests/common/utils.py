@@ -18,7 +18,7 @@ import mock
 
 
 # Borrowed from neutron
-# https://review.openstack.org/#/c/232716/
+# https://review.opendev.org/#/c/232716/
 class OpenFixture(fixtures.Fixture):
     """Mock access to a specific file while preserving open for others."""
 

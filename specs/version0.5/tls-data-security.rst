@@ -155,5 +155,5 @@ Documentation changes will be primarily internal.
 References
 ==========
 .. line-block::
-    [1] https://review.openstack.org/#/c/127353/
-    [2] https://review.openstack.org/#/c/129048/
+    [1] https://review.opendev.org/#/c/127353/
+    [2] https://review.opendev.org/#/c/129048/
