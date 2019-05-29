@@ -74,7 +74,8 @@ class MemberPOST(BaseMemberType):
         minimum=constants.MIN_PORT_NUMBER, maximum=constants.MAX_PORT_NUMBER),
         mandatory=True)
     weight = wtypes.wsattr(wtypes.IntegerType(
-        minimum=constants.MIN_WEIGHT, maximum=constants.MAX_WEIGHT), default=1)
+        minimum=constants.MIN_WEIGHT, maximum=constants.MAX_WEIGHT),
+        default=constants.DEFAULT_WEIGHT)
     backup = wtypes.wsattr(bool, default=False)
     subnet_id = wtypes.wsattr(wtypes.UuidType())
     # TODO(johnsom) Remove after deprecation (R series)
@@ -120,7 +121,8 @@ class MemberSingleCreate(BaseMemberType):
         minimum=constants.MIN_PORT_NUMBER, maximum=constants.MAX_PORT_NUMBER),
         mandatory=True)
     weight = wtypes.wsattr(wtypes.IntegerType(
-        minimum=constants.MIN_WEIGHT, maximum=constants.MAX_WEIGHT), default=1)
+        minimum=constants.MIN_WEIGHT, maximum=constants.MAX_WEIGHT),
+        default=constants.DEFAULT_WEIGHT)
     backup = wtypes.wsattr(bool, default=False)
     subnet_id = wtypes.wsattr(wtypes.UuidType())
     monitor_port = wtypes.wsattr(wtypes.IntegerType(

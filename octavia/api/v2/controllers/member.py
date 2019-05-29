@@ -206,6 +206,22 @@ class MemberController(base.BaseController):
 
         return db_member
 
+    def _set_default_on_none(self, member):
+        """Reset settings to their default values if None/null was passed in
+
+        A None/null value can be passed in to clear a value. PUT values
+        that were not provided by the user have a type of wtypes.UnsetType.
+        If the user is attempting to clear values, they should either
+        be set to None (for example in the name field) or they should be
+        reset to their default values.
+        This method is intended to handle those values that need to be set
+        back to a default value.
+        """
+        if member.backup is None:
+            member.backup = False
+        if member.weight is None:
+            member.weight = constants.DEFAULT_WEIGHT
+
     @wsme_pecan.wsexpose(member_types.MemberRootResponse,
                          wtypes.text, body=member_types.MemberRootPUT,
                          status_code=200)
@@ -224,6 +240,8 @@ class MemberController(base.BaseController):
         self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
         self._validate_pool_id(id, db_member.pool_id)
+
+        self._set_default_on_none(member)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
