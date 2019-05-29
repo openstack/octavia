@@ -1074,6 +1074,26 @@ class TestMember(base.BaseAPITest):
         self.assertIn('Provider \'bad_driver\' reports error: broken',
                       response.json.get('faultstring'))
 
+    def test_update_unset_defaults(self):
+        old_name = "name1"
+        api_member = self.create_member(
+            self.pool_with_listener_id, '192.0.2.1', 80,
+            name=old_name, backup=True, monitor_address='192.0.2.2',
+            monitor_port=8888, weight=10).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        unset_params = {'name': None, 'backup': None, 'monitor_address': None,
+                        'monitor_port': None, 'weight': None}
+        member_path = self.member_path_listener.format(
+            member_id=api_member.get('id'))
+        response = self.put(member_path, self._build_body(unset_params))
+        response = response.json.get(self.root_tag)
+
+        self.assertFalse(response['backup'])
+        self.assertIsNone(response['monitor_address'])
+        self.assertIsNone(response['monitor_port'])
+        self.assertEqual('', response['name'])
+        self.assertEqual(constants.DEFAULT_WEIGHT, response['weight'])
+
     def test_delete(self):
         api_member = self.create_member(
             self.pool_with_listener_id, '192.0.2.1', 80).get(self.root_tag)
