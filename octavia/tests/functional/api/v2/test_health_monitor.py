@@ -1519,6 +1519,42 @@ class TestHealthMonitor(base.BaseAPITest):
         self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
                  self._build_body(new_hm), status=400)
 
+    def test_update_delay_none(self):
+        api_hm = self.create_health_monitor(self.pool_with_listener_id,
+                                            constants.HEALTH_MONITOR_HTTP,
+                                            1, 1, 1, 1).get(self.root_tag)
+        new_hm = {constants.DELAY: None}
+        self.set_lb_status(self.lb_id)
+        expect_error_msg = ("None is not a valid option for %s" %
+                            constants.DELAY)
+        res = self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+                       self._build_body(new_hm), status=400)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+
+    def test_update_max_retries_none(self):
+        api_hm = self.create_health_monitor(self.pool_with_listener_id,
+                                            constants.HEALTH_MONITOR_HTTP,
+                                            1, 1, 1, 1).get(self.root_tag)
+        new_hm = {constants.MAX_RETRIES: None}
+        self.set_lb_status(self.lb_id)
+        expect_error_msg = ("None is not a valid option for %s" %
+                            constants.MAX_RETRIES)
+        res = self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+                       self._build_body(new_hm), status=400)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+
+    def test_update_timeout_none(self):
+        api_hm = self.create_health_monitor(self.pool_with_listener_id,
+                                            constants.HEALTH_MONITOR_HTTP,
+                                            1, 1, 1, 1).get(self.root_tag)
+        new_hm = {constants.TIMEOUT: None}
+        self.set_lb_status(self.lb_id)
+        expect_error_msg = ("None is not a valid option for %s" %
+                            constants.TIMEOUT)
+        res = self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+                       self._build_body(new_hm), status=400)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+
     @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_update_with_bad_provider(self, mock_provider):
         api_hm = self.create_health_monitor(
@@ -1630,6 +1666,31 @@ class TestHealthMonitor(base.BaseAPITest):
             "Value should match the pattern %s") % (new_hm[
                 'domain_name'], constants.DOMAIN_NAME_REGEX)
         self.assertEqual(expect_error_msg, response.json['faultstring'])
+
+    def test_update_unset_defaults(self):
+        api_hm = self.create_health_monitor(
+            self.pool_with_listener_id, constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 1, name='test', domain_name='test.example.com',
+            expected_codes='400', http_method='HEAD', http_version='1.1',
+            url_path='/test').get(self.root_tag)
+        new_hm = {constants.DOMAIN_NAME: None, constants.EXPECTED_CODES: None,
+                  constants.HTTP_METHOD: None, constants.HTTP_VERSION: None,
+                  constants.MAX_RETRIES_DOWN: None, 'name': None,
+                  constants.URL_PATH: None}
+        self.set_lb_status(self.lb_id)
+        res = self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+                       self._build_body(new_hm)).json.get(self.root_tag)
+        self.assertIsNone(res[constants.DOMAIN_NAME])
+        self.assertEqual(constants.HEALTH_MONITOR_DEFAULT_EXPECTED_CODES,
+                         res[constants.EXPECTED_CODES])
+        self.assertEqual(constants.HEALTH_MONITOR_HTTP_DEFAULT_METHOD,
+                         res[constants.HTTP_METHOD])
+        self.assertIsNone(res[constants.HTTP_VERSION])
+        self.assertEqual(constants.DEFAULT_MAX_RETRIES_DOWN,
+                         res[constants.MAX_RETRIES_DOWN])
+        self.assertEqual('', res['name'])
+        self.assertEqual(constants.HEALTH_MONITOR_DEFAULT_URL_PATH,
+                         res[constants.URL_PATH])
 
     def test_delete(self):
         api_hm = self.create_health_monitor(
