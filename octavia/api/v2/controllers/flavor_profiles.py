@@ -111,6 +111,24 @@ class FlavorProfileController(base.BaseController):
             db_flavor_profile, profile_types.FlavorProfileResponse)
         return profile_types.FlavorProfileRootResponse(flavorprofile=result)
 
+    def _validate_update_fp(self, context, id, flavorprofile):
+        if flavorprofile.name is None:
+            raise exceptions.InvalidOption(value=None, option=constants.NAME)
+        if flavorprofile.provider_name is None:
+            raise exceptions.InvalidOption(value=None,
+                                           option=constants.PROVIDER_NAME)
+        if flavorprofile.flavor_data is None:
+            raise exceptions.InvalidOption(value=None,
+                                           option=constants.FLAVOR_DATA)
+
+        # Don't allow changes to the flavor_data or provider_name if it
+        # is in use.
+        if (not isinstance(flavorprofile.flavor_data, wtypes.UnsetType) or
+                not isinstance(flavorprofile.provider_name, wtypes.UnsetType)):
+            if self.repositories.flavor.count(context.session,
+                                              flavor_profile_id=id) > 0:
+                raise exceptions.ObjectInUse(object='Flavor profile', id=id)
+
     @wsme_pecan.wsexpose(profile_types.FlavorProfileRootResponse,
                          wtypes.text, status_code=200,
                          body=profile_types.FlavorProfileRootPUT)
@@ -121,13 +139,7 @@ class FlavorProfileController(base.BaseController):
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_PUT)
 
-        # Don't allow changes to the flavor_data or provider_name if it
-        # is in use.
-        if (not isinstance(flavorprofile.flavor_data, wtypes.UnsetType) or
-                not isinstance(flavorprofile.provider_name, wtypes.UnsetType)):
-            if self.repositories.flavor.count(context.session,
-                                              flavor_profile_id=id) > 0:
-                raise exceptions.ObjectInUse(object='Flavor profile', id=id)
+        self._validate_update_fp(context, id, flavorprofile)
 
         if not isinstance(flavorprofile.flavor_data, wtypes.UnsetType):
             # Do a basic JSON validation on the metadata
