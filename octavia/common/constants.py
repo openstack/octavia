@@ -193,11 +193,14 @@ HEALTH_MONITOR_DEFAULT_URL_PATH = '/'
 TYPE = 'type'
 URL_PATH = 'url_path'
 HTTP_METHOD = 'http_method'
+HTTP_VERSION = 'http_version'
 EXPECTED_CODES = 'expected_codes'
 DELAY = 'delay'
 TIMEOUT = 'timeout'
 MAX_RETRIES = 'max_retries'
+MAX_RETRIES_DOWN = 'max_retries_down'
 RISE_THRESHOLD = 'rise_threshold'
+DOMAIN_NAME = 'domain_name'
 
 UPDATE_STATS = 'UPDATE_STATS'
 UPDATE_HEALTH = 'UPDATE_HEALTH'
@@ -212,6 +215,7 @@ MIN_CONNECTION_LIMIT = -1
 MIN_WEIGHT = 0
 MAX_WEIGHT = 256
 
+DEFAULT_MAX_RETRIES_DOWN = 3
 MIN_HM_RETRIES = 1
 MAX_HM_RETRIES = 10
 
