@@ -104,6 +104,8 @@ def regex(regex):
 # L7 rules must be internally consistent.
 def l7rule_data(l7rule):
     """Raises an error if the l7rule given is invalid in some way."""
+    if not l7rule.value:
+        raise exceptions.InvalidL7Rule(msg=_('L7 rule type requires a value'))
     if l7rule.type == constants.L7RULE_TYPE_HEADER:
         if not l7rule.key:
             raise exceptions.InvalidL7Rule(msg='L7 rule type requires a key')
