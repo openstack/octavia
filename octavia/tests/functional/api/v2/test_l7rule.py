@@ -735,6 +735,18 @@ class TestL7Rule(base.BaseAPITest):
             l7policy_id=self.l7policy_id, l7rule_id=api_l7rule.get('id'),
             l7rule_prov_status=constants.ACTIVE)
 
+    def test_update_invert_none(self):
+        api_l7rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api', invert=True).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        new_l7rule = {'invert': None}
+        response = self.put(self.l7rule_path.format(
+            l7rule_id=api_l7rule.get('id')),
+            self._build_body(new_l7rule)).json.get(self.root_tag)
+        self.assertFalse(response.get('invert'))
+
     def test_delete(self):
         api_l7rule = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,
