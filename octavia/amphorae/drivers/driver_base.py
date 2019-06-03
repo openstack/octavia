@@ -82,11 +82,13 @@ class AmphoraLoadBalancerDriver(object):
         """
 
     @abc.abstractmethod
-    def get_info(self, amphora):
+    def get_info(self, amphora, raise_retry_exception=False):
         """Returns information about the amphora.
 
         :param amphora: amphora object, need to use its id property
         :type amphora: octavia.db.models.Amphora
+        :param raise_retry_exception: Flag if outside task should be retried
+        :type boolean: False by default
         :returns: return a value list (amphora.id, status flag--'info')
 
         At this moment, we just build the basic structure for testing, will
