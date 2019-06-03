@@ -70,9 +70,14 @@ class AmphoraFlows(object):
         create_amphora_flow.add(database_tasks.UpdateAmphoraInfo(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
             provides=constants.AMPHORA))
-        create_amphora_flow.add(
+        retry_subflow = linear_flow.Flow(
+            constants.CREATE_AMPHORA_RETRY_SUBFLOW,
+            retry=amphora_driver_tasks.AmpRetry())
+        retry_subflow.add(
             amphora_driver_tasks.AmphoraComputeConnectivityWait(
-                requires=constants.AMPHORA))
+                requires=constants.AMPHORA,
+                inject={'raise_retry_exception': True}))
+        create_amphora_flow.add(retry_subflow)
         create_amphora_flow.add(database_tasks.ReloadAmphora(
             requires=constants.AMPHORA_ID,
             provides=constants.AMPHORA))
@@ -194,10 +199,15 @@ class AmphoraFlows(object):
             name=sf_name + '-' + constants.UPDATE_AMPHORA_INFO,
             requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
             provides=constants.AMPHORA))
-        create_amp_for_lb_subflow.add(
+        retry_task = sf_name + '-' + constants.AMP_COMPUTE_CONNECTIVITY_WAIT
+        retry_subflow = linear_flow.Flow(
+            constants.CREATE_AMPHORA_RETRY_SUBFLOW,
+            retry=amphora_driver_tasks.AmpRetry())
+        retry_subflow.add(
             amphora_driver_tasks.AmphoraComputeConnectivityWait(
-                name=sf_name + '-' + constants.AMP_COMPUTE_CONNECTIVITY_WAIT,
-                requires=constants.AMPHORA))
+                name=retry_task, requires=constants.AMPHORA,
+                inject={'raise_retry_exception': True}))
+        create_amp_for_lb_subflow.add(retry_subflow)
         create_amp_for_lb_subflow.add(amphora_driver_tasks.AmphoraFinalize(
             name=sf_name + '-' + constants.AMPHORA_FINALIZE,
             requires=constants.AMPHORA))

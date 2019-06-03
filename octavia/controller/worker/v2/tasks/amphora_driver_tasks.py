@@ -18,6 +18,7 @@ from oslo_config import cfg
 from oslo_log import log as logging
 import six
 from stevedore import driver as stevedore_driver
+from taskflow import retry
 from taskflow import task
 from taskflow.types import failure
 
@@ -47,6 +48,26 @@ class BaseAmphoraTask(task.Task):
         self.listener_repo = repo.ListenerRepository()
         self.loadbalancer_repo = repo.LoadBalancerRepository()
         self.task_utils = task_utilities.TaskUtils()
+
+
+class AmpRetry(retry.Times):
+
+    def on_failure(self, history, *args, **kwargs):
+        last_errors = history[-1][1]
+        max_retry_attempt = CONF.haproxy_amphora.connection_max_retries
+        for task_name, ex_info in last_errors.items():
+            if len(history) <= max_retry_attempt:
+                # When taskflow persistance is enabled and flow/task state is
+                # saved in the backend. If flow(task) is restored(restart of
+                # worker,etc) we are getting ex_info as None - we need to RETRY
+                # task to check its real state.
+                if ex_info is None or ex_info._exc_info is None:
+                    return retry.RETRY
+                excp = ex_info._exc_info[1]
+                if isinstance(excp, driver_except.AmpConnectionRetry):
+                    return retry.RETRY
+
+        return retry.REVERT_ALL
 
 
 class AmpListenersUpdate(BaseAmphoraTask):
@@ -323,10 +344,11 @@ class AmphoraVRRPStart(BaseAmphoraTask):
 class AmphoraComputeConnectivityWait(BaseAmphoraTask):
     """Task to wait for the compute instance to be up."""
 
-    def execute(self, amphora):
+    def execute(self, amphora, raise_retry_exception=False):
         """Execute get_info routine for an amphora until it responds."""
         try:
-            amp_info = self.amphora_driver.get_info(amphora)
+            amp_info = self.amphora_driver.get_info(
+                amphora, raise_retry_exception=raise_retry_exception)
             LOG.debug('Successfuly connected to amphora %s: %s',
                       amphora.id, amp_info)
         except driver_except.TimeOutException:
