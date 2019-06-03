@@ -42,6 +42,7 @@ agent_server_network_file = {{ agent_server_network_file }}
 agent_request_read_timeout = {{ agent_request_read_timeout }}
 amphora_id = {{ amphora_id }}
 amphora_udp_driver = {{ amphora_udp_driver }}
+agent_tls_protocol = {{ agent_tls_protocol }}
 
 [controller_worker]
 loadbalancer_topology = {{ topology }}

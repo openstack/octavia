@@ -58,4 +58,5 @@ class AgentJinjaTemplater(object):
              'respawn_count': CONF.haproxy_amphora.respawn_count,
              'respawn_interval': CONF.haproxy_amphora.respawn_interval,
              'amphora_udp_driver': CONF.amphora_agent.amphora_udp_driver,
+             'agent_tls_protocol': CONF.amphora_agent.agent_tls_protocol,
              'topology': topology})
