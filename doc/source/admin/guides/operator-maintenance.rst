@@ -300,10 +300,9 @@ random string of a sufficient length.
 Rotating Amphora Certificates
 -----------------------------
 
-For the server part Octavia will either act as a certificate authority itself,
-or use :doc:`../Anchor` to issue amphora certificates to be used
-by each amphora. Octavia will also monitor those certificates and refresh them
-before they expire.
+For the server part Octavia will act as a certificate authority itself to
+issue amphora certificates to be used by each amphora. Octavia will also
+monitor those certificates and refresh them before they expire.
 
 There are three ways to initiate a rotation manually:
 

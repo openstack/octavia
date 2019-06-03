@@ -451,17 +451,6 @@ house_keeping_opts = [
                       ' rotation'))
 ]
 
-anchor_opts = [
-    cfg.StrOpt('url',
-               default='http://localhost:9999/v1/sign/default',
-               help=_('Anchor URL')),
-    cfg.StrOpt('username',
-               help=_('Anchor username')),
-    cfg.StrOpt('password',
-               help=_('Anchor password'),
-               secret=True)
-]
-
 keepalived_vrrp_opts = [
     cfg.IntOpt('vrrp_advert_int',
                default=1,
@@ -629,7 +618,6 @@ cfg.CONF.register_opts(controller_worker_opts, group='controller_worker')
 cfg.CONF.register_opts(keepalived_vrrp_opts, group='keepalived_vrrp')
 cfg.CONF.register_opts(task_flow_opts, group='task_flow')
 cfg.CONF.register_opts(house_keeping_opts, group='house_keeping')
-cfg.CONF.register_opts(anchor_opts, group='anchor')
 cfg.CONF.register_cli_opts(core_cli_opts)
 cfg.CONF.register_opts(certificate_opts, group='certificates')
 cfg.CONF.register_cli_opts(healthmanager_opts, group='health_manager')
