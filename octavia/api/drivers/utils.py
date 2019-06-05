@@ -177,7 +177,8 @@ def _get_secret_data(cert_manager, project_id, secret_ref):
 
 
 def listener_dict_to_provider_dict(listener_dict):
-    new_listener_dict = _base_to_provider_dict(listener_dict)
+    new_listener_dict = _base_to_provider_dict(listener_dict,
+                                               include_project_id=True)
     new_listener_dict['listener_id'] = new_listener_dict.pop('id')
     if 'load_balancer_id' in new_listener_dict:
         new_listener_dict['loadbalancer_id'] = new_listener_dict.pop(
@@ -291,7 +292,7 @@ def db_pool_to_provider_pool(db_pool):
 
 
 def pool_dict_to_provider_dict(pool_dict):
-    new_pool_dict = _base_to_provider_dict(pool_dict)
+    new_pool_dict = _base_to_provider_dict(pool_dict, include_project_id=True)
     new_pool_dict['pool_id'] = new_pool_dict.pop('id')
 
     # Pull the certs out of the certificate manager to pass to the provider
@@ -371,7 +372,8 @@ def db_member_to_provider_member(db_member):
 
 
 def member_dict_to_provider_dict(member_dict):
-    new_member_dict = _base_to_provider_dict(member_dict)
+    new_member_dict = _base_to_provider_dict(member_dict,
+                                             include_project_id=True)
     new_member_dict['member_id'] = new_member_dict.pop('id')
     if 'ip_address' in new_member_dict:
         new_member_dict['address'] = new_member_dict.pop('ip_address')
@@ -387,7 +389,7 @@ def db_HM_to_provider_HM(db_hm):
 
 
 def hm_dict_to_provider_dict(hm_dict):
-    new_hm_dict = _base_to_provider_dict(hm_dict)
+    new_hm_dict = _base_to_provider_dict(hm_dict, include_project_id=True)
     new_hm_dict['healthmonitor_id'] = new_hm_dict.pop('id')
     if 'fall_threshold' in new_hm_dict:
         new_hm_dict['max_retries_down'] = new_hm_dict.pop('fall_threshold')
@@ -418,7 +420,8 @@ def db_l7policy_to_provider_l7policy(db_l7policy):
 
 
 def l7policy_dict_to_provider_dict(l7policy_dict):
-    new_l7policy_dict = _base_to_provider_dict(l7policy_dict)
+    new_l7policy_dict = _base_to_provider_dict(l7policy_dict,
+                                               include_project_id=True)
     new_l7policy_dict['l7policy_id'] = new_l7policy_dict.pop('id')
     # Remove the DB back references
     if 'listener' in new_l7policy_dict:
@@ -449,7 +452,8 @@ def db_l7rule_to_provider_l7rule(db_l7rule):
 
 
 def l7rule_dict_to_provider_dict(l7rule_dict):
-    new_l7rule_dict = _base_to_provider_dict(l7rule_dict)
+    new_l7rule_dict = _base_to_provider_dict(l7rule_dict,
+                                             include_project_id=True)
     new_l7rule_dict['l7rule_id'] = new_l7rule_dict.pop('id')
     # Remove the DB back references
     if 'l7policy' in new_l7rule_dict:

@@ -74,7 +74,8 @@ class SampleDriverDataModels(object):
                               'rise_threshold': 2, 'http_method': 'GET',
                               'url_path': '/', 'expected_codes': '200',
                               'name': 'hm1', 'pool_id': self.pool1_id,
-                              'http_version': 1.0, 'domain_name': None}
+                              'http_version': 1.0, 'domain_name': None,
+                              'project_id': self.project_id}
 
         self.test_hm1_dict.update(self._common_test_dict)
 
@@ -95,6 +96,7 @@ class SampleDriverDataModels(object):
                                   'max_retries_down': 1,
                                   'name': 'hm1',
                                   'pool_id': self.pool1_id,
+                                  'project_id': self.project_id,
                                   'timeout': 3,
                                   'type': constants.HEALTH_MONITOR_PING,
                                   'url_path': '/',
@@ -118,6 +120,7 @@ class SampleDriverDataModels(object):
                                   'backup': False,
                                   'subnet_id': self.subnet_id,
                                   'pool': None,
+                                  'project_id': self.project_id,
                                   'name': 'member1',
                                   'monitor_address': '192.0.2.26',
                                   'monitor_port': 81}
@@ -164,6 +167,7 @@ class SampleDriverDataModels(object):
                                       'monitor_port': 81,
                                       'name': 'member1',
                                       'pool_id': self.pool1_id,
+                                      'project_id': self.project_id,
                                       'protocol_port': 80,
                                       'subnet_id': self.subnet_id,
                                       'weight': 0,
@@ -209,6 +213,7 @@ class SampleDriverDataModels(object):
         self.test_pool1_dict = {'id': self.pool1_id,
                                 'name': 'pool1', 'description': 'Pool 1',
                                 'load_balancer_id': self.lb_id,
+                                'project_id': self.project_id,
                                 'protocol': 'avian',
                                 'lb_algorithm': 'round_robin',
                                 'members': self.test_pool1_members_dict,
@@ -258,6 +263,7 @@ class SampleDriverDataModels(object):
             'members': self.provider_pool1_members_dict,
             'name': 'pool1',
             'pool_id': self.pool1_id,
+            'project_id': self.project_id,
             'protocol': 'avian',
             'session_persistence': {'type': 'SOURCE'},
             'tls_container_ref': self.pool_sni_container_ref,
@@ -298,6 +304,7 @@ class SampleDriverDataModels(object):
                                   'compare_type': 'fake_type',
                                   'key': 'fake_key',
                                   'value': 'fake_value',
+                                  'project_id': self.project_id,
                                   'l7policy': None,
                                   'invert': False}
 
@@ -320,6 +327,7 @@ class SampleDriverDataModels(object):
                                       'l7policy_id': self.l7policy1_id,
                                       'l7rule_id': self.l7rule1_id,
                                       'type': 'o',
+                                      'project_id': self.project_id,
                                       'value': 'fake_value'}
 
         self.provider_l7rule2_dict = copy.deepcopy(self.provider_l7rule1_dict)
@@ -341,6 +349,7 @@ class SampleDriverDataModels(object):
                                     'redirect_pool_id': self.pool1_id,
                                     'redirect_url': '/index.html',
                                     'redirect_prefix': 'https://example.com/',
+                                    'project_id': self.project_id,
                                     'position': 1,
                                     'listener': None,
                                     'redirect_pool': None,
@@ -372,6 +381,7 @@ class SampleDriverDataModels(object):
             'listener_id': self.listener1_id,
             'name': 'l7policy_1',
             'position': 1,
+            'project_id': self.project_id,
             'redirect_pool_id': self.pool1_id,
             'redirect_url': '/index.html',
             'redirect_prefix': 'https://example.com/',
@@ -405,6 +415,7 @@ class SampleDriverDataModels(object):
             'description': 'Listener 1',
             'default_pool_id': self.pool1_id,
             'load_balancer_id': self.lb_id,
+            'project_id': self.project_id,
             'protocol': 'avian',
             'protocol_port': 90,
             'connection_limit': 10000,
@@ -473,6 +484,7 @@ class SampleDriverDataModels(object):
             'listener_id': self.listener1_id,
             'loadbalancer_id': self.lb_id,
             'name': 'listener_1',
+            'project_id': self.project_id,
             'protocol': 'avian',
             'protocol_port': 90,
             'sni_container_data': [cert2.to_dict(), cert3.to_dict()],

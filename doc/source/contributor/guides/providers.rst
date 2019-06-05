@@ -412,6 +412,9 @@ contain the following:
 +------------------------------+--------+-------------------------------------+
 | name                         | string | Human-readable name of the listener.|
 +------------------------------+--------+-------------------------------------+
+| project_id                   | string | ID of the project owning this       |
+|                              |        | resource.                           |
++------------------------------+--------+-------------------------------------+
 | protocol                     | string | Protocol type: One of HTTP, HTTPS,  |
 |                              |        | TCP, or TERMINATED_HTTPS.           |
 +------------------------------+--------+-------------------------------------+
@@ -745,6 +748,8 @@ contain the following:
 +-----------------------+--------+------------------------------------------+
 | pool_id               | string | ID of pool to create.                    |
 +-----------------------+--------+------------------------------------------+
+| project_id            | string | ID of the project owning this resource.  |
++-----------------------+--------+------------------------------------------+
 | protocol              | string | Protocol type: One of HTTP, HTTPS,       |
 |                       |        | PROXY, or TCP.                           |
 +-----------------------+--------+------------------------------------------+
@@ -932,6 +937,8 @@ contain the following:
 | name                  | string | Human-readable name of the member.       |
 +-----------------------+--------+------------------------------------------+
 | pool_id               | string | ID of pool.                              |
++-----------------------+--------+------------------------------------------+
+| project_id            | string | ID of the project owning this resource.  |
 +-----------------------+--------+------------------------------------------+
 | protocol_port         | int    | The port on which the backend member     |
 |                       |        | listens for traffic.                     |
@@ -1164,6 +1171,8 @@ and validated with the following exceptions:
 +-----------------------+--------+------------------------------------------+
 | pool_id               | string | The pool to monitor.                     |
 +-----------------------+--------+------------------------------------------+
+| project_id            | string | ID of the project owning this resource.  |
++-----------------------+--------+------------------------------------------+
 | timeout               | int    | The time, in seconds, after which a      |
 |                       |        | health check times out. This value must  |
 |                       |        | be less than the delay value.            |
@@ -1354,6 +1363,8 @@ contain the following:
 | position              | int    | The position of this policy on the       |
 |                       |        | listener. Positions start at 1.          |
 +-----------------------+--------+------------------------------------------+
+| project_id            | string | ID of the project owning this resource.  |
++-----------------------+--------+------------------------------------------+
 | redirect_http_code    | int    | The HTTP status code to be returned on   |
 |                       |        | a redirect policy.                       |
 +-----------------------+--------+------------------------------------------+
@@ -1541,6 +1552,8 @@ contain the following:
 | l7policy_id           | string | The ID of the L7 policy.                 |
 +-----------------------+--------+------------------------------------------+
 | l7rule_id             | string | The ID of the L7 rule.                   |
++-----------------------+--------+------------------------------------------+
+| project_id            | string | ID of the project owning this resource.  |
 +-----------------------+--------+------------------------------------------+
 | type                  | string | The L7 rule type. One of COOKIE,         |
 |                       |        | FILE_TYPE, HEADER, HOST_NAME, or PATH.   |

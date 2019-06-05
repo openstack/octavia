@@ -582,12 +582,18 @@ class TestMember(base.BaseAPITest):
         mock_driver.name = 'noop_driver'
         mock_get_driver.return_value = mock_driver
 
-        member1 = {'address': '192.0.2.1', 'protocol_port': 80}
-        member2 = {'address': '192.0.2.2', 'protocol_port': 80}
-        member3 = {'address': '192.0.2.3', 'protocol_port': 80}
-        member4 = {'address': '192.0.2.4', 'protocol_port': 80}
-        member5 = {'address': '192.0.2.5', 'protocol_port': 80}
-        member6 = {'address': '192.0.2.6', 'protocol_port': 80}
+        member1 = {'address': '192.0.2.1', 'protocol_port': 80,
+                   'project_id': self.project_id}
+        member2 = {'address': '192.0.2.2', 'protocol_port': 80,
+                   'project_id': self.project_id}
+        member3 = {'address': '192.0.2.3', 'protocol_port': 80,
+                   'project_id': self.project_id}
+        member4 = {'address': '192.0.2.4', 'protocol_port': 80,
+                   'project_id': self.project_id}
+        member5 = {'address': '192.0.2.5', 'protocol_port': 80,
+                   'project_id': self.project_id}
+        member6 = {'address': '192.0.2.6', 'protocol_port': 80,
+                   'project_id': self.project_id}
         members = [member1, member2, member3, member4]
         for m in members:
             self.create_member(pool_id=self.pool_id, **m)
@@ -724,8 +730,10 @@ class TestMember(base.BaseAPITest):
         mock_driver.name = 'noop_driver'
         mock_get_driver.return_value = mock_driver
 
-        member1 = {'address': '192.0.2.1', 'protocol_port': 80}
-        member2 = {'address': '192.0.2.2', 'protocol_port': 80}
+        member1 = {'address': '192.0.2.1', 'protocol_port': 80,
+                   'project_id': self.project_id}
+        member2 = {'address': '192.0.2.2', 'protocol_port': 80,
+                   'project_id': self.project_id}
         members = [member1, member2]
         for m in members:
             self.create_member(pool_id=self.pool_id, **m)
