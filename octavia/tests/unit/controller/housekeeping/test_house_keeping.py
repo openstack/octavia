@@ -219,7 +219,7 @@ class TestCertRotation(base.TestCase):
     def setUp(self):
         super(TestCertRotation, self).setUp()
 
-    @mock.patch('octavia.controller.worker.controller_worker.'
+    @mock.patch('octavia.controller.worker.v1.controller_worker.'
                 'ControllerWorker.amphora_cert_rotation')
     @mock.patch('octavia.db.repositories.AmphoraRepository.'
                 'get_cert_expiring_amphora')
@@ -239,7 +239,7 @@ class TestCertRotation(base.TestCase):
         self.assertRaises(TestException, cr.rotate)
         amp_cert_mock.assert_called_once_with(AMPHORA_ID)
 
-    @mock.patch('octavia.controller.worker.controller_worker.'
+    @mock.patch('octavia.controller.worker.v1.controller_worker.'
                 'ControllerWorker.amphora_cert_rotation')
     @mock.patch('octavia.db.repositories.AmphoraRepository.'
                 'get_cert_expiring_amphora')
@@ -259,7 +259,7 @@ class TestCertRotation(base.TestCase):
         self.assertIsNone(cr.rotate())
         amp_cert_mock.assert_called_once_with(AMPHORA_ID)
 
-    @mock.patch('octavia.controller.worker.controller_worker.'
+    @mock.patch('octavia.controller.worker.v1.controller_worker.'
                 'ControllerWorker.amphora_cert_rotation')
     @mock.patch('octavia.db.repositories.AmphoraRepository.'
                 'get_cert_expiring_amphora')

@@ -20,7 +20,7 @@ from oslo_log import log as logging
 from oslo_utils import timeutils
 from sqlalchemy.orm import exc as sqlalchemy_exceptions
 
-from octavia.controller.worker import controller_worker as cw
+from octavia.controller.worker.v1 import controller_worker as cw
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
 

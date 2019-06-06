@@ -79,3 +79,19 @@
       - openstack/octavia-lib
       - openstack/octavia-tempest-plugin
       - openstack/python-octaviaclient
+
+- job:
+    name: octavia-v2-dsvm-scenario-amphora-v2
+    parent: octavia-v2-dsvm-scenario
+    vars:
+      devstack_local_conf:
+        post-config:
+          $OCTAVIA_CONF:
+            api_settings:
+              default_provider_driver: amphorav2
+              enabled_provider_drivers: amphorav2:The v2 amphora driver.
+        test-config:
+          "$TEMPEST_CONFIG":
+            load_balancer:
+              enabled_provider_drivers: amphorav2:The v2 amphora driver.
+              provider: amphorav2
