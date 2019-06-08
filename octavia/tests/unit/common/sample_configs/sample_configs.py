@@ -295,6 +295,9 @@ RET_LISTENER = {
     'amphorae': [sample_amphora_tuple()],
     'peer_port': 1024,
     'topology': 'SINGLE',
+    'user_log_format': '12345\\ sample_loadbalancer_id_1\\ %f\\ %ci\\ %cp\\ '
+                       '%t\\ %{+Q}r\\ %ST\\ %B\\ %U\\ %[ssl_c_verify]\\ '
+                       '%{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ %tsc',
     'pools': [RET_POOL_1],
     'l7policies': [],
     'enabled': True,
@@ -315,6 +318,9 @@ RET_LISTENER_L7 = {
     'amphorae': [sample_amphora_tuple()],
     'peer_port': 1024,
     'topology': 'SINGLE',
+    'user_log_format': '12345\\ sample_loadbalancer_id_1\\ %f\\ %ci\\ %cp\\ '
+                       '%t\\ %{+Q}r\\ %ST\\ %B\\ %U\\ %[ssl_c_verify]\\ '
+                       '%{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ %tsc',
     'pools': [RET_POOL_1, RET_POOL_2],
     'l7policies': [RET_L7POLICY_1, RET_L7POLICY_2, RET_L7POLICY_3,
                    RET_L7POLICY_4, RET_L7POLICY_5, RET_L7POLICY_6,
@@ -504,7 +510,7 @@ def sample_listener_loadbalancer_tuple(proto=None, topology=None,
         topology = constants.TOPOLOGY_SINGLE
     in_lb = collections.namedtuple(
         'load_balancer', 'id, name, protocol, vip, amphorae, topology, '
-        'enabled')
+        'enabled, project_id')
     return in_lb(
         id='sample_loadbalancer_id_1',
         name='test-lb',
@@ -518,7 +524,8 @@ def sample_listener_loadbalancer_tuple(proto=None, topology=None,
                       role=constants.ROLE_BACKUP)]
         if more_amp else [sample_amphora_tuple()],
         topology=topology,
-        enabled=enabled
+        enabled=enabled,
+        project_id='12345'
     )
 
 
@@ -991,7 +998,10 @@ def sample_base_expected_config(frontend=None, backend=None,
                                 peers=None, global_opts=None, defaults=None):
     if frontend is None:
         frontend = ("frontend sample_listener_id_1\n"
-                    "    option httplog\n"
+                    "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+                    "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+                    "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+                    "%tsc\n"
                     "    maxconn {maxconn}\n"
                     "    bind 10.0.0.2:80\n"
                     "    mode http\n"

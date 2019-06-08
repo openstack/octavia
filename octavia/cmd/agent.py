@@ -80,5 +80,10 @@ def main():
         'accesslog': '/var/log/amphora-agent.log',
         'errorlog': '/var/log/amphora-agent.log',
         'loglevel': 'debug',
+        'syslog': True,
+        'syslog_facility': 'local{}'.format(
+            CONF.haproxy_amphora.administrative_log_facility),
+        'syslog_addr': 'unix://dev/log',
+
     }
     AmphoraAgent(server_instance.app, options).run()
