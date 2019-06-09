@@ -36,6 +36,7 @@ lsof:
 net-tools:
 netbase:
 netcat-openbsd:
+network-scripts:
 open-vm-tools:
 openssh-client:
 openssh-server:

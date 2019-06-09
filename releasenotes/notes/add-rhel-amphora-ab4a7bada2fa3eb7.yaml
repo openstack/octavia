@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Added support to create RHEL 8 amphora images.
