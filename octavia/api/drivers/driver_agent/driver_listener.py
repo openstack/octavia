@@ -1,4 +1,5 @@
 # Copyright 2018 Rackspace, US Inc.
+# Copyright 2019 Red Hat, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -23,6 +24,7 @@ from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 
+from octavia.api.drivers.driver_agent import driver_get
 from octavia.api.drivers.driver_agent import driver_updater
 
 
@@ -72,6 +74,22 @@ class StatsRequestHandler(socketserver.BaseRequestHandler):
         # Process the update
         updater = driver_updater.DriverUpdater()
         response = updater.update_listener_statistics(stats)
+
+        # Send the response
+        json_data = jsonutils.dump_as_bytes(response)
+        len_str = '{}\n'.format(len(json_data)).encode('utf-8')
+        self.request.send(len_str)
+        self.request.sendall(json_data)
+
+
+class GetRequestHandler(socketserver.BaseRequestHandler):
+
+    def handle(self):
+        # Get the data request
+        get_data = _recv(self.request)
+
+        # Process the get
+        response = driver_get.process_get(get_data)
 
         # Send the response
         json_data = jsonutils.dump_as_bytes(response)
@@ -142,3 +160,26 @@ def stats_listener(exit_event):
     LOG.info('Driver statistics listener shutdown finished.')
     server.server_close()
     _cleanup_socket_file(CONF.driver_agent.stats_socket_path)
+
+
+def get_listener(exit_event):
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    signal.signal(signal.SIGHUP, _mutate_config)
+
+    _cleanup_socket_file(CONF.driver_agent.get_socket_path)
+
+    server = ForkingUDSServer(CONF.driver_agent.get_socket_path,
+                              GetRequestHandler)
+
+    server.timeout = CONF.driver_agent.get_request_timeout
+    server.max_children = CONF.driver_agent.get_max_processes
+
+    while not exit_event.is_set():
+        server.handle_request()
+
+    LOG.info('Waiting for driver get listener to shutdown...')
+    # Can't shut ourselves down as we would deadlock, spawn a thread
+    threading.Thread(target=server.shutdown).start()
+    LOG.info('Driver get listener shutdown finished.')
+    server.server_close()
+    _cleanup_socket_file(CONF.driver_agent.get_socket_path)

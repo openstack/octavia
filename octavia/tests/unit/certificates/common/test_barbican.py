@@ -18,8 +18,8 @@ import mock
 import six
 
 import octavia.certificates.common.barbican as barbican_common
+import octavia.tests.common.sample_certs as sample
 import octavia.tests.unit.base as base
-import octavia.tests.unit.common.sample_configs.sample_certs as sample
 
 
 class TestBarbicanCert(base.TestCase):

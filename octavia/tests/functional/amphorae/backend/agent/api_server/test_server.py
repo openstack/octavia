@@ -2607,7 +2607,8 @@ class TestServerTestCase(base.TestCase):
             self.assertEqual(500, rv.status_code)
 
     def test_version_discovery(self):
-        self.test_client = server.Server().app.test_client()
+        with mock.patch('distro.id', return_value='ubuntu'):
+            self.test_client = server.Server().app.test_client()
         expected_dict = {'api_version': api_server.VERSION}
         rv = self.test_client.get('/')
         self.assertEqual(200, rv.status_code)

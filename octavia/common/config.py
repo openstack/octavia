@@ -637,6 +637,9 @@ driver_agent_opts = [
                default='/var/run/octavia/stats.sock',
                help=_('Path to the driver statistics unix domain socket '
                       'file.')),
+    cfg.StrOpt('get_socket_path',
+               default='/var/run/octavia/get.sock',
+               help=_('Path to the driver get unix domain socket file.')),
     cfg.IntOpt('status_request_timeout',
                default=5,
                help=_('Time, in seconds, to wait for a status update '
@@ -653,6 +656,13 @@ driver_agent_opts = [
                default=50,
                help=_('Maximum number of concurrent processes to use '
                       'servicing statistics updates.')),
+    cfg.IntOpt('get_request_timeout',
+               default=5,
+               help=_('Time, in seconds, to wait for a get request.')),
+    cfg.IntOpt('get_max_processes',
+               default=50,
+               help=_('Maximum number of concurrent processes to use '
+                      'servicing get requests.')),
     cfg.FloatOpt('max_process_warning_percent',
                  default=0.75, min=0.01, max=0.99,
                  help=_('Percentage of max_processes (both status and stats) '

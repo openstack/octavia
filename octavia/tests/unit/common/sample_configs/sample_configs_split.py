@@ -18,7 +18,7 @@ import collections
 from oslo_config import cfg
 
 from octavia.common import constants
-from octavia.tests.unit.common.sample_configs import sample_certs
+from octavia.tests.common import sample_certs
 
 CONF = cfg.CONF
 

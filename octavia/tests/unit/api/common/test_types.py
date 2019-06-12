@@ -160,7 +160,7 @@ class TestDataModelToDict(base.TestCase):
     NO_RECURSE_RESULT = {'parent': None,
                          'text': 'parent_text',
                          'child': None,
-                         'children': None}
+                         'children': []}
 
     def setUp(self):
         super(TestDataModelToDict, self).setUp()

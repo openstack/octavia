@@ -45,15 +45,19 @@ class TestDriverAgentCMD(base.TestCase):
         mock_multiprocessing.Event.return_value = mock_exit_event
         mock_status_listener_proc = mock.MagicMock()
         mock_stats_listener_proc = mock.MagicMock()
+        mock_get_listener_proc = mock.MagicMock()
         mock_multiprocessing.Process.side_effect = [mock_status_listener_proc,
                                                     mock_stats_listener_proc,
+                                                    mock_get_listener_proc,
                                                     mock_status_listener_proc,
-                                                    mock_stats_listener_proc]
+                                                    mock_stats_listener_proc,
+                                                    mock_get_listener_proc]
         driver_agent.main()
         mock_prep_srvc.assert_called_once()
         mock_gmr.assert_called_once()
         mock_status_listener_proc.start.assert_called_once()
         mock_stats_listener_proc.start.assert_called_once()
+        mock_get_listener_proc.start.assert_called_once()
         process_calls = [mock.call(
             args=mock_exit_event, name='status_listener',
             target=(octavia.api.drivers.driver_agent.driver_listener.
@@ -61,7 +65,11 @@ class TestDriverAgentCMD(base.TestCase):
             mock.call(
                 args=mock_exit_event, name='stats_listener',
                 target=(octavia.api.drivers.driver_agent.driver_listener.
-                        stats_listener))]
+                        stats_listener)),
+            mock.call(
+                args=mock_exit_event, name='get_listener',
+                target=(octavia.api.drivers.driver_agent.driver_listener.
+                        get_listener))]
         mock_multiprocessing.Process.has_calls(process_calls, any_order=True)
 
         # Test keyboard interrupt path

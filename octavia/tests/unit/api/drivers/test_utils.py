@@ -24,7 +24,7 @@ from octavia.api.drivers import utils
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
-from octavia.tests.unit.api.drivers import sample_data_models
+from octavia.tests.common import sample_data_models
 from octavia.tests.unit import base
 
 
@@ -140,12 +140,20 @@ class TestUtils(base.TestCase):
                         'operating_status': constants.OFFLINE,
                         'flavor_id': 'flavor_id',
                         'provider': 'noop_driver'}
+        ref_listeners = copy.deepcopy(self.sample_data.provider_listeners)
+        # TODO(johnsom) Remove this once the listener ACLs patch merges
+        # https://review.opendev.org/#/c/659626/
+        for listener in ref_listeners:
+            try:
+                del listener.allowed_cidrs
+            except AttributeError:
+                pass
         ref_prov_lb_dict = {
             'vip_address': self.sample_data.ip_address,
             'admin_state_up': True,
             'loadbalancer_id': self.sample_data.lb_id,
             'vip_subnet_id': self.sample_data.subnet_id,
-            'listeners': self.sample_data.provider_listeners,
+            'listeners': ref_listeners,
             'description': '',
             'project_id': self.sample_data.project_id,
             'vip_port_id': self.sample_data.port_id,
@@ -211,8 +219,15 @@ class TestUtils(base.TestCase):
                                        'sni_certs': [cert2, cert3]}
         provider_listeners = utils.db_listeners_to_provider_listeners(
             self.sample_data.test_db_listeners)
-        self.assertEqual(self.sample_data.provider_listeners,
-                         provider_listeners)
+        ref_listeners = copy.deepcopy(self.sample_data.provider_listeners)
+        # TODO(johnsom) Remove this once the listener ACLs patch merges
+        # https://review.opendev.org/#/c/659626/
+        for listener in ref_listeners:
+            try:
+                del listener.allowed_cidrs
+            except AttributeError:
+                pass
+        self.assertEqual(ref_listeners, provider_listeners)
 
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')

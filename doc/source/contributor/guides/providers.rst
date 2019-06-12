@@ -1931,11 +1931,13 @@ resources. See the `Octavia API Reference <https://docs.openstack.org/api-ref/lo
 API Exception Model
 -------------------
 
-The driver support API will include two Exceptions, one for each of the
+The driver support API will include exceptions:
 two API groups:
 
 * UpdateStatusError
 * UpdateStatisticsError
+* DriverAgentNotFound
+* DriverAgentTimeout
 
 Each exception class will include a message field that describes the error and
 references to the failed record if available.
@@ -1955,7 +1957,8 @@ references to the failed record if available.
           self.status_object_id = kwargs.pop('status_object_id', None)
           self.status_record = kwargs.pop('status_record', None)
 
-          super(UpdateStatusError, self).__init__(*args, **kwargs)
+          super(UpdateStatusError, self).__init__(self.fault_string,
+                                                  *args, **kwargs)
 
   class UpdateStatisticsError(Exception):
       fault_string = _("The statistics update had an unknown error.")
@@ -1970,7 +1973,24 @@ references to the failed record if available.
           self.stats_object_id = kwargs.pop('stats_object_id', None)
           self.stats_record = kwargs.pop('stats_record', None)
 
-          super(UpdateStatisticsError, self).__init__(*args, **kwargs)
+          super(UpdateStatisticsError, self).__init__(self.fault_string,
+                                                      *args, **kwargs)
+
+  class DriverAgentNotFound(Exception):
+    fault_string = _("The driver-agent process was not found or not ready.")
+
+    def __init__(self, *args, **kwargs):
+        self.fault_string = kwargs.pop('fault_string', self.fault_string)
+        super(DriverAgentNotFound, self).__init__(self.fault_string,
+                                                  *args, **kwargs)
+
+  class DriverAgentTimeout(Exception):
+    fault_string = _("The driver-agent timeout.")
+
+    def __init__(self, *args, **kwargs):
+        self.fault_string = kwargs.pop('fault_string', self.fault_string)
+        super(DriverAgentTimeout, self).__init__(self.fault_string,
+                                                 *args, **kwargs)
 
 Documenting the Driver
 ======================

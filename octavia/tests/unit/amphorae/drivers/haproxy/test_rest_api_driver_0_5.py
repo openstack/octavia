@@ -29,8 +29,8 @@ from octavia.amphorae.drivers.haproxy import rest_api_driver as driver
 from octavia.common import constants
 from octavia.db import models
 from octavia.network import data_models as network_models
+from octavia.tests.common import sample_certs
 from octavia.tests.unit import base
-from octavia.tests.unit.common.sample_configs import sample_certs
 from octavia.tests.unit.common.sample_configs import sample_configs_split
 
 API_VERSION = '0.5'

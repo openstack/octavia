@@ -106,6 +106,12 @@ def get_intermediates_pems(intermediates=None):
               X509 pem block surrounded by BEGIN CERTIFICATE,
               END CERTIFICATE block tags
     """
+    if isinstance(intermediates, six.string_types):
+        try:
+            intermediates = intermediates.encode("utf-8")
+        except UnicodeDecodeError:
+            LOG.debug("Couldn't encode intermediates string, it was probably "
+                      "in binary DER format.")
     if X509_BEG in intermediates:
         for x509Pem in _split_x509s(intermediates):
             yield _prepare_x509_cert(_get_x509_from_pem_bytes(x509Pem))
@@ -249,6 +255,8 @@ def get_host_names(certificate):
               certificate, and 'dns_names' is a list of dNSNames
               (possibly empty) from the SubjectAltNames of the certificate.
     """
+    if isinstance(certificate, six.string_types):
+        certificate = certificate.encode('utf-8')
     try:
         cert = x509.load_pem_x509_certificate(certificate,
                                               backends.default_backend())
@@ -362,19 +370,34 @@ def load_certificates_data(cert_mngr, obj, context=None):
 
 
 def _map_cert_tls_container(cert):
+    certificate = cert.get_certificate()
+    private_key = cert.get_private_key()
+    private_key_passphrase = cert.get_private_key_passphrase()
+    intermediates = cert.get_intermediates()
+    if isinstance(certificate, six.string_types):
+        certificate = certificate.encode('utf-8')
+    if isinstance(private_key, six.string_types):
+        private_key = private_key.encode('utf-8')
+    if isinstance(private_key_passphrase, six.string_types):
+        private_key_passphrase = private_key_passphrase.encode('utf-8')
+    if intermediates:
+        intermediates = [
+            (imd.encode('utf-8') if isinstance(imd, six.string_types) else imd)
+            for imd in intermediates
+        ]
+    else:
+        intermediates = []
     return data_models.TLSContainer(
         # TODO(rm_work): applying nosec here because this is not intended to be
         # secure, it's just a way to get a consistent ID. Changing this would
         # break backwards compatibility with existing loadbalancers.
-        id=hashlib.sha1(cert.get_certificate()).hexdigest(),  # nosec
-        primary_cn=get_primary_cn(cert),
-        private_key=prepare_private_key(
-            cert.get_private_key(),
-            cert.get_private_key_passphrase()),
-        certificate=cert.get_certificate(),
-        intermediates=cert.get_intermediates())
+        id=hashlib.sha1(certificate).hexdigest(),  # nosec
+        primary_cn=get_primary_cn(certificate),
+        private_key=prepare_private_key(private_key, private_key_passphrase),
+        certificate=certificate,
+        intermediates=intermediates)
 
 
 def get_primary_cn(tls_cert):
     """Returns primary CN for Certificate."""
-    return get_host_names(tls_cert.get_certificate())['cn']
+    return get_host_names(tls_cert)['cn']

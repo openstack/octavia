@@ -25,8 +25,8 @@ from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.tests.common import sample_certs
 from octavia.tests.functional.api.v2 import base
-from octavia.tests.unit.common.sample_configs import sample_certs
 
 
 class TestListener(base.BaseAPITest):

@@ -18,10 +18,12 @@ import uuid
 
 from oslo_config import cfg
 from oslo_log import log as logging
+import six
 
 from octavia.certificates.common import local as local_common
 from octavia.certificates.manager import cert_mgr
 from octavia.common import exceptions
+from octavia.common.tls_utils import cert_parser
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -49,6 +51,10 @@ class LocalCertManager(cert_mgr.CertManager):
         """
         cert_ref = str(uuid.uuid4())
         filename_base = os.path.join(CONF.certificates.storage_path, cert_ref)
+        if type(certificate) == six.binary_type:
+            certificate = certificate.decode('utf-8')
+        if type(private_key) == six.binary_type:
+            private_key = private_key.decode('utf-8')
 
         LOG.info("Storing certificate data on the local filesystem.")
         try:
@@ -66,12 +72,17 @@ class LocalCertManager(cert_mgr.CertManager):
 
             if intermediates:
                 filename_intermediates = "{0}.int".format(filename_base)
+                if type(intermediates) == six.binary_type:
+                    intermediates = intermediates.decode('utf-8')
                 with os.fdopen(os.open(
                         filename_intermediates, flags, mode), 'w') as int_file:
                     int_file.write(intermediates)
 
             if private_key_passphrase:
                 filename_pkp = "{0}.pass".format(filename_base)
+                if type(private_key_passphrase) == six.binary_type:
+                    private_key_passphrase = private_key_passphrase.decode(
+                        'utf-8')
                 with os.fdopen(os.open(
                         filename_pkp, flags, mode), 'w') as pass_file:
                     pass_file.write(private_key_passphrase)
@@ -122,6 +133,8 @@ class LocalCertManager(cert_mgr.CertManager):
         try:
             with os.fdopen(os.open(filename_intermediates, flags)) as int_file:
                 cert_data['intermediates'] = int_file.read()
+            cert_data['intermediates'] = list(
+                cert_parser.get_intermediates_pems(cert_data['intermediates']))
         except IOError:
             pass
 
@@ -184,7 +197,7 @@ class LocalCertManager(cert_mgr.CertManager):
         filename_base = os.path.join(CONF.certificates.storage_path,
                                      secret_ref)
 
-        filename_secret = "{0}.pem".format(filename_base)
+        filename_secret = "{0}.crt".format(filename_base)
 
         secret_data = None
 

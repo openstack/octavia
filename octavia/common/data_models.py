@@ -47,9 +47,15 @@ class BaseDataModel(object):
                                         calling_classes + [type(self)]),
                                         recurse=recurse))
                             else:
+                                # TODO(rm_work): Is the idea that if this list
+                                #  contains ANY BaseDataModel, that all of them
+                                #  are data models, and we may as well quit?
+                                #  Or, were we supposed to append a `None` for
+                                #  each one? I assume the former?
                                 ret[attr] = None
+                                break
                         else:
-                            ret[attr] = item
+                            ret[attr].append(item)
                 elif isinstance(getattr(self, attr), BaseDataModel):
                     if type(self) not in calling_classes:
                         ret[attr] = value.to_dict(
@@ -62,8 +68,10 @@ class BaseDataModel(object):
                 else:
                     ret[attr] = value
             else:
-                if isinstance(getattr(self, attr), (BaseDataModel, list)):
+                if isinstance(getattr(self, attr), BaseDataModel):
                     ret[attr] = None
+                elif isinstance(getattr(self, attr), list):
+                    ret[attr] = []
                 else:
                     ret[attr] = value
 

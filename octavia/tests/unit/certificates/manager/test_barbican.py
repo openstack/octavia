@@ -21,8 +21,8 @@ import octavia.certificates.common.barbican as barbican_common
 import octavia.certificates.common.cert as cert
 import octavia.certificates.manager.barbican as barbican_cert_mgr
 from octavia.common import exceptions
+import octavia.tests.common.sample_certs as sample
 import octavia.tests.unit.base as base
-import octavia.tests.unit.common.sample_configs.sample_certs as sample
 
 
 PROJECT_ID = "12345"

@@ -21,7 +21,7 @@ from octavia_lib.api.drivers import exceptions
 from octavia.api.drivers.amphora_driver.v1 import driver
 from octavia.common import constants as consts
 from octavia.network import base as network_base
-from octavia.tests.unit.api.drivers import sample_data_models
+from octavia.tests.common import sample_data_models
 from octavia.tests.unit import base
 
 
@@ -585,8 +585,7 @@ class TestAmphoraDriver(base.TestRpc):
             self.assertRaises(exceptions.DriverError,
                               self.amp_driver.get_supported_flavor_metadata)
 
-    @mock.patch('jsonschema.validators.requests')
-    def test_validate_flavor(self, mock_validate):
+    def test_validate_flavor(self):
         ref_dict = {consts.LOADBALANCER_TOPOLOGY: consts.TOPOLOGY_SINGLE}
         self.amp_driver.validate_flavor(ref_dict)
 

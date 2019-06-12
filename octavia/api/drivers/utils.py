@@ -250,11 +250,11 @@ def listener_dict_to_provider_dict(listener_dict):
                                                        listener_obj)
         if 'tls_cert' in cert_dict and cert_dict['tls_cert']:
             new_listener_dict['default_tls_container_data'] = (
-                cert_dict['tls_cert'].to_dict())
+                cert_dict['tls_cert'].to_dict(recurse=True))
         if 'sni_certs' in cert_dict and cert_dict['sni_certs']:
             sni_data_list = []
             for sni in cert_dict['sni_certs']:
-                sni_data_list.append(sni.to_dict())
+                sni_data_list.append(sni.to_dict(recurse=True))
             new_listener_dict['sni_container_data'] = sni_data_list
 
         if listener_obj.client_ca_tls_certificate_id:
@@ -344,7 +344,7 @@ def pool_dict_to_provider_dict(pool_dict):
                                                        pool_obj)
         if 'tls_cert' in cert_dict and cert_dict['tls_cert']:
             new_pool_dict['tls_container_data'] = (
-                cert_dict['tls_cert'].to_dict())
+                cert_dict['tls_cert'].to_dict(recurse=True))
 
         if pool_obj.ca_tls_certificate_id:
             cert = _get_secret_data(cert_manager, pool_obj.project_id,

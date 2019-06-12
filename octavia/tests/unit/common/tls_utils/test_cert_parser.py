@@ -20,8 +20,8 @@ import mock
 from octavia.common import data_models
 import octavia.common.exceptions as exceptions
 import octavia.common.tls_utils.cert_parser as cert_parser
+from octavia.tests.common import sample_certs
 from octavia.tests.unit import base
-from octavia.tests.unit.common.sample_configs import sample_certs
 from octavia.tests.unit.common.sample_configs import sample_configs_combined
 
 
@@ -110,14 +110,12 @@ class TestTLSParseUtils(base.TestCase):
     def test_get_intermediates_pem_chain(self):
         self.assertEqual(
             sample_certs.X509_IMDS_LIST,
-            [c for c in
-                cert_parser.get_intermediates_pems(sample_certs.X509_IMDS)])
+            list(cert_parser.get_intermediates_pems(sample_certs.X509_IMDS)))
 
     def test_get_intermediates_pkcs7_pem(self):
         self.assertEqual(
             sample_certs.X509_IMDS_LIST,
-            [c for c in
-                cert_parser.get_intermediates_pems(sample_certs.PKCS7_PEM)])
+            list(cert_parser.get_intermediates_pems(sample_certs.PKCS7_PEM)))
 
     def test_get_intermediates_pkcs7_pem_bad(self):
         self.assertRaises(
@@ -128,8 +126,7 @@ class TestTLSParseUtils(base.TestCase):
     def test_get_intermediates_pkcs7_der(self):
         self.assertEqual(
             sample_certs.X509_IMDS_LIST,
-            [c for c in
-                cert_parser.get_intermediates_pems(sample_certs.PKCS7_DER)])
+            list(cert_parser.get_intermediates_pems(sample_certs.PKCS7_DER)))
 
     def test_get_intermediates_pkcs7_der_bad(self):
         self.assertRaises(
@@ -217,7 +214,7 @@ class TestTLSParseUtils(base.TestCase):
         self.assertEqual(expected, cert_parser.build_pem(tls_tuple))
 
     def test_get_primary_cn(self):
-        cert = mock.MagicMock()
+        cert = sample_certs.X509_CERT
 
         with mock.patch.object(cert_parser, 'get_host_names') as cp:
             cp.return_value = {'cn': 'fakeCN'}

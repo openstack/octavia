@@ -110,6 +110,31 @@ class TestDriverListener(base.TestCase):
         mock_send.assert_called_with(b'15\n')
         mock_sendall.assert_called_with(jsonutils.dump_as_bytes(TEST_OBJECT))
 
+    @mock.patch('octavia.api.drivers.driver_agent.driver_get.'
+                'process_get')
+    @mock.patch('octavia.api.drivers.driver_agent.driver_listener._recv')
+    def test_GetRequestHandler_handle(self, mock_recv, mock_process_get):
+        TEST_OBJECT = {"test": "msg"}
+
+        mock_recv.return_value = 'bogus'
+
+        mock_process_get.return_value = TEST_OBJECT
+        mock_request = mock.MagicMock()
+        mock_send = mock.MagicMock()
+        mock_sendall = mock.MagicMock()
+        mock_request.send = mock_send
+        mock_request.sendall = mock_sendall
+
+        GetRequestHandler = driver_listener.GetRequestHandler(
+            mock_request, 'bogus', 'bogus')
+        GetRequestHandler.handle()
+
+        mock_recv.assert_called_with(mock_request)
+        mock_process_get.assert_called_with('bogus')
+
+        mock_send.assert_called_with(b'15\n')
+        mock_sendall.assert_called_with(jsonutils.dump_as_bytes(TEST_OBJECT))
+
     @mock.patch('octavia.api.drivers.driver_agent.driver_listener.CONF')
     def test_mutate_config(self, mock_conf):
         driver_listener._mutate_config()
@@ -167,5 +192,26 @@ class TestDriverListener(base.TestCase):
         mock_exit_event.is_set.side_effect = [False, False, False, False, True]
 
         driver_listener.stats_listener(mock_exit_event)
+        mock_server.handle_request.assert_called()
+        mock_server.server_close.assert_called_once()
+
+    @mock.patch('octavia.api.drivers.driver_agent.driver_listener.'
+                '_cleanup_socket_file')
+    @mock.patch('octavia.api.drivers.driver_agent.driver_listener.signal')
+    @mock.patch('octavia.api.drivers.driver_agent.driver_listener.'
+                'ForkingUDSServer')
+    def test_get_listener(self, mock_forking_server,
+                          mock_signal, mock_cleanup):
+        mock_server = mock.MagicMock()
+        mock_active_children = mock.PropertyMock(
+            side_effect=['a', 'a', 'a',
+                         'a' * CONF.driver_agent.status_max_processes, 'a',
+                         'a' * 1000, ''])
+        type(mock_server).active_children = mock_active_children
+        mock_forking_server.return_value = mock_server
+        mock_exit_event = mock.MagicMock()
+        mock_exit_event.is_set.side_effect = [False, False, False, False, True]
+
+        driver_listener.get_listener(mock_exit_event)
         mock_server.handle_request.assert_called()
         mock_server.server_close.assert_called_once()

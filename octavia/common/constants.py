@@ -351,6 +351,9 @@ TOTAL_CONNECTIONS = 'total_connections'
 NAME = 'name'
 PROVIDER_NAME = 'provider_name'
 
+# Database fields
+SNI_CONTAINERS = 'sni_containers'
+
 CERT_ROTATE_AMPHORA_FLOW = 'octavia-cert-rotate-amphora-flow'
 CREATE_AMPHORA_FLOW = 'octavia-create-amphora-flow'
 CREATE_AMPHORA_FOR_LB_FLOW = 'octavia-create-amp-for-lb-flow'

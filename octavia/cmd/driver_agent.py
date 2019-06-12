@@ -66,16 +66,25 @@ def main():
     LOG.info("Driver agent statistics listener process starts:")
     stats_listener_proc.start()
 
+    get_listener_proc = multiprocessing.Process(
+        name='get_listener', target=driver_listener.get_listener,
+        args=(exit_event,))
+    processes.append(get_listener_proc)
+
+    LOG.info("Driver agent get listener process starts:")
+    get_listener_proc.start()
+
     def process_cleanup(*args, **kwargs):
         LOG.info("Driver agent exiting due to signal")
         exit_event.set()
         status_listener_proc.join()
         stats_listener_proc.join()
+        get_listener_proc.join()
 
     signal.signal(signal.SIGTERM, process_cleanup)
     signal.signal(signal.SIGHUP, partial(
         _handle_mutate_config, status_listener_proc.pid,
-        stats_listener_proc.pid))
+        stats_listener_proc.pid, get_listener_proc.pid))
 
     try:
         for process in processes:

@@ -47,7 +47,8 @@ class TestNeutronUtils(base.TestCase):
             project_id=t_constants.MOCK_PROJECT_ID,
             gateway_ip=t_constants.MOCK_GATEWAY_IP,
             cidr=t_constants.MOCK_CIDR,
-            ip_version=t_constants.MOCK_IP_VERSION
+            ip_version=t_constants.MOCK_IP_VERSION,
+            host_routes=[],
         )
         self._compare_ignore_value_none(model_obj.to_dict(), assert_dict)
 
@@ -64,6 +65,7 @@ class TestNeutronUtils(base.TestCase):
             status=t_constants.MOCK_STATUS,
             project_id=t_constants.MOCK_PROJECT_ID,
             admin_state_up=t_constants.MOCK_ADMIN_STATE_UP,
+            fixed_ips=[],
         )
         self._compare_ignore_value_none(model_obj.to_dict(), assert_dict)
         fixed_ips = t_constants.MOCK_NEUTRON_PORT['port']['fixed_ips']
