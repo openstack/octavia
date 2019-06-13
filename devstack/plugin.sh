@@ -249,13 +249,13 @@ function octavia_configure {
     iniset $OCTAVIA_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
 
     # Change bind host
-    iniset $OCTAVIA_CONF api_settings bind_host $SERVICE_HOST
+    iniset $OCTAVIA_CONF api_settings bind_host $(ipv6_unquote $SERVICE_HOST)
     iniset $OCTAVIA_CONF api_settings api_handler queue_producer
 
     iniset $OCTAVIA_CONF database connection "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia"
 
     # Configure keystone auth_token for all users
-    configure_auth_token_middleware $OCTAVIA_CONF octavia
+    configure_keystone_authtoken_middleware $OCTAVIA_CONF octavia
 
     # Ensure config is set up properly for authentication as admin
     iniset $OCTAVIA_CONF service_auth auth_url $OS_AUTH_URL
@@ -396,7 +396,8 @@ function create_mgmt_network_interface {
     MGMT_PORT_ID=$(openstack port create --security-group lb-health-mgr-sec-grp --device-owner Octavia:health-mgr --host=$(hostname) -c id -f value --network lb-mgmt-net $PORT_FIXED_IP octavia-health-manager-$OCTAVIA_NODE-listen-port)
     MGMT_PORT_MAC=$(openstack port show -c mac_address -f value $MGMT_PORT_ID)
 
-    MGMT_PORT_IP=$(openstack port show -f yaml -c fixed_ips $MGMT_PORT_ID | awk '{FS=",|";gsub(",","");gsub("'\''","");for(line = 1; line <= NF; ++line) {if ($line ~ /^- ip_address:/) {split($line, word, " ");if (ENVIRON["IPV6_ENABLED"] == "" && word[3] ~ /\./) print word[3];if (ENVIRON["IPV6_ENABLED"] != "" && word[3] ~ /:/) print word[3];} else {split($line, word, " ");for(ind in word) {if (word[ind] ~ /^ip_address=/) {split(word[ind], token, "=");if (ENVIRON["IPV6_ENABLED"] == "" && token[2] ~ /\./) print token[2];if (ENVIRON["IPV6_ENABLED"] != "" && token[2] ~ /:/) print token[2];}}}}}')
+    MGMT_PORT_IP=$(openstack port show -f yaml -c fixed_ips $MGMT_PORT_ID | awk -v IP_VER=$SERVICE_IP_VERSION '{FS=",|";gsub(",","");gsub("'\''","");for(line = 1; line <= NF; ++line) {if ($line ~ /^.*- ip_address:/) {split($line, word, " ");if ((IP_VER == "4" || IP_VER == "") && word[3] ~ /\./) print word[3];if (IP_VER == "6" && word[3] ~ /:/) print word[3];} else {split($line, word, " ");for(ind in word) {if (word[ind] ~ /^ip_address=/) {split(word[ind], token, "=");if ((IP_VER == "4" || IP_VER == "") && token[2] ~ /\./) print token[2];if (IP_VER == "6" && token[2] ~ /:/) print token[2];}}}}}')
+
     if function_exists octavia_create_network_interface_device ; then
         octavia_create_network_interface_device o-hm0 $MGMT_PORT_ID $MGMT_PORT_MAC
     elif [[ $NEUTRON_AGENT == "openvswitch" || $Q_AGENT == "openvswitch" ]]; then
@@ -413,15 +414,17 @@ function create_mgmt_network_interface {
         die "Unknown network controller. Please define octavia_create_network_interface_device"
     fi
     sudo ip link set dev o-hm0 address $MGMT_PORT_MAC
-    sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_HM_LISTEN_PORT -j ACCEPT
-    sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_ADMIN_PORT -j ACCEPT
-    sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_TENANT_PORT -j ACCEPT
-    if [ $IPV6_ENABLED == 'true' ] ; then
+    if [ $SERVICE_IP_VERSION == '6' ] ; then
+        # Allow the required IPv6 ICMP messages
+        sudo ip6tables -I INPUT -i o-hm0 -p ipv6-icmp -j ACCEPT
         sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_HM_LISTEN_PORT -j ACCEPT
         sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_ADMIN_PORT -j ACCEPT
         sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_TENANT_PORT -j ACCEPT
+    else
+        sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_HM_LISTEN_PORT -j ACCEPT
+        sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_ADMIN_PORT -j ACCEPT
+        sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_TENANT_PORT -j ACCEPT
     fi
-
 
     if [ $OCTAVIA_CONTROLLER_IP_PORT_LIST == 'auto' ] ; then
         iniset $OCTAVIA_CONF health_manager controller_ip_port_list $MGMT_PORT_IP:$OCTAVIA_HM_LISTEN_PORT
@@ -444,29 +447,37 @@ function create_mgmt_network_interface {
 function build_mgmt_network {
     # Create network and attach a subnet
     openstack network create lb-mgmt-net
-    openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET --allocation-pool start=$OCTAVIA_MGMT_SUBNET_START,end=$OCTAVIA_MGMT_SUBNET_END --network lb-mgmt-net lb-mgmt-subnet
-
-    # Create security group and rules
-    openstack security group create lb-mgmt-sec-grp
-    openstack security group rule create --protocol icmp lb-mgmt-sec-grp
-    openstack security group rule create --protocol tcp --dst-port 22 lb-mgmt-sec-grp
-    openstack security group rule create --protocol tcp --dst-port 9443 lb-mgmt-sec-grp
-    if [ $IPV6_ENABLED == 'true' ] ; then
-        openstack security group rule create --protocol icmpv6 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
-        openstack security group rule create --protocol tcp --dst-port 22 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
-        openstack security group rule create --protocol tcp --dst-port 9443 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
+    if [ $SERVICE_IP_VERSION == '6' ] ; then
+        openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET_IPV6 --allocation-pool start=$OCTAVIA_MGMT_SUBNET_IPV6_START,end=$OCTAVIA_MGMT_SUBNET_IPV6_END --network lb-mgmt-net --ip-version 6 --ipv6-address-mode slaac --ipv6-ra-mode slaac lb-mgmt-subnet
+    else
+        openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET --allocation-pool start=$OCTAVIA_MGMT_SUBNET_START,end=$OCTAVIA_MGMT_SUBNET_END --network lb-mgmt-net lb-mgmt-subnet
     fi
 
     # Create security group and rules
-    openstack security group create lb-health-mgr-sec-grp
-    openstack security group rule create --protocol udp --dst-port $OCTAVIA_HM_LISTEN_PORT lb-health-mgr-sec-grp
-    openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_ADMIN_PORT lb-health-mgr-sec-grp
-    openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_TENANT_PORT lb-health-mgr-sec-grp
+    # Used for the amphora lb-mgmt-net ports
+    openstack security group create lb-mgmt-sec-grp
+    if [ $SERVICE_IP_VERSION == '6' ] ; then
+        openstack security group rule create --protocol ipv6-icmp --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
+        openstack security group rule create --protocol tcp --dst-port 22 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
+        openstack security group rule create --protocol tcp --dst-port 9443 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
+    else
+        openstack security group rule create --protocol icmp lb-mgmt-sec-grp
+        openstack security group rule create --protocol tcp --dst-port 22 lb-mgmt-sec-grp
+        openstack security group rule create --protocol tcp --dst-port 9443 lb-mgmt-sec-grp
+    fi
 
-    if [ $IPV6_ENABLED == 'true' ] ; then
+    # Create security group and rules
+    # Used for the health manager port
+    openstack security group create lb-health-mgr-sec-grp
+    if [ $SERVICE_IP_VERSION == '6' ] ; then
+        openstack security group rule create --protocol ipv6-icmp --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
         openstack security group rule create --protocol udp --dst-port $OCTAVIA_HM_LISTEN_PORT --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
         openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_ADMIN_PORT --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
         openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_TENANT_PORT --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
+    else
+        openstack security group rule create --protocol udp --dst-port $OCTAVIA_HM_LISTEN_PORT lb-health-mgr-sec-grp
+        openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_ADMIN_PORT lb-health-mgr-sec-grp
+        openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_TENANT_PORT lb-health-mgr-sec-grp
     fi
 }
 
@@ -512,7 +523,14 @@ function configure_rsyslog {
 function octavia_start {
 
     if  ! ps aux | grep -q [o]-hm0 && [ $OCTAVIA_NODE != 'api' ] ; then
-        sudo dhclient -v o-hm0 -cf $OCTAVIA_DHCLIENT_CONF
+        if [ $SERVICE_IP_VERSION == '6' ] ; then
+                # This is probably out of scope here? Load it from config
+                MGMT_PORT_IP=$(iniget $OCTAVIA_CONF health_manager bind_ip)
+            sudo ip addr add $MGMT_PORT_IP/64 dev o-hm0
+            sudo ip link set o-hm0 up
+        else
+            sudo dhclient -v o-hm0 -cf $OCTAVIA_DHCLIENT_CONF
+        fi
     fi
 
     if [ $OCTAVIA_NODE == 'main' ]; then
