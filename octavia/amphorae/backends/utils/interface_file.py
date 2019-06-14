@@ -129,13 +129,14 @@ class VIPInterfaceFile(InterfaceFile):
                 consts.GATEWAY: gateway,
                 consts.FLAGS: [consts.ONLINK]
             })
-            self.routes.append({
-                consts.DST: (
-                    "::/0" if ip_version == 6 else "0.0.0.0/0"),
-                consts.GATEWAY: gateway,
-                consts.FLAGS: [consts.ONLINK],
-                consts.TABLE: 1,
-            })
+            if topology != consts.TOPOLOGY_ACTIVE_STANDBY:
+                self.routes.append({
+                    consts.DST: (
+                        "::/0" if ip_version == 6 else "0.0.0.0/0"),
+                    consts.GATEWAY: gateway,
+                    consts.FLAGS: [consts.ONLINK],
+                    consts.TABLE: 1,
+                })
 
         # In ACTIVE_STANDBY topology, keepalived configures the VIP address.
         # Keep track of it in the interface file but mark it with a special
@@ -148,9 +149,13 @@ class VIPInterfaceFile(InterfaceFile):
             # tool (keepalived)
             consts.OCTAVIA_OWNED: topology != consts.TOPOLOGY_ACTIVE_STANDBY
         })
+        vip_cidr = ipaddress.ip_network(
+            "{}/{}".format(vip, prefixlen), strict=False)
+        self.routes.append({
+            consts.DST: vip_cidr.exploded,
+            consts.SCOPE: 'link',
+        })
         if topology != consts.TOPOLOGY_ACTIVE_STANDBY:
-            vip_cidr = ipaddress.ip_network(
-                "{}/{}".format(vip, prefixlen), strict=False)
             self.routes.append({
                 consts.DST: vip_cidr.exploded,
                 consts.PREFSRC: vip,
@@ -169,23 +174,40 @@ class VIPInterfaceFile(InterfaceFile):
 
         ip_versions = {ip_version}
 
-        if fixed_ips:
-            for fixed_ip in fixed_ips:
-                ip_addr = fixed_ip['ip_address']
-                cidr = fixed_ip['subnet_cidr']
-                ip = ipaddress.ip_address(ip_addr)
-                network = ipaddress.ip_network(cidr)
-                prefixlen = network.prefixlen
-                self.addresses.append({
-                    consts.ADDRESS: fixed_ip['ip_address'],
-                    consts.PREFIXLEN: prefixlen,
+        for fixed_ip in fixed_ips or ():
+            ip_addr = fixed_ip['ip_address']
+            cidr = fixed_ip['subnet_cidr']
+            ip = ipaddress.ip_address(ip_addr)
+            network = ipaddress.ip_network(cidr)
+            prefixlen = network.prefixlen
+            self.addresses.append({
+                consts.ADDRESS: fixed_ip['ip_address'],
+                consts.PREFIXLEN: prefixlen,
+            })
+
+            ip_versions.add(ip.version)
+
+            gateway = fixed_ip.get('gateway')
+            if gateway:
+                # Add default routes if there's a gateway
+                self.routes.append({
+                    consts.DST: (
+                        "::/0" if ip.version == 6 else "0.0.0.0/0"),
+                    consts.GATEWAY: gateway,
+                    consts.FLAGS: [consts.ONLINK]
                 })
+                if topology != consts.TOPOLOGY_ACTIVE_STANDBY:
+                    self.routes.append({
+                        consts.DST: (
+                            "::/0" if ip.version == 6 else "0.0.0.0/0"),
+                        consts.GATEWAY: gateway,
+                        consts.FLAGS: [consts.ONLINK],
+                        consts.TABLE: 1,
+                    })
 
-                ip_versions.add(ip.version)
-
-                host_routes = self.get_host_routes(
-                    fixed_ip.get('host_routes', []))
-                self.routes.extend(host_routes)
+            host_routes = self.get_host_routes(
+                fixed_ip.get('host_routes', []))
+            self.routes.extend(host_routes)
 
         for ip_v in ip_versions:
             self.scripts[consts.IFACE_UP].append({

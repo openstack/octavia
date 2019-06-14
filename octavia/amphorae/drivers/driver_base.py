@@ -162,6 +162,8 @@ class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
         :param amphorae_network_config: A data model containing information
                                         about the subnets and ports that an
                                         amphorae owns.
+        :type amphorae_network_config: octavia.network.data_models.
+                                       AmphoraNetworkConfig
         :param vrrp_port: VRRP port associated with the load balancer
         :type vrrp_port: octavia.network.data_models.Port
 
@@ -175,13 +177,18 @@ class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
         the vip, such as bring up interfaces.
         """
 
-    def post_network_plug(self, amphora, port):
+    def post_network_plug(self, amphora, port, amphora_network_config):
         """Called after amphora added to network
 
         :param amphora: amphora object, needs id and network ip(s)
         :type amphora: octavia.db.models.Amphora
         :param port: contains information of the plugged port
         :type port: octavia.network.data_models.Port
+        :param amphora_network_config: A data model containing information
+                                        about the subnets and ports that an
+                                        amphorae owns.
+        :type amphora_network_config: octavia.network.data_models.
+                                      AmphoraNetworkConfig
 
         This method is optional to implement.  After adding an amphora to a
         network, there may be steps necessary on the amphora to allow it to

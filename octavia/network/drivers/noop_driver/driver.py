@@ -21,8 +21,12 @@ from octavia.network import data_models as network_models
 
 LOG = logging.getLogger(__name__)
 
+_PLUGGED_NETWORKS = {}
+_PORTS = {}
+
 
 class NoopManager(object):
+
     def __init__(self):
         super().__init__()
         self.networkconfigconfig = {}
@@ -110,33 +114,40 @@ class NoopManager(object):
                                   vip.ip_address)] = (vip, amphora, subnet,
                                                       'unplug_aap_port')
 
-    def plug_network(self, compute_id, network_id, ip_address=None):
+    def plug_network(self, compute_id, network_id):
         LOG.debug("Network %s no-op, plug_network compute_id %s, network_id "
-                  "%s, ip_address %s", self.__class__.__name__, compute_id,
-                  network_id, ip_address)
-        self.networkconfigconfig[(compute_id, network_id, ip_address)] = (
-            compute_id, network_id, ip_address, 'plug_network')
-        return network_models.Interface(
+                  "%s", self.__class__.__name__, compute_id,
+                  network_id)
+        self.networkconfigconfig[(compute_id, network_id)] = (
+            compute_id, network_id, 'plug_network')
+        interface = network_models.Interface(
             id=uuidutils.generate_uuid(),
             compute_id=compute_id,
             network_id=network_id,
             fixed_ips=[],
             port_id=uuidutils.generate_uuid()
         )
+        _PORTS[interface.port_id] = network_models.Port(
+            id=interface.port_id,
+            network_id=network_id)
+        _PLUGGED_NETWORKS[(network_id, compute_id)] = interface
+        return interface
 
-    def unplug_network(self, compute_id, network_id, ip_address=None):
+    def unplug_network(self, compute_id, network_id):
         LOG.debug("Network %s no-op, unplug_network compute_id %s, "
                   "network_id %s",
                   self.__class__.__name__, compute_id, network_id)
-        self.networkconfigconfig[(compute_id, network_id, ip_address)] = (
-            compute_id, network_id, ip_address, 'unplug_network')
+        self.networkconfigconfig[(compute_id, network_id)] = (
+            compute_id, network_id, 'unplug_network')
+        _PLUGGED_NETWORKS.pop((network_id, compute_id), None)
 
     def get_plugged_networks(self, compute_id):
         LOG.debug("Network %s no-op, get_plugged_networks amphora_id %s",
                   self.__class__.__name__, compute_id)
         self.networkconfigconfig[compute_id] = (
             compute_id, 'get_plugged_networks')
-        return []
+        return [pn for pn in _PLUGGED_NETWORKS.values()
+                if pn.compute_id == compute_id]
 
     def update_vip(self, loadbalancer, for_delete=False):
         LOG.debug("Network %s no-op, update_vip loadbalancer %s "
@@ -175,7 +186,10 @@ class NoopManager(object):
         LOG.debug("Port %s no-op, get_port port_id %s",
                   self.__class__.__name__, port_id)
         self.networkconfigconfig[port_id] = (port_id, 'get_port')
-        return network_models.Port(id=uuidutils.generate_uuid())
+        if port_id in _PORTS:
+            return _PORTS[port_id]
+        return network_models.Port(id=uuidutils.generate_uuid(),
+                                   network_id=uuidutils.generate_uuid())
 
     def get_network_by_name(self, network_name):
         LOG.debug("Network %s no-op, get_network_by_name network_name %s",
@@ -337,6 +351,27 @@ class NoopManager(object):
             admin_state_up=admin_state_up, fixed_ips=fixed_ip_obj_list,
             qos_policy_id=qos_policy_id, security_group_ids=security_group_ids)
 
+    def plug_fixed_ip(self, port_id, subnet_id, ip_address=None):
+        LOG.debug("Network %s no-op, plug_fixed_ip port_id %s, subnet_id "
+                  "%s, ip_address %s", self.__class__.__name__, port_id,
+                  subnet_id, ip_address)
+        self.networkconfigconfig[(port_id, subnet_id)] = (
+            port_id, subnet_id, ip_address, 'plug_fixed_ip')
+
+        port = network_models.Port(id=port_id,
+                                   network_id=uuidutils.generate_uuid())
+        _PORTS[port.id] = port
+        return port
+
+    def unplug_fixed_ip(self, port_id, subnet_id):
+        LOG.debug("Network %s no-op, unplug_fixed_ip port_id %s, subnet_id "
+                  "%s", self.__class__.__name__, port_id,
+                  subnet_id)
+        self.networkconfigconfig[(port_id, subnet_id)] = (
+            port_id, subnet_id, 'unplug_fixed_ip')
+
+        return _PORTS.pop(port_id, None)
+
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def __init__(self):
@@ -355,15 +390,14 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def unplug_vip(self, loadbalancer, vip):
         self.driver.unplug_vip(loadbalancer, vip)
 
-    def plug_network(self, amphora_id, network_id, ip_address=None):
-        return self.driver.plug_network(amphora_id, network_id, ip_address)
+    def plug_network(self, compute_id, network_id):
+        return self.driver.plug_network(compute_id, network_id)
 
-    def unplug_network(self, amphora_id, network_id, ip_address=None):
-        self.driver.unplug_network(amphora_id, network_id,
-                                   ip_address=ip_address)
+    def unplug_network(self, compute_id, network_id):
+        self.driver.unplug_network(compute_id, network_id)
 
-    def get_plugged_networks(self, amphora_id):
-        return self.driver.get_plugged_networks(amphora_id)
+    def get_plugged_networks(self, compute_id):
+        return self.driver.get_plugged_networks(compute_id)
 
     def update_vip(self, loadbalancer, for_delete=False):
         self.driver.update_vip(loadbalancer, for_delete)
@@ -437,3 +471,9 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
         return self.driver.create_port(
             network_id, name, fixed_ips, secondary_ips, security_group_ids,
             admin_state_up, qos_policy_id)
+
+    def plug_fixed_ip(self, port_id, subnet_id, ip_address=None):
+        return self.driver.plug_fixed_ip(port_id, subnet_id, ip_address)
+
+    def unplug_fixed_ip(self, port_id, subnet_id):
+        return self.driver.unplug_fixed_ip(port_id, subnet_id)
