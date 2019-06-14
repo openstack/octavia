@@ -298,7 +298,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_https_real_monitor(self):
         fe = ("frontend sample_listener_id_1\n"
               "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
               "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
               "%tsc\n"
               "    maxconn {maxconn}\n"
@@ -334,7 +334,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_https_hello_monitor(self):
         fe = ("frontend sample_listener_id_1\n"
               "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
               "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
               "%tsc\n"
               "    maxconn {maxconn}\n"
@@ -439,7 +439,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_no_monitor_https(self):
         fe = ("frontend sample_listener_id_1\n"
               "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
               "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
               "%tsc\n"
               "    maxconn {maxconn}\n"
@@ -498,7 +498,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_no_persistence_https(self):
         fe = ("frontend sample_listener_id_1\n"
               "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
               "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
               "%tsc\n"
               "    maxconn {maxconn}\n"
@@ -599,7 +599,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_unlimited_connections(self):
         fe = ("frontend sample_listener_id_1\n"
               "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
               "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
               "%tsc\n"
               "    maxconn {maxconn}\n"
@@ -630,7 +630,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_limited_connections(self):
         fe = ("frontend sample_listener_id_1\n"
               "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ %{+Q}r\\ %ST\\ %B\\ %U\\ "
+              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
               "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
               "%tsc\n"
               "    maxconn 2014\n"

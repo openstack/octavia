@@ -123,10 +123,22 @@ class JinjaTemplater(object):
         JINJA_ENV.filters['hash_amp_id'] = octavia_utils.base64_sha1_string
         return JINJA_ENV.get_template(os.path.basename(self.haproxy_template))
 
-    def _format_log_string(self, load_balancer):
+    def _format_log_string(self, load_balancer, protocol):
         log_format = CONF.haproxy_amphora.user_log_format.replace(
             '{project_id}', load_balancer.project_id)
         log_format = log_format.replace('{lb_id}', load_balancer.id)
+
+        # Order of these filters matter.
+        # TODO(johnsom) Remove when HAProxy handles the format string
+        #               with HTTP variables in TCP listeners.
+        #               Currently it either throws an error or just fails
+        #               to log the message.
+        if protocol not in constants.HAPROXY_HTTP_PROTOCOLS:
+            log_format = log_format.replace('%{+Q}r', '-')
+            log_format = log_format.replace('%r', '-')
+            log_format = log_format.replace('%{+Q}ST', '-')
+            log_format = log_format.replace('%ST', '-')
+
         log_format = log_format.replace(' ', '\ ')
         return log_format
 
@@ -234,7 +246,8 @@ class JinjaTemplater(object):
             'topology': listener.load_balancer.topology,
             'amphorae': listener.load_balancer.amphorae,
             'enabled': listener.enabled,
-            'user_log_format': self._format_log_string(loadbalancer),
+            'user_log_format': self._format_log_string(loadbalancer,
+                                                       listener.protocol),
             'timeout_client_data': (
                 listener.timeout_client_data or
                 CONF.haproxy_amphora.timeout_client_data),

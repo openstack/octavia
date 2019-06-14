@@ -658,3 +658,6 @@ SUPPORTED_CLIENT_AUTH_MODES = [CLIENT_AUTH_NONE, CLIENT_AUTH_OPTIONAL,
                                CLIENT_AUTH_MANDATORY]
 
 TOPIC_AMPHORA_V2 = 'octavia_provisioning_v2'
+
+HAPROXY_HTTP_PROTOCOLS = [lib_consts.PROTOCOL_HTTP,
+                          lib_consts.PROTOCOL_TERMINATED_HTTPS]
