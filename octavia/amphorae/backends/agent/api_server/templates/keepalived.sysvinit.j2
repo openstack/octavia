@@ -19,9 +19,9 @@ NAME=octavia-keepalived
 DESC=octavia-keepalived
 TMPFILES="/tmp/.vrrp /tmp/.healthcheckers"
 {% if vrrp_pid and check_pid %}
-DAEMON_ARGS="-D -d -f {{ keepalived_cfg }} -p {{ keepalived_pid }} -r {{ vrrp_pid }} -c {{ check_pid }}"
+DAEMON_ARGS="--log-facility={{ administrative_log_facility }} -f {{ keepalived_cfg }} -p {{ keepalived_pid }} -r {{ vrrp_pid }} -c {{ check_pid }}"
 {% else %}
-DAEMON_ARGS="-D -d -f {{ keepalived_cfg }} -p {{ keepalived_pid }}"
+DAEMON_ARGS="-log-facility={{ administrative_log_facility }} -f {{ keepalived_cfg }} -p {{ keepalived_pid }}"
 {% endif %}
 
 #includes lsb functions

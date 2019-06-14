@@ -20,6 +20,7 @@ import subprocess
 
 import flask
 import jinja2
+from oslo_config import cfg
 from oslo_log import log as logging
 import webob
 from werkzeug import exceptions
@@ -32,6 +33,7 @@ from octavia.common import constants as consts
 
 BUFFER = 100
 CHECK_SCRIPT_NAME = 'udp_check.sh'
+CONF = cfg.CONF
 KEEPALIVED_CHECK_SCRIPT_NAME = 'lvs_udp_check.sh'
 LOG = logging.getLogger(__name__)
 
@@ -127,7 +129,9 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
                     keepalived_cmd=consts.KEEPALIVED_CMD,
                     keepalived_cfg=util.keepalived_lvs_cfg_path(listener_id),
                     amphora_nsname=consts.AMPHORA_NAMESPACE,
-                    amphora_netns=consts.AMP_NETNS_SVC_PREFIX
+                    amphora_netns=consts.AMP_NETNS_SVC_PREFIX,
+                    administrative_log_facility=(
+                        CONF.haproxy_amphora.administrative_log_facility),
                 )
                 text_file.write(text)
 

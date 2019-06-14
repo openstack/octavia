@@ -139,14 +139,7 @@ bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
 
 {% macro frontend_macro(constants, listener, lb_vip_address) %}
 frontend {{ listener.id }}
-    {% if (listener.protocol.lower() ==
-       constants.PROTOCOL_TERMINATED_HTTPS.lower() or
-       listener.protocol.lower() ==
-       constants.PROTOCOL_HTTP.lower()) %}
-    option httplog
-    {% else %}
-    option tcplog
-    {% endif %}
+    log-format {{ listener.user_log_format }}
     {% if listener.connection_limit is defined %}
     maxconn {{ listener.connection_limit }}
     {% endif %}

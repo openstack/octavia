@@ -253,6 +253,16 @@ haproxy_amphora_opts = [
     cfg.StrOpt('haproxy_stick_size', default='10k',
                help=_('Size of the HAProxy stick table. Accepts k, m, g '
                       'suffixes.  Example: 10k')),
+    cfg.IntOpt('user_log_facility', default=0, min=0, max=7,
+               help=_('LOG_LOCAL facility number to use for user traffic '
+                      'logs.')),
+    cfg.IntOpt('administrative_log_facility', default=1, min=0, max=7,
+               help=_('LOG_LOCAL facility number to use for amphora processes '
+                      'logs.')),
+    cfg.StrOpt('user_log_format',
+               default='{project_id} {lb_id} %f %ci %cp %t %{+Q}r %ST %B %U '
+                       '%[ssl_c_verify] %{+Q}[ssl_c_s_dn] %b %s %Tt %tsc',
+               help=_('Log format string for user flow logging.')),
 
     # REST server
     cfg.IPOpt('bind_host', default='::',  # nosec

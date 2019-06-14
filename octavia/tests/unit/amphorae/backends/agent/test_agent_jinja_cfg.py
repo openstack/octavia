@@ -57,8 +57,13 @@ class AgentJinjaTestCase(base.TestCase):
         # Test execution order could influence this with the test below
         self.conf.config(group='amphora_agent',
                          agent_server_network_file=None)
+        self.conf.config(group="haproxy_amphora",
+                         administrative_log_facility=1)
+        self.conf.config(group="haproxy_amphora", user_log_facility=0)
         expected_config = ('\n[DEFAULT]\n'
-                           'debug = False\n\n'
+                           'debug = False\n'
+                           'use_syslog = True\n'
+                           'syslog_log_facility = LOG_LOCAL1\n\n'
                            '[haproxy_amphora]\n'
                            'base_cert_dir = /var/lib/octavia/certs\n'
                            'base_path = /var/lib/octavia\n'
@@ -67,7 +72,9 @@ class AgentJinjaTestCase(base.TestCase):
                            'haproxy_cmd = /usr/sbin/haproxy\n'
                            'respawn_count = 2\n'
                            'respawn_interval = 2\n'
-                           'use_upstart = True\n\n'
+                           'use_upstart = True\n'
+                           'user_log_facility = 0\n'
+                           'administrative_log_facility = 1\n\n'
                            '[health_manager]\n'
                            'controller_ip_port_list = 192.0.2.10:5555\n'
                            'heartbeat_interval = 10\n'
@@ -94,8 +101,13 @@ class AgentJinjaTestCase(base.TestCase):
         self.conf.config(group="amphora_agent",
                          agent_server_network_file='/etc/network/interfaces')
         self.conf.config(group="haproxy_amphora", use_upstart='False')
+        self.conf.config(group="haproxy_amphora",
+                         administrative_log_facility=1)
+        self.conf.config(group="haproxy_amphora", user_log_facility=0)
         expected_config = ('\n[DEFAULT]\n'
-                           'debug = False\n\n'
+                           'debug = False\n'
+                           'use_syslog = True\n'
+                           'syslog_log_facility = LOG_LOCAL1\n\n'
                            '[haproxy_amphora]\n'
                            'base_cert_dir = /var/lib/octavia/certs\n'
                            'base_path = /var/lib/octavia\n'
@@ -104,7 +116,9 @@ class AgentJinjaTestCase(base.TestCase):
                            'haproxy_cmd = /usr/sbin/haproxy\n'
                            'respawn_count = 2\n'
                            'respawn_interval = 2\n'
-                           'use_upstart = False\n\n'
+                           'use_upstart = False\n'
+                           'user_log_facility = 0\n'
+                           'administrative_log_facility = 1\n\n'
                            '[health_manager]\n'
                            'controller_ip_port_list = 192.0.2.10:5555\n'
                            'heartbeat_interval = 10\n'
@@ -135,8 +149,13 @@ class AgentJinjaTestCase(base.TestCase):
                          agent_server_network_file=None)
         self.conf.config(group="amphora_agent",
                          amphora_udp_driver='new_udp_driver')
+        self.conf.config(group="haproxy_amphora",
+                         administrative_log_facility=1)
+        self.conf.config(group="haproxy_amphora", user_log_facility=0)
         expected_config = ('\n[DEFAULT]\n'
-                           'debug = False\n\n'
+                           'debug = False\n'
+                           'use_syslog = True\n'
+                           'syslog_log_facility = LOG_LOCAL1\n\n'
                            '[haproxy_amphora]\n'
                            'base_cert_dir = /var/lib/octavia/certs\n'
                            'base_path = /var/lib/octavia\n'
@@ -145,7 +164,9 @@ class AgentJinjaTestCase(base.TestCase):
                            'haproxy_cmd = /usr/sbin/haproxy\n'
                            'respawn_count = 2\n'
                            'respawn_interval = 2\n'
-                           'use_upstart = True\n\n'
+                           'use_upstart = True\n'
+                           'user_log_facility = 0\n'
+                           'administrative_log_facility = 1\n\n'
                            '[health_manager]\n'
                            'controller_ip_port_list = 192.0.2.10:5555\n'
                            'heartbeat_interval = 10\n'

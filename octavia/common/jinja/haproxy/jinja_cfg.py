@@ -123,6 +123,13 @@ class JinjaTemplater(object):
         JINJA_ENV.filters['hash_amp_id'] = octavia_utils.base64_sha1_string
         return JINJA_ENV.get_template(os.path.basename(self.haproxy_template))
 
+    def _format_log_string(self, load_balancer):
+        log_format = CONF.haproxy_amphora.user_log_format.replace(
+            '{project_id}', load_balancer.project_id)
+        log_format = log_format.replace('{lb_id}', load_balancer.id)
+        log_format = log_format.replace(' ', '\ ')
+        return log_format
+
     def render_loadbalancer_obj(self, host_amphora, listener,
                                 tls_cert=None, socket_path=None,
                                 feature_compatibility=None,
@@ -154,6 +161,9 @@ class JinjaTemplater(object):
              'stats_sock': socket_path,
              'log_http': self.log_http,
              'log_server': self.log_server,
+             'administrative_log_facility':
+                 CONF.haproxy_amphora.administrative_log_facility,
+             'user_log_facility': CONF.haproxy_amphora.user_log_facility,
              'connection_logging': self.connection_logging},
             constants=constants)
 
@@ -166,7 +176,7 @@ class JinjaTemplater(object):
            be processed by the templating system
         """
         t_listener = self._transform_listener(
-            listener, tls_cert, feature_compatibility,
+            listener, tls_cert, feature_compatibility, loadbalancer,
             client_ca_filename=client_ca_filename, client_crl=client_crl,
             pool_tls_certs=pool_tls_certs)
         ret_value = {
@@ -208,8 +218,8 @@ class JinjaTemplater(object):
         }
 
     def _transform_listener(self, listener, tls_cert, feature_compatibility,
-                            client_ca_filename=None, client_crl=None,
-                            pool_tls_certs=None):
+                            loadbalancer, client_ca_filename=None,
+                            client_crl=None, pool_tls_certs=None):
         """Transforms a listener into an object that will
 
             be processed by the templating system
@@ -224,6 +234,7 @@ class JinjaTemplater(object):
             'topology': listener.load_balancer.topology,
             'amphorae': listener.load_balancer.amphorae,
             'enabled': listener.enabled,
+            'user_log_format': self._format_log_string(loadbalancer),
             'timeout_client_data': (
                 listener.timeout_client_data or
                 CONF.haproxy_amphora.timeout_client_data),

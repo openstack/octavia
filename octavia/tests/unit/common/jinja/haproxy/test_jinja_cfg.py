@@ -35,7 +35,10 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_tls(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option httplog\n"
+              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    redirect scheme https if !{{ ssl_fc }}\n"
               "    bind 10.0.0.2:443 "
@@ -86,7 +89,10 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_tls_no_sni(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option httplog\n"
+              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    redirect scheme https if !{{ ssl_fc }}\n"
               "    bind 10.0.0.2:443 "
@@ -185,7 +191,10 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_custom_timeouts(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option httplog\n"
+              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:80\n"
               "    mode http\n"
@@ -221,7 +230,10 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_null_timeouts(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option httplog\n"
+              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:80\n"
               "    mode http\n"
@@ -285,7 +297,10 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_https_real_monitor(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option tcplog\n"
+              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
@@ -318,7 +333,10 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_https_hello_monitor(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option tcplog\n"
+              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
@@ -420,7 +438,10 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_no_monitor_https(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option tcplog\n"
+              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
@@ -476,7 +497,10 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_no_persistence_https(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option tcplog\n"
+              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
@@ -574,7 +598,10 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_unlimited_connections(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option tcplog\n"
+              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
@@ -602,7 +629,10 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_limited_connections(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option tcplog\n"
+              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ %{+Q}r\\ %ST\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n"
               "    maxconn 2014\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
@@ -630,7 +660,10 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_l7policies(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    option httplog\n"
+              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:80\n"
               "    mode http\n"
@@ -896,12 +929,14 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_transform_listener(self):
         in_listener = sample_configs.sample_listener_tuple()
-        ret = self.jinja_cfg._transform_listener(in_listener, None, {})
+        ret = self.jinja_cfg._transform_listener(in_listener, None, {},
+                                                 in_listener.load_balancer)
         self.assertEqual(sample_configs.RET_LISTENER, ret)
 
     def test_transform_listener_with_l7(self):
         in_listener = sample_configs.sample_listener_tuple(l7=True)
-        ret = self.jinja_cfg._transform_listener(in_listener, None, {})
+        ret = self.jinja_cfg._transform_listener(in_listener, None, {},
+                                                 in_listener.load_balancer)
         self.assertEqual(sample_configs.RET_LISTENER_L7, ret)
 
     def test_transform_loadbalancer(self):
@@ -1069,7 +1104,10 @@ class TestHaproxyCfg(base.TestCase):
             base_amp_path='/var/lib/octavia',
             base_crt_dir='/var/lib/octavia/certs')
         fe = ("frontend sample_listener_id_1\n"
-              "    option httplog\n"
+              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ %{+Q}r\\ %ST\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n"
               "    maxconn 1000000\n"
               "    redirect scheme https if !{ ssl_fc }\n"
               "    bind 10.0.0.2:443\n"
