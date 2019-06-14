@@ -170,7 +170,7 @@ class TestAmphoraDriver(base.TestRpc):
             pool_id=self.sample_data.pool1_id,
             lb_algorithm=consts.LB_ALGORITHM_ROUND_ROBIN)
         self.amp_driver.pool_create(provider_pool)
-        payload = {consts.POOL_ID: self.sample_data.pool1_id}
+        payload = {consts.POOL: provider_pool.to_dict()}
         mock_cast.assert_called_with({}, 'create_pool', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
@@ -189,7 +189,7 @@ class TestAmphoraDriver(base.TestRpc):
         provider_pool = driver_dm.Pool(
             pool_id=self.sample_data.pool1_id)
         self.amp_driver.pool_delete(provider_pool)
-        payload = {consts.POOL_ID: self.sample_data.pool1_id}
+        payload = {consts.POOL: provider_pool.to_dict()}
         mock_cast.assert_called_with({}, 'delete_pool', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
@@ -200,7 +200,7 @@ class TestAmphoraDriver(base.TestRpc):
             pool_id=self.sample_data.pool1_id, admin_state_up=True)
         pool_dict = {'enabled': True}
         self.amp_driver.pool_update(old_provider_pool, provider_pool)
-        payload = {consts.POOL_ID: self.sample_data.pool1_id,
+        payload = {consts.ORIGINAL_POOL: old_provider_pool.to_dict(),
                    consts.POOL_UPDATES: pool_dict}
         mock_cast.assert_called_with({}, 'update_pool', **payload)
 
@@ -215,7 +215,7 @@ class TestAmphoraDriver(base.TestRpc):
                      'enabled': True,
                      'tls_enabled': True}
         self.amp_driver.pool_update(old_provider_pool, provider_pool)
-        payload = {consts.POOL_ID: self.sample_data.pool1_id,
+        payload = {consts.ORIGINAL_POOL: old_provider_pool.to_dict(),
                    consts.POOL_UPDATES: pool_dict}
         mock_cast.assert_called_with({}, 'update_pool', **payload)
 

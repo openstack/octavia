@@ -120,7 +120,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual({'listener_123': listener_dict,
                           constants.LOADBALANCER_ID: lb_mock.id,
                           constants.PROJECT_ID: lb_mock.project_id,
-                          'pool345': pool_mock}, store)
+                          'pool345': pool_mock.id}, store)
 
         self.assertIn(constants.LOADBALANCER, lb_flow.requires)
 

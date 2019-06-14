@@ -273,31 +273,31 @@ class DeletePoolInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, pool):
+    def execute(self, pool_id):
         """Delete the pool in DB
 
-        :param pool: The pool to be deleted
+        :param pool_id: The pool_id to be deleted
         :returns: None
         """
 
-        LOG.debug("Delete in DB for pool id: %s ", pool.id)
-        self.pool_repo.delete(db_apis.get_session(), id=pool.id)
+        LOG.debug("Delete in DB for pool id: %s ", pool_id)
+        self.pool_repo.delete(db_apis.get_session(), id=pool_id)
 
-    def revert(self, pool, *args, **kwargs):
+    def revert(self, pool_id, *args, **kwargs):
         """Mark the pool ERROR since the delete couldn't happen
 
-        :param pool: Pool that failed to get deleted
+        :param pool_id: pool_id that failed to get deleted
         :returns: None
         """
 
-        LOG.warning("Reverting delete in DB for pool id %s", pool.id)
+        LOG.warning("Reverting delete in DB for pool id %s", pool_id)
         try:
-            self.pool_repo.update(db_apis.get_session(), pool.id,
+            self.pool_repo.update(db_apis.get_session(), pool_id,
                                   provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update pool %(pool)s "
                       "provisioning_status to ERROR due to: %(except)s",
-                      {'pool': pool.id, 'except': e})
+                      {'pool': pool_id, 'except': e})
 
 
 class DeleteL7PolicyInDB(BaseDatabaseTask):
@@ -1493,33 +1493,33 @@ class UpdatePoolInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, pool, update_dict):
+    def execute(self, pool_id, update_dict):
         """Update the pool in the DB
 
-        :param pool: The pool to be updated
+        :param pool_id: The pool_id to be updated
         :param update_dict: The dictionary of updates to apply
         :returns: None
         """
 
-        LOG.debug("Update DB for pool id: %s ", pool.id)
-        self.repos.update_pool_and_sp(db_apis.get_session(), pool.id,
+        LOG.debug("Update DB for pool id: %s ", pool_id)
+        self.repos.update_pool_and_sp(db_apis.get_session(), pool_id,
                                       update_dict)
 
-    def revert(self, pool, *args, **kwargs):
+    def revert(self, pool_id, *args, **kwargs):
         """Mark the pool ERROR since the update couldn't happen
 
-        :param pool: The pool that couldn't be updated
+        :param pool_id: The pool_id that couldn't be updated
         :returns: None
         """
 
-        LOG.warning("Reverting update pool in DB for pool id %s", pool.id)
+        LOG.warning("Reverting update pool in DB for pool id %s", pool_id)
         try:
             self.repos.update_pool_and_sp(
-                db_apis.get_session(), pool.id,
+                db_apis.get_session(), pool_id,
                 dict(provisioning_status=constants.ERROR))
         except Exception as e:
             LOG.error("Failed to update pool %(pool)s provisioning_status to "
-                      "ERROR due to: %(except)s", {'pool': pool.id,
+                      "ERROR due to: %(except)s", {'pool': pool_id,
                                                    'except': e})
 
 
@@ -2267,28 +2267,29 @@ class MarkPoolActiveInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, pool):
+    def execute(self, pool_id):
         """Mark the pool ACTIVE in DB.
 
-        :param pool: Pool object to be updated
+        :param pool_id: pool_id to be updated
         :returns: None
         """
 
         LOG.debug("Mark ACTIVE in DB for pool id: %s",
-                  pool.id)
+                  pool_id)
         self.pool_repo.update(db_apis.get_session(),
-                              pool.id,
+                              pool_id,
                               provisioning_status=constants.ACTIVE)
 
-    def revert(self, pool, *args, **kwargs):
+    def revert(self, pool_id, *args, **kwargs):
         """Mark the pool as broken
 
-        :param pool: Pool object that failed to update
+        :param pool_id: pool_id that failed to update
         :returns: None
         """
 
-        LOG.warning("Reverting mark pool ACTIVE in DB for pool id %s", pool.id)
-        self.task_utils.mark_pool_prov_status_error(pool.id)
+        LOG.warning("Reverting mark pool ACTIVE in DB for pool id %s",
+                    pool_id)
+        self.task_utils.mark_pool_prov_status_error(pool_id)
 
 
 class MarkPoolPendingCreateInDB(BaseDatabaseTask):
@@ -2297,29 +2298,29 @@ class MarkPoolPendingCreateInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, pool):
+    def execute(self, pool_id):
         """Mark the pool as pending create in DB.
 
-        :param pool: Pool object to be updated
+        :param pool_id: pool_id of pool object to be updated
         :returns: None
         """
 
         LOG.debug("Mark PENDING CREATE in DB for pool id: %s",
-                  pool.id)
+                  pool_id)
         self.pool_repo.update(db_apis.get_session(),
-                              pool.id,
+                              pool_id,
                               provisioning_status=constants.PENDING_CREATE)
 
-    def revert(self, pool, *args, **kwargs):
+    def revert(self, pool_id, *args, **kwargs):
         """Mark the pool as broken
 
-        :param pool: Pool object that failed to update
+        :param pool_id: pool_id of pool object that failed to update
         :returns: None
         """
 
         LOG.warning("Reverting mark pool pending create in DB "
-                    "for pool id %s", pool.id)
-        self.task_utils.mark_pool_prov_status_error(pool.id)
+                    "for pool id %s", pool_id)
+        self.task_utils.mark_pool_prov_status_error(pool_id)
 
 
 class MarkPoolPendingDeleteInDB(BaseDatabaseTask):
@@ -2328,29 +2329,29 @@ class MarkPoolPendingDeleteInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, pool):
+    def execute(self, pool_id):
         """Mark the pool as pending delete in DB.
 
-        :param pool: Pool object to be updated
+        :param pool_id: pool_id of pool object to be updated
         :returns: None
         """
 
         LOG.debug("Mark PENDING DELETE in DB for pool id: %s",
-                  pool.id)
+                  pool_id)
         self.pool_repo.update(db_apis.get_session(),
-                              pool.id,
+                              pool_id,
                               provisioning_status=constants.PENDING_DELETE)
 
-    def revert(self, pool, *args, **kwargs):
+    def revert(self, pool_id, *args, **kwargs):
         """Mark the pool as broken
 
-        :param pool: Pool object that failed to update
+        :param pool_id: pool_id of pool object that failed to update
         :returns: None
         """
 
         LOG.warning("Reverting mark pool pending delete in DB "
-                    "for pool id %s", pool.id)
-        self.task_utils.mark_pool_prov_status_error(pool.id)
+                    "for pool id %s", pool_id)
+        self.task_utils.mark_pool_prov_status_error(pool_id)
 
 
 class MarkPoolPendingUpdateInDB(BaseDatabaseTask):
@@ -2359,29 +2360,29 @@ class MarkPoolPendingUpdateInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, pool):
+    def execute(self, pool_id):
         """Mark the pool as pending update in DB.
 
-        :param pool: Pool object to be updated
+        :param pool_id: pool_id of pool object to be updated
         :returns: None
         """
 
         LOG.debug("Mark PENDING UPDATE in DB for pool id: %s",
-                  pool.id)
+                  pool_id)
         self.pool_repo.update(db_apis.get_session(),
-                              pool.id,
+                              pool_id,
                               provisioning_status=constants.PENDING_UPDATE)
 
-    def revert(self, pool, *args, **kwargs):
+    def revert(self, pool_id, *args, **kwargs):
         """Mark the pool as broken
 
-        :param pool: Pool object that failed to update
+        :param pool_id: pool_id of pool object that failed to update
         :returns: None
         """
 
         LOG.warning("Reverting mark pool pending update in DB "
-                    "for pool id %s", pool.id)
-        self.task_utils.mark_pool_prov_status_error(pool.id)
+                    "for pool id %s", pool_id)
+        self.task_utils.mark_pool_prov_status_error(pool_id)
 
 
 class DecrementHealthMonitorQuota(BaseDatabaseTask):
@@ -2625,42 +2626,42 @@ class DecrementPoolQuota(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, pool, pool_child_count):
+    def execute(self, project_id, pool_child_count):
         """Decrements the pool quota.
 
-        :param pool: The pool to decrement the quota on
+        :param project_id: project_id where the pool to decrement the quota on
         :returns: None
         """
 
         LOG.debug("Decrementing pool quota for "
-                  "project: %s ", pool.project_id)
+                  "project: %s ", project_id)
 
         lock_session = db_apis.get_session(autocommit=False)
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.Pool,
-                                       pool.project_id)
+                                       project_id)
 
             # Pools cascade delete members and health monitors
             # update the quota for those items as well.
             if pool_child_count['HM'] > 0:
                 self.repos.decrement_quota(lock_session,
                                            data_models.HealthMonitor,
-                                           pool.project_id)
+                                           project_id)
             if pool_child_count['member'] > 0:
                 self.repos.decrement_quota(
                     lock_session, data_models.Member,
-                    pool.project_id, quantity=pool_child_count['member'])
+                    project_id, quantity=pool_child_count['member'])
 
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
                 LOG.error('Failed to decrement pool quota for project: '
                           '%(proj)s the project may have excess quota in use.',
-                          {'proj': pool.project_id})
+                          {'proj': project_id})
                 lock_session.rollback()
 
-    def revert(self, pool, pool_child_count, result, *args, **kwargs):
+    def revert(self, project_id, pool_child_count, result, *args, **kwargs):
         """Re-apply the quota
 
         :param project_id: The id of project to decrement the quota on
@@ -2669,7 +2670,7 @@ class DecrementPoolQuota(BaseDatabaseTask):
 
         LOG.warning('Reverting decrement quota for pool on project %(proj)s '
                     'Project quota counts may be incorrect.',
-                    {'proj': pool.project_id})
+                    {'proj': project_id})
 
         # Increment the quota back if this task wasn't the failure
         if not isinstance(result, failure.Failure):
@@ -2683,7 +2684,7 @@ class DecrementPoolQuota(BaseDatabaseTask):
                     self.repos.check_quota_met(session,
                                                lock_session,
                                                data_models.Pool,
-                                               pool.project_id)
+                                               project_id)
                     lock_session.commit()
                 except Exception:
                     lock_session.rollback()
@@ -2695,7 +2696,7 @@ class DecrementPoolQuota(BaseDatabaseTask):
                         self.repos.check_quota_met(session,
                                                    lock_session,
                                                    data_models.HealthMonitor,
-                                                   pool.project_id)
+                                                   project_id)
                         lock_session.commit()
                     except Exception:
                         lock_session.rollback()
@@ -2710,7 +2711,7 @@ class DecrementPoolQuota(BaseDatabaseTask):
                         self.repos.check_quota_met(session,
                                                    lock_session,
                                                    data_models.Member,
-                                                   pool.project_id)
+                                                   project_id)
                         lock_session.commit()
                     except Exception:
                         lock_session.rollback()
@@ -2728,18 +2729,19 @@ class CountPoolChildrenForQuota(BaseDatabaseTask):
 
     """
 
-    def execute(self, pool):
+    def execute(self, pool_id):
         """Count the pool child resources for quota management
 
-        :param pool: The pool to count children on
+        :param pool_id: pool_id of pool object to count children on
         :returns: None
         """
-
+        session = db_apis.get_session()
+        db_pool = self.pool_repo.get(session, id=pool_id)
         LOG.debug("Counting pool children for "
-                  "project: %s ", pool.project_id)
+                  "project: %s ", db_pool.project_id)
 
-        health_mon_count = 1 if pool.health_monitor else 0
-        member_count = len(pool.members)
+        health_mon_count = 1 if db_pool.health_monitor else 0
+        member_count = len(db_pool.members)
 
         return {'HM': health_mon_count, 'member': member_count}
 
@@ -2750,17 +2752,17 @@ class UpdatePoolMembersOperatingStatusInDB(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, pool, operating_status):
+    def execute(self, pool_id, operating_status):
         """Update the members of a pool operating status in DB.
 
-        :param pool: Pool object to be updated
+        :param pool_id: pool_id of pool object to be updated
         :param operating_status: Operating status to set
         :returns: None
         """
 
         LOG.debug("Updating member operating status to %(status)s in DB for "
                   "pool id: %(pool)s", {'status': operating_status,
-                                        'pool': pool.id})
+                                        'pool': pool_id})
         self.member_repo.update_pool_members(db_apis.get_session(),
-                                             pool.id,
+                                             pool_id,
                                              operating_status=operating_status)

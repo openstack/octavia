@@ -40,7 +40,7 @@ class HealthMonitorFlows(object):
         create_hm_flow.add(database_tasks.MarkHealthMonitorActiveInDB(
             requires=constants.HEALTH_MON))
         create_hm_flow.add(database_tasks.MarkPoolActiveInDB(
-            requires=constants.POOL))
+            requires=constants.POOL_ID))
         create_hm_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
             requires=(constants.LOADBALANCER_ID, constants.LISTENERS)))
 
@@ -66,10 +66,10 @@ class HealthMonitorFlows(object):
             requires=constants.HEALTH_MON))
         delete_hm_flow.add(
             database_tasks.UpdatePoolMembersOperatingStatusInDB(
-                requires=constants.POOL,
+                requires=constants.POOL_ID,
                 inject={constants.OPERATING_STATUS: constants.NO_MONITOR}))
         delete_hm_flow.add(database_tasks.MarkPoolActiveInDB(
-            requires=constants.POOL))
+            requires=constants.POOL_ID))
         delete_hm_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
             requires=(constants.LOADBALANCER_ID, constants.LISTENERS)))
 
@@ -94,7 +94,7 @@ class HealthMonitorFlows(object):
         update_hm_flow.add(database_tasks.MarkHealthMonitorActiveInDB(
             requires=constants.HEALTH_MON))
         update_hm_flow.add(database_tasks.MarkPoolActiveInDB(
-            requires=constants.POOL))
+            requires=constants.POOL_ID))
         update_hm_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
             requires=(constants.LOADBALANCER_ID, constants.LISTENERS)))
 

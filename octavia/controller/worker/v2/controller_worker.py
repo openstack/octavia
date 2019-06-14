@@ -152,7 +152,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         create_hm_tf = self._taskflow_load(
             self._health_monitor_flows.get_create_health_monitor_flow(),
             store={constants.HEALTH_MON: health_mon,
-                   constants.POOL: pool,
+                   constants.POOL_ID: pool.id,
                    constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER_ID: load_balancer.id,
                    constants.LOADBALANCER: load_balancer})
@@ -180,7 +180,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         delete_hm_tf = self._taskflow_load(
             self._health_monitor_flows.get_delete_health_monitor_flow(),
             store={constants.HEALTH_MON: health_mon,
-                   constants.POOL: pool,
+                   constants.POOL_ID: pool.id,
                    constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER_ID: load_balancer.id,
                    constants.LOADBALANCER: load_balancer})
@@ -220,7 +220,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         update_hm_tf = self._taskflow_load(
             self._health_monitor_flows.get_update_health_monitor_flow(),
             store={constants.HEALTH_MON: health_mon,
-                   constants.POOL: pool,
+                   constants.POOL_ID: pool.id,
                    constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER_ID: load_balancer.id,
                    constants.LOADBALANCER: load_balancer,
@@ -427,7 +427,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                    constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER_ID: load_balancer.id,
                    constants.LOADBALANCER: load_balancer,
-                   constants.POOL: pool})
+                   constants.POOL_ID: pool.id})
         with tf_logging.DynamicLoggingListener(create_member_tf,
                                                log=LOG):
             create_member_tf.run()
@@ -454,7 +454,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                    constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER: load_balancer,
                    constants.LOADBALANCER_ID: load_balancer.id,
-                   constants.POOL: pool}
+                   constants.POOL_ID: pool.id}
         )
         with tf_logging.DynamicLoggingListener(delete_member_tf,
                                                log=LOG):
@@ -487,7 +487,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             store={constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER: load_balancer,
                    constants.LOADBALANCER_ID: load_balancer.id,
-                   constants.POOL: pool})
+                   constants.POOL_ID: pool.id})
         with tf_logging.DynamicLoggingListener(batch_update_members_tf,
                                                log=LOG):
             batch_update_members_tf.run()
@@ -525,40 +525,38 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                    constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER: load_balancer,
                    constants.LOADBALANCER_ID: load_balancer.id,
-                   constants.POOL: pool,
+                   constants.POOL_ID: pool.id,
                    constants.UPDATE_DICT: member_updates})
         with tf_logging.DynamicLoggingListener(update_member_tf,
                                                log=LOG):
             update_member_tf.run()
 
-    @tenacity.retry(
-        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
-        wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
-    def create_pool(self, pool_id):
+    def create_pool(self, pool):
         """Creates a node pool.
 
-        :param pool_id: ID of the pool to create
+        :param pool: Provider pool dict to create
         :returns: None
         :raises NoResultFound: Unable to find the object
         """
-        pool = self._pool_repo.get(db_apis.get_session(),
-                                   id=pool_id)
-        if not pool:
+
+        # TODO(ataraday) It seems we need to get db pool here anyway to get
+        # proper listeners
+        db_pool = self._pool_repo.get(db_apis.get_session(),
+                                      id=pool[constants.POOL_ID])
+        if not db_pool:
             LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
-                        '60 seconds.', 'pool', pool_id)
+                        '60 seconds.', 'pool', pool[constants.POOL_ID])
             raise db_exceptions.NoResultFound
 
-        load_balancer = pool.load_balancer
+        load_balancer = db_pool.load_balancer
 
         listeners_dicts = (
             provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                pool.listeners))
+                db_pool.listeners))
 
         create_pool_tf = self._taskflow_load(
             self._pool_flows.get_create_pool_flow(),
-            store={constants.POOL: pool,
+            store={constants.POOL_ID: pool[constants.POOL_ID],
                    constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER_ID: load_balancer.id,
                    constants.LOADBALANCER: load_balancer})
@@ -566,60 +564,60 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             create_pool_tf.run()
 
-    def delete_pool(self, pool_id):
+    def delete_pool(self, pool):
         """Deletes a node pool.
 
-        :param pool_id: ID of the pool to delete
+        :param pool: Provider pool dict to delete
         :returns: None
         :raises PoolNotFound: The referenced pool was not found
         """
-        pool = self._pool_repo.get(db_apis.get_session(),
-                                   id=pool_id)
-
-        load_balancer = pool.load_balancer
+        db_pool = self._pool_repo.get(db_apis.get_session(),
+                                      id=pool[constants.POOL_ID])
 
         listeners_dicts = (
             provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                pool.listeners))
+                db_pool.listeners))
+        load_balancer = db_pool.load_balancer
 
         delete_pool_tf = self._taskflow_load(
             self._pool_flows.get_delete_pool_flow(),
-            store={constants.POOL: pool, constants.LISTENERS: listeners_dicts,
+            store={constants.POOL_ID: pool[constants.POOL_ID],
+                   constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER: load_balancer,
-                   constants.LOADBALANCER_ID: load_balancer.id})
+                   constants.LOADBALANCER_ID: load_balancer.id,
+                   constants.PROJECT_ID: db_pool.project_id})
         with tf_logging.DynamicLoggingListener(delete_pool_tf,
                                                log=LOG):
             delete_pool_tf.run()
 
-    def update_pool(self, pool_id, pool_updates):
+    def update_pool(self, origin_pool, pool_updates):
         """Updates a node pool.
 
-        :param pool_id: ID of the pool to update
+        :param origin_pool: Provider pool dict to update
         :param pool_updates: Dict containing updated pool attributes
         :returns: None
         :raises PoolNotFound: The referenced pool was not found
         """
-        pool = None
         try:
-            pool = self._get_db_obj_until_pending_update(
-                self._pool_repo, pool_id)
+            db_pool = self._get_db_obj_until_pending_update(
+                self._pool_repo, origin_pool[constants.POOL_ID])
         except tenacity.RetryError as e:
             LOG.warning('Pool did not go into %s in 60 seconds. '
                         'This either due to an in-progress Octavia upgrade '
                         'or an overloaded and failing database. Assuming '
                         'an upgrade is in progress and continuing.',
                         constants.PENDING_UPDATE)
-            pool = e.last_attempt.result()
+            db_pool = e.last_attempt.result()
 
-        load_balancer = pool.load_balancer
+        load_balancer = db_pool.load_balancer
 
         listeners_dicts = (
             provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                pool.listeners))
+                db_pool.listeners))
 
         update_pool_tf = self._taskflow_load(
             self._pool_flows.get_update_pool_flow(),
-            store={constants.POOL: pool,
+            store={constants.POOL_ID: db_pool.id,
                    constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER: load_balancer,
                    constants.LOADBALANCER_ID: load_balancer.id,

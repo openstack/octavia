@@ -140,42 +140,44 @@ class LoadBalancerToErrorOnRevertTask(LoadBalancerIDToErrorOnRevertTask):
 class MemberToErrorOnRevertTask(BaseLifecycleTask):
     """Task to set a member to ERROR on revert."""
 
-    def execute(self, member, listeners, loadbalancer, pool):
+    def execute(self, member, listeners, loadbalancer, pool_id):
         pass
 
-    def revert(self, member, listeners, loadbalancer, pool, *args, **kwargs):
+    def revert(self, member, listeners, loadbalancer, pool_id, *args,
+               **kwargs):
         self.task_utils.mark_member_prov_status_error(member.id)
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_active(
                 listener[constants.LISTENER_ID])
-        self.task_utils.mark_pool_prov_status_active(pool.id)
+        self.task_utils.mark_pool_prov_status_active(pool_id)
         self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
 
 
 class MembersToErrorOnRevertTask(BaseLifecycleTask):
     """Task to set members to ERROR on revert."""
 
-    def execute(self, members, listeners, loadbalancer, pool):
+    def execute(self, members, listeners, loadbalancer, pool_id):
         pass
 
-    def revert(self, members, listeners, loadbalancer, pool, *args, **kwargs):
+    def revert(self, members, listeners, loadbalancer, pool_id, *args,
+               **kwargs):
         for m in members:
             self.task_utils.mark_member_prov_status_error(m.id)
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_active(
                 listener[constants.LISTENER_ID])
-        self.task_utils.mark_pool_prov_status_active(pool.id)
+        self.task_utils.mark_pool_prov_status_active(pool_id)
         self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
 
 
 class PoolToErrorOnRevertTask(BaseLifecycleTask):
     """Task to set a pool to ERROR on revert."""
 
-    def execute(self, pool, listeners, loadbalancer):
+    def execute(self, pool_id, listeners, loadbalancer):
         pass
 
-    def revert(self, pool, listeners, loadbalancer, *args, **kwargs):
-        self.task_utils.mark_pool_prov_status_error(pool.id)
+    def revert(self, pool_id, listeners, loadbalancer, *args, **kwargs):
+        self.task_utils.mark_pool_prov_status_error(pool_id)
         self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_active(

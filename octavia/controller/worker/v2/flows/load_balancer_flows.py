@@ -247,10 +247,11 @@ class LoadBalancerFlows(object):
         store = {}
         for pool in lb.pools:
             pool_name = 'pool' + pool.id
-            store[pool_name] = pool
+            store[pool_name] = pool.id
             pools_delete_flow.add(
                 self.pool_flows.get_delete_pool_flow_internal(
                     pool_name))
+        store[constants.PROJECT_ID] = lb.project_id
         return (pools_delete_flow, store)
 
     def _get_delete_load_balancer_flow(self, lb, cascade):

@@ -307,7 +307,7 @@ class TestLifecycleTasks(base.TestCase):
         member_to_error_on_revert.execute(self.MEMBER,
                                           self.LISTENERS,
                                           self.LOADBALANCER,
-                                          self.POOL)
+                                          self.POOL_ID)
 
         self.assertFalse(mock_member_prov_status_error.called)
 
@@ -315,7 +315,7 @@ class TestLifecycleTasks(base.TestCase):
         member_to_error_on_revert.revert(self.MEMBER,
                                          self.LISTENERS,
                                          self.LOADBALANCER,
-                                         self.POOL)
+                                         self.POOL_ID)
 
         mock_member_prov_status_error.assert_called_once_with(
             self.MEMBER_ID)
@@ -347,7 +347,7 @@ class TestLifecycleTasks(base.TestCase):
         members_to_error_on_revert.execute(self.MEMBERS,
                                            self.LISTENERS,
                                            self.LOADBALANCER,
-                                           self.POOL)
+                                           self.POOL_ID)
 
         self.assertFalse(mock_member_prov_status_error.called)
 
@@ -355,7 +355,7 @@ class TestLifecycleTasks(base.TestCase):
         members_to_error_on_revert.revert(self.MEMBERS,
                                           self.LISTENERS,
                                           self.LOADBALANCER,
-                                          self.POOL)
+                                          self.POOL_ID)
 
         mock_member_prov_status_error.assert_called_once_with(
             self.MEMBER_ID)
@@ -381,14 +381,14 @@ class TestLifecycleTasks(base.TestCase):
         pool_to_error_on_revert = lifecycle_tasks.PoolToErrorOnRevertTask()
 
         # Execute
-        pool_to_error_on_revert.execute(self.POOL,
+        pool_to_error_on_revert.execute(self.POOL_ID,
                                         self.LISTENERS,
                                         self.LOADBALANCER)
 
         self.assertFalse(mock_pool_prov_status_error.called)
 
         # Revert
-        pool_to_error_on_revert.revert(self.POOL,
+        pool_to_error_on_revert.revert(self.POOL_ID,
                                        self.LISTENERS,
                                        self.LOADBALANCER)
 

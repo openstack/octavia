@@ -74,17 +74,17 @@ class Endpoints(object):
         LOG.info('Deleting listener \'%s\'...', listener.get(constants.ID))
         self.worker.delete_listener(listener)
 
-    def create_pool(self, context, pool_id):
-        LOG.info('Creating pool \'%s\'...', pool_id)
-        self.worker.create_pool(pool_id)
+    def create_pool(self, context, pool):
+        LOG.info('Creating pool \'%s\'...', pool.get(constants.ID))
+        self.worker.create_pool(pool)
 
-    def update_pool(self, context, pool_id, pool_updates):
-        LOG.info('Updating pool \'%s\'...', pool_id)
-        self.worker.update_pool(pool_id, pool_updates)
+    def update_pool(self, context, original_pool, pool_updates):
+        LOG.info('Updating pool \'%s\'...', original_pool.get(constants.ID))
+        self.worker.update_pool(original_pool, pool_updates)
 
-    def delete_pool(self, context, pool_id):
-        LOG.info('Deleting pool \'%s\'...', pool_id)
-        self.worker.delete_pool(pool_id)
+    def delete_pool(self, context, pool):
+        LOG.info('Deleting pool \'%s\'...', pool.get(constants.ID))
+        self.worker.delete_pool(pool)
 
     def create_health_monitor(self, context, health_monitor_id):
         LOG.info('Creating health monitor \'%s\'...', health_monitor_id)

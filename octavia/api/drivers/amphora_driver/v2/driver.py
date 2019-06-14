@@ -154,23 +154,10 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         self.client.cast({}, 'update_listener', **payload)
 
     # Pool
-    def pool_create(self, pool):
-        self._validate_pool_algorithm(pool)
-        payload = {consts.POOL_ID: pool.pool_id}
-        self.client.cast({}, 'create_pool', **payload)
-
-    def pool_delete(self, pool):
-        pool_id = pool.pool_id
-        payload = {consts.POOL_ID: pool_id}
-        self.client.cast({}, 'delete_pool', **payload)
-
-    def pool_update(self, old_pool, new_pool):
-        if new_pool.lb_algorithm:
-            self._validate_pool_algorithm(new_pool)
-        pool_dict = new_pool.to_dict()
+    def _pool_convert_to_dict(self, pool):
+        pool_dict = pool.to_dict(recurse=True)
         if 'admin_state_up' in pool_dict:
             pool_dict['enabled'] = pool_dict.pop('admin_state_up')
-        pool_id = pool_dict.pop('pool_id')
         if 'tls_container_ref' in pool_dict:
             pool_dict['tls_container_id'] = pool_dict.pop('tls_container_ref')
         pool_dict.pop('tls_container_data', None)
@@ -182,8 +169,23 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             pool_dict['client_crl_container_id'] = pool_dict.pop(
                 'client_crl_container_ref')
         pool_dict.pop('client_crl_container_data', None)
+        return pool_dict
 
-        payload = {consts.POOL_ID: pool_id,
+    def pool_create(self, pool):
+        self._validate_pool_algorithm(pool)
+        payload = {consts.POOL: self._pool_convert_to_dict(pool)}
+        self.client.cast({}, 'create_pool', **payload)
+
+    def pool_delete(self, pool):
+        payload = {consts.POOL: pool.to_dict(recurse=True)}
+        self.client.cast({}, 'delete_pool', **payload)
+
+    def pool_update(self, old_pool, new_pool):
+        if new_pool.lb_algorithm:
+            self._validate_pool_algorithm(new_pool)
+        pool_dict = self._pool_convert_to_dict(new_pool)
+        pool_dict.pop('pool_id')
+        payload = {consts.ORIGINAL_POOL: old_pool.to_dict(),
                    consts.POOL_UPDATES: pool_dict}
         self.client.cast({}, 'update_pool', **payload)
 

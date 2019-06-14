@@ -70,8 +70,6 @@ _amphorae = [_amphora_mock]
 _loadbalancer_mock = mock.MagicMock()
 _loadbalancer_mock.id = LB_ID
 _loadbalancer_mock.amphorae = [_amphora_mock]
-_pool_mock = mock.MagicMock()
-_pool_mock.id = POOL_ID
 _l7policy_mock = mock.MagicMock()
 _l7policy_mock.id = L7POLICY_ID
 _l7rule_mock = mock.MagicMock()
@@ -119,9 +117,9 @@ class TestDatabaseTasks(base.TestCase):
         self.member_mock = mock.MagicMock()
         self.member_mock.id = MEMBER_ID
 
-        self.pool_mock = mock.MagicMock()
-        self.pool_mock.id = POOL_ID
-        self.pool_mock.health_monitor = self.health_mon_mock
+        self.db_pool_mock = mock.MagicMock()
+        self.db_pool_mock.id = POOL_ID
+        self.db_pool_mock.health_monitor = self.health_mon_mock
 
         self.l7policy_mock = mock.MagicMock()
         self.l7policy_mock.id = L7POLICY_ID
@@ -246,7 +244,7 @@ class TestDatabaseTasks(base.TestCase):
                                                  mock_amphora_repo_delete):
 
         delete_health_mon = database_tasks.DeleteHealthMonitorInDBByPool()
-        delete_health_mon.execute(self.pool_mock)
+        delete_health_mon.execute(self.db_pool_mock)
 
         repo.HealthMonitorRepository.delete.assert_called_once_with(
             'TEST',
@@ -254,7 +252,7 @@ class TestDatabaseTasks(base.TestCase):
 
         # Test the revert
         mock_health_mon_repo_delete.reset_mock()
-        delete_health_mon.revert(self.pool_mock)
+        delete_health_mon.revert(self.db_pool_mock)
 
         repo.HealthMonitorRepository.update.assert_called_once_with(
             'TEST', id=HM_ID, provisioning_status=constants.ERROR)
@@ -305,7 +303,7 @@ class TestDatabaseTasks(base.TestCase):
                                mock_amphora_repo_delete):
 
         delete_pool = database_tasks.DeletePoolInDB()
-        delete_pool.execute(_pool_mock)
+        delete_pool.execute(POOL_ID)
 
         repo.PoolRepository.delete.assert_called_once_with(
             'TEST',
@@ -314,7 +312,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert
 
         mock_pool_repo_delete.reset_mock()
-        delete_pool.revert(_pool_mock)
+        delete_pool.revert(POOL_ID)
 
 # TODO(johnsom) Fix
 #        repo.PoolRepository.update.assert_called_once_with(
@@ -1662,7 +1660,7 @@ class TestDatabaseTasks(base.TestCase):
         update_dict = {'name': 'test', 'description': 'test2',
                        'session_persistence': sp_dict}
         update_pool = database_tasks.UpdatePoolInDB()
-        update_pool.execute(self.pool_mock,
+        update_pool.execute(POOL_ID,
                             update_dict)
 
         repo.Repositories.update_pool_and_sp.assert_called_once_with(
@@ -1672,7 +1670,7 @@ class TestDatabaseTasks(base.TestCase):
 
         # Test the revert
         mock_repos_pool_update.reset_mock()
-        update_pool.revert(self.pool_mock)
+        update_pool.revert(POOL_ID)
 
         repo.Repositories.update_pool_and_sp.assert_called_once_with(
             'TEST',
@@ -1682,7 +1680,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert with exception
         mock_repos_pool_update.reset_mock()
         mock_repos_pool_update.side_effect = Exception('fail')
-        update_pool.revert(self.pool_mock)
+        update_pool.revert(POOL_ID)
 
         repo.Repositories.update_pool_and_sp.assert_called_once_with(
             'TEST',
@@ -2661,7 +2659,7 @@ class TestDatabaseTasks(base.TestCase):
                                     mock_amphora_repo_delete):
 
         mark_pool_active = (database_tasks.MarkPoolActiveInDB())
-        mark_pool_active.execute(self.pool_mock)
+        mark_pool_active.execute(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
             'TEST',
@@ -2670,7 +2668,7 @@ class TestDatabaseTasks(base.TestCase):
 
         # Test the revert
         mock_pool_repo_update.reset_mock()
-        mark_pool_active.revert(self.pool_mock)
+        mark_pool_active.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
             'TEST',
@@ -2680,7 +2678,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert with exception
         mock_pool_repo_update.reset_mock()
         mock_pool_repo_update.side_effect = Exception('fail')
-        mark_pool_active.revert(self.pool_mock)
+        mark_pool_active.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
             'TEST',
@@ -2699,7 +2697,7 @@ class TestDatabaseTasks(base.TestCase):
                                             mock_amphora_repo_delete):
 
         mark_pool_pending_create = (database_tasks.MarkPoolPendingCreateInDB())
-        mark_pool_pending_create.execute(self.pool_mock)
+        mark_pool_pending_create.execute(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
             'TEST',
@@ -2708,7 +2706,7 @@ class TestDatabaseTasks(base.TestCase):
 
         # Test the revert
         mock_pool_repo_update.reset_mock()
-        mark_pool_pending_create.revert(self.pool_mock)
+        mark_pool_pending_create.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
             'TEST',
@@ -2718,7 +2716,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert with exception
         mock_pool_repo_update.reset_mock()
         mock_pool_repo_update.side_effect = Exception('fail')
-        mark_pool_pending_create.revert(self.pool_mock)
+        mark_pool_pending_create.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
             'TEST',
@@ -2737,7 +2735,7 @@ class TestDatabaseTasks(base.TestCase):
                                             mock_amphora_repo_delete):
 
         mark_pool_pending_delete = (database_tasks.MarkPoolPendingDeleteInDB())
-        mark_pool_pending_delete.execute(self.pool_mock)
+        mark_pool_pending_delete.execute(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
             'TEST',
@@ -2746,7 +2744,7 @@ class TestDatabaseTasks(base.TestCase):
 
         # Test the revert
         mock_pool_repo_update.reset_mock()
-        mark_pool_pending_delete.revert(self.pool_mock)
+        mark_pool_pending_delete.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
             'TEST',
@@ -2756,7 +2754,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert with exception
         mock_pool_repo_update.reset_mock()
         mock_pool_repo_update.side_effect = Exception('fail')
-        mark_pool_pending_delete.revert(self.pool_mock)
+        mark_pool_pending_delete.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
             'TEST',
@@ -2776,7 +2774,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mark_pool_pending_update = (database_tasks.
                                     MarkPoolPendingUpdateInDB())
-        mark_pool_pending_update.execute(self.pool_mock)
+        mark_pool_pending_update.execute(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
             'TEST',
@@ -2785,7 +2783,7 @@ class TestDatabaseTasks(base.TestCase):
 
         # Test the revert
         mock_pool_repo_update.reset_mock()
-        mark_pool_pending_update.revert(self.pool_mock)
+        mark_pool_pending_update.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
             'TEST',
@@ -2795,7 +2793,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert with exception
         mock_pool_repo_update.reset_mock()
         mock_pool_repo_update.side_effect = Exception('fail')
-        mark_pool_pending_update.revert(self.pool_mock)
+        mark_pool_pending_update.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
             'TEST',
@@ -2815,7 +2813,7 @@ class TestDatabaseTasks(base.TestCase):
             mock_amphora_repo_delete):
 
         update_members = database_tasks.UpdatePoolMembersOperatingStatusInDB()
-        update_members.execute(self.pool_mock, constants.ONLINE)
+        update_members.execute(POOL_ID, constants.ONLINE)
 
         mock_member_repo_update_pool_members.assert_called_once_with(
             'TEST',

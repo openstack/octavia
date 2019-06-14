@@ -169,9 +169,10 @@ class TestDatabaseTasksQuota(base.TestCase):
         self._test_decrement_quota(task, data_model)
 
     def test_decrement_pool_quota(self):
+        project_id = uuidutils.generate_uuid()
         task = database_tasks.DecrementPoolQuota()
         data_model = data_models.Pool
-        self._test_decrement_quota(task, data_model)
+        self._test_decrement_quota(task, data_model, project_id=project_id)
 
     def test_decrement_member_quota(self):
         task = database_tasks.DecrementMemberQuota()
@@ -185,8 +186,6 @@ class TestDatabaseTasksQuota(base.TestCase):
                                                 mock_decrement_quota):
         pool_child_count = {'HM': 1, 'member': 2}
         project_id = uuidutils.generate_uuid()
-        test_object = mock.MagicMock()
-        test_object.project_id = project_id
         task = database_tasks.DecrementPoolQuota()
         mock_session = mock.MagicMock()
 
@@ -194,7 +193,7 @@ class TestDatabaseTasksQuota(base.TestCase):
                         'get_session') as mock_get_session_local:
             mock_get_session_local.return_value = mock_session
 
-            task.execute(test_object, pool_child_count)
+            task.execute(project_id, pool_child_count)
 
             calls = [mock.call(mock_session, data_models.Pool, project_id),
                      mock.call(mock_session, data_models.HealthMonitor,
@@ -217,7 +216,7 @@ class TestDatabaseTasksQuota(base.TestCase):
                                                   mock_lock_session,
                                                   mock_lock_session]
 
-            task.revert(test_object, pool_child_count, None)
+            task.revert(project_id, pool_child_count, None)
 
             calls = [mock.call(mock_session, mock_lock_session,
                                data_models.Pool, project_id),
@@ -245,7 +244,7 @@ class TestDatabaseTasksQuota(base.TestCase):
                                                   mock_lock_session,
                                                   mock_lock_session]
 
-            task.revert(test_object, pool_child_count, None)
+            task.revert(project_id, pool_child_count, None)
 
             calls = [mock.call(mock_session, mock_lock_session,
                                data_models.Pool, project_id),
@@ -274,7 +273,7 @@ class TestDatabaseTasksQuota(base.TestCase):
                                                   mock_lock_session,
                                                   mock_lock_session]
 
-            task.revert(test_object, pool_child_count, None)
+            task.revert(project_id, pool_child_count, None)
 
             calls = [mock.call(mock_session, mock_lock_session,
                                data_models.Pool, project_id),
@@ -290,7 +289,9 @@ class TestDatabaseTasksQuota(base.TestCase):
             self.assertEqual(3, mock_lock_session.commit.call_count)
             self.assertEqual(1, mock_lock_session.rollback.call_count)
 
-    def test_count_pool_children_for_quota(self):
+    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.repositories.PoolRepository.get')
+    def test_count_pool_children_for_quota(self, repo_mock, session_mock):
         project_id = uuidutils.generate_uuid()
         member1 = data_models.Member(id=1, project_id=project_id)
         member2 = data_models.Member(id=2, project_id=project_id)
@@ -303,24 +304,33 @@ class TestDatabaseTasksQuota(base.TestCase):
         pool_hm_2_mem = data_models.Pool(id=1, project_id=project_id,
                                          health_monitor=healtmon,
                                          members=[member1, member2])
+
         task = database_tasks.CountPoolChildrenForQuota()
 
         # Test pool with no children
-        result = task.execute(pool_no_children)
+        repo_mock.reset_mock()
+        repo_mock.return_value = pool_no_children
+        result = task.execute(pool_no_children.id)
 
         self.assertEqual({'HM': 0, 'member': 0}, result)
 
         # Test pool with one member
-        result = task.execute(pool_1_mem)
+        repo_mock.reset_mock()
+        repo_mock.return_value = pool_1_mem
+        result = task.execute(pool_1_mem.id)
 
         self.assertEqual({'HM': 0, 'member': 1}, result)
 
         # Test pool with health monitor and no members
-        result = task.execute(pool_hm)
+        repo_mock.reset_mock()
+        repo_mock.return_value = pool_hm
+        result = task.execute(pool_hm.id)
 
         self.assertEqual({'HM': 1, 'member': 0}, result)
 
         # Test pool with health monitor and two members
-        result = task.execute(pool_hm_2_mem)
+        repo_mock.reset_mock()
+        repo_mock.return_value = pool_hm_2_mem
+        result = task.execute(pool_hm_2_mem.id)
 
         self.assertEqual({'HM': 1, 'member': 2}, result)

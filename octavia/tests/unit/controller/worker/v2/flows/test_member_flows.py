@@ -40,7 +40,7 @@ class TestMemberFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, member_flow.requires)
         self.assertIn(constants.LOADBALANCER, member_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, member_flow.requires)
-        self.assertIn(constants.POOL, member_flow.requires)
+        self.assertIn(constants.POOL_ID, member_flow.requires)
 
         self.assertEqual(5, len(member_flow.requires))
         self.assertEqual(2, len(member_flow.provides))
@@ -55,7 +55,7 @@ class TestMemberFlows(base.TestCase):
         self.assertIn(constants.LOADBALANCER, member_flow.requires)
         self.assertIn(constants.LISTENERS, member_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, member_flow.requires)
-        self.assertIn(constants.POOL, member_flow.requires)
+        self.assertIn(constants.POOL_ID, member_flow.requires)
 
         self.assertEqual(5, len(member_flow.requires))
         self.assertEqual(0, len(member_flow.provides))
@@ -70,7 +70,7 @@ class TestMemberFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, member_flow.requires)
         self.assertIn(constants.LOADBALANCER, member_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, member_flow.requires)
-        self.assertIn(constants.POOL, member_flow.requires)
+        self.assertIn(constants.POOL_ID, member_flow.requires)
         self.assertIn(constants.UPDATE_DICT, member_flow.requires)
 
         self.assertEqual(6, len(member_flow.requires))
@@ -86,7 +86,7 @@ class TestMemberFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, member_flow.requires)
         self.assertIn(constants.LOADBALANCER, member_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, member_flow.requires)
-        self.assertIn(constants.POOL, member_flow.requires)
+        self.assertIn(constants.POOL_ID, member_flow.requires)
 
         self.assertEqual(4, len(member_flow.requires))
         self.assertEqual(2, len(member_flow.provides))

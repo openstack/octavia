@@ -38,6 +38,7 @@ class TestEndpoints(base.TestCase):
         self.context = {}
         self.resource_updates = {}
         self.resource_id = 1234
+        self.resource = {constants.ID: self.resource_id}
         self.server_group_id = 3456
         self.listener_dict = {constants.ID: uuidutils.generate_uuid()}
         self.flavor_id = uuidutils.generate_uuid()
@@ -91,20 +92,20 @@ class TestEndpoints(base.TestCase):
             self.listener_dict)
 
     def test_create_pool(self):
-        self.ep.create_pool(self.context, self.resource_id)
+        self.ep.create_pool(self.context, self.resource)
         self.ep.worker.create_pool.assert_called_once_with(
-            self.resource_id)
+            self.resource)
 
     def test_update_pool(self):
-        self.ep.update_pool(self.context, self.resource_id,
+        self.ep.update_pool(self.context, self.resource,
                             self.resource_updates)
         self.ep.worker.update_pool.assert_called_once_with(
-            self.resource_id, self.resource_updates)
+            self.resource, self.resource_updates)
 
     def test_delete_pool(self):
-        self.ep.delete_pool(self.context, self.resource_id)
+        self.ep.delete_pool(self.context, self.resource)
         self.ep.worker.delete_pool.assert_called_once_with(
-            self.resource_id)
+            self.resource)
 
     def test_create_health_monitor(self):
         self.ep.create_health_monitor(self.context, self.resource_id)
