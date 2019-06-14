@@ -39,6 +39,7 @@ from octavia.common.tls_utils import cert_parser
 from octavia.common import utils
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
+from octavia.network import data_models as network_models
 
 
 LOG = logging.getLogger(__name__)
@@ -390,23 +391,33 @@ class HaproxyAmphoraLoadBalancerDriver(
     def finalize_amphora(self, amphora):
         pass
 
+    def _build_net_info(self, port, amphora, subnet, mtu=None):
+        # NOTE(blogan): using the vrrp port here because that
+        # is what the allowed address pairs network driver sets
+        # this particular port to.  This does expose a bit of
+        # tight coupling between the network driver and amphora
+        # driver.  We will need to revisit this to try and remove
+        # this tight coupling.
+        # NOTE (johnsom): I am loading the vrrp_ip into the
+        # net_info structure here so that I don't break
+        # compatibility with old amphora agent versions.
+        host_routes = [{'nexthop': hr[consts.NEXTHOP],
+                        'destination': hr[consts.DESTINATION]}
+                       for hr in subnet[consts.HOST_ROUTES]]
+        net_info = {'subnet_cidr': subnet[consts.CIDR],
+                    'gateway': subnet[consts.GATEWAY_IP],
+                    'mac_address': port[consts.MAC_ADDRESS],
+                    'vrrp_ip': amphora[consts.VRRP_IP],
+                    'mtu': mtu or port[consts.NETWORK][consts.MTU],
+                    'host_routes': host_routes}
+        return net_info
+
     def post_vip_plug(self, amphora, load_balancer, amphorae_network_config,
                       vrrp_port=None, vip_subnet=None):
         if amphora.status != consts.DELETED:
             self._populate_amphora_api_version(amphora)
             if vip_subnet is None:
-                subnet = amphorae_network_config.get(amphora.id).vip_subnet
-            else:
-                subnet = vip_subnet
-            # NOTE(blogan): using the vrrp port here because that
-            # is what the allowed address pairs network driver sets
-            # this particular port to.  This does expose a bit of
-            # tight coupling between the network driver and amphora
-            # driver.  We will need to revisit this to try and remove
-            # this tight coupling.
-            # NOTE (johnsom): I am loading the vrrp_ip into the
-            # net_info structure here so that I don't break
-            # compatibility with old amphora agent versions.
+                vip_subnet = amphorae_network_config.get(amphora.id).vip_subnet
             if vrrp_port is None:
                 port = amphorae_network_config.get(amphora.id).vrrp_port
                 mtu = port.network.mtu
@@ -415,15 +426,9 @@ class HaproxyAmphoraLoadBalancerDriver(
                 mtu = port.network['mtu']
             LOG.debug("Post-VIP-Plugging with vrrp_ip %s vrrp_port %s",
                       amphora.vrrp_ip, port.id)
-            host_routes = [{'nexthop': hr.nexthop,
-                            'destination': hr.destination}
-                           for hr in subnet.host_routes]
-            net_info = {'subnet_cidr': subnet.cidr,
-                        'gateway': subnet.gateway_ip,
-                        'mac_address': port.mac_address,
-                        'vrrp_ip': amphora.vrrp_ip,
-                        'mtu': mtu,
-                        'host_routes': host_routes}
+            net_info = self._build_net_info(
+                port.to_dict(recurse=True), amphora.to_dict(),
+                vip_subnet.to_dict(recurse=True), mtu)
             try:
                 self.clients[amphora.api_version].plug_vip(
                     amphora, load_balancer.vip.ip_address, net_info)
@@ -432,7 +437,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                             'skipping post_vip_plug',
                             {'mac': port.mac_address})
 
-    def post_network_plug(self, amphora, port):
+    def post_network_plug(self, amphora, port, amphora_network_config):
         fixed_ips = []
         for fixed_ip in port.fixed_ips:
             host_routes = [{'nexthop': hr.nexthop,
@@ -440,11 +445,25 @@ class HaproxyAmphoraLoadBalancerDriver(
                            for hr in fixed_ip.subnet.host_routes]
             ip = {'ip_address': fixed_ip.ip_address,
                   'subnet_cidr': fixed_ip.subnet.cidr,
-                  'host_routes': host_routes}
+                  'host_routes': host_routes,
+                  'gateway': fixed_ip.subnet.gateway_ip}
             fixed_ips.append(ip)
         port_info = {'mac_address': port.mac_address,
                      'fixed_ips': fixed_ips,
                      'mtu': port.network.mtu}
+        if port.id == amphora.vrrp_port_id:
+            if isinstance(amphora_network_config,
+                          network_models.AmphoraNetworkConfig):
+                amphora_network_config = amphora_network_config.to_dict(
+                    recurse=True)
+            # We have to special-case sharing the vrrp port and pass through
+            # enough extra information to populate the whole VIP port
+            net_info = self._build_net_info(
+                port.to_dict(recurse=True), amphora.to_dict(),
+                amphora_network_config[consts.VIP_SUBNET],
+                port.network.mtu)
+            net_info['vip'] = amphora.ha_ip
+            port_info['vip_net_info'] = net_info
         try:
             self._populate_amphora_api_version(amphora)
             self.clients[amphora.api_version].plug_network(amphora, port_info)

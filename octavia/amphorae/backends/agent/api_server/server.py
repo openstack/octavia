@@ -214,7 +214,8 @@ class Server(object):
                 description='Invalid port information') from e
         return self._plug.plug_network(port_info['mac_address'],
                                        port_info.get('fixed_ips'),
-                                       port_info.get('mtu'))
+                                       port_info.get('mtu'),
+                                       port_info.get('vip_net_info'))
 
     def upload_cert(self):
         return certificate_update.upload_server_cert()

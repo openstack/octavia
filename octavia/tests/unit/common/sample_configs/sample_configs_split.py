@@ -23,16 +23,20 @@ from octavia.tests.common import sample_certs
 CONF = cfg.CONF
 
 
+class AmphoraTuple(collections.namedtuple(
+        'amphora', 'id, lb_network_ip, vrrp_ip, ha_ip, vrrp_port_id, '
+                   'ha_port_id, role, status, vrrp_interface,'
+                   'vrrp_priority, api_version')):
+    def to_dict(self):
+        return self._asdict()
+
+
 def sample_amphora_tuple(id='sample_amphora_id_1', lb_network_ip='10.0.1.1',
                          vrrp_ip='10.1.1.1', ha_ip='192.168.10.1',
                          vrrp_port_id='1234', ha_port_id='1234', role=None,
                          status='ACTIVE', vrrp_interface=None,
                          vrrp_priority=None, api_version='0.5'):
-    in_amphora = collections.namedtuple(
-        'amphora', 'id, lb_network_ip, vrrp_ip, ha_ip, vrrp_port_id, '
-                   'ha_port_id, role, status, vrrp_interface,'
-                   'vrrp_priority, api_version')
-    return in_amphora(
+    return AmphoraTuple(
         id=id,
         lb_network_ip=lb_network_ip,
         vrrp_ip=vrrp_ip,
@@ -599,9 +603,9 @@ def sample_vrrp_group_tuple():
         smtp_connect_timeout='')
 
 
-def sample_vip_tuple():
-    vip = collections.namedtuple('vip', 'ip_address')
-    return vip(ip_address='10.0.0.2')
+def sample_vip_tuple(ip_address='10.0.0.2', subnet_id='vip_subnet_uuid'):
+    vip = collections.namedtuple('vip', ('ip_address', 'subnet_id'))
+    return vip(ip_address=ip_address, subnet_id=subnet_id)
 
 
 def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,

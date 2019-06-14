@@ -969,10 +969,12 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'plug.Plug._netns_interface_exists')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'plug.Plug._netns_interface_by_mac')
     @mock.patch('os.path.isfile')
-    def _test_plug_network(self, distro, mock_isfile, mock_int_exists,
-                           mock_check_output, mock_netns, mock_pyroute2,
-                           mock_os_chmod):
+    def _test_plug_network(self, distro, mock_isfile, mock_int_by_mac,
+                           mock_int_exists, mock_check_output, mock_netns,
+                           mock_pyroute2, mock_os_chmod):
         mock_ipr = mock.MagicMock()
         mock_ipr_instance = mock.MagicMock()
         mock_ipr_instance.link_lookup.side_effect = [
@@ -991,24 +993,9 @@ class TestServerTestCase(base.TestCase):
         netns_handle.get_links.return_value = [0] * test_int_num
         mock_isfile.return_value = True
 
-        test_int_num = str(test_int_num)
+        mock_check_output.return_value = b"1\n2\n3\n"
 
-        # Interface already plugged
-        mock_int_exists.return_value = True
-        if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.post('/' + api_server.VERSION +
-                                      "/plug/network",
-                                      content_type='application/json',
-                                      data=jsonutils.dumps(port_info))
-        elif distro == consts.CENTOS:
-            rv = self.centos_app.post('/' + api_server.VERSION +
-                                      "/plug/network",
-                                      content_type='application/json',
-                                      data=jsonutils.dumps(port_info))
-        self.assertEqual(409, rv.status_code)
-        self.assertEqual(dict(message="Interface already exists"),
-                         jsonutils.loads(rv.data.decode('utf-8')))
-        mock_int_exists.return_value = False
+        test_int_num = str(test_int_num)
 
         # No interface at all
         file_name = '/sys/bus/pci/rescan'
@@ -1675,6 +1662,9 @@ class TestServerTestCase(base.TestCase):
                         consts.FLAGS: [consts.ONLINK]
                     }, {
                         consts.DST: '203.0.113.0/24',
+                        consts.SCOPE: 'link'
+                    }, {
+                        consts.DST: '203.0.113.0/24',
                         consts.PREFSRC: '203.0.113.2',
                         consts.SCOPE: 'link',
                         consts.TABLE: 1
@@ -1797,6 +1787,9 @@ class TestServerTestCase(base.TestCase):
                         consts.GATEWAY: '203.0.113.1',
                         consts.FLAGS: [consts.ONLINK],
                         consts.TABLE: 1
+                    }, {
+                        consts.DST: '203.0.113.0/24',
+                        consts.SCOPE: 'link'
                     }, {
                         consts.DST: '203.0.113.0/24',
                         consts.PREFSRC: '203.0.113.2',
@@ -2038,6 +2031,9 @@ class TestServerTestCase(base.TestCase):
                         consts.TABLE: 1
                     }, {
                         consts.DST: '2001:0db8::/32',
+                        consts.SCOPE: 'link'
+                    }, {
+                        consts.DST: '2001:0db8::/32',
                         consts.PREFSRC: '2001:0db8::2',
                         consts.SCOPE: 'link',
                         consts.TABLE: 1
@@ -2157,6 +2153,9 @@ class TestServerTestCase(base.TestCase):
                         consts.GATEWAY: '2001:db8::1',
                         consts.FLAGS: [consts.ONLINK],
                         consts.TABLE: 1
+                    }, {
+                        consts.DST: '2001:db8::/32',
+                        consts.SCOPE: 'link'
                     }, {
                         consts.DST: '2001:db8::/32',
                         consts.PREFSRC: '2001:db8::2',

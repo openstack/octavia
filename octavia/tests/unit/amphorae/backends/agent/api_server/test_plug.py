@@ -188,16 +188,166 @@ class TestPlug(base.TestCase):
         mock_webob.Response.assert_any_call(json={'message': 'Invalid VIP'},
                                             status=400)
 
+    @mock.patch("octavia.amphorae.backends.agent.api_server.osutils."
+                "BaseOS.write_interface_file")
+    def test_plug_lo(self, mock_write_interface):
+        m = mock.mock_open()
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
+            self.test_plug.plug_lo()
+        mock_write_interface.assert_called_once_with(interface='lo',
+                                                     ip_address='127.0.0.1',
+                                                     prefixlen=8)
+
     @mock.patch('pyroute2.NetNS', create=True)
     def test__netns_interface_exists(self, mock_netns):
 
         netns_handle = mock_netns.return_value.__enter__.return_value
 
         netns_handle.get_links.return_value = [{
-            'attrs': [['IFLA_ADDRESS', '123']]}]
+            'attrs': [['IFLA_ADDRESS', '123'],
+                      ['IFLA_IFNAME', 'eth0']]}]
 
         # Interface is found in netns
         self.assertTrue(self.test_plug._netns_interface_exists('123'))
 
         # Interface is not found in netns
         self.assertFalse(self.test_plug._netns_interface_exists('321'))
+
+    @mock.patch.object(plug, "webob")
+    @mock.patch('octavia.amphorae.backends.agent.api_server.plug.Plug.'
+                '_netns_interface_exists', return_value=False)
+    @mock.patch('octavia.amphorae.backends.agent.api_server.plug.Plug.'
+                '_interface_by_mac', return_value=FAKE_INTERFACE)
+    @mock.patch('pyroute2.IPRoute', create=True)
+    @mock.patch('pyroute2.NetNS', create=True)
+    @mock.patch("octavia.amphorae.backends.agent.api_server.osutils."
+                "BaseOS.write_port_interface_file")
+    @mock.patch("octavia.amphorae.backends.agent.api_server.osutils."
+                "BaseOS.bring_interface_up")
+    def test_plug_network(self, mock_if_up, mock_write_port_interface,
+                          mock_netns, mock_iproute,
+                          mock_by_mac, mock_interface_exists, mock_webob):
+        fixed_ips = [
+            {'ip_address': FAKE_IP_IPV4,
+             'subnet_cidr': FAKE_CIDR_IPV4,
+             'gateway': FAKE_GATEWAY_IPV4,
+             'host_routes': [
+                 {'destination': '192.0.2.0/24',
+                  'nexthop': '192.0.2.254'}]
+             }]
+        mtu = 1400
+        m = mock.mock_open()
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
+            self.test_plug.plug_network(FAKE_MAC_ADDRESS, fixed_ips, 1400)
+
+        mock_write_port_interface.assert_called_once_with(
+            interface='eth0', fixed_ips=fixed_ips, mtu=mtu)
+        mock_if_up.assert_called_once_with('eth0', 'network')
+
+        mock_webob.Response.assert_any_call(
+            json={'message': 'OK',
+                  'details': 'Plugged on interface eth0'},
+            status=202)
+
+    @mock.patch.object(plug, "webob")
+    @mock.patch('octavia.amphorae.backends.agent.api_server.plug.Plug.'
+                '_netns_interface_exists', return_value=True)
+    @mock.patch('octavia.amphorae.backends.agent.api_server.plug.Plug.'
+                '_netns_interface_by_mac', return_value=FAKE_INTERFACE)
+    @mock.patch('pyroute2.NetNS', create=True)
+    @mock.patch("octavia.amphorae.backends.agent.api_server.osutils."
+                "BaseOS.write_port_interface_file")
+    @mock.patch("octavia.amphorae.backends.agent.api_server.osutils."
+                "BaseOS.bring_interface_up")
+    def test_plug_network_existing_interface(self, mock_if_up,
+                                             mock_write_port_interface,
+                                             mock_netns, mock_by_mac,
+                                             mock_interface_exists,
+                                             mock_webob):
+        fixed_ips = [
+            {'ip_address': FAKE_IP_IPV4,
+             'subnet_cidr': FAKE_CIDR_IPV4,
+             'gateway': FAKE_GATEWAY_IPV4,
+             'host_routes': [
+                 {'destination': '192.0.2.0/24',
+                  'nexthop': '192.0.2.254'}]
+             }, {'ip_address': FAKE_IP_IPV6,
+                 'subnet_cidr': FAKE_CIDR_IPV6,
+                 'gateway': FAKE_GATEWAY_IPV6,
+                 'host_routes': [
+                     {'destination': '2001:db8::/64',
+                      'nexthop': '2001:db8::ffff'}]
+                 }]
+        mtu = 1400
+        m = mock.mock_open()
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
+            self.test_plug.plug_network(FAKE_MAC_ADDRESS, fixed_ips, 1400)
+
+        mock_write_port_interface.assert_called_once_with(
+            interface=FAKE_INTERFACE, fixed_ips=fixed_ips, mtu=mtu)
+        mock_if_up.assert_called_once_with(FAKE_INTERFACE, 'network')
+
+        mock_webob.Response.assert_any_call(
+            json={'message': 'OK',
+                  'details': 'Updated existing interface {}'.format(
+                      FAKE_INTERFACE)},
+            status=202)
+
+    @mock.patch.object(plug, "webob")
+    @mock.patch('octavia.amphorae.backends.agent.api_server.plug.Plug.'
+                '_netns_interface_exists', return_value=True)
+    @mock.patch('octavia.amphorae.backends.agent.api_server.plug.Plug.'
+                '_netns_interface_by_mac', return_value=FAKE_INTERFACE)
+    @mock.patch('pyroute2.NetNS', create=True)
+    @mock.patch("octavia.amphorae.backends.agent.api_server.osutils."
+                "BaseOS.write_vip_interface_file")
+    @mock.patch("octavia.amphorae.backends.agent.api_server.osutils."
+                "BaseOS.bring_interface_up")
+    def test_plug_network_on_vip(
+            self, mock_if_up, mock_write_vip_interface,
+            mock_netns, mock_by_mac, mock_interface_exists, mock_webob):
+        fixed_ips = [
+            {'ip_address': FAKE_IP_IPV4,
+             'subnet_cidr': FAKE_CIDR_IPV4,
+             'gateway': FAKE_GATEWAY_IPV4,
+             'host_routes': [
+                 {'destination': '192.0.2.128/25',
+                  'nexthop': '192.0.2.100'}]
+             }, {'ip_address': FAKE_IP_IPV6,
+                 'subnet_cidr': FAKE_CIDR_IPV6,
+                 'gateway': FAKE_GATEWAY_IPV6,
+                 'host_routes': [
+                     {'destination': '2001:db8::/64',
+                      'nexthop': '2001:db8::ffff'}]
+                 }]
+        mtu = 1400
+        vip_net_info = {
+            'vip': '192.0.2.10',
+            'subnet_cidr': '192.0.2.0/25',
+            'vrrp_ip': '192.0.2.11',
+            'gateway': '192.0.2.1',
+            'host_routes': []
+        }
+
+        m = mock.mock_open()
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
+            self.test_plug.plug_network(FAKE_MAC_ADDRESS, fixed_ips, mtu=1400,
+                                        vip_net_info=vip_net_info)
+
+        mock_write_vip_interface.assert_called_once_with(
+            interface=FAKE_INTERFACE,
+            vip=vip_net_info['vip'],
+            ip_version=4,
+            prefixlen=25,
+            gateway=vip_net_info['gateway'],
+            vrrp_ip=vip_net_info['vrrp_ip'],
+            host_routes=[],
+            fixed_ips=fixed_ips, mtu=mtu)
+
+        mock_if_up.assert_called_once_with(FAKE_INTERFACE, 'vip')
+
+        mock_webob.Response.assert_any_call(
+            json={'message': 'OK',
+                  'details': 'Updated existing interface {}'.format(
+                      FAKE_INTERFACE)},
+            status=202)

@@ -429,6 +429,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             constants.MEMBER: member,
             constants.LISTENERS: listeners,
             constants.LOADBALANCER: load_balancer,
+            constants.LOADBALANCER_ID: load_balancer.id,
             constants.POOL: pool}
         if load_balancer.availability_zone:
             store[constants.AVAILABILITY_ZONE] = (
@@ -461,6 +462,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             constants.MEMBER: member,
             constants.LISTENERS: listeners,
             constants.LOADBALANCER: load_balancer,
+            constants.LOADBALANCER_ID: load_balancer.id,
             constants.POOL: pool}
         if load_balancer.availability_zone:
             store[constants.AVAILABILITY_ZONE] = (
