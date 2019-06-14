@@ -43,10 +43,14 @@ class MemberFlows(object):
             requires=(constants.LOADBALANCER, constants.AVAILABILITY_ZONE),
             provides=constants.DELTAS))
         create_member_flow.add(network_tasks.HandleNetworkDeltas(
-            requires=constants.DELTAS, provides=constants.ADDED_PORTS))
+            requires=(constants.DELTAS, constants.LOADBALANCER),
+            provides=constants.UPDATED_PORTS))
+        create_member_flow.add(network_tasks.GetAmphoraeNetworkConfigs(
+            requires=constants.LOADBALANCER_ID,
+            provides=constants.AMPHORAE_NETWORK_CONFIG))
         create_member_flow.add(amphora_driver_tasks.AmphoraePostNetworkPlug(
-            requires=(constants.LOADBALANCER, constants.ADDED_PORTS)
-        ))
+            requires=(constants.LOADBALANCER, constants.UPDATED_PORTS,
+                      constants.AMPHORAE_NETWORK_CONFIG)))
         create_member_flow.add(amphora_driver_tasks.ListenersUpdate(
             requires=constants.LOADBALANCER))
         create_member_flow.add(database_tasks.MarkMemberActiveInDB(
@@ -73,6 +77,18 @@ class MemberFlows(object):
                       constants.POOL]))
         delete_member_flow.add(database_tasks.MarkMemberPendingDeleteInDB(
             requires=constants.MEMBER))
+        delete_member_flow.add(network_tasks.CalculateDelta(
+            requires=(constants.LOADBALANCER, constants.AVAILABILITY_ZONE),
+            provides=constants.DELTAS))
+        delete_member_flow.add(network_tasks.HandleNetworkDeltas(
+            requires=(constants.DELTAS, constants.LOADBALANCER),
+            provides=constants.UPDATED_PORTS))
+        delete_member_flow.add(network_tasks.GetAmphoraeNetworkConfigs(
+            requires=constants.LOADBALANCER_ID,
+            provides=constants.AMPHORAE_NETWORK_CONFIG))
+        delete_member_flow.add(amphora_driver_tasks.AmphoraePostNetworkPlug(
+            requires=(constants.LOADBALANCER, constants.UPDATED_PORTS,
+                      constants.AMPHORAE_NETWORK_CONFIG)))
         delete_member_flow.add(model_tasks.
                                DeleteModelObject(rebind={constants.OBJECT:
                                                          constants.MEMBER}))
@@ -188,10 +204,15 @@ class MemberFlows(object):
             requires=(constants.LOADBALANCER, constants.AVAILABILITY_ZONE),
             provides=constants.DELTAS))
         batch_update_members_flow.add(network_tasks.HandleNetworkDeltas(
-            requires=constants.DELTAS, provides=constants.ADDED_PORTS))
+            requires=(constants.DELTAS, constants.LOADBALANCER),
+            provides=constants.UPDATED_PORTS))
+        batch_update_members_flow.add(network_tasks.GetAmphoraeNetworkConfigs(
+            requires=constants.LOADBALANCER_ID,
+            provides=constants.AMPHORAE_NETWORK_CONFIG))
         batch_update_members_flow.add(
             amphora_driver_tasks.AmphoraePostNetworkPlug(
-                requires=(constants.LOADBALANCER, constants.ADDED_PORTS)))
+                requires=(constants.LOADBALANCER, constants.UPDATED_PORTS,
+                          constants.AMPHORAE_NETWORK_CONFIG)))
 
         # Update the Listener (this makes the changes active on the Amp)
         batch_update_members_flow.add(amphora_driver_tasks.ListenersUpdate(

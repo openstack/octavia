@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fix a bug when adding a member on a subnet that belongs to a network with
+    multiple subnets, an incorrect subnet may have been plugged in the amphora.
+  - |
+    Fix a bug when deleting the last member plugged on a network, the port that
+    was no longer used was not deleted.

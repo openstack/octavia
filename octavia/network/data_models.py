@@ -29,11 +29,14 @@ class Interface(data_models.BaseDataModel):
 class Delta(data_models.BaseDataModel):
 
     def __init__(self, amphora_id=None, compute_id=None,
-                 add_nics=None, delete_nics=None):
+                 add_nics=None, delete_nics=None,
+                 add_subnets=None, delete_subnets=None):
         self.compute_id = compute_id
         self.amphora_id = amphora_id
         self.add_nics = add_nics
         self.delete_nics = delete_nics
+        self.add_subnets = add_subnets
+        self.delete_subnets = delete_subnets
 
 
 class Network(data_models.BaseDataModel):

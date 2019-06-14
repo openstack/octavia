@@ -164,10 +164,10 @@ class AmphoraInfo(object):
             for interface in netns.get_links():
                 interface_name = None
                 for item in interface['attrs']:
-                    if (item[0] == 'IFLA_IFNAME' and
+                    if (item[0] == consts.IFLA_IFNAME and
                             not item[1].startswith('eth')):
                         break
-                    if item[0] == 'IFLA_IFNAME':
+                    if item[0] == consts.IFLA_IFNAME:
                         interface_name = item[1]
                     if item[0] == 'IFLA_STATS64':
                         networks[interface_name] = dict(
