@@ -97,6 +97,20 @@ class TestOSUtils(base.TestCase):
         self.assertEqual(centos_cmd, returned_centos_cmd)
 
     @mock.patch('octavia.amphorae.backends.utils.interface_file.'
+                'InterfaceFile')
+    def test_write_interface_file(self, mock_interface_file):
+        mock_interface = mock.MagicMock()
+        mock_interface_file.return_value = mock_interface
+
+        self.ubuntu_os_util.write_interface_file('eth1',
+                                                 '192.0.2.2', 16)
+
+        mock_interface_file.assert_called_once_with(
+            name='eth1',
+            addresses=[{"address": "192.0.2.2", "prefixlen": 16}])
+        mock_interface.write.assert_called_once()
+
+    @mock.patch('octavia.amphorae.backends.utils.interface_file.'
                 'VIPInterfaceFile')
     def test_write_vip_interface_file(self, mock_vip_interface_file):
         netns_interface = u'eth1234'
@@ -142,6 +156,7 @@ class TestOSUtils(base.TestCase):
             mtu=MTU,
             vrrp_ip=None,
             host_routes=host_routes,
+            fixed_ips=None,
             topology="SINGLE")
         mock_vip_interface_file.return_value.write.assert_called_once()
 
@@ -167,6 +182,7 @@ class TestOSUtils(base.TestCase):
             mtu=MTU,
             vrrp_ip=None,
             host_routes=host_routes,
+            fixed_ips=None,
             topology="SINGLE")
 
     @mock.patch('octavia.amphorae.backends.utils.interface_file.'

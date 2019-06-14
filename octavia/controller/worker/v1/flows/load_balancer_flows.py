@@ -202,12 +202,12 @@ class LoadBalancerFlows(object):
         )
         flows.append(
             network_tasks.HandleNetworkDeltas(
-                requires=constants.DELTAS, provides=constants.ADDED_PORTS
+                requires=constants.DELTAS, provides=constants.UPDATED_PORTS
             )
         )
         flows.append(
             amphora_driver_tasks.AmphoraePostNetworkPlug(
-                requires=(constants.LOADBALANCER, constants.ADDED_PORTS)
+                requires=(constants.LOADBALANCER, constants.UPDATED_PORTS)
             )
         )
         flows.append(

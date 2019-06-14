@@ -169,29 +169,50 @@ class AbstractNetworkDriver(object, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def plug_network(self, compute_id, network_id, ip_address=None):
+    def plug_network(self, compute_id, network_id):
         """Connects an existing amphora to an existing network.
 
         :param compute_id: id of an amphora in the compute service
         :param network_id: id of a network
-        :param ip_address: ip address to attempt to be assigned to interface
         :return: octavia.network.data_models.Interface instance
         :raises: PlugNetworkException, AmphoraNotFound, NetworkNotFound
         """
 
     @abc.abstractmethod
-    def unplug_network(self, compute_id, network_id, ip_address=None):
+    def unplug_network(self, compute_id, network_id):
         """Disconnects an existing amphora from an existing network.
 
-        If ip_address is not specificed, all the interfaces plugged on
+        If ip_address is not specified, all the interfaces plugged on
         network_id should be unplugged.
 
         :param compute_id: id of an amphora in the compute service
         :param network_id: id of a network
-        :param ip_address: specific ip_address to unplug
         :return: None
         :raises: UnplugNetworkException, AmphoraNotFound, NetworkNotFound,
                  NetworkException
+        """
+
+    @abc.abstractmethod
+    def plug_fixed_ip(self, port_id, subnet_id, ip_address=None):
+        """Plug a fixed ip to an existing port.
+
+        If ip_address is not specified, one will be auto-assigned.
+
+        :param port_id: id of a port to add a fixed ip
+        :param subnet_id: id of a subnet
+        :param ip_address: specific ip_address to add
+        :return: octavia.network.data_models.Port
+        :raises: NetworkException, PortNotFound
+        """
+
+    @abc.abstractmethod
+    def unplug_fixed_ip(self, port_id, subnet_id):
+        """Unplug a fixed ip from an existing port.
+
+        :param port_id: id of a port to remove the fixed ip from
+        :param subnet_id: id of a subnet
+        :return: octavia.network.data_models.Port
+        :raises: NetworkException, PortNotFound
         """
 
     @abc.abstractmethod
