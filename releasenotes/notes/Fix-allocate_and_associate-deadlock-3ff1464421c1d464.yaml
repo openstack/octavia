@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixes a potential DB deadlock in allocate_and_associate found in testing.
