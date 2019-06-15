@@ -82,7 +82,7 @@ def main():
         'loglevel': 'debug',
         'syslog': True,
         'syslog_facility': 'local{}'.format(
-            CONF.haproxy_amphora.administrative_log_facility),
+            CONF.amphora_agent.administrative_log_facility),
         'syslog_addr': 'unix://dev/log',
 
     }

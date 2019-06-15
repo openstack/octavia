@@ -483,8 +483,10 @@ AUTH_HEADER_PROTOCOL_NUMBER = 51
 
 TEMPLATES = '/templates'
 AGENT_API_TEMPLATES = '/templates'
+LOGGING_TEMPLATES = '/templates'
 
 AGENT_CONF_TEMPLATE = 'amphora_agent_conf.template'
+LOGGING_CONF_TEMPLATE = '10-rsyslog.conf.template'
 USER_DATA_CONFIG_DRIVE_TEMPLATE = 'user_data_config_drive.template'
 
 OPEN = 'OPEN'

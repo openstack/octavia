@@ -61,5 +61,5 @@ class AgentJinjaTemplater(object):
              'agent_tls_protocol': CONF.amphora_agent.agent_tls_protocol,
              'topology': topology,
              'administrative_log_facility':
-                 CONF.haproxy_amphora.administrative_log_facility,
-             'user_log_facility': CONF.haproxy_amphora.user_log_facility})
+                 CONF.amphora_agent.administrative_log_facility,
+             'user_log_facility': CONF.amphora_agent.user_log_facility})

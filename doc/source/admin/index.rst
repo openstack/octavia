@@ -29,6 +29,7 @@ Operator Reference
    :maxdepth: 1
 
    ../contributor/guides/dev-quick-start.rst
+   log-offloading.rst
    api-audit.rst
    guides/certificates.rst
    ../configuration/configref.rst

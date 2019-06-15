@@ -22,6 +22,7 @@ import ssl
 import sys
 
 from keystoneauth1 import loading as ks_loading
+from octavia_lib.common import constants as lib_consts
 from oslo_config import cfg
 from oslo_db import options as db_options
 from oslo_log import log as logging
@@ -118,6 +119,50 @@ amphora_agent_opts = [
                help=_("Minimum TLS protocol for communication with the "
                       "amphora agent."),
                choices=TLS_PROTOCOL_CHOICES),
+
+    # Logging setup
+    cfg.ListOpt('admin_log_targets',
+                help=_('List of log server ip and port pairs for '
+                       'Administrative logs. Additional hosts are backup to '
+                       'the primary server. If none is '
+                       'specified remote logging is disabled. Example '
+                       '127.0.0.1:10514, 192.168.0.1:10514')),
+    cfg.ListOpt('tenant_log_targets',
+                help=_('List of log server ip and port pairs for '
+                       'tenant traffic logs. Additional hosts are backup to '
+                       'the primary server. If none is '
+                       'specified remote logging is disabled. Example '
+                       '127.0.0.1:10514, 192.168.0.1:10514')),
+    cfg.IntOpt('user_log_facility', default=0, min=0, max=7,
+               help=_('LOG_LOCAL facility number to use for user traffic '
+                      'logs.')),
+    cfg.IntOpt('administrative_log_facility', default=1, min=0, max=7,
+               help=_('LOG_LOCAL facility number to use for amphora processes '
+                      'logs.')),
+    cfg.StrOpt('log_protocol', default=lib_consts.PROTOCOL_UDP,
+               choices=[lib_consts.PROTOCOL_TCP, lib_consts.PROTOCOL_UDP],
+               help=_("The log forwarding transport protocol. One of UDP or "
+                      "TCP.")),
+    cfg.IntOpt('log_retry_count', default=5,
+               help=_('The maximum attempts to retry connecting to the '
+                      'logging host.')),
+    cfg.IntOpt('log_retry_interval', default=2,
+               help=_('The time, in seconds, to wait between retries '
+                      'connecting to the logging host.')),
+    cfg.IntOpt('log_queue_size', default=10000,
+               help=_('The queue size (messages) to buffer log messages.')),
+    cfg.StrOpt('logging_template_override',
+               help=_('Custom logging configuration template.')),
+    cfg.BoolOpt('forward_all_logs', default=False,
+                help=_('When True, the amphora will forward all of the '
+                       'system logs (except tenant traffic logs) to the '
+                       'admin log target(s). When False, '
+                       'only amphora specific admin logs will be forwarded.')),
+    cfg.BoolOpt('disable_local_log_storage', default=False,
+                help=_('When True, no logs will be written to the amphora '
+                       'filesystem. When False, log files will be written to '
+                       'the local filesystem.')),
+
     # Do not specify in octavia.conf, loaded at runtime
     cfg.StrOpt('amphora_id', help=_("The amphora ID.")),
     cfg.StrOpt('amphora_udp_driver',
@@ -253,12 +298,6 @@ haproxy_amphora_opts = [
     cfg.StrOpt('haproxy_stick_size', default='10k',
                help=_('Size of the HAProxy stick table. Accepts k, m, g '
                       'suffixes.  Example: 10k')),
-    cfg.IntOpt('user_log_facility', default=0, min=0, max=7,
-               help=_('LOG_LOCAL facility number to use for user traffic '
-                      'logs.')),
-    cfg.IntOpt('administrative_log_facility', default=1, min=0, max=7,
-               help=_('LOG_LOCAL facility number to use for amphora processes '
-                      'logs.')),
     cfg.StrOpt('user_log_format',
                default='{project_id} {lb_id} %f %ci %cp %t %{+Q}r %ST %B %U '
                        '%[ssl_c_verify] %{+Q}[ssl_c_s_dn] %b %s %Tt %tsc',

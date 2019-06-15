@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Octavia now supports Amphora log offloading. Operators can define syslog
+    targets for the Amphora administrative logs and for the tenant load
+    balancer flow logs.
+issues:
+  - |
+    Amphorae are unable to provide tenant flow logs for UDP listeners.
+upgrade:
+  - |
+    To enable log offloading, the amphora image needs to be updated.
