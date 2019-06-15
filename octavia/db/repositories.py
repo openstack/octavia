@@ -1137,6 +1137,7 @@ class AmphoraRepository(BaseRepository):
                 id=amphora_id).first()
             load_balancer.amphorae.append(amphora)
 
+    @oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)
     def allocate_and_associate(self, session, load_balancer_id):
         """Allocate an amphora for a load balancer.
 
