@@ -11,16 +11,40 @@ Getting Started
 
    ../reference/introduction.rst
    ../reference/glossary.rst
+   ../contributor/guides/dev-quick-start.rst
 
-APIs
-----
+Installation and Configuration Guides
+-------------------------------------
 
 .. toctree::
    :maxdepth: 1
 
-   Octavia API Reference <https://docs.openstack.org/api-ref/load-balancer/>
-   ../contributor/api/haproxy-amphora-api.rst
+   amphora-image-build
+   guides/certificates.rst
+   ../configuration/configref.rst
+   ../configuration/policy.rst
 
+Optional Installation and Configuration Guides
+----------------------------------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   log-offloading.rst
+   api-audit.rst
+   flavors.rst
+   providers.rst
+   apache-httpd.rst
+
+Maintanence and Operations
+--------------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   guides/operator-maintenance.rst
+   octavia-status
+   guides/upgrade.rst
 
 Operator Reference
 ------------------
@@ -28,18 +52,8 @@ Operator Reference
 .. toctree::
    :maxdepth: 1
 
-   ../contributor/guides/dev-quick-start.rst
-   log-offloading.rst
-   api-audit.rst
-   guides/certificates.rst
-   ../configuration/configref.rst
-   flavors.rst
-   guides/operator-maintenance.rst
-   ../configuration/policy.rst
-   providers.rst
-   octavia-status
-   guides/upgrade.rst
-   apache-httpd.rst
+   Octavia API Reference <https://docs.openstack.org/api-ref/load-balancer/>
+   ../contributor/api/haproxy-amphora-api.rst
 
 .. only:: html
 
