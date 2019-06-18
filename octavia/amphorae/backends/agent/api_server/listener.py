@@ -259,7 +259,7 @@ class Listener(object):
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            if 'Job is already running' not in e.output:
+            if b'Job is already running' not in e.output:
                 LOG.debug(
                     "Failed to %(action)s haproxy-%(list)s service: %(err)s "
                     "%(out)s", {'action': action, 'list': listener_id,
