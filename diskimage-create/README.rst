@@ -107,7 +107,8 @@ Command syntax:
             [-e]
             [-f]
             [-h]
-            [-i **ubuntu** | fedora | centos | rhel ]
+            [-i **ubuntu-minimal** | fedora | centos | rhel ]
+            [-k <kernel package name> ]
             [-l <log file> ]
             [-n]
             [-o **amphora-x64-haproxy** | <filename> ]
@@ -126,7 +127,8 @@ Command syntax:
         '-e' enable complete mandatory access control systems when available (default: permissive)
         '-f' disable tmpfs for build
         '-h' display help message
-        '-i' is the base OS (default: ubuntu)
+        '-i' is the base OS (default: ubuntu-minimal)
+        '-k' is the kernel meta package name, currently only for ubuntu-minimal base OS (default: linux-image-kvm)
         '-l' is output logfile (default: none)
         '-n' disable sshd (default: enabled)
         '-o' is the output image file name

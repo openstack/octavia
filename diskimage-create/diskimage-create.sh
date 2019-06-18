@@ -28,6 +28,7 @@ usage() {
     echo "            [-f]"
     echo "            [-h]"
     echo "            [-i **ubuntu-minimal** | fedora | centos | rhel ]"
+    echo "            [-k <kernel package name> ]"
     echo "            [-l <log file> ]"
     echo "            [-n]"
     echo "            [-o **amphora-x64-haproxy** | <filename> ]"
@@ -46,7 +47,8 @@ usage() {
     echo "        '-e' enable complete mandatory access control systems when available (default: permissive)"
     echo "        '-f' disable tmpfs for build"
     echo "        '-h' display this help message"
-    echo "        '-i' is the base OS (default: ubuntu)"
+    echo "        '-i' is the base OS (default: ubuntu-minimal)"
+    echo "        '-k' is the kernel meta package name, currently only for ubuntu-minimal base OS (default: linux-image-kvm)"
     echo "        '-l' is output logfile (default: none)"
     echo "        '-n' disable sshd (default: enabled)"
     echo "        '-o' is the output image file name"
@@ -87,7 +89,7 @@ dib_enable_tracing=
 
 AMP_LOGFILE=""
 
-while getopts "a:b:c:d:efhi:l:no:pt:r:s:vw:x" opt; do
+while getopts "a:b:c:d:efhi:k:l:no:pt:r:s:vw:x" opt; do
     case $opt in
         a)
             AMP_ARCH=$OPTARG
@@ -135,6 +137,9 @@ while getopts "a:b:c:d:efhi:l:no:pt:r:s:vw:x" opt; do
             if [ $AMP_BASEOS == "ubuntu" ]; then
                 AMP_BASEOS="ubuntu-minimal"
             fi
+        ;;
+        k)
+            AMP_KERNEL=$OPTARG
         ;;
         l)
             AMP_LOGFILE="--logfile=$OPTARG"
@@ -214,6 +219,10 @@ AMP_OUTPUTFILENAME=${AMP_OUTPUTFILENAME:-"$PWD/amphora-x64-haproxy"}
 AMP_IMAGETYPE=${AMP_IMAGETYPE:-"qcow2"}
 
 AMP_IMAGESIZE=${AMP_IMAGESIZE:-2}
+
+if [ "$AMP_BASEOS" = "ubuntu-minimal" ]; then
+    export DIB_UBUNTU_KERNEL=${AMP_KERNEL:-"linux-image-kvm"}
+fi
 
 AMP_DISABLE_SSHD=${AMP_DISABLE_SSHD:-0}
 
