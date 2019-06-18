@@ -612,7 +612,7 @@ function octavia_init {
        OCTAVIA_AMP_IMAGE_ID=$(openstack image list -f value --property name=${OCTAVIA_AMP_IMAGE_NAME} -c ID)
 
        if [ -n "$OCTAVIA_AMP_IMAGE_ID" ]; then
-           openstack image set --tag ${OCTAVIA_AMP_IMAGE_TAG} ${OCTAVIA_AMP_IMAGE_ID}
+           openstack image set --tag ${OCTAVIA_AMP_IMAGE_TAG} --property hw_architecture='x86_64' ${OCTAVIA_AMP_IMAGE_ID}
        fi
 
        # Create a management network.

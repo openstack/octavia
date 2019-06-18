@@ -78,6 +78,15 @@ As the project progresses and/or the diskimage-builder project adds support
 for additional base OS options they may become available for Amphora images.
 This does not mean that they are necessarily supported or tested.
 
+.. note::
+
+    If your cloud has multiple hardware architectures available to nova,
+    remember to set the appropriate hw_architecture property on the
+    image when you load it into glance. For example, when loading an
+    amphora image built for "amd64" you would add
+    "--property hw_architecture='x86_64'" to your "openstack image create"
+    command line.
+
 The script will use environment variables to customize the build beyond the
 Octavia project defaults, such as adding elements.
 
