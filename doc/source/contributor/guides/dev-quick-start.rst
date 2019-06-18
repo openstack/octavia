@@ -261,10 +261,10 @@ amphorae: The amphora REST API. Both amphora API and Octavia controller do
 bi-directional certificate-based authentication in order to authenticate and
 encrypt communication. You must therefore create appropriate TLS certificates
 which will be used for key signing, authentication, and encryption. There is a
-helper script to do this in this repository under:
-``bin/create_certificates.sh``
+detailed :doc:`../../admin/guides/certificates` to guide you through this
+process.
 
-Please note that certificates created with this helper script may not meet your
+Please note that certificates created with this guide may not meet your
 organization's security policies, since they are self-signed certificates with
 arbitrary bit lengths, expiration dates, etc.  Operators should obviously
 follow their own security guidelines in creating these certificates.

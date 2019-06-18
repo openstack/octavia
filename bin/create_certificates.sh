@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# NOTE: This script should not be used for creating certificates in a
+# deployment. It is only used for some testing jobs.
+# Please follow the Octavia Certificate Configuration Guide when setting
+# up a deployment. See:
+# https://docs.openstack.org/octavia/latest/admin/guides/certificates.html
+
 # USAGE: <certificate directory> <openssl.cnf (example in etc/certificate)
 #Those are certificates for testing will be generated
 #
@@ -35,6 +41,11 @@
 CERT_DIR=$1
 OPEN_SSL_CONF=$2 # etc/certificates/openssl.cnf
 VALIDITY_DAYS=${3:-18250} # defaults to 50 years
+
+echo "!!!!!!!!!!!!!!!Do not use this script for deployments!!!!!!!!!!!!!"
+echo "Please use the Octavia Certificate Configuration guide:"
+echo "https://docs.openstack.org/octavia/latest/admin/guides/certificates.html"
+echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
 echo $CERT_DIR
 
