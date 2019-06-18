@@ -67,11 +67,11 @@ class TestPlug(base.TestCase):
                 FAKE_MAC_ADDRESS.upper())
             self.assertEqual(FAKE_INTERFACE, interface)
 
-    @mock.patch('pyroute2.NSPopen')
+    @mock.patch('pyroute2.NSPopen', create=True)
     @mock.patch.object(plug, "webob")
-    @mock.patch('pyroute2.IPRoute')
-    @mock.patch('pyroute2.netns.create')
-    @mock.patch('pyroute2.NetNS')
+    @mock.patch('pyroute2.IPRoute', create=True)
+    @mock.patch('pyroute2.netns.create', create=True)
+    @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
     @mock.patch('os.makedirs')
@@ -103,11 +103,11 @@ class TestPlug(base.TestCase):
                            stdout=subprocess.PIPE)]
         mock_nspopen.assert_has_calls(calls, any_order=True)
 
-    @mock.patch('pyroute2.NSPopen')
+    @mock.patch('pyroute2.NSPopen', create=True)
     @mock.patch.object(plug, "webob")
-    @mock.patch('pyroute2.IPRoute')
-    @mock.patch('pyroute2.netns.create')
-    @mock.patch('pyroute2.NetNS')
+    @mock.patch('pyroute2.IPRoute', create=True)
+    @mock.patch('pyroute2.netns.create', create=True)
+    @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
     @mock.patch('os.makedirs')
@@ -144,9 +144,9 @@ class TestPlug(base.TestCase):
         mock_nspopen.assert_has_calls(calls, any_order=True)
 
     @mock.patch.object(plug, "webob")
-    @mock.patch('pyroute2.IPRoute')
-    @mock.patch('pyroute2.netns.create')
-    @mock.patch('pyroute2.NetNS')
+    @mock.patch('pyroute2.IPRoute', create=True)
+    @mock.patch('pyroute2.netns.create', create=True)
+    @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
     @mock.patch('os.makedirs')
@@ -164,7 +164,7 @@ class TestPlug(base.TestCase):
         mock_webob.Response.assert_any_call(json={'message': 'Invalid VIP'},
                                             status=400)
 
-    @mock.patch('pyroute2.NetNS')
+    @mock.patch('pyroute2.NetNS', create=True)
     def test__netns_interface_exists(self, mock_netns):
 
         netns_handle = mock_netns.return_value.__enter__.return_value

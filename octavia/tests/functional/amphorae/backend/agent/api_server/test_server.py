@@ -1030,8 +1030,8 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('os.chmod')
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
-    @mock.patch('pyroute2.IPRoute')
-    @mock.patch('pyroute2.NetNS')
+    @mock.patch('pyroute2.IPRoute', create=True)
+    @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'plug.Plug._netns_interface_exists')
@@ -1433,8 +1433,8 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('os.chmod')
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
-    @mock.patch('pyroute2.IPRoute')
-    @mock.patch('pyroute2.NetNS')
+    @mock.patch('pyroute2.IPRoute', create=True)
+    @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
     def _test_plug_network_host_routes(self, distro, mock_check_output,
                                        mock_netns, mock_pyroute2,
@@ -1554,14 +1554,14 @@ class TestServerTestCase(base.TestCase):
 
     @mock.patch('os.chmod')
     @mock.patch('shutil.copy2')
-    @mock.patch('pyroute2.NSPopen')
+    @mock.patch('pyroute2.NSPopen', create=True)
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'plug.Plug._netns_interface_exists')
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
-    @mock.patch('pyroute2.IPRoute')
-    @mock.patch('pyroute2.netns.create')
-    @mock.patch('pyroute2.NetNS')
+    @mock.patch('pyroute2.IPRoute', create=True)
+    @mock.patch('pyroute2.netns.create', create=True)
+    @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
     @mock.patch('os.makedirs')
@@ -1941,12 +1941,12 @@ class TestServerTestCase(base.TestCase):
 
     @mock.patch('os.chmod')
     @mock.patch('shutil.copy2')
-    @mock.patch('pyroute2.NSPopen')
+    @mock.patch('pyroute2.NSPopen', create=True)
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
-    @mock.patch('pyroute2.IPRoute')
-    @mock.patch('pyroute2.netns.create')
-    @mock.patch('pyroute2.NetNS')
+    @mock.patch('pyroute2.IPRoute', create=True)
+    @mock.patch('pyroute2.netns.create', create=True)
+    @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
     @mock.patch('os.makedirs')
@@ -2318,7 +2318,7 @@ class TestServerTestCase(base.TestCase):
     def test_centos_get_interface(self):
         self._test_get_interface(consts.CENTOS)
 
-    @mock.patch('pyroute2.NetNS')
+    @mock.patch('pyroute2.NetNS', create=True)
     def _test_get_interface(self, distro, mock_netns):
 
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
