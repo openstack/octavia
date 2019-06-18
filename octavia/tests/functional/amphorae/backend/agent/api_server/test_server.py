@@ -39,7 +39,7 @@ import octavia.tests.unit.base as base
 
 
 AMP_AGENT_CONF_PATH = '/etc/octavia/amphora-agent.conf'
-RANDOM_ERROR = 'random error'
+RANDOM_ERROR = b'random error'
 OK = dict(message='OK')
 
 
@@ -330,7 +330,7 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual(
             {
                 'message': 'Error starting haproxy',
-                'details': RANDOM_ERROR,
+                'details': RANDOM_ERROR.decode('utf-8'),
             }, jsonutils.loads(rv.data.decode('utf-8')))
         mock_subprocess.assert_called_with(
             ['/usr/sbin/service', 'haproxy-123', 'start'], stderr=-2)
@@ -1390,7 +1390,7 @@ class TestServerTestCase(base.TestCase):
                                           data=jsonutils.dumps(port_info))
             self.assertEqual(500, rv.status_code)
             self.assertEqual(
-                {'details': RANDOM_ERROR,
+                {'details': RANDOM_ERROR.decode('utf-8'),
                  'message': 'Error plugging network'},
                 jsonutils.loads(rv.data.decode('utf-8')))
 
@@ -1929,7 +1929,7 @@ class TestServerTestCase(base.TestCase):
                                           data=jsonutils.dumps(subnet_info))
             self.assertEqual(500, rv.status_code)
             self.assertEqual(
-                {'details': RANDOM_ERROR,
+                {'details': RANDOM_ERROR.decode('utf-8'),
                  'message': 'Error plugging VIP'},
                 jsonutils.loads(rv.data.decode('utf-8')))
 
@@ -2308,7 +2308,7 @@ class TestServerTestCase(base.TestCase):
                                           data=jsonutils.dumps(subnet_info))
             self.assertEqual(500, rv.status_code)
             self.assertEqual(
-                {'details': RANDOM_ERROR,
+                {'details': RANDOM_ERROR.decode('utf-8'),
                  'message': 'Error plugging VIP'},
                 jsonutils.loads(rv.data.decode('utf-8')))
 
