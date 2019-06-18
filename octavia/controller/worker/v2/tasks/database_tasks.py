@@ -330,8 +330,10 @@ class DeleteL7PolicyInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Delete in DB for l7policy id: %s ", l7policy.id)
-        self.l7policy_repo.delete(db_apis.get_session(), id=l7policy.id)
+        LOG.debug("Delete in DB for l7policy id: %s ",
+                  l7policy[constants.L7POLICY_ID])
+        self.l7policy_repo.delete(db_apis.get_session(),
+                                  id=l7policy[constants.L7POLICY_ID])
 
     def revert(self, l7policy, *args, **kwargs):
         """Mark the l7policy ERROR since the delete couldn't happen
@@ -340,14 +342,17 @@ class DeleteL7PolicyInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warning("Reverting delete in DB for l7policy id %s", l7policy.id)
+        LOG.warning("Reverting delete in DB for l7policy id %s",
+                    l7policy[constants.L7POLICY_ID])
         try:
-            self.l7policy_repo.update(db_apis.get_session(), l7policy.id,
+            self.l7policy_repo.update(db_apis.get_session(),
+                                      l7policy[constants.L7POLICY_ID],
                                       provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update l7policy %(l7policy)s "
                       "provisioning_status to ERROR due to: %(except)s",
-                      {'l7policy': l7policy.id, 'except': e})
+                      {'l7policy': l7policy[constants.L7POLICY_ID],
+                       'except': e})
 
 
 class DeleteL7RuleInDB(BaseDatabaseTask):
@@ -1594,8 +1599,10 @@ class UpdateL7PolicyInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for l7policy id: %s ", l7policy.id)
-        self.l7policy_repo.update(db_apis.get_session(), l7policy.id,
+        LOG.debug("Update DB for l7policy id: %s",
+                  l7policy[constants.L7POLICY_ID])
+        self.l7policy_repo.update(db_apis.get_session(),
+                                  l7policy[constants.L7POLICY_ID],
                                   **update_dict)
 
     def revert(self, l7policy, *args, **kwargs):
@@ -1606,14 +1613,15 @@ class UpdateL7PolicyInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting update l7policy in DB "
-                    "for l7policy id %s", l7policy.id)
+                    "for l7policy id %s", l7policy[constants.L7POLICY_ID])
         try:
-            self.l7policy_repo.update(db_apis.get_session(), l7policy.id,
+            self.l7policy_repo.update(db_apis.get_session(),
+                                      l7policy[constants.L7POLICY_ID],
                                       provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update l7policy %(l7p)s provisioning_status "
-                      "to ERROR due to: %(except)s", {'l7p': l7policy.id,
-                                                      'except': e})
+                      "to ERROR due to: %(except)s",
+                      {'l7p': l7policy[constants.L7POLICY_ID], 'except': e})
 
 
 class UpdateL7RuleInDB(BaseDatabaseTask):
@@ -1841,7 +1849,7 @@ class MarkHealthMonitorActiveInDB(BaseDatabaseTask):
 
         LOG.debug("Mark ACTIVE in DB for health monitor id: %s",
                   health_mon[constants.HEALTHMONITOR_ID])
-        op_status = (constants.ONLINE if health_mon['admin_state_up']
+        op_status = (constants.ONLINE if health_mon[constants.ADMIN_STATE_UP]
                      else constants.OFFLINE)
         self.health_mon_repo.update(db_apis.get_session(),
                                     health_mon[constants.HEALTHMONITOR_ID],
@@ -1978,11 +1986,13 @@ class MarkL7PolicyActiveInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark ACTIVE in DB for l7policy id: %s",
-                  l7policy.id)
-
-        op_status = constants.ONLINE if l7policy.enabled else constants.OFFLINE
+                  l7policy[constants.L7POLICY_ID])
+        db_l7policy = self.l7policy_repo.get(
+            db_apis.get_session(), id=l7policy[constants.L7POLICY_ID])
+        op_status = (constants.ONLINE if db_l7policy.enabled
+                     else constants.OFFLINE)
         self.l7policy_repo.update(db_apis.get_session(),
-                                  l7policy.id,
+                                  l7policy[constants.L7POLICY_ID],
                                   provisioning_status=constants.ACTIVE,
                                   operating_status=op_status)
 
@@ -1994,8 +2004,9 @@ class MarkL7PolicyActiveInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark l7policy ACTIVE in DB "
-                    "for l7policy id %s", l7policy.id)
-        self.task_utils.mark_l7policy_prov_status_error(l7policy.id)
+                    "for l7policy id %s", l7policy[constants.L7POLICY_ID])
+        self.task_utils.mark_l7policy_prov_status_error(
+            l7policy[constants.L7POLICY_ID])
 
 
 class MarkL7PolicyPendingCreateInDB(BaseDatabaseTask):
@@ -2012,9 +2023,9 @@ class MarkL7PolicyPendingCreateInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING CREATE in DB for l7policy id: %s",
-                  l7policy.id)
+                  l7policy[constants.L7POLICY_ID])
         self.l7policy_repo.update(db_apis.get_session(),
-                                  l7policy.id,
+                                  l7policy[constants.L7POLICY_ID],
                                   provisioning_status=constants.PENDING_CREATE)
 
     def revert(self, l7policy, *args, **kwargs):
@@ -2025,8 +2036,9 @@ class MarkL7PolicyPendingCreateInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark l7policy pending create in DB "
-                    "for l7policy id %s", l7policy.id)
-        self.task_utils.mark_l7policy_prov_status_error(l7policy.id)
+                    "for l7policy id %s", l7policy[constants.L7POLICY_ID])
+        self.task_utils.mark_l7policy_prov_status_error(
+            l7policy[constants.L7POLICY_ID])
 
 
 class MarkL7PolicyPendingDeleteInDB(BaseDatabaseTask):
@@ -2043,9 +2055,9 @@ class MarkL7PolicyPendingDeleteInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING DELETE in DB for l7policy id: %s",
-                  l7policy.id)
+                  l7policy[constants.L7POLICY_ID])
         self.l7policy_repo.update(db_apis.get_session(),
-                                  l7policy.id,
+                                  l7policy[constants.L7POLICY_ID],
                                   provisioning_status=constants.PENDING_DELETE)
 
     def revert(self, l7policy, *args, **kwargs):
@@ -2056,8 +2068,9 @@ class MarkL7PolicyPendingDeleteInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark l7policy pending delete in DB "
-                    "for l7policy id %s", l7policy.id)
-        self.task_utils.mark_l7policy_prov_status_error(l7policy.id)
+                    "for l7policy id %s", l7policy[constants.L7POLICY_ID])
+        self.task_utils.mark_l7policy_prov_status_error(
+            l7policy[constants.L7POLICY_ID])
 
 
 class MarkL7PolicyPendingUpdateInDB(BaseDatabaseTask):
@@ -2074,9 +2087,9 @@ class MarkL7PolicyPendingUpdateInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING UPDATE in DB for l7policy id: %s",
-                  l7policy.id)
+                  l7policy[constants.L7POLICY_ID])
         self.l7policy_repo.update(db_apis.get_session(),
-                                  l7policy.id,
+                                  l7policy[constants.L7POLICY_ID],
                                   provisioning_status=(constants.
                                                        PENDING_UPDATE))
 
@@ -2088,8 +2101,9 @@ class MarkL7PolicyPendingUpdateInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark l7policy pending update in DB "
-                    "for l7policy id %s", l7policy.id)
-        self.task_utils.mark_l7policy_prov_status_error(l7policy.id)
+                    "for l7policy id %s", l7policy[constants.L7POLICY_ID])
+        self.task_utils.mark_l7policy_prov_status_error(
+            l7policy[constants.L7POLICY_ID])
 
 
 class MarkL7RuleActiveInDB(BaseDatabaseTask):

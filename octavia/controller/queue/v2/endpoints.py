@@ -136,17 +136,20 @@ class Endpoints(object):
         LOG.info('Deleting member \'%s\'...', member.get(constants.MEMBER_ID))
         self.worker.delete_member(member)
 
-    def create_l7policy(self, context, l7policy_id):
-        LOG.info('Creating l7policy \'%s\'...', l7policy_id)
-        self.worker.create_l7policy(l7policy_id)
+    def create_l7policy(self, context, l7policy):
+        LOG.info('Creating l7policy \'%s\'...',
+                 l7policy.get(constants.L7POLICY_ID))
+        self.worker.create_l7policy(l7policy)
 
-    def update_l7policy(self, context, l7policy_id, l7policy_updates):
-        LOG.info('Updating l7policy \'%s\'...', l7policy_id)
-        self.worker.update_l7policy(l7policy_id, l7policy_updates)
+    def update_l7policy(self, context, original_l7policy, l7policy_updates):
+        LOG.info('Updating l7policy \'%s\'...', original_l7policy.get(
+            constants.L7POLICY_ID))
+        self.worker.update_l7policy(original_l7policy, l7policy_updates)
 
-    def delete_l7policy(self, context, l7policy_id):
-        LOG.info('Deleting l7policy \'%s\'...', l7policy_id)
-        self.worker.delete_l7policy(l7policy_id)
+    def delete_l7policy(self, context, l7policy):
+        LOG.info('Deleting l7policy \'%s\'...', l7policy.get(
+            constants.L7POLICY_ID))
+        self.worker.delete_l7policy(l7policy)
 
     def create_l7rule(self, context, l7rule_id):
         LOG.info('Creating l7rule \'%s\'...', l7rule_id)

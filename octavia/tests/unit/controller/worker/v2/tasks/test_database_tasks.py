@@ -121,7 +121,7 @@ class TestDatabaseTasks(base.TestCase):
         self.health_mon_mock = {
             constants.HEALTHMONITOR_ID: HM_ID,
             constants.POOL_ID: POOL_ID,
-            'admin_state_up': True,
+            constants.ADMIN_STATE_UP: True,
         }
 
         self.listener_mock = mock.MagicMock()
@@ -147,12 +147,15 @@ class TestDatabaseTasks(base.TestCase):
             constants.POOL_ID: POOL_ID,
         }
 
-        self.l7policy_mock = mock.MagicMock()
-        self.l7policy_mock.id = L7POLICY_ID
+        self.l7policy_mock = {
+            constants.L7POLICY_ID: L7POLICY_ID,
+            constants.ADMIN_STATE_UP: True,
+        }
 
         self.l7rule_mock = mock.MagicMock()
         self.l7rule_mock.id = L7RULE_ID
-        self.l7rule_mock.l7policy = self.l7policy_mock
+        self.l7rule_mock.l7policy = mock.MagicMock()
+        self.l7rule_mock.l7policy.id = L7POLICY_ID
 
         self.amphora = {
             constants.ID: AMP_ID,
@@ -374,7 +377,7 @@ class TestDatabaseTasks(base.TestCase):
                                    mock_amphora_repo_delete):
 
         delete_l7policy = database_tasks.DeleteL7PolicyInDB()
-        delete_l7policy.execute(_l7policy_mock)
+        delete_l7policy.execute(self.l7policy_mock)
 
         repo.L7PolicyRepository.delete.assert_called_once_with(
             'TEST',
@@ -383,7 +386,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert
 
         mock_l7policy_repo_delete.reset_mock()
-        delete_l7policy.revert(_l7policy_mock)
+        delete_l7policy.revert(self.l7policy_mock)
 
 # TODO(sbalukoff) Fix
 #        repo.ListenerRepository.update.assert_called_once_with(
@@ -2232,7 +2235,9 @@ class TestDatabaseTasks(base.TestCase):
             provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.L7PolicyRepository.update')
+    @mock.patch('octavia.db.repositories.L7PolicyRepository.get')
     def test_mark_l7policy_active_in_db(self,
+                                        mock_l7policy_repo_get,
                                         mock_l7policy_repo_update,
                                         mock_generate_uuid,
                                         mock_LOG,
@@ -2243,6 +2248,7 @@ class TestDatabaseTasks(base.TestCase):
                                         mock_amphora_repo_delete):
 
         mark_l7policy_active = (database_tasks.MarkL7PolicyActiveInDB())
+        mock_l7policy_repo_get.return_value = _l7policy_mock
         mark_l7policy_active.execute(self.l7policy_mock)
 
         mock_l7policy_repo_update.assert_called_once_with(
