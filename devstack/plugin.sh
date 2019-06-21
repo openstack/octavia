@@ -44,7 +44,7 @@ function install_diskimage_builder {
         GITDIR["diskimage-builder"]=$DISKIMAGE_BUILDER_DIR
         GITBRANCH["diskimage-builder"]=$DISKIMAGE_BUILDER_REPO_REF
         git_clone_by_name "diskimage-builder"
-        setup_dev_lib "diskimage-builder"
+        setup_dev_lib -bindep "diskimage-builder"
     fi
 }
 
