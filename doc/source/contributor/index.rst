@@ -89,14 +89,22 @@ Version 1.1 (queens)
 
    specs/version1.1/*
 
-Indices and Search
-------------------
 
-.. toctree::
-   :hidden:
+.. only:: latex
 
-   modules/modules
+   Module Reference
+   ----------------
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   .. toctree::
+      :hidden:
+
+      modules/modules
+
+.. only:: html
+
+   Indices and Search
+   ------------------
+
+   * :ref:`genindex`
+   * :ref:`modindex`
+   * :ref:`search`

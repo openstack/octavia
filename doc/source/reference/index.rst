@@ -9,9 +9,11 @@ Octavia Reference
    *
    Command Line Interface Reference <https://docs.openstack.org/python-octaviaclient/latest/cli/index.html>
 
-Indices and Search
-------------------
+.. only:: html
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   Indices and Search
+   ------------------
+
+   * :ref:`genindex`
+   * :ref:`modindex`
+   * :ref:`search`

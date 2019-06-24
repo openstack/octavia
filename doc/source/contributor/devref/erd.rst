@@ -10,8 +10,15 @@ Below is the current Octavia database data model.
 * Items labeled as "PROPERTY" are data model relationships and are not
   present in the database.
 
-Click to enlarge the diagram.
+.. only:: html
 
-.. image:: erd.svg
-    :width: 660px
-    :target: ../../_images/erd.svg
+   Click to enlarge the diagram.
+
+   .. image:: erd.svg
+       :width: 660px
+       :target: ../../_images/erd.svg
+
+.. only:: latex
+
+   .. image:: erd.svg
+       :width: 660px

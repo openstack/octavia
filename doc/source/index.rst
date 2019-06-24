@@ -11,8 +11,10 @@ See :doc:`reference/introduction` for an overview of Octavia.
 
 For information on what is new see the `Octavia Release Notes <https://docs.openstack.org/releasenotes/octavia/>`_.
 
-To align with the overall OpenStack documentation, the Octavia documentation
-is grouped into the following topic areas.
+.. only:: html
+
+   To align with the overall OpenStack documentation, the Octavia documentation
+   is grouped into the following topic areas.
 
 .. toctree::
    :maxdepth: 1
@@ -26,6 +28,6 @@ is grouped into the following topic areas.
    reference/index.rst
    user/index.rst
 
+.. only:: html
 
-
-:ref:`search`
+   :ref:`search`
