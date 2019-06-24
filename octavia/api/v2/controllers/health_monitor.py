@@ -285,14 +285,13 @@ class HealthMonitorController(base.BaseController):
                 raise exceptions.InvalidOption(
                     value=consts.EXPECTED_CODES, option='health monitors of '
                     'type {}'.format(db_hm.type))
-        else:
-            # For HTTP health monitor these cannot be null/None
-            if health_monitor.http_method is None:
-                health_monitor.http_method = wtypes.Unset
-            if health_monitor.url_path is None:
-                health_monitor.url_path = wtypes.Unset
-            if health_monitor.expected_codes is None:
-                health_monitor.expected_codes = wtypes.Unset
+        if health_monitor.delay is None:
+            raise exceptions.InvalidOption(value=None, option=consts.DELAY)
+        if health_monitor.max_retries is None:
+            raise exceptions.InvalidOption(value=None,
+                                           option=consts.MAX_RETRIES)
+        if health_monitor.timeout is None:
+            raise exceptions.InvalidOption(value=None, option=consts.TIMEOUT)
 
         if health_monitor.domain_name and not (
                 db_hm.http_version or health_monitor.http_version):
@@ -307,6 +306,29 @@ class HealthMonitorController(base.BaseController):
                 raise exceptions.InvalidOption(
                     value='http_version %s' % http_version,
                     option='health monitors HTTP 1.1 domain name health check')
+
+    def _set_default_on_none(self, health_monitor):
+        """Reset settings to their default values if None/null was passed in
+
+        A None/null value can be passed in to clear a value. PUT values
+        that were not provided by the user have a type of wtypes.UnsetType.
+        If the user is attempting to clear values, they should either
+        be set to None (for example in the name field) or they should be
+        reset to their default values.
+        This method is intended to handle those values that need to be set
+        back to a default value.
+        """
+        if health_monitor.http_method is None:
+            health_monitor.http_method = (
+                consts.HEALTH_MONITOR_HTTP_DEFAULT_METHOD)
+        if health_monitor.url_path is None:
+            health_monitor.url_path = (
+                consts.HEALTH_MONITOR_DEFAULT_URL_PATH)
+        if health_monitor.expected_codes is None:
+            health_monitor.expected_codes = (
+                consts.HEALTH_MONITOR_DEFAULT_EXPECTED_CODES)
+        if health_monitor.max_retries_down is None:
+            health_monitor.max_retries_down = consts.DEFAULT_MAX_RETRIES_DOWN
 
     @wsme_pecan.wsexpose(hm_types.HealthMonitorRootResponse, wtypes.text,
                          body=hm_types.HealthMonitorRootPUT, status_code=200)
@@ -327,6 +349,9 @@ class HealthMonitorController(base.BaseController):
         if (pool.protocol == consts.PROTOCOL_UDP and
                 db_hm.type == consts.HEALTH_MONITOR_UDP_CONNECT):
             self._validate_healthmonitor_request_for_udp(health_monitor)
+
+        self._set_default_on_none(health_monitor)
+
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
