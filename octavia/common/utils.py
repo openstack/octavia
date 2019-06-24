@@ -38,7 +38,11 @@ def get_hostname():
 
 
 def base64_sha1_string(string_to_hash):
-    hash_str = hashlib.sha1(string_to_hash.encode('utf-8')).digest()
+    """Get a b64-encoded sha1 hash of a string. Not intended to be secure!"""
+    # TODO(rm_work): applying nosec here because this is not intended to be
+    # secure, it's just a way to get a consistent ID. Changing this would
+    # break backwards compatibility with existing loadbalancers.
+    hash_str = hashlib.sha1(string_to_hash.encode('utf-8')).digest()  # nosec
     b64_str = base64.b64encode(hash_str, str.encode('_-', 'ascii'))
     return b64_str.decode('UTF-8')
 
