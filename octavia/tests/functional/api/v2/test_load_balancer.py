@@ -2209,7 +2209,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
-    def test_with_one_listener_sni_containers(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_with_one_listener_sni_containers(self, mock_load_cert):
         create_sni_containers, expected_sni_containers = (
             self._get_sni_container_bodies())
         create_listener, expected_listener = self._get_listener_bodies(
@@ -2415,7 +2416,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         body = self._build_body(create_lb)
         return body, expected_lb
 
-    def test_with_one_of_everything(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_with_one_of_everything(self, mock_load_cert):
         body, expected_lb = self._test_with_one_of_everything_helper()
         response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
@@ -2497,7 +2499,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         self.start_quota_mock(data_models.HealthMonitor)
         self.post(self.LBS_PATH, body, status=403)
 
-    def test_create_over_quota_sanity_check(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_create_over_quota_sanity_check(self, mock_load_cert):
         # This one should create, as we don't check quotas on L7Policies
         body, _ = self._test_with_one_of_everything_helper()
         self.start_quota_mock(data_models.L7Policy)

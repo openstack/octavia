@@ -334,6 +334,12 @@ def build_pem(tls_container):
     return b'\n'.join(pem) + b'\n'
 
 
+def load_certificate_data(cert_mngr, cert_ref, context):
+    """Load TLS certificate data."""
+    return _map_cert_tls_container(
+        cert_mngr.get_cert(context, cert_ref, check_only=True))
+
+
 def load_certificates_data(cert_mngr, listener, context=None):
     """Load TLS certificate data from the listener.
 
@@ -345,16 +351,13 @@ def load_certificates_data(cert_mngr, listener, context=None):
         context = oslo_context.RequestContext(project_id=listener.project_id)
 
     if listener.tls_certificate_id:
-        tls_cert = _map_cert_tls_container(
-            cert_mngr.get_cert(context,
-                               listener.tls_certificate_id,
-                               check_only=True))
+        tls_cert = load_certificate_data(
+            cert_mngr, listener.tls_certificate_id, context)
+
     if listener.sni_containers:
         for sni_cont in listener.sni_containers:
-            cert_container = _map_cert_tls_container(
-                cert_mngr.get_cert(context,
-                                   sni_cont.tls_container_id,
-                                   check_only=True))
+            cert_container = load_certificate_data(
+                cert_mngr, sni_cont.tls_container_id, context)
             sni_certs.append(cert_container)
     return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
 

@@ -437,7 +437,8 @@ class TestListener(base.BaseAPITest):
         listener_path = self.listener_path
         self.get(listener_path.format(listener_id='SEAN-CONNERY'), status=404)
 
-    def test_create(self, **optionals):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_create(self, mock_load_cert, **optionals):
         sni1 = uuidutils.generate_uuid()
         sni2 = uuidutils.generate_uuid()
         lb_listener = {'name': 'listener1', 'default_pool_id': None,
@@ -480,7 +481,8 @@ class TestListener(base.BaseAPITest):
         self.create_listener(constants.PROTOCOL_HTTP, 80, self.lb_id,
                              status=409)
 
-    def test_create_bad_tls_ref(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_create_bad_tls_ref(self, mock_load_cert):
         sni1 = uuidutils.generate_uuid()
         sni2 = uuidutils.generate_uuid()
         tls_ref = uuidutils.generate_uuid()
@@ -492,7 +494,7 @@ class TestListener(base.BaseAPITest):
                        'loadbalancer_id': self.lb_id}
 
         body = self._build_body(lb_listener)
-        self.cert_manager_mock().get_cert.side_effect = [
+        mock_load_cert.side_effect = [
             Exception("bad cert"), None, Exception("bad_cert")]
         response = self.post(self.LISTENERS_PATH, body, status=400).json
         self.assertIn(sni1, response['faultstring'])
@@ -597,7 +599,8 @@ class TestListener(base.BaseAPITest):
             listener_prov_status=constants.ERROR,
             listener_op_status=constants.OFFLINE)
 
-    def test_create_authorized(self, **optionals):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_create_authorized(self, mock_load_cert, **optionals):
         sni1 = uuidutils.generate_uuid()
         sni2 = uuidutils.generate_uuid()
         lb_listener = {'name': 'listener1', 'default_pool_id': None,
@@ -723,7 +726,8 @@ class TestListener(base.BaseAPITest):
             listener_id=api_listener.get('id'),
             listener_prov_status=constants.ERROR)
 
-    def test_update(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_update(self, mock_load_cert):
         tls_uuid = uuidutils.generate_uuid()
         listener = self.create_listener(
             constants.PROTOCOL_TCP, 80, self.lb_id,
@@ -774,7 +778,8 @@ class TestListener(base.BaseAPITest):
         self.assert_final_listener_statuses(self.lb_id,
                                             listener['listener']['id'])
 
-    def test_update_unset_defaults(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_update_unset_defaults(self, mock_load_cert):
         tls_uuid = uuidutils.generate_uuid()
         listener = self.create_listener(
             constants.PROTOCOL_TERMINATED_HTTPS, 80, self.lb_id,
@@ -796,7 +801,8 @@ class TestListener(base.BaseAPITest):
         self.assertEqual([], api_listener['sni_container_refs'])
         self.assertNotEqual(listener, api_listener)
 
-    def test_update_authorized(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_update_authorized(self, mock_load_cert):
         tls_uuid = uuidutils.generate_uuid()
         listener = self.create_listener(
             constants.PROTOCOL_TCP, 80, self.lb_id,
@@ -850,7 +856,8 @@ class TestListener(base.BaseAPITest):
         self.assert_final_listener_statuses(self.lb_id,
                                             api_listener['id'])
 
-    def test_update_not_authorized(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_update_not_authorized(self, mock_load_cert):
         tls_uuid = uuidutils.generate_uuid()
         listener = self.create_listener(
             constants.PROTOCOL_TCP, 80, self.lb_id,
@@ -1037,7 +1044,8 @@ class TestListener(base.BaseAPITest):
             listener_id=listener['listener'].get('id'))
         self.put(listener_path, {}, status=400)
 
-    def test_update_bad_tls_ref(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_update_bad_tls_ref(self, mock_load_cert):
         sni1 = uuidutils.generate_uuid()
         sni2 = uuidutils.generate_uuid()
         tls_ref = uuidutils.generate_uuid()
@@ -1060,7 +1068,7 @@ class TestListener(base.BaseAPITest):
         body = self._build_body(lb_listener_put)
         listener_path = self.LISTENER_PATH.format(
             listener_id=api_listener['id'])
-        self.cert_manager_mock().get_cert.side_effect = [
+        mock_load_cert.side_effect = [
             Exception("bad cert"), None, Exception("bad cert")]
         response = self.put(listener_path, body, status=400).json
         self.assertIn(tls_ref2, response['faultstring'])
@@ -1155,7 +1163,8 @@ class TestListener(base.BaseAPITest):
             listener_id=api_listener['id'])
         self.delete(listener_path, status=204)
 
-    def test_create_with_tls_termination_data(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_create_with_tls_termination_data(self, mock_load_cert):
         cert_id = uuidutils.generate_uuid()
         listener = self.create_listener(constants.PROTOCOL_TERMINATED_HTTPS,
                                         80, self.lb_id,
@@ -1165,7 +1174,8 @@ class TestListener(base.BaseAPITest):
         get_listener = self.get(listener_path).json['listener']
         self.assertEqual(cert_id, get_listener['default_tls_container_ref'])
 
-    def test_update_with_tls_termination_data(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_update_with_tls_termination_data(self, mock_load_cert):
         cert_id = uuidutils.generate_uuid()
         listener = self.create_listener(constants.PROTOCOL_TERMINATED_HTTPS,
                                         80, self.lb_id)
@@ -1192,7 +1202,8 @@ class TestListener(base.BaseAPITest):
             .format(constants.PROTOCOL_TERMINATED_HTTPS),
             listener.get('faultstring'))
 
-    def test_create_with_sni_data(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_create_with_sni_data(self, mock_load_cert):
         sni_id1 = uuidutils.generate_uuid()
         sni_id2 = uuidutils.generate_uuid()
         listener = self.create_listener(constants.PROTOCOL_HTTP, 80,
@@ -1204,7 +1215,8 @@ class TestListener(base.BaseAPITest):
         self.assertItemsEqual([sni_id1, sni_id2],
                               get_listener['sni_container_refs'])
 
-    def test_update_with_sni_data(self):
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificate_data')
+    def test_update_with_sni_data(self, mock_load_cert):
         sni_id1 = uuidutils.generate_uuid()
         sni_id2 = uuidutils.generate_uuid()
         listener = self.create_listener(constants.PROTOCOL_HTTP, 80,

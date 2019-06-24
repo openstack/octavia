@@ -30,6 +30,7 @@ from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import stats
+from octavia.common.tls_utils import cert_parser
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 
@@ -139,7 +140,8 @@ class ListenersController(base.BaseController):
         bad_refs = []
         for ref in tls_refs:
             try:
-                self.cert_manager.get_cert(context, ref, check_only=True)
+                cert_parser.load_certificate_data(
+                    self.cert_manager, ref, context)
             except Exception:
                 bad_refs.append(ref)
 

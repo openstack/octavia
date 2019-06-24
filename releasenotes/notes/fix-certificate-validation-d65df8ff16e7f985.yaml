@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue where invalid certificates would trigger an amphora failover
+    loop. Certificates are now validated at API level.
