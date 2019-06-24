@@ -1,0 +1,2 @@
+# Docs package dependencies
+graphviz [doc]
