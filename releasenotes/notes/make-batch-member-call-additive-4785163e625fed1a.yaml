@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    The batch member update resource can now be used additively by passing the
+    query parameter ``additive_only=True``. Existing members can be updated and
+    new members will be created, but missing members will not be deleted.

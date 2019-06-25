@@ -620,7 +620,6 @@ class TestMember(base.BaseAPITest):
             ('192.0.2.6', 80, 'PENDING_CREATE'),
         ]
 
-        member_ids = {}
         provider_creates = []
         provider_updates = []
         for rm in returned_members:
@@ -628,7 +627,6 @@ class TestMember(base.BaseAPITest):
                 (rm['address'],
                  rm['protocol_port'],
                  rm['provisioning_status']), expected_members)
-            member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
 
             provider_dict = driver_utils.member_dict_to_provider_dict(rm)
             # Adjust for API response
@@ -672,7 +670,6 @@ class TestMember(base.BaseAPITest):
             ('192.0.2.6', 80, 'PENDING_CREATE', ['test_tag2']),
         ]
 
-        member_ids = {}
         provider_members = []
         for rm in returned_members:
             self.assertIn(
@@ -680,7 +677,6 @@ class TestMember(base.BaseAPITest):
                  rm['protocol_port'],
                  rm['provisioning_status'],
                  rm['tags']), expected_members)
-            member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
 
             provider_dict = driver_utils.member_dict_to_provider_dict(rm)
             # Adjust for API response
@@ -725,6 +721,77 @@ class TestMember(base.BaseAPITest):
 
     @mock.patch('octavia.api.drivers.driver_factory.get_driver')
     @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_additive_only_batch_members(self, mock_provider, mock_get_driver):
+        mock_driver = mock.MagicMock()
+        mock_driver.name = 'noop_driver'
+        mock_get_driver.return_value = mock_driver
+
+        member1 = {'address': '192.0.2.1', 'protocol_port': 80}
+        member2 = {'address': '192.0.2.2', 'protocol_port': 80}
+        member3 = {'address': '192.0.2.3', 'protocol_port': 80}
+        member4 = {'address': '192.0.2.4', 'protocol_port': 80}
+        member5 = {'address': '192.0.2.5', 'protocol_port': 80}
+        member6 = {'address': '192.0.2.6', 'protocol_port': 80}
+        members = [member1, member2, member3, member4]
+        for m in members:
+            self.create_member(pool_id=self.pool_id, **m)
+            self.set_lb_status(self.lb_id)
+
+        # We are only concerned about the batch update, so clear out the
+        # create members calls above.
+        mock_provider.reset_mock()
+
+        req_dict = [member1, member2, member5, member6]
+        body = {self.root_tag_list: req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        path = "{}?additive_only=True".format(path)
+        self.put(path, body, status=202)
+        returned_members = self.get(
+            self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        ).json.get(self.root_tag_list)
+
+        # Members 1+2 should be updated, 3+4 left alone, and 5+6 created
+        expected_members = [
+            ('192.0.2.1', 80, 'PENDING_UPDATE'),
+            ('192.0.2.2', 80, 'PENDING_UPDATE'),
+            ('192.0.2.3', 80, 'ACTIVE'),
+            ('192.0.2.4', 80, 'ACTIVE'),
+            ('192.0.2.5', 80, 'PENDING_CREATE'),
+            ('192.0.2.6', 80, 'PENDING_CREATE'),
+        ]
+
+        provider_creates = []
+        provider_updates = []
+        provider_ignored = []
+        for rm in returned_members:
+            self.assertIn(
+                (rm['address'],
+                 rm['protocol_port'],
+                 rm['provisioning_status']), expected_members)
+
+            provider_dict = driver_utils.member_dict_to_provider_dict(rm)
+            # Adjust for API response
+            provider_dict['pool_id'] = self.pool_id
+            if rm['provisioning_status'] == 'PENDING_UPDATE':
+                del provider_dict['name']
+                del provider_dict['subnet_id']
+                provider_updates.append(driver_dm.Member(**provider_dict))
+            elif rm['provisioning_status'] == 'PENDING_CREATE':
+                provider_dict['name'] = None
+                provider_creates.append(driver_dm.Member(**provider_dict))
+            elif rm['provisioning_status'] == 'ACTIVE':
+                provider_dict['name'] = None
+                provider_ignored.append(driver_dm.Member(**provider_dict))
+        # Order matters here
+        provider_creates += provider_updates
+        provider_creates += provider_ignored
+
+        mock_provider.assert_called_once_with(u'noop_driver',
+                                              mock_driver.member_batch_update,
+                                              provider_creates)
+
+    @mock.patch('octavia.api.drivers.driver_factory.get_driver')
+    @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_update_batch_members(self, mock_provider, mock_get_driver):
         mock_driver = mock.MagicMock()
         mock_driver.name = 'noop_driver'
@@ -756,14 +823,12 @@ class TestMember(base.BaseAPITest):
             ('192.0.2.2', 80, 'PENDING_UPDATE'),
         ]
 
-        member_ids = {}
         provider_members = []
         for rm in returned_members:
             self.assertIn(
                 (rm['address'],
                  rm['protocol_port'],
                  rm['provisioning_status']), expected_members)
-            member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
 
             provider_dict = driver_utils.member_dict_to_provider_dict(rm)
             # Adjust for API response
@@ -807,14 +872,12 @@ class TestMember(base.BaseAPITest):
             ('192.0.2.4', 80, 'PENDING_DELETE'),
         ]
 
-        member_ids = {}
         provider_members = []
         for rm in returned_members:
             self.assertIn(
                 (rm['address'],
                  rm['protocol_port'],
                  rm['provisioning_status']), expected_members)
-            member_ids[(rm['address'], rm['protocol_port'])] = rm['id']
 
         mock_provider.assert_called_once_with(u'noop_driver',
                                               mock_driver.member_batch_update,
