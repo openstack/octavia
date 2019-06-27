@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue with the health manager reporting an UnboundLocalError if
+    it gets an exception attempting to get a database connection.
