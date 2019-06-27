@@ -1,0 +1,11 @@
+---
+upgrade:
+  - |
+    A new amphora image is required to resolve the amphora memory issues when
+    a load balancer has multiple listeners and the amphora image uses
+    haproxy 1.8 or newer.
+fixes:
+  - |
+    Fixed an issue with load balancers that have multiple listeners when using
+    an amphora image that contains HAProxy 1.8 or newer. An updated amphora
+    image is required to apply this fix.

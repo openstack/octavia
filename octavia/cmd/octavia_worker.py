@@ -36,3 +36,6 @@ def main():
            args=(CONF,))
     oslo_config_glue.setup(sm, CONF, reload_method="mutate")
     sm.run()
+
+if __name__ == "__main__":
+    main()

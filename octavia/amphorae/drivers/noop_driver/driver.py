@@ -37,44 +37,41 @@ class NoopManager(object):
         super(NoopManager, self).__init__()
         self.amphoraconfig = {}
 
-    def update_amphora_listeners(self, listeners, amphora_index,
-                                 amphorae, timeout_dict):
-        amphora_id = amphorae[amphora_index].id
-        for listener in listeners:
+    def update_amphora_listeners(self, loadbalancer, amphora, timeout_dict):
+        amphora_id = amphora.id
+        for listener in loadbalancer.listeners:
             LOG.debug("Amphora noop driver update_amphora_listeners, "
                       "listener %s, amphora %s, timeouts %s", listener.id,
                       amphora_id, timeout_dict)
             self.amphoraconfig[(listener.id, amphora_id)] = (
                 listener, amphora_id, timeout_dict, "update_amp")
 
-    def update(self, listener, vip):
+    def update(self, loadbalancer):
         LOG.debug("Amphora %s no-op, update listener %s, vip %s",
-                  self.__class__.__name__, listener.protocol_port,
-                  vip.ip_address)
-        self.amphoraconfig[(listener.protocol_port,
-                            vip.ip_address)] = (listener, vip, 'active')
-
-    def stop(self, listener, vip):
-        LOG.debug("Amphora %s no-op, stop listener %s, vip %s",
                   self.__class__.__name__,
-                  listener.protocol_port, vip.ip_address)
-        self.amphoraconfig[(listener.protocol_port,
-                            vip.ip_address)] = (listener, vip, 'stop')
+                  tuple(l.protocol_port for l in loadbalancer.listeners),
+                  loadbalancer.vip.ip_address)
+        self.amphoraconfig[
+            (tuple(l.protocol_port for l in loadbalancer.listeners),
+             loadbalancer.vip.ip_address)] = (loadbalancer.listeners,
+                                              loadbalancer.vip,
+                                              'active')
 
-    def start(self, listener, vip, amphora=None):
-        LOG.debug("Amphora %s no-op, start listener %s, vip %s, amp %s",
-                  self.__class__.__name__,
-                  listener.protocol_port, vip.ip_address, amphora)
-        self.amphoraconfig[(listener.protocol_port,
-                            vip.ip_address, amphora)] = (listener, vip,
-                                                         amphora, 'start')
+    def start(self, loadbalancer, amphora=None):
+        LOG.debug("Amphora %s no-op, start listeners, lb %s, amp %s",
+                  self.__class__.__name__, loadbalancer.id, amphora)
+        self.amphoraconfig[
+            (loadbalancer.id, amphora.id)] = (loadbalancer, amphora,
+                                              'start')
 
-    def delete(self, listener, vip):
+    def delete(self, listener):
         LOG.debug("Amphora %s no-op, delete listener %s, vip %s",
                   self.__class__.__name__,
-                  listener.protocol_port, vip.ip_address)
+                  listener.protocol_port,
+                  listener.load_balancer.vip.ip_address)
         self.amphoraconfig[(listener.protocol_port,
-                            vip.ip_address)] = (listener, vip, 'delete')
+                            listener.load_balancer.vip.ip_address)] = (
+            listener, listener.load_balancer.vip, 'delete')
 
     def get_info(self, amphora):
         LOG.debug("Amphora %s no-op, info amphora %s",
@@ -124,27 +121,22 @@ class NoopAmphoraLoadBalancerDriver(
         super(NoopAmphoraLoadBalancerDriver, self).__init__()
         self.driver = NoopManager()
 
-    def update_amphora_listeners(self, listeners, amphora_index,
-                                 amphorae, timeout_dict):
+    def update_amphora_listeners(self, loadbalancer, amphora, timeout_dict):
 
-        self.driver.update_amphora_listeners(listeners, amphora_index,
-                                             amphorae, timeout_dict)
+        self.driver.update_amphora_listeners(loadbalancer, amphora,
+                                             timeout_dict)
 
-    def update(self, listener, vip):
+    def update(self, loadbalancer):
 
-        self.driver.update(listener, vip)
+        self.driver.update(loadbalancer)
 
-    def stop(self, listener, vip):
+    def start(self, loadbalancer, amphora=None):
 
-        self.driver.stop(listener, vip)
+        self.driver.start(loadbalancer, amphora)
 
-    def start(self, listener, vip, amphora=None):
+    def delete(self, listener):
 
-        self.driver.start(listener, vip, amphora)
-
-    def delete(self, listener, vip):
-
-        self.driver.delete(listener, vip)
+        self.driver.delete(listener)
 
     def get_info(self, amphora):
 

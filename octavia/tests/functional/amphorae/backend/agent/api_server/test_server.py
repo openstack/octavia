@@ -118,11 +118,11 @@ class TestServerTestCase(base.TestCase):
             mock_distro_id.return_value = distro
             if distro == consts.UBUNTU:
                 rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                         '/listeners/amp_123/123/haproxy',
+                                         '/loadbalancer/amp_123/123/haproxy',
                                          data='test')
             elif distro == consts.CENTOS:
                 rv = self.centos_app.put('/' + api_server.VERSION +
-                                         '/listeners/amp_123/123/haproxy',
+                                         '/loadbalancer/amp_123/123/haproxy',
                                          data='test')
             mode = stat.S_IRUSR | stat.S_IWUSR
             mock_open.assert_called_with(file_name, flags, mode)
@@ -159,11 +159,11 @@ class TestServerTestCase(base.TestCase):
             mock_distro_id.return_value = distro
             if distro == consts.UBUNTU:
                 rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                         '/listeners/amp_123/123/haproxy',
+                                         '/loadbalancer/amp_123/123/haproxy',
                                          data='test')
             elif distro == consts.CENTOS:
                 rv = self.centos_app.put('/' + api_server.VERSION +
-                                         '/listeners/amp_123/123/haproxy',
+                                         '/loadbalancer/amp_123/123/haproxy',
                                          data='test')
             self.assertEqual(500, rv.status_code)
 
@@ -188,11 +188,11 @@ class TestServerTestCase(base.TestCase):
 
             if distro == consts.UBUNTU:
                 rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                         '/listeners/amp_123/123/haproxy',
+                                         '/loadbalancer/amp_123/123/haproxy',
                                          data='test')
             elif distro == consts.CENTOS:
                 rv = self.centos_app.put('/' + api_server.VERSION +
-                                         '/listeners/amp_123/123/haproxy',
+                                         '/loadbalancer/amp_123/123/haproxy',
                                          data='test')
 
             self.assertEqual(202, rv.status_code)
@@ -220,11 +220,11 @@ class TestServerTestCase(base.TestCase):
             mock_distro_id.return_value = distro
             if distro == consts.UBUNTU:
                 rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                         '/listeners/amp_123/123/haproxy',
+                                         '/loadbalancer/amp_123/123/haproxy',
                                          data='test')
             elif distro == consts.CENTOS:
                 rv = self.centos_app.put('/' + api_server.VERSION +
-                                         '/listeners/amp_123/123/haproxy',
+                                         '/loadbalancer/amp_123/123/haproxy',
                                          data='test')
             self.assertEqual(400, rv.status_code)
             self.assertEqual(
@@ -255,11 +255,11 @@ class TestServerTestCase(base.TestCase):
             mock_distro_id.return_value = distro
             if distro == consts.UBUNTU:
                 rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                         '/listeners/amp_123/123/haproxy',
+                                         '/loadbalancer/amp_123/123/haproxy',
                                          data='test')
             elif distro == consts.CENTOS:
                 rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                         '/listeners/amp_123/123/haproxy',
+                                         '/loadbalancer/amp_123/123/haproxy',
                                          data='test')
             self.assertEqual(500, rv.status_code)
 
@@ -269,45 +269,49 @@ class TestServerTestCase(base.TestCase):
     def test_centos_start(self):
         self._test_start(consts.CENTOS)
 
+    @mock.patch('os.listdir')
     @mock.patch('os.path.exists')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
-                'vrrp_check_script_update')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
+                'Loadbalancer.vrrp_check_script_update')
     @mock.patch('subprocess.check_output')
-    def _test_start(self, distro, mock_subprocess, mock_vrrp, mock_exists):
+    def _test_start(self, distro, mock_subprocess, mock_vrrp, mock_exists,
+                    mock_listdir):
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/error')
+                                     '/loadbalancer/123/error')
         elif distro == consts.CENTOS:
             rv = self.centos_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/error')
+                                     '/loadbalancer/123/error')
         self.assertEqual(400, rv.status_code)
         self.assertEqual(
             {'message': 'Invalid Request',
              'details': 'Unknown action: error', },
             jsonutils.loads(rv.data.decode('utf-8')))
 
+        mock_exists.reset_mock()
         mock_exists.return_value = False
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/start')
+                                     '/loadbalancer/123/start')
         elif distro == consts.CENTOS:
             rv = self.centos_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/start')
+                                     '/loadbalancer/123/start')
         self.assertEqual(404, rv.status_code)
         self.assertEqual(
-            {'message': 'Listener Not Found',
-             'details': 'No listener with UUID: 123'},
+            {'message': 'Loadbalancer Not Found',
+             'details': 'No loadbalancer with UUID: 123'},
             jsonutils.loads(rv.data.decode('utf-8')))
-        mock_exists.assert_called_with('/var/lib/octavia/123/haproxy.cfg')
+        mock_exists.assert_called_with('/var/lib/octavia')
 
         mock_exists.return_value = True
+        mock_listdir.return_value = ['123']
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/start')
+                                     '/loadbalancer/123/start')
         elif distro == consts.CENTOS:
             rv = self.centos_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/start')
+                                     '/loadbalancer/123/start')
         self.assertEqual(202, rv.status_code)
         self.assertEqual(
             {'message': 'OK',
@@ -322,10 +326,10 @@ class TestServerTestCase(base.TestCase):
             7, 'test', RANDOM_ERROR)
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/start')
+                                     '/loadbalancer/123/start')
         elif distro == consts.CENTOS:
             rv = self.centos_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/start')
+                                     '/loadbalancer/123/start')
         self.assertEqual(500, rv.status_code)
         self.assertEqual(
             {
@@ -341,26 +345,28 @@ class TestServerTestCase(base.TestCase):
     def test_centos_reload(self):
         self._test_reload(consts.CENTOS)
 
+    @mock.patch('os.listdir')
     @mock.patch('os.path.exists')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
-                'vrrp_check_script_update')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
-                '_check_haproxy_status')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
+                'Loadbalancer.vrrp_check_script_update')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
+                'Loadbalancer._check_haproxy_status')
     @mock.patch('subprocess.check_output')
     def _test_reload(self, distro, mock_subprocess, mock_haproxy_status,
-                     mock_vrrp, mock_exists):
+                     mock_vrrp, mock_exists, mock_listdir):
 
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
 
         # Process running so reload
         mock_exists.return_value = True
+        mock_listdir.return_value = ['123']
         mock_haproxy_status.return_value = consts.ACTIVE
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/reload')
+                                     '/loadbalancer/123/reload')
         elif distro == consts.CENTOS:
             rv = self.centos_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/reload')
+                                     '/loadbalancer/123/reload')
         self.assertEqual(202, rv.status_code)
         self.assertEqual(
             {'message': 'OK',
@@ -374,10 +380,10 @@ class TestServerTestCase(base.TestCase):
         mock_haproxy_status.return_value = consts.OFFLINE
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/reload')
+                                     '/loadbalancer/123/reload')
         elif distro == consts.CENTOS:
             rv = self.centos_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/reload')
+                                     '/loadbalancer/123/reload')
         self.assertEqual(202, rv.status_code)
         self.assertEqual(
             {'message': 'OK',
@@ -411,13 +417,13 @@ class TestServerTestCase(base.TestCase):
 
         self.assertEqual(200, rv.status_code)
         self.assertEqual(dict(
-            api_version='0.5',
+            api_version='1.0',
             haproxy_version='9.9.99-9',
             hostname='test-host'),
             jsonutils.loads(rv.data.decode('utf-8')))
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_listener_protocol', return_value='TCP')
+                'get_protocol_for_lb_object', return_value='TCP')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     def test_delete_ubuntu_listener_systemd(self, mock_init_system,
@@ -426,7 +432,7 @@ class TestServerTestCase(base.TestCase):
                                    mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_listener_protocol', return_value='TCP')
+                'get_protocol_for_lb_object', return_value='TCP')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     def test_delete_centos_listener_systemd(self, mock_init_system,
@@ -435,7 +441,7 @@ class TestServerTestCase(base.TestCase):
                                    mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_listener_protocol', return_value='TCP')
+                'get_protocol_for_lb_object', return_value='TCP')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSVINIT)
     def test_delete_ubuntu_listener_sysvinit(self, mock_init_system,
@@ -444,7 +450,7 @@ class TestServerTestCase(base.TestCase):
                                    mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_listener_protocol', return_value='TCP')
+                'get_protocol_for_lb_object', return_value='TCP')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_UPSTART)
     def test_delete_ubuntu_listener_upstart(self, mock_init_system,
@@ -452,20 +458,22 @@ class TestServerTestCase(base.TestCase):
         self._test_delete_listener(consts.INIT_UPSTART, consts.UBUNTU,
                                    mock_init_system)
 
+    @mock.patch('os.listdir')
     @mock.patch('os.path.exists')
     @mock.patch('subprocess.check_output')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
-                'vrrp_check_script_update')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
+                'Loadbalancer.vrrp_check_script_update')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.' +
                 'get_haproxy_pid')
     @mock.patch('shutil.rmtree')
     @mock.patch('os.remove')
     def _test_delete_listener(self, init_system, distro, mock_init_system,
                               mock_remove, mock_rmtree, mock_pid, mock_vrrp,
-                              mock_check_output, mock_exists):
+                              mock_check_output, mock_exists, mock_listdir):
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         # no listener
         mock_exists.return_value = False
+        mock_listdir.return_value = ['123']
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
@@ -474,10 +482,10 @@ class TestServerTestCase(base.TestCase):
                                         '/listeners/123')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(OK, jsonutils.loads(rv.data.decode('utf-8')))
-        mock_exists.assert_called_with('/var/lib/octavia/123/haproxy.cfg')
+        mock_exists.assert_called_once_with('/var/lib/octavia')
 
         # service is stopped + no upstart script + no vrrp
-        mock_exists.side_effect = [True, False, False, False]
+        mock_exists.side_effect = [True, True, False, False, False]
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
@@ -504,7 +512,7 @@ class TestServerTestCase(base.TestCase):
         mock_exists.assert_any_call('/var/lib/octavia/123/123.pid')
 
         # service is stopped + no upstart script + vrrp
-        mock_exists.side_effect = [True, False, True, False]
+        mock_exists.side_effect = [True, True, False, True, False]
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
@@ -531,7 +539,7 @@ class TestServerTestCase(base.TestCase):
         mock_exists.assert_any_call('/var/lib/octavia/123/123.pid')
 
         # service is stopped + upstart script + no vrrp
-        mock_exists.side_effect = [True, False, False, True]
+        mock_exists.side_effect = [True, True, False, False, True]
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
@@ -555,7 +563,7 @@ class TestServerTestCase(base.TestCase):
             self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
 
         # service is stopped + upstart script + vrrp
-        mock_exists.side_effect = [True, False, True, True]
+        mock_exists.side_effect = [True, True, False, True, True]
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
@@ -579,7 +587,7 @@ class TestServerTestCase(base.TestCase):
             self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
 
         # service is running + upstart script + no vrrp
-        mock_exists.side_effect = [True, True, True, False, True]
+        mock_exists.side_effect = [True, True, True, True, False, True]
         mock_pid.return_value = '456'
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.delete('/' + api_server.VERSION +
@@ -609,7 +617,7 @@ class TestServerTestCase(base.TestCase):
             self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
 
         # service is running + upstart script + vrrp
-        mock_exists.side_effect = [True, True, True, True, True]
+        mock_exists.side_effect = [True, True, True, True, True, True]
         mock_pid.return_value = '456'
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.delete('/' + api_server.VERSION +
@@ -639,7 +647,7 @@ class TestServerTestCase(base.TestCase):
             self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
 
         # service is running + stopping fails
-        mock_exists.side_effect = [True, True, True]
+        mock_exists.side_effect = [True, True, True, True]
         mock_check_output.side_effect = subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR)
         if distro == consts.UBUNTU:
@@ -661,8 +669,9 @@ class TestServerTestCase(base.TestCase):
     def test_centos_get_haproxy(self):
         self._test_get_haproxy(consts.CENTOS)
 
+    @mock.patch('os.listdir')
     @mock.patch('os.path.exists')
-    def _test_get_haproxy(self, distro, mock_exists):
+    def _test_get_haproxy(self, distro, mock_exists, mock_listdir):
 
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
 
@@ -670,23 +679,24 @@ class TestServerTestCase(base.TestCase):
         mock_exists.side_effect = [False]
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.get('/' + api_server.VERSION +
-                                     '/listeners/123/haproxy')
+                                     '/loadbalancer/123/haproxy')
         elif distro == consts.CENTOS:
             rv = self.centos_app.get('/' + api_server.VERSION +
-                                     '/listeners/123/haproxy')
+                                     '/loadbalancer/123/haproxy')
         self.assertEqual(404, rv.status_code)
 
-        mock_exists.side_effect = [True]
+        mock_exists.side_effect = [True, True]
 
         path = util.config_path('123')
         self.useFixture(test_utils.OpenFixture(path, CONTENT))
 
+        mock_listdir.return_value = ['123']
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.get('/' + api_server.VERSION +
-                                     '/listeners/123/haproxy')
+                                     '/loadbalancer/123/haproxy')
         elif distro == consts.CENTOS:
             rv = self.centos_app.get('/' + api_server.VERSION +
-                                     '/listeners/123/haproxy')
+                                     '/loadbalancer/123/haproxy')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(six.b(CONTENT), rv.data)
         self.assertEqual('text/plain; charset=utf-8',
@@ -699,17 +709,17 @@ class TestServerTestCase(base.TestCase):
         self._test_get_all_listeners(consts.CENTOS)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_listeners')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
-                '_check_listener_status')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
-                '_parse_haproxy_file')
+                'get_loadbalancers')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
+                'Loadbalancer._check_haproxy_status')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'parse_haproxy_file')
     def _test_get_all_listeners(self, distro, mock_parse, mock_status,
-                                mock_listener):
+                                mock_lbs):
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
 
         # no listeners
-        mock_listener.side_effect = [[]]
+        mock_lbs.side_effect = [[]]
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.get('/' + api_server.VERSION + '/listeners')
         elif distro == consts.CENTOS:
@@ -719,8 +729,8 @@ class TestServerTestCase(base.TestCase):
         self.assertFalse(jsonutils.loads(rv.data.decode('utf-8')))
 
         # one listener ACTIVE
-        mock_listener.side_effect = [['123']]
-        mock_parse.side_effect = [{'mode': 'test'}]
+        mock_lbs.side_effect = [['123']]
+        mock_parse.side_effect = [['fake_socket', {'123': {'mode': 'test'}}]]
         mock_status.side_effect = [consts.ACTIVE]
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.get('/' + api_server.VERSION + '/listeners')
@@ -732,10 +742,11 @@ class TestServerTestCase(base.TestCase):
             [{'status': consts.ACTIVE, 'type': 'test', 'uuid': '123'}],
             jsonutils.loads(rv.data.decode('utf-8')))
 
-        # two listener one ACTIVE, one ERROR
-        mock_listener.side_effect = [['123', '456']]
-        mock_parse.side_effect = [{'mode': 'test'}, {'mode': 'http'}]
-        mock_status.side_effect = [consts.ACTIVE, consts.ERROR]
+        # two listeners, two modes
+        mock_lbs.side_effect = [['123', '456']]
+        mock_parse.side_effect = [['fake_socket', {'123': {'mode': 'test'}}],
+                                  ['fake_socket', {'456': {'mode': 'http'}}]]
+        mock_status.return_value = consts.ACTIVE
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.get('/' + api_server.VERSION + '/listeners')
         elif distro == consts.CENTOS:
@@ -744,86 +755,7 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual(200, rv.status_code)
         self.assertEqual(
             [{'status': consts.ACTIVE, 'type': 'test', 'uuid': '123'},
-             {'status': consts.ERROR, 'type': '', 'uuid': '456'}],
-            jsonutils.loads(rv.data.decode('utf-8')))
-
-    def test_ubuntu_get_listener(self):
-        self._test_get_listener(consts.UBUNTU)
-
-    def test_centos_get_listener(self):
-        self._test_get_listener(consts.CENTOS)
-
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_listener_protocol', return_value='TCP')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
-                '_check_listener_status')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.listener.Listener.'
-                '_parse_haproxy_file')
-    @mock.patch('octavia.amphorae.backends.utils.haproxy_query.HAProxyQuery')
-    @mock.patch('os.path.exists')
-    def _test_get_listener(self, distro, mock_exists, mock_query, mock_parse,
-                           mock_status, mock_get_proto):
-        self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
-        # Listener not found
-        mock_exists.side_effect = [False]
-        if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.get('/' + api_server.VERSION +
-                                     '/listeners/123')
-        elif distro == consts.CENTOS:
-            rv = self.centos_app.get('/' + api_server.VERSION +
-                                     '/listeners/123')
-        self.assertEqual(404, rv.status_code)
-        self.assertEqual(
-            {'message': 'Listener Not Found',
-             'details': 'No listener with UUID: 123'},
-            jsonutils.loads(rv.data.decode('utf-8')))
-
-        # Listener not ACTIVE
-        mock_parse.side_effect = [dict(mode='test')]
-        mock_status.side_effect = [consts.ERROR]
-        mock_exists.side_effect = [True]
-        if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.get('/' + api_server.VERSION +
-                                     '/listeners/123')
-        elif distro == consts.CENTOS:
-            rv = self.centos_app.get('/' + api_server.VERSION +
-                                     '/listeners/123')
-        self.assertEqual(200, rv.status_code)
-        self.assertEqual(dict(
-            status=consts.ERROR,
-            type='',
-            uuid='123'), jsonutils.loads(rv.data.decode('utf-8')))
-
-        # Listener ACTIVE
-        mock_parse.side_effect = [dict(mode='test', stats_socket='blah')]
-        mock_status.side_effect = [consts.ACTIVE]
-        mock_exists.side_effect = [True]
-        mock_pool = mock.Mock()
-        mock_query.side_effect = [mock_pool]
-        mock_pool.get_pool_status.side_effect = [
-            {'tcp-servers': {
-                'status': 'DOWN',
-                'uuid': 'tcp-servers',
-                'members': [
-                    {'id-34833': 'DOWN'},
-                    {'id-34836': 'DOWN'}]}}]
-        if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.get('/' + api_server.VERSION +
-                                     '/listeners/123')
-        elif distro == consts.CENTOS:
-            rv = self.centos_app.get('/' + api_server.VERSION +
-                                     '/listeners/123')
-        self.assertEqual(200, rv.status_code)
-        self.assertEqual(dict(
-            status=consts.ACTIVE,
-            type='test',
-            uuid='123',
-            pools=[dict(
-                status=consts.DOWN,
-                uuid='tcp-servers',
-                members=[
-                    {u'id-34833': u'DOWN'},
-                    {u'id-34836': u'DOWN'}])]),
+             {'status': consts.ACTIVE, 'type': 'http', 'uuid': '456'}],
             jsonutils.loads(rv.data.decode('utf-8')))
 
     def test_ubuntu_delete_cert(self):
@@ -838,11 +770,13 @@ class TestServerTestCase(base.TestCase):
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         mock_exists.side_effect = [False]
         if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
-                                        '/listeners/123/certificates/test.pem')
+            rv = self.ubuntu_app.delete(
+                '/' + api_server.VERSION +
+                '/loadbalancer/123/certificates/test.pem')
         elif distro == consts.CENTOS:
-            rv = self.centos_app.delete('/' + api_server.VERSION +
-                                        '/listeners/123/certificates/test.pem')
+            rv = self.centos_app.delete(
+                '/' + api_server.VERSION +
+                '/loadbalancer/123/certificates/test.pem')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(OK, jsonutils.loads(rv.data.decode('utf-8')))
         mock_exists.assert_called_once_with(
@@ -851,20 +785,24 @@ class TestServerTestCase(base.TestCase):
         # wrong file name
         mock_exists.side_effect = [True]
         if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
-                                        '/listeners/123/certificates/test.bla')
+            rv = self.ubuntu_app.delete(
+                '/' + api_server.VERSION +
+                '/loadbalancer/123/certificates/test.bla')
         elif distro == consts.CENTOS:
-            rv = self.centos_app.delete('/' + api_server.VERSION +
-                                        '/listeners/123/certificates/test.bla')
+            rv = self.centos_app.delete(
+                '/' + api_server.VERSION +
+                '/loadbalancer/123/certificates/test.bla')
         self.assertEqual(400, rv.status_code)
 
         mock_exists.side_effect = [True]
         if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.delete('/' + api_server.VERSION +
-                                        '/listeners/123/certificates/test.pem')
+            rv = self.ubuntu_app.delete(
+                '/' + api_server.VERSION +
+                '/loadbalancer/123/certificates/test.pem')
         elif distro == consts.CENTOS:
-            rv = self.centos_app.delete('/' + api_server.VERSION +
-                                        '/listeners/123/certificates/test.pem')
+            rv = self.centos_app.delete(
+                '/' + api_server.VERSION +
+                '/loadbalancer/123/certificates/test.pem')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(OK, jsonutils.loads(rv.data.decode('utf-8')))
         mock_remove.assert_called_once_with(
@@ -886,10 +824,10 @@ class TestServerTestCase(base.TestCase):
 
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.get('/' + api_server.VERSION +
-                                     '/listeners/123/certificates/test.pem')
+                                     '/loadbalancer/123/certificates/test.pem')
         elif distro == consts.CENTOS:
             rv = self.centos_app.get('/' + api_server.VERSION +
-                                     '/listeners/123/certificates/test.pem')
+                                     '/loadbalancer/123/certificates/test.pem')
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(
             details='No certificate with filename: test.pem',
@@ -901,29 +839,29 @@ class TestServerTestCase(base.TestCase):
         mock_exists.side_effect = [True]
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/certificates/test.bla',
+                                     '/loadbalancer/123/certificates/test.bla',
                                      data='TestTest')
         elif distro == consts.CENTOS:
             rv = self.centos_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/certificates/test.bla',
+                                     '/loadbalancer/123/certificates/test.bla',
                                      data='TestTest')
         self.assertEqual(400, rv.status_code)
 
         mock_exists.return_value = True
         mock_exists.side_effect = None
         if distro == consts.UBUNTU:
-            path = self.ubuntu_test_server._listener._cert_file_path(
+            path = self.ubuntu_test_server._loadbalancer._cert_file_path(
                 '123', 'test.pem')
         elif distro == consts.CENTOS:
-            path = self.centos_test_server._listener._cert_file_path(
+            path = self.centos_test_server._loadbalancer._cert_file_path(
                 '123', 'test.pem')
         self.useFixture(test_utils.OpenFixture(path, CONTENT))
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.get('/' + api_server.VERSION +
-                                     '/listeners/123/certificates/test.pem')
+                                     '/loadbalancer/123/certificates/test.pem')
         elif distro == consts.CENTOS:
             rv = self.centos_app.get('/' + api_server.VERSION +
-                                     '/listeners/123/certificates/test.pem')
+                                     '/loadbalancer/123/certificates/test.pem')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(dict(md5sum=hashlib.md5(six.b(CONTENT)).hexdigest()),
                          jsonutils.loads(rv.data.decode('utf-8')))
@@ -942,20 +880,20 @@ class TestServerTestCase(base.TestCase):
         # wrong file name
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/certificates/test.bla',
+                                     '/loadbalancer/123/certificates/test.bla',
                                      data='TestTest')
         elif distro == consts.CENTOS:
             rv = self.centos_app.put('/' + api_server.VERSION +
-                                     '/listeners/123/certificates/test.bla',
+                                     '/loadbalancer/123/certificates/test.bla',
                                      data='TestTest')
         self.assertEqual(400, rv.status_code)
 
         mock_exists.return_value = True
         if distro == consts.UBUNTU:
-            path = self.ubuntu_test_server._listener._cert_file_path(
+            path = self.ubuntu_test_server._loadbalancer._cert_file_path(
                 '123', 'test.pem')
         elif distro == consts.CENTOS:
-            path = self.centos_test_server._listener._cert_file_path(
+            path = self.centos_test_server._loadbalancer._cert_file_path(
                 '123', 'test.pem')
 
         m = self.useFixture(test_utils.OpenFixture(path)).mock_open
@@ -963,11 +901,11 @@ class TestServerTestCase(base.TestCase):
 
             if distro == consts.UBUNTU:
                 rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                         '/listeners/123/certificates/'
+                                         '/loadbalancer/123/certificates/'
                                          'test.pem', data='TestTest')
             elif distro == consts.CENTOS:
                 rv = self.centos_app.put('/' + api_server.VERSION +
-                                         '/listeners/123/certificates/'
+                                         '/loadbalancer/123/certificates/'
                                          'test.pem', data='TestTest')
             self.assertEqual(200, rv.status_code)
             self.assertEqual(OK, jsonutils.loads(rv.data.decode('utf-8')))
@@ -980,11 +918,11 @@ class TestServerTestCase(base.TestCase):
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             if distro == consts.UBUNTU:
                 rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                         '/listeners/123/certificates/'
+                                         '/loadbalancer/123/certificates/'
                                          'test.pem', data='TestTest')
             elif distro == consts.CENTOS:
                 rv = self.centos_app.put('/' + api_server.VERSION +
-                                         '/listeners/123/certificates/'
+                                         '/loadbalancer/123/certificates/'
                                          'test.pem', data='TestTest')
             self.assertEqual(200, rv.status_code)
             self.assertEqual(OK, jsonutils.loads(rv.data.decode('utf-8')))
@@ -2626,7 +2564,7 @@ class TestServerTestCase(base.TestCase):
         haproxy_count = random.randrange(0, 100)
         mock_count_haproxy.return_value = haproxy_count
 
-        expected_dict = {'active': True, 'api_version': '0.5',
+        expected_dict = {'active': True, 'api_version': '1.0',
                          'cpu': {'soft_irq': cpu_softirq, 'system': cpu_system,
                                  'total': cpu_total, 'user': cpu_user},
                          'disk': {'available': disk_available,
@@ -2699,3 +2637,11 @@ class TestServerTestCase(base.TestCase):
                 rv = self.centos_app.put('/' + api_server.VERSION +
                                          '/config', data='TestTest')
             self.assertEqual(500, rv.status_code)
+
+    def test_version_discovery(self):
+        self.test_client = server.Server().app.test_client()
+        expected_dict = {'api_version': api_server.VERSION}
+        rv = self.test_client.get('/')
+        self.assertEqual(200, rv.status_code)
+        self.assertEqual(expected_dict,
+                         jsonutils.loads(rv.data.decode('utf-8')))

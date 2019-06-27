@@ -18,7 +18,6 @@ import subprocess
 
 import flask
 import mock
-from werkzeug import exceptions
 
 from oslo_utils import uuidutils
 
@@ -314,67 +313,6 @@ class KeepalivedLvsTestCase(base.TestCase):
         res = self.test_keepalivedlvs.manage_udp_listener(self.FAKE_ID,
                                                           'start')
         self.assertEqual(500, res.status_code)
-
-    @mock.patch('octavia.amphorae.backends.utils.keepalivedlvs_query.'
-                'get_listener_realserver_mapping')
-    @mock.patch('subprocess.check_output', return_value=PROC_CONTENT)
-    @mock.patch('os.path.exists')
-    def test_get_udp_listener_status(self, m_exist, m_check_output,
-                                     mget_mapping):
-        mget_mapping.return_value = (
-            True, {'10.0.0.99:82': {'status': 'UP',
-                                    'Weight': '13',
-                                    'InActConn': '0',
-                                    'ActiveConn': '0'},
-                   '10.0.0.98:82': {'status': 'UP',
-                                    'Weight': '13',
-                                    'InActConn': '0',
-                                    'ActiveConn': '0'}})
-        pid_path = ('/var/lib/octavia/lvs/octavia-'
-                    'keepalivedlvs-%s.pid' % self.FAKE_ID)
-        self.useFixture(test_utils.OpenFixture(pid_path,
-                                               self.NORMAL_PID_CONTENT))
-
-        cfg_path = ('/var/lib/octavia/lvs/octavia-'
-                    'keepalivedlvs-%s.conf' % self.FAKE_ID)
-        self.useFixture(test_utils.OpenFixture(cfg_path,
-                                               self.NORMAL_CFG_CONTENT))
-
-        m_exist.return_value = True
-        expected = {'status': 'ACTIVE',
-                    'pools': [{'lvs': {
-                        'members': {self.MEMBER_ID1: 'UP',
-                                    self.MEMBER_ID2: 'UP'},
-                        'status': 'UP',
-                        'uuid': self.POOL_ID}}],
-                    'type': 'UDP', 'uuid': self.FAKE_ID}
-        res = self.test_keepalivedlvs.get_udp_listener_status(self.FAKE_ID)
-        self.assertEqual(200, res.status_code)
-        self.assertEqual(expected, res.json)
-
-    @mock.patch('os.path.exists')
-    def test_get_udp_listener_status_no_exists(self, m_exist):
-        m_exist.return_value = False
-        self.assertRaises(exceptions.HTTPException,
-                          self.test_keepalivedlvs.get_udp_listener_status,
-                          self.FAKE_ID)
-
-    @mock.patch('os.path.exists')
-    def test_get_udp_listener_status_offline_status(self, m_exist):
-        m_exist.return_value = True
-        pid_path = ('/var/lib/octavia/lvs/octavia-'
-                    'keepalivedlvs-%s.pid' % self.FAKE_ID)
-        self.useFixture(test_utils.OpenFixture(pid_path,
-                                               self.NORMAL_PID_CONTENT))
-        cfg_path = ('/var/lib/octavia/lvs/octavia-'
-                    'keepalivedlvs-%s.conf' % self.FAKE_ID)
-        self.useFixture(test_utils.OpenFixture(cfg_path, 'NO VS CONFIG'))
-        expected = {'status': 'OFFLINE',
-                    'type': 'UDP',
-                    'uuid': self.FAKE_ID}
-        res = self.test_keepalivedlvs.get_udp_listener_status(self.FAKE_ID)
-        self.assertEqual(200, res.status_code)
-        self.assertEqual(expected, res.json)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_udp_listeners', return_value=[LISTENER_ID])

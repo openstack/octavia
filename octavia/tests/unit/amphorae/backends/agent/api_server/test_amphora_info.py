@@ -19,13 +19,18 @@ from oslo_utils import uuidutils
 
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import amphora_info
+from octavia.amphorae.backends.agent.api_server import util
+from octavia.common.jinja.haproxy.combined_listeners import jinja_cfg
 from octavia.tests.common import utils as test_utils
 import octavia.tests.unit.base as base
+from octavia.tests.unit.common.sample_configs import sample_configs_combined
 
 
 class TestAmphoraInfo(base.TestCase):
 
     API_VERSION = random.randrange(0, 10000)
+    BASE_AMP_PATH = '/var/lib/octavia'
+    BASE_CRT_PATH = BASE_AMP_PATH + '/certs'
     HAPROXY_VERSION = random.randrange(0, 10000)
     KEEPALIVED_VERSION = random.randrange(0, 10000)
     IPVSADM_VERSION = random.randrange(0, 10000)
@@ -33,12 +38,30 @@ class TestAmphoraInfo(base.TestCase):
     FAKE_LISTENER_ID_2 = uuidutils.generate_uuid()
     FAKE_LISTENER_ID_3 = uuidutils.generate_uuid()
     FAKE_LISTENER_ID_4 = uuidutils.generate_uuid()
+    LB_ID_1 = uuidutils.generate_uuid()
 
     def setUp(self):
         super(TestAmphoraInfo, self).setUp()
         self.osutils_mock = mock.MagicMock()
         self.amp_info = amphora_info.AmphoraInfo(self.osutils_mock)
         self.udp_driver = mock.MagicMock()
+
+        # setup a fake haproxy config file
+        templater = jinja_cfg.JinjaTemplater(
+            base_amp_path=self.BASE_AMP_PATH,
+            base_crt_dir=self.BASE_CRT_PATH)
+        tls_tupel = sample_configs_combined.sample_tls_container_tuple(
+            id='tls_container_id',
+            certificate='imaCert1', private_key='imaPrivateKey1',
+            primary_cn='FakeCN')
+        self.rendered_haproxy_cfg = templater.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple(
+                proto='TERMINATED_HTTPS', tls=True, sni=True)],
+            tls_tupel)
+        path = util.config_path(self.LB_ID_1)
+        self.useFixture(test_utils.OpenFixture(path,
+                                               self.rendered_haproxy_cfg))
 
     def _return_version(self, package_name):
         if package_name == 'ipvsadm':
@@ -138,8 +161,8 @@ class TestAmphoraInfo(base.TestCase):
                          u'haproxy_count': 5,
                          u'haproxy_version': self.HAPROXY_VERSION,
                          u'hostname': u'FAKE_HOST',
-                         u'listeners': [self.FAKE_LISTENER_ID_1,
-                                        self.FAKE_LISTENER_ID_2],
+                         u'listeners': sorted([self.FAKE_LISTENER_ID_1,
+                                               self.FAKE_LISTENER_ID_2]),
                          u'load': [u'0.09', u'0.11', u'0.10'],
                          u'memory': {u'buffers': 344792,
                                      u'cached': 4271856,
@@ -163,8 +186,7 @@ class TestAmphoraInfo(base.TestCase):
                 'get_udp_listeners',
                 return_value=[FAKE_LISTENER_ID_3, FAKE_LISTENER_ID_4])
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_listeners', return_value=[FAKE_LISTENER_ID_1,
-                                               FAKE_LISTENER_ID_2])
+                'get_loadbalancers')
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'amphora_info.AmphoraInfo._get_meminfo')
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
@@ -182,7 +204,7 @@ class TestAmphoraInfo(base.TestCase):
     def test_compile_amphora_details_for_udp(self, mhostname, m_count,
                                              m_pkg_version, m_load, m_get_nets,
                                              m_os, m_cpu, mget_mem,
-                                             mget_listener, mget_udp_listener):
+                                             mock_get_lb, mget_udp_listener):
         mget_mem.return_value = {'SwapCached': 0, 'Buffers': 344792,
                                  'MemTotal': 21692784, 'Cached': 4271856,
                                  'Slab': 534384, 'MemFree': 12685624,
@@ -205,6 +227,7 @@ class TestAmphoraInfo(base.TestCase):
         self.udp_driver.get_subscribed_amp_compile_info.return_value = [
             'keepalived', 'ipvsadm']
         self.udp_driver.is_listener_running.side_effect = [True, False]
+        mock_get_lb.return_value = [self.LB_ID_1]
         original_version = api_server.VERSION
         api_server.VERSION = self.API_VERSION
         expected_dict = {u'active': True,
@@ -221,10 +244,10 @@ class TestAmphoraInfo(base.TestCase):
                          u'ipvsadm_version': self.IPVSADM_VERSION,
                          u'udp_listener_process_count': 1,
                          u'hostname': u'FAKE_HOST',
-                         u'listeners': list(set([self.FAKE_LISTENER_ID_1,
-                                                 self.FAKE_LISTENER_ID_2,
-                                                 self.FAKE_LISTENER_ID_3,
-                                                 self.FAKE_LISTENER_ID_4])),
+                         u'listeners': sorted(list(set(
+                             [self.FAKE_LISTENER_ID_3,
+                              self.FAKE_LISTENER_ID_4,
+                              'sample_listener_id_1']))),
                          u'load': [u'0.09', u'0.11', u'0.10'],
                          u'memory': {u'buffers': 344792,
                                      u'cached': 4271856,
@@ -245,7 +268,7 @@ class TestAmphoraInfo(base.TestCase):
         api_server.VERSION = original_version
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'is_listener_running')
+                'is_lb_running')
     def test__count_haproxy_process(self, mock_is_running):
 
         # Test no listeners passed in

@@ -24,10 +24,9 @@ from oslo_log import log as logging
 import webob
 from werkzeug import exceptions
 
-from octavia.amphorae.backends.agent.api_server import listener
+from octavia.amphorae.backends.agent.api_server import loadbalancer
 from octavia.amphorae.backends.agent.api_server import udp_listener_base
 from octavia.amphorae.backends.agent.api_server import util
-from octavia.amphorae.backends.utils import keepalivedlvs_query
 from octavia.common import constants as consts
 
 BUFFER = 100
@@ -49,7 +48,7 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
     _SUBSCRIBED_AMP_COMPILE = ['keepalived', 'ipvsadm']
 
     def upload_udp_listener_config(self, listener_id):
-        stream = listener.Wrapped(flask.request.stream)
+        stream = loadbalancer.Wrapped(flask.request.stream)
         NEED_CHECK = True
 
         if not os.path.exists(util.keepalived_lvs_dir()):
@@ -251,45 +250,6 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
                 'type': 'UDP',
             })
         return listeners
-
-    def get_udp_listener_status(self, listener_id):
-        """Gets the status of a UDP listener
-
-        This method will consult the stats socket
-        so calling this method will interfere with
-        the health daemon with the risk of the amphora
-        shut down
-
-        :param listener_id: The id of the listener
-        """
-        self._check_udp_listener_exists(listener_id)
-
-        status = self._check_udp_listener_status(listener_id)
-
-        if status != consts.ACTIVE:
-            stats = dict(
-                status=status,
-                uuid=listener_id,
-                type='UDP'
-            )
-            return webob.Response(json=stats)
-
-        stats = dict(
-            status=status,
-            uuid=listener_id,
-            type='UDP'
-        )
-
-        try:
-            pool = keepalivedlvs_query.get_udp_listener_pool_status(
-                listener_id)
-        except subprocess.CalledProcessError as e:
-            return webob.Response(json=dict(
-                message="Error getting kernel lvs status for udp listener "
-                        "{}".format(listener_id),
-                details=e.output), status=500)
-        stats['pools'] = [pool]
-        return webob.Response(json=stats)
 
     def delete_udp_listener(self, listener_id):
         try:

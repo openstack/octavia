@@ -470,7 +470,7 @@ class AmphoraFlows(object):
             update_amps_subflow.add(
                 amphora_driver_tasks.AmpListenersUpdate(
                     name=constants.AMP_LISTENER_UPDATE + '-' + str(amp_index),
-                    requires=(constants.LISTENERS, constants.AMPHORAE),
+                    requires=(constants.LOADBALANCER, constants.AMPHORAE),
                     inject={constants.AMPHORA_INDEX: amp_index,
                             constants.TIMEOUT_DICT: timeout_dict}))
             amp_index += 1
@@ -514,8 +514,7 @@ class AmphoraFlows(object):
                     requires=constants.AMPHORA))
 
         failover_amphora_flow.add(amphora_driver_tasks.ListenersStart(
-            requires=(constants.LOADBALANCER, constants.LISTENERS,
-                      constants.AMPHORA)))
+            requires=(constants.LOADBALANCER, constants.AMPHORA)))
         failover_amphora_flow.add(
             database_tasks.DisableAmphoraHealthMonitoring(
                 rebind={constants.AMPHORA: constants.FAILED_AMPHORA},

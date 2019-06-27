@@ -124,7 +124,9 @@ class HAProxyQuery(object):
                 final_results[line['pxname']] = dict(members={})
 
             if line['svname'] == 'BACKEND':
-                final_results[line['pxname']]['uuid'] = line['pxname']
+                pool_id, listener_id = line['pxname'].split(':')
+                final_results[line['pxname']]['pool_uuid'] = pool_id
+                final_results[line['pxname']]['listener_uuid'] = listener_id
                 final_results[line['pxname']]['status'] = line['status']
             else:
                 final_results[line['pxname']]['members'][line['svname']] = (
