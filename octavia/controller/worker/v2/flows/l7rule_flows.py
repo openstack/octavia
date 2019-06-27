@@ -37,7 +37,7 @@ class L7RuleFlows(object):
         create_l7rule_flow.add(database_tasks.MarkL7RulePendingCreateInDB(
             requires=constants.L7RULE))
         create_l7rule_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=constants.LOADBALANCER))
         create_l7rule_flow.add(database_tasks.MarkL7RuleActiveInDB(
             requires=constants.L7RULE))
         create_l7rule_flow.add(database_tasks.MarkL7PolicyActiveInDB(
@@ -62,7 +62,7 @@ class L7RuleFlows(object):
         delete_l7rule_flow.add(model_tasks.DeleteModelObject(
             rebind={constants.OBJECT: constants.L7RULE}))
         delete_l7rule_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=constants.LOADBALANCER))
         delete_l7rule_flow.add(database_tasks.DeleteL7RuleInDB(
             requires=constants.L7RULE))
         delete_l7rule_flow.add(database_tasks.MarkL7PolicyActiveInDB(
@@ -85,7 +85,7 @@ class L7RuleFlows(object):
         update_l7rule_flow.add(database_tasks.MarkL7RulePendingUpdateInDB(
             requires=constants.L7RULE))
         update_l7rule_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=constants.LOADBALANCER))
         update_l7rule_flow.add(database_tasks.UpdateL7RuleInDB(
             requires=[constants.L7RULE, constants.UPDATE_DICT]))
         update_l7rule_flow.add(database_tasks.MarkL7RuleActiveInDB(

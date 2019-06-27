@@ -49,6 +49,7 @@ _health_mon_mock = mock.MagicMock()
 _vip_mock = mock.MagicMock()
 _listener_mock = mock.MagicMock()
 _load_balancer_mock = mock.MagicMock()
+_load_balancer_mock.listeners = [_listener_mock]
 _member_mock = mock.MagicMock()
 _pool_mock = mock.MagicMock()
 _l7policy_mock = mock.MagicMock()
@@ -324,7 +325,7 @@ class TestControllerWorker(base.TestCase):
                                     store={constants.LOADBALANCER:
                                            _load_balancer_mock,
                                            constants.LISTENERS:
-                                           [_listener_mock]}))
+                                           _load_balancer_mock.listeners}))
 
         _flow_mock.run.assert_called_once_with()
         self.assertEqual(2, mock_listener_repo_get.call_count)

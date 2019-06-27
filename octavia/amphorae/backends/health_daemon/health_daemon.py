@@ -43,18 +43,19 @@ SEQ = 0
 # incompatible changes.
 #
 # ver 1 - Adds UDP listener status when no pool or members are present
+# ver 2 - Switch to all listeners in a single combined haproxy config
 #
-MSG_VER = 1
+MSG_VER = 2
 
 
 def list_sock_stat_files(hadir=None):
     stat_sock_files = {}
     if hadir is None:
         hadir = CONF.haproxy_amphora.base_path
-    listener_ids = util.get_listeners()
-    for listener_id in listener_ids:
-        sock_file = listener_id + ".sock"
-        stat_sock_files[listener_id] = os.path.join(hadir, sock_file)
+    lb_ids = util.get_loadbalancers()
+    for lb_id in lb_ids:
+        sock_file = lb_id + ".sock"
+        stat_sock_files[lb_id] = os.path.join(hadir, sock_file)
     return stat_sock_files
 
 
@@ -115,39 +116,55 @@ def get_stats(stat_sock_file):
 
 
 def build_stats_message():
+    # Example version 2 message without UDP:
+    # {
+    #   "id": "<amphora_id>",
+    #   "seq": 67,
+    #   "listeners": {
+    #     "<listener_id>": {
+    #       "status": "OPEN",
+    #       "stats": {
+    #         "tx": 0,
+    #         "rx": 0,
+    #         "conns": 0,
+    #         "totconns": 0,
+    #         "ereq": 0
+    #       }
+    #     }
+    #  },
+    #  "pools": {
+    #    "<pool_id>:<listener_id>": {
+    #      "status": "UP",
+    #      "members": {
+    #        "<member_id>": "no check"
+    #      }
+    #    }
+    #  },
+    #  "ver": 2
+    # }
     global SEQ
     msg = {'id': CONF.amphora_agent.amphora_id,
-           'seq': SEQ, "listeners": {},
+           'seq': SEQ, 'listeners': {}, 'pools': {},
            'ver': MSG_VER}
     SEQ += 1
     stat_sock_files = list_sock_stat_files()
-    for listener_id, stat_sock_file in stat_sock_files.items():
-        listener_dict = {'pools': {},
-                         'status': 'DOWN',
-                         'stats': {
-                             'tx': 0,
-                             'rx': 0,
-                             'conns': 0,
-                             'totconns': 0,
-                             'ereq': 0}}
-        msg['listeners'][listener_id] = listener_dict
-        if util.is_listener_running(listener_id):
+    # TODO(rm_work) There should only be one of these in the new config system
+    for lb_id, stat_sock_file in stat_sock_files.items():
+        if util.is_lb_running(lb_id):
             (stats, pool_status) = get_stats(stat_sock_file)
-            listener_dict = msg['listeners'][listener_id]
             for row in stats:
                 if row['svname'] == 'FRONTEND':
-                    listener_dict['stats']['tx'] = int(row['bout'])
-                    listener_dict['stats']['rx'] = int(row['bin'])
-                    listener_dict['stats']['conns'] = int(row['scur'])
-                    listener_dict['stats']['totconns'] = int(row['stot'])
-                    listener_dict['stats']['ereq'] = int(row['ereq'])
-                    listener_dict['status'] = row['status']
-            for oid, pool in pool_status.items():
-                if oid != listener_id:
-                    pool_id = oid
-                    pools = listener_dict['pools']
-                    pools[pool_id] = {"status": pool['status'],
-                                      "members": pool['members']}
+                    listener_id = row['pxname']
+                    msg['listeners'][listener_id] = {
+                        'status': row['status'],
+                        'stats': {'tx': int(row['bout']),
+                                  'rx': int(row['bin']),
+                                  'conns': int(row['scur']),
+                                  'totconns': int(row['stot']),
+                                  'ereq': int(row['ereq'])}}
+            for pool_id, pool in pool_status.items():
+                msg['pools'][pool_id] = {"status": pool['status'],
+                                         "members": pool['members']}
 
     # UDP listener part
     udp_listener_ids = util.get_udp_listeners()

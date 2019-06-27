@@ -1,0 +1,40 @@
+{#   Copyright (c) 2015 Rackspace
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+#}
+{% extends 'base.j2' %}
+
+
+{% from 'macros.j2' import frontend_macro, backend_macro %}
+{% from 'macros.j2' import peers_macro %}
+
+
+{% set loadbalancer_id = loadbalancer.id %}
+{% set sock_path = stats_sock %}
+
+
+{% block peers %}
+{{ peers_macro(constants, loadbalancer) }}
+{% endblock peers %}
+
+{% block proxies %}
+    {% if loadbalancer.enabled %}
+         {% for listener in loadbalancer.listeners if listener.enabled %}
+             {{- frontend_macro(constants, listener, loadbalancer.vip_address) }}
+             {% for pool in listener.pools if pool.enabled %}
+               {{- backend_macro(constants, listener, pool, loadbalancer) }}
+             {% endfor %}
+         {% endfor %}
+    {% endif %}
+{% endblock proxies %}

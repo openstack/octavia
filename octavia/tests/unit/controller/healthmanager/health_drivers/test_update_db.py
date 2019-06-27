@@ -136,7 +136,8 @@ class TestUpdateHealthDb(base.TestCase):
         if listener:
             listener_ref = {'listener-id-1': {
                 constants.OPERATING_STATUS: 'bogus',
-                'protocol': listener_protocol}}
+                'protocol': listener_protocol,
+                'enabled': True}}
             lb_ref['listeners'] = listener_ref
 
         return lb_ref
@@ -145,6 +146,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {},
             "recv_time": time.time()
         }
@@ -161,6 +163,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {},
             "recv_time": time.time()
         }
@@ -178,6 +181,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {},
             "recv_time": time.time()
         }
@@ -194,6 +198,7 @@ class TestUpdateHealthDb(base.TestCase):
         hb_interval = cfg.CONF.health_manager.heartbeat_interval
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {},
             "recv_time": time.time() - hb_interval - 1  # extra -1 for buffer
         }
@@ -211,6 +216,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.OPEN, "pools": {
                     "pool-id-1": {"status": constants.UP,
@@ -233,9 +239,9 @@ class TestUpdateHealthDb(base.TestCase):
         self.session_mock.rollback.assert_called_once()
 
     def test_update_health_online(self):
-
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.OPEN, "pools": {
                     "pool-id-1": {"status": constants.UP,
@@ -281,10 +287,53 @@ class TestUpdateHealthDb(base.TestCase):
         self.hm.update_health(health, '192.0.2.1')
         self.assertTrue(not self.amphora_health_repo.replace.called)
 
+    def test_update_health_listener_disabled(self):
+        health = {
+            "id": self.FAKE_UUID_1,
+            "ver": 1,
+            "listeners": {
+                "listener-id-1": {"status": constants.OPEN, "pools": {
+                    "pool-id-1": {"status": constants.UP,
+                                  "members": {"member-id-1": constants.UP}
+                                  }
+                }
+                }
+            },
+            "recv_time": time.time()
+        }
+
+        lb_ref = self._make_fake_lb_health_dict()
+        lb_ref['listeners']['listener-id-2'] = {
+            'enabled': False, constants.OPERATING_STATUS: constants.OFFLINE}
+        self.amphora_repo.get_lb_for_health_update.return_value = lb_ref
+        self.hm.update_health(health, '192.0.2.1')
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # test listener, member
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
+
+            self.listener_repo.update.assert_any_call(
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
+
+            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+
+                self.hm.pool_repo.update.assert_any_call(
+                    self.session_mock, pool_id,
+                    operating_status=constants.ONLINE)
+
+                for member_id, member in six.iteritems(
+                        pool.get('members', {})):
+                    self.member_repo.update.assert_any_call(
+                        self.session_mock, member_id,
+                        operating_status=constants.ONLINE)
+
     def test_update_lb_pool_health_offline(self):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.OPEN, "pools": {}}
             },
@@ -312,6 +361,7 @@ class TestUpdateHealthDb(base.TestCase):
     def test_update_lb_multiple_listeners_one_error_pool(self):
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.OPEN, "pools": {
                     "pool-id-1": {"status": constants.DOWN,
@@ -333,7 +383,8 @@ class TestUpdateHealthDb(base.TestCase):
 
         lb_ref['listeners']['listener-id-2'] = {
             constants.OPERATING_STATUS: 'bogus',
-            'protocol': constants.PROTOCOL_TCP}
+            'protocol': constants.PROTOCOL_TCP,
+            'enabled': True}
 
         self.amphora_repo.get_lb_for_health_update.return_value = lb_ref
         self.hm.update_health(health, '192.0.2.1')
@@ -359,6 +410,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.OPEN, "pools": {
                     "pool-id-1": {"status": constants.UP,
@@ -396,10 +448,54 @@ class TestUpdateHealthDb(base.TestCase):
                         self.session_mock, member_id,
                         operating_status=constants.ONLINE)
 
+    def test_update_v2_lb_and_list_pool_health_online(self):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "ver": 2,
+            "listeners": {
+                "listener-id-1": {"status": constants.OPEN}
+            },
+            "pools": {
+                "pool-id-1:listener-id-1": {
+                    "status": constants.UP,
+                    "members": {"member-id-1": constants.UP}},
+                "pool-id-1:listener-id-1": {
+                    "status": constants.UP,
+                    "members": {"member-id-1": constants.UP}}},
+            "recv_time": time.time()
+        }
+
+        lb_ref = self._make_fake_lb_health_dict()
+        self.amphora_repo.get_lb_for_health_update.return_value = lb_ref
+        self.hm.update_health(health, '192.0.2.1')
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # test listener, member
+        for listener_id, listener in six.iteritems(
+                health.get('listeners', {})):
+
+            self.listener_repo.update.assert_any_call(
+                self.session_mock, listener_id,
+                operating_status=constants.ONLINE)
+
+        for pool_id, pool in six.iteritems(health.get('pools', {})):
+            # We should not double process a shared pool
+            self.hm.pool_repo.update.assert_called_once_with(
+                self.session_mock, 'pool-id-1',
+                operating_status=constants.ONLINE)
+
+            for member_id, member in six.iteritems(
+                    pool.get('members', {})):
+                self.member_repo.update.assert_any_call(
+                    self.session_mock, member_id,
+                    operating_status=constants.ONLINE)
+
     def test_update_pool_offline(self):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.OPEN, "pools": {
                     "pool-id-5": {"status": constants.UP,
@@ -436,6 +532,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {
                     "status": constants.OPEN,
@@ -475,6 +572,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {
                     "status": constants.OPEN,
@@ -514,6 +612,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {
                     "status": constants.OPEN,
@@ -547,6 +646,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.OPEN, "pools": {
                     "pool-id-1": {"status": constants.UP,
@@ -589,6 +689,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.OPEN, "pools": {
                     "pool-id-1": {"status": constants.UP,
@@ -626,6 +727,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.OPEN, "pools": {
                     "pool-id-1": {"status": constants.UP,
@@ -668,6 +770,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.OPEN, "pools": {
                     "pool-id-1": {"status": constants.UP,
@@ -710,6 +813,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {
                     "status": constants.OPEN,
@@ -755,6 +859,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.FULL, "pools": {
                     "pool-id-1": {"status": constants.UP,
@@ -804,6 +909,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.OPEN, "pools": {
                     "pool-id-1": {"status": constants.DOWN,
@@ -847,6 +953,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.FULL, "pools": {
                     "pool-id-1": {"status": constants.DOWN,
@@ -895,7 +1002,8 @@ class TestUpdateHealthDb(base.TestCase):
 
             lb_ref['listeners']['listener-id-%s' % i] = {
                 constants.OPERATING_STATUS: 'bogus',
-                'protocol': constants.PROTOCOL_TCP}
+                'protocol': constants.PROTOCOL_TCP,
+                'enabled': True}
 
             if i == 3:
                 members_dict = {'member-id-3': {
@@ -936,6 +1044,7 @@ class TestUpdateHealthDb(base.TestCase):
 
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {"status": constants.OPEN, "pools": {
                     "pool-id-1": {"status": constants.UP,
@@ -1000,6 +1109,7 @@ class TestUpdateHealthDb(base.TestCase):
     def test_update_health_no_status_change(self):
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {
                 "listener-id-1": {
                     "status": constants.OPEN, "pools": {
@@ -1036,6 +1146,7 @@ class TestUpdateHealthDb(base.TestCase):
     def test_update_health_lb_admin_down(self):
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {},
             "recv_time": time.time()}
 
@@ -1118,10 +1229,12 @@ class TestUpdateHealthDb(base.TestCase):
             listener_protocol=constants.PROTOCOL_UDP)
         lb_ref['listeners']['listener-id-2'] = {
             constants.OPERATING_STATUS: 'bogus',
-            'protocol': constants.PROTOCOL_UDP}
+            'protocol': constants.PROTOCOL_UDP,
+            'enabled': True}
         lb_ref['listeners']['listener-id-3'] = {
             constants.OPERATING_STATUS: 'bogus',
-            'protocol': constants.PROTOCOL_UDP}
+            'protocol': constants.PROTOCOL_UDP,
+            'enabled': True}
 
         self.amphora_repo.get_lb_for_health_update.return_value = lb_ref
         self.hm.update_health(health, '192.0.2.1')
@@ -1132,6 +1245,7 @@ class TestUpdateHealthDb(base.TestCase):
     def test_update_health_no_db_lb(self):
         health = {
             "id": self.FAKE_UUID_1,
+            "ver": 1,
             "listeners": {},
             "recv_time": time.time()
         }
@@ -1288,6 +1402,7 @@ class TestUpdateStatsDb(base.TestCase):
 
         health = {
             "id": self.amphora_id,
+            "ver": 1,
             "listeners": {
                 self.listener_id: {
                     "status": constants.OPEN,

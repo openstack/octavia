@@ -31,7 +31,6 @@ from werkzeug import exceptions
 from octavia.amphorae.backends.agent.api_server import haproxy_compatibility
 from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.agent.api_server import util
-from octavia.amphorae.backends.utils import haproxy_query as query
 from octavia.common import constants as consts
 from octavia.common import utils as octavia_utils
 
@@ -54,10 +53,6 @@ SYSVINIT_TEMPLATE = JINJA_ENV.get_template(SYSVINIT_CONF)
 SYSTEMD_TEMPLATE = JINJA_ENV.get_template(SYSTEMD_CONF)
 
 
-class ParsingError(Exception):
-    pass
-
-
 # Wrap a stream so we can compute the md5 while reading
 class Wrapped(object):
     def __init__(self, stream_):
@@ -77,37 +72,37 @@ class Wrapped(object):
         return getattr(self.stream, attr)
 
 
-class Listener(object):
+class Loadbalancer(object):
 
     def __init__(self):
         self._osutils = osutils.BaseOS.get_os_util()
 
-    def get_haproxy_config(self, listener_id):
+    def get_haproxy_config(self, lb_id):
         """Gets the haproxy config
 
         :param listener_id: the id of the listener
         """
-        self._check_listener_exists(listener_id)
-        with open(util.config_path(listener_id), 'r') as file:
+        self._check_lb_exists(lb_id)
+        with open(util.config_path(lb_id), 'r') as file:
             cfg = file.read()
             resp = webob.Response(cfg, content_type='text/plain')
             resp.headers['ETag'] = hashlib.md5(six.b(cfg)).hexdigest()  # nosec
             return resp
 
-    def upload_haproxy_config(self, amphora_id, listener_id):
+    def upload_haproxy_config(self, amphora_id, lb_id):
         """Upload the haproxy config
 
         :param amphora_id: The id of the amphora to update
-        :param listener_id: The id of the listener
+        :param lb_id: The id of the loadbalancer
         """
         stream = Wrapped(flask.request.stream)
         # We have to hash here because HAProxy has a string length limitation
         # in the configuration file "peer <peername>" lines
         peer_name = octavia_utils.base64_sha1_string(amphora_id).rstrip('=')
-        if not os.path.exists(util.haproxy_dir(listener_id)):
-            os.makedirs(util.haproxy_dir(listener_id))
+        if not os.path.exists(util.haproxy_dir(lb_id)):
+            os.makedirs(util.haproxy_dir(lb_id))
 
-        name = os.path.join(util.haproxy_dir(listener_id), 'haproxy.cfg.new')
+        name = os.path.join(util.haproxy_dir(lb_id), 'haproxy.cfg.new')
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         # mode 00600
         mode = stat.S_IRUSR | stat.S_IWUSR
@@ -148,7 +143,7 @@ class Listener(object):
                 status=400)
 
         # file ok - move it
-        os.rename(name, util.config_path(listener_id))
+        os.rename(name, util.config_path(lb_id))
 
         try:
 
@@ -156,7 +151,7 @@ class Listener(object):
 
             LOG.debug('Found init system: %s', init_system)
 
-            init_path = util.init_path(listener_id, init_system)
+            init_path = util.init_path(lb_id, init_system)
 
             if init_system == consts.INIT_SYSTEMD:
                 template = SYSTEMD_TEMPLATE
@@ -194,9 +189,9 @@ class Listener(object):
 
                 text = template.render(
                     peer_name=peer_name,
-                    haproxy_pid=util.pid_path(listener_id),
+                    haproxy_pid=util.pid_path(lb_id),
                     haproxy_cmd=util.CONF.haproxy_amphora.haproxy_cmd,
-                    haproxy_cfg=util.config_path(listener_id),
+                    haproxy_cfg=util.config_path(lb_id),
                     haproxy_user_group_cfg=consts.HAPROXY_USER_GROUP_CFG,
                     respawn_count=util.CONF.haproxy_amphora.respawn_count,
                     respawn_interval=(util.CONF.haproxy_amphora.
@@ -212,25 +207,25 @@ class Listener(object):
         # Make sure the new service is enabled on boot
         if init_system == consts.INIT_SYSTEMD:
             util.run_systemctl_command(
-                consts.ENABLE, "haproxy-{list}".format(list=listener_id))
+                consts.ENABLE, "haproxy-{lb_id}".format(lb_id=lb_id))
         elif init_system == consts.INIT_SYSVINIT:
             try:
                 subprocess.check_output(init_enable_cmd.split(),
                                         stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                LOG.error("Failed to enable haproxy-%(list)s service: "
-                          "%(err)s %(out)s", {'list': listener_id, 'err': e,
+                LOG.error("Failed to enable haproxy-%(lb_id)s service: "
+                          "%(err)s %(out)s", {'lb_id': lb_id, 'err': e,
                                               'out': e.output})
                 return webob.Response(json=dict(
                     message="Error enabling haproxy-{0} service".format(
-                            listener_id), details=e.output), status=500)
+                            lb_id), details=e.output), status=500)
 
         res = webob.Response(json={'message': 'OK'}, status=202)
         res.headers['ETag'] = stream.get_md5()
 
         return res
 
-    def start_stop_listener(self, listener_id, action):
+    def start_stop_lb(self, lb_id, action):
         action = action.lower()
         if action not in [consts.AMP_ACTION_START,
                           consts.AMP_ACTION_STOP,
@@ -239,30 +234,30 @@ class Listener(object):
                 message='Invalid Request',
                 details="Unknown action: {0}".format(action)), status=400)
 
-        self._check_listener_exists(listener_id)
+        self._check_lb_exists(lb_id)
 
         # Since this script should be created at LB create time
         # we can check for this path to see if VRRP is enabled
         # on this amphora and not write the file if VRRP is not in use
         if os.path.exists(util.keepalived_check_script_path()):
-            self.vrrp_check_script_update(listener_id, action)
+            self.vrrp_check_script_update(lb_id, action)
 
         # HAProxy does not start the process when given a reload
         # so start it if haproxy is not already running
         if action == consts.AMP_ACTION_RELOAD:
-            if consts.OFFLINE == self._check_haproxy_status(listener_id):
+            if consts.OFFLINE == self._check_haproxy_status(lb_id):
                 action = consts.AMP_ACTION_START
 
-        cmd = ("/usr/sbin/service haproxy-{listener_id} {action}".format(
-            listener_id=listener_id, action=action))
+        cmd = ("/usr/sbin/service haproxy-{lb_id} {action}".format(
+            lb_id=lb_id, action=action))
 
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             if b'Job is already running' not in e.output:
                 LOG.debug(
-                    "Failed to %(action)s haproxy-%(list)s service: %(err)s "
-                    "%(out)s", {'action': action, 'list': listener_id,
+                    "Failed to %(action)s haproxy-%(lb_id)s service: %(err)s "
+                    "%(out)s", {'action': action, 'lb_id': lb_id,
                                 'err': e, 'out': e.output})
                 return webob.Response(json=dict(
                     message="Error {0}ing haproxy".format(action),
@@ -271,40 +266,40 @@ class Listener(object):
                       consts.AMP_ACTION_RELOAD]:
             return webob.Response(json=dict(
                 message='OK',
-                details='Listener {listener_id} {action}ed'.format(
-                    listener_id=listener_id, action=action)), status=202)
+                details='Listener {lb_id} {action}ed'.format(
+                    lb_id=lb_id, action=action)), status=202)
 
         details = (
             'Configuration file is valid\n'
-            'haproxy daemon for {0} started'.format(listener_id)
+            'haproxy daemon for {0} started'.format(lb_id)
         )
 
         return webob.Response(json=dict(message='OK', details=details),
                               status=202)
 
-    def delete_listener(self, listener_id):
+    def delete_lb(self, lb_id):
         try:
-            self._check_listener_exists(listener_id)
+            self._check_lb_exists(lb_id)
         except exceptions.HTTPException:
             return webob.Response(json={'message': 'OK'})
 
         # check if that haproxy is still running and if stop it
-        if os.path.exists(util.pid_path(listener_id)) and os.path.exists(
-                os.path.join('/proc', util.get_haproxy_pid(listener_id))):
-            cmd = "/usr/sbin/service haproxy-{0} stop".format(listener_id)
+        if os.path.exists(util.pid_path(lb_id)) and os.path.exists(
+                os.path.join('/proc', util.get_haproxy_pid(lb_id))):
+            cmd = "/usr/sbin/service haproxy-{0} stop".format(lb_id)
             try:
                 subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to stop haproxy-%s service: %s %s",
-                          listener_id, e, e.output)
+                          lb_id, e, e.output)
                 return webob.Response(json=dict(
                     message="Error stopping haproxy",
                     details=e.output), status=500)
 
         # parse config and delete stats socket
         try:
-            cfg = self._parse_haproxy_file(listener_id)
-            os.remove(cfg['stats_socket'])
+            stats_socket = util.parse_haproxy_file(lb_id)[0]
+            os.remove(stats_socket)
         except Exception:
             pass
 
@@ -313,22 +308,22 @@ class Listener(object):
         # on this amphora and not write the file if VRRP is not in use
         if os.path.exists(util.keepalived_check_script_path()):
             self.vrrp_check_script_update(
-                listener_id, action=consts.AMP_ACTION_STOP)
+                lb_id, action=consts.AMP_ACTION_STOP)
 
         # delete the ssl files
         try:
-            shutil.rmtree(self._cert_dir(listener_id))
+            shutil.rmtree(self._cert_dir(lb_id))
         except Exception:
             pass
 
         # disable the service
         init_system = util.get_os_init_system()
-        init_path = util.init_path(listener_id, init_system)
+        init_path = util.init_path(lb_id, init_system)
 
         if init_system == consts.INIT_SYSTEMD:
             util.run_systemctl_command(
-                consts.DISABLE, "haproxy-{list}".format(
-                    list=listener_id))
+                consts.DISABLE, "haproxy-{lb_id}".format(
+                    lb_id=lb_id))
         elif init_system == consts.INIT_SYSVINIT:
             init_disable_cmd = "insserv -r {file}".format(file=init_path)
         elif init_system != consts.INIT_UPSTART:
@@ -339,15 +334,15 @@ class Listener(object):
                 subprocess.check_output(init_disable_cmd.split(),
                                         stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                LOG.error("Failed to disable haproxy-%(list)s service: "
-                          "%(err)s %(out)s", {'list': listener_id, 'err': e,
+                LOG.error("Failed to disable haproxy-%(lb_id)s service: "
+                          "%(err)s %(out)s", {'lb_id': lb_id, 'err': e,
                                               'out': e.output})
                 return webob.Response(json=dict(
                     message="Error disabling haproxy-{0} service".format(
-                            listener_id), details=e.output), status=500)
+                            lb_id), details=e.output), status=500)
 
         # delete the directory + init script for that listener
-        shutil.rmtree(util.haproxy_dir(listener_id))
+        shutil.rmtree(util.haproxy_dir(lb_id))
         if os.path.exists(init_path):
             os.remove(init_path)
 
@@ -364,68 +359,29 @@ class Listener(object):
         """
         listeners = list()
 
-        for listener in util.get_listeners():
-            status = self._check_listener_status(listener)
-            listener_type = ''
+        for lb in util.get_loadbalancers():
+            stats_socket, listeners_on_lb = util.parse_haproxy_file(lb)
 
-            if status == consts.ACTIVE:
-                listener_type = self._parse_haproxy_file(listener)['mode']
-
-            listeners.append({
-                'status': status,
-                'uuid': listener,
-                'type': listener_type,
-            })
+            for listener_id, listener in listeners_on_lb.items():
+                listeners.append({
+                    'status': consts.ACTIVE,
+                    'uuid': listener_id,
+                    'type': listener['mode'],
+                })
 
         if other_listeners:
             listeners = listeners + other_listeners
         return webob.Response(json=listeners, content_type='application/json')
 
-    def get_listener_status(self, listener_id):
-        """Gets the status of a listener
-
-        This method will consult the stats socket
-        so calling this method will interfere with
-        the health daemon with the risk of the amphora
-        shut down
-
-        Currently type==SSL is not detected
-        :param listener_id: The id of the listener
-        """
-        self._check_listener_exists(listener_id)
-
-        status = self._check_listener_status(listener_id)
-
-        if status != consts.ACTIVE:
-            stats = dict(
-                status=status,
-                uuid=listener_id,
-                type=''
-            )
-            return webob.Response(json=stats)
-
-        cfg = self._parse_haproxy_file(listener_id)
-        stats = dict(
-            status=status,
-            uuid=listener_id,
-            type=cfg['mode']
-        )
-
-        # read stats socket
-        q = query.HAProxyQuery(cfg['stats_socket'])
-        servers = q.get_pool_status()
-        stats['pools'] = list(servers.values())
-        return webob.Response(json=stats)
-
-    def upload_certificate(self, listener_id, filename):
+    def upload_certificate(self, lb_id, filename):
         self._check_ssl_filename_format(filename)
 
         # create directory if not already there
-        if not os.path.exists(self._cert_dir(listener_id)):
-            os.makedirs(self._cert_dir(listener_id))
+        if not os.path.exists(self._cert_dir(lb_id)):
+            os.makedirs(self._cert_dir(lb_id))
 
         stream = Wrapped(flask.request.stream)
-        file = self._cert_file_path(listener_id, filename)
+        file = self._cert_file_path(lb_id, filename)
         flags = os.O_WRONLY | os.O_CREAT
         # mode 00600
         mode = stat.S_IRUSR | stat.S_IWUSR
@@ -439,10 +395,10 @@ class Listener(object):
         resp.headers['ETag'] = stream.get_md5()
         return resp
 
-    def get_certificate_md5(self, listener_id, filename):
+    def get_certificate_md5(self, lb_id, filename):
         self._check_ssl_filename_format(filename)
 
-        cert_path = self._cert_file_path(listener_id, filename)
+        cert_path = self._cert_file_path(lb_id, filename)
         path_exists = os.path.exists(cert_path)
         if not path_exists:
             return webob.Response(json=dict(
@@ -457,60 +413,34 @@ class Listener(object):
             resp.headers['ETag'] = md5
             return resp
 
-    def delete_certificate(self, listener_id, filename):
+    def delete_certificate(self, lb_id, filename):
         self._check_ssl_filename_format(filename)
-        if os.path.exists(self._cert_file_path(listener_id, filename)):
-            os.remove(self._cert_file_path(listener_id, filename))
+        if os.path.exists(self._cert_file_path(lb_id, filename)):
+            os.remove(self._cert_file_path(lb_id, filename))
         return webob.Response(json=dict(message='OK'))
 
-    def _check_listener_status(self, listener_id):
-        if os.path.exists(util.pid_path(listener_id)):
+    def _get_listeners_on_lb(self, lb_id):
+        if os.path.exists(util.pid_path(lb_id)):
             if os.path.exists(
-                    os.path.join('/proc', util.get_haproxy_pid(listener_id))):
+                    os.path.join('/proc', util.get_haproxy_pid(lb_id))):
                 # Check if the listener is disabled
-                with open(util.config_path(listener_id), 'r') as file:
+                with open(util.config_path(lb_id), 'r') as file:
                     cfg = file.read()
-                    m = re.search('frontend {}'.format(listener_id), cfg)
-                    if m:
-                        return consts.ACTIVE
-                    return consts.OFFLINE
+                    m = re.findall('^frontend (.*)$', cfg, re.MULTILINE)
+                    return m or []
             else:  # pid file but no process...
-                return consts.ERROR
+                return []
         else:
-            return consts.OFFLINE
+            return []
 
-    def _parse_haproxy_file(self, listener_id):
-        with open(util.config_path(listener_id), 'r') as file:
-            cfg = file.read()
-
-            m = re.search(r'mode\s+(http|tcp)', cfg)
-            if not m:
-                raise ParsingError()
-            mode = m.group(1).upper()
-
-            m = re.search(r'stats socket\s+(\S+)', cfg)
-            if not m:
-                raise ParsingError()
-            stats_socket = m.group(1)
-
-            m = re.search(r'ssl crt\s+(\S+)', cfg)
-            ssl_crt = None
-            if m:
-                ssl_crt = m.group(1)
-                mode = 'TERMINATED_HTTPS'
-
-            return dict(mode=mode,
-                        stats_socket=stats_socket,
-                        ssl_crt=ssl_crt)
-
-    def _check_listener_exists(self, listener_id):
-        # check if we know about that listener
-        if not os.path.exists(util.config_path(listener_id)):
+    def _check_lb_exists(self, lb_id):
+        # check if we know about that lb
+        if lb_id not in util.get_loadbalancers():
             raise exceptions.HTTPException(
                 response=webob.Response(json=dict(
-                    message='Listener Not Found',
-                    details="No listener with UUID: {0}".format(
-                        listener_id)), status=404))
+                    message='Loadbalancer Not Found',
+                    details="No loadbalancer with UUID: {0}".format(
+                        lb_id)), status=404))
 
     def _check_ssl_filename_format(self, filename):
         # check if the format is (xxx.)*xxx.pem
@@ -519,20 +449,19 @@ class Listener(object):
                 response=webob.Response(json=dict(
                     message='Filename has wrong format'), status=400))
 
-    def _cert_dir(self, listener_id):
-        return os.path.join(util.CONF.haproxy_amphora.base_cert_dir,
-                            listener_id)
+    def _cert_dir(self, lb_id):
+        return os.path.join(util.CONF.haproxy_amphora.base_cert_dir, lb_id)
 
-    def _cert_file_path(self, listener_id, filename):
-        return os.path.join(self._cert_dir(listener_id), filename)
+    def _cert_file_path(self, lb_id, filename):
+        return os.path.join(self._cert_dir(lb_id), filename)
 
-    def vrrp_check_script_update(self, listener_id, action):
-        listener_ids = util.get_listeners()
+    def vrrp_check_script_update(self, lb_id, action):
+        lb_ids = util.get_loadbalancers()
         if action == consts.AMP_ACTION_STOP:
-            listener_ids.remove(listener_id)
+            lb_ids.remove(lb_id)
         args = []
-        for lid in listener_ids:
-            args.append(util.haproxy_sock_path(lid))
+        for lbid in lb_ids:
+            args.append(util.haproxy_sock_path(lbid))
 
         if not os.path.exists(util.keepalived_dir()):
             os.makedirs(util.keepalived_dir())
@@ -542,9 +471,9 @@ class Listener(object):
         with open(util.haproxy_check_script_path(), 'w') as text_file:
             text_file.write(cmd)
 
-    def _check_haproxy_status(self, listener_id):
-        if os.path.exists(util.pid_path(listener_id)):
+    def _check_haproxy_status(self, lb_id):
+        if os.path.exists(util.pid_path(lb_id)):
             if os.path.exists(
-                    os.path.join('/proc', util.get_haproxy_pid(listener_id))):
+                    os.path.join('/proc', util.get_haproxy_pid(lb_id))):
                 return consts.ACTIVE
         return consts.OFFLINE

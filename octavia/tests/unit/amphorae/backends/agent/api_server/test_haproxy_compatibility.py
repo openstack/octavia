@@ -17,7 +17,7 @@ import mock
 from octavia.amphorae.backends.agent.api_server import haproxy_compatibility
 from octavia.common import constants
 import octavia.tests.unit.base as base
-from octavia.tests.unit.common.sample_configs import sample_configs
+from octavia.tests.unit.common.sample_configs import sample_configs_combined
 
 
 class HAProxyCompatTestCase(base.TestCase):
@@ -30,7 +30,7 @@ class HAProxyCompatTestCase(base.TestCase):
             "    user nobody\n"
             "    log /dev/log local0\n"
             "    log /dev/log local1 notice\n"
-            "    stats socket /var/lib/octavia/sample_listener_id_1.sock"
+            "    stats socket /var/lib/octavia/sample_loadbalancer_id_1.sock"
             " mode 0666 level user\n"
             "    maxconn {maxconn}\n\n"
             "defaults\n"
@@ -47,11 +47,11 @@ class HAProxyCompatTestCase(base.TestCase):
             "    maxconn {maxconn}\n"
             "    bind 10.0.0.2:80\n"
             "    mode http\n"
-            "    default_backend sample_pool_id_1\n"
+            "    default_backend sample_pool_id_1:sample_listener_id_1\n"
             "    timeout client 50000\n\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
         self.backend_without_external = (
-            "backend sample_pool_id_1\n"
+            "backend sample_pool_id_1:sample_listener_id_1\n"
             "    mode http\n"
             "    balance roundrobin\n"
             "    cookie SRV insert indirect nocache\n"
@@ -69,7 +69,7 @@ class HAProxyCompatTestCase(base.TestCase):
             "sample_member_id_2\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
         self.backend_with_external = (
-            "backend sample_pool_id_1\n"
+            "backend sample_pool_id_1:sample_listener_id_1\n"
             "    mode http\n"
             "    balance roundrobin\n"
             "    cookie SRV insert indirect nocache\n"
@@ -103,7 +103,7 @@ class HAProxyCompatTestCase(base.TestCase):
     def test_process_cfg_for_version_compat(self, mock_get_version):
         # Test 1.6 version path, no change to config expected
         mock_get_version.return_value = [1, 6]
-        test_config = sample_configs.sample_base_expected_config(
+        test_config = sample_configs_combined.sample_base_expected_config(
             backend=self.backend_with_external)
         result_config = haproxy_compatibility.process_cfg_for_version_compat(
             test_config)
@@ -111,7 +111,7 @@ class HAProxyCompatTestCase(base.TestCase):
 
         # Test 1.5 version path, external-check should be removed
         mock_get_version.return_value = [1, 5]
-        test_config = sample_configs.sample_base_expected_config(
+        test_config = sample_configs_combined.sample_base_expected_config(
             backend=self.backend_with_external)
         result_config = haproxy_compatibility.process_cfg_for_version_compat(
             test_config)

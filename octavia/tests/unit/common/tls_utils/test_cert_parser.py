@@ -22,7 +22,7 @@ import octavia.common.exceptions as exceptions
 import octavia.common.tls_utils.cert_parser as cert_parser
 from octavia.tests.unit import base
 from octavia.tests.unit.common.sample_configs import sample_certs
-from octavia.tests.unit.common.sample_configs import sample_configs
+from octavia.tests.unit.common.sample_configs import sample_configs_combined
 
 
 class TestTLSParseUtils(base.TestCase):
@@ -144,8 +144,8 @@ class TestTLSParseUtils(base.TestCase):
 
     @mock.patch('oslo_context.context.RequestContext')
     def test_load_certificates(self, mock_oslo):
-        listener = sample_configs.sample_listener_tuple(tls=True, sni=True,
-                                                        client_ca_cert=True)
+        listener = sample_configs_combined.sample_listener_tuple(
+            tls=True, sni=True, client_ca_cert=True)
         client = mock.MagicMock()
         context = mock.Mock()
         context.project_id = '12345'
@@ -165,8 +165,8 @@ class TestTLSParseUtils(base.TestCase):
                 client.assert_has_calls(calls_cert_mngr)
 
         # Test asking for nothing
-        listener = sample_configs.sample_listener_tuple(tls=False, sni=False,
-                                                        client_ca_cert=False)
+        listener = sample_configs_combined.sample_listener_tuple(
+            tls=False, sni=False, client_ca_cert=False)
         client = mock.MagicMock()
         with mock.patch.object(cert_parser,
                                '_map_cert_tls_container') as mock_map:
@@ -211,7 +211,7 @@ class TestTLSParseUtils(base.TestCase):
 
     def test_build_pem(self):
         expected = b'imacert\nimakey\nimainter\nimainter2\n'
-        tls_tuple = sample_configs.sample_tls_container_tuple(
+        tls_tuple = sample_configs_combined.sample_tls_container_tuple(
             certificate=b'imacert', private_key=b'imakey',
             intermediates=[b'imainter', b'imainter2'])
         self.assertEqual(expected, cert_parser.build_pem(tls_tuple))

@@ -29,22 +29,29 @@ STATS_SOCKET_SAMPLE = (
     "_3xx,hrsp_4xx,hrsp_5xx,hrsp_other,hanafail,req_rate,req_rate_max,req_tot"
     ",cli_abrt,srv_abrt,comp_in,comp_out,comp_byp,comp_rsp,lastsess,last_chk,"
     "last_agt,qtime,ctime,rtime,ttime,\n"
-    "http-servers,id-34821,0,0,0,0,,0,0,0,,0,,0,0,0,0,DOWN,1,1,0,1,1,575,575"
-    ",,1,3,1,,0,,2,0,,0,L4TOUT,,30001,0,0,0,0,0,0,0,,,,0,0,,,,,-1,,,0,0,0,0,\n"
-    "http-servers,id-34824,0,0,0,0,,0,0,0,,0,,0,0,0,0,DOWN,1,1,0,1,1,567,567,"
-    ",1,3,2,,0,,2,0,,0,L4TOUT,,30001,0,0,0,0,0,0,0,,,,0,0,,,,,-1,,,0,0,0,0,\n"
-    "http-servers,BACKEND,0,0,0,0,200,0,0,0,0,0,,0,0,0,0,DOWN,0,0,0,,1,567,567"
-    ",,1,3,0,,0,,1,0,,0,,,,0,0,0,0,0,0,,,,,0,0,0,0,0,0,-1,,,0,0,0,0,\n"
-    "tcp-servers,id-34833,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,1,1,0,1,1,560,560,,"
-    "1,5,1,,0,,2,0,,0,L4TOUT,,30000,,,,,,,0,,,,0,0,,,,,-1,,,0,0,0,0,\n"
-    "tcp-servers,id-34836,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,1,1,0,1,1,552,552,,"
-    "1,5,2,,0,,2,0,,0,L4TOUT,,30001,,,,,,,0,,,,0,0,,,,,-1,,,0,0,0,0,\n"
-    "tcp-servers,id-34839,0,0,0,0,,0,0,0,,0,,0,0,0,0,DRAIN,0,1,0,0,0,552,0,,"
-    "1,5,2,,0,,2,0,,0,L7OK,,30001,,,,,,,0,,,,0,0,,,,,-1,,,0,0,0,0,\n"
-    "tcp-servers,id-34842,0,0,0,0,,0,0,0,,0,,0,0,0,0,MAINT,0,1,0,0,0,552,0,,"
-    "1,5,2,,0,,2,0,,0,L7OK,,30001,,,,,,,0,,,,0,0,,,,,-1,,,0,0,0,0,\n"
-    "tcp-servers,BACKEND,0,0,0,0,200,0,0,0,0,0,,0,0,0,0,UP,0,0,0,,1,552,552"
-    ",,1,5,0,,0,,1,0,,0,,,,,,,,,,,,,,0,0,0,0,0,0,-1,,,0,0,0,0,"
+    "http-servers:listener-id,id-34821,0,0,0,0,,0,0,0,,0,,0,0,0,0,DOWN,1,1,0,"
+    "1,1,575,575,,1,3,1,,0,,2,0,,0,L4TOUT,,30001,0,0,0,0,0,0,0,,,,0,0,,,,,-1,,"
+    ",0,0,0,0,\n"
+    "http-servers:listener-id,id-34824,0,0,0,0,,0,0,0,,0,,0,0,0,0,DOWN,1,1,0,"
+    "1,1,567,567,,1,3,2,,0,,2,0,,0,L4TOUT,,30001,0,0,0,0,0,0,0,,,,0,0,,,,,-1,,"
+    ",0,0,0,0,\n"
+    "http-servers:listener-id,BACKEND,0,0,0,0,200,0,0,0,0,0,,0,0,0,0,DOWN,0,0,"
+    "0,,1,567,567,,1,3,0,,0,,1,0,,0,,,,0,0,0,0,0,0,,,,,0,0,0,0,0,0,-1,,,0,0,0,"
+    "0,\n"
+    "tcp-servers:listener-id,id-34833,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,1,1,0,1,1,"
+    "560,560,,1,5,1,,0,,2,0,,0,L4TOUT,,30000,,,,,,,0,,,,0,0,,,,,-1,,,0,0,0,0,"
+    "\n"
+    "tcp-servers:listener-id,id-34836,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,1,1,0,1,1,"
+    "552,552,,1,5,2,,0,,2,0,,0,L4TOUT,,30001,,,,,,,0,,,,0,0,,,,,-1,,,0,0,0,0,"
+    "\n"
+    "tcp-servers:listener-id,id-34839,0,0,0,0,,0,0,0,,0,,0,0,0,0,DRAIN,0,1,0,"
+    "0,0,552,0,,1,5,2,,0,,2,0,,0,L7OK,,30001,,,,,,,0,,,,0,0,,,,,-1,,,0,0,0,0,"
+    "\n"
+    "tcp-servers:listener-id,id-34842,0,0,0,0,,0,0,0,,0,,0,0,0,0,MAINT,0,1,0,"
+    "0,0,552,0,,1,5,2,,0,,2,0,,0,L7OK,,30001,,,,,,,0,,,,0,0,,,,,-1,,,0,0,0,0,"
+    "\n"
+    "tcp-servers:listener-id,BACKEND,0,0,0,0,200,0,0,0,0,0,,0,0,0,0,UP,0,0,0,,"
+    "1,552,552,,1,5,0,,0,,1,0,,0,,,,,,,,,,,,,,0,0,0,0,0,0,-1,,,0,0,0,0,"
 )
 
 INFO_SOCKET_SAMPLE = (
@@ -94,17 +101,19 @@ class QueryTestCase(base.TestCase):
         self.q._query = query_mock
         query_mock.return_value = STATS_SOCKET_SAMPLE
         self.assertEqual(
-            {'tcp-servers': {
+            {'tcp-servers:listener-id': {
                 'status': constants.UP,
-                'uuid': 'tcp-servers',
+                'listener_uuid': 'listener-id',
+                'pool_uuid': 'tcp-servers',
                 'members':
                     {'id-34833': constants.UP,
                      'id-34836': constants.UP,
                      'id-34839': constants.DRAIN,
                      'id-34842': constants.MAINT}},
-             'http-servers': {
+             'http-servers:listener-id': {
                 'status': constants.DOWN,
-                'uuid': 'http-servers',
+                'listener_uuid': 'listener-id',
+                'pool_uuid': 'http-servers',
                 'members':
                     {'id-34821': constants.DOWN,
                      'id-34824': constants.DOWN}}},
