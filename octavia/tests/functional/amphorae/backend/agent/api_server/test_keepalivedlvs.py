@@ -113,7 +113,7 @@ class KeepalivedLvsTestCase(base.TestCase):
                 'run_systemctl_command')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'install_netns_systemd_service')
-    @mock.patch('pyroute2.NetNS')
+    @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('shutil.copy2')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
@@ -174,7 +174,7 @@ class KeepalivedLvsTestCase(base.TestCase):
                 'run_systemctl_command')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'install_netns_systemd_service')
-    @mock.patch('pyroute2.NetNS')
+    @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('shutil.copy2')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)

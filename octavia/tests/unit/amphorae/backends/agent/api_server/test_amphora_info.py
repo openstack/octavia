@@ -386,7 +386,7 @@ class TestAmphoraInfo(base.TestCase):
 
         self.assertEqual(expected_result, result)
 
-    @mock.patch('pyroute2.NetNS')
+    @mock.patch('pyroute2.NetNS', create=True)
     def test__get_networks(self, mock_netns):
 
         # The output of get_links is huge, just pulling out the parts we
