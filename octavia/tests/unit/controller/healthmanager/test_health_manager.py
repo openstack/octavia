@@ -117,3 +117,21 @@ class TestHealthManager(base.TestCase):
 
         session_mock.assert_called_once_with(autocommit=False)
         self.assertFalse(failover_mock.called)
+
+    @mock.patch('octavia.controller.worker.v1.controller_worker.'
+                'ControllerWorker.failover_amphora')
+    @mock.patch('octavia.db.repositories.AmphoraHealthRepository.'
+                'get_stale_amphora', return_value=None)
+    @mock.patch('octavia.db.api.get_session')
+    def test_health_check_db_error(self, session_mock, get_stale_amp_mock,
+                                   failover_mock):
+        get_stale_amp_mock.return_value = None
+
+        mock_session = mock.MagicMock()
+        session_mock.return_value = mock_session
+        session_mock.side_effect = TestException('DB Error')
+        exit_event = threading.Event()
+        hm = healthmanager.HealthManager(exit_event)
+
+        self.assertRaises(TestException, hm.health_check)
+        self.assertEqual(0, mock_session.rollback.call_count)
