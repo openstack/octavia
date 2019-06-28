@@ -455,8 +455,9 @@ class Listener(base_models.BASE, base_models.IdMixin,
     __v2_wsme__ = listener.ListenerResponse
 
     __table_args__ = (
-        sa.UniqueConstraint('load_balancer_id', 'protocol_port',
-                            name='uq_listener_load_balancer_id_protocol_port'),
+        sa.UniqueConstraint(
+            'load_balancer_id', 'protocol', 'protocol_port',
+            name='uq_listener_load_balancer_id_protocol_port'),
     )
 
     description = sa.Column(sa.String(255), nullable=True)
