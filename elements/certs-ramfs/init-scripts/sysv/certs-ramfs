@@ -17,14 +17,7 @@ NAME=certs-ramfs
 case $1 in
  start)
   log_daemon_msg "Starting the process" "$NAME"
-  modprobe brd
-  passphrase=$(head /dev/urandom | tr -dc "a-zA-Z0-9" | fold -w 32 | head -n 1)
-  certs_path=$(awk "/base_cert_dir / {printf \$3}" /etc/octavia/amphora-agent.conf)
-  mkdir -p "${certs_path}"
-  echo -n "${passphrase}" | cryptsetup --pbkdf-memory=262144 luksFormat /dev/ram0 -
-  echo -n "${passphrase}" | cryptsetup --pbkdf-memory=262144 luksOpen /dev/ram0 certfs-ramfs -
-  mkfs.ext2 /dev/mapper/certfs-ramfs
-  mount /dev/mapper/certfs-ramfs "${certs_path}"
+  /usr/local/bin/certfs-ramfs
   log_end_msg 0
   ;;
  stop)
