@@ -170,20 +170,20 @@ class TestEndpoints(base.TestCase):
             self.resource)
 
     def test_create_l7rule(self):
-        self.ep.create_l7rule(self.context, self.resource_id)
+        self.ep.create_l7rule(self.context, self.resource)
         self.ep.worker.create_l7rule.assert_called_once_with(
-            self.resource_id)
+            self.resource)
 
     def test_update_l7rule(self):
-        self.ep.update_l7rule(self.context, self.resource_id,
+        self.ep.update_l7rule(self.context, self.resource,
                               self.resource_updates)
         self.ep.worker.update_l7rule.assert_called_once_with(
-            self.resource_id, self.resource_updates)
+            self.resource, self.resource_updates)
 
     def test_delete_l7rule(self):
-        self.ep.delete_l7rule(self.context, self.resource_id)
+        self.ep.delete_l7rule(self.context, self.resource)
         self.ep.worker.delete_l7rule.assert_called_once_with(
-            self.resource_id)
+            self.resource)
 
     def test_update_amphora_agent_config(self):
         self.ep.update_amphora_agent_config(self.context, self.resource)

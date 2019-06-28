@@ -581,7 +581,7 @@ class TestAmphoraDriver(base.TestRpc):
         provider_l7rule = driver_dm.L7Rule(
             l7rule_id=self.sample_data.l7rule1_id)
         self.amp_driver.l7rule_create(provider_l7rule)
-        payload = {consts.L7RULE_ID: self.sample_data.l7rule1_id}
+        payload = {consts.L7RULE: provider_l7rule.to_dict()}
         mock_cast.assert_called_with({}, 'create_l7rule', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
@@ -589,7 +589,7 @@ class TestAmphoraDriver(base.TestRpc):
         provider_l7rule = driver_dm.L7Rule(
             l7rule_id=self.sample_data.l7rule1_id)
         self.amp_driver.l7rule_delete(provider_l7rule)
-        payload = {consts.L7RULE_ID: self.sample_data.l7rule1_id}
+        payload = {consts.L7RULE: provider_l7rule.to_dict()}
         mock_cast.assert_called_with({}, 'delete_l7rule', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
@@ -599,8 +599,9 @@ class TestAmphoraDriver(base.TestRpc):
         provider_l7rule = driver_dm.L7Rule(
             l7rule_id=self.sample_data.l7rule1_id, admin_state_up=True)
         l7rule_dict = {'enabled': True}
-        self.amp_driver.l7rule_update(old_provider_l7rule, provider_l7rule)
-        payload = {consts.L7RULE_ID: self.sample_data.l7rule1_id,
+        self.amp_driver.l7rule_update(old_provider_l7rule,
+                                      provider_l7rule)
+        payload = {consts.ORIGINAL_L7RULE: old_provider_l7rule.to_dict(),
                    consts.L7RULE_UPDATES: l7rule_dict}
         mock_cast.assert_called_with({}, 'update_l7rule', **payload)
 
@@ -612,7 +613,7 @@ class TestAmphoraDriver(base.TestRpc):
             l7rule_id=self.sample_data.l7rule1_id, invert=True)
         l7rule_dict = {'invert': True}
         self.amp_driver.l7rule_update(old_provider_l7rule, provider_l7rule)
-        payload = {consts.L7RULE_ID: self.sample_data.l7rule1_id,
+        payload = {consts.ORIGINAL_L7RULE: old_provider_l7rule.to_dict(),
                    consts.L7RULE_UPDATES: l7rule_dict}
         mock_cast.assert_called_with({}, 'update_l7rule', **payload)
 

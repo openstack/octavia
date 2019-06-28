@@ -152,10 +152,11 @@ class TestDatabaseTasks(base.TestCase):
             constants.ADMIN_STATE_UP: True,
         }
 
-        self.l7rule_mock = mock.MagicMock()
-        self.l7rule_mock.id = L7RULE_ID
-        self.l7rule_mock.l7policy = mock.MagicMock()
-        self.l7rule_mock.l7policy.id = L7POLICY_ID
+        self.l7rule_mock = {
+            constants.L7RULE_ID: L7RULE_ID,
+            constants.ADMIN_STATE_UP: True,
+            constants.L7POLICY_ID: L7POLICY_ID,
+        }
 
         self.amphora = {
             constants.ID: AMP_ID,
@@ -406,7 +407,7 @@ class TestDatabaseTasks(base.TestCase):
                                  mock_amphora_repo_delete):
 
         delete_l7rule = database_tasks.DeleteL7RuleInDB()
-        delete_l7rule.execute(_l7rule_mock)
+        delete_l7rule.execute(self.l7rule_mock)
 
         repo.L7RuleRepository.delete.assert_called_once_with(
             'TEST',
@@ -415,7 +416,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert
 
         mock_l7rule_repo_delete.reset_mock()
-        delete_l7rule.revert(_l7rule_mock)
+        delete_l7rule.revert(self.l7rule_mock)
 
 # TODO(sbalukoff) Fix
 #        repo.ListenerRepository.update.assert_called_once_with(
@@ -2394,7 +2395,9 @@ class TestDatabaseTasks(base.TestCase):
             provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.L7RuleRepository.update')
+    @mock.patch('octavia.db.repositories.L7RuleRepository.get')
     def test_mark_l7rule_active_in_db(self,
+                                      mock_l7rule_repo_get,
                                       mock_l7rule_repo_update,
                                       mock_generate_uuid,
                                       mock_LOG,
@@ -2403,7 +2406,7 @@ class TestDatabaseTasks(base.TestCase):
                                       mock_listener_repo_update,
                                       mock_amphora_repo_update,
                                       mock_amphora_repo_delete):
-
+        mock_l7rule_repo_get.return_value = _l7rule_mock
         mark_l7rule_active = (database_tasks.MarkL7RuleActiveInDB())
         mark_l7rule_active.execute(self.l7rule_mock)
 

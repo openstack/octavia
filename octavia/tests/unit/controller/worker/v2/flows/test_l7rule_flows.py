@@ -34,8 +34,10 @@ class TestL7RuleFlows(base.TestCase):
         self.assertIsInstance(l7rule_flow, flow.Flow)
 
         self.assertIn(constants.LISTENERS, l7rule_flow.requires)
-        self.assertIn(constants.LOADBALANCER, l7rule_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, l7rule_flow.requires)
+        self.assertIn(constants.L7RULE, l7rule_flow.requires)
+        self.assertIn(constants.L7POLICY, l7rule_flow.requires)
+        self.assertIn(constants.L7POLICY_ID, l7rule_flow.requires)
 
         self.assertEqual(5, len(l7rule_flow.requires))
         self.assertEqual(0, len(l7rule_flow.provides))
@@ -47,9 +49,10 @@ class TestL7RuleFlows(base.TestCase):
         self.assertIsInstance(l7rule_flow, flow.Flow)
 
         self.assertIn(constants.LISTENERS, l7rule_flow.requires)
-        self.assertIn(constants.LOADBALANCER, l7rule_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, l7rule_flow.requires)
         self.assertIn(constants.L7RULE, l7rule_flow.requires)
+        self.assertIn(constants.L7POLICY, l7rule_flow.requires)
+        self.assertIn(constants.L7POLICY_ID, l7rule_flow.requires)
 
         self.assertEqual(5, len(l7rule_flow.requires))
         self.assertEqual(0, len(l7rule_flow.provides))
@@ -62,9 +65,10 @@ class TestL7RuleFlows(base.TestCase):
 
         self.assertIn(constants.L7RULE, l7rule_flow.requires)
         self.assertIn(constants.LISTENERS, l7rule_flow.requires)
-        self.assertIn(constants.LOADBALANCER, l7rule_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, l7rule_flow.requires)
         self.assertIn(constants.UPDATE_DICT, l7rule_flow.requires)
+        self.assertIn(constants.L7POLICY, l7rule_flow.requires)
+        self.assertIn(constants.L7POLICY_ID, l7rule_flow.requires)
 
         self.assertEqual(6, len(l7rule_flow.requires))
         self.assertEqual(0, len(l7rule_flow.provides))
