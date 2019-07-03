@@ -85,6 +85,7 @@ class HealthManager(object):
         futs = []
         while not self.dead.is_set():
             amp_health = None
+            lock_session = None
             try:
                 lock_session = db_api.get_session(autocommit=False)
                 amp = None
@@ -123,7 +124,8 @@ class HealthManager(object):
                     time.sleep(CONF.health_manager.heartbeat_timeout)
             except Exception:
                 with excutils.save_and_reraise_exception():
-                    lock_session.rollback()
+                    if lock_session:
+                        lock_session.rollback()
 
             if amp_health is None:
                 break
