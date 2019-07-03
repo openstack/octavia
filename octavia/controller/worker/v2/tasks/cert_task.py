@@ -48,4 +48,6 @@ class GenerateServerPEMTask(BaseCertTask):
         key = utils.get_six_compatible_server_certs_key_passphrase()
         fer = fernet.Fernet(key)
 
-        return fer.encrypt(cert.certificate + cert.private_key)
+        # storing in db requires conversion bytes to string
+        # (required for python3)
+        return fer.encrypt(cert.certificate + cert.private_key).decode('utf-8')

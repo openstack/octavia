@@ -40,7 +40,7 @@ class TestEndpoints(base.TestCase):
         self.resource_id = 1234
         self.resource = {constants.ID: self.resource_id}
         self.server_group_id = 3456
-        self.listener_dict = {constants.ID: uuidutils.generate_uuid()}
+        self.listener_dict = {constants.LISTENER_ID: uuidutils.generate_uuid()}
         self.flavor_id = uuidutils.generate_uuid()
         self.availability_zone = uuidutils.generate_uuid()
 
@@ -183,6 +183,6 @@ class TestEndpoints(base.TestCase):
             self.resource_id)
 
     def test_update_amphora_agent_config(self):
-        self.ep.update_amphora_agent_config(self.context, self.resource_id)
+        self.ep.update_amphora_agent_config(self.context, self.resource)
         self.ep.worker.update_amphora_agent_config.assert_called_once_with(
-            self.resource_id)
+            self.resource)

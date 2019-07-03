@@ -55,28 +55,27 @@ CACHED_ZONE = 'zone1'
 IMAGE_ID = uuidutils.generate_uuid()
 COMPUTE_FLAVOR = uuidutils.generate_uuid()
 
-_amphora_mock = mock.MagicMock()
-_amphora_mock.id = AMP_ID
-_amphora_mock.compute_id = COMPUTE_ID
-_amphora_mock.lb_network_ip = LB_NET_IP
-_amphora_mock.vrrp_ip = VRRP_IP
-_amphora_mock.ha_ip = HA_IP
-_amphora_mock.ha_port_id = HA_PORT_ID
-_amphora_mock.vrrp_port_id = VRRP_PORT_ID
-_amphora_mock.role = AMP_ROLE
-_amphora_mock.vrrp_id = VRRP_ID
-_amphora_mock.vrrp_priority = VRRP_PRIORITY
-_amphorae = [_amphora_mock]
+_db_amphora_mock = mock.MagicMock()
+_db_amphora_mock.id = AMP_ID
+_db_amphora_mock.compute_id = COMPUTE_ID
+_db_amphora_mock.lb_network_ip = LB_NET_IP
+_db_amphora_mock.vrrp_ip = VRRP_IP
+_db_amphora_mock.ha_ip = HA_IP
+_db_amphora_mock.ha_port_id = HA_PORT_ID
+_db_amphora_mock.vrrp_port_id = VRRP_PORT_ID
+_db_amphora_mock.role = AMP_ROLE
+_db_amphora_mock.vrrp_id = VRRP_ID
+_db_amphora_mock.vrrp_priority = VRRP_PRIORITY
 _loadbalancer_mock = mock.MagicMock()
 _loadbalancer_mock.id = LB_ID
-_loadbalancer_mock.amphorae = [_amphora_mock]
+_loadbalancer_mock.amphorae = [_db_amphora_mock]
 _l7policy_mock = mock.MagicMock()
 _l7policy_mock.id = L7POLICY_ID
 _l7rule_mock = mock.MagicMock()
 _l7rule_mock.id = L7RULE_ID
 _listener_mock = mock.MagicMock()
 _listener_to_dict_mock = mock.MagicMock(
-    return_value={'id': LISTENER_ID})
+    return_value={constants.ID: LISTENER_ID})
 _listener_mock.id = LISTENER_ID
 _listener_mock.to_dict = _listener_to_dict_mock
 _tf_failure_mock = mock.Mock(spec=failure.Failure)
@@ -86,11 +85,12 @@ _vip_mock.subnet_id = SUBNET_ID
 _vip_mock.ip_address = VIP_IP
 _vrrp_group_mock = mock.MagicMock()
 _cert_mock = mock.MagicMock()
-_compute_mock = mock.MagicMock()
-_compute_mock.lb_network_ip = LB_NET_IP
-_compute_mock.cached_zone = CACHED_ZONE
-_compute_mock.image_id = IMAGE_ID
-_compute_mock.compute_flavor = COMPUTE_FLAVOR
+_compute_mock_dict = {
+    constants.LB_NETWORK_IP: LB_NET_IP,
+    constants.CACHED_ZONE: CACHED_ZONE,
+    constants.IMAGE_ID: IMAGE_ID,
+    constants.COMPUTE_FLAVOR: COMPUTE_FLAVOR
+}
 
 
 @mock.patch('octavia.db.repositories.AmphoraRepository.delete')
@@ -133,10 +133,24 @@ class TestDatabaseTasks(base.TestCase):
         self.l7rule_mock.id = L7RULE_ID
         self.l7rule_mock.l7policy = self.l7policy_mock
 
+        self.amphora = {
+            constants.ID: AMP_ID,
+            constants.COMPUTE_ID: COMPUTE_ID,
+            constants.LB_NETWORK_IP: LB_NET_IP,
+            constants.VRRP_IP: VRRP_IP,
+            constants.HA_IP: HA_IP,
+            constants.HA_PORT_ID: HA_PORT_ID,
+            constants.VRRP_PORT_ID: VRRP_PORT_ID,
+            constants.ROLE: AMP_ROLE,
+            constants.VRRP_ID: VRRP_ID,
+            constants.VRRP_PRIORITY: VRRP_PRIORITY,
+        }
+        _db_amphora_mock.to_dict.return_value = self.amphora
+
         super(TestDatabaseTasks, self).setUp()
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.create',
-                return_value=_amphora_mock)
+                return_value=_db_amphora_mock)
     def test_create_amphora_in_db(self,
                                   mock_create,
                                   mock_generate_uuid,
@@ -156,7 +170,7 @@ class TestDatabaseTasks(base.TestCase):
             status=constants.PENDING_CREATE,
             cert_busy=False)
 
-        self.assertEqual(_amphora_mock.id, amp_id)
+        self.assertEqual(_db_amphora_mock.id, amp_id)
 
         # Test the revert
         create_amp_in_db.revert(_tf_failure_mock)
@@ -384,7 +398,7 @@ class TestDatabaseTasks(base.TestCase):
 #            operating_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.get',
-                return_value=_amphora_mock)
+                return_value=_db_amphora_mock)
     def test_reload_amphora(self,
                             mock_amp_get,
                             mock_generate_uuid,
@@ -396,13 +410,13 @@ class TestDatabaseTasks(base.TestCase):
                             mock_amphora_repo_delete):
 
         reload_amp = database_tasks.ReloadAmphora()
-        amp = reload_amp.execute(AMP_ID)
+        amp = reload_amp.execute(self.amphora)
 
         repo.AmphoraRepository.get.assert_called_once_with(
             'TEST',
             id=AMP_ID)
 
-        self.assertEqual(_amphora_mock, amp)
+        self.assertEqual(_db_amphora_mock.to_dict(), amp)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
                 return_value=_loadbalancer_mock)
@@ -461,7 +475,7 @@ class TestDatabaseTasks(base.TestCase):
                                      mock_amphora_repo_delete):
 
         update_amp_vip_data = database_tasks.UpdateAmphoraeVIPData()
-        update_amp_vip_data.execute(_amphorae)
+        update_amp_vip_data.execute([self.amphora])
 
         mock_amphora_repo_update.assert_called_once_with(
             'TEST',
@@ -481,7 +495,7 @@ class TestDatabaseTasks(base.TestCase):
                                       mock_amphora_repo_update,
                                       mock_amphora_repo_delete):
         update_amp_vip_data2 = database_tasks.UpdateAmphoraVIPData()
-        update_amp_vip_data2.execute(_amphorae[0])
+        update_amp_vip_data2.execute(self.amphora)
 
         mock_amphora_repo_update.assert_called_once_with(
             'TEST',
@@ -502,7 +516,7 @@ class TestDatabaseTasks(base.TestCase):
                                          mock_amphora_repo_delete):
 
         update_amp_fo_details = database_tasks.UpdateAmpFailoverDetails()
-        update_amp_fo_details.execute(_amphora_mock, _amphora_mock)
+        update_amp_fo_details.execute(self.amphora, self.amphora)
 
         mock_amphora_repo_update.assert_called_once_with(
             'TEST',
@@ -551,7 +565,7 @@ class TestDatabaseTasks(base.TestCase):
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.'
                 'allocate_and_associate',
-                side_effect=[_amphora_mock, None])
+                side_effect=[_db_amphora_mock, None])
     def test_map_loadbalancer_to_amphora(self,
                                          mock_allocate_and_associate,
                                          mock_generate_uuid,
@@ -563,14 +577,14 @@ class TestDatabaseTasks(base.TestCase):
                                          mock_amphora_repo_delete):
 
         map_lb_to_amp = database_tasks.MapLoadbalancerToAmphora()
-        amp_id = map_lb_to_amp.execute(self.loadbalancer_mock.id)
+        amp = map_lb_to_amp.execute(self.loadbalancer_mock.id)
 
         repo.AmphoraRepository.allocate_and_associate.assert_called_once_with(
             'TEST',
             LB_ID,
             None)
 
-        self.assertEqual(_amphora_mock.id, amp_id)
+        self.assertEqual(self.amphora, amp)
 
         amp_id = map_lb_to_amp.execute(self.loadbalancer_mock.id)
 
@@ -594,7 +608,7 @@ class TestDatabaseTasks(base.TestCase):
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.'
                 'allocate_and_associate',
-                side_effect=[_amphora_mock, None])
+                side_effect=[_db_amphora_mock, None])
     def test_map_loadbalancer_to_amphora_with_az(self,
                                                  mock_allocate_and_associate,
                                                  mock_generate_uuid,
@@ -606,7 +620,7 @@ class TestDatabaseTasks(base.TestCase):
                                                  mock_amphora_repo_delete):
 
         map_lb_to_amp = database_tasks.MapLoadbalancerToAmphora()
-        amp_id = map_lb_to_amp.execute(
+        amp = map_lb_to_amp.execute(
             self.loadbalancer_mock.id, availability_zone={
                 constants.COMPUTE_ZONE: 'fakeaz'})
 
@@ -615,11 +629,11 @@ class TestDatabaseTasks(base.TestCase):
             LB_ID,
             'fakeaz')
 
-        self.assertEqual(_amphora_mock.id, amp_id)
+        self.assertEqual(self.amphora, amp)
 
-        amp_id = map_lb_to_amp.execute(self.loadbalancer_mock.id)
+        amp = map_lb_to_amp.execute(self.loadbalancer_mock.id)
 
-        self.assertIsNone(amp_id)
+        self.assertIsNone(amp)
 
         # Test revert
         map_lb_to_amp.revert(None, self.loadbalancer_mock.id)
@@ -638,7 +652,7 @@ class TestDatabaseTasks(base.TestCase):
             provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.get',
-                return_value=_amphora_mock)
+                return_value=_db_amphora_mock)
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
                 return_value=_loadbalancer_mock)
     def test_mark_lb_amphorae_deleted_in_db(self,
@@ -662,7 +676,7 @@ class TestDatabaseTasks(base.TestCase):
             status=constants.DELETED)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.get',
-                return_value=_amphora_mock)
+                return_value=_db_amphora_mock)
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
                 return_value=_loadbalancer_mock)
     def test_mark_amphora_allocated_in_db(self,
@@ -678,7 +692,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mark_amp_allocated_in_db = (database_tasks.
                                     MarkAmphoraAllocatedInDB())
-        mark_amp_allocated_in_db.execute(_amphora_mock,
+        mark_amp_allocated_in_db.execute(self.amphora,
                                          self.loadbalancer_mock.id)
 
         repo.AmphoraRepository.update.assert_called_once_with(
@@ -692,7 +706,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert
 
         mock_amphora_repo_update.reset_mock()
-        mark_amp_allocated_in_db.revert(None, _amphora_mock,
+        mark_amp_allocated_in_db.revert(None, self.amphora,
                                         self.loadbalancer_mock.id)
 
         repo.AmphoraRepository.update.assert_called_once_with(
@@ -704,7 +718,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_amphora_repo_update.reset_mock()
         mock_amphora_repo_update.side_effect = Exception('fail')
-        mark_amp_allocated_in_db.revert(None, _amphora_mock,
+        mark_amp_allocated_in_db.revert(None, self.amphora,
                                         self.loadbalancer_mock.id)
 
         repo.AmphoraRepository.update.assert_called_once_with(
@@ -722,8 +736,8 @@ class TestDatabaseTasks(base.TestCase):
                                         mock_amphora_repo_delete):
 
         mark_amp_booting_in_db = database_tasks.MarkAmphoraBootingInDB()
-        mark_amp_booting_in_db.execute(_amphora_mock.id,
-                                       _amphora_mock.compute_id)
+        mark_amp_booting_in_db.execute(_db_amphora_mock.id,
+                                       _db_amphora_mock.compute_id)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -734,8 +748,8 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert
 
         mock_amphora_repo_update.reset_mock()
-        mark_amp_booting_in_db.revert(None, _amphora_mock.id,
-                                      _amphora_mock.compute_id)
+        mark_amp_booting_in_db.revert(None, _db_amphora_mock.id,
+                                      _db_amphora_mock.compute_id)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -747,8 +761,8 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_amphora_repo_update.reset_mock()
         mock_amphora_repo_update.side_effect = Exception('fail')
-        mark_amp_booting_in_db.revert(None, _amphora_mock.id,
-                                      _amphora_mock.compute_id)
+        mark_amp_booting_in_db.revert(None, _db_amphora_mock.id,
+                                      _db_amphora_mock.compute_id)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -766,7 +780,7 @@ class TestDatabaseTasks(base.TestCase):
                                         mock_amphora_repo_delete):
 
         mark_amp_deleted_in_db = database_tasks.MarkAmphoraDeletedInDB()
-        mark_amp_deleted_in_db.execute(_amphora_mock)
+        mark_amp_deleted_in_db.execute(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -775,7 +789,7 @@ class TestDatabaseTasks(base.TestCase):
 
         # Test the revert
         mock_amphora_repo_update.reset_mock()
-        mark_amp_deleted_in_db.revert(_amphora_mock)
+        mark_amp_deleted_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -785,7 +799,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert with exception
         mock_amphora_repo_update.reset_mock()
         mock_amphora_repo_update.side_effect = Exception('fail')
-        mark_amp_deleted_in_db.revert(_amphora_mock)
+        mark_amp_deleted_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -803,7 +817,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mark_amp_pending_delete_in_db = (database_tasks.
                                          MarkAmphoraPendingDeleteInDB())
-        mark_amp_pending_delete_in_db.execute(_amphora_mock)
+        mark_amp_pending_delete_in_db.execute(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -812,7 +826,7 @@ class TestDatabaseTasks(base.TestCase):
 
         # Test the revert
         mock_amphora_repo_update.reset_mock()
-        mark_amp_pending_delete_in_db.revert(_amphora_mock)
+        mark_amp_pending_delete_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -823,7 +837,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_amphora_repo_update.reset_mock()
         mock_amphora_repo_update.side_effect = Exception('fail')
 
-        mark_amp_pending_delete_in_db.revert(_amphora_mock)
+        mark_amp_pending_delete_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -841,7 +855,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mark_amp_pending_update_in_db = (database_tasks.
                                          MarkAmphoraPendingUpdateInDB())
-        mark_amp_pending_update_in_db.execute(_amphora_mock)
+        mark_amp_pending_update_in_db.execute(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -850,7 +864,7 @@ class TestDatabaseTasks(base.TestCase):
 
         # Test the revert
         mock_amphora_repo_update.reset_mock()
-        mark_amp_pending_update_in_db.revert(_amphora_mock)
+        mark_amp_pending_update_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -860,7 +874,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert with exception
         mock_amphora_repo_update.reset_mock()
         mock_amphora_repo_update.side_effect = Exception('fail')
-        mark_amp_pending_update_in_db.revert(_amphora_mock)
+        mark_amp_pending_update_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -876,10 +890,10 @@ class TestDatabaseTasks(base.TestCase):
                                       mock_amphora_repo_update,
                                       mock_amphora_repo_delete):
 
-        _amphora_mock.lb_network_ip = LB_NET_IP
+        self.amphora['lb_network_ip'] = LB_NET_IP
 
         mark_amp_ready_in_db = database_tasks.MarkAmphoraReadyInDB()
-        mark_amp_ready_in_db.execute(_amphora_mock)
+        mark_amp_ready_in_db.execute(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -891,7 +905,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test the revert
 
         mock_amphora_repo_update.reset_mock()
-        mark_amp_ready_in_db.revert(_amphora_mock)
+        mark_amp_ready_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -904,7 +918,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_amphora_repo_update.reset_mock()
         mock_amphora_repo_update.side_effect = Exception('fail')
-        mark_amp_ready_in_db.revert(_amphora_mock)
+        mark_amp_ready_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -925,7 +939,7 @@ class TestDatabaseTasks(base.TestCase):
                                  mock_amphora_repo_delete):
 
         update_amphora_info = database_tasks.UpdateAmphoraInfo()
-        update_amphora_info.execute(AMP_ID, _compute_mock)
+        update_amphora_info.execute(AMP_ID, _compute_mock_dict)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -1130,8 +1144,8 @@ class TestDatabaseTasks(base.TestCase):
         fer = fernet.Fernet(key)
         _pem_mock = fer.encrypt(
             utils.get_six_compatible_value('test_cert')
-        )
-        update_amp_cert.execute(_amphora_mock.id, _pem_mock)
+        ).decode('utf-8')
+        update_amp_cert.execute(_db_amphora_mock.id, _pem_mock)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -1147,7 +1161,7 @@ class TestDatabaseTasks(base.TestCase):
                                                mock_amphora_repo_update,
                                                mock_amphora_repo_delete):
         amp_cert_busy_to_F = database_tasks.UpdateAmphoraCertBusyToFalse()
-        amp_cert_busy_to_F.execute(_amphora_mock)
+        amp_cert_busy_to_F.execute(AMP_ID)
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
             AMP_ID,
@@ -1764,7 +1778,10 @@ class TestDatabaseTasks(base.TestCase):
             L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
+    @mock.patch('octavia.db.repositories.AmphoraRepository.get',
+                return_value=_db_amphora_mock)
     def test_get_amphora_details(self,
+                                 mock_amp_get,
                                  mock_generate_uuid,
                                  mock_LOG,
                                  mock_get_session,
@@ -1774,15 +1791,15 @@ class TestDatabaseTasks(base.TestCase):
                                  mock_amphora_repo_delete):
 
         get_amp_details = database_tasks.GetAmphoraDetails()
-        new_amp = get_amp_details.execute(_amphora_mock)
+        new_amp = get_amp_details.execute(self.amphora)
 
-        self.assertEqual(AMP_ID, new_amp.id)
-        self.assertEqual(VRRP_IP, new_amp.vrrp_ip)
-        self.assertEqual(HA_IP, new_amp.ha_ip)
-        self.assertEqual(VRRP_PORT_ID, new_amp.vrrp_port_id)
-        self.assertEqual(AMP_ROLE, new_amp.role)
-        self.assertEqual(VRRP_ID, new_amp.vrrp_id)
-        self.assertEqual(VRRP_PRIORITY, new_amp.vrrp_priority)
+        self.assertEqual(AMP_ID, new_amp[constants.ID])
+        self.assertEqual(VRRP_IP, new_amp[constants.VRRP_IP])
+        self.assertEqual(HA_IP, new_amp[constants.HA_IP])
+        self.assertEqual(VRRP_PORT_ID, new_amp[constants.VRRP_PORT_ID])
+        self.assertEqual(AMP_ROLE, new_amp[constants.ROLE])
+        self.assertEqual(VRRP_ID, new_amp[constants.VRRP_ID])
+        self.assertEqual(VRRP_PRIORITY, new_amp[constants.VRRP_PRIORITY])
 
     def test_mark_amphora_role_indb(self,
                                     mock_generate_uuid,
@@ -1794,55 +1811,55 @@ class TestDatabaseTasks(base.TestCase):
                                     mock_amphora_repo_delete):
 
         mark_amp_master_indb = database_tasks.MarkAmphoraMasterInDB()
-        mark_amp_master_indb.execute(_amphora_mock)
+        mark_amp_master_indb.execute(self.amphora)
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST', AMP_ID, role='MASTER',
             vrrp_priority=constants.ROLE_MASTER_PRIORITY)
 
         mock_amphora_repo_update.reset_mock()
 
-        mark_amp_master_indb.revert("BADRESULT", _amphora_mock)
+        mark_amp_master_indb.revert("BADRESULT", self.amphora)
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST', AMP_ID, role=None, vrrp_priority=None)
 
         mock_amphora_repo_update.reset_mock()
 
         failure_obj = failure.Failure.from_exception(Exception("TESTEXCEPT"))
-        mark_amp_master_indb.revert(failure_obj, _amphora_mock)
+        mark_amp_master_indb.revert(failure_obj, self.amphora)
         self.assertFalse(repo.AmphoraRepository.update.called)
 
         mock_amphora_repo_update.reset_mock()
 
         mark_amp_backup_indb = database_tasks.MarkAmphoraBackupInDB()
-        mark_amp_backup_indb.execute(_amphora_mock)
+        mark_amp_backup_indb.execute(self.amphora)
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST', AMP_ID, role='BACKUP',
             vrrp_priority=constants.ROLE_BACKUP_PRIORITY)
 
         mock_amphora_repo_update.reset_mock()
 
-        mark_amp_backup_indb.revert("BADRESULT", _amphora_mock)
+        mark_amp_backup_indb.revert("BADRESULT", self.amphora)
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST', AMP_ID, role=None, vrrp_priority=None)
 
         mock_amphora_repo_update.reset_mock()
 
         mark_amp_standalone_indb = database_tasks.MarkAmphoraStandAloneInDB()
-        mark_amp_standalone_indb.execute(_amphora_mock)
+        mark_amp_standalone_indb.execute(self.amphora)
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST', AMP_ID, role='STANDALONE',
             vrrp_priority=None)
 
         mock_amphora_repo_update.reset_mock()
 
-        mark_amp_standalone_indb.revert("BADRESULT", _amphora_mock)
+        mark_amp_standalone_indb.revert("BADRESULT", self.amphora)
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST', AMP_ID, role=None, vrrp_priority=None)
 
         # Test revert with exception
         mock_amphora_repo_update.reset_mock()
         mock_amphora_repo_update.side_effect = Exception('fail')
-        mark_amp_standalone_indb.revert("BADRESULT", _amphora_mock)
+        mark_amp_standalone_indb.revert("BADRESULT", self.amphora)
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST', AMP_ID, role=None, vrrp_priority=None)
 
@@ -1863,11 +1880,12 @@ class TestDatabaseTasks(base.TestCase):
         lb = mock.MagicMock()
         lb.amphorae = [amp1, amp2]
 
-        mock_amphora_get.side_effect = [_amphora_mock, None]
+        mock_amphora_get.side_effect = [_db_amphora_mock, None]
 
         get_amps_from_lb_obj = database_tasks.GetAmphoraeFromLoadbalancer()
         result = get_amps_from_lb_obj.execute(lb)
-        self.assertEqual([_amphora_mock], result)
+        self.assertEqual([_db_amphora_mock.to_dict()], result)
+        self.assertEqual([_db_amphora_mock.to_dict()], result)
 
     @mock.patch('octavia.db.repositories.ListenerRepository.get')
     def test_get_listeners_from_loadbalancer(self,
@@ -1934,7 +1952,7 @@ class TestDatabaseTasks(base.TestCase):
                                                mock_amphora_repo_update,
                                                mock_amphora_repo_delete):
         disable_amp_health = database_tasks.DisableAmphoraHealthMonitoring()
-        disable_amp_health.execute(_amphora_mock)
+        disable_amp_health.execute(self.amphora)
         mock_amp_health_repo_delete.assert_called_once_with(
             'TEST', amphora_id=AMP_ID)
 
@@ -1966,7 +1984,7 @@ class TestDatabaseTasks(base.TestCase):
                                                  mock_amphora_repo_update,
                                                  mock_amphora_repo_delete):
         mark_busy = database_tasks.MarkAmphoraHealthBusy()
-        mark_busy.execute(_amphora_mock)
+        mark_busy.execute(self.amphora)
         mock_amp_health_repo_update.assert_called_once_with(
             'TEST', amphora_id=AMP_ID, busy=True)
 

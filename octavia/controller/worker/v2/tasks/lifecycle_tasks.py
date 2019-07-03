@@ -43,7 +43,8 @@ class AmphoraToErrorOnRevertTask(AmphoraIDToErrorOnRevertTask):
         pass
 
     def revert(self, amphora, *args, **kwargs):
-        super(AmphoraToErrorOnRevertTask, self).revert(amphora.id)
+        super(AmphoraToErrorOnRevertTask, self).revert(
+            amphora.get(constants.ID))
 
 
 class HealthMonitorToErrorOnRevertTask(BaseLifecycleTask):

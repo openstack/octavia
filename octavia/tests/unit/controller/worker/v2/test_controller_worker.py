@@ -46,7 +46,11 @@ L7RULE_UPDATE_DICT = {
     'compare_type': constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
     'value': '/api'}
 
-_amphora_mock = mock.MagicMock()
+_db_amphora_mock = mock.MagicMock()
+_amphora_mock = {
+    constants.ID: AMP_ID,
+    constants.LOAD_BALANCER_ID: LB_ID,
+}
 _flow_mock = mock.MagicMock()
 _health_mon_mock = mock.MagicMock()
 _vip_mock = mock.MagicMock()
@@ -60,8 +64,8 @@ _db_pool_mock = mock.MagicMock()
 _l7policy_mock = mock.MagicMock()
 _l7rule_mock = mock.MagicMock()
 _create_map_flow_mock = mock.MagicMock()
-_amphora_mock.load_balancer_id = LB_ID
-_amphora_mock.id = AMP_ID
+_db_amphora_mock.load_balancer_id = LB_ID
+_db_amphora_mock.id = AMP_ID
 _db_session = mock.MagicMock()
 
 CONF = cfg.CONF
@@ -77,7 +81,7 @@ class TestException(Exception):
 
 
 @mock.patch('octavia.db.repositories.AmphoraRepository.get',
-            return_value=_amphora_mock)
+            return_value=_db_amphora_mock)
 @mock.patch('octavia.db.repositories.HealthMonitorRepository.get',
             return_value=_health_mon_mock)
 @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
@@ -105,14 +109,14 @@ class TestControllerWorker(base.TestCase):
         _db_pool_mock.listeners = [_listener_mock]
         _db_pool_mock.load_balancer = _load_balancer_mock
         _health_mon_mock.pool = _db_pool_mock
-        _load_balancer_mock.amphorae = _amphora_mock
+        _load_balancer_mock.amphorae = _db_amphora_mock
         _load_balancer_mock.vip = _vip_mock
         _load_balancer_mock.id = LB_ID
         _load_balancer_mock.project_id = PROJECT_ID
         _listener_mock.load_balancer = _load_balancer_mock
         _listener_mock.id = LISTENER_ID
         _listener_mock.to_dict.return_value = {
-            'id': LISTENER_ID, constants.LOAD_BALANCER_ID: LB_ID}
+            constants.ID: LISTENER_ID, constants.LOAD_BALANCER_ID: LB_ID}
         self.ref_listener_dict = {constants.LISTENER_ID: LISTENER_ID,
                                   constants.LOADBALANCER_ID: LB_ID}
         _member_mock.pool = _db_pool_mock
@@ -230,10 +234,11 @@ class TestControllerWorker(base.TestCase):
         mock_amp_repo_get.assert_called_once_with(
             _db_session,
             id=AMP_ID)
+        mock_amp_repo_get.return_value = _db_amphora_mock
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with('TEST',
-                                    store={constants.AMPHORA: _amphora_mock}))
+            assert_called_once_with(
+                'TEST', store={constants.AMPHORA: _db_amphora_mock.to_dict()}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -1272,13 +1277,13 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         cw.failover_amphora(AMP_ID)
-
+        mock_amp_repo_get.return_value = _db_amphora_mock
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(
                 _flow_mock,
-                store={constants.FAILED_AMPHORA: _amphora_mock,
+                store={constants.FAILED_AMPHORA: _db_amphora_mock.to_dict(),
                        constants.LOADBALANCER_ID:
-                           _amphora_mock.load_balancer_id,
+                           _db_amphora_mock.load_balancer_id,
                        constants.BUILD_TYPE_PRIORITY:
                            constants.LB_CREATE_FAILOVER_PRIORITY,
                        constants.FLAVOR: {},
@@ -1401,7 +1406,7 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(
                 _flow_mock,
-                store={constants.FAILED_AMPHORA: mock_amphora,
+                store={constants.FAILED_AMPHORA: mock_amphora.to_dict(),
                        constants.LOADBALANCER_ID: None,
                        constants.BUILD_TYPE_PRIORITY:
                            constants.LB_CREATE_FAILOVER_PRIORITY,
@@ -1458,22 +1463,23 @@ class TestControllerWorker(base.TestCase):
         _amphora_mock3 = mock.MagicMock()
         _amphora_mock3.status = constants.DELETED
         _load_balancer_mock.amphorae = [
-            _amphora_mock, _amphora_mock2, _amphora_mock3]
+            _db_amphora_mock, _amphora_mock2, _amphora_mock3]
         cw = controller_worker.ControllerWorker()
         cw.failover_loadbalancer('123')
         mock_perform.assert_called_with(
-            _amphora_mock2, constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
+            _amphora_mock2,
+            constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
         mock_update.assert_called_with(_db_session, '123',
                                        provisioning_status=constants.ACTIVE)
 
         _load_balancer_mock.amphorae = [
-            _amphora_mock, _amphora_mock2, _amphora_mock3]
+            _db_amphora_mock, _amphora_mock2, _amphora_mock3]
         _amphora_mock2.role = constants.ROLE_BACKUP
         cw.failover_loadbalancer('123')
         # because mock2 gets failed over earlier now _amphora_mock
         # is the last one
         mock_perform.assert_called_with(
-            _amphora_mock, constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
+            _db_amphora_mock, constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
         mock_update.assert_called_with(_db_session, '123',
                                        provisioning_status=constants.ACTIVE)
 
@@ -1521,9 +1527,9 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(
                 _flow_mock,
-                store={constants.FAILED_AMPHORA: _amphora_mock,
+                store={constants.FAILED_AMPHORA: _db_amphora_mock.to_dict(),
                        constants.LOADBALANCER_ID:
-                           _amphora_mock.load_balancer_id,
+                           _db_amphora_mock.load_balancer_id,
                        constants.BUILD_TYPE_PRIORITY:
                            constants.LB_CREATE_FAILOVER_PRIORITY,
                        constants.SERVER_GROUP_ID: "123",
@@ -1554,11 +1560,13 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
         cw = controller_worker.ControllerWorker()
         cw.amphora_cert_rotation(AMP_ID)
+        mock_amp_repo_get.return_value = _db_amphora_mock
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
          assert_called_once_with(_flow_mock,
-                                 store={constants.AMPHORA: _amphora_mock,
+                                 store={constants.AMPHORA:
+                                        _db_amphora_mock.to_dict(),
                                         constants.AMPHORA_ID:
-                                            _amphora_mock.id}))
+                                        _amphora_mock[constants.ID]}))
         _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.db.repositories.FlavorRepository.'
@@ -1595,7 +1603,8 @@ class TestControllerWorker(base.TestCase):
         mock_flavor_meta.assert_called_once_with(_db_session, 'vanilla')
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
          assert_called_once_with(_flow_mock,
-                                 store={constants.AMPHORA: _amphora_mock,
+                                 store={constants.AMPHORA:
+                                        _db_amphora_mock.to_dict(),
                                         constants.FLAVOR: {'test': 'dict'}}))
         _flow_mock.run.assert_called_once_with()
 
@@ -1612,6 +1621,7 @@ class TestControllerWorker(base.TestCase):
         mock_flavor_meta.assert_not_called()
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
          assert_called_once_with(_flow_mock,
-                                 store={constants.AMPHORA: _amphora_mock,
+                                 store={constants.AMPHORA:
+                                        _db_amphora_mock.to_dict(),
                                         constants.FLAVOR: {}}))
         _flow_mock.run.assert_called_once_with()

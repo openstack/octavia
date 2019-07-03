@@ -39,7 +39,7 @@ class TestCertTasks(base.TestCase):
         c = cert_task.GenerateServerPEMTask()
         pem = c.execute('123')
         self.assertEqual(
-            fer.decrypt(pem),
+            fer.decrypt(pem.encode('utf-8')),
             dummy_cert.get_certificate() +
             dummy_cert.get_private_key()
         )

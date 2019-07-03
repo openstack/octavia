@@ -163,7 +163,8 @@ class CertComputeCreate(ComputeCreate):
         key = utils.get_six_compatible_server_certs_key_passphrase()
         fer = fernet.Fernet(key)
         config_drive_files = {
-            '/etc/octavia/certs/server.pem': fer.decrypt(server_pem),
+            '/etc/octavia/certs/server.pem': fer.decrypt(
+                server_pem.encode("utf-8")),
             '/etc/octavia/certs/client_ca.pem': ca}
         return super(CertComputeCreate, self).execute(
             amphora_id, config_drive_files=config_drive_files,
@@ -191,13 +192,14 @@ class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
 
 class ComputeDelete(BaseComputeTask):
     def execute(self, amphora):
-        LOG.debug("Compute Delete execute for amphora with id %s", amphora.id)
+        LOG.debug("Compute Delete execute for amphora with id %s",
+                  amphora.get(constants.ID))
 
         try:
-            self.compute.delete(amphora.compute_id)
+            self.compute.delete(amphora[constants.COMPUTE_ID])
         except Exception:
             LOG.exception("Compute delete for amphora id: %s failed",
-                          amphora.id)
+                          amphora.get(constants.ID))
             raise
 
 
@@ -215,7 +217,7 @@ class ComputeActiveWait(BaseComputeTask):
             if amp.status == constants.ACTIVE:
                 if CONF.haproxy_amphora.build_rate_limit != -1:
                     self.rate_limit.remove_from_build_req_queue(amphora_id)
-                return amp
+                return amp.to_dict()
             if amp.status == constants.ERROR:
                 raise exceptions.ComputeBuildException(fault=fault)
             time.sleep(CONF.controller_worker.amp_active_wait_sec)

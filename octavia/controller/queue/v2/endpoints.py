@@ -63,28 +63,31 @@ class Endpoints(object):
         self.worker.failover_amphora(amphora_id)
 
     def create_listener(self, context, listener):
-        LOG.info('Creating listener \'%s\'...', listener.get(constants.ID))
+        LOG.info('Creating listener \'%s\'...',
+                 listener[constants.LISTENER_ID])
         self.worker.create_listener(listener)
 
     def update_listener(self, context, original_listener, listener_updates):
-        LOG.info('Updating listener \'%s\'...', original_listener.get(
-            constants.ID))
+        LOG.info('Updating listener \'%s\'...',
+                 original_listener[constants.LISTENER_ID])
         self.worker.update_listener(original_listener, listener_updates)
 
     def delete_listener(self, context, listener):
-        LOG.info('Deleting listener \'%s\'...', listener.get(constants.ID))
+        LOG.info('Deleting listener \'%s\'...',
+                 listener[constants.LISTENER_ID])
         self.worker.delete_listener(listener)
 
     def create_pool(self, context, pool):
-        LOG.info('Creating pool \'%s\'...', pool.get(constants.ID))
+        LOG.info('Creating pool \'%s\'...', pool.get(constants.POOL_ID))
         self.worker.create_pool(pool)
 
     def update_pool(self, context, original_pool, pool_updates):
-        LOG.info('Updating pool \'%s\'...', original_pool.get(constants.ID))
+        LOG.info('Updating pool \'%s\'...',
+                 original_pool.get(constants.POOL_ID))
         self.worker.update_pool(original_pool, pool_updates)
 
     def delete_pool(self, context, pool):
-        LOG.info('Deleting pool \'%s\'...', pool.get(constants.ID))
+        LOG.info('Deleting pool \'%s\'...', pool.get(constants.POOL_ID))
         self.worker.delete_pool(pool)
 
     def create_health_monitor(self, context, health_monitor_id):
@@ -102,12 +105,12 @@ class Endpoints(object):
         self.worker.delete_health_monitor(health_monitor_id)
 
     def create_member(self, context, member):
-        LOG.info('Creating member \'%s\'...', member.get(constants.ID))
+        LOG.info('Creating member \'%s\'...', member.get(constants.MEMBER_ID))
         self.worker.create_member(member)
 
     def update_member(self, context, original_member, member_updates):
         LOG.info('Updating member \'%s\'...', original_member.get(
-            constants.ID))
+            constants.MEMBER_ID))
         self.worker.update_member(original_member, member_updates)
 
     def batch_update_members(self, context, old_members, new_members,
@@ -124,7 +127,7 @@ class Endpoints(object):
             old_members, new_members, updated_members)
 
     def delete_member(self, context, member):
-        LOG.info('Deleting member \'%s\'...', member.get(constants.ID))
+        LOG.info('Deleting member \'%s\'...', member.get(constants.MEMBER_ID))
         self.worker.delete_member(member)
 
     def create_l7policy(self, context, l7policy_id):

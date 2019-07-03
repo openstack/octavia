@@ -85,12 +85,13 @@ class TestLifecycleTasks(base.TestCase):
         amp_to_error_on_revert = lifecycle_tasks.AmphoraToErrorOnRevertTask()
 
         # Execute
-        amp_to_error_on_revert.execute(self.AMPHORA)
+        amp = {constants.ID: self.AMPHORA_ID}
+        amp_to_error_on_revert.execute(amp)
 
         self.assertFalse(mock_amp_status_error.called)
 
         # Revert
-        amp_to_error_on_revert.revert(self.AMPHORA)
+        amp_to_error_on_revert.revert(amp)
 
         mock_amp_status_error.assert_called_once_with(self.AMPHORA_ID)
         self.assertFalse(mock_amp_health_busy.called)

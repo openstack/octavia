@@ -378,10 +378,14 @@ class HaproxyAmphoraLoadBalancerDriver(
     def finalize_amphora(self, amphora):
         pass
 
-    def post_vip_plug(self, amphora, load_balancer, amphorae_network_config):
+    def post_vip_plug(self, amphora, load_balancer, amphorae_network_config,
+                      vrrp_port=None, vip_subnet=None):
         if amphora.status != consts.DELETED:
             self._populate_amphora_api_version(amphora)
-            subnet = amphorae_network_config.get(amphora.id).vip_subnet
+            if vip_subnet is None:
+                subnet = amphorae_network_config.get(amphora.id).vip_subnet
+            else:
+                subnet = vip_subnet
             # NOTE(blogan): using the vrrp port here because that
             # is what the allowed address pairs network driver sets
             # this particular port to.  This does expose a bit of
@@ -391,8 +395,12 @@ class HaproxyAmphoraLoadBalancerDriver(
             # NOTE (johnsom): I am loading the vrrp_ip into the
             # net_info structure here so that I don't break
             # compatibility with old amphora agent versions.
-
-            port = amphorae_network_config.get(amphora.id).vrrp_port
+            if vrrp_port is None:
+                port = amphorae_network_config.get(amphora.id).vrrp_port
+                mtu = port.network.mtu
+            else:
+                port = vrrp_port
+                mtu = port.network['mtu']
             LOG.debug("Post-VIP-Plugging with vrrp_ip %s vrrp_port %s",
                       amphora.vrrp_ip, port.id)
             host_routes = [{'nexthop': hr.nexthop,
@@ -402,7 +410,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                         'gateway': subnet.gateway_ip,
                         'mac_address': port.mac_address,
                         'vrrp_ip': amphora.vrrp_ip,
-                        'mtu': port.network.mtu,
+                        'mtu': mtu,
                         'host_routes': host_routes}
             try:
                 self.clients[amphora.api_version].plug_vip(
