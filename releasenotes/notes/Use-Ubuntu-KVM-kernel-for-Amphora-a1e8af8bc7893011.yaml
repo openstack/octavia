@@ -1,7 +1,0 @@
----
-features:
-  - |
-    The default kernel for the amphora image has switched from
-    linux-image-generic to linux-image-kvm, resulting in an image size
-    reduction of about 200MB. The linux-image-kvm kernel works with kvm,
-    qemu tcg, and Xen hypervisors among others.

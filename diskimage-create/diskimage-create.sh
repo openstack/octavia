@@ -48,7 +48,7 @@ usage() {
     echo "        '-f' disable tmpfs for build"
     echo "        '-h' display this help message"
     echo "        '-i' is the base OS (default: ubuntu-minimal)"
-    echo "        '-k' is the kernel meta package name, currently only for ubuntu-minimal base OS (default: linux-image-kvm)"
+    echo "        '-k' is the kernel meta package name, currently only for ubuntu-minimal base OS (default: linux-image-virtual)"
     echo "        '-l' is output logfile (default: none)"
     echo "        '-n' disable sshd (default: enabled)"
     echo "        '-o' is the output image file name"
@@ -221,7 +221,7 @@ AMP_IMAGETYPE=${AMP_IMAGETYPE:-"qcow2"}
 AMP_IMAGESIZE=${AMP_IMAGESIZE:-2}
 
 if [ "$AMP_BASEOS" = "ubuntu-minimal" ]; then
-    export DIB_UBUNTU_KERNEL=${AMP_KERNEL:-"linux-image-kvm"}
+    export DIB_UBUNTU_KERNEL=${AMP_KERNEL:-"linux-image-virtual"}
 fi
 
 AMP_DISABLE_SSHD=${AMP_DISABLE_SSHD:-0}

@@ -128,7 +128,7 @@ Command syntax:
         '-f' disable tmpfs for build
         '-h' display help message
         '-i' is the base OS (default: ubuntu-minimal)
-        '-k' is the kernel meta package name, currently only for ubuntu-minimal base OS (default: linux-image-kvm)
+        '-k' is the kernel meta package name, currently only for ubuntu-minimal base OS (default: linux-image-virtual)
         '-l' is output logfile (default: none)
         '-n' disable sshd (default: enabled)
         '-o' is the output image file name
