@@ -250,7 +250,9 @@ class LoadBalancersController(base.BaseController):
 
         if not load_balancer.project_id:
             raise exceptions.ValidationException(detail=_(
-                "Missing project ID in request where one is required."))
+                "Missing project ID in request where one is required. "
+                "An administrator should check the keystone settings "
+                "in the Octavia configuration."))
 
         self._auth_validate_action(context, load_balancer.project_id,
                                    constants.RBAC_POST)
