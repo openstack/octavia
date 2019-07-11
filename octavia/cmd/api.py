@@ -20,6 +20,7 @@ from oslo_log import log as logging
 from oslo_reports import guru_meditation_report as gmr
 
 from octavia.api import app as api_app
+from octavia.common import constants
 from octavia import version
 
 
@@ -35,6 +36,11 @@ def main():
     port = cfg.CONF.api_settings.bind_port
     LOG.info("Starting API server on %(host)s:%(port)s",
              {"host": host, "port": port})
+    if cfg.CONF.api_settings.auth_strategy != constants.KEYSTONE:
+        LOG.warning('Octavia configuration [api_settings] auth_strategy is '
+                    'not set to "keystone". This is not a normal '
+                    'configuration and you may get "Missing project ID" '
+                    'errors from API calls."')
     srv = simple_server.make_server(host, port, app)
 
     srv.serve_forever()
