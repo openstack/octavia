@@ -13,6 +13,7 @@
 #    under the License.
 
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 
 import octavia.common.config as config
 import octavia.tests.unit.base as base
@@ -26,3 +27,25 @@ class TestConfig(base.TestCase):
         # Resetting because this will cause inconsistent errors when run with
         # other tests
         self.addCleanup(cfg.CONF.reset)
+
+    def test_validate_server_certs_key_passphrase(self):
+        conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))
+        conf.config(
+            group="certificates",
+            server_certs_key_passphrase="insecure-key-do-not-use-this-key"
+        )
+
+        # Test too short
+        self.assertRaises(ValueError, conf.config,
+                          group="certificates",
+                          server_certs_key_passphrase="short_passphrase")
+
+        # Test too long
+        self.assertRaises(
+            ValueError, conf.config, group="certificates",
+            server_certs_key_passphrase="long-insecure-key-do-not-use-this")
+
+        # Test invalid characters
+        self.assertRaises(
+            ValueError, conf.config, group="certificates",
+            server_certs_key_passphrase="insecure-key-do-not-u$e-this-key")
