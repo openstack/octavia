@@ -53,8 +53,10 @@ certgen_opts = [
     cfg.StrOpt('server_certs_key_passphrase',
                default=TLS_PASS_AMPS_DEFAULT,
                help='Passphrase for encrypting Amphora Certificates and '
-                    'Private Keys. Defaults to env[TLS_PASS_AMPS_DEFAULT] or '
-                    'insecure-key-do-not-use-this-key',
+                    'Private Keys. Must be 32, base64(url) compatible, '
+                    'characters long. Defaults to env[TLS_PASS_AMPS_DEFAULT] '
+                    'or insecure-key-do-not-use-this-key',
+               regex=r'^[A-Za-z0-9\-_=]{32}$',
                required=True),
     cfg.StrOpt('signing_digest',
                default=TLS_DIGEST_DEFAULT,
