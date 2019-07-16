@@ -11,8 +11,8 @@ make_resolv_conf() { : ; }" > /etc/dhcp/dhclient-enter-hooks.d/noresolvconf
 else
     # RHEL/CentOS/Fedora
     echo "#!/bin/sh
-make_resolv_conf() { : ; }" > /etc/dhclient-enter-hooks
-    chmod +x /etc/dhclient-enter-hooks
+make_resolv_conf() { : ; }" > /etc/dhcp/dhclient-enter-hooks
+    chmod +x /etc/dhcp/dhclient-enter-hooks
 fi
 
 if [ -e /etc/nsswitch.conf ]; then

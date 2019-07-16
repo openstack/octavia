@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue where /etc/resolv.conf on RHEl-based amphorae was being
+    populated with DNS servers.
