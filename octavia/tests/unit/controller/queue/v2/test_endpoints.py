@@ -41,31 +41,34 @@ class TestEndpoints(base.TestCase):
         self.resource = {constants.ID: self.resource_id}
         self.server_group_id = 3456
         self.listener_dict = {constants.LISTENER_ID: uuidutils.generate_uuid()}
+        self.loadbalancer_dict = {
+            constants.LOADBALANCER_ID: uuidutils.generate_uuid()
+        }
         self.flavor_id = uuidutils.generate_uuid()
         self.availability_zone = uuidutils.generate_uuid()
 
     def test_create_load_balancer(self):
-        self.ep.create_load_balancer(self.context, self.resource_id,
+        self.ep.create_load_balancer(self.context, self.loadbalancer_dict,
                                      flavor=self.flavor_id,
                                      availability_zone=self.availability_zone)
         self.ep.worker.create_load_balancer.assert_called_once_with(
-            self.resource_id, self.flavor_id, self.availability_zone)
+            self.loadbalancer_dict, self.flavor_id, self.availability_zone)
 
     def test_create_load_balancer_no_flavor_or_az(self):
-        self.ep.create_load_balancer(self.context, self.resource_id)
+        self.ep.create_load_balancer(self.context, self.loadbalancer_dict)
         self.ep.worker.create_load_balancer.assert_called_once_with(
-            self.resource_id, None, None)
+            self.loadbalancer_dict, None, None)
 
     def test_update_load_balancer(self):
-        self.ep.update_load_balancer(self.context, self.resource_id,
+        self.ep.update_load_balancer(self.context, self.loadbalancer_dict,
                                      self.resource_updates)
         self.ep.worker.update_load_balancer.assert_called_once_with(
-            self.resource_id, self.resource_updates)
+            self.loadbalancer_dict, self.resource_updates)
 
     def test_delete_load_balancer(self):
-        self.ep.delete_load_balancer(self.context, self.resource_id)
+        self.ep.delete_load_balancer(self.context, self.loadbalancer_dict)
         self.ep.worker.delete_load_balancer.assert_called_once_with(
-            self.resource_id, False)
+            self.loadbalancer_dict, False)
 
     def test_failover_load_balancer(self):
         self.ep.failover_load_balancer(self.context, self.resource_id)

@@ -24,6 +24,7 @@ from taskflow.types import failure
 
 from octavia.amphorae.backends.agent import agent_jinja_cfg
 from octavia.amphorae.driver_exceptions import exceptions as driver_except
+from octavia.api.drivers import utils as provider_utils
 from octavia.common import constants
 from octavia.common import utils
 from octavia.controller.worker import task_utils as task_utilities
@@ -84,8 +85,11 @@ class AmpListenersUpdate(BaseAmphoraTask):
                 db_amp = self.amphora_repo.get(db_apis.get_session(),
                                                id=amp[constants.ID])
                 db_amphorae.append(db_amp)
+            db_lb = self.loadbalancer_repo.get(
+                db_apis.get_session(),
+                id=loadbalancer[constants.LOADBALANCER_ID])
             self.amphora_driver.update_amphora_listeners(
-                loadbalancer, db_amphorae[amphora_index], timeout_dict)
+                db_lb, db_amphorae[amphora_index], timeout_dict)
         except Exception as e:
             amphora_id = amphorae[amphora_index].get(constants.ID)
             LOG.error('Failed to update listeners on amphora %s. Skipping '
@@ -124,20 +128,24 @@ class ListenersStart(BaseAmphoraTask):
 
     def execute(self, loadbalancer, amphora=None):
         """Execute listener start routines for listeners on an amphora."""
-        if loadbalancer.listeners:
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        if db_lb.listeners:
             if amphora is not None:
                 db_amp = self.amphora_repo.get(db_apis.get_session(),
                                                id=amphora[constants.ID])
             else:
                 db_amp = amphora
-            self.amphora_driver.start(loadbalancer, db_amp)
+            self.amphora_driver.start(db_lb, db_amp)
             LOG.debug("Started the listeners on the vip")
 
     def revert(self, loadbalancer, *args, **kwargs):
         """Handle failed listeners starts."""
 
         LOG.warning("Reverting listeners starts.")
-        for listener in loadbalancer.listeners:
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        for listener in db_lb.listeners:
             self.task_utils.mark_listener_prov_status_error(listener.id)
 
 
@@ -234,7 +242,9 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
     def execute(self, loadbalancer, added_ports):
         """Execute post_network_plug routine."""
         amp_post_plug = AmphoraPostNetworkPlug()
-        for amphora in loadbalancer.amphorae:
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        for amphora in db_lb.amphorae:
             if amphora.id in added_ports:
                 amp_post_plug.execute(amphora.to_dict(),
                                       added_ports[amphora.id])
@@ -243,10 +253,12 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
         """Handle a failed post network plug."""
         if isinstance(result, failure.Failure):
             return
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
         LOG.warning("Reverting post network plug.")
         for amphora in six.moves.filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
-                loadbalancer.amphorae):
+                db_lb.amphorae):
 
             self.task_utils.mark_amphora_status_error(amphora.id)
 
@@ -258,6 +270,8 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
         """Execute post_vip_routine."""
         db_amp = self.amphora_repo.get(db_apis.get_session(),
                                        id=amphora.get(constants.ID))
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
         vrrp_port = data_models.Port(
             **amphorae_network_config[
                 amphora.get(constants.ID)][constants.VRRP_PORT])
@@ -265,7 +279,7 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
             **amphorae_network_config[
                 amphora.get(constants.ID)][constants.VIP_SUBNET])
         self.amphora_driver.post_vip_plug(
-            db_amp, loadbalancer, amphorae_network_config, vrrp_port=vrrp_port,
+            db_amp, db_lb, amphorae_network_config, vrrp_port=vrrp_port,
             vip_subnet=vip_subnet)
         LOG.debug("Notified amphora of vip plug")
 
@@ -275,7 +289,8 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
             return
         LOG.warning("Reverting post vip plug.")
         self.task_utils.mark_amphora_status_error(amphora.get(constants.ID))
-        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_error(
+            loadbalancer[constants.LOADBALANCER_ID])
 
 
 class AmphoraePostVIPPlug(BaseAmphoraTask):
@@ -284,8 +299,10 @@ class AmphoraePostVIPPlug(BaseAmphoraTask):
     def execute(self, loadbalancer, amphorae_network_config):
         """Execute post_vip_plug across the amphorae."""
         amp_post_vip_plug = AmphoraPostVIPPlug()
-        for amphora in loadbalancer.amphorae:
-            amp_post_vip_plug.execute(amphora,
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        for amphora in db_lb.amphorae:
+            amp_post_vip_plug.execute(amphora.to_dict(),
                                       loadbalancer,
                                       amphorae_network_config)
 
@@ -294,7 +311,8 @@ class AmphoraePostVIPPlug(BaseAmphoraTask):
         if isinstance(result, failure.Failure):
             return
         LOG.warning("Reverting amphorae post vip plug.")
-        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_error(
+            loadbalancer[constants.LOADBALANCER_ID])
 
 
 class AmphoraCertUpload(BaseAmphoraTask):
@@ -317,6 +335,8 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
     def execute(self, loadbalancer):
         """Execute post_vip_routine."""
         amps = []
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
         timeout_dict = {
             constants.CONN_MAX_RETRIES:
                 CONF.haproxy_amphora.active_connection_max_retries,
@@ -324,7 +344,7 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
                 CONF.haproxy_amphora.active_connection_rety_interval}
         for amp in six.moves.filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
-                loadbalancer.amphorae):
+                db_lb.amphorae):
 
             try:
                 interface = self.amphora_driver.get_vrrp_interface(
@@ -342,17 +362,20 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
                                      vrrp_interface=interface)
             amps.append(self.amphora_repo.get(db_apis.get_session(),
                                               id=amp.id))
-        loadbalancer.amphorae = amps
-        return loadbalancer
+        db_lb.amphorae = amps
+        return provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            db_lb).to_dict()
 
     def revert(self, result, loadbalancer, *args, **kwargs):
         """Handle a failed amphora vip plug notification."""
         if isinstance(result, failure.Failure):
             return
         LOG.warning("Reverting Get Amphora VRRP Interface.")
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
         for amp in six.moves.filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
-                loadbalancer.amphorae):
+                db_lb.amphorae):
 
             try:
                 self.amphora_repo.update(db_apis.get_session(), amp.id,
@@ -368,28 +391,34 @@ class AmphoraVRRPUpdate(BaseAmphoraTask):
 
     def execute(self, loadbalancer, amphorae_network_config):
         """Execute update_vrrp_conf."""
-        self.amphora_driver.update_vrrp_conf(loadbalancer,
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        self.amphora_driver.update_vrrp_conf(db_lb,
                                              amphorae_network_config)
         LOG.debug("Uploaded VRRP configuration of loadbalancer %s amphorae",
-                  loadbalancer.id)
+                  loadbalancer[constants.LOADBALANCER_ID])
 
 
 class AmphoraVRRPStop(BaseAmphoraTask):
     """Task to stop keepalived of all amphorae of a LB."""
 
     def execute(self, loadbalancer):
-        self.amphora_driver.stop_vrrp_service(loadbalancer)
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        self.amphora_driver.stop_vrrp_service(db_lb)
         LOG.debug("Stopped VRRP of loadbalancer %s amphorae",
-                  loadbalancer.id)
+                  loadbalancer[constants.LOADBALANCER_ID])
 
 
 class AmphoraVRRPStart(BaseAmphoraTask):
     """Task to start keepalived of all amphorae of a LB."""
 
     def execute(self, loadbalancer):
-        self.amphora_driver.start_vrrp_service(loadbalancer)
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        self.amphora_driver.start_vrrp_service(db_lb)
         LOG.debug("Started VRRP of loadbalancer %s amphorae",
-                  loadbalancer.id)
+                  loadbalancer[constants.LOADBALANCER_ID])
 
 
 class AmphoraComputeConnectivityWait(BaseAmphoraTask):

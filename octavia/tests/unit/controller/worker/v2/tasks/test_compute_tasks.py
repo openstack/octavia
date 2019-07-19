@@ -37,6 +37,7 @@ AMP_WAIT = 12
 AMPHORA_ID = uuidutils.generate_uuid()
 COMPUTE_ID = uuidutils.generate_uuid()
 LB_NET_IP = '192.0.2.1'
+LB_ID = uuidutils.generate_uuid()
 PORT_ID = uuidutils.generate_uuid()
 SERVER_GRPOUP_ID = uuidutils.generate_uuid()
 
@@ -57,8 +58,14 @@ _amphora_mock = {
     constants.ID: AMPHORA_ID,
     constants.COMPUTE_ID: COMPUTE_ID
 }
-_load_balancer_mock = mock.MagicMock()
-_load_balancer_mock.amphorae = [_db_amphora_mock]
+_db_load_balancer_mock = mock.MagicMock()
+_db_load_balancer_mock.amphorae = [_db_amphora_mock]
+_db_load_balancer_mock.to_dict.return_value = {
+    constants.ID: LB_ID,
+}
+_load_balancer_mock = {
+    constants.LOADBALANCER_ID: LB_ID,
+}
 _port = mock.MagicMock()
 _port.id = PORT_ID
 
@@ -498,9 +505,13 @@ class TestComputeTasks(base.TestCase):
         mock_remove_from_build_queue.assert_not_called()
 
     @mock.patch('stevedore.driver.DriverManager.driver')
-    def test_delete_amphorae_on_load_balancer(self, mock_driver):
+    @mock.patch('octavia.db.api.get_session', return_value=mock.MagicMock())
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    def test_delete_amphorae_on_load_balancer(self, mock_lb_get, mock_session,
+                                              mock_driver):
 
         delete_amps = compute_tasks.DeleteAmphoraeOnLoadBalancer()
+        mock_lb_get.return_value = _db_load_balancer_mock
         delete_amps.execute(_load_balancer_mock)
 
         mock_driver.delete.assert_called_once_with(COMPUTE_ID)

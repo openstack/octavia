@@ -144,7 +144,9 @@ class MarkLBAmphoraeDeletedInDB(BaseDatabaseTask):
                marked DELETED.
         :returns: None
         """
-        for amp in loadbalancer.amphorae:
+        db_lb = self.repos.load_balancer.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        for amp in db_lb.amphorae:
             LOG.debug("Marking amphora %s DELETED ", amp.id)
             self.amphora_repo.update(db_apis.get_session(),
                                      id=amp.id, status=constants.DELETED)
@@ -397,8 +399,11 @@ class ReloadLoadBalancer(BaseDatabaseTask):
 
         LOG.debug("Get load balancer from DB for load balancer id: %s ",
                   loadbalancer_id)
-        return self.loadbalancer_repo.get(db_apis.get_session(),
-                                          id=loadbalancer_id)
+        db_lb = self.loadbalancer_repo.get(db_apis.get_session(),
+                                           id=loadbalancer_id)
+        lb_dict = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            db_lb)
+        return lb_dict.to_dict()
 
 
 class UpdateVIPAfterAllocation(BaseDatabaseTask):
@@ -413,10 +418,13 @@ class UpdateVIPAfterAllocation(BaseDatabaseTask):
         :returns: The load balancer object.
         """
         self.repos.vip.update(db_apis.get_session(), loadbalancer_id,
-                              port_id=vip.port_id, subnet_id=vip.subnet_id,
-                              ip_address=vip.ip_address)
-        return self.repos.load_balancer.get(db_apis.get_session(),
-                                            id=loadbalancer_id)
+                              port_id=vip[constants.PORT_ID],
+                              subnet_id=vip[constants.SUBNET_ID],
+                              ip_address=vip[constants.IP_ADDRESS])
+        db_lb = self.repos.load_balancer.get(db_apis.get_session(),
+                                             id=loadbalancer_id)
+        return provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            db_lb).to_dict()
 
 
 class UpdateAmphoraeVIPData(BaseDatabaseTask):
@@ -1016,14 +1024,17 @@ class MarkLBActiveInDB(BaseDatabaseTask):
 
         if self.mark_subobjects:
             LOG.debug("Marking all listeners of loadbalancer %s ACTIVE",
-                      loadbalancer.id)
-            for listener in loadbalancer.listeners:
+                      loadbalancer[constants.LOADBALANCER_ID])
+            db_lb = self.loadbalancer_repo.get(
+                db_apis.get_session(),
+                id=loadbalancer[constants.LOADBALANCER_ID])
+            for listener in db_lb.listeners:
                 self._mark_listener_status(listener, constants.ACTIVE)
 
         LOG.info("Mark ACTIVE in DB for load balancer id: %s",
-                 loadbalancer.id)
+                 loadbalancer[constants.LOADBALANCER_ID])
         self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer.id,
+                                      loadbalancer[constants.LOADBALANCER_ID],
                                       provisioning_status=constants.ACTIVE)
 
     def _mark_listener_status(self, listener, status):
@@ -1094,8 +1105,11 @@ class MarkLBActiveInDB(BaseDatabaseTask):
 
         if self.mark_subobjects:
             LOG.debug("Marking all listeners of loadbalancer %s ERROR",
-                      loadbalancer.id)
-            for listener in loadbalancer.listeners:
+                      loadbalancer[constants.LOADBALANCER_ID])
+            db_lb = self.loadbalancer_repo.get(
+                db_apis.get_session(),
+                id=loadbalancer[constants.LOADBALANCER_ID])
+            for listener in db_lb.listeners:
                 try:
                     self._mark_listener_status(listener, constants.ERROR)
                 except Exception:
@@ -1103,8 +1117,10 @@ class MarkLBActiveInDB(BaseDatabaseTask):
                                 "status", listener.id)
 
         LOG.warning("Reverting mark load balancer deleted in DB "
-                    "for load balancer id %s", loadbalancer.id)
-        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
+                    "for load balancer id %s",
+                    loadbalancer[constants.LOADBALANCER_ID])
+        self.task_utils.mark_loadbalancer_prov_status_error(
+            loadbalancer[constants.LOADBALANCER_ID])
 
 
 class MarkLBActiveInDBByListener(BaseDatabaseTask):
@@ -1196,9 +1212,9 @@ class MarkLBDeletedInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark DELETED in DB for load balancer id: %s",
-                  loadbalancer.id)
+                  loadbalancer[constants.LOADBALANCER_ID])
         self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer.id,
+                                      loadbalancer[constants.LOADBALANCER_ID],
                                       provisioning_status=constants.DELETED)
 
     def revert(self, loadbalancer, *args, **kwargs):
@@ -1209,8 +1225,10 @@ class MarkLBDeletedInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark load balancer deleted in DB "
-                    "for load balancer id %s", loadbalancer.id)
-        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
+                    "for load balancer id %s",
+                    loadbalancer[constants.LOADBALANCER_ID])
+        self.task_utils.mark_loadbalancer_prov_status_error(
+            loadbalancer[constants.LOADBALANCER_ID])
 
 
 class MarkLBPendingDeleteInDB(BaseDatabaseTask):
@@ -1227,9 +1245,9 @@ class MarkLBPendingDeleteInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING DELETE in DB for load balancer id: %s",
-                  loadbalancer.id)
+                  loadbalancer[constants.LOADBALANCER_ID])
         self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer.id,
+                                      loadbalancer[constants.LOADBALANCER_ID],
                                       provisioning_status=(constants.
                                                            PENDING_DELETE))
 
@@ -1241,8 +1259,10 @@ class MarkLBPendingDeleteInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark load balancer pending delete in DB "
-                    "for load balancer id %s", loadbalancer.id)
-        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
+                    "for load balancer id %s",
+                    loadbalancer[constants.LOADBALANCER_ID])
+        self.task_utils.mark_loadbalancer_prov_status_error(
+            loadbalancer[constants.LOADBALANCER_ID])
 
 
 class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
@@ -1373,13 +1393,15 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for loadbalancer id: %s ", loadbalancer.id)
+        LOG.debug("Update DB for loadbalancer id: %s ",
+                  loadbalancer[constants.LOADBALANCER_ID])
         if update_dict.get('vip'):
             vip_dict = update_dict.pop('vip')
             self.vip_repo.update(db_apis.get_session(),
-                                 loadbalancer.vip.load_balancer_id,
+                                 loadbalancer[constants.LOADBALANCER_ID],
                                  **vip_dict)
-        self.loadbalancer_repo.update(db_apis.get_session(), loadbalancer.id,
+        self.loadbalancer_repo.update(db_apis.get_session(),
+                                      loadbalancer[constants.LOADBALANCER_ID],
                                       **update_dict)
 
     def revert(self, loadbalancer, *args, **kwargs):
@@ -1390,9 +1412,11 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting update loadbalancer in DB "
-                    "for loadbalancer id %s", loadbalancer.id)
+                    "for loadbalancer id %s",
+                    loadbalancer[constants.LOADBALANCER_ID])
 
-        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_error(
+            loadbalancer[constants.LOADBALANCER_ID])
 
 
 class UpdateHealthMonInDB(BaseDatabaseTask):
@@ -1644,7 +1668,9 @@ class GetAmphoraeFromLoadbalancer(BaseDatabaseTask):
         :returns: A list of Listener objects
         """
         amphorae = []
-        for amp in loadbalancer.amphorae:
+        db_lb = self.repos.load_balancer.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        for amp in db_lb.amphorae:
             a = self.amphora_repo.get(db_apis.get_session(), id=amp.id,
                                       show_deleted=False)
             if a is None:
@@ -1663,7 +1689,9 @@ class GetListenersFromLoadbalancer(BaseDatabaseTask):
         :returns: A list of Listener objects
         """
         listeners = []
-        for listener in loadbalancer.listeners:
+        db_lb = self.repos.load_balancer.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        for listener in db_lb.listeners:
             db_l = self.listener_repo.get(db_apis.get_session(),
                                           id=listener.id)
             prov_listener = provider_utils.db_listener_to_provider_listener(
@@ -1681,7 +1709,9 @@ class GetVipFromLoadbalancer(BaseDatabaseTask):
         :param loadbalancer: Load balancer which VIP is required
         :returns: VIP associated with a given load balancer
         """
-        return loadbalancer.vip
+        db_lb = self.repos.load_balancer.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        return db_lb.vip.to_dict(recurse=True)
 
 
 class CreateVRRPGroupForLB(BaseDatabaseTask):
@@ -1695,10 +1725,11 @@ class CreateVRRPGroupForLB(BaseDatabaseTask):
         :returns: Updated load balancer
         """
         try:
-            loadbalancer.vrrp_group = self.repos.vrrpgroup.create(
+            self.repos.vrrpgroup.create(
                 db_apis.get_session(),
-                load_balancer_id=loadbalancer.id,
-                vrrp_group_name=str(loadbalancer.id).replace('-', ''),
+                load_balancer_id=loadbalancer[constants.LOADBALANCER_ID],
+                vrrp_group_name=str(
+                    loadbalancer[constants.LOADBALANCER_ID]).replace('-', ''),
                 vrrp_auth_type=constants.VRRP_AUTH_DEFAULT,
                 vrrp_auth_pass=uuidutils.generate_uuid().replace('-', '')[0:7],
                 advert_int=CONF.keepalived_vrrp.vrrp_advert_int)
@@ -1737,7 +1768,9 @@ class DisableLBAmphoraeHealthMonitoring(BaseDatabaseTask):
         :param loadbalancer: The load balancer to disable health monitoring on
         :returns: None
         """
-        for amphora in loadbalancer.amphorae:
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        for amphora in db_lb.amphorae:
             self._delete_from_amp_health(amphora.id)
 
 
@@ -1770,7 +1803,9 @@ class MarkLBAmphoraeHealthBusy(BaseDatabaseTask):
         :param loadbalancer: The load balancer to mark amphorae health busy
         :returns: None
         """
-        for amphora in loadbalancer.amphorae:
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        for amphora in db_lb.amphorae:
             self._mark_amp_health_busy(amphora.id)
 
 
@@ -2534,39 +2569,40 @@ class DecrementLoadBalancerQuota(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, loadbalancer):
+    def execute(self, project_id):
         """Decrements the load balancer quota.
 
-        :param loadbalancer: The load balancer to decrement the quota on.
+        :param project_id: Project id where quota should be reduced
         :returns: None
         """
 
         LOG.debug("Decrementing load balancer quota for "
-                  "project: %s ", loadbalancer.project_id)
+                  "project: %s ", project_id)
 
         lock_session = db_apis.get_session(autocommit=False)
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.LoadBalancer,
-                                       loadbalancer.project_id)
+                                       project_id)
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
                 LOG.error('Failed to decrement load balancer quota for '
                           'project: %(proj)s the project may have excess '
-                          'quota in use.', {'proj': loadbalancer.project_id})
+                          'quota in use.',
+                          {'proj': project_id})
                 lock_session.rollback()
 
-    def revert(self, loadbalancer, result, *args, **kwargs):
+    def revert(self, project_id, result, *args, **kwargs):
         """Re-apply the quota
 
-        :param loadbalancer: The load balancer to decrement the quota on.
+        :param project_id: The project id to decrement the quota on.
         :returns: None
         """
 
         LOG.warning('Reverting decrement quota for load balancer on project '
                     '%(proj)s Project quota counts may be incorrect.',
-                    {'proj': loadbalancer.project_id})
+                    {'proj': project_id})
 
         # Increment the quota back if this task wasn't the failure
         if not isinstance(result, failure.Failure):
@@ -2578,7 +2614,7 @@ class DecrementLoadBalancerQuota(BaseDatabaseTask):
                     self.repos.check_quota_met(session,
                                                lock_session,
                                                data_models.LoadBalancer,
-                                               loadbalancer.project_id)
+                                               project_id)
                     lock_session.commit()
                 except Exception:
                     lock_session.rollback()

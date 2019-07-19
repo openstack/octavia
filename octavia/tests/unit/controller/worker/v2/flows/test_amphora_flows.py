@@ -232,10 +232,14 @@ class TestAmphoraFlows(base.TestCase):
         result = self.AmpFlow._create_new_amp_for_lb_decider(history)
         self.assertFalse(result)
 
-    def test_get_failover_flow_allocated(self, mock_get_net_driver):
-
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=mock.MagicMock())
+    def test_get_failover_flow_allocated(self, mock_session, mock_get_lb,
+                                         mock_get_net_driver):
+        mock_get_lb.return_value = self.lb
+        provider_lb = {constants.LOADBALANCER_ID: '1234'}
         amp_flow = self.AmpFlow.get_failover_flow(
-            load_balancer=self.lb)
+            load_balancer=provider_lb)
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
@@ -255,7 +259,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(12, len(amp_flow.provides))
 
         amp_flow = self.AmpFlow.get_failover_flow(
-            role=constants.ROLE_MASTER, load_balancer=self.lb)
+            role=constants.ROLE_MASTER, load_balancer=provider_lb)
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
@@ -275,7 +279,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(12, len(amp_flow.provides))
 
         amp_flow = self.AmpFlow.get_failover_flow(
-            role=constants.ROLE_BACKUP, load_balancer=self.lb)
+            role=constants.ROLE_BACKUP, load_balancer=provider_lb)
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
@@ -295,7 +299,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(12, len(amp_flow.provides))
 
         amp_flow = self.AmpFlow.get_failover_flow(
-            role='BOGUSROLE', load_balancer=self.lb)
+            role='BOGUSROLE', load_balancer=provider_lb)
 
         self.assertIsInstance(amp_flow, flow.Flow)
 

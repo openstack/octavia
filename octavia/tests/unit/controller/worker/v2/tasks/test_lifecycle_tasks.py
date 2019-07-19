@@ -40,9 +40,8 @@ class TestLifecycleTasks(base.TestCase):
         self.LISTENER_ID = uuidutils.generate_uuid()
         self.LISTENER = {constants.LISTENER_ID: self.LISTENER_ID}
         self.LISTENERS = [self.LISTENER]
-        self.LOADBALANCER = mock.MagicMock()
         self.LOADBALANCER_ID = uuidutils.generate_uuid()
-        self.LOADBALANCER.id = self.LOADBALANCER_ID
+        self.LOADBALANCER = {constants.LOADBALANCER_ID: self.LOADBALANCER_ID}
         self.LISTENER[constants.LOADBALANCER_ID] = self.LOADBALANCER_ID
         self.MEMBER = mock.MagicMock()
         self.MEMBER_ID = uuidutils.generate_uuid()
@@ -278,12 +277,14 @@ class TestLifecycleTasks(base.TestCase):
             lifecycle_tasks.LoadBalancerToErrorOnRevertTask())
 
         # Execute
-        loadbalancer_to_error_on_revert.execute(self.LOADBALANCER)
+        loadbalancer_to_error_on_revert.execute({constants.LOADBALANCER_ID:
+                                                 self.LOADBALANCER_ID})
 
         self.assertFalse(mock_loadbalancer_prov_status_error.called)
 
         # Revert
-        loadbalancer_to_error_on_revert.revert(self.LOADBALANCER)
+        loadbalancer_to_error_on_revert.revert({constants.LOADBALANCER_ID:
+                                                self.LOADBALANCER_ID})
 
         mock_loadbalancer_prov_status_error.assert_called_once_with(
             self.LOADBALANCER_ID)

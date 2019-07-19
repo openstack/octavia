@@ -25,11 +25,16 @@ from octavia.controller.worker.v2.tasks import compute_tasks
 from octavia.controller.worker.v2.tasks import database_tasks
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
 from octavia.controller.worker.v2.tasks import network_tasks
+from octavia.db import api as db_apis
+from octavia.db import repositories as repo
 
 CONF = cfg.CONF
 
 
 class AmphoraFlows(object):
+
+    def __init__(self):
+        self.lb_repo = repo.LoadBalancerRepository()
 
     def get_create_amphora_flow(self):
         """Creates a flow to create an amphora.
@@ -502,7 +507,9 @@ class AmphoraFlows(object):
         # amp on the LB, they let the task index into a list of amps
         # to find the amphora it should work on.
         amp_index = 0
-        for amp in load_balancer.amphorae:
+        db_lb = self.lb_repo.get(db_apis.get_session(),
+                                 id=load_balancer[constants.LOADBALANCER_ID])
+        for amp in db_lb.amphorae:
             if amp.status == constants.DELETED:
                 continue
             update_amps_subflow.add(

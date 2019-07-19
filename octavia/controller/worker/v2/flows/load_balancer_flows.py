@@ -30,6 +30,8 @@ from octavia.controller.worker.v2.tasks import compute_tasks
 from octavia.controller.worker.v2.tasks import database_tasks
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
 from octavia.controller.worker.v2.tasks import network_tasks
+from octavia.db import api as db_apis
+from octavia.db import repositories as repo
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -42,6 +44,7 @@ class LoadBalancerFlows(object):
         self.listener_flows = listener_flows.ListenerFlows()
         self.pool_flows = pool_flows.PoolFlows()
         self.member_flows = member_flows.MemberFlows()
+        self.lb_repo = repo.LoadBalancerRepository()
 
     def get_create_load_balancer_flow(self, topology, listeners=None):
         """Creates a conditional graph flow that allocates a loadbalancer to
@@ -214,18 +217,25 @@ class LoadBalancerFlows(object):
                     the listeners stored properly
         """
         listeners_delete_flow = unordered_flow.Flow('listener_delete_flow')
+        db_lb = self.lb_repo.get(db_apis.get_session(),
+                                 id=lb[constants.LOADBALANCER_ID])
+        for listener in db_lb.listeners:
+            listener_name = 'listener_' + listener.id
+            listeners_delete_flow.add(
+                self.listener_flows.get_delete_listener_internal_flow(
+                    listener_name))
+        return listeners_delete_flow
+
+    def get_delete_listeners_store(self, lb):
         store = {}
         for listener in lb.listeners:
             listener_name = 'listener_' + listener.id
             prov_listener = provider_utils.db_listener_to_provider_listener(
                 listener)
             store[listener_name] = prov_listener.to_dict()
-            listeners_delete_flow.add(
-                self.listener_flows.get_delete_listener_internal_flow(
-                    listener_name))
-        store.update({constants.LOADBALANCER_ID: lb.id,
-                      constants.PROJECT_ID: lb.project_id})
-        return (listeners_delete_flow, store)
+            store.update({constants.LOADBALANCER_ID: lb.id,
+                          constants.PROJECT_ID: lb.project_id})
+        return store
 
     def get_delete_load_balancer_flow(self, lb):
         """Creates a flow to delete a load balancer.
@@ -233,6 +243,13 @@ class LoadBalancerFlows(object):
         :returns: The flow for deleting a load balancer
         """
         return self._get_delete_load_balancer_flow(lb, False)
+
+    def get_delete_pools_store(self, lb):
+        store = {}
+        for pool in lb.pools:
+            pool_name = 'pool' + pool.id
+            store[pool_name] = pool.id
+        return store
 
     def _get_delete_pools_flow(self, lb):
         """Sets up an internal delete flow
@@ -244,18 +261,16 @@ class LoadBalancerFlows(object):
                     the listeners stored properly
         """
         pools_delete_flow = unordered_flow.Flow('pool_delete_flow')
-        store = {}
-        for pool in lb.pools:
+        db_lb = self.lb_repo.get(db_apis.get_session(),
+                                 id=lb[constants.LOADBALANCER_ID])
+        for pool in db_lb.pools:
             pool_name = 'pool' + pool.id
-            store[pool_name] = pool.id
             pools_delete_flow.add(
                 self.pool_flows.get_delete_pool_flow_internal(
                     pool_name))
-        store[constants.PROJECT_ID] = lb.project_id
-        return (pools_delete_flow, store)
+        return pools_delete_flow
 
     def _get_delete_load_balancer_flow(self, lb, cascade):
-        store = {}
         delete_LB_flow = linear_flow.Flow(constants.DELETE_LOADBALANCER_FLOW)
         delete_LB_flow.add(lifecycle_tasks.LoadBalancerToErrorOnRevertTask(
             requires=constants.LOADBALANCER))
@@ -264,9 +279,8 @@ class LoadBalancerFlows(object):
         delete_LB_flow.add(database_tasks.MarkLBAmphoraeHealthBusy(
             requires=constants.LOADBALANCER))
         if cascade:
-            (listeners_delete, store) = self._get_delete_listeners_flow(lb)
-            (pools_delete, pool_store) = self._get_delete_pools_flow(lb)
-            store.update(pool_store)
+            listeners_delete = self._get_delete_listeners_flow(lb)
+            pools_delete = self._get_delete_pools_flow(lb)
             delete_LB_flow.add(pools_delete)
             delete_LB_flow.add(listeners_delete)
         delete_LB_flow.add(network_tasks.UnplugVIP(
@@ -282,8 +296,8 @@ class LoadBalancerFlows(object):
         delete_LB_flow.add(database_tasks.MarkLBDeletedInDB(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(database_tasks.DecrementLoadBalancerQuota(
-            requires=constants.LOADBALANCER))
-        return (delete_LB_flow, store)
+            requires=constants.PROJECT_ID))
+        return delete_LB_flow
 
     def get_cascade_delete_load_balancer_flow(self, lb):
         """Creates a flow to delete a load balancer.

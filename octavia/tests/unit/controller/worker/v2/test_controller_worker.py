@@ -18,6 +18,7 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
+from octavia.api.drivers import utils as provider_utils
 from octavia.common import base_taskflow
 from octavia.common import constants
 from octavia.common import data_models
@@ -55,19 +56,22 @@ _flow_mock = mock.MagicMock()
 _health_mon_mock = mock.MagicMock()
 _vip_mock = mock.MagicMock()
 _listener_mock = mock.MagicMock()
-_load_balancer_mock = mock.MagicMock()
-_load_balancer_mock.listeners = [_listener_mock]
-_load_balancer_mock.project_id = PROJECT_ID
+_db_load_balancer_mock = mock.MagicMock()
+_load_balancer_mock = {
+    constants.LOADBALANCER_ID: LB_ID
+}
+
 _member_mock = mock.MagicMock()
 _pool_mock = {constants.POOL_ID: POOL_ID}
 _db_pool_mock = mock.MagicMock()
+_db_pool_mock.load_balancer = _db_load_balancer_mock
+_member_mock.pool = _db_pool_mock
 _l7policy_mock = mock.MagicMock()
 _l7rule_mock = mock.MagicMock()
 _create_map_flow_mock = mock.MagicMock()
 _db_amphora_mock.load_balancer_id = LB_ID
 _db_amphora_mock.id = AMP_ID
 _db_session = mock.MagicMock()
-
 CONF = cfg.CONF
 
 
@@ -85,7 +89,7 @@ class TestException(Exception):
 @mock.patch('octavia.db.repositories.HealthMonitorRepository.get',
             return_value=_health_mon_mock)
 @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
-            return_value=_load_balancer_mock)
+            return_value=_db_load_balancer_mock)
 @mock.patch('octavia.db.repositories.ListenerRepository.get',
             return_value=_listener_mock)
 @mock.patch('octavia.db.repositories.L7PolicyRepository.get',
@@ -107,21 +111,24 @@ class TestControllerWorker(base.TestCase):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
         _db_pool_mock.listeners = [_listener_mock]
-        _db_pool_mock.load_balancer = _load_balancer_mock
+        _db_pool_mock.load_balancer = _db_load_balancer_mock
         _health_mon_mock.pool = _db_pool_mock
-        _load_balancer_mock.amphorae = _db_amphora_mock
-        _load_balancer_mock.vip = _vip_mock
-        _load_balancer_mock.id = LB_ID
-        _load_balancer_mock.project_id = PROJECT_ID
-        _listener_mock.load_balancer = _load_balancer_mock
+        _db_load_balancer_mock.amphorae = _db_amphora_mock
+        _db_load_balancer_mock.vip = _vip_mock
+        _db_load_balancer_mock.id = LB_ID
+        _db_load_balancer_mock.project_id = PROJECT_ID
+        _listener_mock.load_balancer = _db_load_balancer_mock
         _listener_mock.id = LISTENER_ID
         _listener_mock.to_dict.return_value = {
             constants.ID: LISTENER_ID, constants.LOAD_BALANCER_ID: LB_ID}
         self.ref_listener_dict = {constants.LISTENER_ID: LISTENER_ID,
                                   constants.LOADBALANCER_ID: LB_ID}
+
         _member_mock.pool = _db_pool_mock
         _l7policy_mock.listener = _listener_mock
         _l7rule_mock.l7policy = _l7policy_mock
+        _db_load_balancer_mock.listeners = [_listener_mock]
+        _db_load_balancer_mock.to_dict.return_value = {'id': LB_ID}
 
         fetch_mock = mock.MagicMock(return_value=AMP_ID)
         _flow_mock.storage.fetch = fetch_mock
@@ -265,6 +272,8 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         cw.create_health_monitor(_health_mon_mock)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
@@ -273,9 +282,9 @@ class TestControllerWorker(base.TestCase):
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock,
+                                               provider_lb,
                                            constants.POOL_ID:
                                                POOL_ID}))
 
@@ -304,6 +313,8 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         cw.delete_health_monitor(HM_ID)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
@@ -312,9 +323,9 @@ class TestControllerWorker(base.TestCase):
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock,
+                                               provider_lb,
                                            constants.POOL_ID:
                                                POOL_ID}))
 
@@ -344,6 +355,8 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.update_health_monitor(_health_mon_mock.id,
                                  HEALTH_UPDATE_DICT)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
@@ -351,11 +364,11 @@ class TestControllerWorker(base.TestCase):
                                            _health_mon_mock,
                                            constants.POOL_ID: POOL_ID,
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock,
+                                               provider_lb,
                                            constants.UPDATE_DICT:
                                            HEALTH_UPDATE_DICT}))
 
@@ -385,11 +398,13 @@ class TestControllerWorker(base.TestCase):
         listener_dict = {constants.LISTENER_ID: LISTENER_ID,
                          constants.LOADBALANCER_ID: LB_ID}
         cw.create_listener(listener_dict)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(
                 _flow_mock, store={
-                    constants.LOADBALANCER: _load_balancer_mock,
+                    constants.LOADBALANCER: provider_lb,
                     constants.LOADBALANCER_ID: LB_ID,
                     constants.LISTENERS: [listener_dict]}))
 
@@ -501,7 +516,7 @@ class TestControllerWorker(base.TestCase):
         mock_lb_repo_get.side_effect = [None, None, None, lb_mock]
 
         cw = controller_worker.ControllerWorker()
-        cw.create_load_balancer(LB_ID)
+        cw.create_load_balancer(_load_balancer_mock)
 
         mock_get_create_load_balancer_flow.assert_called_with(
             topology=constants.TOPOLOGY_SINGLE, listeners=[])
@@ -548,7 +563,7 @@ class TestControllerWorker(base.TestCase):
         setattr(mock_lb_repo_get.return_value, 'listeners', [])
 
         cw = controller_worker.ControllerWorker()
-        cw.create_load_balancer(LB_ID)
+        cw.create_load_balancer(_load_balancer_mock)
 
         mock_get_create_load_balancer_flow.assert_called_with(
             topology=constants.TOPOLOGY_ACTIVE_STANDBY, listeners=[])
@@ -579,6 +594,9 @@ class TestControllerWorker(base.TestCase):
 
         listeners = [data_models.Listener(id='listener1'),
                      data_models.Listener(id='listener2')]
+        dict_listeners = [listener.to_dict() for listener in
+                          provider_utils.db_listeners_to_provider_listeners(
+                              listeners)]
         lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners,
                                       topology=constants.TOPOLOGY_SINGLE)
         mock_lb_repo_get.return_value = lb
@@ -593,12 +611,12 @@ class TestControllerWorker(base.TestCase):
         }
 
         cw = controller_worker.ControllerWorker()
-        cw.create_load_balancer(LB_ID)
+        cw.create_load_balancer(_load_balancer_mock)
 
         # mock_create_single_topology.assert_called_once()
         # mock_create_active_standby_topology.assert_not_called()
         mock_get_create_load_balancer_flow.assert_called_with(
-            topology=constants.TOPOLOGY_SINGLE, listeners=lb.listeners)
+            topology=constants.TOPOLOGY_SINGLE, listeners=dict_listeners)
         mock_taskflow_load.assert_called_with(
             mock_get_create_load_balancer_flow.return_value, store=store)
         mock_eng.run.assert_any_call()
@@ -632,6 +650,9 @@ class TestControllerWorker(base.TestCase):
 
         listeners = [data_models.Listener(id='listener1'),
                      data_models.Listener(id='listener2')]
+        dict_listeners = [listener.to_dict() for listener in
+                          provider_utils.db_listeners_to_provider_listeners(
+                              listeners)]
         lb = data_models.LoadBalancer(
             id=LB_ID, listeners=listeners,
             topology=constants.TOPOLOGY_ACTIVE_STANDBY)
@@ -647,17 +668,18 @@ class TestControllerWorker(base.TestCase):
         }
 
         cw = controller_worker.ControllerWorker()
-        cw.create_load_balancer(LB_ID)
+        cw.create_load_balancer(_load_balancer_mock)
 
         mock_get_create_load_balancer_flow.assert_called_with(
-            topology=constants.TOPOLOGY_ACTIVE_STANDBY, listeners=lb.listeners)
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY,
+            listeners=dict_listeners)
         mock_taskflow_load.assert_called_with(
             mock_get_create_load_balancer_flow.return_value, store=store)
         mock_eng.run.assert_any_call()
 
     @mock.patch('octavia.controller.worker.v2.flows.load_balancer_flows.'
                 'LoadBalancerFlows.get_delete_load_balancer_flow',
-                return_value=(_flow_mock, {'test': 'test'}))
+                return_value=_flow_mock)
     def test_delete_load_balancer_without_cascade(self,
                                                   mock_get_delete_lb_flow,
                                                   mock_api_get_session,
@@ -675,27 +697,26 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
 
         cw = controller_worker.ControllerWorker()
-        cw.delete_load_balancer(LB_ID, cascade=False)
+        cw.delete_load_balancer(_load_balancer_mock, cascade=False)
 
         mock_lb_repo_get.assert_called_once_with(
             _db_session,
             id=LB_ID)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
-                                    store={constants.LOADBALANCER:
-                                           _load_balancer_mock,
-                                           constants.SERVER_GROUP_ID:
-                                           _load_balancer_mock.server_group_id,
-                                           'test': 'test'
-                                           }
-                                    )
-         )
+            assert_called_once_with(
+                _flow_mock,
+                store={constants.LOADBALANCER: _load_balancer_mock,
+                       constants.SERVER_GROUP_ID:
+                           _db_load_balancer_mock.server_group_id,
+                       constants.PROJECT_ID: _db_load_balancer_mock.project_id,
+
+                       }))
         _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.v2.flows.load_balancer_flows.'
                 'LoadBalancerFlows.get_cascade_delete_load_balancer_flow',
-                return_value=(_flow_mock, {'test': 'test'}))
+                return_value=_flow_mock)
     def test_delete_load_balancer_with_cascade(self,
                                                mock_get_delete_lb_flow,
                                                mock_api_get_session,
@@ -713,21 +734,23 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
 
         cw = controller_worker.ControllerWorker()
-        cw.delete_load_balancer(LB_ID, cascade=True)
+        cw.delete_load_balancer(_load_balancer_mock, cascade=True)
 
         mock_lb_repo_get.assert_called_once_with(
             _db_session,
             id=LB_ID)
+        list_name = 'listener_%s' % _listener_mock.id
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
-                                    store={constants.LOADBALANCER:
-                                           _load_balancer_mock,
-                                           constants.SERVER_GROUP_ID:
-                                           _load_balancer_mock.server_group_id,
-                                           'test': 'test'
-                                           }
-                                    )
+            assert_called_once_with(
+                _flow_mock,
+                store={constants.LOADBALANCER: _load_balancer_mock,
+                       list_name: self.ref_listener_dict,
+                       constants.LOADBALANCER_ID: LB_ID,
+                       constants.SERVER_GROUP_ID:
+                           _db_load_balancer_mock.server_group_id,
+                       constants.PROJECT_ID: _db_load_balancer_mock.project_id,
+                       })
          )
         _flow_mock.run.assert_called_once_with()
 
@@ -752,15 +775,11 @@ class TestControllerWorker(base.TestCase):
                                   mock_amp_repo_get):
 
         _flow_mock.reset_mock()
-        _load_balancer_mock.provisioning_status = constants.PENDING_UPDATE
+        _db_load_balancer_mock.provisioning_status = constants.PENDING_UPDATE
 
         cw = controller_worker.ControllerWorker()
         change = 'TEST2'
-        cw.update_load_balancer(LB_ID, change)
-
-        mock_lb_repo_get.assert_called_once_with(
-            _db_session,
-            id=LB_ID)
+        cw.update_load_balancer(_load_balancer_mock, change)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
@@ -768,7 +787,7 @@ class TestControllerWorker(base.TestCase):
                                            constants.LOADBALANCER:
                                                _load_balancer_mock,
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               _db_load_balancer_mock.id,
                                            }))
 
         _flow_mock.run.assert_called_once_with()
@@ -796,15 +815,17 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_member(_member)
 
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.MEMBER: _member,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock,
+                                               provider_lb,
                                            constants.POOL_ID:
                                                POOL_ID}))
 
@@ -831,6 +852,8 @@ class TestControllerWorker(base.TestCase):
         _member = _member_mock.to_dict()
         cw = controller_worker.ControllerWorker()
         cw.delete_member(_member)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(
@@ -838,9 +861,9 @@ class TestControllerWorker(base.TestCase):
                                    constants.LISTENERS:
                                        [self.ref_listener_dict],
                                    constants.LOADBALANCER_ID:
-                                       _load_balancer_mock.id,
+                                       LB_ID,
                                    constants.LOADBALANCER:
-                                       _load_balancer_mock,
+                                       provider_lb,
                                    constants.POOL_ID:
                                        POOL_ID,
                                    constants.PROJECT_ID: PROJECT_ID}))
@@ -870,6 +893,8 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         cw.update_member(_member, MEMBER_UPDATE_DICT)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
@@ -877,11 +902,11 @@ class TestControllerWorker(base.TestCase):
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock,
+                                               provider_lb,
                                            constants.POOL_ID:
                                                POOL_ID,
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.UPDATE_DICT:
                                                MEMBER_UPDATE_DICT}))
 
@@ -911,12 +936,14 @@ class TestControllerWorker(base.TestCase):
                                   constants.POOL_ID: 'testtest'}],
                                 [{constants.MEMBER_ID: 11}],
                                 [MEMBER_UPDATE_DICT])
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(
                 _flow_mock,
                 store={constants.LISTENERS: [self.ref_listener_dict],
-                       constants.LOADBALANCER_ID: _load_balancer_mock.id,
-                       constants.LOADBALANCER: _load_balancer_mock,
+                       constants.LOADBALANCER_ID: LB_ID,
+                       constants.LOADBALANCER: provider_lb,
                        constants.POOL_ID: POOL_ID,
                        constants.PROJECT_ID: PROJECT_ID}))
 
@@ -944,16 +971,18 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         cw.create_pool(_pool_mock)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.POOL_ID: POOL_ID,
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock}))
+                                               provider_lb}))
 
         _flow_mock.run.assert_called_once_with()
         self.assertEqual(1, mock_pool_repo_get.call_count)
@@ -980,16 +1009,17 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         cw.delete_pool(_pool_mock)
-
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.POOL_ID: POOL_ID,
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock,
+                                               provider_lb,
                                            constants.PROJECT_ID: PROJECT_ID}))
 
         _flow_mock.run.assert_called_once_with()
@@ -1013,19 +1043,21 @@ class TestControllerWorker(base.TestCase):
 
         _flow_mock.reset_mock()
         _db_pool_mock.provisioning_status = constants.PENDING_UPDATE
+        mock_pool_repo_get.return_value = _db_pool_mock
 
         cw = controller_worker.ControllerWorker()
         cw.update_pool(_pool_mock, POOL_UPDATE_DICT)
-
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.POOL_ID: POOL_ID,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock,
+                                               provider_lb,
                                            constants.UPDATE_DICT:
                                                POOL_UPDATE_DICT}))
 
@@ -1053,16 +1085,18 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         cw.create_l7policy(L7POLICY_ID)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7POLICY: _l7policy_mock,
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock}))
+                                               provider_lb}))
 
         _flow_mock.run.assert_called_once_with()
         self.assertEqual(2, mock_l7policy_repo_get.call_count)
@@ -1088,6 +1122,8 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         cw.delete_l7policy(L7POLICY_ID)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
@@ -1095,9 +1131,9 @@ class TestControllerWorker(base.TestCase):
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock}))
+                                               provider_lb}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -1123,6 +1159,8 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         cw.update_l7policy(L7POLICY_ID, L7POLICY_UPDATE_DICT)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
@@ -1130,9 +1168,9 @@ class TestControllerWorker(base.TestCase):
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock,
+                                               provider_lb,
                                            constants.UPDATE_DICT:
                                                L7POLICY_UPDATE_DICT}))
 
@@ -1160,17 +1198,19 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         cw.create_l7rule(L7RULE_ID)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
                                            constants.L7POLICY: _l7policy_mock,
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock}))
+                                               provider_lb}))
 
         _flow_mock.run.assert_called_once_with()
         self.assertEqual(2, mock_l7rule_repo_get.call_count)
@@ -1196,17 +1236,19 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         cw.delete_l7rule(L7RULE_ID)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.L7POLICY: _l7policy_mock,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock}))
+                                               provider_lb}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -1232,17 +1274,19 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         cw.update_l7rule(L7RULE_ID, L7RULE_UPDATE_DICT)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
                                            constants.L7POLICY: _l7policy_mock,
                                            constants.LOADBALANCER_ID:
-                                               _load_balancer_mock.id,
+                                               LB_ID,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER:
-                                               _load_balancer_mock,
+                                               provider_lb,
                                            constants.UPDATE_DICT:
                                                L7RULE_UPDATE_DICT}))
 
@@ -1462,7 +1506,7 @@ class TestControllerWorker(base.TestCase):
         _amphora_mock2 = mock.MagicMock()
         _amphora_mock3 = mock.MagicMock()
         _amphora_mock3.status = constants.DELETED
-        _load_balancer_mock.amphorae = [
+        _db_load_balancer_mock.amphorae = [
             _db_amphora_mock, _amphora_mock2, _amphora_mock3]
         cw = controller_worker.ControllerWorker()
         cw.failover_loadbalancer('123')
@@ -1472,7 +1516,8 @@ class TestControllerWorker(base.TestCase):
         mock_update.assert_called_with(_db_session, '123',
                                        provisioning_status=constants.ACTIVE)
 
-        _load_balancer_mock.amphorae = [
+        mock_perform.reset_mock()
+        _db_load_balancer_mock.amphorae = [
             _db_amphora_mock, _amphora_mock2, _amphora_mock3]
         _amphora_mock2.role = constants.ROLE_BACKUP
         cw.failover_loadbalancer('123')
@@ -1497,7 +1542,7 @@ class TestControllerWorker(base.TestCase):
                 return_value=_flow_mock)
     @mock.patch(
         'octavia.db.repositories.AmphoraRepository.get_lb_for_amphora',
-        return_value=_load_balancer_mock)
+        return_value=_db_load_balancer_mock)
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_failover_amphora_anti_affinity(self,
                                             mock_update,
@@ -1519,7 +1564,7 @@ class TestControllerWorker(base.TestCase):
 
         self.conf.config(group="nova", enable_anti_affinity=True)
         _flow_mock.reset_mock()
-        _load_balancer_mock.server_group_id = "123"
+        _db_load_balancer_mock.server_group_id = "123"
 
         cw = controller_worker.ControllerWorker()
         cw.failover_amphora(AMP_ID)
