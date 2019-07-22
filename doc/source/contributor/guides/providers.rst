@@ -82,7 +82,7 @@ See the `Exception Model`_ below for more details.
           `Octavia API reference`_ document for details of the fields and
           expected outcome of these calls.
 
-.. _Octavia API reference: https://developer.openstack.org/api-ref/load-balancer/v2/index.html
+.. _Octavia API reference: https://docs.openstack.org/api-ref/load-balancer/v2/index.html
 
 Load balancer
 -------------
@@ -1830,10 +1830,10 @@ unchanged.
   the configured limit.
 
 provisioning_status: status associated with lifecycle of the
-resource. See `Octavia Provisioning Status Codes <https://developer.openstack.org/api-ref/load-balancer/v2/index.html#provisioning-status-codes>`_.
+resource. See `Octavia Provisioning Status Codes <https://docs.openstack.org/api-ref/load-balancer/v2/index.html#provisioning-status-codes>`_.
 
 operating_status: the observed status of the resource. See `Octavia
-Operating Status Codes <https://developer.openstack.org/api-ref/load-balancer/v2/index.html#operating-status-codes>`_.
+Operating Status Codes <https://docs.openstack.org/api-ref/load-balancer/v2/index.html#operating-status-codes>`_.
 
 The dictionary takes this form:
 
@@ -1913,7 +1913,7 @@ Provider drivers may need to get information about an Octavia resource.
 As an example of its use, a provider driver may need to sync with Octavia,
 and therefore need to fetch all of the Octavia resources it is responsible
 for managing. Provider drivers can use the existing Octavia API to get these
-resources. See the `Octavia API Reference <https://developer.openstack.org/api-ref/load-balancer/v2/index.html>`_.
+resources. See the `Octavia API Reference <https://docs.openstack.org/api-ref/load-balancer/v2/index.html>`_.
 
 API Exception Model
 -------------------
@@ -2003,7 +2003,7 @@ following to the feature-matrix-lb.ini file.
 
     [driver.amphora]
     title=Amphora Provider
-    link=https://developer.openstack.org/api-ref/load-balancer/v2/index.html
+    link=https://docs.openstack.org/api-ref/load-balancer/v2/index.html
 
     [operation.admin_state_up]
     ...

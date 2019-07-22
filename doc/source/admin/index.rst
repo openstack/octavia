@@ -18,7 +18,7 @@ APIs
 .. toctree::
    :maxdepth: 1
 
-   Octavia API Reference <https://developer.openstack.org/api-ref/load-balancer/>
+   Octavia API Reference <https://docs.openstack.org/api-ref/load-balancer/>
    ../contributor/api/haproxy-amphora-api.rst
 
 

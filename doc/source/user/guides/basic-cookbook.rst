@@ -541,7 +541,7 @@ them out of the pool. Since effective health monitors depend as much on
 back-end application server configuration as proper load balancer
 configuration, some additional discussion of best practices is warranted here.
 
-See also: `Octavia API Reference <https://developer.openstack.org/api-ref/load-balancer/>`_
+See also: `Octavia API Reference <https://docs.openstack.org/api-ref/load-balancer/>`_
 
 
 Heath monitor options

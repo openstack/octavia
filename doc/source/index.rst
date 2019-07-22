@@ -18,7 +18,7 @@ is grouped into the following topic areas.
    :maxdepth: 1
 
    admin/index.rst
-   Octavia API Reference <https://developer.openstack.org/api-ref/load-balancer/>
+   Octavia API Reference <https://docs.openstack.org/api-ref/load-balancer/>
    cli/index.rst
    configuration/index.rst
    contributor/index.rst

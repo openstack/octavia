@@ -70,7 +70,7 @@ It consists of a rule type, a comparison type, a value, and an optional key
 that gets used depending on the rule type. An L7 rule must always be associated
 with an L7 policy.
 
-See also: `Octavia API Reference <https://developer.openstack.org/api-ref/load-balancer/>`_
+See also: `Octavia API Reference <https://docs.openstack.org/api-ref/load-balancer/>`_
 
 Rule types
 __________
@@ -124,7 +124,7 @@ may also have an association to a back-end pool. Policies describe actions that
 should be taken by the load balancing software if all of the rules in the
 policy return true.
 
-See also: `Octavia API Reference <https://developer.openstack.org/api-ref/load-balancer/>`_
+See also: `Octavia API Reference <https://docs.openstack.org/api-ref/load-balancer/>`_
 
 Policy Logic
 ____________
@@ -189,7 +189,7 @@ For a cookbook of common L7 usage examples, please see the :doc:`l7-cookbook`
 
 Useful links
 ============
-* `Octavia API Reference <https://developer.openstack.org/api-ref/load-balancer/>`_
+* `Octavia API Reference <https://docs.openstack.org/api-ref/load-balancer/>`_
 * `LBaaS Layer 7 rules <https://github.com/openstack/neutron-specs/blob/master/specs/mitaka/lbaas-l7-rules.rst>`_
 * `Using ACLs and fetching samples <http://cbonte.github.io/haproxy-dconv/1.6/configuration.html#7>`_
 * `OpenSSL openssl-verify command <https://www.openssl.org/docs/manmaster/man1/openssl-verify.html>`_

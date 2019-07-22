@@ -62,7 +62,7 @@ when response times become too high.
 
 An additional check might be to monitor the provisioning status of a
 load balancer (see `Load Balance Status Codes
-<https://developer.openstack.org/api-ref/load-balancer/v2/#status-codes>`_)
+<https://docs.openstack.org/api-ref/load-balancer/v2/#status-codes>`_)
 and alert depending on the application if the provisioning status is
 not ACTIVE. For some applications other states might not lead to alerts:
 For instance if an application is making regular changes to the pool

@@ -67,7 +67,7 @@ request against the current driver capabilities.
 
 See the `Exception Model`_ below for more details.
 
-.. note:: Driver developers should refer to the official `Octavia API reference <https://developer.openstack.org/api-ref/load-balancer/v2/index.html>` document for details of the fields and expected outcome of these calls.
+.. note:: Driver developers should refer to the official `Octavia API reference <https://docs.openstack.org/api-ref/load-balancer/v2/index.html>` document for details of the fields and expected outcome of these calls.
 
 Load balancer
 ^^^^^^^^^^^^^
@@ -1603,10 +1603,10 @@ existing object is not included in the input parameter, the status remains
 unchanged.
 
 provisioning_status: status associated with lifecycle of the
-resource. See `Octavia Provisioning Status Codes <https://developer.openstack.org/api-ref/load-balancer/v2/index.html#provisioning-status-codes>`_.
+resource. See `Octavia Provisioning Status Codes <https://docs.openstack.org/api-ref/load-balancer/v2/index.html#provisioning-status-codes>`_.
 
 operating_status: the observed status of the resource. See `Octavia
-Operating Status Codes <https://developer.openstack.org/api-ref/load-balancer/v2/index.html#operating-status-codes>`_.
+Operating Status Codes <https://docs.openstack.org/api-ref/load-balancer/v2/index.html#operating-status-codes>`_.
 
 The dictionary takes this form:
 
@@ -1679,7 +1679,7 @@ Provider drivers may need to get information about an Octavia resource.
 As an example of its use, a provider driver may need to sync with Octavia,
 and therefore need to fetch all of the Octavia resources it is responsible
 for managing. Provider drivers can use the existing Octavia API to get these
-resources. See the `Octavia API Reference <https://developer.openstack.org/api-ref/load-balancer/v2/index.html>`_.
+resources. See the `Octavia API Reference <https://docs.openstack.org/api-ref/load-balancer/v2/index.html>`_.
 
 API Exception Model
 ^^^^^^^^^^^^^^^^^^^
@@ -1798,7 +1798,7 @@ Work Items
 Dependencies
 ============
 * Octavia API:
-  https://developer.openstack.org/api-ref/load-balancer/
+  https://docs.openstack.org/api-ref/load-balancer/
 * Flavors:
   https://docs.openstack.org/octavia/latest/contributor/specs/version1.0/flavors.html
 
@@ -1822,7 +1822,7 @@ A driver developer guide should be created.
 References
 ==========
 Octavia API
-  https://developer.openstack.org/api-ref/load-balancer/v2/index.html
+  https://docs.openstack.org/api-ref/load-balancer/v2/index.html
 
 Octavia Flavors Specification
   https://docs.openstack.org/octavia/latest/contributor/specs/version1.0/flavors.html
