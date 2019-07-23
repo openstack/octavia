@@ -1,0 +1,16 @@
+---
+features:
+  - |
+    New Load Balancing algorithm SOURCE_IP_PORT has been added.
+    It is supported only by OVN provider driver.
+upgrade:
+  - |
+    All pools configured under OVN provider driver are
+    automatically migrated to SOURCE_IP_PORT algorithm.
+    Previously algorithm was named as ROUND_ROBIN, but in
+    fact it was not working like ROUND_ROBIN. After
+    investigating, it was observed that core OVN actually
+    utilizes a 5 Tuple Hash/RSS Hash in DPDK/Kernel as a Load
+    Balancing algorithm. The 5 Tuple Hash has Source IP, Destination
+    IP, Protocol, Source Port, Destination Port.
+    To reflect this the name was changed to SOURCE_IP_PORT.

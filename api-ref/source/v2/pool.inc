@@ -103,8 +103,8 @@ At a minimum, you must specify these pool attributes:
   listen. A valid value is ``HTTP``, ``HTTPS``, ``PROXY``, ``TCP``, or ``UDP``.
 
 - ``lb_algorithm`` The load-balancer algorithm, such as
-  ``ROUND_ROBIN``, ``LEAST_CONNECTIONS``, and ``SOURCE_IP``, that
-  distributes traffic to the pool members. The load-balancer
+  ``ROUND_ROBIN``, ``LEAST_CONNECTIONS``, ``SOURCE_IP`` and ``SOURCE_IP_PORT``,
+  that distributes traffic to the pool members. The load-balancer
   provider must support this algorithm.
 
 - ``listener_id`` The ID of the listener in which this pool
@@ -143,6 +143,9 @@ specifying the additional elements or attributes in the request.
 
 To create a pool, the parent load balancer must have an ``ACTIVE``
 provisioning status.
+
+``SOURCE_IP_PORT`` algorithm is available from version 2.13.
+
 
 .. rest_status_code:: success ../http-status.yaml
 

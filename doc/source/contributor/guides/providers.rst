@@ -755,8 +755,8 @@ contain the following:
 | healthmonitor         | object | A `Healthmonitor object`_.               |
 +-----------------------+--------+------------------------------------------+
 | lb_algorithm          | string | Load balancing algorithm: One of         |
-|                       |        | ROUND_ROBIN, LEAST_CONNECTIONS, or       |
-|                       |        | SOURCE_IP.                               |
+|                       |        | ROUND_ROBIN, LEAST_CONNECTIONS,          |
+|                       |        | SOURCE_IP or SOURCE_IP_PORT.             |
 +-----------------------+--------+------------------------------------------+
 | loadbalancer_id       | string | ID of load balancer.                     |
 +-----------------------+--------+------------------------------------------+

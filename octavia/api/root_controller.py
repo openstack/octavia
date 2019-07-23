@@ -85,6 +85,9 @@ class RootController(rest.RestController):
         self._add_a_version(versions, 'v2.11', 'v2', 'SUPPORTED',
                             '2019-06-24T00:00:00Z', host_url)
         # VIP ACL
-        self._add_a_version(versions, 'v2.12', 'v2', 'CURRENT',
+        self._add_a_version(versions, 'v2.12', 'v2', 'SUPPORTED',
                             '2019-09-11T00:00:00Z', host_url)
+        # SOURCE_IP_PORT algorithm
+        self._add_a_version(versions, 'v2.13', 'v2', 'CURRENT',
+                            '2019-09-13T00:00:00Z', host_url)
         return {'versions': versions}

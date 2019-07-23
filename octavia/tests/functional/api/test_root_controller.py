@@ -43,7 +43,7 @@ class TestRootController(base_db_test.OctaviaDBTestBase):
     def test_api_versions(self):
         versions = self._get_versions_with_config()
         version_ids = tuple(v.get('id') for v in versions)
-        self.assertEqual(13, len(version_ids))
+        self.assertEqual(14, len(version_ids))
         self.assertIn('v2.0', version_ids)
         self.assertIn('v2.1', version_ids)
         self.assertIn('v2.2', version_ids)
@@ -57,6 +57,7 @@ class TestRootController(base_db_test.OctaviaDBTestBase):
         self.assertIn('v2.10', version_ids)
         self.assertIn('v2.11', version_ids)
         self.assertIn('v2.12', version_ids)
+        self.assertIn('v2.13', version_ids)
 
         # Each version should have a 'self' 'href' to the API version URL
         # [{u'rel': u'self', u'href': u'http://localhost/v2'}]

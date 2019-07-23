@@ -909,7 +909,7 @@ l7rules-status-object-list:
 lb-algorithm:
   description: |
     The load balancing algorithm for the pool. One of ``LEAST_CONNECTIONS``,
-    ``ROUND_ROBIN``, or ``SOURCE_IP``.
+    ``ROUND_ROBIN``, ``SOURCE_IP``, or ``SOURCE_IP_PORT``.
   in: body
   required: true
   type: string
