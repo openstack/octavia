@@ -37,7 +37,7 @@ There are three steps to creating a new Octavia flavor:
 Provider Capabilities
 =====================
 
-.. _provider driver flavor capabilities: https://developer.openstack.org/api-ref/load-balancer/v2/index.html##show-provider-flavor-capabilities
+.. _provider driver flavor capabilities: https://docs.openstack.org/api-ref/load-balancer/v2/index.html##show-provider-flavor-capabilities
 
 To start the process of defining a flavor, you will want to look at the
 flavor capabilities that the provider driver exposes. To do this you can use
@@ -66,7 +66,7 @@ capability, among many others::
 Flavor Profiles
 ===============
 
-.. _flavor profile: https://developer.openstack.org/api-ref/load-balancer/v2/index.html#create-flavor-profile
+.. _flavor profile: https://docs.openstack.org/api-ref/load-balancer/v2/index.html#create-flavor-profile
 
 The next step in the process of creating a flavor is to define a flavor
 profile. The flavor profile includes the provider and the flavor data.
@@ -102,7 +102,7 @@ The output of the command above is::
 Flavors
 =======
 
-.. _flavor: https://developer.openstack.org/api-ref/load-balancer/v2/index.html#create-flavor
+.. _flavor: https://docs.openstack.org/api-ref/load-balancer/v2/index.html#create-flavor
 
 Finally we will create the user facing Octavia flavor. This defines the
 information users will see and use to create a load balancer with an Octavia

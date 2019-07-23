@@ -26,7 +26,7 @@ Load Balancer API Features
 --------------------------
 
 These features are documented in the Octavia API reference
-`Create a Load Balancer <https://developer.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-a-load-balancer-detail#create-a-load-balancer>`_ section.
+`Create a Load Balancer <https://docs.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-a-load-balancer-detail#create-a-load-balancer>`_ section.
 
 .. support_matrix:: feature-matrix-lb.ini
 
@@ -39,7 +39,7 @@ Listener API Features
 ---------------------
 
 These features are documented in the Octavia API reference
-`Create a Listener <https://developer.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-listener-detail#create-listener>`_ section.
+`Create a Listener <https://docs.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-listener-detail#create-listener>`_ section.
 
 .. support_matrix:: feature-matrix-listener.ini
 
@@ -52,7 +52,7 @@ Pool API Features
 -----------------
 
 These features are documented in the Octavia API reference
-`Create a Pool <https://developer.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-pool-detail#create-pool>`_ section.
+`Create a Pool <https://docs.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-pool-detail#create-pool>`_ section.
 
 .. support_matrix:: feature-matrix-pool.ini
 
@@ -65,7 +65,7 @@ Member API Features
 -------------------
 
 These features are documented in the Octavia API reference
-`Create a Member <https://developer.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-member-detail#create-member>`_ section.
+`Create a Member <https://docs.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-member-detail#create-member>`_ section.
 
 .. support_matrix:: feature-matrix-member.ini
 
@@ -78,7 +78,7 @@ Health Monitor API Features
 ---------------------------
 
 These features are documented in the Octavia API reference
-`Create a Health Monitor <https://developer.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-health-monitor-detail#create-health-monitor>`_ section.
+`Create a Health Monitor <https://docs.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-health-monitor-detail#create-health-monitor>`_ section.
 
 .. support_matrix:: feature-matrix-healthmonitor.ini
 
@@ -91,7 +91,7 @@ L7 Policy API Features
 ----------------------
 
 These features are documented in the Octavia API reference
-`Create an L7 Policy <https://developer.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-l7-policy-detail#create-an-l7-policy>`_ section.
+`Create an L7 Policy <https://docs.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-l7-policy-detail#create-an-l7-policy>`_ section.
 
 .. support_matrix:: feature-matrix-l7policy.ini
 
@@ -104,6 +104,6 @@ L7 Rule API Features
 --------------------
 
 These features are documented in the Octavia API reference
-`Create an L7 Rule <https://developer.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-l7-rule-detail#create-an-l7-rule>`_ section.
+`Create an L7 Rule <https://docs.openstack.org/api-ref/load-balancer/v2/index.html?expanded=create-l7-rule-detail#create-an-l7-rule>`_ section.
 
 .. support_matrix:: feature-matrix-l7rule.ini

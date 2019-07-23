@@ -337,4 +337,4 @@ extensions.
 
 References
 ==========
-[1] https://developer.openstack.org/api-ref/load-balancer/v2/index.html
+[1] https://docs.openstack.org/api-ref/load-balancer/v2/index.html
