@@ -382,6 +382,7 @@ AMP_element_sequence="$AMP_element_sequence rebind-sshd"
 AMP_element_sequence="$AMP_element_sequence no-resolvconf"
 AMP_element_sequence="$AMP_element_sequence amphora-agent"
 AMP_element_sequence="$AMP_element_sequence sos"
+AMP_element_sequence="$AMP_element_sequence cloud-init-datasources"
 
 if [ "$AMP_ENABLE_FULL_MAC_SECURITY" -ne 1 ]; then
     # SELinux systems
@@ -416,9 +417,7 @@ fi
 
 # Build the image
 
-if [ "$AMP_BASEOS" = "ubuntu-minimal" ]; then
-    export DIB_CLOUD_INIT_DATASOURCES=$CLOUD_INIT_DATASOURCES
-fi
+export DIB_CLOUD_INIT_DATASOURCES=$CLOUD_INIT_DATASOURCES
 
 dib_trace_arg=
 if [ -n "$dib_enable_tracing" ]; then
