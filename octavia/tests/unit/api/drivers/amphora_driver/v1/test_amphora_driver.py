@@ -165,10 +165,22 @@ class TestAmphoraDriver(base.TestRpc):
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_pool_create(self, mock_cast):
         provider_pool = driver_dm.Pool(
-            pool_id=self.sample_data.pool1_id)
+            pool_id=self.sample_data.pool1_id,
+            lb_algorithm=consts.LB_ALGORITHM_ROUND_ROBIN)
         self.amp_driver.pool_create(provider_pool)
         payload = {consts.POOL_ID: self.sample_data.pool1_id}
         mock_cast.assert_called_with({}, 'create_pool', **payload)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_pool_create_unsupported_algorithm(self, mock_cast):
+        provider_pool = driver_dm.Pool(
+            pool_id=self.sample_data.pool1_id)
+        provider_pool.lb_algorithm = 'foo'
+        self.assertRaises(
+            exceptions.UnsupportedOptionError,
+            self.amp_driver.pool_create,
+            provider_pool)
+        mock_cast.assert_not_called()
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_pool_delete(self, mock_cast):
@@ -204,6 +216,20 @@ class TestAmphoraDriver(base.TestRpc):
         payload = {consts.POOL_ID: self.sample_data.pool1_id,
                    consts.POOL_UPDATES: pool_dict}
         mock_cast.assert_called_with({}, 'update_pool', **payload)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_pool_update_unsupported_algorithm(self, mock_cast):
+        old_provider_pool = driver_dm.Pool(
+            pool_id=self.sample_data.pool1_id)
+        provider_pool = driver_dm.Pool(
+            pool_id=self.sample_data.pool1_id)
+        provider_pool.lb_algorithm = 'foo'
+        self.assertRaises(
+            exceptions.UnsupportedOptionError,
+            self.amp_driver.pool_update,
+            old_provider_pool,
+            provider_pool)
+        mock_cast.assert_not_called()
 
     # Member
     @mock.patch('octavia.db.api.get_session')

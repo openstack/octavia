@@ -37,6 +37,10 @@ from octavia.network import base as network_base
 CONF = cfg.CONF
 CONF.import_group('oslo_messaging', 'octavia.common.config')
 LOG = logging.getLogger(__name__)
+AMPHORA_SUPPORTED_LB_ALGORITHMS = [
+    consts.LB_ALGORITHM_ROUND_ROBIN,
+    consts.LB_ALGORITHM_SOURCE_IP,
+    consts.LB_ALGORITHM_LEAST_CONNECTIONS]
 
 
 class AmphoraProviderDriver(driver_base.ProviderDriver):
@@ -48,6 +52,14 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             topic=topic, version="1.0", fanout=False)
         self.client = rpc.get_client(self.target)
         self.repositories = repositories.Repositories()
+
+    def _validate_pool_algorithm(self, pool):
+        if pool.lb_algorithm not in AMPHORA_SUPPORTED_LB_ALGORITHMS:
+            msg = ('Amphora provider does not support %s algorithm.'
+                   % pool.lb_algorithm)
+            raise exceptions.UnsupportedOptionError(
+                user_fault_string=msg,
+                operator_fault_string=msg)
 
     # Load Balancer
     def create_vip_port(self, loadbalancer_id, project_id, vip_dictionary):
@@ -132,6 +144,7 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
     # Pool
     def pool_create(self, pool):
+        self._validate_pool_algorithm(pool)
         payload = {consts.POOL_ID: pool.pool_id}
         self.client.cast({}, 'create_pool', **payload)
 
@@ -141,6 +154,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         self.client.cast({}, 'delete_pool', **payload)
 
     def pool_update(self, old_pool, new_pool):
+        if new_pool.lb_algorithm:
+            self._validate_pool_algorithm(new_pool)
         pool_dict = new_pool.to_dict()
         if 'admin_state_up' in pool_dict:
             pool_dict['enabled'] = pool_dict.pop('admin_state_up')
