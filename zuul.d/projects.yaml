@@ -65,6 +65,12 @@
               - ^octavia/tests/unit/.*$
               - ^releasenotes/.*$
             voting: false
+        - octavia-v2-act-stdby-iptables-dsvm-scenario:
+            voting: false
+        - octavia-v2-act-stdby-iptables-dsvm-py2-scenario:
+            voting: false
+        - octavia-v2-act-stdby-iptables-dsvm-py2-scenario-centos-7:
+            voting: false
     gate:
       fail-fast: true
       queue: octavia
