@@ -1474,6 +1474,10 @@ class L7RuleRepository(BaseRepository):
         with session.begin(subtransactions=True):
             if not model_kwargs.get('id'):
                 model_kwargs.update(id=uuidutils.generate_uuid())
+            if model_kwargs.get('l7policy_id'):
+                l7policy_db = session.query(models.L7Policy).filter_by(
+                    id=model_kwargs.get('l7policy_id')).first()
+                model_kwargs.update(l7policy=l7policy_db)
             l7rule = self.model_class(**model_kwargs)
             validate.l7rule_data(l7rule)
             session.add(l7rule)
@@ -1612,6 +1616,10 @@ class L7PolicyRepository(BaseRepository):
                 pool_db = session.query(models.Pool).filter_by(
                     id=model_kwargs.get('redirect_pool_id')).first()
                 model_kwargs.update(redirect_pool=pool_db)
+            if model_kwargs.get('listener_id'):
+                listener_db = session.query(models.Listener).filter_by(
+                    id=model_kwargs.get('listener_id')).first()
+                model_kwargs.update(listener=listener_db)
             l7policy = self.model_class(
                 **validate.sanitize_l7policy_api_args(model_kwargs,
                                                       create=True))
