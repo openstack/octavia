@@ -16,17 +16,19 @@ import copy
 
 import six
 
+from octavia_lib.api.drivers import data_models as driver_dm
 from octavia_lib.api.drivers import exceptions as lib_exceptions
 from oslo_config import cfg
 from oslo_context import context as oslo_context
 from oslo_log import log as logging
 from stevedore import driver as stevedore_driver
 
-from octavia.api.drivers import data_models as driver_dm
 from octavia.api.drivers import exceptions as driver_exceptions
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common.tls_utils import cert_parser
+from octavia.db import api as db_api
+from octavia.db import repositories
 from octavia.i18n import _
 
 LOG = logging.getLogger(__name__)
@@ -105,6 +107,18 @@ def _base_to_provider_dict(current_dict, include_project_id=False):
         del new_dict['flavor_id']
     if 'topology' in new_dict:
         del new_dict['topology']
+    if 'vrrp_group' in new_dict:
+        del new_dict['vrrp_group']
+    if 'amphorae' in new_dict:
+        del new_dict['amphorae']
+    if 'vip' in new_dict:
+        del new_dict['vip']
+    if 'listeners' in new_dict:
+        del new_dict['listeners']
+    if 'pools' in new_dict:
+        del new_dict['pools']
+    if 'server_group_id' in new_dict:
+        del new_dict['server_group_id']
     return new_dict
 
 
@@ -120,7 +134,10 @@ def lb_dict_to_provider_dict(lb_dict, vip=None,
         new_lb_dict['vip_port_id'] = vip.port_id
         new_lb_dict['vip_subnet_id'] = vip.subnet_id
         new_lb_dict['vip_qos_policy_id'] = vip.qos_policy_id
-
+    if 'flavor_id' in lb_dict and lb_dict['flavor_id']:
+        flavor_repo = repositories.FlavorRepository()
+        new_lb_dict['flavor'] = flavor_repo.get_flavor_metadata_dict(
+            db_api.get_session(), lb_dict['flavor_id'])
     if db_pools:
         new_lb_dict['pools'] = db_pools_to_provider_pools(db_pools)
     if db_listeners:
@@ -189,8 +206,15 @@ def listener_dict_to_provider_dict(listener_dict):
         new_listener_dict['default_tls_container_ref'] = new_listener_dict.pop(
             'tls_certificate_id')
     if 'sni_containers' in new_listener_dict:
-        new_listener_dict['sni_container_refs'] = new_listener_dict.pop(
-            'sni_containers')
+        sni_refs = []
+        sni_containers = new_listener_dict.pop('sni_containers')
+        for sni in sni_containers:
+            if 'tls_container_id' in sni:
+                sni_refs.append(sni['tls_container_id'])
+            else:
+                raise exceptions.ValidationException(
+                    detail=_('Invalid SNI container on listener'))
+        new_listener_dict['sni_container_refs'] = sni_refs
     if 'sni_container_refs' in listener_dict:
         listener_dict['sni_containers'] = listener_dict.pop(
             'sni_container_refs')
@@ -206,6 +230,8 @@ def listener_dict_to_provider_dict(listener_dict):
         SNI_objs = []
         for sni in listener_obj.sni_containers:
             if isinstance(sni, dict):
+                if 'listener' in sni:
+                    del sni['listener']
                 sni_obj = data_models.SNI(**sni)
                 SNI_objs.append(sni_obj)
             elif isinstance(sni, six.string_types):
@@ -256,7 +282,7 @@ def listener_dict_to_provider_dict(listener_dict):
         new_listener_dict['default_pool'] = pool_dict_to_provider_dict(pool)
     provider_l7policies = []
     if 'l7policies' in new_listener_dict:
-        l7policies = new_listener_dict.pop('l7policies')
+        l7policies = new_listener_dict.pop('l7policies') or []
         for l7policy in l7policies:
             provider_l7policy = l7policy_dict_to_provider_dict(l7policy)
             provider_l7policies.append(provider_l7policy)
@@ -346,9 +372,12 @@ def pool_dict_to_provider_dict(pool_dict):
     if 'load_balancer_id' in new_pool_dict:
         new_pool_dict['loadbalancer_id'] = new_pool_dict.pop(
             'load_balancer_id')
-    if 'health_monitor' in new_pool_dict and new_pool_dict['health_monitor']:
+    if 'health_monitor' in new_pool_dict:
         hm = new_pool_dict.pop('health_monitor')
-        new_pool_dict['healthmonitor'] = hm_dict_to_provider_dict(hm)
+        if hm:
+            new_pool_dict['healthmonitor'] = hm_dict_to_provider_dict(hm)
+        else:
+            new_pool_dict['healthmonitor'] = None
     if 'members' in new_pool_dict and new_pool_dict['members']:
         members = new_pool_dict.pop('members')
         provider_members = []

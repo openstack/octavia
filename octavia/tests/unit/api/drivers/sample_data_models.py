@@ -13,10 +13,12 @@
 #    under the License.
 
 import copy
+import datetime
 
+from octavia_lib.api.drivers import data_models as driver_dm
+from octavia_lib.common import constants as lib_consts
 from oslo_utils import uuidutils
 
-from octavia.api.drivers import data_models as driver_dm
 from octavia.common import constants
 from octavia.common import data_models
 
@@ -31,6 +33,10 @@ class SampleDriverDataModels(object):
         self.network_id = uuidutils.generate_uuid()
         self.subnet_id = uuidutils.generate_uuid()
         self.qos_policy_id = uuidutils.generate_uuid()
+        self.lb_name = uuidutils.generate_uuid()
+        self.lb_description = uuidutils.generate_uuid()
+        self.flavor_id = uuidutils.generate_uuid()
+        self.flavor_profile_id = uuidutils.generate_uuid()
 
         self.listener1_id = uuidutils.generate_uuid()
         self.listener2_id = uuidutils.generate_uuid()
@@ -60,11 +66,15 @@ class SampleDriverDataModels(object):
         self.l7rule1_id = uuidutils.generate_uuid()
         self.l7rule2_id = uuidutils.generate_uuid()
 
+        self.created_at = datetime.datetime.now()
+        self.updated_at = (datetime.datetime.now() +
+                           datetime.timedelta(minutes=1))
+
         self._common_test_dict = {'provisioning_status': constants.ACTIVE,
                                   'operating_status': constants.ONLINE,
                                   'project_id': self.project_id,
-                                  'created_at': 'then',
-                                  'updated_at': 'now',
+                                  'created_at': self.created_at,
+                                  'updated_at': self.updated_at,
                                   'enabled': True}
 
         # Setup Health Monitors
@@ -119,9 +129,13 @@ class SampleDriverDataModels(object):
                                   'protocol_port': 80, 'weight': 0,
                                   'backup': False,
                                   'subnet_id': self.subnet_id,
-                                  'pool': None,
                                   'project_id': self.project_id,
                                   'name': 'member1',
+                                  'operating_status': lib_consts.ONLINE,
+                                  'provisioning_status': lib_consts.ACTIVE,
+                                  'enabled': True,
+                                  'created_at': self.created_at,
+                                  'updated_at': self.updated_at,
                                   'monitor_address': '192.0.2.26',
                                   'monitor_port': 81}
 
@@ -214,11 +228,11 @@ class SampleDriverDataModels(object):
                                 'name': 'pool1', 'description': 'Pool 1',
                                 'load_balancer_id': self.lb_id,
                                 'project_id': self.project_id,
-                                'protocol': 'avian',
-                                'lb_algorithm': 'round_robin',
+                                'protocol': 'TCP',
+                                'lb_algorithm': 'ROUND_ROBIN',
                                 'members': self.test_pool1_members_dict,
                                 'health_monitor': self.test_hm1_dict,
-                                'session_persistence': {'type': 'SOURCE'},
+                                'session_persistence': {'type': 'SOURCE_IP'},
                                 'listeners': [],
                                 'l7policies': [],
                                 'tls_certificate_id':
@@ -258,14 +272,14 @@ class SampleDriverDataModels(object):
             'admin_state_up': True,
             'description': 'Pool 1',
             'healthmonitor': self.provider_hm1_dict,
-            'lb_algorithm': 'round_robin',
+            'lb_algorithm': 'ROUND_ROBIN',
             'loadbalancer_id': self.lb_id,
             'members': self.provider_pool1_members_dict,
             'name': 'pool1',
             'pool_id': self.pool1_id,
             'project_id': self.project_id,
-            'protocol': 'avian',
-            'session_persistence': {'type': 'SOURCE'},
+            'protocol': 'TCP',
+            'session_persistence': {'type': 'SOURCE_IP'},
             'tls_container_ref': self.pool_sni_container_ref,
             'tls_container_data': pool_cert.to_dict(),
             'ca_tls_container_ref': self.pool_ca_container_ref,
@@ -298,15 +312,16 @@ class SampleDriverDataModels(object):
         self.provider_pools = [self.provider_pool1, self.provider_pool2]
 
         # Setup L7Rules
-        self.test_l7rule1_dict = {'id': self.l7rule1_id,
-                                  'l7policy_id': self.l7policy1_id,
-                                  'type': 'o',
-                                  'compare_type': 'fake_type',
-                                  'key': 'fake_key',
-                                  'value': 'fake_value',
-                                  'project_id': self.project_id,
-                                  'l7policy': None,
-                                  'invert': False}
+        self.test_l7rule1_dict = {
+            'id': self.l7rule1_id,
+            'l7policy_id': self.l7policy1_id,
+            'type': lib_consts.L7RULE_TYPE_PATH,
+            'compare_type': lib_consts.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            'key': 'fake_key',
+            'value': 'fake_value',
+            'project_id': self.project_id,
+            'l7policy': None,
+            'invert': False}
 
         self.test_l7rule1_dict.update(self._common_test_dict)
 
@@ -320,15 +335,16 @@ class SampleDriverDataModels(object):
 
         self.db_l7Rules = [self.db_l7Rule1, self.db_l7Rule2]
 
-        self.provider_l7rule1_dict = {'admin_state_up': True,
-                                      'compare_type': 'fake_type',
-                                      'invert': False,
-                                      'key': 'fake_key',
-                                      'l7policy_id': self.l7policy1_id,
-                                      'l7rule_id': self.l7rule1_id,
-                                      'type': 'o',
-                                      'project_id': self.project_id,
-                                      'value': 'fake_value'}
+        self.provider_l7rule1_dict = {
+            'admin_state_up': True,
+            'compare_type': lib_consts.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            'invert': False,
+            'key': 'fake_key',
+            'l7policy_id': self.l7policy1_id,
+            'l7rule_id': self.l7rule1_id,
+            'type': lib_consts.L7RULE_TYPE_PATH,
+            'project_id': self.project_id,
+            'value': 'fake_value'}
 
         self.provider_l7rule2_dict = copy.deepcopy(self.provider_l7rule1_dict)
         self.provider_l7rule2_dict['l7rule_id'] = self.l7rule2_id
@@ -341,20 +357,21 @@ class SampleDriverDataModels(object):
         self.provider_rules = [self.provider_l7rule1, self.provider_l7rule2]
 
         # Setup L7Policies
-        self.test_l7policy1_dict = {'id': self.l7policy1_id,
-                                    'name': 'l7policy_1',
-                                    'description': 'L7policy 1',
-                                    'listener_id': self.listener1_id,
-                                    'action': 'go',
-                                    'redirect_pool_id': self.pool1_id,
-                                    'redirect_url': '/index.html',
-                                    'redirect_prefix': 'https://example.com/',
-                                    'project_id': self.project_id,
-                                    'position': 1,
-                                    'listener': None,
-                                    'redirect_pool': None,
-                                    'l7rules': self.test_l7rules,
-                                    'redirect_http_code': 302}
+        self.test_l7policy1_dict = {
+            'id': self.l7policy1_id,
+            'name': 'l7policy_1',
+            'description': 'L7policy 1',
+            'listener_id': self.listener1_id,
+            'action': lib_consts.L7POLICY_ACTION_REDIRECT_TO_URL,
+            'redirect_pool_id': None,
+            'redirect_url': 'http://example.com/index.html',
+            'redirect_prefix': None,
+            'project_id': self.project_id,
+            'position': 1,
+            'listener': None,
+            'redirect_pool': None,
+            'l7rules': self.test_l7rules,
+            'redirect_http_code': 302}
 
         self.test_l7policy1_dict.update(self._common_test_dict)
 
@@ -374,7 +391,7 @@ class SampleDriverDataModels(object):
         self.db_l7policies = [self.db_l7policy1, self.db_l7policy2]
 
         self.provider_l7policy1_dict = {
-            'action': 'go',
+            'action': lib_consts.L7POLICY_ACTION_REDIRECT_TO_URL,
             'admin_state_up': True,
             'description': 'L7policy 1',
             'l7policy_id': self.l7policy1_id,
@@ -382,9 +399,9 @@ class SampleDriverDataModels(object):
             'name': 'l7policy_1',
             'position': 1,
             'project_id': self.project_id,
-            'redirect_pool_id': self.pool1_id,
-            'redirect_url': '/index.html',
-            'redirect_prefix': 'https://example.com/',
+            'redirect_pool_id': None,
+            'redirect_url': 'http://example.com/index.html',
+            'redirect_prefix': None,
             'rules': self.provider_l7rules_dicts,
             'redirect_http_code': 302
         }
@@ -416,19 +433,16 @@ class SampleDriverDataModels(object):
             'default_pool_id': self.pool1_id,
             'load_balancer_id': self.lb_id,
             'project_id': self.project_id,
-            'protocol': 'avian',
+            'protocol': 'TCP',
             'protocol_port': 90,
             'connection_limit': 10000,
             'tls_certificate_id': self.default_tls_container_ref,
-            'stats': None,
             'default_pool': self.test_pool1_dict,
-            'load_balancer': None,
-            'sni_containers': [self.sni_container_ref_1,
-                               self.sni_container_ref_2],
+            'sni_containers': [{'tls_container_id': self.sni_container_ref_1},
+                               {'tls_container_id': self.sni_container_ref_2}],
             'peer_port': 55,
             'l7policies': self.test_l7policies,
             'insert_headers': {},
-            'pools': None,
             'timeout_client_data': 1000,
             'timeout_member_connect': 2000,
             'timeout_member_data': 3000,
@@ -485,7 +499,7 @@ class SampleDriverDataModels(object):
             'loadbalancer_id': self.lb_id,
             'name': 'listener_1',
             'project_id': self.project_id,
-            'protocol': 'avian',
+            'protocol': 'TCP',
             'protocol_port': 90,
             'sni_container_data': [cert2.to_dict(), cert3.to_dict()],
             'sni_container_refs': [self.sni_container_ref_1,
@@ -546,3 +560,48 @@ class SampleDriverDataModels(object):
             port_id=self.port_id,
             subnet_id=self.subnet_id,
             qos_policy_id=self.qos_policy_id)
+
+        self.test_loadbalancer1_dict = {
+            'name': self.lb_name, 'description': self.lb_description,
+            'enabled': True,
+            'provisioning_status': lib_consts.PENDING_UPDATE,
+            'operating_status': lib_consts.OFFLINE,
+            'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
+            'vrrp_group': None,
+            'provider': 'amphora',
+            'server_group_id': uuidutils.generate_uuid(),
+            'project_id': self.project_id,
+            'id': self.lb_id, 'flavor_id': self.flavor_id,
+            'tags': ['test_tag']}
+
+        self.provider_loadbalancer_dict = {
+            'additional_vips': None,
+            'admin_state_up': True,
+            'description': self.lb_description,
+            'flavor': {"something": "else"},
+            'listeners': None,
+            'loadbalancer_id': self.lb_id,
+            'name': self.lb_name,
+            'pools': None,
+            'project_id': self.project_id,
+            'vip_address': self.ip_address,
+            'vip_network_id': self.network_id,
+            'vip_port_id': self.port_id,
+            'vip_qos_policy_id': self.qos_policy_id,
+            'vip_subnet_id': self.subnet_id}
+
+        self.provider_loadbalancer_tree_dict = {
+            'additional_vips': None,
+            'admin_state_up': True,
+            'description': self.lb_description,
+            'flavor': {"something": "else"},
+            'listeners': None,
+            'loadbalancer_id': self.lb_id,
+            'name': self.lb_name,
+            'pools': None,
+            'project_id': self.project_id,
+            'vip_address': self.ip_address,
+            'vip_network_id': self.network_id,
+            'vip_port_id': self.port_id,
+            'vip_qos_policy_id': self.qos_policy_id,
+            'vip_subnet_id': self.subnet_id}
