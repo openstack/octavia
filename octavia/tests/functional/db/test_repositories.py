@@ -3583,6 +3583,14 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
                          new_l7policy.action)
         self.assertEqual(1, new_l7policy.position)
 
+    def test_l7policy_create_no_listener_id(self):
+        self.assertRaises(
+            db_exception.DBError, self.l7policy_repo.create,
+            self.session, action=constants.L7POLICY_ACTION_REJECT,
+            operating_status=constants.ONLINE,
+            provisioning_status=constants.ACTIVE,
+            enabled=True)
+
     def test_update(self):
         new_url = 'http://www.example.com/'
         listener = self.create_listener(uuidutils.generate_uuid(), 80)
@@ -3951,6 +3959,16 @@ class L7RuleRepositoryTest(BaseRepositoryTest):
         self.assertIsNone(new_l7rule.key)
         self.assertEqual('something', new_l7rule.value)
         self.assertFalse(new_l7rule.invert)
+
+    def test_l7rule_create_wihout_l7policy_id(self):
+        self.assertRaises(
+            db_exception.DBError, self.l7rule_repo.create,
+            self.session, id=None, type=constants.L7RULE_TYPE_PATH,
+            compare_type=constants.L7RULE_COMPARE_TYPE_CONTAINS,
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            value='something',
+            enabled=True)
 
     def test_update(self):
         l7rule = self.create_l7rule(uuidutils.generate_uuid(),
