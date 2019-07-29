@@ -148,3 +148,17 @@ class HostRoute(data_models.BaseDataModel):
 class QosPolicy(data_models.BaseDataModel):
     def __init__(self, id):
         self.id = id
+
+
+class Network_IP_Availability(data_models.BaseDataModel):
+
+    def __init__(self, network_id=None, tenant_id=None, project_id=None,
+                 network_name=None, total_ips=None, used_ips=None,
+                 subnet_ip_availability=None):
+        self.network_id = network_id
+        self.tenant_id = tenant_id
+        self.project_id = project_id
+        self.network_name = network_name
+        self.total_ips = total_ips
+        self.used_ips = used_ips
+        self.subnet_ip_availability = subnet_ip_availability
