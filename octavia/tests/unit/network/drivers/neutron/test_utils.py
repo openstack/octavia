@@ -117,3 +117,17 @@ class TestNeutronUtils(base.TestCase):
             fixed_port_id=t_constants.MOCK_PORT_ID2
         )
         self._compare_ignore_value_none(model_obj.to_dict(), assert_dict)
+
+    def test_convert_network_ip_availability_dict_to_model(self):
+        model_obj = utils.convert_network_ip_availability_dict_to_model(
+            t_constants.MOCK_NETWORK_IP_AVAILABILITY)
+        assert_dict = dict(
+            network_id=t_constants.MOCK_NETWORK_ID,
+            tenant_id=t_constants.MOCK_PROJECT_ID,
+            network_name=t_constants.MOCK_NETWORK_NAME,
+            total_ips=t_constants.MOCK_NETWORK_TOTAL_IPS,
+            used_ips=t_constants.MOCK_NETWORK_USED_IPS,
+            subnet_ip_availability=t_constants.MOCK_SUBNET_IP_AVAILABILITY
+        )
+        self._compare_ignore_value_none(model_obj.to_dict(recurse=True),
+                                        assert_dict)

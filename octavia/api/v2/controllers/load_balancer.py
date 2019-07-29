@@ -136,9 +136,29 @@ class LoadBalancersController(base.BaseController):
                         "VIP address specified."
                     ))
             else:
-                # If subnet and IP are not provided, pick the first subnet,
-                # preferring ipv4
-                for subnet_id in network.subnets:
+                # If subnet and IP are not provided, pick the first subnet with
+                # enough available IPs, preferring ipv4
+                if not network.subnets:
+                    raise exceptions.ValidationException(detail=_(
+                        "Supplied network does not contain a subnet."
+                    ))
+                ip_avail = network_driver.get_network_ip_availability(
+                    network)
+                if (CONF.controller_worker.loadbalancer_topology ==
+                        constants.TOPOLOGY_SINGLE):
+                    num_req_ips = 2
+                if (CONF.controller_worker.loadbalancer_topology ==
+                        constants.TOPOLOGY_ACTIVE_STANDBY):
+                    num_req_ips = 3
+                subnets = [subnet_id for subnet_id in network.subnets if
+                           utils.subnet_ip_availability(ip_avail, subnet_id,
+                                                        num_req_ips)]
+                if not subnets:
+                    raise exceptions.ValidationException(detail=_(
+                        "Subnet(s) in the supplied network do not contain "
+                        "enough available IPs."
+                    ))
+                for subnet_id in subnets:
                     # Use the first subnet, in case there are no ipv4 subnets
                     if not load_balancer.vip_subnet_id:
                         load_balancer.vip_subnet_id = subnet_id
@@ -146,10 +166,6 @@ class LoadBalancersController(base.BaseController):
                     if subnet.ip_version == 4:
                         load_balancer.vip_subnet_id = subnet_id
                         break
-                if not load_balancer.vip_subnet_id:
-                    raise exceptions.ValidationException(detail=_(
-                        "Supplied network does not contain a subnet."
-                    ))
 
     @staticmethod
     def _validate_port_and_fill_or_validate_subnet(load_balancer):

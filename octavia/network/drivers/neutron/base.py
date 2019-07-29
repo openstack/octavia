@@ -256,3 +256,6 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
 
     def qos_enabled(self):
         return self._qos_enabled
+
+    def get_network_ip_availability(self, network):
+        return self._get_resource('network_ip_availability', network.id)
