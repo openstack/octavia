@@ -16,9 +16,9 @@ import os
 import subprocess
 
 import mock
-import netifaces
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
+from werkzeug import exceptions as wz_exceptions
 
 from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.agent.api_server import plug
@@ -33,40 +33,64 @@ FAKE_GATEWAY_IPV6 = '2001:db8::1'
 FAKE_IP_IPV6 = '2001:db8::2'
 FAKE_IP_IPV6_EXPANDED = '2001:0db8:0000:0000:0000:0000:0000:0002'
 FAKE_MAC_ADDRESS = 'ab:cd:ef:00:ff:22'
-FAKE_INTERFACE = 'eth0'
+FAKE_INTERFACE = 'eth33'
 
 
 class TestPlug(base.TestCase):
     def setUp(self):
         super(TestPlug, self).setUp()
-        self.mock_netifaces = mock.patch.object(plug, "netifaces").start()
         self.mock_platform = mock.patch("distro.id").start()
         self.mock_platform.return_value = "ubuntu"
         self.osutil = osutils.BaseOS.get_os_util()
         self.test_plug = plug.Plug(self.osutil)
-        self.addCleanup(self.mock_netifaces.stop)
+        self.addCleanup(self.mock_platform.stop)
 
-        # Set up our fake interface
-        self.mock_netifaces.AF_LINK = netifaces.AF_LINK
-        self.mock_netifaces.interfaces.return_value = [FAKE_INTERFACE]
-        self.mock_netifaces.ifaddresses.return_value = {
-            netifaces.AF_LINK: [
-                {'addr': FAKE_MAC_ADDRESS.lower()}
-            ]
-        }
+    @mock.patch('pyroute2.IPRoute.__enter__', create=True)
+    def test__interface_by_mac_case_insensitive_ubuntu(self, mock_ipr):
+        mock_ipr_instance = mock.MagicMock()
+        mock_ipr_instance.link_lookup.return_value = [33]
+        mock_ipr_instance.get_links.return_value = ({
+            'attrs': [('IFLA_IFNAME', FAKE_INTERFACE)]},)
+        mock_ipr.return_value = mock_ipr_instance
 
-    def test__interface_by_mac_case_insensitive_ubuntu(self):
         interface = self.test_plug._interface_by_mac(FAKE_MAC_ADDRESS.upper())
         self.assertEqual(FAKE_INTERFACE, interface)
+        mock_ipr_instance.get_links.assert_called_once_with(33)
 
-    def test__interface_by_mac_case_insensitive_rh(self):
+    @mock.patch('pyroute2.IPRoute.__enter__', create=True)
+    def test__interface_by_mac_not_found(self, mock_ipr):
+        mock_ipr_instance = mock.MagicMock()
+        mock_ipr_instance.link_lookup.return_value = []
+        mock_ipr.return_value = mock_ipr_instance
+
+        fd_mock = mock.mock_open()
+        open_mock = mock.Mock()
+        with mock.patch('os.open', open_mock), mock.patch.object(
+                os, 'fdopen', fd_mock):
+            self.assertRaises(wz_exceptions.HTTPException,
+                              self.test_plug._interface_by_mac,
+                              FAKE_MAC_ADDRESS.upper())
+        open_mock.assert_called_once_with('/sys/bus/pci/rescan', os.O_WRONLY)
+        fd_mock().write.assert_called_once_with('1')
+
+    @mock.patch('pyroute2.IPRoute.__enter__', create=True)
+    def test__interface_by_mac_case_insensitive_rh(self, mock_ipr):
+        mock_ipr_instance = mock.MagicMock()
+        mock_ipr_instance.link_lookup.return_value = [33]
+        mock_ipr_instance.get_links.return_value = ({
+            'attrs': [('IFLA_IFNAME', FAKE_INTERFACE)]},)
+        mock_ipr.return_value = mock_ipr_instance
+
         with mock.patch('distro.id', return_value='centos'):
             osutil = osutils.BaseOS.get_os_util()
             self.test_plug = plug.Plug(osutil)
             interface = self.test_plug._interface_by_mac(
                 FAKE_MAC_ADDRESS.upper())
             self.assertEqual(FAKE_INTERFACE, interface)
+            mock_ipr_instance.get_links.assert_called_once_with(33)
 
+    @mock.patch('octavia.amphorae.backends.agent.api_server.plug.Plug.'
+                '_interface_by_mac', return_value=FAKE_INTERFACE)
     @mock.patch('pyroute2.NSPopen', create=True)
     @mock.patch.object(plug, "webob")
     @mock.patch('pyroute2.IPRoute', create=True)
@@ -77,7 +101,8 @@ class TestPlug(base.TestCase):
     @mock.patch('os.makedirs')
     def test_plug_vip_ipv4(self, mock_makedirs, mock_copytree,
                            mock_check_output, mock_netns, mock_netns_create,
-                           mock_pyroute2, mock_webob, mock_nspopen):
+                           mock_pyroute2, mock_webob, mock_nspopen,
+                           mock_by_mac):
         m = mock.mock_open()
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             self.test_plug.plug_vip(
@@ -103,6 +128,8 @@ class TestPlug(base.TestCase):
                            stdout=subprocess.PIPE)]
         mock_nspopen.assert_has_calls(calls, any_order=True)
 
+    @mock.patch('octavia.amphorae.backends.agent.api_server.plug.Plug.'
+                '_interface_by_mac', return_value=FAKE_INTERFACE)
     @mock.patch('pyroute2.NSPopen', create=True)
     @mock.patch.object(plug, "webob")
     @mock.patch('pyroute2.IPRoute', create=True)
@@ -113,7 +140,8 @@ class TestPlug(base.TestCase):
     @mock.patch('os.makedirs')
     def test_plug_vip_ipv6(self, mock_makedirs, mock_copytree,
                            mock_check_output, mock_netns, mock_netns_create,
-                           mock_pyroute2, mock_webob, mock_nspopen):
+                           mock_pyroute2, mock_webob, mock_nspopen,
+                           mock_by_mac):
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group='controller_worker',
                     loadbalancer_topology=constants.TOPOLOGY_ACTIVE_STANDBY)

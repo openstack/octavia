@@ -26,7 +26,6 @@ import six
 import webob
 from werkzeug import exceptions
 
-import netifaces
 from octavia.common import constants as consts
 
 
@@ -82,8 +81,8 @@ class Plug(object):
             return webob.Response(
                 json=dict(message="Interface already exists"), status=409)
 
-        # This is the interface prior to moving into the netns
-        default_netns_interface = self._interface_by_mac(mac_address)
+        # Check that the interface has been fully plugged
+        self._interface_by_mac(mac_address)
 
         # Always put the VIP interface as eth1
         primary_interface = consts.NETNS_PRIMARY_INTERFACE
@@ -143,7 +142,7 @@ class Plug(object):
 
         with pyroute2.IPRoute() as ipr:
             # Move the interfaces into the namespace
-            idx = ipr.link_lookup(ifname=default_netns_interface)[0]
+            idx = ipr.link_lookup(address=mac_address)[0]
             ipr.link('set', index=idx, net_ns_fd=consts.AMPHORA_NAMESPACE,
                      IFLA_IFNAME=primary_interface)
 
@@ -213,7 +212,7 @@ class Plug(object):
 
         with pyroute2.IPRoute() as ipr:
             # Move the interfaces into the namespace
-            idx = ipr.link_lookup(ifname=default_netns_interface)[0]
+            idx = ipr.link_lookup(address=mac_address)[0]
             ipr.link('set', index=idx,
                      net_ns_fd=consts.AMPHORA_NAMESPACE,
                      IFLA_IFNAME=netns_interface)
@@ -227,12 +226,17 @@ class Plug(object):
                 interface=netns_interface)), status=202)
 
     def _interface_by_mac(self, mac):
-        for interface in netifaces.interfaces():
-            if netifaces.AF_LINK in netifaces.ifaddresses(interface):
-                for link in netifaces.ifaddresses(
-                        interface)[netifaces.AF_LINK]:
-                    if link.get('addr', '').lower() == mac.lower():
-                        return interface
+        try:
+            with pyroute2.IPRoute() as ipr:
+                idx = ipr.link_lookup(address=mac)[0]
+                addr = ipr.get_links(idx)[0]
+                for attr in addr['attrs']:
+                    if attr[0] == 'IFLA_IFNAME':
+                        return attr[1]
+        except Exception as e:
+            LOG.info('Unable to find interface with MAC: %s, rescanning '
+                     'and returning 404. Reported error: %s', mac, str(e))
+
         # Poke the kernel to re-enumerate the PCI bus.
         # We have had cases where nova hot plugs the interface but
         # the kernel doesn't get the memo.
