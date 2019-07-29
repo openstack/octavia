@@ -26,7 +26,7 @@ from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import amphora_info
 from octavia.amphorae.backends.agent.api_server import certificate_update
 from octavia.amphorae.backends.agent.api_server import keepalived
-from octavia.amphorae.backends.agent.api_server import listener
+from octavia.amphorae.backends.agent.api_server import loadbalancer
 from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.agent.api_server import plug
 from octavia.amphorae.backends.agent.api_server import udp_listener_base
@@ -56,7 +56,7 @@ class Server(object):
         self.app = flask.Flask(__name__)
         self._osutils = osutils.BaseOS.get_os_util()
         self._keepalived = keepalived.Keepalived()
-        self._listener = listener.Listener()
+        self._loadbalancer = loadbalancer.Loadbalancer()
         self._udp_listener = (udp_listener_base.UdpListenerApiServerBase.
                               get_server_driver())
         self._plug = plug.Plug(self._osutils)
@@ -64,8 +64,10 @@ class Server(object):
 
         register_app_error_handler(self.app)
 
+        self.app.add_url_rule(rule='/', view_func=self.version_discovery,
+                              methods=['GET'])
         self.app.add_url_rule(rule=PATH_PREFIX +
-                              '/listeners/<amphora_id>/<listener_id>/haproxy',
+                              '/loadbalancer/<amphora_id>/<lb_id>/haproxy',
                               view_func=self.upload_haproxy_config,
                               methods=['PUT'])
         self.app.add_url_rule(rule=PATH_PREFIX +
@@ -74,7 +76,7 @@ class Server(object):
                               view_func=self.upload_udp_listener_config,
                               methods=['PUT'])
         self.app.add_url_rule(rule=PATH_PREFIX +
-                              '/listeners/<listener_id>/haproxy',
+                              '/loadbalancer/<lb_id>/haproxy',
                               view_func=self.get_haproxy_config,
                               methods=['GET'])
         self.app.add_url_rule(rule=PATH_PREFIX +
@@ -82,11 +84,11 @@ class Server(object):
                               view_func=self.get_udp_listener_config,
                               methods=['GET'])
         self.app.add_url_rule(rule=PATH_PREFIX +
-                              '/listeners/<listener_id>/<action>',
-                              view_func=self.start_stop_listener,
+                              '/loadbalancer/<object_id>/<action>',
+                              view_func=self.start_stop_lb_object,
                               methods=['PUT'])
-        self.app.add_url_rule(rule=PATH_PREFIX + '/listeners/<listener_id>',
-                              view_func=self.delete_listener,
+        self.app.add_url_rule(rule=PATH_PREFIX + '/listeners/<object_id>',
+                              view_func=self.delete_lb_object,
                               methods=['DELETE'])
         self.app.add_url_rule(rule=PATH_PREFIX + '/config',
                               view_func=self.upload_config,
@@ -100,18 +102,15 @@ class Server(object):
         self.app.add_url_rule(rule=PATH_PREFIX + '/listeners',
                               view_func=self.get_all_listeners_status,
                               methods=['GET'])
-        self.app.add_url_rule(rule=PATH_PREFIX + '/listeners/<listener_id>',
-                              view_func=self.get_listener_status,
-                              methods=['GET'])
-        self.app.add_url_rule(rule=PATH_PREFIX + '/listeners/<listener_id>'
+        self.app.add_url_rule(rule=PATH_PREFIX + '/loadbalancer/<lb_id>'
                               '/certificates/<filename>',
                               view_func=self.upload_certificate,
                               methods=['PUT'])
-        self.app.add_url_rule(rule=PATH_PREFIX + '/listeners/<listener_id>'
+        self.app.add_url_rule(rule=PATH_PREFIX + '/loadbalancer/<lb_id>'
                               '/certificates/<filename>',
                               view_func=self.get_certificate_md5,
                               methods=['GET'])
-        self.app.add_url_rule(rule=PATH_PREFIX + '/listeners/<listener_id>'
+        self.app.add_url_rule(rule=PATH_PREFIX + '/loadbalancer/<lb_id>'
                               '/certificates/<filename>',
                               view_func=self.delete_certificate,
                               methods=['DELETE'])
@@ -133,30 +132,30 @@ class Server(object):
                               view_func=self.get_interface,
                               methods=['GET'])
 
-    def upload_haproxy_config(self, amphora_id, listener_id):
-        return self._listener.upload_haproxy_config(amphora_id, listener_id)
+    def upload_haproxy_config(self, amphora_id, lb_id):
+        return self._loadbalancer.upload_haproxy_config(amphora_id, lb_id)
 
     def upload_udp_listener_config(self, amphora_id, listener_id):
         return self._udp_listener.upload_udp_listener_config(listener_id)
 
-    def get_haproxy_config(self, listener_id):
-        return self._listener.get_haproxy_config(listener_id)
+    def get_haproxy_config(self, lb_id):
+        return self._loadbalancer.get_haproxy_config(lb_id)
 
     def get_udp_listener_config(self, listener_id):
         return self._udp_listener.get_udp_listener_config(listener_id)
 
-    def start_stop_listener(self, listener_id, action):
-        protocol = util.get_listener_protocol(listener_id)
+    def start_stop_lb_object(self, object_id, action):
+        protocol = util.get_protocol_for_lb_object(object_id)
         if protocol == 'UDP':
             return self._udp_listener.manage_udp_listener(
-                listener_id, action)
-        return self._listener.start_stop_listener(listener_id, action)
+                listener_id=object_id, action=action)
+        return self._loadbalancer.start_stop_lb(lb_id=object_id, action=action)
 
-    def delete_listener(self, listener_id):
-        protocol = util.get_listener_protocol(listener_id)
+    def delete_lb_object(self, object_id):
+        protocol = util.get_protocol_for_lb_object(object_id)
         if protocol == 'UDP':
-            return self._udp_listener.delete_udp_listener(listener_id)
-        return self._listener.delete_listener(listener_id)
+            return self._udp_listener.delete_udp_listener(object_id)
+        return self._loadbalancer.delete_lb(object_id)
 
     def get_details(self):
         return self._amphora_info.compile_amphora_details(
@@ -168,23 +167,17 @@ class Server(object):
 
     def get_all_listeners_status(self):
         udp_listeners = self._udp_listener.get_all_udp_listeners_status()
-        return self._listener.get_all_listeners_status(
+        return self._loadbalancer.get_all_listeners_status(
             other_listeners=udp_listeners)
 
-    def get_listener_status(self, listener_id):
-        protocol = util.get_listener_protocol(listener_id)
-        if protocol == 'UDP':
-            return self._udp_listener.get_udp_listener_status(listener_id)
-        return self._listener.get_listener_status(listener_id)
+    def upload_certificate(self, lb_id, filename):
+        return self._loadbalancer.upload_certificate(lb_id, filename)
 
-    def upload_certificate(self, listener_id, filename):
-        return self._listener.upload_certificate(listener_id, filename)
+    def get_certificate_md5(self, lb_id, filename):
+        return self._loadbalancer.get_certificate_md5(lb_id, filename)
 
-    def get_certificate_md5(self, listener_id, filename):
-        return self._listener.get_certificate_md5(listener_id, filename)
-
-    def delete_certificate(self, listener_id, filename):
-        return self._listener.delete_certificate(listener_id, filename)
+    def delete_certificate(self, lb_id, filename):
+        return self._loadbalancer.delete_certificate(lb_id, filename)
 
     def plug_vip(self, vip):
         # Catch any issues with the subnet info json
@@ -251,3 +244,6 @@ class Server(object):
                 details=str(e)), status=500)
 
         return webob.Response(json={'message': 'OK'}, status=202)
+
+    def version_discovery(self):
+        return webob.Response(json={'api_version': api_server.VERSION})

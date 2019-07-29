@@ -45,13 +45,14 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
 
+            self._populate_amphora_api_version(amp)
             # Get the VIP subnet prefix for the amphora
             vip_cidr = amphorae_network_config[amp.id].vip_subnet.cidr
 
             # Generate Keepalived configuration from loadbalancer object
             config = templater.build_keepalived_config(
                 loadbalancer, amp, vip_cidr)
-            self.client.upload_vrrp_config(amp, config)
+            self.clients[amp.api_version].upload_vrrp_config(amp, config)
 
     def stop_vrrp_service(self, loadbalancer):
         """Stop the vrrp services running on the loadbalancer's amphorae
@@ -65,7 +66,8 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
 
-            self.client.stop_vrrp(amp)
+            self._populate_amphora_api_version(amp)
+            self.clients[amp.api_version].stop_vrrp(amp)
 
     def start_vrrp_service(self, loadbalancer):
         """Start the VRRP services of all amphorae of the loadbalancer
@@ -80,7 +82,8 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
                 loadbalancer.amphorae):
 
             LOG.debug("Start VRRP Service on amphora %s .", amp.lb_network_ip)
-            self.client.start_vrrp(amp)
+            self._populate_amphora_api_version(amp)
+            self.clients[amp.api_version].start_vrrp(amp)
 
     def reload_vrrp_service(self, loadbalancer):
         """Reload the VRRP services of all amphorae of the loadbalancer
@@ -94,8 +97,10 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
 
-            self.client.reload_vrrp(amp)
+            self._populate_amphora_api_version(amp)
+            self.clients[amp.api_version].reload_vrrp(amp)
 
     def get_vrrp_interface(self, amphora, timeout_dict=None):
-        return self.client.get_interface(
+        self._populate_amphora_api_version(amphora)
+        return self.clients[amphora.api_version].get_interface(
             amphora, amphora.vrrp_ip, timeout_dict=timeout_dict)['interface']

@@ -33,7 +33,7 @@ class ListenerFlows(object):
         create_listener_flow.add(lifecycle_tasks.ListenersToErrorOnRevertTask(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         create_listener_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=constants.LOADBALANCER))
         create_listener_flow.add(network_tasks.UpdateVIP(
             requires=constants.LOADBALANCER))
         create_listener_flow.add(database_tasks.
@@ -57,7 +57,7 @@ class ListenerFlows(object):
             requires=constants.LOADBALANCER_ID,
             provides=constants.LOADBALANCER))
         create_all_listeners_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=constants.LOADBALANCER))
         create_all_listeners_flow.add(network_tasks.UpdateVIP(
             requires=constants.LOADBALANCER))
         return create_all_listeners_flow
@@ -71,7 +71,7 @@ class ListenerFlows(object):
         delete_listener_flow.add(lifecycle_tasks.ListenerToErrorOnRevertTask(
             requires=constants.LISTENER))
         delete_listener_flow.add(amphora_driver_tasks.ListenerDelete(
-            requires=[constants.LOADBALANCER, constants.LISTENER]))
+            requires=constants.LISTENER))
         delete_listener_flow.add(network_tasks.UpdateVIPForDelete(
             requires=constants.LOADBALANCER))
         delete_listener_flow.add(database_tasks.DeleteListenerInDB(
@@ -115,7 +115,7 @@ class ListenerFlows(object):
         update_listener_flow.add(lifecycle_tasks.ListenersToErrorOnRevertTask(
             requires=[constants.LOADBALANCER, constants.LISTENERS]))
         update_listener_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=constants.LOADBALANCER))
         update_listener_flow.add(database_tasks.UpdateListenerInDB(
             requires=[constants.LISTENER, constants.UPDATE_DICT]))
         update_listener_flow.add(database_tasks.

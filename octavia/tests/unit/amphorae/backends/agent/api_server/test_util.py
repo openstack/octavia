@@ -22,11 +22,15 @@ from oslo_utils import uuidutils
 
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants as consts
+from octavia.common.jinja.haproxy.combined_listeners import jinja_cfg
 from octavia.tests.common import utils as test_utils
 import octavia.tests.unit.base as base
+from octavia.tests.unit.common.sample_configs import sample_configs_combined
 
-
+BASE_AMP_PATH = '/var/lib/octavia'
+BASE_CRT_PATH = BASE_AMP_PATH + '/certs'
 CONF = cfg.CONF
+LISTENER_ID1 = uuidutils.generate_uuid()
 
 
 class TestUtil(base.TestCase):
@@ -34,6 +38,9 @@ class TestUtil(base.TestCase):
         super(TestUtil, self).setUp()
         self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.listener_id = uuidutils.generate_uuid()
+        self.jinja_cfg = jinja_cfg.JinjaTemplater(
+            base_amp_path=BASE_AMP_PATH,
+            base_crt_dir=BASE_CRT_PATH)
 
     def test_keepalived_lvs_dir(self):
         fake_path = '/fake/path'
@@ -171,7 +178,7 @@ class TestUtil(base.TestCase):
         mock_cfg_path.return_value = '/there'
         mock_path_exists.side_effect = [True, False, True, False, False]
 
-        result = util.get_listener_protocol('1')
+        result = util.get_protocol_for_lb_object('1')
 
         mock_cfg_path.assert_called_once_with('1')
         mock_path_exists.assert_called_once_with('/there')
@@ -180,7 +187,7 @@ class TestUtil(base.TestCase):
 
         mock_cfg_path.reset_mock()
 
-        result = util.get_listener_protocol('2')
+        result = util.get_protocol_for_lb_object('2')
 
         mock_cfg_path.assert_called_once_with('2')
         mock_lvs_path.assert_called_once_with('2')
@@ -189,8 +196,97 @@ class TestUtil(base.TestCase):
         mock_cfg_path.reset_mock()
         mock_lvs_path.reset_mock()
 
-        result = util.get_listener_protocol('3')
+        result = util.get_protocol_for_lb_object('3')
 
         mock_cfg_path.assert_called_once_with('3')
         mock_lvs_path.assert_called_once_with('3')
         self.assertIsNone(result)
+
+    def test_parse_haproxy_config(self):
+        # template_tls
+        tls_tupe = sample_configs_combined.sample_tls_container_tuple(
+            id='tls_container_id',
+            certificate='imaCert1', private_key='imaPrivateKey1',
+            primary_cn='FakeCN')
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple(
+                proto='TERMINATED_HTTPS', tls=True, sni=True)],
+            tls_tupe)
+
+        path = util.config_path(LISTENER_ID1)
+        self.useFixture(test_utils.OpenFixture(path, rendered_obj))
+
+        res = util.parse_haproxy_file(LISTENER_ID1)
+        listener_dict = res[1]['sample_listener_id_1']
+        self.assertEqual('TERMINATED_HTTPS', listener_dict['mode'])
+        self.assertEqual('/var/lib/octavia/sample_loadbalancer_id_1.sock',
+                         res[0])
+        self.assertEqual(
+            '/var/lib/octavia/certs/sample_loadbalancer_id_1/'
+            'tls_container_id.pem crt /var/lib/octavia/certs/'
+            'sample_loadbalancer_id_1',
+            listener_dict['ssl_crt'])
+
+        # render_template_tls_no_sni
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple(
+                proto='TERMINATED_HTTPS', tls=True)],
+            tls_cert=sample_configs_combined.sample_tls_container_tuple(
+                id='tls_container_id',
+                certificate='ImAalsdkfjCert',
+                private_key='ImAsdlfksdjPrivateKey',
+                primary_cn="FakeCN"))
+
+        self.useFixture(test_utils.OpenFixture(path, rendered_obj))
+
+        res = util.parse_haproxy_file(LISTENER_ID1)
+        listener_dict = res[1]['sample_listener_id_1']
+        self.assertEqual('TERMINATED_HTTPS', listener_dict['mode'])
+        self.assertEqual(BASE_AMP_PATH + '/sample_loadbalancer_id_1.sock',
+                         res[0])
+        self.assertEqual(
+            BASE_CRT_PATH + '/sample_loadbalancer_id_1/tls_container_id.pem',
+            listener_dict['ssl_crt'])
+
+        # render_template_http
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple()])
+
+        self.useFixture(test_utils.OpenFixture(path, rendered_obj))
+
+        res = util.parse_haproxy_file(LISTENER_ID1)
+        listener_dict = res[1]['sample_listener_id_1']
+        self.assertEqual('HTTP', listener_dict['mode'])
+        self.assertEqual(BASE_AMP_PATH + '/sample_loadbalancer_id_1.sock',
+                         res[0])
+        self.assertIsNone(listener_dict.get('ssl_crt', None))
+
+        # template_https
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple(proto='HTTPS')])
+        self.useFixture(test_utils.OpenFixture(path, rendered_obj))
+
+        res = util.parse_haproxy_file(LISTENER_ID1)
+        listener_dict = res[1]['sample_listener_id_1']
+        self.assertEqual('TCP', listener_dict['mode'])
+        self.assertEqual(BASE_AMP_PATH + '/sample_loadbalancer_id_1.sock',
+                         res[0])
+        self.assertIsNone(listener_dict.get('ssl_crt', None))
+
+        # Bogus format
+        self.useFixture(test_utils.OpenFixture(path, 'Bogus'))
+        try:
+            res = util.parse_haproxy_file(LISTENER_ID1)
+            self.fail("No Exception?")
+        except util.ParsingError:
+            pass
+
+        # Bad listener mode
+        fake_cfg = 'stats socket foo\nfrontend {}\nmode\n'.format(LISTENER_ID1)
+        self.useFixture(test_utils.OpenFixture(path, fake_cfg))
+        self.assertRaises(util.ParsingError, util.parse_haproxy_file,
+                          LISTENER_ID1)

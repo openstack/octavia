@@ -1,0 +1,370 @@
+{#   Copyright (c) 2015 Rackspace
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+#}
+{% macro peers_macro(constants, loadbalancer) %}
+    {% if loadbalancer.topology == constants.TOPOLOGY_ACTIVE_STANDBY %}
+peers {{ "%s_peers"|format(loadbalancer.id.replace("-", ""))|trim() }}
+        {% for amp in loadbalancer.amphorae if (
+            amp.status == constants.AMPHORA_ALLOCATED) %}
+            {# HAProxy has peer name limitations, thus the hash filter #}
+    peer {{ amp.id|hash_amp_id|replace('=', '') }} {{
+    amp.vrrp_ip }}:{{ constants.HAPROXY_BASE_PEER_PORT }}
+        {% endfor %}
+    {% endif %}
+{% endmacro %}
+
+
+{% macro bind_macro(constants, listener, lb_vip_address) %}
+    {% if listener.default_tls_path %}
+        {% set def_crt_opt = ("ssl crt %s"|format(
+            listener.default_tls_path)|trim()) %}
+    {% else %}
+        {% set def_crt_opt = "" %}
+    {% endif %}
+    {% if listener.crt_dir %}
+        {% set crt_dir_opt = "crt %s"|format(listener.crt_dir)|trim() %}
+    {% else %}
+        {% set crt_dir_opt = "" %}
+    {% endif %}
+    {% if listener.client_ca_tls_path and listener.client_auth %}
+        {% set client_ca_opt = "ca-file %s verify %s"|format(listener.client_ca_tls_path, listener.client_auth)|trim() %}
+    {% else %}
+        {% set client_ca_opt = "" %}
+    {% endif %}
+    {% if listener.client_crl_path and listener.client_ca_tls_path %}
+        {% set ca_crl_opt = "crl-file %s"|format(listener.client_crl_path)|trim() %}
+    {% else %}
+        {% set ca_crl_opt = "" %}
+    {% endif %}
+bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
+"%s %s %s %s"|format(def_crt_opt, crt_dir_opt, client_ca_opt, ca_crl_opt)|trim() }}
+{% endmacro %}
+
+
+{% macro l7rule_compare_type_macro(constants, ctype) %}
+    {% if ctype == constants.L7RULE_COMPARE_TYPE_REGEX %}
+        {{- "-m reg" -}}
+    {% elif ctype == constants.L7RULE_COMPARE_TYPE_STARTS_WITH %}
+        {{- "-m beg" -}}
+    {% elif ctype == constants.L7RULE_COMPARE_TYPE_ENDS_WITH %}
+        {{- "-m end" -}}
+    {% elif ctype == constants.L7RULE_COMPARE_TYPE_CONTAINS %}
+        {{- "-m sub" -}}
+    {% elif ctype == constants.L7RULE_COMPARE_TYPE_EQUAL_TO %}
+        {{- "-m str" -}}
+    {% endif %}
+{% endmacro %}
+
+
+{% macro l7rule_macro(constants, l7rule) %}
+    {% if l7rule.type == constants.L7RULE_TYPE_HOST_NAME %}
+        acl {{ l7rule.id }} req.hdr(host) -i {{ l7rule_compare_type_macro(
+            constants, l7rule.compare_type) }} {{ l7rule.value }}
+    {% elif l7rule.type == constants.L7RULE_TYPE_PATH %}
+        acl {{ l7rule.id }} path {{ l7rule_compare_type_macro(
+            constants, l7rule.compare_type) }} {{ l7rule.value }}
+    {% elif l7rule.type == constants.L7RULE_TYPE_FILE_TYPE %}
+        acl {{ l7rule.id }} path_end {{ l7rule_compare_type_macro(
+            constants, l7rule.compare_type) }} {{ l7rule.value }}
+    {% elif l7rule.type == constants.L7RULE_TYPE_HEADER %}
+        acl {{ l7rule.id }} req.hdr({{ l7rule.key }}) {{
+            l7rule_compare_type_macro(
+            constants, l7rule.compare_type) }} {{ l7rule.value }}
+    {% elif l7rule.type == constants.L7RULE_TYPE_COOKIE %}
+        acl {{ l7rule.id }} req.cook({{ l7rule.key }}) {{
+            l7rule_compare_type_macro(
+            constants, l7rule.compare_type) }} {{ l7rule.value }}
+    {% elif l7rule.type == constants.L7RULE_TYPE_SSL_CONN_HAS_CERT %}
+        acl {{ l7rule.id }} ssl_c_used
+    {% elif l7rule.type == constants.L7RULE_TYPE_SSL_VERIFY_RESULT %}
+        acl {{ l7rule.id }} ssl_c_verify eq {{ l7rule.value }}
+    {% elif l7rule.type == constants.L7RULE_TYPE_SSL_DN_FIELD %}
+        acl {{ l7rule.id }} ssl_c_s_dn({{ l7rule.key }}) {{
+            l7rule_compare_type_macro(
+            constants, l7rule.compare_type) }} {{ l7rule.value }}
+    {% endif %}
+{% endmacro %}
+
+
+{% macro l7rule_invert_macro(invert) %}
+    {% if invert %}
+        {{- "!" -}}
+    {% endif %}
+{% endmacro %}
+
+
+{% macro l7rule_list_macro(l7policy) %}
+    {% for l7rule in l7policy.l7rules %}
+        {{- " " -}}{{- l7rule_invert_macro(l7rule.invert) -}}{{- l7rule.id -}}
+    {% endfor %}
+{% endmacro %}
+
+
+{% macro l7policy_macro(constants, l7policy, listener) %}
+    {% for l7rule in l7policy.l7rules %}
+        {{- l7rule_macro(constants, l7rule) -}}
+    {% endfor %}
+    {% if l7policy.redirect_http_code %}
+        {% set redirect_http_code_opt = " code %s"|format(
+        l7policy.redirect_http_code) %}
+    {% else %}
+        {% set redirect_http_code_opt = "" %}
+    {% endif %}
+    {% if l7policy.action == constants.L7POLICY_ACTION_REJECT %}
+    http-request deny if{{ l7rule_list_macro(l7policy) }}
+    {% elif l7policy.action == constants.L7POLICY_ACTION_REDIRECT_TO_URL %}
+    redirect {{- redirect_http_code_opt }} location {{ l7policy.redirect_url }} if{{ l7rule_list_macro(l7policy) }}
+    {% elif l7policy.action == constants.L7POLICY_ACTION_REDIRECT_TO_POOL and l7policy.redirect_pool.enabled %}
+    use_backend {{ l7policy.redirect_pool.id }}:{{ listener.id }} if{{ l7rule_list_macro(l7policy) }}
+    {% elif l7policy.action == constants.L7POLICY_ACTION_REDIRECT_PREFIX %}
+    redirect {{- redirect_http_code_opt }} prefix {{ l7policy.redirect_prefix }} if{{ l7rule_list_macro(l7policy) }}
+    {% endif %}
+{% endmacro %}
+
+
+{% macro frontend_macro(constants, listener, lb_vip_address) %}
+frontend {{ listener.id }}
+    log-format {{ listener.user_log_format }}
+    {% if listener.connection_limit is defined %}
+    maxconn {{ listener.connection_limit }}
+    {% endif %}
+    {% if (listener.protocol.lower() ==
+       constants.PROTOCOL_TERMINATED_HTTPS.lower()) %}
+    redirect scheme https if !{ ssl_fc }
+    {% endif %}
+    {{ bind_macro(constants, listener, lb_vip_address)|trim() }}
+    mode {{ listener.protocol_mode }}
+    {% for l7policy in listener.l7policies if (l7policy.enabled and
+                                               l7policy.l7rules|length > 0) %}
+        {{- l7policy_macro(constants, l7policy, listener) -}}
+    {% endfor %}
+    {% if listener.default_pool and listener.default_pool.enabled %}
+    default_backend {{ listener.default_pool.id }}:{{ listener.id }}
+    {% endif %}
+    timeout client {{ listener.timeout_client_data }}
+    {% if listener.timeout_tcp_inspect %}
+    tcp-request inspect-delay {{ listener.timeout_tcp_inspect }}
+    {% endif %}
+{% endmacro %}
+
+
+{% macro member_macro(constants, pool, member) %}
+    {% if pool.health_monitor and pool.health_monitor.enabled %}
+        {% if member.monitor_address %}
+            {% set monitor_addr_opt = " addr %s"|format(member.monitor_address) %}
+        {% else %}
+            {% set monitor_addr_opt = "" %}
+        {% endif %}
+        {% if member.monitor_port %}
+            {% set monitor_port_opt = " port %s"|format(member.monitor_port) %}
+        {% else %}
+            {% set monitor_port_opt = "" %}
+        {% endif %}
+        {% if pool.health_monitor.type == constants.HEALTH_MONITOR_HTTPS %}
+            {% set monitor_ssl_opt = " check-ssl verify none" %}
+        {% else %}
+            {% set monitor_ssl_opt = "" %}
+        {% endif %}
+        {% set hm_opt = " check%s inter %ds fall %d rise %d%s%s"|format(
+            monitor_ssl_opt, pool.health_monitor.delay,
+            pool.health_monitor.fall_threshold,
+            pool.health_monitor.rise_threshold, monitor_addr_opt,
+            monitor_port_opt) %}
+    {% else %}
+        {% set hm_opt = "" %}
+    {% endif %}
+    {% if (pool.session_persistence.type ==
+           constants.SESSION_PERSISTENCE_HTTP_COOKIE) %}
+        {% set persistence_opt = " cookie %s"|format(member.id) %}
+    {% else %}
+        {% set persistence_opt = "" %}
+    {% endif %}
+    {% if pool.proxy_protocol %}
+        {% set proxy_protocol_opt = " send-proxy" %}
+    {% else %}
+        {% set proxy_protocol_opt = "" %}
+    {% endif %}
+    {% if member.backup %}
+        {% set member_backup_opt = " backup" %}
+    {% else %}
+        {% set member_backup_opt = "" %}
+    {% endif %}
+    {% if member.enabled %}
+        {% set member_enabled_opt = "" %}
+    {% else %}
+        {% set member_enabled_opt = " disabled" %}
+    {% endif %}
+    {% if pool.tls_enabled %}
+        {% set def_opt_prefix = " ssl" %}
+        {% set def_sni_opt = " sni ssl_fc_sni" %}
+    {% else %}
+        {% set def_opt_prefix = "" %}
+        {% set def_sni_opt = "" %}
+    {% endif %}
+    {% if pool.client_cert and pool.tls_enabled %}
+        {% set def_crt_opt = " crt %s"|format(pool.client_cert) %}
+    {% else %}
+        {% set def_crt_opt = "" %}
+    {% endif %}
+    {% if pool.ca_cert and pool.tls_enabled %}
+        {% set ca_opt = " ca-file %s"|format(pool.ca_cert) %}
+        {% set def_verify_opt = " verify required" %}
+        {% if pool.crl %}
+            {% set crl_opt = " crl-file %s"|format(pool.crl) %}
+        {% else %}
+            {% set def_verify_opt = "" %}
+        {% endif %}
+    {% elif pool.tls_enabled %}
+        {% set def_verify_opt = " verify none" %}
+    {% endif %}
+    {{ "server %s %s:%d weight %s%s%s%s%s%s%s%s%s%s%s%s"|e|format(
+        member.id, member.address, member.protocol_port, member.weight,
+        hm_opt, persistence_opt, proxy_protocol_opt, member_backup_opt,
+        member_enabled_opt, def_opt_prefix, def_crt_opt, ca_opt, crl_opt,
+        def_verify_opt, def_sni_opt)|trim() }}
+{% endmacro %}
+
+
+{% macro backend_macro(constants, listener, pool, loadbalancer) %}
+backend {{ pool.id }}:{{ listener.id }}
+    {% if pool.protocol.lower() == constants.PROTOCOL_PROXY.lower() %}
+    mode {{ listener.protocol_mode }}
+    {% else %}
+    mode {{ pool.protocol }}
+    {% endif %}
+    {% if pool.get(constants.HTTP_REUSE, False) and (
+          pool.protocol.lower() == constants.PROTOCOL_HTTP.lower() or
+          (pool.protocol.lower() == constants.PROTOCOL_PROXY.lower() and
+           listener.protocol_mode.lower() ==
+               constants.PROTOCOL_HTTP.lower()))%}
+    http-reuse safe
+    {% endif %}
+    balance {{ pool.lb_algorithm }}
+    {% if pool.session_persistence %}
+        {% if (pool.session_persistence.type ==
+               constants.SESSION_PERSISTENCE_SOURCE_IP) %}
+            {% if loadbalancer.topology == constants.TOPOLOGY_ACTIVE_STANDBY %}
+    stick-table type ip size {{ pool.stick_size }} peers {{
+    "%s_peers"|format(loadbalancer.id.replace("-", ""))|trim() }}
+            {% else %}
+    stick-table type ip size {{ pool.stick_size }}
+            {% endif %}
+    stick on src
+        {% elif (pool.session_persistence.type ==
+                 constants.SESSION_PERSISTENCE_APP_COOKIE) %}
+            {% if loadbalancer.topology == constants.TOPOLOGY_ACTIVE_STANDBY %}
+    stick-table type string len 64 size {{
+        pool.stick_size }} peers {{
+        "%s_peers"|format(loadbalancer.id.replace("-", ""))|trim() }}
+            {% else %}
+    stick-table type string len 64 size {{ pool.stick_size }}
+            {% endif %}
+    stick store-response res.cook({{ pool.session_persistence.cookie_name }})
+    stick match req.cook({{ pool.session_persistence.cookie_name }})
+        {% elif (pool.session_persistence.type ==
+                  constants.SESSION_PERSISTENCE_HTTP_COOKIE) %}
+    cookie SRV insert indirect nocache
+        {% endif %}
+    {% endif %}
+    {% if pool.health_monitor and pool.health_monitor.enabled %}
+    timeout check {{ pool.health_monitor.timeout }}s
+        {% if (pool.health_monitor.type ==
+               constants.HEALTH_MONITOR_HTTP or pool.health_monitor.type ==
+               constants.HEALTH_MONITOR_HTTPS) %}
+            {% if (pool.health_monitor.http_version and
+                   pool.health_monitor.http_version == 1.1 and
+                   pool.health_monitor.domain_name) %}
+    option httpchk {{ pool.health_monitor.http_method }} {{ pool.health_monitor.url_path }} HTTP/
+    {{- pool.health_monitor.http_version -}}{{- "\\r\\n" | safe -}}
+    Host:\ {{ pool.health_monitor.domain_name }}
+            {% elif pool.health_monitor.http_version %}
+    option httpchk {{ pool.health_monitor.http_method }} {{ pool.health_monitor.url_path }} HTTP/
+    {{- pool.health_monitor.http_version -}}{{- "\\r\\n" | safe }}
+            {% else %}
+    option httpchk {{ pool.health_monitor.http_method }} {{ pool.health_monitor.url_path }}
+            {% endif %}
+    http-check expect rstatus {{ pool.health_monitor.expected_codes }}
+        {% endif %}
+        {% if pool.health_monitor.type == constants.HEALTH_MONITOR_TLS_HELLO %}
+    option ssl-hello-chk
+        {% endif %}
+        {% if pool.health_monitor.type == constants.HEALTH_MONITOR_PING %}
+    option external-check
+    external-check command /var/lib/octavia/ping-wrapper.sh
+        {% endif %}
+    {% endif %}
+    {% if pool.protocol.lower() == constants.PROTOCOL_HTTP.lower() %}
+        {% if listener.insert_headers.get('X-Forwarded-For',
+                                          'False').lower() == 'true' %}
+    option forwardfor
+        {% endif %}
+        {% if listener.insert_headers.get('X-Forwarded-Port',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-Forwarded-Port %[dst_port]
+        {% endif %}
+    {% endif %}
+    {% if listener.insert_headers.get('X-Forwarded-Proto',
+                                          'False').lower() == 'true' %}
+        {% if listener.protocol.lower() == constants.PROTOCOL_HTTP.lower() %}
+    http-request set-header X-Forwarded-Proto http
+        {% elif listener.protocol.lower() ==
+                               constants.PROTOCOL_TERMINATED_HTTPS.lower() %}
+    http-request set-header X-Forwarded-Proto https
+        {% endif %}
+    {% endif %}
+    {% if listener.protocol.lower() == constants.PROTOCOL_TERMINATED_HTTPS.lower() %}
+        {% if listener.insert_headers.get('X-SSL-Client-Verify',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-Verify %[ssl_c_verify]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Client-Has-Cert',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-Has-Cert %[ssl_c_used]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Client-DN',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-DN %{+Q}[ssl_c_s_dn]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Client-CN',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-CN %{+Q}[ssl_c_s_dn(cn)]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Issuer',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Issuer %{+Q}[ssl_c_i_dn]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Client-SHA1',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-SHA1 %{+Q}[ssl_c_sha1,hex]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Client-Not-Before',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-Not-Before %{+Q}[ssl_c_notbefore]
+        {% endif %}
+        {% if listener.insert_headers.get('X-SSL-Client-Not-After',
+                                          'False').lower() == 'true' %}
+    http-request set-header X-SSL-Client-Not-After %{+Q}[ssl_c_notafter]
+        {% endif %}
+    {% endif %}
+    {% if listener.connection_limit is defined %}
+    fullconn {{ listener.connection_limit }}
+    {% endif %}
+    option allbackups
+    timeout connect {{ listener.timeout_member_connect }}
+    timeout server {{ listener.timeout_member_data }}
+    {% for member in pool.members %}
+        {{- member_macro(constants, pool, member) -}}
+    {% endfor %}
+{% endmacro %}

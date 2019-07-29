@@ -48,7 +48,7 @@ class MemberFlows(object):
             requires=(constants.LOADBALANCER, constants.ADDED_PORTS)
         ))
         create_member_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=(constants.LOADBALANCER, constants.LISTENERS)))
+            requires=constants.LOADBALANCER))
         create_member_flow.add(database_tasks.MarkMemberActiveInDB(
             requires=constants.MEMBER))
         create_member_flow.add(database_tasks.MarkPoolActiveInDB(
@@ -79,7 +79,7 @@ class MemberFlows(object):
         delete_member_flow.add(database_tasks.DeleteMemberInDB(
             requires=constants.MEMBER))
         delete_member_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=constants.LOADBALANCER))
         delete_member_flow.add(database_tasks.DecrementMemberQuota(
             requires=constants.MEMBER))
         delete_member_flow.add(database_tasks.MarkPoolActiveInDB(
@@ -105,7 +105,7 @@ class MemberFlows(object):
         update_member_flow.add(database_tasks.MarkMemberPendingUpdateInDB(
             requires=constants.MEMBER))
         update_member_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=constants.LOADBALANCER))
         update_member_flow.add(database_tasks.UpdateMemberInDB(
             requires=[constants.MEMBER, constants.UPDATE_DICT]))
         update_member_flow.add(database_tasks.MarkMemberActiveInDB(
@@ -195,7 +195,7 @@ class MemberFlows(object):
 
         # Update the Listener (this makes the changes active on the Amp)
         batch_update_members_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=(constants.LOADBALANCER, constants.LISTENERS)))
+            requires=constants.LOADBALANCER))
 
         # Mark all the members ACTIVE here, then pool then LB/Listeners
         batch_update_members_flow.add(unordered_members_active_flow)

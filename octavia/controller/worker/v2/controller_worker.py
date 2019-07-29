@@ -235,13 +235,14 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             raise db_exceptions.NoResultFound
 
         load_balancer = listener.load_balancer
+        listeners = load_balancer.listeners
 
         create_listener_tf = self._taskflow_load(self._listener_flows.
                                                  get_create_listener_flow(),
                                                  store={constants.LOADBALANCER:
                                                         load_balancer,
                                                         constants.LISTENERS:
-                                                            [listener]})
+                                                            listeners})
         with tf_logging.DynamicLoggingListener(create_listener_tf,
                                                log=LOG):
             create_listener_tf.run()
