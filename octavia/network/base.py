@@ -325,3 +325,12 @@ class AbstractNetworkDriver(object):
 
         :return: Boolean
         """
+
+    @abc.abstractmethod
+    def get_network_ip_availability(self, network):
+        """Retrieves network IP availability.
+
+        :param network: octavia.network.data_models.Network
+        :return: octavia.network.data_models.Network_IP_Availability
+        :raises: NetworkException, NetworkNotFound
+        """

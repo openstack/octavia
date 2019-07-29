@@ -479,3 +479,18 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                           self.driver.apply_qos_on_port,
                           t_constants.MOCK_PORT_ID,
                           t_constants.MOCK_NEUTRON_QOS_POLICY_ID)
+
+    def test_get_network_ip_availability(self):
+        show_network_ip_availability = (
+            self.driver.neutron_client.show_network_ip_availability)
+        show_network_ip_availability.return_value = (
+            {'network_ip_availability': {
+             'network_id': t_constants.MOCK_NETWORK_ID,
+             'subnet_ip_availability': t_constants.MOCK_SUBNET_IP_AVAILABILITY
+             }})
+        ip_avail = self.driver.get_network_ip_availability(
+            network_models.Network(t_constants.MOCK_NETWORK_ID))
+        self.assertIsInstance(ip_avail, network_models.Network_IP_Availability)
+        self.assertEqual(t_constants.MOCK_NETWORK_ID, ip_avail.network_id)
+        self.assertEqual(t_constants.MOCK_SUBNET_IP_AVAILABILITY,
+                         ip_avail.subnet_ip_availability)
