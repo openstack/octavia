@@ -192,6 +192,11 @@ class L7RuleController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         db_l7rule = self._get_db_l7rule(context.session, id,
                                         show_deleted=False)
+
+        # Handle the invert unset
+        if l7rule.invert is None:
+            l7rule.invert = False
+
         new_l7rule = db_l7rule.to_dict()
         new_l7rule.update(l7rule.to_dict())
         new_l7rule = data_models.L7Rule.from_dict(new_l7rule)
