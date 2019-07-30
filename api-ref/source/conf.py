@@ -68,7 +68,6 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Octavia API Reference'
 copyright = u'2017-present, OpenStack Foundation'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -151,12 +150,6 @@ pygments_style = 'sphinx'
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ['_static']
 
-# If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
-# using the given strftime format.
-# html_last_updated_fmt = '%b %d, %Y'
-# Must set this variable to include year, month, day, hours, and minutes.
-html_last_updated_fmt = '%Y-%m-%d %H:%M'
-
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
 # html_use_smartypants = True
@@ -215,14 +208,6 @@ latex_documents = [
     ('index', 'Octavia.tex', u'OpenStack Octavia API Documentation',
      u'OpenStack Foundation', 'manual'),
 ]
-
-latex_elements = {
-    # ...
-    # Additional stuff for the LaTeX preamble.
-    'preamble': latex_custom_template,
-}
-
-latex_engine = 'xelatex'
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
