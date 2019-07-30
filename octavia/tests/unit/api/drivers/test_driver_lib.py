@@ -26,6 +26,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
+
 import octavia_lib.api.drivers.driver_lib as lib_driver_lib
 
 from octavia.api.drivers import driver_lib
@@ -38,6 +40,8 @@ class TestDriverLib(base.TestCase):
         super(TestDriverLib, self).setUp()
 
     # Silly test to check that debtcollector moves is working
-    def test_driver_lib_exists(self):
+    @mock.patch('octavia_lib.api.drivers.driver_lib.DriverLibrary.'
+                '_check_for_socket_ready')
+    def test_driver_lib_exists(self, mock_ready):
         driver_lib_class = driver_lib.DriverLibrary()
         self.assertIsInstance(driver_lib_class, lib_driver_lib.DriverLibrary)
