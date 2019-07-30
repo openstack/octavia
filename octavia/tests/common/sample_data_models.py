@@ -70,96 +70,103 @@ class SampleDriverDataModels(object):
         self.updated_at = (datetime.datetime.now() +
                            datetime.timedelta(minutes=1))
 
-        self._common_test_dict = {'provisioning_status': constants.ACTIVE,
-                                  'operating_status': constants.ONLINE,
-                                  'project_id': self.project_id,
-                                  'created_at': self.created_at,
-                                  'updated_at': self.updated_at,
-                                  'enabled': True}
+        self._common_test_dict = {
+            lib_consts.PROVISIONING_STATUS: constants.ACTIVE,
+            lib_consts.OPERATING_STATUS: constants.ONLINE,
+            lib_consts.PROJECT_ID: self.project_id,
+            constants.CREATED_AT: self.created_at,
+            constants.UPDATED_AT: self.updated_at,
+            constants.ENABLED: True}
 
         # Setup Health Monitors
-        self.test_hm1_dict = {'id': self.hm1_id,
-                              'type': constants.HEALTH_MONITOR_PING,
-                              'delay': 1, 'timeout': 3, 'fall_threshold': 1,
-                              'rise_threshold': 2, 'http_method': 'GET',
-                              'url_path': '/', 'expected_codes': '200',
-                              'name': 'hm1', 'pool_id': self.pool1_id,
-                              'http_version': 1.0, 'domain_name': None,
-                              'project_id': self.project_id}
+        self.test_hm1_dict = {
+            lib_consts.ID: self.hm1_id,
+            lib_consts.TYPE: constants.HEALTH_MONITOR_PING,
+            lib_consts.DELAY: 1, lib_consts.TIMEOUT: 3,
+            lib_consts.FALL_THRESHOLD: 1, lib_consts.RISE_THRESHOLD: 2,
+            lib_consts.HTTP_METHOD: lib_consts.HEALTH_MONITOR_HTTP_METHOD_GET,
+            lib_consts.URL_PATH: '/', lib_consts.EXPECTED_CODES: '200',
+            lib_consts.NAME: 'hm1', lib_consts.POOL_ID: self.pool1_id,
+            lib_consts.HTTP_VERSION: 1.0, lib_consts.DOMAIN_NAME: None,
+            lib_consts.PROJECT_ID: self.project_id}
 
         self.test_hm1_dict.update(self._common_test_dict)
 
         self.test_hm2_dict = copy.deepcopy(self.test_hm1_dict)
-        self.test_hm2_dict['id'] = self.hm2_id
-        self.test_hm2_dict['name'] = 'hm2'
-        self.test_hm2_dict.update({'http_version': 1.1,
-                                   'domain_name': 'testdomainname.com'})
+        self.test_hm2_dict[lib_consts.ID] = self.hm2_id
+        self.test_hm2_dict[lib_consts.NAME] = 'hm2'
+        self.test_hm2_dict.update(
+            {lib_consts.HTTP_VERSION: 1.1,
+             lib_consts.DOMAIN_NAME: 'testdomainname.com'})
 
         self.db_hm1 = data_models.HealthMonitor(**self.test_hm1_dict)
         self.db_hm2 = data_models.HealthMonitor(**self.test_hm2_dict)
 
-        self.provider_hm1_dict = {'admin_state_up': True,
-                                  'delay': 1, 'expected_codes': '200',
-                                  'healthmonitor_id': self.hm1_id,
-                                  'http_method': 'GET',
-                                  'max_retries': 2,
-                                  'max_retries_down': 1,
-                                  'name': 'hm1',
-                                  'pool_id': self.pool1_id,
-                                  'project_id': self.project_id,
-                                  'timeout': 3,
-                                  'type': constants.HEALTH_MONITOR_PING,
-                                  'url_path': '/',
-                                  'http_version': 1.0,
-                                  'domain_name': None}
+        self.provider_hm1_dict = {
+            lib_consts.ADMIN_STATE_UP: True,
+            lib_consts.DELAY: 1, lib_consts.EXPECTED_CODES: '200',
+            lib_consts.HEALTHMONITOR_ID: self.hm1_id,
+            lib_consts.HTTP_METHOD: lib_consts.HEALTH_MONITOR_HTTP_METHOD_GET,
+            lib_consts.MAX_RETRIES: 2,
+            lib_consts.MAX_RETRIES_DOWN: 1,
+            lib_consts.NAME: 'hm1',
+            lib_consts.POOL_ID: self.pool1_id,
+            lib_consts.PROJECT_ID: self.project_id,
+            lib_consts.TIMEOUT: 3,
+            lib_consts.TYPE: constants.HEALTH_MONITOR_PING,
+            lib_consts.URL_PATH: '/',
+            lib_consts.HTTP_VERSION: 1.0,
+            lib_consts.DOMAIN_NAME: None}
 
         self.provider_hm2_dict = copy.deepcopy(self.provider_hm1_dict)
-        self.provider_hm2_dict['healthmonitor_id'] = self.hm2_id
-        self.provider_hm2_dict['name'] = 'hm2'
-        self.provider_hm2_dict.update({'http_version': 1.1,
-                                       'domain_name': 'testdomainname.com'})
+        self.provider_hm2_dict[lib_consts.HEALTHMONITOR_ID] = self.hm2_id
+        self.provider_hm2_dict[lib_consts.NAME] = 'hm2'
+        self.provider_hm2_dict.update(
+            {lib_consts.HTTP_VERSION: 1.1,
+             lib_consts.DOMAIN_NAME: 'testdomainname.com'})
 
         self.provider_hm1 = driver_dm.HealthMonitor(**self.provider_hm1_dict)
         self.provider_hm2 = driver_dm.HealthMonitor(**self.provider_hm2_dict)
 
         # Setup Members
-        self.test_member1_dict = {'id': self.member1_id,
-                                  'pool_id': self.pool1_id,
-                                  'ip_address': '192.0.2.16',
-                                  'protocol_port': 80, 'weight': 0,
-                                  'backup': False,
-                                  'subnet_id': self.subnet_id,
-                                  'project_id': self.project_id,
-                                  'name': 'member1',
-                                  'operating_status': lib_consts.ONLINE,
-                                  'provisioning_status': lib_consts.ACTIVE,
-                                  'enabled': True,
-                                  'created_at': self.created_at,
-                                  'updated_at': self.updated_at,
-                                  'monitor_address': '192.0.2.26',
-                                  'monitor_port': 81}
+        self.test_member1_dict = {
+            lib_consts.ID: self.member1_id,
+            lib_consts.POOL_ID: self.pool1_id,
+            constants.IP_ADDRESS: '192.0.2.16',
+            lib_consts.PROTOCOL_PORT: 80, lib_consts.WEIGHT: 0,
+            lib_consts.BACKUP: False,
+            lib_consts.SUBNET_ID: self.subnet_id,
+            lib_consts.PROJECT_ID: self.project_id,
+            lib_consts.NAME: 'member1',
+            lib_consts.OPERATING_STATUS: lib_consts.ONLINE,
+            lib_consts.PROVISIONING_STATUS: lib_consts.ACTIVE,
+            constants.ENABLED: True,
+            constants.CREATED_AT: self.created_at,
+            constants.UPDATED_AT: self.updated_at,
+            lib_consts.MONITOR_ADDRESS: '192.0.2.26',
+            lib_consts.MONITOR_PORT: 81}
 
         self.test_member1_dict.update(self._common_test_dict)
 
         self.test_member2_dict = copy.deepcopy(self.test_member1_dict)
-        self.test_member2_dict['id'] = self.member2_id
-        self.test_member2_dict['ip_address'] = '192.0.2.17'
-        self.test_member2_dict['monitor_address'] = '192.0.2.27'
-        self.test_member2_dict['name'] = 'member2'
+        self.test_member2_dict[lib_consts.ID] = self.member2_id
+        self.test_member2_dict[constants.IP_ADDRESS] = '192.0.2.17'
+        self.test_member2_dict[lib_consts.MONITOR_ADDRESS] = '192.0.2.27'
+        self.test_member2_dict[lib_consts.NAME] = 'member2'
 
         self.test_member3_dict = copy.deepcopy(self.test_member1_dict)
-        self.test_member3_dict['id'] = self.member3_id
-        self.test_member3_dict['ip_address'] = '192.0.2.18'
-        self.test_member3_dict['monitor_address'] = '192.0.2.28'
-        self.test_member3_dict['name'] = 'member3'
-        self.test_member3_dict['pool_id'] = self.pool2_id
+        self.test_member3_dict[lib_consts.ID] = self.member3_id
+        self.test_member3_dict[constants.IP_ADDRESS] = '192.0.2.18'
+        self.test_member3_dict[lib_consts.MONITOR_ADDRESS] = '192.0.2.28'
+        self.test_member3_dict[lib_consts.NAME] = 'member3'
+        self.test_member3_dict[lib_consts.POOL_ID] = self.pool2_id
 
         self.test_member4_dict = copy.deepcopy(self.test_member1_dict)
-        self.test_member4_dict['id'] = self.member4_id
-        self.test_member4_dict['ip_address'] = '192.0.2.19'
-        self.test_member4_dict['monitor_address'] = '192.0.2.29'
-        self.test_member4_dict['name'] = 'member4'
-        self.test_member4_dict['pool_id'] = self.pool2_id
+        self.test_member4_dict[lib_consts.ID] = self.member4_id
+        self.test_member4_dict[constants.IP_ADDRESS] = '192.0.2.19'
+        self.test_member4_dict[lib_consts.MONITOR_ADDRESS] = '192.0.2.29'
+        self.test_member4_dict[lib_consts.NAME] = 'member4'
+        self.test_member4_dict[lib_consts.POOL_ID] = self.pool2_id
 
         self.test_pool1_members_dict = [self.test_member1_dict,
                                         self.test_member2_dict]
@@ -174,38 +181,38 @@ class SampleDriverDataModels(object):
         self.db_pool1_members = [self.db_member1, self.db_member2]
         self.db_pool2_members = [self.db_member3, self.db_member4]
 
-        self.provider_member1_dict = {'address': '192.0.2.16',
-                                      'admin_state_up': True,
-                                      'member_id': self.member1_id,
-                                      'monitor_address': '192.0.2.26',
-                                      'monitor_port': 81,
-                                      'name': 'member1',
-                                      'pool_id': self.pool1_id,
-                                      'project_id': self.project_id,
-                                      'protocol_port': 80,
-                                      'subnet_id': self.subnet_id,
-                                      'weight': 0,
-                                      'backup': False}
+        self.provider_member1_dict = {lib_consts.ADDRESS: '192.0.2.16',
+                                      lib_consts.ADMIN_STATE_UP: True,
+                                      lib_consts.MEMBER_ID: self.member1_id,
+                                      lib_consts.MONITOR_ADDRESS: '192.0.2.26',
+                                      lib_consts.MONITOR_PORT: 81,
+                                      lib_consts.NAME: 'member1',
+                                      lib_consts.POOL_ID: self.pool1_id,
+                                      lib_consts.PROJECT_ID: self.project_id,
+                                      lib_consts.PROTOCOL_PORT: 80,
+                                      lib_consts.SUBNET_ID: self.subnet_id,
+                                      lib_consts.WEIGHT: 0,
+                                      lib_consts.BACKUP: False}
 
         self.provider_member2_dict = copy.deepcopy(self.provider_member1_dict)
-        self.provider_member2_dict['member_id'] = self.member2_id
-        self.provider_member2_dict['address'] = '192.0.2.17'
-        self.provider_member2_dict['monitor_address'] = '192.0.2.27'
-        self.provider_member2_dict['name'] = 'member2'
+        self.provider_member2_dict[lib_consts.MEMBER_ID] = self.member2_id
+        self.provider_member2_dict[lib_consts.ADDRESS] = '192.0.2.17'
+        self.provider_member2_dict[lib_consts.MONITOR_ADDRESS] = '192.0.2.27'
+        self.provider_member2_dict[lib_consts.NAME] = 'member2'
 
         self.provider_member3_dict = copy.deepcopy(self.provider_member1_dict)
-        self.provider_member3_dict['member_id'] = self.member3_id
-        self.provider_member3_dict['address'] = '192.0.2.18'
-        self.provider_member3_dict['monitor_address'] = '192.0.2.28'
-        self.provider_member3_dict['name'] = 'member3'
-        self.provider_member3_dict['pool_id'] = self.pool2_id
+        self.provider_member3_dict[lib_consts.MEMBER_ID] = self.member3_id
+        self.provider_member3_dict[lib_consts.ADDRESS] = '192.0.2.18'
+        self.provider_member3_dict[lib_consts.MONITOR_ADDRESS] = '192.0.2.28'
+        self.provider_member3_dict[lib_consts.NAME] = 'member3'
+        self.provider_member3_dict[lib_consts.POOL_ID] = self.pool2_id
 
         self.provider_member4_dict = copy.deepcopy(self.provider_member1_dict)
-        self.provider_member4_dict['member_id'] = self.member4_id
-        self.provider_member4_dict['address'] = '192.0.2.19'
-        self.provider_member4_dict['monitor_address'] = '192.0.2.29'
-        self.provider_member4_dict['name'] = 'member4'
-        self.provider_member4_dict['pool_id'] = self.pool2_id
+        self.provider_member4_dict[lib_consts.MEMBER_ID] = self.member4_id
+        self.provider_member4_dict[lib_consts.ADDRESS] = '192.0.2.19'
+        self.provider_member4_dict[lib_consts.MONITOR_ADDRESS] = '192.0.2.29'
+        self.provider_member4_dict[lib_consts.NAME] = 'member4'
+        self.provider_member4_dict[lib_consts.POOL_ID] = self.pool2_id
 
         self.provider_pool1_members_dict = [self.provider_member1_dict,
                                             self.provider_member2_dict]
@@ -224,35 +231,35 @@ class SampleDriverDataModels(object):
                                        self.provider_member4]
 
         # Setup test pools
-        self.test_pool1_dict = {'id': self.pool1_id,
-                                'name': 'pool1', 'description': 'Pool 1',
-                                'load_balancer_id': self.lb_id,
-                                'project_id': self.project_id,
-                                'protocol': 'TCP',
-                                'lb_algorithm': 'ROUND_ROBIN',
-                                'members': self.test_pool1_members_dict,
-                                'health_monitor': self.test_hm1_dict,
-                                'session_persistence': {'type': 'SOURCE_IP'},
-                                'listeners': [],
-                                'l7policies': [],
-                                'tls_certificate_id':
-                                    self.pool_sni_container_ref,
-                                'ca_tls_certificate_id':
-                                    self.pool_ca_container_ref,
-                                'crl_container_id':
-                                    self.pool_crl_container_ref,
-                                'tls_enabled': True}
+        self.test_pool1_dict = {
+            lib_consts.ID: self.pool1_id,
+            lib_consts.NAME: 'pool1', lib_consts.DESCRIPTION: 'Pool 1',
+            constants.LOAD_BALANCER_ID: self.lb_id,
+            lib_consts.PROJECT_ID: self.project_id,
+            lib_consts.PROTOCOL: lib_consts.PROTOCOL_TCP,
+            lib_consts.LB_ALGORITHM: lib_consts.LB_ALGORITHM_ROUND_ROBIN,
+            lib_consts.MEMBERS: self.test_pool1_members_dict,
+            constants.HEALTH_MONITOR: self.test_hm1_dict,
+            lib_consts.SESSION_PERSISTENCE: {
+                lib_consts.TYPE: lib_consts.LB_ALGORITHM_SOURCE_IP},
+            lib_consts.LISTENERS: [],
+            lib_consts.L7POLICIES: [],
+            constants.TLS_CERTIFICATE_ID: self.pool_sni_container_ref,
+            constants.CA_TLS_CERTIFICATE_ID: self.pool_ca_container_ref,
+            constants.CRL_CONTAINER_ID: self.pool_crl_container_ref,
+            lib_consts.TLS_ENABLED: True}
 
         self.test_pool1_dict.update(self._common_test_dict)
 
         self.test_pool2_dict = copy.deepcopy(self.test_pool1_dict)
-        self.test_pool2_dict['id'] = self.pool2_id
-        self.test_pool2_dict['name'] = 'pool2'
-        self.test_pool2_dict['description'] = 'Pool 2'
-        self.test_pool2_dict['members'] = self.test_pool2_members_dict
-        del self.test_pool2_dict['tls_certificate_id']
-        del self.test_pool2_dict['ca_tls_certificate_id']
-        del self.test_pool2_dict['crl_container_id']
+        self.test_pool2_dict[lib_consts.ID] = self.pool2_id
+        self.test_pool2_dict[lib_consts.NAME] = 'pool2'
+        self.test_pool2_dict[lib_consts.DESCRIPTION] = 'Pool 2'
+        self.test_pool2_dict[
+            lib_consts.MEMBERS] = self.test_pool2_members_dict
+        del self.test_pool2_dict[constants.TLS_CERTIFICATE_ID]
+        del self.test_pool2_dict[constants.CA_TLS_CERTIFICATE_ID]
+        del self.test_pool2_dict[constants.CRL_CONTAINER_ID]
 
         self.test_pools = [self.test_pool1_dict, self.test_pool2_dict]
 
@@ -269,38 +276,41 @@ class SampleDriverDataModels(object):
         pool_crl_file_content = 'X509 POOL CRL FILE'
 
         self.provider_pool1_dict = {
-            'admin_state_up': True,
-            'description': 'Pool 1',
-            'healthmonitor': self.provider_hm1_dict,
-            'lb_algorithm': 'ROUND_ROBIN',
-            'loadbalancer_id': self.lb_id,
-            'members': self.provider_pool1_members_dict,
-            'name': 'pool1',
-            'pool_id': self.pool1_id,
-            'project_id': self.project_id,
-            'protocol': 'TCP',
-            'session_persistence': {'type': 'SOURCE_IP'},
-            'tls_container_ref': self.pool_sni_container_ref,
-            'tls_container_data': pool_cert.to_dict(),
-            'ca_tls_container_ref': self.pool_ca_container_ref,
-            'ca_tls_container_data': pool_ca_file_content,
-            'crl_container_ref': self.pool_crl_container_ref,
-            'crl_container_data': pool_crl_file_content,
-            'tls_enabled': True
+            lib_consts.ADMIN_STATE_UP: True,
+            lib_consts.DESCRIPTION: 'Pool 1',
+            lib_consts.HEALTHMONITOR: self.provider_hm1_dict,
+            lib_consts.LB_ALGORITHM: lib_consts.LB_ALGORITHM_ROUND_ROBIN,
+            lib_consts.LOADBALANCER_ID: self.lb_id,
+            lib_consts.MEMBERS: self.provider_pool1_members_dict,
+            lib_consts.NAME: 'pool1',
+            lib_consts.POOL_ID: self.pool1_id,
+            lib_consts.PROJECT_ID: self.project_id,
+            lib_consts.PROTOCOL: lib_consts.PROTOCOL_TCP,
+            lib_consts.SESSION_PERSISTENCE: {
+                lib_consts.TYPE: lib_consts.LB_ALGORITHM_SOURCE_IP},
+            lib_consts.TLS_CONTAINER_REF: self.pool_sni_container_ref,
+            lib_consts.TLS_CONTAINER_DATA: pool_cert.to_dict(),
+            lib_consts.CA_TLS_CONTAINER_REF: self.pool_ca_container_ref,
+            lib_consts.CA_TLS_CONTAINER_DATA: pool_ca_file_content,
+            lib_consts.CRL_CONTAINER_REF: self.pool_crl_container_ref,
+            lib_consts.CRL_CONTAINER_DATA: pool_crl_file_content,
+            lib_consts.TLS_ENABLED: True
         }
 
         self.provider_pool2_dict = copy.deepcopy(self.provider_pool1_dict)
-        self.provider_pool2_dict['pool_id'] = self.pool2_id
-        self.provider_pool2_dict['name'] = 'pool2'
-        self.provider_pool2_dict['description'] = 'Pool 2'
-        self.provider_pool2_dict['members'] = self.provider_pool2_members_dict
-        self.provider_pool2_dict['healthmonitor'] = self.provider_hm2_dict
-        self.provider_pool2_dict['tls_container_ref'] = None
-        del self.provider_pool2_dict['tls_container_data']
-        self.provider_pool2_dict['ca_tls_container_ref'] = None
-        del self.provider_pool2_dict['ca_tls_container_data']
-        self.provider_pool2_dict['crl_container_ref'] = None
-        del self.provider_pool2_dict['crl_container_data']
+        self.provider_pool2_dict[lib_consts.POOL_ID] = self.pool2_id
+        self.provider_pool2_dict[lib_consts.NAME] = 'pool2'
+        self.provider_pool2_dict[lib_consts.DESCRIPTION] = 'Pool 2'
+        self.provider_pool2_dict[
+            lib_consts.MEMBERS] = self.provider_pool2_members_dict
+        self.provider_pool2_dict[
+            lib_consts.HEALTHMONITOR] = self.provider_hm2_dict
+        self.provider_pool2_dict[lib_consts.TLS_CONTAINER_REF] = None
+        del self.provider_pool2_dict[lib_consts.TLS_CONTAINER_DATA]
+        self.provider_pool2_dict[lib_consts.CA_TLS_CONTAINER_REF] = None
+        del self.provider_pool2_dict[lib_consts.CA_TLS_CONTAINER_DATA]
+        self.provider_pool2_dict[lib_consts.CRL_CONTAINER_REF] = None
+        del self.provider_pool2_dict[lib_consts.CRL_CONTAINER_DATA]
 
         self.provider_pool1 = driver_dm.Pool(**self.provider_pool1_dict)
         self.provider_pool1.members = self.provider_pool1_members
@@ -313,20 +323,20 @@ class SampleDriverDataModels(object):
 
         # Setup L7Rules
         self.test_l7rule1_dict = {
-            'id': self.l7rule1_id,
-            'l7policy_id': self.l7policy1_id,
-            'type': lib_consts.L7RULE_TYPE_PATH,
-            'compare_type': lib_consts.L7RULE_COMPARE_TYPE_EQUAL_TO,
-            'key': 'fake_key',
-            'value': 'fake_value',
-            'project_id': self.project_id,
-            'l7policy': None,
-            'invert': False}
+            lib_consts.ID: self.l7rule1_id,
+            lib_consts.L7POLICY_ID: self.l7policy1_id,
+            lib_consts.TYPE: lib_consts.L7RULE_TYPE_PATH,
+            lib_consts.COMPARE_TYPE: lib_consts.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            lib_consts.KEY: 'fake_key',
+            lib_consts.VALUE: 'fake_value',
+            lib_consts.PROJECT_ID: self.project_id,
+            constants.L7POLICY: None,
+            lib_consts.INVERT: False}
 
         self.test_l7rule1_dict.update(self._common_test_dict)
 
         self.test_l7rule2_dict = copy.deepcopy(self.test_l7rule1_dict)
-        self.test_l7rule2_dict['id'] = self.l7rule2_id
+        self.test_l7rule2_dict[lib_consts.ID] = self.l7rule2_id
 
         self.test_l7rules = [self.test_l7rule1_dict, self.test_l7rule2_dict]
 
@@ -336,18 +346,18 @@ class SampleDriverDataModels(object):
         self.db_l7Rules = [self.db_l7Rule1, self.db_l7Rule2]
 
         self.provider_l7rule1_dict = {
-            'admin_state_up': True,
-            'compare_type': lib_consts.L7RULE_COMPARE_TYPE_EQUAL_TO,
-            'invert': False,
-            'key': 'fake_key',
-            'l7policy_id': self.l7policy1_id,
-            'l7rule_id': self.l7rule1_id,
-            'type': lib_consts.L7RULE_TYPE_PATH,
-            'project_id': self.project_id,
-            'value': 'fake_value'}
+            lib_consts.ADMIN_STATE_UP: True,
+            lib_consts.COMPARE_TYPE: lib_consts.L7RULE_COMPARE_TYPE_EQUAL_TO,
+            lib_consts.INVERT: False,
+            lib_consts.KEY: 'fake_key',
+            lib_consts.L7POLICY_ID: self.l7policy1_id,
+            lib_consts.L7RULE_ID: self.l7rule1_id,
+            lib_consts.TYPE: lib_consts.L7RULE_TYPE_PATH,
+            lib_consts.PROJECT_ID: self.project_id,
+            lib_consts.VALUE: 'fake_value'}
 
         self.provider_l7rule2_dict = copy.deepcopy(self.provider_l7rule1_dict)
-        self.provider_l7rule2_dict['l7rule_id'] = self.l7rule2_id
+        self.provider_l7rule2_dict[lib_consts.L7RULE_ID] = self.l7rule2_id
         self.provider_l7rules_dicts = [self.provider_l7rule1_dict,
                                        self.provider_l7rule2_dict]
 
@@ -358,27 +368,27 @@ class SampleDriverDataModels(object):
 
         # Setup L7Policies
         self.test_l7policy1_dict = {
-            'id': self.l7policy1_id,
-            'name': 'l7policy_1',
-            'description': 'L7policy 1',
-            'listener_id': self.listener1_id,
-            'action': lib_consts.L7POLICY_ACTION_REDIRECT_TO_URL,
-            'redirect_pool_id': None,
-            'redirect_url': 'http://example.com/index.html',
-            'redirect_prefix': None,
-            'project_id': self.project_id,
-            'position': 1,
-            'listener': None,
-            'redirect_pool': None,
-            'l7rules': self.test_l7rules,
-            'redirect_http_code': 302}
+            lib_consts.ID: self.l7policy1_id,
+            lib_consts.NAME: 'l7policy_1',
+            lib_consts.DESCRIPTION: 'L7policy 1',
+            lib_consts.LISTENER_ID: self.listener1_id,
+            lib_consts.ACTION: lib_consts.L7POLICY_ACTION_REDIRECT_TO_URL,
+            lib_consts.REDIRECT_POOL_ID: None,
+            lib_consts.REDIRECT_URL: 'http://example.com/index.html',
+            lib_consts.REDIRECT_PREFIX: None,
+            lib_consts.PROJECT_ID: self.project_id,
+            lib_consts.POSITION: 1,
+            constants.LISTENER: None,
+            constants.REDIRECT_POOL: None,
+            lib_consts.L7RULES: self.test_l7rules,
+            lib_consts.REDIRECT_HTTP_CODE: 302}
 
         self.test_l7policy1_dict.update(self._common_test_dict)
 
         self.test_l7policy2_dict = copy.deepcopy(self.test_l7policy1_dict)
-        self.test_l7policy2_dict['id'] = self.l7policy2_id
-        self.test_l7policy2_dict['name'] = 'l7policy_2'
-        self.test_l7policy2_dict['description'] = 'L7policy 2'
+        self.test_l7policy2_dict[lib_consts.ID] = self.l7policy2_id
+        self.test_l7policy2_dict[lib_consts.NAME] = 'l7policy_2'
+        self.test_l7policy2_dict[lib_consts.DESCRIPTION] = 'L7policy 2'
 
         self.test_l7policies = [self.test_l7policy1_dict,
                                 self.test_l7policy2_dict]
@@ -391,26 +401,27 @@ class SampleDriverDataModels(object):
         self.db_l7policies = [self.db_l7policy1, self.db_l7policy2]
 
         self.provider_l7policy1_dict = {
-            'action': lib_consts.L7POLICY_ACTION_REDIRECT_TO_URL,
-            'admin_state_up': True,
-            'description': 'L7policy 1',
-            'l7policy_id': self.l7policy1_id,
-            'listener_id': self.listener1_id,
-            'name': 'l7policy_1',
-            'position': 1,
-            'project_id': self.project_id,
-            'redirect_pool_id': None,
-            'redirect_url': 'http://example.com/index.html',
-            'redirect_prefix': None,
-            'rules': self.provider_l7rules_dicts,
-            'redirect_http_code': 302
+            lib_consts.ACTION: lib_consts.L7POLICY_ACTION_REDIRECT_TO_URL,
+            lib_consts.ADMIN_STATE_UP: True,
+            lib_consts.DESCRIPTION: 'L7policy 1',
+            lib_consts.L7POLICY_ID: self.l7policy1_id,
+            lib_consts.LISTENER_ID: self.listener1_id,
+            lib_consts.NAME: 'l7policy_1',
+            lib_consts.POSITION: 1,
+            lib_consts.PROJECT_ID: self.project_id,
+            lib_consts.REDIRECT_POOL_ID: None,
+            lib_consts.REDIRECT_URL: 'http://example.com/index.html',
+            lib_consts.REDIRECT_PREFIX: None,
+            lib_consts.RULES: self.provider_l7rules_dicts,
+            lib_consts.REDIRECT_HTTP_CODE: 302
         }
 
         self.provider_l7policy2_dict = copy.deepcopy(
             self.provider_l7policy1_dict)
-        self.provider_l7policy2_dict['l7policy_id'] = self.l7policy2_id
-        self.provider_l7policy2_dict['name'] = 'l7policy_2'
-        self.provider_l7policy2_dict['description'] = 'L7policy 2'
+        self.provider_l7policy2_dict[
+            lib_consts.L7POLICY_ID] = self.l7policy2_id
+        self.provider_l7policy2_dict[lib_consts.NAME] = 'l7policy_2'
+        self.provider_l7policy2_dict[lib_consts.DESCRIPTION] = 'L7policy 2'
 
         self.provider_l7policies_dict = [self.provider_l7policy1_dict,
                                          self.provider_l7policy2_dict]
@@ -427,43 +438,46 @@ class SampleDriverDataModels(object):
 
         # Setup Listeners
         self.test_listener1_dict = {
-            'id': self.listener1_id,
-            'name': 'listener_1',
-            'description': 'Listener 1',
-            'default_pool_id': self.pool1_id,
-            'load_balancer_id': self.lb_id,
-            'project_id': self.project_id,
-            'protocol': 'TCP',
-            'protocol_port': 90,
-            'connection_limit': 10000,
-            'tls_certificate_id': self.default_tls_container_ref,
-            'default_pool': self.test_pool1_dict,
-            'sni_containers': [{'tls_container_id': self.sni_container_ref_1},
-                               {'tls_container_id': self.sni_container_ref_2}],
-            'peer_port': 55,
-            'l7policies': self.test_l7policies,
-            'insert_headers': {},
-            'timeout_client_data': 1000,
-            'timeout_member_connect': 2000,
-            'timeout_member_data': 3000,
-            'timeout_tcp_inspect': 4000,
-            'client_ca_tls_certificate_id': self.client_ca_tls_certificate_ref,
-            'client_authentication': constants.CLIENT_AUTH_NONE,
-            'client_crl_container_id': self.client_crl_container_ref
+            lib_consts.ID: self.listener1_id,
+            lib_consts.NAME: 'listener_1',
+            lib_consts.DESCRIPTION: 'Listener 1',
+            lib_consts.DEFAULT_POOL_ID: self.pool1_id,
+            constants.LOAD_BALANCER_ID: self.lb_id,
+            lib_consts.PROJECT_ID: self.project_id,
+            lib_consts.PROTOCOL: lib_consts.PROTOCOL_TCP,
+            lib_consts.PROTOCOL_PORT: 90,
+            lib_consts.CONNECTION_LIMIT: 10000,
+            constants.TLS_CERTIFICATE_ID: self.default_tls_container_ref,
+            lib_consts.DEFAULT_POOL: self.test_pool1_dict,
+            constants.SNI_CONTAINERS: [
+                {constants.TLS_CONTAINER_ID: self.sni_container_ref_1},
+                {constants.TLS_CONTAINER_ID: self.sni_container_ref_2}],
+            constants.PEER_PORT: 55,
+            lib_consts.L7POLICIES: self.test_l7policies,
+            lib_consts.INSERT_HEADERS: {},
+            lib_consts.TIMEOUT_CLIENT_DATA: 1000,
+            lib_consts.TIMEOUT_MEMBER_CONNECT: 2000,
+            lib_consts.TIMEOUT_MEMBER_DATA: 3000,
+            lib_consts.TIMEOUT_TCP_INSPECT: 4000,
+            constants.CLIENT_CA_TLS_CERTIFICATE_ID:
+                self.client_ca_tls_certificate_ref,
+            lib_consts.CLIENT_AUTHENTICATION: constants.CLIENT_AUTH_NONE,
+            constants.CLIENT_CRL_CONTAINER_ID: self.client_crl_container_ref
         }
 
         self.test_listener1_dict.update(self._common_test_dict)
 
         self.test_listener2_dict = copy.deepcopy(self.test_listener1_dict)
-        self.test_listener2_dict['id'] = self.listener2_id
-        self.test_listener2_dict['name'] = 'listener_2'
-        self.test_listener2_dict['description'] = 'Listener 1'
-        self.test_listener2_dict['default_pool_id'] = self.pool2_id
-        self.test_listener2_dict['default_pool'] = self.test_pool2_dict
-        del self.test_listener2_dict['l7policies']
-        del self.test_listener2_dict['sni_containers']
-        del self.test_listener2_dict['client_ca_tls_certificate_id']
-        del self.test_listener2_dict['client_crl_container_id']
+        self.test_listener2_dict[lib_consts.ID] = self.listener2_id
+        self.test_listener2_dict[lib_consts.NAME] = 'listener_2'
+        self.test_listener2_dict[lib_consts.DESCRIPTION] = 'Listener 1'
+        self.test_listener2_dict[lib_consts.DEFAULT_POOL_ID] = self.pool2_id
+        self.test_listener2_dict[
+            lib_consts.DEFAULT_POOL] = self.test_pool2_dict
+        del self.test_listener2_dict[lib_consts.L7POLICIES]
+        del self.test_listener2_dict[constants.SNI_CONTAINERS]
+        del self.test_listener2_dict[constants.CLIENT_CA_TLS_CERTIFICATE_ID]
+        del self.test_listener2_dict[constants.CLIENT_CRL_CONTAINER_ID]
 
         self.test_listeners = [self.test_listener1_dict,
                                self.test_listener2_dict]
@@ -486,49 +500,58 @@ class SampleDriverDataModels(object):
         crl_file_content = 'X509 CRL FILE'
 
         self.provider_listener1_dict = {
-            'admin_state_up': True,
-            'connection_limit': 10000,
-            'default_pool': self.provider_pool1_dict,
-            'default_pool_id': self.pool1_id,
-            'default_tls_container_data': cert1.to_dict(),
-            'default_tls_container_ref': self.default_tls_container_ref,
-            'description': 'Listener 1',
-            'insert_headers': {},
-            'l7policies': self.provider_l7policies_dict,
-            'listener_id': self.listener1_id,
-            'loadbalancer_id': self.lb_id,
-            'name': 'listener_1',
-            'project_id': self.project_id,
-            'protocol': 'TCP',
-            'protocol_port': 90,
-            'sni_container_data': [cert2.to_dict(), cert3.to_dict()],
-            'sni_container_refs': [self.sni_container_ref_1,
-                                   self.sni_container_ref_2],
-            'timeout_client_data': 1000,
-            'timeout_member_connect': 2000,
-            'timeout_member_data': 3000,
-            'timeout_tcp_inspect': 4000,
-            'client_ca_tls_container_ref': self.client_ca_tls_certificate_ref,
-            'client_ca_tls_container_data': ca_cert,
-            'client_authentication': constants.CLIENT_AUTH_NONE,
-            'client_crl_container_ref': self.client_crl_container_ref,
-            'client_crl_container_data': crl_file_content
+            lib_consts.ADMIN_STATE_UP: True,
+            lib_consts.ALLOWED_CIDRS: None,
+            lib_consts.CONNECTION_LIMIT: 10000,
+            lib_consts.DEFAULT_POOL: self.provider_pool1_dict,
+            lib_consts.DEFAULT_POOL_ID: self.pool1_id,
+            lib_consts.DEFAULT_TLS_CONTAINER_DATA: cert1.to_dict(),
+            lib_consts.DEFAULT_TLS_CONTAINER_REF:
+                self.default_tls_container_ref,
+            lib_consts.DESCRIPTION: 'Listener 1',
+            lib_consts.INSERT_HEADERS: {},
+            lib_consts.L7POLICIES: self.provider_l7policies_dict,
+            lib_consts.LISTENER_ID: self.listener1_id,
+            lib_consts.LOADBALANCER_ID: self.lb_id,
+            lib_consts.NAME: 'listener_1',
+            lib_consts.PROJECT_ID: self.project_id,
+            lib_consts.PROTOCOL: lib_consts.PROTOCOL_TCP,
+            lib_consts.PROTOCOL_PORT: 90,
+            lib_consts.SNI_CONTAINER_DATA: [cert2.to_dict(), cert3.to_dict()],
+            lib_consts.SNI_CONTAINER_REFS: [self.sni_container_ref_1,
+                                            self.sni_container_ref_2],
+            lib_consts.TIMEOUT_CLIENT_DATA: 1000,
+            lib_consts.TIMEOUT_MEMBER_CONNECT: 2000,
+            lib_consts.TIMEOUT_MEMBER_DATA: 3000,
+            lib_consts.TIMEOUT_TCP_INSPECT: 4000,
+            lib_consts.CLIENT_CA_TLS_CONTAINER_REF:
+                self.client_ca_tls_certificate_ref,
+            lib_consts.CLIENT_CA_TLS_CONTAINER_DATA: ca_cert,
+            lib_consts.CLIENT_AUTHENTICATION: constants.CLIENT_AUTH_NONE,
+            lib_consts.CLIENT_CRL_CONTAINER_REF: self.client_crl_container_ref,
+            lib_consts.CLIENT_CRL_CONTAINER_DATA: crl_file_content
         }
 
         self.provider_listener2_dict = copy.deepcopy(
             self.provider_listener1_dict)
-        self.provider_listener2_dict['listener_id'] = self.listener2_id
-        self.provider_listener2_dict['name'] = 'listener_2'
-        self.provider_listener2_dict['description'] = 'Listener 1'
-        self.provider_listener2_dict['default_pool_id'] = self.pool2_id
-        self.provider_listener2_dict['default_pool'] = self.provider_pool2_dict
-        del self.provider_listener2_dict['l7policies']
-        self.provider_listener2_dict['client_ca_tls_container_ref'] = None
-        del self.provider_listener2_dict['client_ca_tls_container_data']
-        self.provider_listener2_dict['client_authentication'] = (
+        self.provider_listener2_dict[
+            lib_consts.LISTENER_ID] = self.listener2_id
+        self.provider_listener2_dict[lib_consts.NAME] = 'listener_2'
+        self.provider_listener2_dict[lib_consts.DESCRIPTION] = 'Listener 1'
+        self.provider_listener2_dict[
+            lib_consts.DEFAULT_POOL_ID] = self.pool2_id
+        self.provider_listener2_dict[
+            lib_consts.DEFAULT_POOL] = self.provider_pool2_dict
+        del self.provider_listener2_dict[lib_consts.L7POLICIES]
+        self.provider_listener2_dict[
+            lib_consts.CLIENT_CA_TLS_CONTAINER_REF] = None
+        del self.provider_listener2_dict[
+            lib_consts.CLIENT_CA_TLS_CONTAINER_DATA]
+        self.provider_listener2_dict[lib_consts.CLIENT_AUTHENTICATION] = (
             constants.CLIENT_AUTH_NONE)
-        self.provider_listener2_dict['client_crl_container_ref'] = None
-        del self.provider_listener2_dict['client_crl_container_data']
+        self.provider_listener2_dict[
+            lib_consts.CLIENT_CRL_CONTAINER_REF] = None
+        del self.provider_listener2_dict[lib_consts.CLIENT_CRL_CONTAINER_DATA]
 
         self.provider_listener1 = driver_dm.Listener(
             **self.provider_listener1_dict)
@@ -541,18 +564,18 @@ class SampleDriverDataModels(object):
         self.provider_listeners = [self.provider_listener1,
                                    self.provider_listener2]
 
-        self.test_vip_dict = {'ip_address': self.ip_address,
-                              'network_id': self.network_id,
-                              'port_id': self.port_id,
-                              'subnet_id': self.subnet_id,
-                              'qos_policy_id': self.qos_policy_id}
+        self.test_vip_dict = {constants.IP_ADDRESS: self.ip_address,
+                              constants.NETWORK_ID: self.network_id,
+                              constants.PORT_ID: self.port_id,
+                              lib_consts.SUBNET_ID: self.subnet_id,
+                              constants.QOS_POLICY_ID: self.qos_policy_id}
 
         self.provider_vip_dict = {
-            'vip_address': self.ip_address,
-            'vip_network_id': self.network_id,
-            'vip_port_id': self.port_id,
-            'vip_subnet_id': self.subnet_id,
-            'vip_qos_policy_id': self.qos_policy_id}
+            lib_consts.VIP_ADDRESS: self.ip_address,
+            lib_consts.VIP_NETWORK_ID: self.network_id,
+            lib_consts.VIP_PORT_ID: self.port_id,
+            lib_consts.VIP_SUBNET_ID: self.subnet_id,
+            lib_consts.VIP_QOS_POLICY_ID: self.qos_policy_id}
 
         self.db_vip = data_models.Vip(
             ip_address=self.ip_address,
@@ -562,46 +585,47 @@ class SampleDriverDataModels(object):
             qos_policy_id=self.qos_policy_id)
 
         self.test_loadbalancer1_dict = {
-            'name': self.lb_name, 'description': self.lb_description,
-            'enabled': True,
-            'provisioning_status': lib_consts.PENDING_UPDATE,
-            'operating_status': lib_consts.OFFLINE,
-            'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
-            'vrrp_group': None,
-            'provider': 'amphora',
-            'server_group_id': uuidutils.generate_uuid(),
-            'project_id': self.project_id,
-            'id': self.lb_id, 'flavor_id': self.flavor_id,
-            'tags': ['test_tag']}
+            lib_consts.NAME: self.lb_name,
+            lib_consts.DESCRIPTION: self.lb_description,
+            constants.ENABLED: True,
+            lib_consts.PROVISIONING_STATUS: lib_consts.PENDING_UPDATE,
+            lib_consts.OPERATING_STATUS: lib_consts.OFFLINE,
+            constants.TOPOLOGY: constants.TOPOLOGY_ACTIVE_STANDBY,
+            constants.VRRP_GROUP: None,
+            constants.PROVIDER: constants.AMPHORA,
+            constants.SERVER_GROUP_ID: uuidutils.generate_uuid(),
+            lib_consts.PROJECT_ID: self.project_id,
+            lib_consts.ID: self.lb_id, constants.FLAVOR_ID: self.flavor_id,
+            constants.TAGS: ['test_tag']}
 
         self.provider_loadbalancer_dict = {
-            'additional_vips': None,
-            'admin_state_up': True,
-            'description': self.lb_description,
-            'flavor': {"something": "else"},
-            'listeners': None,
-            'loadbalancer_id': self.lb_id,
-            'name': self.lb_name,
-            'pools': None,
-            'project_id': self.project_id,
-            'vip_address': self.ip_address,
-            'vip_network_id': self.network_id,
-            'vip_port_id': self.port_id,
-            'vip_qos_policy_id': self.qos_policy_id,
-            'vip_subnet_id': self.subnet_id}
+            lib_consts.ADDITIONAL_VIPS: None,
+            lib_consts.ADMIN_STATE_UP: True,
+            lib_consts.DESCRIPTION: self.lb_description,
+            lib_consts.FLAVOR: {"something": "else"},
+            lib_consts.LISTENERS: None,
+            lib_consts.LOADBALANCER_ID: self.lb_id,
+            lib_consts.NAME: self.lb_name,
+            lib_consts.POOLS: None,
+            lib_consts.PROJECT_ID: self.project_id,
+            lib_consts.VIP_ADDRESS: self.ip_address,
+            lib_consts.VIP_NETWORK_ID: self.network_id,
+            lib_consts.VIP_PORT_ID: self.port_id,
+            lib_consts.VIP_QOS_POLICY_ID: self.qos_policy_id,
+            lib_consts.VIP_SUBNET_ID: self.subnet_id}
 
         self.provider_loadbalancer_tree_dict = {
-            'additional_vips': None,
-            'admin_state_up': True,
-            'description': self.lb_description,
-            'flavor': {"something": "else"},
-            'listeners': None,
-            'loadbalancer_id': self.lb_id,
-            'name': self.lb_name,
-            'pools': None,
-            'project_id': self.project_id,
-            'vip_address': self.ip_address,
-            'vip_network_id': self.network_id,
-            'vip_port_id': self.port_id,
-            'vip_qos_policy_id': self.qos_policy_id,
-            'vip_subnet_id': self.subnet_id}
+            lib_consts.ADDITIONAL_VIPS: None,
+            lib_consts.ADMIN_STATE_UP: True,
+            lib_consts.DESCRIPTION: self.lb_description,
+            lib_consts.FLAVOR: {"something": "else"},
+            lib_consts.LISTENERS: None,
+            lib_consts.LOADBALANCER_ID: self.lb_id,
+            lib_consts.NAME: self.lb_name,
+            lib_consts.POOLS: None,
+            lib_consts.PROJECT_ID: self.project_id,
+            lib_consts.VIP_ADDRESS: self.ip_address,
+            lib_consts.VIP_NETWORK_ID: self.network_id,
+            lib_consts.VIP_PORT_ID: self.port_id,
+            lib_consts.VIP_QOS_POLICY_ID: self.qos_policy_id,
+            lib_consts.VIP_SUBNET_ID: self.subnet_id}
