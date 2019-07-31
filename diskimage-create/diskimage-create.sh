@@ -424,6 +424,10 @@ if [ -n "$dib_enable_tracing" ]; then
     dib_trace_arg="-x"
 fi
 
+if [ "$USE_PYTHON3" = "False" ]; then
+    export DIB_PYTHON_VERSION=2
+fi
+
 disk-image-create $AMP_LOGFILE $dib_trace_arg -a $AMP_ARCH -o $AMP_OUTPUTFILENAME -t $AMP_IMAGETYPE --image-size $AMP_IMAGESIZE --image-cache $AMP_CACHEDIR $AMP_DISABLE_TMP_FS $AMP_element_sequence
 
 popd > /dev/null # out of $TEMP
