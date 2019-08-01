@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Now supports ``oslo_middleware http_proxy_to_wsgi``, which will set up the
+    request URL correctly in the case that there is a proxy (for example, a
+    loadbalancer such as HAProxy) in front of the Octavia API. It is off by
+    default and can be enabled by setting ``enable_proxy_headers_parsing=True``
+    in the ``[oslo_middleware]`` section of ``octavia.conf``.
