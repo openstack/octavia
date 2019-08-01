@@ -345,6 +345,8 @@ BYTES_IN = 'bytes_in'
 BYTES_OUT = 'bytes_out'
 REQUEST_ERRORS = 'request_errors'
 TOTAL_CONNECTIONS = 'total_connections'
+NAME = 'name'
+PROVIDER_NAME = 'provider_name'
 
 CERT_ROTATE_AMPHORA_FLOW = 'octavia-cert-rotate-amphora-flow'
 CREATE_AMPHORA_FLOW = 'octavia-create-amphora-flow'

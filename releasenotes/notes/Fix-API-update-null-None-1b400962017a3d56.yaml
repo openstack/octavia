@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed the API handling of None (JSON null) on object update calls. The
+    API will now either clear the value from the field or will reset the value
+    of the field to the API default.

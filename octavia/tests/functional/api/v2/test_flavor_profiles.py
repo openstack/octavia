@@ -328,7 +328,7 @@ class TestFlavorProfiles(base.BaseAPITest):
         self.assertEqual('{"hello": "world"}',
                          response.get(constants.FLAVOR_DATA))
 
-    def test_update_none(self):
+    def test_update_nothing(self):
         fp = self.create_flavor_profile('test_profile', 'noop_driver',
                                         '{"x": "y"}')
         body = self._build_body({})
@@ -339,6 +339,25 @@ class TestFlavorProfiles(base.BaseAPITest):
         self.assertEqual('noop_driver', response.get('provider_name'))
         self.assertEqual('{"x": "y"}',
                          response.get(constants.FLAVOR_DATA))
+
+    def test_update_name_none(self):
+        self._test_update_param_none(constants.NAME)
+
+    def test_update_provider_name_none(self):
+        self._test_update_param_none(constants.PROVIDER_NAME)
+
+    def test_update_flavor_data_none(self):
+        self._test_update_param_none(constants.FLAVOR_DATA)
+
+    def _test_update_param_none(self, param_name):
+        fp = self.create_flavor_profile('test_profile', 'noop_driver',
+                                        '{"x": "y"}')
+        expect_error_msg = ("None is not a valid option for %s" %
+                            param_name)
+        body = self._build_body({param_name: None})
+        response = self.put(self.FP_PATH.format(fp_id=fp.get('id')), body,
+                            status=400)
+        self.assertEqual(expect_error_msg, response.json['faultstring'])
 
     def test_update_no_flavor_data(self):
         fp = self.create_flavor_profile('test_profile', 'noop_driver',
