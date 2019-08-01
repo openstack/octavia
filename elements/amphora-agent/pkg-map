@@ -2,6 +2,7 @@
   "release": {
     "rhel": {
       "8": {
+        "isc-dhcp-client": "dhcp-client",
         "python-dev": "platform-python-devel",
         "vlan": "",
         "screen": "",
@@ -20,7 +21,7 @@
       "cloud-guest-utils": "",
       "apparmor": "",
       "dmeventd": "",
-      "isc-dhcp-client": "dhcp-client",
+      "isc-dhcp-client": "dhclient",
       "uuid-runtime": "",
       "ubuntu-cloudimage-keyring": "",
       "vim-tiny": "",
