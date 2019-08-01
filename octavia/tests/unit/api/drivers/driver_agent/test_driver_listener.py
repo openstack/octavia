@@ -135,11 +135,6 @@ class TestDriverListener(base.TestCase):
         mock_send.assert_called_with(b'15\n')
         mock_sendall.assert_called_with(jsonutils.dump_as_bytes(TEST_OBJECT))
 
-    @mock.patch('octavia.api.drivers.driver_agent.driver_listener.CONF')
-    def test_mutate_config(self, mock_conf):
-        driver_listener._mutate_config()
-        mock_conf.mutate_config_files.assert_called_once()
-
     @mock.patch('os.remove')
     def test_cleanup_socket_file(self, mock_remove):
         mock_remove.side_effect = [mock.DEFAULT, OSError,
@@ -154,11 +149,9 @@ class TestDriverListener(base.TestCase):
 
     @mock.patch('octavia.api.drivers.driver_agent.driver_listener.'
                 '_cleanup_socket_file')
-    @mock.patch('octavia.api.drivers.driver_agent.driver_listener.signal')
     @mock.patch('octavia.api.drivers.driver_agent.driver_listener.'
                 'ForkingUDSServer')
-    def test_status_listener(self, mock_forking_server,
-                             mock_signal, mock_cleanup):
+    def test_status_listener(self, mock_forking_server, mock_cleanup):
         mock_server = mock.MagicMock()
         mock_active_children = mock.PropertyMock(
             side_effect=['a', 'a', 'a',
@@ -176,11 +169,9 @@ class TestDriverListener(base.TestCase):
 
     @mock.patch('octavia.api.drivers.driver_agent.driver_listener.'
                 '_cleanup_socket_file')
-    @mock.patch('octavia.api.drivers.driver_agent.driver_listener.signal')
     @mock.patch('octavia.api.drivers.driver_agent.driver_listener.'
                 'ForkingUDSServer')
-    def test_stats_listener(self, mock_forking_server,
-                            mock_signal, mock_cleanup):
+    def test_stats_listener(self, mock_forking_server, mock_cleanup):
         mock_server = mock.MagicMock()
         mock_active_children = mock.PropertyMock(
             side_effect=['a', 'a', 'a',
@@ -197,11 +188,9 @@ class TestDriverListener(base.TestCase):
 
     @mock.patch('octavia.api.drivers.driver_agent.driver_listener.'
                 '_cleanup_socket_file')
-    @mock.patch('octavia.api.drivers.driver_agent.driver_listener.signal')
     @mock.patch('octavia.api.drivers.driver_agent.driver_listener.'
                 'ForkingUDSServer')
-    def test_get_listener(self, mock_forking_server,
-                          mock_signal, mock_cleanup):
+    def test_get_listener(self, mock_forking_server, mock_cleanup):
         mock_server = mock.MagicMock()
         mock_active_children = mock.PropertyMock(
             side_effect=['a', 'a', 'a',

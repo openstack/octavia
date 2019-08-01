@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    The Octavia driver-agent now supports starting provider driver agents.
+    Provider driver agents are long running agent processes supporting
+    provider drivers.
