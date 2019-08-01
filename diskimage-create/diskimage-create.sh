@@ -27,7 +27,7 @@ usage() {
     echo "            [-e]"
     echo "            [-f]"
     echo "            [-h]"
-    echo "            [-i **ubuntu-minimal** | fedora | centos | rhel ]"
+    echo "            [-i **ubuntu-minimal** | fedora | centos-minimal | rhel ]"
     echo "            [-k <kernel package name> ]"
     echo "            [-l <log file> ]"
     echo "            [-n]"
@@ -130,12 +130,16 @@ while getopts "a:b:c:d:efhi:k:l:no:pt:r:s:vw:x" opt; do
                 [ $AMP_BASEOS != "ubuntu-minimal" ] && \
                 [ $AMP_BASEOS != "fedora" ] && \
                 [ $AMP_BASEOS != "centos" ] && \
+                [ $AMP_BASEOS != "centos-minimal" ] && \
                 [ $AMP_BASEOS != "rhel" ]; then
                 echo "Error: Unsupported base OS " $AMP_BASEOS " specified"
                 exit 3
             fi
             if [ $AMP_BASEOS == "ubuntu" ]; then
                 AMP_BASEOS="ubuntu-minimal"
+            fi
+            if [ $AMP_BASEOS == "centos" ]; then
+                AMP_BASEOS="centos-minimal"
             fi
         ;;
         k)
@@ -208,7 +212,7 @@ AMP_BASEOS=${AMP_BASEOS:-"ubuntu-minimal"}
 
 if [ "$AMP_BASEOS" = "ubuntu-minimal" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"bionic"}
-elif [ "${AMP_BASEOS}" = "centos" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
+elif [ "${AMP_BASEOS}" = "centos-minimal" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"7"}
 elif [ "${AMP_BASEOS}" = "fedora" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"28"}
@@ -232,7 +236,7 @@ AMP_ENABLE_FULL_MAC_SECURITY=${AMP_ENABLE_FULL_MAC_SECURITY:-0}
 
 AMP_DISABLE_TMP_FS=${AMP_DISABLE_TMP_FS:-""}
 
-if [ "$AMP_BASEOS" = "rhel" -o "$AMP_BASEOS" = "centos" -o "$AMP_BASEOS" = "fedora" ] && [ "$AMP_IMAGESIZE" -lt 3 ]; then
+if [ "$AMP_BASEOS" = "rhel" -o "$AMP_BASEOS" = "centos-minimal" -o "$AMP_BASEOS" = "fedora" ] && [ "$AMP_IMAGESIZE" -lt 3 ]; then
     echo "RHEL/CentOS based amphora requires an image size of at least 3GB"
     exit 1
 fi
@@ -354,14 +358,10 @@ pushd $TEMP > /dev/null
 # Setup the elements list
 
 AMP_element_sequence=${AMP_element_sequence:-"base vm"}
-if [ "${AMP_BASEOS}" = "centos" ]; then
-    AMP_element_sequence="$AMP_element_sequence ${AMP_BASEOS}${DIB_RELEASE}"
-else
-    if [ "${AMP_BASEOS}" = "rhel" ] && [ "${DIB_RELEASE}" = "8" ]; then
-        export DIB_INSTALLTYPE_pip_and_virtualenv=package
-    fi
-    AMP_element_sequence="$AMP_element_sequence ${AMP_BASEOS}"
+if [ "${AMP_BASEOS}" = "rhel" ] && [ "${DIB_RELEASE}" = "8" ]; then
+    export DIB_INSTALLTYPE_pip_and_virtualenv=package
 fi
+AMP_element_sequence="$AMP_element_sequence ${AMP_BASEOS}"
 
 if [ "$AMP_PACKAGE_INSTALL" -eq 1 ]; then
     export DIB_INSTALLTYPE_amphora_agent=package
@@ -386,9 +386,13 @@ AMP_element_sequence="$AMP_element_sequence cloud-init-datasources"
 
 if [ "$AMP_ENABLE_FULL_MAC_SECURITY" -ne 1 ]; then
     # SELinux systems
-    if [ "${AMP_BASEOS}" = "centos" ] || [ "${AMP_BASEOS}" = "fedora" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
+    if [ "${AMP_BASEOS}" = "centos-minimal" ] || [ "${AMP_BASEOS}" = "fedora" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
         AMP_element_sequence="$AMP_element_sequence selinux-permissive"
     fi
+fi
+
+if [ "${AMP_BASEOS}" = "centos-minimal" ]; then
+    export DIB_YUM_MINIMAL_CREATE_INTERFACES=0
 fi
 
 # Add keepalived-octavia element
