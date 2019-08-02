@@ -299,7 +299,10 @@ class HaproxyAmphoraLoadBalancerDriver(
     def _combined_config_delete(self, amphora, listener):
         # Remove the listener from the listener list on the LB before
         # passing the whole thing over to update (so it'll actually delete)
-        listener.load_balancer.listeners.remove(listener)
+        # In case of amphorae in ACTIVE_STANDBY topology, ensure that we don't
+        # remove an already removed listener.
+        if listener in listener.load_balancer.listeners:
+            listener.load_balancer.listeners.remove(listener)
 
         # Check if there's any certs that we need to delete
         certs = self._process_tls_certificates(listener)
