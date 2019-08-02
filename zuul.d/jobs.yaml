@@ -31,6 +31,7 @@
     required-projects:
         - openstack/diskimage-builder
         - openstack/octavia
+        - openstack/octavia-lib
 - job:
     name: publish-openstack-octavia-amphora-image-xenial
     parent: publish-openstack-octavia-amphora-image

@@ -18,6 +18,9 @@
         - python-yaml
         - debootstrap
         - qemu
+        - bc
+        - rpm
+        - yum-utils
     - name: Install required pip packages
       pip:
         name: "{{  item }}"
