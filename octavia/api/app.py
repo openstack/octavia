@@ -16,6 +16,7 @@ import keystonemiddleware.audit as audit_middleware
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_middleware import cors
+from oslo_middleware import http_proxy_to_wsgi
 from oslo_middleware import request_id
 import pecan
 
@@ -82,6 +83,8 @@ def _wrap_app(app):
 
     if cfg.CONF.api_settings.auth_strategy == constants.KEYSTONE:
         app = keystone.SkippingAuthProtocol(app, {})
+
+    app = http_proxy_to_wsgi.HTTPProxyToWSGI(app)
 
     # This should be the last middleware in the list (which results in
     # it being the first in the middleware chain). This is to ensure
