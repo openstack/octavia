@@ -146,6 +146,17 @@ Environment Variables
 These are optional environment variables that can be set to override the script
 defaults.
 
+DIB_REPOLOCATION_amphora_agent
+    - Location of the amphora-agent code that will be installed in the image.
+    - Default: https://opendev.org/openstack/octavia
+    - Example: /tmp/octavia
+
+DIB_REPOREF_amphora_agent
+    - The git reference to checkout for the amphora-agent code inside the image.
+    - Default: master
+    - Example: stable/stein
+    - Example: refs/changes/40/674140/7
+
 CLOUD_INIT_DATASOURCES
     - Comma separated list of cloud-int datasources
     - Default: ConfigDrive
