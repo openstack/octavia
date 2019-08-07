@@ -163,6 +163,11 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
     # Member
     def member_create(self, member):
+        pool_id = member.pool_id
+        db_pool = self.repositories.pool.get(db_apis.get_session(),
+                                             id=pool_id)
+        self._validate_members(db_pool, [member])
+
         payload = {consts.MEMBER_ID: member.member_id}
         self.client.cast({}, 'create_member', **payload)
 
@@ -186,6 +191,9 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         pool_id = members[0].pool_id
         # The DB should not have updated yet, so we can still use the pool
         db_pool = self.repositories.pool.get(db_apis.get_session(), id=pool_id)
+
+        self._validate_members(db_pool, members)
+
         old_members = db_pool.members
 
         old_member_ids = [m.id for m in old_members]
@@ -217,6 +225,24 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
                    'new_member_ids': [m.member_id for m in new_members],
                    'updated_members': updated_members}
         self.client.cast({}, 'batch_update_members', **payload)
+
+    def _validate_members(self, db_pool, members):
+        if db_pool.protocol == consts.PROTOCOL_UDP:
+            # For UDP LBs, check that we are not mixing IPv4 and IPv6
+            for member in members:
+                member_is_ipv6 = utils.is_ipv6(member.address)
+
+                for listener in db_pool.listeners:
+                    lb = listener.load_balancer
+                    vip_is_ipv6 = utils.is_ipv6(lb.vip.ip_address)
+
+                    if member_is_ipv6 != vip_is_ipv6:
+                        msg = ("This provider doesn't support mixing IPv4 and "
+                               "IPv6 addresses for its VIP and members in UDP "
+                               "load balancers.")
+                        raise exceptions.UnsupportedOptionError(
+                            user_fault_string=msg,
+                            operator_fault_string=msg)
 
     # Health Monitor
     def health_monitor_create(self, healthmonitor):
