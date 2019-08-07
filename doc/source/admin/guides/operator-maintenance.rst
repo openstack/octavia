@@ -103,7 +103,7 @@ The Monasca project has a plugin for such monitoring (see
 Please refer to this project for further information.
 
 Octavia's control plane components are shared nothing and can be scaled
-lineary. For high availability of the control plane we recommend to run at
+linearly. For high availability of the control plane we recommend to run at
 least one set of components in each availability zone. Furthermore, the
 octavia-api endpoint could be behind a load balancer or other HA technology.
 That said, if one or more components fail the system will still be available
@@ -340,17 +340,17 @@ expired, new ones need to be installed into the system. If Octavia is
 not acting as the certificate authority only the certificate authority's
 cert needs to be changed in the system so amphora can be authenticated again.
 
-# Issue new certificates (see the script in the bin folder of Octavia if
-Octavia is acting as the certificate authority) or follow the instructions
-of the third-party certificate authority. Copy the certificate and the
-private key (if Octavia acts as a certificate authority) where Octavia can
-find them.
+* Issue new certificates (see the script in the bin folder of Octavia if
+  Octavia is acting as the certificate authority) or follow the instructions
+  of the third-party certificate authority. Copy the certificate and the
+  private key (if Octavia acts as a certificate authority) where Octavia can
+  find them.
 
-# If the previous certificate files haven't been overridden, adjust the paths
-to the new certs in the configuration file and restart all Octavia services
-(except octavia-api).
+* If the previous certificate files haven't been overridden, adjust the paths
+  to the new certs in the configuration file and restart all Octavia services
+  (except octavia-api).
 
-# Review :ref:`rotate-amphora-certs` above to determine if and how the
+Review :ref:`rotate-amphora-certs` above to determine if and how the
 amphora certificates needs to be rotated.
 
 Rotating Client Certificates
@@ -359,15 +359,15 @@ Rotating Client Certificates
 If the client certificates expired new ones need to be issued and installed on
 the system:
 
-# Issue a new client certificate (see the script in the bin folder of Octavia
-if self signed certificates are used) or use the ones provided to you by
-your certificate authority.
+* Issue a new client certificate (see the script in the bin folder of Octavia
+  if self signed certificates are used) or use the ones provided to you by
+  your certificate authority.
 
-# Copy the new cert where Octavia can find it.
+* Copy the new cert where Octavia can find it.
 
-# If the previous certificate files haven't been overridden, adjust the paths
-to the new certs in the configuration file. In all cases restart all Octavia
-services except octavia-api.
+* If the previous certificate files haven't been overridden, adjust the paths
+  to the new certs in the configuration file. In all cases restart all Octavia
+  services except octavia-api.
 
 If the client CA certificate has been replaced in addition to
 rotating the client certificate the new client CA
@@ -416,7 +416,7 @@ deleted as part of the failover and will not touch them again.
     compute_id). If there are any matches where the amphora status is not
     'DELETED', the amphora is still considered to be in use.
 
-Evacuating a Specific Amohora from a Host
+Evacuating a Specific Amphora from a Host
 -----------------------------------------
 
 In some cases an amphora needs to be evacuated either because the host is being
