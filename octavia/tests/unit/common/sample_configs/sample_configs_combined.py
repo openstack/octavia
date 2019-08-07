@@ -1085,8 +1085,8 @@ def sample_base_expected_config(frontend=None, backend=None,
             "global\n"
             "    daemon\n"
             "    user nobody\n"
-            "    log /dev/log local0\n"
-            "    log /dev/log local1 notice\n"
+            "    log /run/rsyslog/octavia/log local0\n"
+            "    log /run/rsyslog/octavia/log local1 notice\n"
             "    stats socket /var/lib/octavia/sample_loadbalancer_id_1.sock"
             " mode 0666 level user\n" +
             global_opts + defaults + peers + frontend + backend)

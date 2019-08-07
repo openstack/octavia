@@ -1,4 +1,5 @@
 dib-init-system
+install-static
 package-installs
 pkg-map
 source-repositories

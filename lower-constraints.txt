@@ -43,7 +43,7 @@ futures==3.0.0
 gitdb2==2.0.3
 GitPython==2.1.8
 greenlet==0.4.13
-gunicorn==19.0.0
+gunicorn==19.9.0
 hacking==0.12.0
 idna==2.6
 imagesize==1.0.0
