@@ -72,6 +72,22 @@ function build_octavia_worker_image {
     if [[ ${OCTAVIA_AMP_IMAGE_SIZE:+1} ]] ; then
     export PARAM_OCTAVIA_AMP_IMAGE_SIZE='-s '$OCTAVIA_AMP_IMAGE_SIZE
     fi
+
+    # Use the infra pypi mirror if it is available
+    if [[ -e /etc/ci/mirror_info.sh ]]; then
+        source /etc/ci/mirror_info.sh
+    fi
+    if [[ ${NODEPOOL_PYPI_MIRROR:+1} ]]; then
+        if [[ ${DIB_LOCAL_ELEMENTS:+1} ]]; then
+            export DIB_LOCAL_ELEMENTS="${DIB_LOCAL_ELEMENTS} pypi"
+        else
+            export DIB_LOCAL_ELEMENTS='pypi'
+        fi
+        export DIB_PYPI_MIRROR_URL=$NODEPOOL_PYPI_MIRROR
+        export DIB_PYPI_MIRROR_URL_1=$NODEPOOL_WHEEL_MIRROR
+        export DIB_PIP_RETRIES=0
+    fi
+
     if ! [ -f $OCTAVIA_AMP_IMAGE_FILE ]; then
         $OCTAVIA_DIR/diskimage-create/diskimage-create.sh $octavia_dib_tracing_arg -o $OCTAVIA_AMP_IMAGE_FILE ${PARAM_OCTAVIA_AMP_BASE_OS:-} ${PARAM_OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID:-} ${PARAM_OCTAVIA_AMP_IMAGE_SIZE:-}
     fi
