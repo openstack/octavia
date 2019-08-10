@@ -14,6 +14,7 @@
 #
 
 import concurrent.futures
+import datetime
 
 from oslo_config import cfg
 from taskflow import engines as tf_engines
@@ -30,6 +31,8 @@ class BaseTaskFlowEngine(object):
     """
 
     def __init__(self):
+        # work around for https://bugs.python.org/issue7980
+        datetime.datetime.strptime('2014-06-19 22:47:16', '%Y-%m-%d %H:%M:%S')
         self.executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=CONF.task_flow.max_workers)
 
