@@ -450,7 +450,7 @@ function configure_lb_mgmt_sec_grp {
 
 function create_amphora_flavor {
     # Pass even if it exists to avoid race condition on multinode
-    openstack flavor create --id auto --ram 1024 --disk ${OCTAVIA_AMP_IMAGE_SIZE:-2} --vcpus 1 --private m1.amphora -f value -c id || true
+    openstack flavor create --id auto --ram 1024 --disk ${OCTAVIA_AMP_IMAGE_SIZE:-2} --vcpus 1 --private m1.amphora -f value -c id --property hw_rng:allowed=True || true
     amp_flavor_id=$(openstack flavor show m1.amphora -f value -c id)
     iniset $OCTAVIA_CONF controller_worker amp_flavor_id $amp_flavor_id
 }
@@ -612,7 +612,7 @@ function octavia_init {
        OCTAVIA_AMP_IMAGE_ID=$(openstack image list -f value --property name=${OCTAVIA_AMP_IMAGE_NAME} -c ID)
 
        if [ -n "$OCTAVIA_AMP_IMAGE_ID" ]; then
-           openstack image set --tag ${OCTAVIA_AMP_IMAGE_TAG} --property hw_architecture='x86_64' ${OCTAVIA_AMP_IMAGE_ID}
+           openstack image set --tag ${OCTAVIA_AMP_IMAGE_TAG} --property hw_architecture='x86_64' --property hw_rng_model=virtio ${OCTAVIA_AMP_IMAGE_ID}
        fi
 
        # Create a management network.
