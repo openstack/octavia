@@ -1,0 +1,10 @@
+---
+upgrade:
+  - |
+    The default TaskFlow engine is now set to 'parallel' instead of 'serial'.
+    The parallel engine schedules tasks onto different threads to allow for
+    running non-dependent tasks simultaneously. This has the benefit of
+    accelerating the execution of some Octavia Amphora flows such as
+    provisioning of active-standby amphora loadbalancers. Operators can revert
+    to previously default 'serial' engine type by setting the configuration
+    option [task_flow]/engine = serial

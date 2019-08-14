@@ -25,6 +25,7 @@ import octavia.tests.unit.base as base
 
 
 MAX_WORKERS = 1
+ENGINE = 'parallel'
 
 _engine_mock = mock.MagicMock()
 
@@ -35,7 +36,7 @@ class TestBaseTaskFlowEngine(base.TestCase):
 
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="task_flow", max_workers=MAX_WORKERS)
-        conf.config(group="task_flow", engine='TESTENGINE')
+        conf.config(group="task_flow", engine=ENGINE)
         conf.config(group="task_flow", disable_revert=True)
         super(TestBaseTaskFlowEngine, self).setUp()
 
@@ -60,7 +61,7 @@ class TestBaseTaskFlowEngine(base.TestCase):
 
         tf_engines.load.assert_called_once_with(
             'TEST',
-            engine='TESTENGINE',
+            engine=ENGINE,
             executor='TESTEXECUTOR',
             never_resolve=True)
 

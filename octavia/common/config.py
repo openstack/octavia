@@ -429,8 +429,12 @@ controller_worker_opts = [
 
 task_flow_opts = [
     cfg.StrOpt('engine',
-               default='serial',
-               help=_('TaskFlow engine to use')),
+               default='parallel',
+               choices=constants.SUPPORTED_TASKFLOW_ENGINE_TYPES,
+               help=_('TaskFlow engine to use. '
+                      'serial - Runs all tasks on a single thread. '
+                      'parallel - Schedules tasks onto different threads to '
+                      'allow for running non-dependent tasks simultaneously')),
     cfg.IntOpt('max_workers',
                default=5,
                help=_('The maximum number of workers')),

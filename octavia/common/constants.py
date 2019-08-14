@@ -280,6 +280,9 @@ HTTP_QUOTED_HEADER_VALUE_REGEX = (r'\A"[a-zA-Z0-9 \t'
 DOMAIN_NAME_REGEX = (
     r'^(?=.{1,253}\.?$)(?:(?!-|[^.]+_)[A-Za-z0-9-_]{1,63}(?<!-)(?:\.|$))+$')
 
+# TaskFlow
+SUPPORTED_TASKFLOW_ENGINE_TYPES = ['serial', 'parallel']
+
 # Task/Flow constants
 AMPHORA = 'amphora'
 FAILED_AMPHORA = 'failed_amphora'
