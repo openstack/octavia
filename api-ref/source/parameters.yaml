@@ -284,7 +284,7 @@ client_ca_tls_container_ref:
   description: |
     The ref of the `key manager service
     <https://docs.openstack.org/castellan/latest/>`__ secret containing a
-    PEM format client CA certificate bundle for ``TERMINATED_TLS``
+    PEM format client CA certificate bundle for ``TERMINATED_HTTPS``
     listeners.
   in: body
   min_version: 2.8
@@ -294,7 +294,7 @@ client_ca_tls_container_ref-optional:
   description: |
     The ref of the `key manager service
     <https://docs.openstack.org/castellan/latest/>`__ secret containing a
-    PEM format client CA certificate bundle for ``TERMINATED_TLS``
+    PEM format client CA certificate bundle for ``TERMINATED_HTTPS``
     listeners.
   in: body
   min_version: 2.8
@@ -304,7 +304,7 @@ client_crl_container_ref:
   description: |
     The URI of the `key manager service
     <https://docs.openstack.org/castellan/latest/>`__ secret containing a
-    PEM format CA revocation list file for ``TERMINATED_TLS`` listeners.
+    PEM format CA revocation list file for ``TERMINATED_HTTPS`` listeners.
   in: body
   min_version: 2.8
   required: true
@@ -313,7 +313,7 @@ client_crl_container_ref-optional:
   description: |
     The URI of the `key manager service
     <https://docs.openstack.org/castellan/latest/>`__ secret containing a
-    PEM format CA revocation list file for ``TERMINATED_TLS`` listeners.
+    PEM format CA revocation list file for ``TERMINATED_HTTPS`` listeners.
   in: body
   min_version: 2.8
   required: false
@@ -383,9 +383,9 @@ default_tls_container_ref:
   description: |
     The URI of the `key manager service
     <https://docs.openstack.org/castellan/latest/>`__ secret containing a
-    PKCS12 format certificate/key bundle for ``TERMINATED_TLS`` listeners.
+    PKCS12 format certificate/key bundle for ``TERMINATED_HTTPS`` listeners.
     DEPRECATED: A secret container of type "certificate" containing the
-    certificate and key for ``TERMINATED_TLS`` listeners.
+    certificate and key for ``TERMINATED_HTTPS`` listeners.
   in: body
   required: true
   type: string
@@ -393,9 +393,9 @@ default_tls_container_ref-optional:
   description: |
     The URI of the `key manager service
     <https://docs.openstack.org/castellan/latest/>`__ secret containing a
-    PKCS12 format certificate/key bundle for ``TERMINATED_TLS`` listeners.
+    PKCS12 format certificate/key bundle for ``TERMINATED_HTTPS`` listeners.
     DEPRECATED: A secret container of type "certificate" containing the
-    certificate and key for ``TERMINATED_TLS`` listeners.
+    certificate and key for ``TERMINATED_HTTPS`` listeners.
   in: body
   required: false
   type: string
@@ -1291,9 +1291,9 @@ sni_container_refs:
   description: |
     A list of URIs to the `key manager service
     <https://docs.openstack.org/barbican/latest/>`__ secrets containing
-    PKCS12 format certificate/key bundles for ``TERMINATED_TLS`` listeners.
+    PKCS12 format certificate/key bundles for ``TERMINATED_HTTPS`` listeners.
     (DEPRECATED) Secret containers of type "certificate" containing the
-    certificates and keys for ``TERMINATED_TLS`` listeners.
+    certificates and keys for ``TERMINATED_HTTPS`` listeners.
   in: body
   required: true
   type: array
@@ -1301,9 +1301,9 @@ sni_container_refs-optional:
   description: |
     A list of URIs to the `key manager service
     <https://docs.openstack.org/barbican/latest/>`__ secrets containing
-    PKCS12 format certificate/key bundles for ``TERMINATED_TLS`` listeners.
+    PKCS12 format certificate/key bundles for ``TERMINATED_HTTPS`` listeners.
     (DEPRECATED) Secret containers of type "certificate" containing the
-    certificates and keys for ``TERMINATED_TLS`` listeners.
+    certificates and keys for ``TERMINATED_HTTPS`` listeners.
   in: body
   required: false
   type: array
