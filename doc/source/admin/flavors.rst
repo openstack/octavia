@@ -61,6 +61,7 @@ capability, among many others::
   | loadbalancer_topology | The load balancer topology. One of: SINGLE - One  |
   |                       | amphora per load balancer. ACTIVE_STANDBY - Two   |
   |                       | amphora per load balancer.                        |
+  | ...                   | ...                                               |
   +-----------------------+---------------------------------------------------+
 
 Flavor Profiles
