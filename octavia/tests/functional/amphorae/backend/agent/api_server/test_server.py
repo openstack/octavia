@@ -21,7 +21,6 @@ import subprocess
 
 import fixtures
 import mock
-import netifaces
 from oslo_config import fixture as oslo_fixture
 from oslo_serialization import jsonutils
 from oslo_utils import uuidutils
@@ -41,6 +40,7 @@ import octavia.tests.unit.base as base
 AMP_AGENT_CONF_PATH = '/etc/octavia/amphora-agent.conf'
 RANDOM_ERROR = b'random error'
 OK = dict(message='OK')
+FAKE_INTERFACE = 'eth33'
 
 
 class TestServerTestCase(base.TestCase):
@@ -966,8 +966,6 @@ class TestServerTestCase(base.TestCase):
         self._test_plug_network(consts.CENTOS)
 
     @mock.patch('os.chmod')
-    @mock.patch('netifaces.interfaces')
-    @mock.patch('netifaces.ifaddresses')
     @mock.patch('pyroute2.IPRoute', create=True)
     @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
@@ -976,7 +974,16 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('os.path.isfile')
     def _test_plug_network(self, distro, mock_isfile, mock_int_exists,
                            mock_check_output, mock_netns, mock_pyroute2,
-                           mock_ifaddress, mock_interfaces, mock_os_chmod):
+                           mock_os_chmod):
+        mock_ipr = mock.MagicMock()
+        mock_ipr_instance = mock.MagicMock()
+        mock_ipr_instance.link_lookup.side_effect = [
+            [], [], [33], [33], [33], [33], [33], [33], [33], [33]]
+        mock_ipr_instance.get_links.return_value = ({
+            'attrs': [('IFLA_IFNAME', FAKE_INTERFACE)]},)
+        mock_ipr.__enter__.return_value = mock_ipr_instance
+        mock_pyroute2.return_value = mock_ipr
+
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         port_info = {'mac_address': '123'}
         test_int_num = random.randint(0, 9999)
@@ -1006,7 +1013,6 @@ class TestServerTestCase(base.TestCase):
         mock_int_exists.return_value = False
 
         # No interface at all
-        mock_interfaces.side_effect = [[]]
         file_name = '/sys/bus/pci/rescan'
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open') as mock_open, mock.patch.object(
@@ -1031,8 +1037,6 @@ class TestServerTestCase(base.TestCase):
 
         # No interface down
         m().reset_mock()
-        mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [[netifaces.AF_INET]]
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
@@ -1052,13 +1056,8 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual(404, rv.status_code)
         self.assertEqual(dict(details="No suitable network interface found"),
                          jsonutils.loads(rv.data.decode('utf-8')))
-        mock_ifaddress.assert_called_once_with('blah')
 
         # One Interface down, Happy Path
-        mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
-                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
-
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 
         if self.conf.conf.amphora_agent.agent_server_network_file:
@@ -1128,9 +1127,6 @@ class TestServerTestCase(base.TestCase):
         # fixed IPs happy path
         port_info = {'mac_address': '123', 'mtu': 1450, 'fixed_ips': [
             {'ip_address': '10.0.0.5', 'subnet_cidr': '10.0.0.0/24'}]}
-        mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
-                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
 
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 
@@ -1206,9 +1202,6 @@ class TestServerTestCase(base.TestCase):
         # fixed IPs happy path IPv6
         port_info = {'mac_address': '123', 'mtu': 1450, 'fixed_ips': [
             {'ip_address': '2001:db8::2', 'subnet_cidr': '2001:db8::/32'}]}
-        mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
-                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
 
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 
@@ -1280,9 +1273,6 @@ class TestServerTestCase(base.TestCase):
         # fixed IPs, bogus IP
         port_info = {'mac_address': '123', 'fixed_ips': [
             {'ip_address': '10005', 'subnet_cidr': '10.0.0.0/24'}]}
-        mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
-                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
 
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
@@ -1307,9 +1297,6 @@ class TestServerTestCase(base.TestCase):
         # same as above but ifup fails
         port_info = {'mac_address': '123', 'fixed_ips': [
             {'ip_address': '10.0.0.5', 'subnet_cidr': '10.0.0.0/24'}]}
-        mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
-                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
         mock_check_output.side_effect = [subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
             7, 'test', RANDOM_ERROR)]
@@ -1369,15 +1356,19 @@ class TestServerTestCase(base.TestCase):
         self._test_plug_network_host_routes(consts.CENTOS)
 
     @mock.patch('os.chmod')
-    @mock.patch('netifaces.interfaces')
-    @mock.patch('netifaces.ifaddresses')
     @mock.patch('pyroute2.IPRoute', create=True)
     @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
     def _test_plug_network_host_routes(self, distro, mock_check_output,
                                        mock_netns, mock_pyroute2,
-                                       mock_ifaddress, mock_interfaces,
                                        mock_os_chmod):
+        mock_ipr = mock.MagicMock()
+        mock_ipr_instance = mock.MagicMock()
+        mock_ipr_instance.link_lookup.return_value = [33]
+        mock_ipr_instance.get_links.return_value = ({
+            'attrs': [('IFLA_IFNAME', FAKE_INTERFACE)]},)
+        mock_ipr.__enter__.return_value = mock_ipr_instance
+        mock_pyroute2.return_value = mock_ipr
 
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
 
@@ -1398,9 +1389,6 @@ class TestServerTestCase(base.TestCase):
             {'ip_address': IP, 'subnet_cidr': SUBNET_CIDR,
              'host_routes': [{'destination': DEST1, 'nexthop': NEXTHOP},
                              {'destination': DEST2, 'nexthop': NEXTHOP}]}]}
-        mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
-                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
 
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
@@ -1495,8 +1483,6 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('pyroute2.NSPopen', create=True)
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'plug.Plug._netns_interface_exists')
-    @mock.patch('netifaces.interfaces')
-    @mock.patch('netifaces.ifaddresses')
     @mock.patch('pyroute2.IPRoute', create=True)
     @mock.patch('pyroute2.netns.create', create=True)
     @mock.patch('pyroute2.NetNS', create=True)
@@ -1506,9 +1492,16 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('os.path.isfile')
     def _test_plug_VIP4(self, distro, mock_isfile, mock_makedirs,
                         mock_copytree, mock_check_output, mock_netns,
-                        mock_netns_create, mock_pyroute2, mock_ifaddress,
-                        mock_interfaces, mock_int_exists, mock_nspopen,
-                        mock_copy2, mock_os_chmod):
+                        mock_netns_create, mock_pyroute2, mock_int_exists,
+                        mock_nspopen, mock_copy2, mock_os_chmod):
+        mock_ipr = mock.MagicMock()
+        mock_ipr_instance = mock.MagicMock()
+        mock_ipr_instance.link_lookup.side_effect = [[], [], [33], [33], [33],
+                                                     [33], [33], [33]]
+        mock_ipr_instance.get_links.return_value = ({
+            'attrs': [('IFLA_IFNAME', FAKE_INTERFACE)]},)
+        mock_ipr.__enter__.return_value = mock_ipr_instance
+        mock_pyroute2.return_value = mock_ipr
 
         mock_isfile.return_value = True
 
@@ -1560,7 +1553,6 @@ class TestServerTestCase(base.TestCase):
         mock_int_exists.return_value = False
 
         # No interface at all
-        mock_interfaces.side_effect = [[]]
         file_name = '/sys/bus/pci/rescan'
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open') as mock_open, mock.patch.object(
@@ -1586,8 +1578,6 @@ class TestServerTestCase(base.TestCase):
 
         # Two interfaces down
         m().reset_mock()
-        mock_interfaces.side_effect = [['blah', 'blah2']]
-        mock_ifaddress.side_effect = [['blabla'], ['blabla']]
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
@@ -1621,10 +1611,6 @@ class TestServerTestCase(base.TestCase):
                             {'destination': '203.0.115.1/32',
                              'nexthop': '203.0.113.5'}]
         }
-
-        mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
-                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
 
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 
@@ -1755,10 +1741,6 @@ class TestServerTestCase(base.TestCase):
         mock_nspopen.assert_has_calls(calls, any_order=True)
 
         # One Interface down, Happy Path IPv4
-        mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
-                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
-
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 
         if self.conf.conf.amphora_agent.agent_server_network_file:
@@ -1843,10 +1825,6 @@ class TestServerTestCase(base.TestCase):
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                  'ifup', '{netns_int}:0'.format(
                      netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
-
-        mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
-                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
         mock_check_output.side_effect = [
             'unplug1',
             subprocess.CalledProcessError(
@@ -1880,8 +1858,6 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('os.chmod')
     @mock.patch('shutil.copy2')
     @mock.patch('pyroute2.NSPopen', create=True)
-    @mock.patch('netifaces.interfaces')
-    @mock.patch('netifaces.ifaddresses')
     @mock.patch('pyroute2.IPRoute', create=True)
     @mock.patch('pyroute2.netns.create', create=True)
     @mock.patch('pyroute2.NetNS', create=True)
@@ -1891,9 +1867,16 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('os.path.isfile')
     def _test_plug_vip6(self, distro, mock_isfile, mock_makedirs,
                         mock_copytree, mock_check_output, mock_netns,
-                        mock_netns_create, mock_pyroute2, mock_ifaddress,
-                        mock_interfaces, mock_nspopen, mock_copy2,
-                        mock_os_chmod):
+                        mock_netns_create, mock_pyroute2, mock_nspopen,
+                        mock_copy2, mock_os_chmod):
+        mock_ipr = mock.MagicMock()
+        mock_ipr_instance = mock.MagicMock()
+        mock_ipr_instance.link_lookup.side_effect = [[], [], [33], [33], [33],
+                                                     [33], [33], [33]]
+        mock_ipr_instance.get_links.return_value = ({
+            'attrs': [('IFLA_IFNAME', FAKE_INTERFACE)]},)
+        mock_ipr.__enter__.return_value = mock_ipr_instance
+        mock_pyroute2.return_value = mock_ipr
 
         mock_isfile.return_value = True
 
@@ -1933,7 +1916,6 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual(400, rv.status_code)
 
         # No interface at all
-        mock_interfaces.side_effect = [[]]
         file_name = '/sys/bus/pci/rescan'
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open') as mock_open, mock.patch.object(
@@ -1958,8 +1940,6 @@ class TestServerTestCase(base.TestCase):
 
         # Two interfaces down
         m().reset_mock()
-        mock_interfaces.side_effect = [['blah', 'blah2']]
-        mock_ifaddress.side_effect = [['blabla'], ['blabla']]
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
             mock_open.return_value = 123
@@ -1992,10 +1972,6 @@ class TestServerTestCase(base.TestCase):
                             {'destination': '2001:db9::1/128',
                              'nexthop': '2001:db8::5'}]
         }
-
-        mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
-                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
 
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
@@ -2128,10 +2104,6 @@ class TestServerTestCase(base.TestCase):
         mock_nspopen.assert_has_calls(calls, any_order=True)
 
         # One Interface down, Happy Path IPv6
-        mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
-                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
-
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
         if distro == consts.UBUNTU:
@@ -2222,10 +2194,6 @@ class TestServerTestCase(base.TestCase):
                     ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                      'ifup', '{netns_int}'.format(
                          netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
-
-        mock_interfaces.side_effect = [['blah']]
-        mock_ifaddress.side_effect = [[netifaces.AF_LINK],
-                                      {netifaces.AF_LINK: [{'addr': '123'}]}]
         mock_check_output.side_effect = [
             'unplug1',
             subprocess.CalledProcessError(
