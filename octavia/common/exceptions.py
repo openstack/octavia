@@ -147,7 +147,8 @@ class CertificateGenerationException(OctaviaException):
 
 class DuplicateListenerEntry(APIException):
     msg = _("Another Listener on this Load Balancer "
-            "is already using protocol_port %(port)d")
+            "is already using protocol %(protocol)s "
+            "and protocol_port %(port)d")
     code = 409
 
 

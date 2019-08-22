@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed bug which prevented the creation of listeners for different protocols
+    on the same port (i.e: tcp port 53, and udp port 53).

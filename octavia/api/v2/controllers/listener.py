@@ -229,6 +229,40 @@ class ListenersController(base.BaseController):
                 listener_dict.get('client_ca_tls_certificate_id'),
                 listener_dict.get('client_crl_container_id', None))
 
+        # Validate that the L4 protocol (UDP or TCP) is not already used for
+        # the specified protocol_port in this load balancer
+        pcontext = pecan.request.context
+        query_filter = {
+            'project_id': listener_dict['project_id'],
+            'load_balancer_id': listener_dict['load_balancer_id'],
+            'protocol_port': listener_dict['protocol_port']
+        }
+
+        # Get listeners on the same load balancer that use the same
+        # protocol port
+        db_listeners = self.repositories.listener.get_all_API_list(
+            lock_session, show_deleted=False,
+            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+            **query_filter)[0]
+
+        if db_listeners:
+            l4_protocol = constants.L4_PROTOCOL_MAP[listener_protocol]
+
+            # List supported protocols that share the same L4 protocol as our
+            # new listener
+            disallowed_protocols = [
+                p
+                for p in constants.L4_PROTOCOL_MAP
+                if constants.L4_PROTOCOL_MAP[p] == l4_protocol
+            ]
+
+            for db_l in db_listeners:
+                # Check if l4 protocol ports conflict
+                if db_l.protocol in disallowed_protocols:
+                    raise exceptions.DuplicateListenerEntry(
+                        protocol=db_l.protocol,
+                        port=listener_dict.get('protocol_port'))
+
         try:
             db_listener = self.repositories.listener.create(
                 lock_session, **listener_dict)
@@ -242,13 +276,14 @@ class ListenersController(base.BaseController):
                     lock_session, id=db_listener.id)
             return db_listener
         except odb_exceptions.DBDuplicateEntry as de:
-            column_list = ['load_balancer_id', 'protocol_port']
+            column_list = ['load_balancer_id', 'protocol', 'protocol_port']
             constraint_list = ['uq_listener_load_balancer_id_protocol_port']
             if ['id'] == de.columns:
                 raise exceptions.IDAlreadyExists()
             if (set(column_list) == set(de.columns) or
                     set(constraint_list) == set(de.columns)):
                 raise exceptions.DuplicateListenerEntry(
+                    protocol=listener_dict.get('protocol'),
                     port=listener_dict.get('protocol_port'))
         except odb_exceptions.DBError:
             raise exceptions.InvalidOption(value=listener_dict.get('protocol'),

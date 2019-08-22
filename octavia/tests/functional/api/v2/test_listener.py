@@ -1708,6 +1708,28 @@ class TestListener(base.BaseAPITest):
         body = self._build_body(listener2_post)
         self.post(self.LISTENERS_PATH, body, status=409)
 
+    def test_create_listeners_tcp_https_same_port(self):
+        listener1 = self.create_listener(constants.PROTOCOL_TCP, 80,
+                                         self.lb_id)
+        self.set_lb_status(self.lb_id)
+        listener2_post = {'protocol': constants.PROTOCOL_HTTPS,
+                          'protocol_port':
+                          listener1['listener']['protocol_port'],
+                          'loadbalancer_id': self.lb_id}
+        body = self._build_body(listener2_post)
+        self.post(self.LISTENERS_PATH, body, status=409)
+
+    def test_create_listeners_tcp_udp_same_port(self):
+        listener1 = self.create_listener(constants.PROTOCOL_TCP, 80,
+                                         self.lb_id)
+        self.set_lb_status(self.lb_id)
+        listener2_post = {'protocol': constants.PROTOCOL_UDP,
+                          'protocol_port':
+                          listener1['listener']['protocol_port'],
+                          'loadbalancer_id': self.lb_id}
+        body = self._build_body(listener2_post)
+        self.post(self.LISTENERS_PATH, body, status=201)
+
     def test_delete(self):
         listener = self.create_listener(constants.PROTOCOL_HTTP, 80,
                                         self.lb_id)
