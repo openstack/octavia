@@ -13,11 +13,11 @@
 #    under the License.
 
 import mock
+from octavia_lib.api.drivers import data_models as driver_dm
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
-from octavia.api.drivers import data_models as driver_dm
 from octavia.api.drivers import utils as driver_utils
 from octavia.common import constants
 import octavia.common.context

@@ -16,9 +16,9 @@ import copy
 
 import mock
 
+from octavia_lib.api.drivers import data_models as driver_dm
 from octavia_lib.api.drivers import exceptions as lib_exceptions
 
-from octavia.api.drivers import data_models as driver_dm
 from octavia.api.drivers import exceptions as driver_exceptions
 from octavia.api.drivers import utils
 from octavia.common import constants
@@ -103,9 +103,13 @@ class TestUtils(base.TestCase):
         self.assertEqual({'admin_state_up': True},
                          result_dict)
 
+    @mock.patch('octavia.db.repositories.FlavorRepository.'
+                'get_flavor_metadata_dict')
+    @mock.patch('octavia.db.api.get_session')
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
-    def test_lb_dict_to_provider_dict(self, mock_load_cert, mock_secret):
+    def test_lb_dict_to_provider_dict(self, mock_load_cert, mock_secret,
+                                      mock_get_session, mock_get_flavor):
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
@@ -120,6 +124,7 @@ class TestUtils(base.TestCase):
         mock_load_cert.side_effect = [pool_certs, listener_certs,
                                       listener_certs, listener_certs,
                                       listener_certs]
+        mock_get_flavor.return_value = {'shaved_ice': 'cherry'}
         test_lb_dict = {'name': 'lb1',
                         'project_id': self.sample_data.project_id,
                         'vip_subnet_id': self.sample_data.subnet_id,
@@ -133,7 +138,7 @@ class TestUtils(base.TestCase):
                         'description': '', 'admin_state_up': True,
                         'provisioning_status': constants.PENDING_CREATE,
                         'operating_status': constants.OFFLINE,
-                        'flavor_id': '',
+                        'flavor_id': 'flavor_id',
                         'provider': 'noop_driver'}
         ref_prov_lb_dict = {
             'vip_address': self.sample_data.ip_address,
@@ -147,6 +152,7 @@ class TestUtils(base.TestCase):
             'vip_qos_policy_id': self.sample_data.qos_policy_id,
             'vip_network_id': self.sample_data.network_id,
             'pools': self.sample_data.provider_pools,
+            'flavor': {'shaved_ice': 'cherry'},
             'name': 'lb1'}
         vip = data_models.Vip(ip_address=self.sample_data.ip_address,
                               network_id=self.sample_data.network_id,
@@ -160,16 +166,22 @@ class TestUtils(base.TestCase):
 
         self.assertEqual(ref_prov_lb_dict, provider_lb_dict)
 
-    def test_db_loadbalancer_to_provider_loadbalancer(self):
+    @mock.patch('octavia.db.repositories.FlavorRepository.'
+                'get_flavor_metadata_dict')
+    @mock.patch('octavia.db.api.get_session')
+    def test_db_loadbalancer_to_provider_loadbalancer(self, mock_get_session,
+                                                      mock_get_flavor):
+        mock_get_flavor.return_value = {'shaved_ice': 'cherry'}
         vip = data_models.Vip(ip_address=self.sample_data.ip_address,
                               network_id=self.sample_data.network_id,
                               port_id=self.sample_data.port_id,
                               subnet_id=self.sample_data.subnet_id)
-        test_db_lb = data_models.LoadBalancer(id=1, vip=vip)
+        test_db_lb = data_models.LoadBalancer(id=1, flavor_id='2', vip=vip)
         provider_lb = utils.db_loadbalancer_to_provider_loadbalancer(
             test_db_lb)
         ref_provider_lb = driver_dm.LoadBalancer(
             loadbalancer_id=1,
+            flavor={'shaved_ice': 'cherry'},
             vip_address=self.sample_data.ip_address,
             vip_network_id=self.sample_data.network_id,
             vip_port_id=self.sample_data.port_id,
@@ -240,7 +252,7 @@ class TestUtils(base.TestCase):
                                        'sni_certs': [cert2, cert3]}
         # Test with bad SNI content
         test_listener = copy.deepcopy(self.sample_data.test_listener1_dict)
-        test_listener['sni_containers'] = [[]]
+        test_listener['sni_containers'] = [{}]
         self.assertRaises(exceptions.ValidationException,
                           utils.listener_dict_to_provider_dict,
                           test_listener)
