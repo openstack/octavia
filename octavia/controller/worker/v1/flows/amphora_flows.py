@@ -364,6 +364,10 @@ class AmphoraFlows(object):
             rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
             requires=constants.AMPHORA))
 
+        failover_amphora_flow.add(network_tasks.FailoverPreparationForAmphora(
+            rebind={constants.AMPHORA: constants.FAILED_AMPHORA},
+            requires=constants.AMPHORA))
+
         # Note: It seems intuitive to boot an amphora prior to deleting
         #       the old amphora, however this is a complicated issue.
         #       If the target host (due to anit-affinity) is resource
