@@ -335,14 +335,26 @@ function octavia_configure {
     if [[ "$(trueorfalse False OCTAVIA_USE_PREGENERATED_CERTS)" == "True" ]]; then
         cp -rfp ${OCTAVIA_PREGENERATED_CERTS_DIR} ${OCTAVIA_CERTS_DIR}
     else
-        source $OCTAVIA_DIR/bin/create_certificates.sh $OCTAVIA_CERTS_DIR $OCTAVIA_DIR/etc/certificates/openssl.cnf
+        pushd $OCTAVIA_DIR/bin
+        source create_dual_intermediate_CA.sh
+        mkdir -p ${OCTAVIA_CERTS_DIR}/private
+        chmod 700 ${OCTAVIA_CERTS_DIR}/private
+        cp -p etc/octavia/certs/server_ca.cert.pem ${OCTAVIA_CERTS_DIR}/
+        cp -p etc/octavia/certs/server_ca-chain.cert.pem ${OCTAVIA_CERTS_DIR}/
+        cp -p etc/octavia/certs/server_ca.key.pem ${OCTAVIA_CERTS_DIR}/private/
+        cp -p etc/octavia/certs/client_ca.cert.pem ${OCTAVIA_CERTS_DIR}/
+        cp -p etc/octavia/certs/client.cert-and-key.pem ${OCTAVIA_CERTS_DIR}/private/
+        popd
     fi
 
-    iniset $OCTAVIA_CONF haproxy_amphora client_cert ${OCTAVIA_CERTS_DIR}/client.pem
-    iniset $OCTAVIA_CONF haproxy_amphora server_ca ${OCTAVIA_CERTS_DIR}/ca_01.pem
-    iniset $OCTAVIA_CONF certificates ca_certificate ${OCTAVIA_CERTS_DIR}/ca_01.pem
-    iniset $OCTAVIA_CONF certificates ca_private_key ${OCTAVIA_CERTS_DIR}/private/cakey.pem
-    iniset $OCTAVIA_CONF certificates ca_private_key_passphrase foobar
+    iniset $OCTAVIA_CONF certificates ca_certificate ${OCTAVIA_CERTS_DIR}/server_ca.cert.pem
+    iniset $OCTAVIA_CONF certificates ca_private_key ${OCTAVIA_CERTS_DIR}/private/server_ca.key.pem
+    iniset $OCTAVIA_CONF certificates ca_private_key_passphrase not-secure-passphrase
+    iniset $OCTAVIA_CONF controller_worker client_ca ${OCTAVIA_CERTS_DIR}/client_ca.cert.pem
+    iniset $OCTAVIA_CONF haproxy_amphora client_cert ${OCTAVIA_CERTS_DIR}/private/client.cert-and-key.pem
+    iniset $OCTAVIA_CONF haproxy_amphora server_ca ${OCTAVIA_CERTS_DIR}/server_ca-chain.cert.pem
+
+    # Controller side symmetric encryption, not used for PKI
     iniset $OCTAVIA_CONF certificates server_certs_key_passphrase insecure-key-do-not-use-this-key
 
     if [[ "$OCTAVIA_USE_LEGACY_RBAC" == "True" ]]; then
