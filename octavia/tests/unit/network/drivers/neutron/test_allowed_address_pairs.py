@@ -373,6 +373,43 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                                     t_constants.MOCK_VRRP_IP2])
         self.assertEqual(lb.vip.ip_address, amp.ha_ip)
 
+    @mock.patch('octavia.network.drivers.neutron.utils.'
+                'convert_port_dict_to_model')
+    def test_plug_aap_port_create_fails(self, mock_convert):
+        lb = dmh.generate_load_balancer_tree()
+
+        subnet = network_models.Subnet(id=t_constants.MOCK_VIP_SUBNET_ID,
+                                       network_id=t_constants.MOCK_VIP_NET_ID)
+
+        list_ports = self.driver.neutron_client.list_ports
+        port1 = t_constants.MOCK_MANAGEMENT_PORT1['port']
+        port2 = t_constants.MOCK_MANAGEMENT_PORT2['port']
+        list_ports.side_effect = [{'ports': [port1]}, {'ports': [port2]}]
+        port_create = self.driver.neutron_client.create_port
+        port_create.side_effect = [Exception('Create failure')]
+        self.assertRaises(network_base.PlugVIPException,
+                          self.driver.plug_aap_port,
+                          lb, lb.vip, lb.amphorae[0], subnet)
+        mock_convert.assert_not_called()
+        self.driver.neutron_client.delete_port.assert_not_called()
+
+    def test_plug_aap_port_attach_fails(self):
+        lb = dmh.generate_load_balancer_tree()
+
+        subnet = network_models.Subnet(id=t_constants.MOCK_VIP_SUBNET_ID,
+                                       network_id=t_constants.MOCK_VIP_NET_ID)
+
+        list_ports = self.driver.neutron_client.list_ports
+        port1 = t_constants.MOCK_MANAGEMENT_PORT1['port']
+        port2 = t_constants.MOCK_MANAGEMENT_PORT2['port']
+        list_ports.side_effect = [{'ports': [port1]}, {'ports': [port2]}]
+        network_attach = self.driver.compute.attach_network_or_port
+        network_attach.side_effect = [Exception('Attach failure')]
+        self.assertRaises(network_base.PlugVIPException,
+                          self.driver.plug_aap_port,
+                          lb, lb.vip, lb.amphorae[0], subnet)
+        self.driver.neutron_client.delete_port.assert_called_once()
+
     def _set_safely(self, obj, name, value):
         if isinstance(obj, dict):
             current = obj.get(name)
